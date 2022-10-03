@@ -148,7 +148,7 @@ namespace System.Threading
                     _nativeEvents =
                         (Interop.Kernel32.OVERLAPPED_ENTRY*)
                         NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
-                    _events = new(default);
+                    _events = new ThreadPoolTypedWorkItemQueue<Event, Callback>();
 
                     // These threads don't run user code, use a smaller stack size
                     _thread = new Thread(Poll, SmallStackSizeBytes);
@@ -247,7 +247,7 @@ namespace System.Threading
 
             private struct Callback : IThreadPoolTypedWorkItemQueueCallback<Event>
             {
-                public void Invoke(Event e)
+                public static void Invoke(Event e)
                 {
                     if (NativeRuntimeEventSource.Log.IsEnabled())
                     {

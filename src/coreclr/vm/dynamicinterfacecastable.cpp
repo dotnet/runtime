@@ -7,7 +7,7 @@
 
 namespace
 {
-    BOOL CallIsInterfaceImplementated(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented)
+    BOOL CallIsInterfaceImplemented(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented)
     {
         CONTRACT(BOOL) {
             THROWS;
@@ -71,7 +71,7 @@ BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeH
         PRECONDITION(typeHandle.IsInterface());
     } CONTRACT_END;
 
-    RETURN CallIsInterfaceImplementated(objPROTECTED, typeHandle, throwIfNotImplemented);
+    RETURN CallIsInterfaceImplemented(objPROTECTED, typeHandle, throwIfNotImplemented);
 }
 
 OBJECTREF DynamicInterfaceCastable::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)

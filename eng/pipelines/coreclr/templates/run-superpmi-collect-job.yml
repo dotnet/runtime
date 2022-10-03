@@ -106,7 +106,7 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 50 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs

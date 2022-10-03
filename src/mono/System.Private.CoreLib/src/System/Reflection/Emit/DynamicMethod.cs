@@ -118,14 +118,12 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
-                returnType = typeof(void);
-            if (owner == null && typeOwner)
-                throw new ArgumentNullException(nameof(owner));
-            if ((m == null) && !anonHosted)
-                throw new ArgumentNullException(nameof(m));
+            ArgumentNullException.ThrowIfNull(name);
+            returnType ??= typeof(void);
+            if (typeOwner)
+                ArgumentNullException.ThrowIfNull(owner);
+            if (!anonHosted)
+                ArgumentNullException.ThrowIfNull(m);
             if (parameterTypes != null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
@@ -137,8 +135,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("Owner can't be an array or an interface.");
             }
 
-            if (m == null)
-                m = AnonHostModuleHolder.AnonHostModule;
+            m ??= AnonHostModuleHolder.AnonHostModule;
 
             this.name = name;
             this.attributes = attributes | MethodAttributes.Static;
@@ -192,12 +189,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType)
+        public sealed override Delegate CreateDelegate(Type delegateType)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
             if (deleg != null)
                 return deleg;
 
@@ -207,12 +201,9 @@ namespace System.Reflection.Emit
             return deleg;
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType, object? target)
+        public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             CreateDynMethod();
 
@@ -247,24 +238,22 @@ namespace System.Reflection.Emit
             return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
         }
 
-        public override object[] GetCustomAttributes(Type attributeType,
-                                  bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-            else
-                return Array.Empty<object>();
+            {
+                // avoid calling CreateInstance() in the common case where the type is Attribute
+                object[] result = attributeType == typeof(Attribute) ? new Attribute[1] : (object[])Array.CreateInstance(attributeType, 1);
+                result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                return result;
+            }
+
+            return (object[])Array.CreateInstance(attributeType.IsValueType || attributeType.ContainsGenericParameters ? typeof(object) : attributeType, 0);
         }
 
-        public DynamicILInfo GetDynamicILInfo()
-        {
-            if (il_info == null)
-                il_info = new DynamicILInfo(this);
-            return il_info;
-        }
+        public DynamicILInfo GetDynamicILInfo() => il_info ??= new DynamicILInfo(this);
 
         public ILGenerator GetILGenerator()
         {
@@ -320,8 +309,7 @@ namespace System.Reflection.Emit
         /*
         public override object Invoke (object obj, object[] parameters) {
             CreateDynMethod ();
-            if (method == null)
-                method = new RuntimeMethodInfo (mhandle);
+            method ??= new RuntimeMethodInfo (mhandle);
             return method.Invoke (obj, parameters);
         }
         */
@@ -345,8 +333,7 @@ namespace System.Reflection.Emit
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                 return true;

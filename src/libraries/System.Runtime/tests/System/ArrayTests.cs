@@ -1609,7 +1609,7 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
+        public static IEnumerable<object[]> Copy_UnreliableConversion_CantPerform_TestData()
         {
             yield return new object[] { new object[] { "1" }, new int[1] };
 
@@ -1633,8 +1633,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
-        public static void Copy_UnreliableConverson_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
+        public static void Copy_UnreliableConversion_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
@@ -1651,7 +1651,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
         public static void ConstrainedCopy_UnreliableConversion_CantPerform_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
@@ -3331,34 +3331,44 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Sort_SZArray_TestData()
         {
+			     // Int
             yield return new object[] { new int[0], 0, 0, new IntegerComparer(), new int[0] };
             yield return new object[] { new int[] { 5 }, 0, 1, new IntegerComparer(), new int[] { 5 } };
             yield return new object[] { new int[] { 5, 2 }, 0, 2, new IntegerComparer(), new int[] { 2, 5 } };
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 0, 9, new IntegerComparer(), new int[] { 2, 2, 3, 4, 4, 5, 6, 8, 9 } };
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 3, 4, new IntegerComparer(), new int[] { 5, 2, 9, 2, 3, 4, 8, 4, 6 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new IntegerComparer(), new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
-
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 0, 9, null, new int[] { 2, 2, 3, 4, 4, 5, 6, 8, 9 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, null, new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
-
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 0, 0, null, new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 } };
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 9, 0, null, new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2, 1 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2, 1 }, 1, 2, null, new int[] { 4, 2, 3, 1 } };
+            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, new IntegerComparer(), new int[] { 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, null, new int[] { 2, 3, 4 } };
 
+			     // String
             yield return new object[] { new string[0], 0, 0, null, new string[0] };
             yield return new object[] { new string[0], 0, 0, new StringComparer(), new string[0] };
             yield return new object[] { new string[] { "5" }, 0, 1, null, new string[] { "5" } };
             yield return new object[] { new string[] { "5" }, 0, 1, new StringComparer(), new string[] { "5" } };
             yield return new object[] { new string[] { "5", "2" }, 0, 2, null, new string[] { "2", "5" } };
             yield return new object[] { new string[] { "5", "2" }, 0, 2, new StringComparer(), new string[] { "2", "5" } };
+            yield return new object[] { new string[] { "5", "2", "3" }, 0, 3, null, new string[] { "2", "3", "5" } };
+            yield return new object[] { new string[] { "5", "2", "3"}, 0, 3, new StringComparer(), new string[] { "2", "3", "5" } };
+            yield return new object[] { new string[] { "5", "2", null }, 0, 3, null, new string[] {null, "2", "5" } };
+            yield return new object[] { new string[] { "5", "2", null}, 0, 3, new StringComparer(), new string[] { null, "2", "5" } };
             yield return new object[] { new string[] { "5", "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 9, new StringComparer(), new string[] { "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 10, new StringComparer(), new string[] { null, "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 3, 4, new StringComparer(), new string[] { "5", null, "2", "3", "4", "8", "9", "2", "4", "6" } };
             yield return new object[] { new string[] { null, null, null, null, null, "foo", null, null, null, null, null, "bar", null, null, null, null, null }, 0, 17, null, new string[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "bar", "foo" } };
-            yield return new object[] { new int[] { 1, 2, 3, 4 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
-            yield return new object[] { new int[] { 4, 3, 2, 1 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
-            yield return new object[] { new int[] { 4, 3, 2, 1 }, 1, 2, null, new int[] { 4, 2, 3, 1 } };
-            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, new IntegerComparer(), new int[] { 2, 3, 4 } };
-            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, null, new int[] { 2, 3, 4 } };
+            yield return new object[] { new string[] { null, null, null, null, null, "foo", null, null, "test", null, null, "bar", null, null, null, null, null }, 0, 17, null, new string[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, "bar", "foo", "test" } };
+            yield return new object[] { new string[] { null, null, null, null, null, "foo", null, null, "test", null, null, "bar", null, null, null, null, null }, 0, 17, new StringComparer(), new string[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, "bar", "foo", "test" } };
+            yield return new object[] { new string[] { null, "bns", "ici", "fvk", "xki", null, "eig", "asb", "tal", "ixn", null, "ema", "tsw", "vjg", "wjz", null, "she" }, 0, 17, null, new string[] { null, null, null, null, "asb", "bns", "eig", "ema", "fvk", "ici", "ixn", "she", "tal", "tsw", "vjg", "wjz", "xki" } };
+            yield return new object[] { new string[] { null, "bns", "ici", "fvk", "xki", null, "eig", "asb", "tal", "ixn", null, "ema", "tsw", "vjg", "wjz", null, "she" }, 0, 17, new StringComparer(), new string[] { null, null, null, null, "asb", "bns", "eig", "ema", "fvk", "ici", "ixn", "she", "tal", "tsw", "vjg", "wjz", "xki" } };
+            yield return new object[] { new string[] { "mpb", "jfr", "pfp", "jgi", "opx", "rzi", "cfg", "hpg", "jta", "yku", "zpo", "atd", "hhv", "vtx", "apn", "ini", "jcc" }, 0, 17, null, new string[] { "apn", "atd", "cfg", "hhv", "hpg", "ini", "jcc", "jfr", "jgi", "jta", "mpb", "opx", "pfp", "rzi", "vtx", "yku", "zpo" } };
+            yield return new object[] { new string[] { "mpb", "jfr", "pfp", "jgi", "opx", "rzi", "cfg", "hpg", "jta", "yku", "zpo", "atd", "hhv", "vtx", "apn", "ini", "jcc" }, 0, 17, new StringComparer(), new string[] { "apn", "atd", "cfg", "hhv", "hpg", "ini", "jcc", "jfr", "jgi", "jta", "mpb", "opx", "pfp", "rzi", "vtx", "yku", "zpo" } };
 
             // Byte
             yield return new object[] { new byte[] { 3, 5, 6, 6 }, 0, 4, null, new byte[] { 3, 5, 6, 6 } };

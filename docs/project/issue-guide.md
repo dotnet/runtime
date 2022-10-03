@@ -65,7 +65,7 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
     * Motivation: Observation is that contributors are less likely to grab assigned issues, no matter what the repo rules say.
 1. Use **up-for-grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
-    * Note: Per http://up-for-grabs.net, such issues should be no longer than few nights' worth of work. They should be actionable (i.e. no misterious CI failures or UWP issues that can't be tested in the open).
+    * Note: Per http://up-for-grabs.net, such issues should be no longer than few nights' worth of work. They should be actionable (i.e. no mysterious CI failures or UWP issues that can't be tested in the open).
 1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
     * Motivation: Helps communicate desire/timeline to community. Can spark further priority/impact discussion.
 1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, **test enhancement**, **question**, **documentation**, etc.)

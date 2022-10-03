@@ -59,6 +59,7 @@ namespace System.Reflection
             typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
+        [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -113,6 +114,7 @@ namespace System.Reflection
             private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
+            [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string name;
@@ -134,18 +136,8 @@ namespace System.Reflection
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
             // This attribute is both defined and referenced in the dynamic assembly to
             // allow access to internal types in other assemblies.
-            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor
-            {
-                get
-                {
-                    if (_ignoresAccessChecksToAttributeConstructor == null)
-                    {
-                        _ignoresAccessChecksToAttributeConstructor = IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
-                    }
-
-                    return _ignoresAccessChecksToAttributeConstructor;
-                }
-            }
+            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor =>
+                _ignoresAccessChecksToAttributeConstructor ??= IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
 
             public GeneratedTypeInfo GetProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
@@ -171,6 +163,8 @@ namespace System.Reflection
 
             // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
                 Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             private GeneratedTypeInfo GenerateProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
@@ -315,7 +309,7 @@ namespace System.Reflection
             internal GeneratedTypeInfo CreateType()
             {
                 this.Complete();
-                return new GeneratedTypeInfo(_tb.CreateType()!, _methodInfos.ToArray());
+                return new GeneratedTypeInfo(_tb.CreateType(), _methodInfos.ToArray());
             }
 
             internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
@@ -351,8 +345,8 @@ namespace System.Reflection
 
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
-                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overriden
-                    // ("methods that cannot be overriden" includes default implementation of other interface methods).
+                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overridden
+                    // ("methods that cannot be overridden" includes default implementation of other interface methods).
                     if (!mi.IsVirtual || mi.IsFinal)
                         continue;
 
@@ -382,7 +376,7 @@ namespace System.Reflection
                 {
                     PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static property, non-virtual property,
+                    // If we didn't make an overridden accessor above, this was a static property, non-virtual property,
                     // or a default implementation of a property of a different interface. In any case, we don't need
                     // to redeclare it.
                     if (ai.GetMethodBuilder == null && ai.SetMethodBuilder == null)
@@ -399,7 +393,7 @@ namespace System.Reflection
                 {
                     EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static event, non-virtual event,
+                    // If we didn't make an overridden accessor above, this was a static event, non-virtual event,
                     // or a default implementation of an event of a different interface. In any case, we don't
                     // need to redeclare it.
                     if (ai.AddMethodBuilder == null && ai.RemoveMethodBuilder == null && ai.RaiseMethodBuilder == null)

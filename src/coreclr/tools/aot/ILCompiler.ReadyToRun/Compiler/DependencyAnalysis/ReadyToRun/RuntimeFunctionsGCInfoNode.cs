@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class RuntimeFunctionsGCInfoNode : ArrayOfEmbeddedDataNode<MethodGCInfoNode>
     {
         public RuntimeFunctionsGCInfoNode()
-            : base("RuntimeFunctionsGCInfo_Begin", "RuntimeFunctionsGCInfo_End", new EmbeddedObjectNodeComparer(new CompilerComparer()))
+            : base("RuntimeFunctionsGCInfo_Begin", "RuntimeFunctionsGCInfo_End", new EmbeddedObjectNodeComparer(CompilerComparer.Instance))
         {
         }
 

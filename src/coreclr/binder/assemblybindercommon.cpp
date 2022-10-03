@@ -30,6 +30,7 @@
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                  DefaultAssemblyBinder *pDefaultBinder,
+                                                 AssemblyBinder *pBinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE)
@@ -105,53 +106,6 @@ namespace BINDER_SPACE
                 return false;
             }
             return true;
-        }
-
-        const WCHAR* s_httpURLPrefix = W("http://");
-        HRESULT URLToFullPath(PathString &assemblyPath)
-        {
-            HRESULT hr = S_OK;
-
-            SString::Iterator pos = assemblyPath.Begin();
-            if (assemblyPath.MatchCaseInsensitive(pos, s_httpURLPrefix))
-            {
-                // HTTP downloads are unsupported
-                hr = FUSION_E_CODE_DOWNLOAD_DISABLED;
-            }
-            else
-            {
-                SString fullAssemblyPath;
-                WCHAR *pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(MAX_LONGPATH);
-                DWORD dwCCFullAssemblyPath = MAX_LONGPATH + 1; // SString allocates extra byte for null.
-
-                MutateUrlToPath(assemblyPath);
-
-                dwCCFullAssemblyPath = WszGetFullPathName(assemblyPath.GetUnicode(),
-                                                          dwCCFullAssemblyPath,
-                                                          pwzFullAssemblyPath,
-                                                          NULL);
-                if (dwCCFullAssemblyPath > MAX_LONGPATH)
-                {
-                    fullAssemblyPath.CloseBuffer();
-                    pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(dwCCFullAssemblyPath - 1);
-                    dwCCFullAssemblyPath = WszGetFullPathName(assemblyPath.GetUnicode(),
-                                                              dwCCFullAssemblyPath,
-                                                              pwzFullAssemblyPath,
-                                                              NULL);
-                }
-                fullAssemblyPath.CloseBuffer(dwCCFullAssemblyPath);
-
-                if (dwCCFullAssemblyPath == 0)
-                {
-                    hr = HRESULT_FROM_GetLastError();
-                }
-                else
-                {
-                    assemblyPath.Set(fullAssemblyPath);
-                }
-            }
-
-            return hr;
         }
 
         HRESULT CreateImageAssembly(PEImage                 *pPEImage,
@@ -238,7 +192,6 @@ namespace BINDER_SPACE
 
     HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                                /* in */  AssemblyName        *pAssemblyName,
-                                               /* in */  LPCWSTR              szCodeBase,
                                                /* in */  bool                 excludeAppPaths,
                                                /* out */ Assembly           **ppAssembly)
     {
@@ -255,28 +208,13 @@ namespace BINDER_SPACE
             // Lock the binding application context
             CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-            if (szCodeBase == NULL)
-            {
-                _ASSERTE(pAssemblyName != NULL);
-                IF_FAIL_GO(BindByName(pApplicationContext,
-                                      pAssemblyName,
-                                      false, // skipFailureCaching
-                                      false, // skipVersionCompatibilityCheck
-                                      excludeAppPaths,
-                                      &bindResult));
-            }
-            else
-            {
-                PathString assemblyPath(szCodeBase);
-
-                // Convert URL to full path and block HTTP downloads
-                IF_FAIL_GO(URLToFullPath(assemblyPath));
-
-                IF_FAIL_GO(BindWhereRef(pApplicationContext,
-                                        assemblyPath,
-                                        excludeAppPaths,
-                                        &bindResult));
-            }
+            _ASSERTE(pAssemblyName != NULL);
+            IF_FAIL_GO(BindByName(pApplicationContext,
+                                    pAssemblyName,
+                                    false, // skipFailureCaching
+                                    false, // skipVersionCompatibilityCheck
+                                    excludeAppPaths,
+                                    &bindResult));
 
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
@@ -520,61 +458,6 @@ namespace BINDER_SPACE
             }
 
             hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
-        }
-
-    LogExit:
-        return hr;
-    }
-
-    /* static */
-    HRESULT AssemblyBinderCommon::BindWhereRef(ApplicationContext *pApplicationContext,
-                                         PathString         &assemblyPath,
-                                         bool                excludeAppPaths,
-                                         BindResult         *pBindResult)
-    {
-        HRESULT hr = S_OK;
-
-        ReleaseHolder<Assembly> pAssembly;
-        BindResult lockedBindResult;
-
-        // Look for already cached binding failure
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyPath);
-        if (FAILED(hr))
-        {
-            goto LogExit;
-        }
-
-        // If we return this assembly, then it is guaranteed to be not in GAC
-        // Design decision. For now, keep the V2 model of Fusion being oblivious of the strong name.
-        // Security team did not see any security concern with interpreting the version information.
-        IF_FAIL_GO(GetAssembly(assemblyPath,
-                               FALSE /* fIsInTPA */,
-                               &pAssembly,
-                               Bundle::ProbeAppBundle(assemblyPath)));
-
-        AssemblyName *pAssemblyName;
-        pAssemblyName = pAssembly->GetAssemblyName();
-
-        IF_FAIL_GO(BindLocked(pApplicationContext,
-                                pAssemblyName,
-                                false, // skipVersionCompatibilityCheck
-                                excludeAppPaths,
-                                &lockedBindResult));
-        if (lockedBindResult.HaveResult())
-        {
-            pBindResult->SetResult(&lockedBindResult);
-            GO_WITH_HRESULT(S_OK);
-        }
-
-        hr = S_OK;
-        pBindResult->SetResult(pAssembly);
-
-    Exit:
-
-        if (FAILED(hr))
-        {
-            // Always cache binding failures
-            hr = pApplicationContext->AddToFailureCache(assemblyPath, hr);
         }
 
     LogExit:
@@ -832,7 +715,7 @@ namespace BINDER_SPACE
 
             hr = BindSatelliteResourceFromBundle(pRequestedAssemblyName, fileName, pBindResult);
 
-            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            if (pBindResult->HaveResult() || FAILED(hr))
             {
                 return hr;
             }
@@ -843,7 +726,7 @@ namespace BINDER_SPACE
                                                      pBindResult,
                                                      BinderTracing::PathSource::PlatformResourceRoots);
 
-            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            if (pBindResult->HaveResult() || FAILED(hr))
             {
                 return hr;
             }
@@ -1206,7 +1089,7 @@ namespace BINDER_SPACE
                 // Lock the application context
                 CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-                // Only perform costly validation if other binds succeded before us
+                // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
                     IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,
@@ -1271,9 +1154,10 @@ namespace BINDER_SPACE
 
 #if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
-                                                            /* in */ AssemblyName       *pAssemblyName,
+                                                            /* in */ AssemblyName *pAssemblyName,
                                                             /* in */ DefaultAssemblyBinder *pDefaultBinder,
-                                                            /* out */ Assembly           **ppAssembly)
+                                                            /* in */ AssemblyBinder *pBinder,
+                                                            /* out */ Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
 
@@ -1282,7 +1166,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
-                                           pAssemblyName, pDefaultBinder, &pLoadedAssembly);
+                                           pAssemblyName, pDefaultBinder, pBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
@@ -1296,6 +1180,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
+                                               /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1324,7 +1209,7 @@ Retry:
                         pAssemblyName,
                         true,  // skipFailureCaching
                         true,  // skipVersionCompatibilityCheck
-                        false, // excludeAppPaths
+                        excludeAppPaths, // excludeAppPaths
                         &bindResult);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -1444,7 +1329,7 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
 #elif defined(TARGET_ARM64)
         peARM64;
 #else
-        PORTABILITY_ASSERT("processArchitecture");
+        peMSIL;
 #endif
 
     return (kArchitecture == processArchitecture);

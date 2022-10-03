@@ -1,13 +1,8 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
-; File: JitHelpers_Slow.asm, see history in jithelp.asm
+; File: JitHelpers_Slow.asm
 ;
 ; Notes: These are ASM routinues which we believe to be cold in normal
 ;        AMD64 scenarios, mainly because they have other versions which
@@ -210,15 +205,8 @@ LEAF_END JIT_TrialAllocSFastSP, _TEXT
 ; HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 NESTED_ENTRY JIT_BoxFastUP, _TEXT
 
-        mov     rax, [rcx + OFFSETOF__MethodTable__m_pWriteableData]
-
-        ; Check whether the class has not been initialized
-        test    dword ptr [rax + OFFSETOF__MethodTableWriteableData__m_dwFlags], MethodTableWriteableData__enum_flag_Unrestored
-        jnz     JIT_Box
-
-        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
-
         ; m_BaseSize is guaranteed to be a multiple of 8.
+        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         inc     [g_global_alloc_lock]
         jnz     JIT_Box
@@ -231,6 +219,8 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         cmp     r8, r10
         ja      NoAlloc
 
+        test    rdx, rdx
+        je      NullRef
 
         mov     qword ptr [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr], r8     ; update the alloc ptr
         mov     [rax], rcx
@@ -270,6 +260,7 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         ret
 
     NoAlloc:
+    NullRef:
         mov     [g_global_alloc_lock], -1
         jmp     JIT_Box
 NESTED_END JIT_BoxFastUP, _TEXT

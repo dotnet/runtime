@@ -192,14 +192,9 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "AuthZSet", "Caught exception {0} with message {1}", e.GetType(), e.Message);
 
-                if (_psBuffer != null && !_psBuffer.IsInvalid)
-                    _psBuffer.Close();
-
-                if (_psUserSid != null && !_psUserSid.IsInvalid)
-                    _psUserSid.Close();
-
-                if (_psMachineSid != null && !_psMachineSid.IsInvalid)
-                    _psMachineSid.Close();
+                _psBuffer?.Dispose();
+                _psUserSid?.Dispose();
+                _psMachineSid?.Dispose();
 
                 // We're on a platform that doesn't have the AuthZ library
                 if (e is DllNotFoundException)
@@ -354,7 +349,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // It's a local group, because either (1) it's a local machine user, and local users can't be a member of a domain group,
                     // or (2) it's a domain user that's a member of a group on the local machine.  Pass the default machine context options
-                    // If we initially targetted AD then those options will not be valid for the machine store.
+                    // If we initially targeted AD then those options will not be valid for the machine store.
 
                     PrincipalContext ctx = SDSCache.LocalMachine.GetContext(
                                                                     sidIssuerName,

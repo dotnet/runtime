@@ -27,6 +27,7 @@ class Generics
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
+        TestSharedAndUnsharedGvmAnalysisRegression.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
         TestReflectionInvoke.Run();
@@ -43,7 +44,11 @@ class Generics
         TestSimpleGenericRecursion.Run();
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
+        TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
+        TestGvmLookupDependency.Run();
+        TestInvokeMemberCornerCaseInGenerics.Run();
+        TestRefAny.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
@@ -804,7 +809,7 @@ class Generics
                     s_NumErrors++;
             }
 
-            // Uncomment when we have the type loader to buld invoke stub dictionaries.
+            // Uncomment when we have the type loader to build invoke stub dictionaries.
             {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
@@ -908,7 +913,6 @@ class Generics
 
                 // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
-                // On ProjectN, both types will get vtable entries for both methods.
                 new BaseClass<int>().Method1(1);
                 m1 = typeof(BaseClass<int>).GetTypeInfo().GetDeclaredMethod("Method1");
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
@@ -1659,6 +1663,36 @@ class Generics
         {
             TestInContext<object>();
             TestInContext<int>();
+        }
+    }
+
+    class TestSharedAndUnsharedGvmAnalysisRegression
+    {
+        interface IAtom { }
+        interface IPhantom { }
+        class Atom : IAtom, IPhantom { }
+
+        class Lol<TLeft> where TLeft : IAtom, IPhantom
+        {
+            public static void Run() => ((IPartitionedStreamRecipient<int>)new RightChildResultsRecipient<TLeft, int>()).ReceivePackage<int>();
+        }
+
+        interface IPartitionedStreamRecipient<T>
+        {
+            void ReceivePackage<U>();
+        }
+
+        sealed class RightChildResultsRecipient<TLeftInput, TRightInput> : IPartitionedStreamRecipient<TRightInput>
+        {
+            public void ReceivePackage<U>() => Console.WriteLine("Accepted");
+        }
+
+        static Type s_atom = typeof(Atom);
+
+        public static void Run()
+        {
+            // Make sure the compiler never saw anything more concrete than Lol<__Canon>.
+            typeof(Lol<>).MakeGenericType(s_atom).GetMethod("Run").Invoke(null, Array.Empty<object>());
         }
     }
 
@@ -3119,6 +3153,47 @@ class Generics
         }
     }
 
+    class TestRecursionInGenericInterfaceMethods
+    {
+        interface IFoo
+        {
+            void Recurse<T>(int val);
+        }
+
+        class Foo : IFoo
+        {
+            void IFoo.Recurse<T>(int val)
+            {
+                if (val > 0)
+                    ((IFoo)this).Recurse<S<T>>(val - 1);
+            }
+        }
+
+        struct S<T>
+        {
+            public T Field;
+        }
+
+        public static void Run()
+        {
+            IFoo f = new Foo();
+
+            f.Recurse<int>(2);
+
+            bool thrown = false;
+            try
+            {
+                f.Recurse<int>(100);
+            }
+            catch (TypeLoadException)
+            {
+                thrown = true;
+            }
+            if (!thrown)
+                throw new Exception();
+        }
+    }
+
     class TestRecursionThroughGenericLookups
     {
         abstract class Handler<T>
@@ -3145,6 +3220,72 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             new ArrayHandler<object>().Write(null);
             new RangeHandler<object>().Write(default);
+        }
+    }
+
+    static class TestGvmLookupDependency
+    {
+        struct SmallCat<T> { }
+
+        interface ITechnique
+        {
+            void CatSlaps<T>() { /* Cannot reference T or it stops testing the thing it should */ }
+        }
+
+        struct Technique : ITechnique { }
+
+        static void CatConcepts<T, U>() where T : ITechnique => default(T).CatSlaps<SmallCat<U>>();
+
+        public static void Run()
+        {
+            CatConcepts<Technique, int>();
+            CatConcepts<Technique, object>();
+        }
+    }
+
+    class TestInvokeMemberCornerCaseInGenerics
+    {
+        class Generic<T>
+        {
+            public void Method(params T[] ts) { }
+        }
+
+        class Atom { }
+
+        static Generic<Atom> s_instance = new Generic<Atom>();
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            s_instance.Method(null);
+
+            // Regression test for https://github.com/dotnet/runtime/issues/65612
+            // This requires MethodTable for "Atom[]" - just make sure the compiler didn't crash and we can invoke
+            typeof(Generic<>).MakeGenericType(s_atomType).InvokeMember("Method", BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance, null, s_instance, new object[] { new Atom() });
+        }
+    }
+
+    static class TestRefAny
+    {
+        static T TestAll<T>(ref T value, Type expectedType)
+        {
+            TypedReference typedRef = __makeref(value);
+            if (__reftype(typedRef) != expectedType)
+                throw new Exception();
+
+            return __refvalue(typedRef, T);
+        }
+
+        public static void Run()
+        {
+            string classValue = "Hello";
+            int structValue = 123;
+
+            if (TestAll(ref classValue, typeof(string)) != classValue)
+                throw new Exception();
+
+            if (TestAll(ref structValue, typeof(int)) != structValue)
+                throw new Exception();
         }
     }
 }

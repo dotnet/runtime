@@ -64,7 +64,7 @@ namespace System.IO.IsolatedStorage
         //
         // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
         // with ownsHandle: false avoids the parent class closing without our knowledge.
-        private IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, InitialiationData initializationData)
+        private IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, InitializationData initializationData)
             : base(new SafeFileHandle(initializationData.NestedStream.SafeFileHandle.DangerousGetHandle(), ownsHandle: false), access, bufferSize)
         {
             _isf = initializationData.StorageFile;
@@ -73,7 +73,7 @@ namespace System.IO.IsolatedStorage
             _fs = initializationData.NestedStream;
         }
 
-        private struct InitialiationData
+        private struct InitializationData
         {
             public FileStream NestedStream;
             public IsolatedStorageFile StorageFile;
@@ -81,8 +81,10 @@ namespace System.IO.IsolatedStorage
         }
 
         // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
-        private static InitialiationData InitializeFileStream(string path!!, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
+        private static InitializationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             if ((path.Length == 0) || path.Equals(BackSlash))
                 throw new ArgumentException(
                    SR.IsolatedStorage_Path);
@@ -111,7 +113,7 @@ namespace System.IO.IsolatedStorage
                     throw new ArgumentException(SR.IsolatedStorage_FileOpenMode);
             }
 
-            InitialiationData data = new InitialiationData
+            InitializationData data = new InitializationData
             {
                 FullPath = isf.GetFullPath(path),
                 StorageFile = isf
@@ -204,8 +206,7 @@ namespace System.IO.IsolatedStorage
             {
                 if (disposing)
                 {
-                    if (_fs != null)
-                        _fs.Dispose();
+                    _fs?.Dispose();
                 }
             }
             finally

@@ -12,7 +12,7 @@ namespace System.Memory.Tests.SequenceReader
         [Fact]
         public void TryReadTo_SkipDelimiter()
         {
-            byte[] expected = Encoding.UTF8.GetBytes("This is our ^|understanding^|");
+            byte[] expected = "This is our ^|understanding^|"u8.ToArray();
             ReadOnlySequence<byte> bytes = SequenceFactory.CreateUtf8("This is our ^|understanding^|| you see.");
             SequenceReader<byte> reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out ReadOnlySpan<byte> span, (byte)'|', (byte)'^', advancePastDelimiter: true));
@@ -125,12 +125,12 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("abc^|de|");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^|de"), span.ToArray());
+            Assert.Equal("abc^|de"u8.ToArray(), span.ToArray());
             Assert.True(reader.End);
             Assert.Equal(8, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^|de"), sequence.ToArray());
+            Assert.Equal("abc^|de"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.End);
             Assert.Equal(8, reader.Consumed);
 
@@ -138,12 +138,12 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("^|a|b");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("^|a"), span.ToArray());
+            Assert.Equal("^|a"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'b'));
             Assert.Equal(4, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("^|a"), sequence.ToArray());
+            Assert.Equal("^|a"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'b'));
             Assert.Equal(4, reader.Consumed);
 
@@ -151,12 +151,12 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("^", "|a|b");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("^|a"), span.ToArray());
+            Assert.Equal("^|a"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'b'));
             Assert.Equal(4, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("^|a"), sequence.ToArray());
+            Assert.Equal("^|a"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'b'));
             Assert.Equal(4, reader.Consumed);
         }
@@ -167,12 +167,12 @@ namespace System.Memory.Tests.SequenceReader
             ReadOnlySequence<byte> bytes = SequenceFactory.CreateUtf8("abc^^|def");
             SequenceReader<byte> reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out ReadOnlySpan<byte> span, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), span.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out ReadOnlySequence<byte> sequence, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), sequence.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
 
@@ -180,12 +180,12 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("abc^^", "|def");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), span.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), sequence.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
 
@@ -193,24 +193,24 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("abc^", "^", "|def");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), span.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), sequence.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(5, reader.Consumed);
 
             // Check advance past delimiter
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), span.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'d'));
             Assert.Equal(6, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: true));
-            Assert.Equal(Encoding.UTF8.GetBytes("abc^^"), sequence.ToArray());
+            Assert.Equal("abc^^"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'d'));
             Assert.Equal(6, reader.Consumed);
 
@@ -218,12 +218,12 @@ namespace System.Memory.Tests.SequenceReader
             bytes = SequenceFactory.CreateUtf8("^^|abc");
             reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.TryReadTo(out span, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("^^"), span.ToArray());
+            Assert.Equal("^^"u8.ToArray(), span.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(2, reader.Consumed);
             reader.Rewind(reader.Consumed);
             Assert.True(reader.TryReadTo(out sequence, (byte)'|', (byte)'^', advancePastDelimiter: false));
-            Assert.Equal(Encoding.UTF8.GetBytes("^^"), sequence.ToArray());
+            Assert.Equal("^^"u8.ToArray(), sequence.ToArray());
             Assert.True(reader.IsNext((byte)'|'));
             Assert.Equal(2, reader.Consumed);
 

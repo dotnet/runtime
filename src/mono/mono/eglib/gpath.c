@@ -90,7 +90,7 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 }
 
 static gchar*
-strrchr_seperator (const gchar* filename)
+strrchr_separator (const gchar* filename)
 {
 #ifdef G_OS_WIN32
 	char *p2;
@@ -114,7 +114,7 @@ g_path_get_dirname (const gchar *filename)
 	size_t count;
 	g_return_val_if_fail (filename != NULL, NULL);
 
-	p = strrchr_seperator (filename);
+	p = strrchr_separator (filename);
 	if (p == NULL)
 		return g_strdup (".");
 	if (p == filename)
@@ -138,7 +138,7 @@ g_path_get_basename (const char *filename)
 		return g_strdup (".");
 
 	/* No separator -> filename */
-	r = strrchr_seperator (filename);
+	r = strrchr_separator (filename);
 	if (r == NULL)
 		return g_strdup (filename);
 
@@ -146,7 +146,7 @@ g_path_get_basename (const char *filename)
 	if (r [1] == 0){
 		char *copy = g_strdup (filename);
 		copy [r-filename] = 0;
-		r = strrchr_seperator (copy);
+		r = strrchr_separator (copy);
 
 		if (r == NULL){
 			g_free (copy);
@@ -194,7 +194,7 @@ cont:
 	 * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
 	 * Note that delim must have one NUL; we stop if we see that, too.
 	 */
-	for (;;){
+	while (true) {
 		c = *s++;
 		spanp = (char *)delim;
 		do {
@@ -287,20 +287,6 @@ g_find_program_in_path (const gchar *program)
 	return NULL;
 }
 
-static char *name;
-
-void
-g_set_prgname (const gchar *prgname)
-{
-	name = g_strdup (prgname);
-}
-
-gchar *
-g_get_prgname (void)
-{
-	return name;
-}
-
 gboolean
 g_ensure_directory_exists (const gchar *filename)
 {
@@ -313,7 +299,7 @@ g_ensure_directory_exists (const gchar *filename)
 	if (!dir_utf8 || !dir_utf8 [0])
 		return FALSE;
 
-	dir_utf16 = g_utf8_to_utf16 (dir_utf8, strlen (dir_utf8), NULL, NULL, NULL);
+	dir_utf16 = g_utf8_to_utf16 (dir_utf8, (glong)strlen (dir_utf8), NULL, NULL, NULL);
 	g_free (dir_utf8);
 
 	if (!dir_utf16)
@@ -321,7 +307,7 @@ g_ensure_directory_exists (const gchar *filename)
 
 	p = dir_utf16;
 
-	/* make life easy and only use one directory seperator */
+	/* make life easy and only use one directory separator */
 	while (*p != '\0')
 	{
 		if (*p == '/')

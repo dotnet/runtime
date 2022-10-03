@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -6,7 +6,6 @@
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -34,6 +33,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
+             Link="Common\System\Net\Http\X509ResourceClient.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
@@ -166,6 +167,10 @@
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</Link>
     </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
@@ -232,6 +237,8 @@
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HashOneShotHelpers.cs"
              Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
@@ -254,6 +261,8 @@
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
@@ -411,6 +420,12 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.Load.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequestLoadOptions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Build.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.CdpExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Load.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
@@ -436,9 +451,14 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500RelativeDistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityInformationAccessExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />
@@ -468,8 +488,10 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationFlag.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationMode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationReason.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Store.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectAlternativeNameExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
@@ -527,15 +549,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <!-- GetRandomBytes is identical on Unix and Browser -->
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Libraries.cs"
+             Link="Common\Interop\Browser\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs"
+             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" /> 
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesManagedTransform.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesSubtleCryptoTransform.Browser.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Browser.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
@@ -548,17 +575,20 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Native.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Native.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.NotSupported.cs" />
@@ -566,6 +596,9 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="System\Security\Cryptography\AesImplementation.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(NeedOpenSslInitializer)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -578,14 +611,10 @@
   <ItemGroup Condition="'$(UseOpenSsl)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
@@ -636,6 +665,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.LookupFriendlyNameByOid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs"
@@ -696,8 +727,6 @@
              Link="Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
     </AsnXml>
@@ -758,6 +787,10 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
+             Link="Common\System\Text\UrlBase64Encoding.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
@@ -823,6 +856,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslSingleCertLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509CertificateReader.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainEventSource.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509Encoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.OpenSsl.cs" />
@@ -830,7 +864,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
@@ -1022,7 +1055,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
@@ -1187,7 +1219,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.ECKey.cs" />
@@ -1671,8 +1702,6 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.HashData.cs"
-             Link="Common\System\Security\Cryptography\ECDsaCng.HashData.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.ImportExport.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs"
@@ -1718,7 +1747,6 @@
     <Compile Include="System\Security\Cryptography\CngKey.OpenHandle.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.Properties.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
-    <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="System\Security\Cryptography\CngSymmetricAlgorithmCore.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Windows.cs" />
@@ -1730,7 +1758,6 @@
     <Compile Include="System\Security\Cryptography\DSACng.Key.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DSAWrapper.cs" />
-    <Compile Include="System\Security\Cryptography\ECCngKey.cs" />
     <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
@@ -1746,6 +1773,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.Windows.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
@@ -1789,15 +1817,13 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

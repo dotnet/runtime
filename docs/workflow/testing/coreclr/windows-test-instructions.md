@@ -45,7 +45,7 @@ This will use `crossgen.exe` to precompile test executables before they are exec
 src\tests\build.cmd -priority=1
 ```
 
-The above is an example of requesting that priority '1' and below be built. The default priority value is '0'. If '1' is specified, all tests with `CLRTestPriorty` `0` **and** `1` will be built and run.
+The above is an example of requesting that priority '1' and below be built. The default priority value is '0'. If '1' is specified, all tests with `CLRTestPriority` `0` **and** `1` will be built and run.
 
 ## Generating Core_Root
 

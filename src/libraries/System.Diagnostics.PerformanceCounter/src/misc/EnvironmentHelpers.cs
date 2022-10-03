@@ -10,13 +10,13 @@ namespace System
     internal static class EnvironmentHelpers
     {
         private static volatile bool s_isAppContainerProcess;
-        private static volatile bool s_isAppContainerProcessInitalized;
+        private static volatile bool s_isAppContainerProcessInitialized;
 
         public static bool IsAppContainerProcess
         {
             get
             {
-                if (!s_isAppContainerProcessInitalized)
+                if (!s_isAppContainerProcessInitialized)
                 {
                     if (Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor <= 1))
                     {
@@ -28,7 +28,7 @@ namespace System
                         s_isAppContainerProcess = HasAppContainerToken();
                     }
 
-                    s_isAppContainerProcessInitalized = true;
+                    s_isAppContainerProcessInitialized = true;
                 }
 
                 return s_isAppContainerProcess;

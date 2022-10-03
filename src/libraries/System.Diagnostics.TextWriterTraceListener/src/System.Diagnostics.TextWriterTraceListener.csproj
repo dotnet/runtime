@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\ConsoleTraceListener.cs" />
@@ -16,8 +15,8 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

@@ -145,10 +145,7 @@ namespace System.Diagnostics
 
         private void Write(string? message, bool useLogFile)
         {
-            if (message == null)
-            {
-                message = string.Empty;
-            }
+            message ??= string.Empty;
 
             if (NeedIndent && message.Length != 0)
             {

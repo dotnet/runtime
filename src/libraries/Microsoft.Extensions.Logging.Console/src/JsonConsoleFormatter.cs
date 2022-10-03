@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,16 +16,16 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal sealed class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        private IDisposable _optionsReloadToken;
+        private IDisposable? _optionsReloadToken;
 
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
-            : base (ConsoleFormatterNames.Json)
+            : base(ConsoleFormatterNames.Json)
         {
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
 
-        public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
+        public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
             if (logEntry.Exception == null && message == null)
@@ -34,7 +35,7 @@ namespace Microsoft.Extensions.Logging.Console
             LogLevel logLevel = logEntry.LogLevel;
             string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
-            Exception exception = logEntry.Exception;
+            Exception? exception = logEntry.Exception;
             const int DefaultBufferSize = 1024;
             using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
@@ -102,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)
+        private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider? scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
@@ -128,7 +129,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
         {
             var key = item.Key;
             switch (item.Value)
@@ -185,10 +186,11 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static string ToInvariantString(object obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
+        private static string? ToInvariantString(object? obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
 
         internal JsonConsoleFormatterOptions FormatterOptions { get; set; }
 
+        [MemberNotNull(nameof(FormatterOptions))]
         private void ReloadLoggerOptions(JsonConsoleFormatterOptions options)
         {
             FormatterOptions = options;

@@ -1,0 +1,7 @@
+{
+    "extends": "../../tsconfig.worker.json",
+    "include": [
+        "../../**/*.ts",
+        "../../**/*.d.ts"
+    ]
+}

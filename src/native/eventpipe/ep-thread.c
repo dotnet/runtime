@@ -116,7 +116,7 @@ ep_thread_register (EventPipeThread *thread)
 
 	ep_thread_addref (thread);
 
-	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+	ep_rt_spin_lock_acquire (&_ep_threads_lock);
 		result = ep_rt_thread_list_append (&_ep_threads, thread);
 	ep_rt_spin_lock_release (&_ep_threads_lock);
 
@@ -483,7 +483,7 @@ ep_thread_session_state_increment_sequence_number (EventPipeThreadSessionState *
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_thread;
 const char quiet_linker_empty_file_warning_eventpipe_thread = 0;
 #endif

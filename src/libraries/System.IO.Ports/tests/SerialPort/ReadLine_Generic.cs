@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying read method throws exception after a call to Cloes()");
+                Debug.WriteLine("Verifying read method throws exception after a call to Close()");
                 com.Open();
                 com.Close();
                 VerifyReadException(com, typeof(InvalidOperationException));
@@ -202,7 +202,7 @@ namespace System.IO.Ports.Tests
                  We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
                 Debug.WriteLine("Verifying default ParityReplace byte with a parity errro on the last byte");
 
-                //Genrate random characters without an parity error
+                // Generate random characters without an parity error
                 for (int i = 0; i < bytesToWrite.Length; i++)
                 {
                     byte randByte = (byte)rndGen.Next(0, 128);
@@ -316,7 +316,7 @@ namespace System.IO.Ports.Tests
                 char[] expectedChars = new char[numRndBytesPairty + 1]; //Plus one to accomidate the NewLineByte
                 byte expectedByte;
 
-                //Genrate random characters without an parity error
+                // Generate random characters without an parity error
                 for (int i = 0; i < numRndBytesPairty; i++)
                 {
                     byte randByte = (byte)rndGen.Next(0, 128);
@@ -378,7 +378,7 @@ namespace System.IO.Ports.Tests
                 byte[] bytesToWrite = new byte[numBytesRead + 1]; //Plus one to accomidate the NewLineByte
                 ASCIIEncoding encoding = new ASCIIEncoding();
 
-                //Genrate random characters
+                // Generate random characters
                 for (int i = 0; i < numBytesRead; i++)
                 {
                     byte randByte = (byte)rndGen.Next(0, 256);

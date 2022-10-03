@@ -1,8 +1,5 @@
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.7.3108.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-// This test originally hit an error in dead code elimination phase that overwrote flag that trigers next iteration if the current iteration has deleted something (fgStmtRemoved)
-// from true to false during the iteration.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime { auto }

@@ -860,12 +860,12 @@ void DumpManifestResources(void* GUICookie)
                     {
                         BOOL fConflict = FALSE;
                         if (*wzName == 0)
-                    {
+                        {
                             // resource with an empty name
                             fConflict = TRUE;
-                    }
+                        }
                         else
-                    {
+                        {
                             for (ULONG i = 0; i < (ix + 2); i++)
                             {
                                 WCHAR *wzPreviousName = (WCHAR *)qbNameArray[i].Ptr();
@@ -875,17 +875,23 @@ void DumpManifestResources(void* GUICookie)
                                     // or with the same name as the output IL/RES file
                                     fConflict = TRUE;
                                     break;
-                    }
+                                }
                             }
-                    }
+                        }
 
                         // if we have a conflict, add a number suffix to the file name
-                        if (!fConflict ||
-                            swprintf_s(wpc, 2048 - (wpc - wzFileName), W("%d"), iIndex) <= 0)
-                    {
-                            // no conflict or unable to add index
+                        if (!fConflict)
+                        {
+                            // no conflict
                             break;
-                    }
+                        }
+
+                        WCHAR* next = FormatInteger(wpc, 2048 - (wpc - wzFileName), "%d", iIndex);
+                        if (next == wpc)
+                        {
+                            // Failed to append index
+                            break;
+                        }
 
                         // try again with this new number suffix
                         fAlias = TRUE;

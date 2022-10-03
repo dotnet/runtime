@@ -270,7 +270,7 @@ namespace System.Transactions
             // the absolute timeout value for the transaction.  When it is found it passes
             // the insert down to that set.
             //
-            // An importent thing to note about the list is that forward links are all weak
+            // An important thing to note about the list is that forward links are all weak
             // references and reverse links are all strong references.  This allows the GC
             // to clean up old links in the list so that they don't need to be removed manually.
             // However if there is still a rooted strong reference to an old link in the
@@ -349,7 +349,7 @@ namespace System.Transactions
                         newBucketSet.prevSet = lastBucketSet;
                     }
 
-                    // Special note - We are going to loop back to the BucketSet that preceeds the one we just tried
+                    // Special note - We are going to loop back to the BucketSet that precedes the one we just tried
                     // to insert because we may have lost the race to insert our new BucketSet into the list to another
                     // "Add" thread. By looping back, we check again to see if the BucketSet we just created actually
                     // got added. If it did, we will exit out of the outer loop and add the transaction. But if we
@@ -372,7 +372,7 @@ namespace System.Transactions
 
 
         // Remove a transaction from the table.
-        internal void Remove(InternalTransaction tx)
+        internal static void Remove(InternalTransaction tx)
         {
             Debug.Assert(tx._tableBucket != null);
             tx._tableBucket.Remove(tx);

@@ -19,7 +19,7 @@ namespace System.IO.Hashing
         private readonly ulong _seed;
         private State _state;
         private byte[]? _holdback;
-        private int _length;
+        private long _length;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="XxHash64"/> class.
@@ -63,17 +63,17 @@ namespace System.IO.Hashing
         /// <param name="source">The data to process.</param>
         public override void Append(ReadOnlySpan<byte> source)
         {
-            // Every time we've read 16 bytes, process the stripe.
-            // Data that isn't perfectly mod-16 gets stored in a holdback
+            // Every time we've read 32 bytes, process the stripe.
+            // Data that isn't perfectly mod-32 gets stored in a holdback
             // buffer.
 
-            int held = _length & 0x1F;
+            int held = (int)_length & 0x1F;
 
             if (held != 0)
             {
                 int remain = StripeSize - held;
 
-                if (source.Length > remain)
+                if (source.Length >= remain)
                 {
                     source.Slice(0, remain).CopyTo(_holdback.AsSpan(held));
                     _state.ProcessStripe(_holdback);
@@ -110,7 +110,7 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
-            int remainingLength = _length & 0x1F;
+            int remainingLength = (int)_length & 0x1F;
             ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
 
             if (remainingLength > 0)
@@ -130,8 +130,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source!!)
+        public static byte[] Hash(byte[] source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             return Hash(new ReadOnlySpan<byte>(source));
         }
 
@@ -144,8 +149,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source!!, long seed)
+        public static byte[] Hash(byte[] source, long seed)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
 
@@ -215,7 +225,7 @@ namespace System.IO.Hashing
                 source = source.Slice(StripeSize);
             }
 
-            ulong val = state.Complete(totalLength, source);
+            ulong val = state.Complete((uint)totalLength, source);
             BinaryPrimitives.WriteUInt64BigEndian(destination, val);
             return HashSize;
         }

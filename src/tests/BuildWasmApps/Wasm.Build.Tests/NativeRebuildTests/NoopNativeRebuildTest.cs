@@ -35,7 +35,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorNoopRebuild(string config)
@@ -62,7 +62,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorOnlyLinkRebuild(string config)
@@ -73,7 +73,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
 
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 

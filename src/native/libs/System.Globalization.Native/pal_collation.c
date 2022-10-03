@@ -321,7 +321,24 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 
     if (customRuleLength == 0)
     {
+#if !defined(STATIC_ICU)
+        if (ucol_clone_ptr != NULL)
+        {
+            pClonedCollator = ucol_clone(pCollator, pErr);
+        }
+        else
+        {
+            pClonedCollator = ucol_safeClone_ptr(pCollator, NULL, NULL, pErr);
+        }
+#else // !defined(STATIC_ICU)
+
+#if HAVE_UCOL_CLONE
+        pClonedCollator = ucol_clone(pCollator, pErr);
+#else
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
+#endif // HAVE_UCOL_CLONE
+
+#endif // !defined(STATIC_ICU)
     }
     else
     {

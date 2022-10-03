@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -24,6 +25,7 @@ namespace System.Diagnostics
     /// when it sees the System.Net.Http.Desktop source, subscribe to it. This will trigger the
     /// initialization of this DiagnosticListener.
     /// </summary>
+    [RequiresDynamicCode(WriteRequiresDynamicCode)]
     internal sealed class HttpHandlerDiagnosticListener : DiagnosticListener
     {
         /// <summary>
@@ -202,6 +204,7 @@ namespace System.Diagnostics
         /// intercept each new ServicePoint object being added to ServicePointManager.s_ServicePointTable
         /// and replace its ConnectionGroupList hashtable field.
         /// </summary>
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         private sealed class ServicePointHashtable : HashtableWrapper
         {
             public ServicePointHashtable(Hashtable table) : base(table)
@@ -242,6 +245,7 @@ namespace System.Diagnostics
         /// intercept each new ConnectionGroup object being added to ServicePoint.m_ConnectionGroupList
         /// and replace its m_ConnectionList arraylist field.
         /// </summary>
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         private sealed class ConnectionGroupHashtable : HashtableWrapper
         {
             public ConnectionGroupHashtable(Hashtable table) : base(table)
@@ -481,6 +485,7 @@ namespace System.Diagnostics
         /// intercept each new Connection object being added to ConnectionGroup.m_ConnectionList
         /// and replace its m_WriteList arraylist field.
         /// </summary>
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         private sealed class ConnectionArrayList : ArrayListWrapper
         {
             public ConnectionArrayList(ArrayList list) : base(list)
@@ -511,6 +516,7 @@ namespace System.Diagnostics
         /// It also intercepts all HttpWebRequest objects that are about to get removed from
         /// Connection.m_WriteList as they have completed the request.
         /// </summary>
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         private sealed class HttpWebRequestArrayList : ArrayListWrapper
         {
             public HttpWebRequestArrayList(ArrayList list) : base(list)
@@ -676,7 +682,7 @@ namespace System.Diagnostics
             }
         }
 
-        private bool IsLastResponse(HttpWebRequest request, HttpStatusCode statusCode)
+        private static bool IsLastResponse(HttpWebRequest request, HttpStatusCode statusCode)
         {
             if (request.AllowAutoRedirect)
             {

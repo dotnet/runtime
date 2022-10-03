@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
@@ -14,12 +14,19 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+
+    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +38,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
@@ -158,26 +168,14 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropStateManager.cs">
       <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs">
+      <Link>TypeSystem\Interop\UnmanagedCallingConventions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs">
       <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
       <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\CompilerGeneratedState.cs">
-      <Link>Compiler\Logging\CompilerGeneratedState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\MessageContainer.cs">
-      <Link>Compiler\Logging\MessageContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\MessageOrigin.cs">
-      <Link>Compiler\Logging\MessageOrigin.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureParser.cs">
-      <Link>Compiler\Logging\DocumentationSignatureParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs">
-      <Link>Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
@@ -209,11 +207,8 @@
     <Compile Include="..\..\Common\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaSignatureEncoder.cs">
-      <Link>Ecma\EcmaSignatureEncoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\CoreRTILProvider.cs">
-      <Link>IL\CoreRTILProvider.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\NativeAotILProvider.cs">
+      <Link>IL\NativeAotILProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
@@ -250,6 +245,7 @@
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StreamIntrinsics.cs" Link="IL\Stubs\StreamIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
     </Compile>
@@ -265,7 +261,7 @@
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
-    <Compile Include="..\..\Common\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
@@ -290,6 +286,10 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
@@ -303,21 +303,25 @@
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
+    <Compile Include="..\..\Common\Compiler\Int128FieldLayoutAlgorithm.cs" Link="Compiler\Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
+    <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
-    <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
+    <Compile Include="Compiler\BodySubstitution.cs" />
+    <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.IntefaceThunks.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.InterfaceThunks.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.DelegateInfo.cs" />
@@ -327,35 +331,65 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
+    <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedNames.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
+    <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
+    <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
     <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\FieldReferenceValue.cs" />
+    <Compile Include="Compiler\Dataflow\FieldValue.cs" />
     <Compile Include="Compiler\Dataflow\FlowAnnotations.cs" />
+    <Compile Include="Compiler\Dataflow\GenericArgumentDataFlow.cs" />
+    <Compile Include="Compiler\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="Compiler\Dataflow\GenericParameterValue.cs" />
+    <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
+    <Compile Include="Compiler\Dataflow\HoistedLocalKey.cs" />
+    <Compile Include="Compiler\Dataflow\InterproceduralState.cs" />
+    <Compile Include="Compiler\Dataflow\IValueWithStaticType.cs" />
+    <Compile Include="Compiler\Dataflow\LocalVariableReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
-    <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
+    <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
+    <Compile Include="Compiler\Dataflow\MethodProxy.cs" />
+    <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
+    <Compile Include="Compiler\Dataflow\MethodThisParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\Origin.cs" />
+    <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
+    <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
-    <Compile Include="Compiler\Dataflow\ReflectionPatternContext.cs" />
+    <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
+    <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TypeExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\TypeProxy.cs" />
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectableFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMTentativeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
@@ -391,7 +425,6 @@
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />
@@ -406,6 +439,7 @@
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
+    <Compile Include="Compiler\DescriptorMarker.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
@@ -485,6 +519,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleUseBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
@@ -511,6 +546,10 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMDebug.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
     <Compile Include="Compiler\ExportedMethodsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
@@ -518,10 +557,8 @@
     <Compile Include="Compiler\LazyGenericsPolicy.cs" />
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
-    <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
-    <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
@@ -529,7 +566,6 @@
     <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\ProcessLinkerXmlBase.cs" />
     <Compile Include="Compiler\ProcessXmlBase.cs" />
-    <Compile Include="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -539,6 +575,7 @@
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
+    <Compile Include="Compiler\TypePreserve.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
@@ -548,6 +585,13 @@
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
+    <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ILogWriter.cs" />
+    <Compile Include="Compiler\TextLogWriter.cs" />
+    <Compile Include="Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs" />
+    <Compile Include="Compiler\Logging\DocumentationSignatureParser.cs" />
+    <Compile Include="Compiler\Logging\MessageContainer.cs" />
+    <Compile Include="Compiler\Logging\MessageOrigin.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />

@@ -234,15 +234,19 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_zlibStream))]
         private void InflateInit(int windowBits)
         {
+            ZLibNative.ZLibStreamHandle? zlibStream = null;
             ZLibNative.ErrorCode error;
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
+                error = ZLibNative.CreateZLibStreamForInflate(out zlibStream, windowBits);
             }
             catch (Exception exception) // could not load the ZLib dll
             {
+                zlibStream?.Dispose();
                 throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
             }
+
+            _zlibStream = zlibStream;
 
             switch (error)
             {

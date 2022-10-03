@@ -154,12 +154,15 @@ namespace System.Threading
         /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        public CancellationTokenRegistration Register(Action callback!!, bool useSynchronizationContext) =>
-            Register(
+        public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
+            return Register(
                 (Action<object?>)(static obj => ((Action)obj!)()),
                 callback,
                 useSynchronizationContext,
                 useExecutionContext: true);
+        }
 
         /// <summary>
         /// Registers a delegate that will be called when this
@@ -281,8 +284,10 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="System.ObjectDisposedException">The associated <see
         /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        private CancellationTokenRegistration Register(Delegate callback!!, object? state, bool useSynchronizationContext, bool useExecutionContext)
+        private CancellationTokenRegistration Register(Delegate callback, object? state, bool useSynchronizationContext, bool useExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(callback);
+
             CancellationTokenSource? source = _source;
             return source != null ?
                 source.Register(callback, state, useSynchronizationContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :

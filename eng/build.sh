@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, s390x or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -56,7 +56,7 @@ usage()
   echo "  --restore (-r)             Restore dependencies."
   echo "  --sign                     Sign build outputs."
   echo "  --test (-t)                Incrementally builds and runs tests."
-  echo "                             Use in conjuction with --testnobuild to only run tests."
+  echo "                             Use in conjunction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
@@ -206,12 +206,12 @@ while [[ $# > 0 ]]; do
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armv6|armel|arm64|loongarch64|s390x|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|riscv64|s390x|ppc64le|wasm)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le and wasm."
           exit 1
           ;;
       esac
@@ -382,7 +382,8 @@ while [[ $# > 0 ]]; do
       ;;
 
      -clang*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
@@ -391,12 +392,13 @@ while [[ $# > 0 ]]; do
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
-      cmakeargs="${cmakeargs} ${opt} $2"
+      cmakeargs="${cmakeargs} $2"
       shift 2
       ;;
 
      -gcc*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 

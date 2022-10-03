@@ -8,7 +8,6 @@ class Program
 {
     static int Main(string[] args)
     {
-/* Re-enable once the fix to https://github.com/dotnet/msbuild/issues/6734 propagates to this repo.
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);
         Assert(((ICustomAttributeProvider)assembly).GetCustomAttributes(typeof(SingleAttribute<int>), true) != null);
@@ -18,16 +17,16 @@ class Program
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<int>), true));
         Assert(CustomAttributeExtensions.IsDefined(assembly, typeof(SingleAttribute<bool>)));
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<bool>), true));
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
-*/
+        Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
 
+        // Uncomment when https://github.com/dotnet/runtime/issues/66168 is resolved
         // Module module = programTypeInfo.Module;
         // AssertAny(CustomAttributeExtensions.GetCustomAttributes(module), a => a is SingleAttribute<long>);
         // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
         // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
-        // Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
-        // Assert(!CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());	
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());	
 
         TypeInfo programTypeInfo = typeof(Class).GetTypeInfo();
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(programTypeInfo) != null);
@@ -160,9 +159,9 @@ class Program
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class));
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class.Derive));
 
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false).GetEnumerator().MoveNext());
-        Assert(!CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
-        Assert(!((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
+        Assert(((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
 
         // Test coverage for CustomAttributeData api surface
         var a1_data = CustomAttributeData.GetCustomAttributes(programTypeInfo);

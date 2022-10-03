@@ -15,7 +15,7 @@ namespace System.Data.OleDb
     ///
     /// Supports IErrorInfo COM interface.
     /// </summary>
-    internal unsafe sealed class OleDbComWrappers : ComWrappers
+    internal sealed unsafe class OleDbComWrappers : ComWrappers
     {
         private const int S_OK = (int)OleDbHResult.S_OK;
         private static readonly Guid IID_IErrorInfo = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
@@ -49,7 +49,7 @@ namespace System.Data.OleDb
         }
 
         // Doc and type layout: https://docs.microsoft.com/windows/win32/api/oaidl/nn-oaidl-ierrorinfo
-        private class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo, IDisposable
+        private sealed class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo, IDisposable
         {
             private readonly IntPtr _wrappedInstance;
 

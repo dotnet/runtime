@@ -1,11 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-
 #if NET7_0_OR_GREATER
     [NativeMarshalling(typeof(PinningMarshaller))]
 #endif
@@ -34,17 +38,13 @@ namespace System.Drawing.Imaging
         internal ref byte GetPinnableReference() => ref Unsafe.As<MetafileType, byte>(ref type);
 
 #if NET7_0_OR_GREATER
-        internal unsafe struct PinningMarshaller
+        [CustomMarshaller(typeof(MetafileHeaderEmf), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
         {
-            private readonly MetafileHeaderEmf _managed;
-            public PinningMarshaller(MetafileHeaderEmf managed)
-            {
-                _managed = managed;
-            }
+            public static ref byte GetPinnableReference(MetafileHeaderEmf managed) => ref (managed is null ? ref Unsafe.NullRef<byte>() : ref managed.GetPinnableReference());
 
-            public ref byte GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<byte>() : ref _managed.GetPinnableReference());
-
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static byte* ConvertToUnmanaged(MetafileHeaderEmf managed) => throw new UnreachableException();
         }
 #endif
     }

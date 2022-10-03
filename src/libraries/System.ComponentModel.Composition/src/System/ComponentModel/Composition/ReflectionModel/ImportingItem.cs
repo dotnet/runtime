@@ -12,8 +12,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly ContractBasedImportDefinition _definition;
         private readonly ImportType _importType;
 
-        protected ImportingItem(ContractBasedImportDefinition definition!!, ImportType importType)
+        protected ImportingItem(ContractBasedImportDefinition definition, ImportType importType)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             _definition = definition;
             _importType = importType;
         }
@@ -40,8 +42,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private object CastExportsToCollectionImportType(Export[] exports!!)
+        private object CastExportsToCollectionImportType(Export[] exports)
         {
+            ArgumentNullException.ThrowIfNull(exports);
+
             // Element type could be null if the actually import type of the member is not a collection
             // This particular case will end up failing when we set the member.
             Type elementType = ImportType.ElementType ?? typeof(object);
@@ -58,8 +62,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return array;
         }
 
-        private object? CastExportsToSingleImportType(Export[] exports!!)
+        private object? CastExportsToSingleImportType(Export[] exports)
         {
+            ArgumentNullException.ThrowIfNull(exports);
+
             if (exports.Length >= 2)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);

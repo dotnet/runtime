@@ -10,33 +10,9 @@ namespace System.Collections
         private static volatile IComparer? s_StructuralComparer;
         private static volatile IEqualityComparer? s_StructuralEqualityComparer;
 
-        public static IComparer StructuralComparer
-        {
-            get
-            {
-                IComparer? comparer = s_StructuralComparer;
-                if (comparer == null)
-                {
-                    comparer = new StructuralComparer();
-                    s_StructuralComparer = comparer;
-                }
-                return comparer;
-            }
-        }
+        public static IComparer StructuralComparer => s_StructuralComparer ??= new StructuralComparer();
 
-        public static IEqualityComparer StructuralEqualityComparer
-        {
-            get
-            {
-                IEqualityComparer? comparer = s_StructuralEqualityComparer;
-                if (comparer == null)
-                {
-                    comparer = new StructuralEqualityComparer();
-                    s_StructuralEqualityComparer = comparer;
-                }
-                return comparer;
-            }
-        }
+        public static IEqualityComparer StructuralEqualityComparer => s_StructuralEqualityComparer ??= new StructuralEqualityComparer();
     }
 
     internal sealed class StructuralEqualityComparer : IEqualityComparer

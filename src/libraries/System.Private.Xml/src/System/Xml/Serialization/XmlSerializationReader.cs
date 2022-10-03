@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Security;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Security;
-    using System.Xml;
-    using System.Xml.Schema;
-
     ///<internalonly/>
     public abstract class XmlSerializationReader : XmlSerializationGeneratedCode
     {
@@ -116,7 +116,6 @@ namespace System.Xml.Serialization
             _r = r;
             _d = null;
             _soap12 = (encodingStyle == Soap12.Encoding);
-            Init(tempAssembly);
 
             _schemaNsID = r.NameTable.Add(XmlSchema.Namespace);
             _schemaNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema");
@@ -828,15 +827,12 @@ namespace System.Xml.Serialization
 
         protected bool GetNullAttr()
         {
-            string? isNull = _r.GetAttribute(_nilID, _instanceNsID);
-            if (isNull == null)
-                isNull = _r.GetAttribute(_nullID, _instanceNsID);
-            if (isNull == null)
-            {
-                isNull = _r.GetAttribute(_nullID, _instanceNs2000ID);
-                if (isNull == null)
-                    isNull = _r.GetAttribute(_nullID, _instanceNs1999ID);
-            }
+            string? isNull =
+                _r.GetAttribute(_nilID, _instanceNsID) ??
+                _r.GetAttribute(_nullID, _instanceNsID) ??
+                _r.GetAttribute(_nullID, _instanceNs2000ID) ??
+                _r.GetAttribute(_nullID, _instanceNs1999ID);
+
             if (isNull == null || !XmlConvert.ToBoolean(isNull)) return false;
             return true;
         }
@@ -882,7 +878,7 @@ namespace System.Xml.Serialization
             return doc;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? CollapseWhitespace(string? value)
         {
             if (value == null)
@@ -913,7 +909,7 @@ namespace System.Xml.Serialization
             return node;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayBase64(string? value)
         {
             return XmlCustomFormatter.ToByteArrayBase64(value);
@@ -928,7 +924,7 @@ namespace System.Xml.Serialization
             return ReadByteArray(true); //means use Base64
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayHex(string? value)
         {
             return XmlCustomFormatter.ToByteArrayHex(value);
@@ -975,8 +971,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
-            char[] chars = value.ToCharArray();
-            int charsLength = chars.Length;
+            int charsLength = value.Length;
 
             SoapArrayInfo soapArrayInfo = default;
 
@@ -984,16 +979,16 @@ namespace System.Xml.Serialization
             int pos = charsLength - 1;
 
             // Must end with ]
-            if (chars[pos] != ']')
+            if (value[pos] != ']')
             {
                 throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
             }
             pos--;
 
             // Find [
-            while (pos != -1 && chars[pos] != '[')
+            while (pos != -1 && value[pos] != '[')
             {
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 pos--;
             }
@@ -1005,19 +1000,9 @@ namespace System.Xml.Serialization
             int len = charsLength - pos - 2;
             if (len > 0)
             {
-                string lengthString = new string(chars, pos + 1, len);
-                try
-                {
-                    soapArrayInfo.length = int.Parse(lengthString, CultureInfo.InvariantCulture);
-                }
-                catch (Exception e)
-                {
-                    if (e is OutOfMemoryException)
-                    {
-                        throw;
-                    }
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), nameof(value));
-                }
+                ReadOnlySpan<char> lengthStringSpan = value.AsSpan(pos + 1, len);
+                if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
             }
             else
             {
@@ -1027,14 +1012,14 @@ namespace System.Xml.Serialization
             pos--;
 
             soapArrayInfo.jaggedDimensions = 0;
-            while (pos != -1 && chars[pos] == ']')
+            while (pos != -1 && value[pos] == ']')
             {
                 pos--;
                 if (pos < 0)
                     throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
-                else if (chars[pos] != '[')
+                else if (value[pos] != '[')
                     throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
@@ -1043,11 +1028,11 @@ namespace System.Xml.Serialization
             soapArrayInfo.dimensions = 1;
 
             // everything else is qname - validation of qnames?
-            soapArrayInfo.qname = new string(chars, 0, pos + 1);
+            soapArrayInfo.qname = new string(value.AsSpan(0, pos + 1));
             return soapArrayInfo;
         }
 
-        private SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
+        private static SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
         {
             SoapArrayInfo soapArrayInfo = default;
 
@@ -1121,25 +1106,25 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToEnum(value, h, typeName, true);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlName(string? value)
         {
             return XmlCustomFormatter.ToXmlName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNCName(string? value)
         {
             return XmlCustomFormatter.ToXmlNCName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmToken(string? value)
         {
             return XmlCustomFormatter.ToXmlNmToken(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmTokens(string? value)
         {
             return XmlCustomFormatter.ToXmlNmTokens(value);
@@ -1264,9 +1249,8 @@ namespace System.Xml.Serialization
 
         private void GetCurrentPosition(out int lineNumber, out int linePosition)
         {
-            if (Reader is IXmlLineInfo)
+            if (Reader is IXmlLineInfo lineInfo)
             {
-                IXmlLineInfo lineInfo = (IXmlLineInfo)Reader;
                 lineNumber = lineInfo.LineNumber;
                 linePosition = lineInfo.LinePosition;
             }
@@ -1378,13 +1362,13 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value)
         {
             return ReadString(value, false);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value, bool trim)
         {
             string str = _r.ReadString();
@@ -1459,14 +1443,13 @@ namespace System.Xml.Serialization
         {
             if (id == null)
             {
-                if (_targetsWithoutIds == null)
-                    _targetsWithoutIds = new ArrayList();
+                _targetsWithoutIds ??= new ArrayList();
                 if (o != null)
                     _targetsWithoutIds.Add(o);
             }
             else
             {
-                if (_targets == null) _targets = new Hashtable();
+                _targets ??= new Hashtable();
                 if (!_targets.Contains(id))
                     _targets.Add(id, o);
             }
@@ -1474,19 +1457,19 @@ namespace System.Xml.Serialization
 
         protected void AddFixup(Fixup? fixup)
         {
-            if (_fixups == null) _fixups = new ArrayList();
+            _fixups ??= new ArrayList();
             _fixups.Add(fixup);
         }
 
         protected void AddFixup(CollectionFixup? fixup)
         {
-            if (_collectionFixups == null) _collectionFixups = new ArrayList();
+            _collectionFixups ??= new ArrayList();
             _collectionFixups.Add(fixup);
         }
 
         protected object GetTarget(string id)
         {
-            object? target = _targets != null ? _targets[id] : null;
+            object? target = _targets?[id];
             if (target == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlInvalidHref, id));
@@ -1498,7 +1481,7 @@ namespace System.Xml.Serialization
         protected void Referenced(object? o)
         {
             if (o == null) return;
-            if (_referencedTargets == null) _referencedTargets = new Hashtable();
+            _referencedTargets ??= new Hashtable();
             _referencedTargets[o] = o;
         }
 
@@ -1913,7 +1896,7 @@ namespace System.Xml.Serialization
                 }
                 XmlAttribute xmlAttribute = (XmlAttribute)Document.ReadNode(_r)!;
                 xmlNodeList.Add(xmlAttribute);
-                if (unknownElement != null) unknownElement.SetAttributeNode(xmlAttribute);
+                unknownElement?.SetAttributeNode(xmlAttribute);
             }
 
             // If the node is referenced (or in case of paramStyle = bare) and if xsi:type is not
@@ -1949,7 +1932,7 @@ namespace System.Xml.Serialization
                 {
                     XmlNode xmlNode = Document.ReadNode(_r)!;
                     xmlNodeList.Add(xmlNode);
-                    if (unknownElement != null) unknownElement.AppendChild(xmlNode);
+                    unknownElement?.AppendChild(xmlNode);
                     Reader.MoveToContent();
                 }
                 ReadEndElement();
@@ -2053,17 +2036,7 @@ namespace System.Xml.Serialization
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
 
-        internal Hashtable Enums
-        {
-            get
-            {
-                if (_enums == null)
-                {
-                    _enums = new Hashtable();
-                }
-                return _enums;
-            }
-        }
+        internal Hashtable Enums => _enums ??= new Hashtable();
 
         private sealed class CreateCollectionInfo
         {
@@ -2157,7 +2130,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    _arraySource = arraySource == null ? source : arraySource;
+                    _arraySource = arraySource ?? source;
                     _choiceArraySource = _choiceSource;
                 }
                 _mapping = mapping;
@@ -2456,7 +2429,7 @@ namespace System.Xml.Serialization
                 return GenerateLiteralMembersElement(xmlMembersMapping);
         }
 
-        private string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
+        private static string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
         {
             string? choiceSource = null;
             if (member.ChoiceIdentifier != null)
@@ -3108,18 +3081,18 @@ namespace System.Xml.Serialization
                 {
                     if (m.IsSoap)
                         continue;
-                    if (m is EnumMapping)
+
+                    if (m is EnumMapping enumMapping)
                     {
-                        EnumMapping mapping = (EnumMapping)m;
                         Writer.Write("if (");
-                        WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                        WriteQNameEqual("xsiType", enumMapping.TypeName, enumMapping.Namespace);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
                         Writer.WriteLine("Reader.ReadStartElement();");
-                        string? methodName = ReferenceMapping(mapping);
+                        string? methodName = ReferenceMapping(enumMapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc!.Name));
+                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, enumMapping.TypeDesc!.Name));
 #endif
                         Writer.Write("object e = ");
                         Writer.Write(methodName);
@@ -3129,22 +3102,21 @@ namespace System.Xml.Serialization
                         Writer.Indent--;
                         Writer.WriteLine("}");
                     }
-                    else if (m is ArrayMapping)
+                    else if (m is ArrayMapping arrayMapping)
                     {
-                        ArrayMapping mapping = (ArrayMapping)m;
-                        if (mapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
                         {
                             Writer.Write("if (");
-                            WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                            WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
                             Writer.WriteLine(") {");
                             Writer.Indent++;
                             MemberMapping memberMapping = new MemberMapping();
-                            memberMapping.TypeDesc = mapping.TypeDesc;
-                            memberMapping.Elements = mapping.Elements;
+                            memberMapping.TypeDesc = arrayMapping.TypeDesc;
+                            memberMapping.Elements = arrayMapping.Elements;
                             Member member = new Member(this, "a", "z", 0, memberMapping);
 
-                            TypeDesc td = mapping.TypeDesc;
-                            string fullTypeName = mapping.TypeDesc.CSharpName;
+                            TypeDesc td = arrayMapping.TypeDesc;
+                            string fullTypeName = arrayMapping.TypeDesc.CSharpName;
                             if (td.UseReflection)
                             {
                                 if (td.IsArray)
@@ -3155,7 +3127,7 @@ namespace System.Xml.Serialization
                             else
                                 Writer.Write(fullTypeName);
                             Writer.Write(" a = ");
-                            if (mapping.TypeDesc.IsValueType)
+                            if (arrayMapping.TypeDesc.IsValueType)
                             {
                                 Writer.Write(RaCodeGen.GetStringForCreateInstance(fullTypeName, td.UseReflection, false, false));
                                 Writer.WriteLine(";");
@@ -3163,7 +3135,7 @@ namespace System.Xml.Serialization
                             else
                                 Writer.WriteLine("null;");
 
-                            WriteArray(member.Source, member.ArrayName, mapping, false, false, -1);
+                            WriteArray(member.Source, member.ArrayName, arrayMapping, false, false, -1);
                             Writer.WriteLine("return a;");
                             Writer.Indent--;
                             Writer.WriteLine("}");
@@ -3676,12 +3648,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             string? idName = (string?)_idNames[name];
             if (idName == null)
             {
@@ -3815,10 +3782,8 @@ namespace System.Xml.Serialization
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
 
-            if (attribute.Mapping is SpecialMapping)
+            if (attribute.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)attribute.Mapping;
-
                 if (special.TypeDesc!.Kind == TypeKind.Attribute)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -3952,12 +3917,12 @@ namespace System.Xml.Serialization
                     else
                     {
                         bool useReflection = typeDesc.UseReflection;
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(typeDescFullName, a, useReflection, typeDesc.CannotNew);
                             Writer.Write(member.Source);
                             Writer.Write(a);
-                            if (member.Source[member.Source.Length - 1] == '{')
+                            if (member.Source.EndsWith('{'))
                                 Writer.WriteLine("});");
                             else
                                 Writer.WriteLine(");");
@@ -3991,7 +3956,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string ExpectedElements(Member[] members)
+        private static string ExpectedElements(Member[] members)
         {
             if (IsSequence(members))
                 return "null";
@@ -4096,9 +4061,8 @@ namespace System.Xml.Serialization
         {
             TextAccessor text = member.Mapping.Text!;
 
-            if (text.Mapping is SpecialMapping)
+            if (text.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)text.Mapping;
                 WriteSourceBeginTyped(member.ArraySource, special.TypeDesc);
                 switch (special.TypeDesc!.Kind)
                 {
@@ -4193,7 +4157,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool IsSequence(Member[] members)
+        private static bool IsSequence(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -4523,7 +4487,7 @@ namespace System.Xml.Serialization
         private void WriteSourceBegin(string source)
         {
             Writer.Write(source);
-            if (source[source.Length - 1] != '(' && source[source.Length - 1] != '{')
+            if (!source.EndsWith('(') && !source.EndsWith('{'))
                 Writer.Write(" = ");
         }
 
@@ -4531,9 +4495,9 @@ namespace System.Xml.Serialization
         {
             // source could be of the form "var", "arrayVar[i]",
             // "collection.Add(" or "methodInfo.Invoke(collection, new object[] {"
-            if (source[source.Length - 1] == '(')
+            if (source.EndsWith('('))
                 Writer.Write(")");
-            else if (source[source.Length - 1] == '{')
+            else if (source.EndsWith('{'))
                 Writer.Write("})");
         }
 
@@ -4826,9 +4790,8 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(";");
                 }
             }
-            else if (element.Mapping is SpecialMapping)
+            else if (element.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)element.Mapping;
                 switch (special.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:
@@ -4983,7 +4946,10 @@ namespace System.Xml.Serialization
 
         private void WriteParamsRead(int length)
         {
-            Writer.Write("bool[] paramsRead = new bool[");
+            const int StackallocLimit = 32; // arbitrary limit
+            Writer.Write(length <= StackallocLimit ?
+                "System.Span<bool> paramsRead = stackalloc bool[" :
+                "System.Span<bool> paramsRead = new bool[");
             Writer.Write(length.ToString(CultureInfo.InvariantCulture));
             Writer.WriteLine("];");
         }

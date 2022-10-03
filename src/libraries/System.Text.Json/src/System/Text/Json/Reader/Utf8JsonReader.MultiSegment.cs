@@ -32,7 +32,7 @@ namespace System.Text.Json
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
-            _stringHasEscaping = state._stringHasEscaping;
+            ValueIsEscaped = state._valueIsEscaped;
             _trailingCommaBeforeComment = state._trailingCommaBeforeComment;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
@@ -121,6 +121,7 @@ namespace System.Text.Json
         {
             bool retVal = false;
             HasValueSequence = false;
+            ValueIsEscaped = false;
             ValueSpan = default;
             ValueSequence = default;
 
@@ -626,23 +627,24 @@ namespace System.Text.Json
             throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
         }
 
-        private int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
+        private static int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
             Debug.Assert(span.Length > 0);
 
             int indexOfFirstMismatch;
 
+#if NET7_0_OR_GREATER
+            indexOfFirstMismatch = span.CommonPrefixLength(literal);
+#else
             int minLength = Math.Min(span.Length, literal.Length);
-
-            int i = 0;
-            for (; i < minLength; i++)
+            for (indexOfFirstMismatch = 0; indexOfFirstMismatch < minLength; indexOfFirstMismatch++)
             {
-                if (span[i] != literal[i])
+                if (span[indexOfFirstMismatch] != literal[indexOfFirstMismatch])
                 {
                     break;
                 }
             }
-            indexOfFirstMismatch = i;
+#endif
 
             Debug.Assert(indexOfFirstMismatch >= 0 && indexOfFirstMismatch < literal.Length);
 
@@ -731,8 +733,8 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            // The next character must be a key / value seperator. Validate and skip.
-            if (first != JsonConstants.KeyValueSeperator)
+            // The next character must be a key / value separator. Validate and skip.
+            if (first != JsonConstants.KeyValueSeparator)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedSeparatorAfterPropertyNameNotFound, first);
             }
@@ -765,7 +767,7 @@ namespace System.Text.Json
                     _bytePositionInLine += idx + 2; // Add 2 for the start and end quotes.
                     ValueSpan = localBuffer.Slice(0, idx);
                     HasValueSequence = false;
-                    _stringHasEscaping = false;
+                    ValueIsEscaped = false;
                     _tokenType = JsonTokenType.String;
                     _consumed += idx + 2;
                     return true;
@@ -821,13 +823,13 @@ namespace System.Text.Json
                         _bytePositionInLine += leftOver + idx + 1;  // Add 1 for the end quote of the string.
                         _totalConsumed += leftOver;
                         _consumed = idx + 1;    // Add 1 for the end quote of the string.
-                        _stringHasEscaping = false;
+                        ValueIsEscaped = false;
                         break;
                     }
                     else
                     {
                         _bytePositionInLine += leftOver + idx;
-                        _stringHasEscaping = true;
+                        ValueIsEscaped = true;
 
                         bool nextCharEscaped = false;
                         while (true)
@@ -1095,7 +1097,7 @@ namespace System.Text.Json
                 ValueSpan = data.Slice(0, idx);
             }
 
-            _stringHasEscaping = true;
+            ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
             return true;
         }

@@ -36,9 +36,9 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedConfigFileInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using install location '{installLocation}'.");
+            return assertion.HaveStdErrContaining($"Found registered install location '{installLocation}'.");
         }
 
         public static AndConstraint<CommandResultAssertions> HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
@@ -53,7 +53,7 @@ namespace HostActivation.Tests
 
         public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
         {
-            return assertion.HaveStdErrContaining($"Looking for architecture specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
+            return assertion.HaveStdErrContaining($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
         }
     }
 }

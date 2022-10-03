@@ -11,14 +11,14 @@
 #include "debugger-engine.h"
 
 static bool
-debugger_avaliable (void);
+debugger_available (void);
 
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable }
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_available }
 };
 
 static bool
-debugger_avaliable (void)
+debugger_available (void)
 {
 	return true;
 }

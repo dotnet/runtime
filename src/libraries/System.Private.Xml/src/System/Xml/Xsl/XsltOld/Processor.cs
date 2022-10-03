@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Xml.XPath;
+using System.Xml.Xsl.XsltOld.Debugger;
+using MS.Internal.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.XsltOld.Debugger;
-    using MS.Internal.Xml.XPath;
-
     internal sealed class Processor : IXsltProcessor
     {
         //
@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.XsltOld
             get
             {
                 ActionFrame? frame = (ActionFrame?)_actionStack.Peek();
-                return frame != null ? frame.Node : null;
+                return frame?.Node;
             }
         }
 
@@ -293,6 +293,7 @@ namespace System.Xml.Xsl.XsltOld
             return _sharedStringBuilder;
         }
 
+#pragma warning disable CA1822
         internal void ReleaseSharedStringBuilder()
         {
             // don't clean stringBuilderLocked here. ToString() will happen after this call
@@ -300,18 +301,9 @@ namespace System.Xml.Xsl.XsltOld
             _stringBuilderLocked = false;
 #endif
         }
+#pragma warning restore CA1822
 
-        internal ArrayList NumberList
-        {
-            get
-            {
-                if (_numberList == null)
-                {
-                    _numberList = new ArrayList();
-                }
-                return _numberList;
-            }
-        }
+        internal ArrayList NumberList => _numberList ??= new ArrayList();
 
         internal IXsltDebugger? Debugger
         {
@@ -557,40 +549,21 @@ namespace System.Xml.Xsl.XsltOld
             return expr;
         }
 
-        private XsltCompileContext GetValueOfContext()
-        {
-            if (_valueOfContext == null)
-            {
-                _valueOfContext = new XsltCompileContext();
-            }
-            return _valueOfContext;
-        }
+        private XsltCompileContext GetValueOfContext() =>
+            _valueOfContext ??= new XsltCompileContext();
 
         [Conditional("DEBUG")]
         private void RecycleValueOfContext()
         {
-            if (_valueOfContext != null)
-            {
-                _valueOfContext.Recycle();
-            }
+            _valueOfContext?.Recycle();
         }
 
-        private XsltCompileContext GetMatchesContext()
-        {
-            if (_matchesContext == null)
-            {
-                _matchesContext = new XsltCompileContext();
-            }
-            return _matchesContext;
-        }
+        private XsltCompileContext GetMatchesContext() => _matchesContext ??= new XsltCompileContext();
 
         [Conditional("DEBUG")]
         private void RecycleMatchesContext()
         {
-            if (_matchesContext != null)
-            {
-                _matchesContext.Recycle();
-            }
+            _matchesContext?.Recycle();
         }
 
         internal string? ValueOf(ActionFrame context, int key)
@@ -689,9 +662,7 @@ namespace System.Xml.Xsl.XsltOld
             string? value = null;
             if (objValue != null)
                 value = XmlConvert.ToXPathString(objValue);
-            if (value == null)
-                value = string.Empty;
-            return value;
+            return value ?? string.Empty;
         }
 
         internal bool EvaluateBoolean(ActionFrame context, int key)

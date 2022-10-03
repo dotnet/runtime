@@ -1,0 +1,67 @@
+<Project>
+  <PropertyGroup>
+    <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
+    <BrowserStampDir>$(ArtifactsBinDir)\</BrowserStampDir>
+    <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
+    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
+    <FirefoxStampFile>$(BrowserStampDir).install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)ProvisioningVersions.props" />
+
+  <Target Name="DownloadAndInstallChrome"
+          AfterTargets="Build"
+          Condition="!Exists($(ChromeStampFile)) and '$(InstallChromeForTests)' == 'true'">
+
+    <ItemGroup>
+      <_StampFile Include="$(BrowserStampDir).install-chrome*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(ChromeDir)" />
+
+    <DownloadFile SourceUrl="$(ChromiumUrl)" DestinationFolder="$(ChromeDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
+
+    <PropertyGroup>
+      <_ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromiumDirName), $(ChromiumBinaryName)))</_ChromeBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find chrome at $(_ChromeBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_ChromeBinaryPath))" />
+
+    <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallFirefox"
+          AfterTargets="Build"
+          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
+    <ItemGroup>
+      <_StampFile Include="$(BrowserStampDir).install-firefox*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(FirefoxDir)" />
+
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
+    <Exec Command="rm -rf $(_DownloadedFile)"/>
+
+    <PropertyGroup>
+      <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_FirefoxBinaryPath))" />
+
+    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
+
+    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
+  </Target>
+</Project>

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: process.cpp
 //
-
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"
@@ -233,7 +233,7 @@ bool IsLegalFatalError(HRESULT hr)
     return
         (hr == CORDBG_E_INCOMPATIBLE_PROTOCOL) ||
         (hr == CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) ||
-        (hr == CORDBG_E_UNCOMPATIBLE_PLATFORMS) ||
+        (hr == CORDBG_E_INCOMPATIBLE_PLATFORMS) ||
         (hr == CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS) ||
         // This should only happen in the case of a security attack on us.
         (hr == E_ACCESSDENIED) ||
@@ -604,7 +604,7 @@ void CordbProcess::Free(void * p)
 //          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
 //          runtime and DAC could be from different builds. However because we service all three binaries together
 //          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privleges could put different builds together and no version check
+//          version coupling. A user with admin privileges could put different builds together and no version check
 //          would ever fail though.
 //
 //      - Desktop and Windows CoreCLR (new architecture)
@@ -684,9 +684,9 @@ CordbProcess::CreateDacDbiInterface()
     // in the new arch we can get the module from OpenVirtualProcess2 but in the shim case
     // and the deprecated OpenVirtualProcess case we must assume it comes from DAC in the
     // same directory as DBI
-    if(m_hDacModule == NULL)
+    if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule());
+        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
     }
 
     //
@@ -964,7 +964,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_cPatch(0),
     m_rgData(NULL),
     m_rgNextPatch(NULL),
-    m_rgUncommitedOpcode(NULL),
+    m_rgUncommittedOpcode(NULL),
     m_minPatchAddr(MAX_ADDRESS),
     m_maxPatchAddr(MIN_ADDRESS),
     m_iFirstPatch(0),
@@ -1224,7 +1224,7 @@ HRESULT ShimProcess::DebugActiveProcess(
         // bit indicating managed attach is coming.
         // However in interop debugging we can't do that because there are debug events which come before the
         // loader breakpoint (which is how far we need to get to set the debuggee bit). If we blocked
-        // DebugActiveProcess there then the debug events would be refering to an ICorDebugProcess that hasn't
+        // DebugActiveProcess there then the debug events would be referring to an ICorDebugProcess that hasn't
         // yet been returned to the caller of DebugActiveProcess. Instead, for interop debugging we force the
         // native debugger to wait until it gets the loader breakpoint to set the event. Note we can't converge
         // on that solution for the pure managed case because there is no loader breakpoint event. Hence pure
@@ -1312,6 +1312,12 @@ void CordbProcess::NeuterChildren()
     m_steppers.NeuterAndClear(GetProcessLock());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
+    if (m_lastDispatchedIBEvent != NULL)
+    {
+        m_lastDispatchedIBEvent->m_owner->InternalRelease();
+        m_lastDispatchedIBEvent = NULL;
+    }
+
     m_unmanagedThreads.NeuterAndClear(GetProcessLock());
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -1464,7 +1470,7 @@ void CordbProcess::CloseIPCHandles()
 //-----------------------------------------------------------------------------
 // Create new OS Thread for the Win32 Event Thread (the thread used in interop-debugging to sniff
 // native debug events). This is 1:1 w/ a CordbProcess object.
-// This will then be used to actuall create the CordbProcess object.
+// This will then be used to actually create the CordbProcess object.
 // The process object will then take ownership of the thread.
 //
 // Arguments:
@@ -1644,7 +1650,7 @@ IEventChannel * CordbProcess::GetEventChannel()
 //   Since we're always on the naitve-pipeline, the Enabling interop debugging just changes
 //   how the native debug events are being handled. So this must be called after Init, but
 //   before any events are actually handled.
-//   This mus be calle on the win32 event thread to gaurantee that it's called before WFDE.
+//   This mus be calle on the win32 event thread to guarantee that it's called before WFDE.
 void CordbProcess::EnableInteropDebugging()
 {
     CONTRACTL
@@ -1654,7 +1660,7 @@ void CordbProcess::EnableInteropDebugging()
     }
     CONTRACTL_END;
 
-    // Must be on W32ET to gaurantee that we're called after Init yet before WFDE (which
+    // Must be on W32ET to guarantee that we're called after Init yet before WFDE (which
     // are both called on the W32et).
     _ASSERTE(IsWin32EventThread());
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -1999,7 +2005,7 @@ void SendAttachProcessWorkItem::Do()
 
     // This just acts like an async-break, which will kick off things.
     // This will not induce any faked attach events from the VM (like it did in V2).
-    // The Left-side will still slip foward allowing the async-break to happen, so
+    // The Left-side will still slip forward allowing the async-break to happen, so
     // we may get normal debug events in addition to the sync-complete.
     //
     // 1. In the common attach case, we should just get a sync-complete.
@@ -2726,7 +2732,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                     {
                         CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
 
-                        ICorDebugAppDomain *pAppDomain;
+                        ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
                         if (dacRefs[i].pObject & 1)
                         {
@@ -2957,7 +2963,7 @@ void CordbProcess::FlushAll()
 //
 //
 // Return Value:
-//    S_OK on successful detach. Else errror.
+//    S_OK on successful detach. Else error.
 //
 // Assumptions:
 //    Target is stopped.
@@ -4254,7 +4260,7 @@ static ICorDebugBreakpoint *CordbBreakpointToInterface(CordbBreakpoint * pBreakp
 class ShimAssemblyCallbackData
 {
 public:
-    // Ctor to intialize callback data
+    // Ctor to initialize callback data
     //
     // Arguments:
     //   pAppDomain - appdomain that the assemblies are in.
@@ -4389,7 +4395,7 @@ void CordbProcess::GetAssembliesInLoadOrder(
 class ShimModuleCallbackData
 {
 public:
-    // Ctor to intialize callback data
+    // Ctor to initialize callback data
     //
     // Arguments:
     //   pAssembly - assembly that the Modules are in.
@@ -5493,7 +5499,7 @@ void CordbProcess::RawDispatchEvent(
                 ("AppDomain changed from Func-Eval. Eval=%p, Started=%p, Now=%p\n",
                 pEval, pEval->m_DbgAppDomainStarted, (void*) pAppDomain));
 
-            // If we did this func eval with this thread stopped at an excpetion, then we need to pretend as if we
+            // If we did this func eval with this thread stopped at an exception, then we need to pretend as if we
             // really didn't continue from the exception, since, of course, we really didn't on the Left Side.
             if (pEval->IsEvalDuringException())
             {
@@ -5610,7 +5616,7 @@ void CordbProcess::RawDispatchEvent(
             // Neutering will dump it back down to zero.
             this->AddToNeuterOnExitList(pMDA);
 
-            // We bump up and down the external ref so that even if the callback doensn't touch the refs,
+            // We bump up and down the external ref so that even if the callback doesn't touch the refs,
             // our Ext-Release here will still cause a 1->0 ext-ref transition, which will get it
             // swept on the neuter list.
             RSExtSmartPtr<ICorDebugMDA> pExternalMDARef;
@@ -5961,7 +5967,7 @@ void CordbProcess::RawDispatchEvent(
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
 //
-// Arugments:
+// Arguments:
 //    vmThread - thread as part of the eunmeration.
 //    pUserData - data supplied with callback. It's a CordbProcess* object.
 //
@@ -6140,7 +6146,7 @@ HRESULT CordbProcess::GetHelperThreadID(DWORD *pThreadID)
 //         sending an IPC event to the RS, and should be excluded.
 //
 // Return Value:
-//     Typical HRESULT symantics, nothing abnormal.
+//     Typical HRESULT semantics, nothing abnormal.
 //
 HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
                                               ICorDebugThread * pExceptThread)
@@ -6217,7 +6223,7 @@ HRESULT CordbProcess::EnumerateObjects(ICorDebugObjectEnum **ppObjects)
 //         transition stub, FALSE if not.  Only valid if this method returns a success code.
 //
 // Return Value:
-//     Typical HRESULT symantics, nothing abnormal.
+//     Typical HRESULT semantics, nothing abnormal.
 //
 //---------------------------------------------------------------------------------------
 HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransitionStub)
@@ -6400,7 +6406,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CO
 #endif
 
 // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a seperate sub rsp
+// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
 // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
 // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
 // can think of these members as not being part of the context, ie they don't represent something
@@ -6754,7 +6760,7 @@ HRESULT CordbProcess::AdjustBuffer( CORDB_ADDRESS address,
 
                 //There can be multiple patches at the same address: we don't want 2nd+ patches to get the
                 // break opcode, so we read from the unmodified copy.
-                m_rgUncommitedOpcode[iNextFree] =
+                m_rgUncommittedOpcode[iNextFree] =
                     CORDbgGetInstructionEx(*bufferCopy, address, patchAddress, opcode, size);
 
                 //put the breakpoint into the memory itself
@@ -6798,11 +6804,11 @@ void CordbProcess::CommitBufferAdjustments( CORDB_ADDRESS start,
         BYTE *patchAddress = *(BYTE**)(DebuggerControllerPatch + m_runtimeOffsets.m_offAddr);
 
         if (IsPatchInRequestedRange(start, (SIZE_T)(end - start), PTR_TO_CORDB_ADDRESS(patchAddress)) &&
-            !PRDIsBreakInst(&(m_rgUncommitedOpcode[iPatch])))
+            !PRDIsBreakInst(&(m_rgUncommittedOpcode[iPatch])))
         {
             //copy this back to the copy of the patch table
             *(PRD_TYPE *)(DebuggerControllerPatch + m_runtimeOffsets.m_offOpcode) =
-                m_rgUncommitedOpcode[iPatch];
+                m_rgUncommittedOpcode[iPatch];
         }
 
         iPatch = m_rgNextPatch[iPatch];
@@ -6817,7 +6823,7 @@ void CordbProcess::ClearBufferAdjustments( )
     ULONG iPatch = m_iFirstPatch;
     while( iPatch != DPT_TERMINATING_INDEX )
     {
-        InitializePRDToBreakInst(&(m_rgUncommitedOpcode[iPatch]));
+        InitializePRDToBreakInst(&(m_rgUncommittedOpcode[iPatch]));
         iPatch = m_rgNextPatch[iPatch];
     }
 }
@@ -6835,8 +6841,8 @@ void CordbProcess::ClearPatchTable(void )
         delete [] m_rgNextPatch;
         m_rgNextPatch = NULL;
 
-        delete [] m_rgUncommitedOpcode;
-        m_rgUncommitedOpcode = NULL;
+        delete [] m_rgUncommittedOpcode;
+        m_rgUncommittedOpcode = NULL;
 
         m_iFirstPatch = DPT_TERMINATING_INDEX;
         m_minPatchAddr = MAX_ADDRESS;
@@ -6923,7 +6929,7 @@ HRESULT CordbProcess::RefreshPatchTable(CORDB_ADDRESS address, SIZE_T size, BYTE
             // Throwing news
             m_pPatchTable = new BYTE[ cbPatchTable ];
             m_rgNextPatch = new ULONG[m_cPatch];
-            m_rgUncommitedOpcode = new PRD_TYPE[m_cPatch];
+            m_rgUncommittedOpcode = new PRD_TYPE[m_cPatch];
 
             TargetBuffer tb(m_rgData, cbPatchTable);
             this->SafeReadBuffer(tb, m_pPatchTable); // Throws
@@ -6934,7 +6940,7 @@ HRESULT CordbProcess::RefreshPatchTable(CORDB_ADDRESS address, SIZE_T size, BYTE
             //
             // 2. Link all valid entries into a linked list, the first entry of which is m_iFirstPatch
             //
-            // 3. Initialize m_rgUncommitedOpcode, so that we can undo local patch table changes if WriteMemory can't write
+            // 3. Initialize m_rgUncommittedOpcode, so that we can undo local patch table changes if WriteMemory can't write
             // atomically.
             //
             // 4. If the patch is in the memory we grabbed, unapply it.
@@ -6980,7 +6986,7 @@ HRESULT CordbProcess::RefreshPatchTable(CORDB_ADDRESS address, SIZE_T size, BYTE
                     iDebuggerControllerPatchPrev = iPatch;
 
                     // (3), above
-                    InitializePRDToBreakInst(&(m_rgUncommitedOpcode[iPatch]));
+                    InitializePRDToBreakInst(&(m_rgUncommittedOpcode[iPatch]));
 
                     // (4), above
                     if (IsPatchInRequestedRange(address, size, patchAddress))
@@ -7034,7 +7040,7 @@ LExit:
 //         success code.
 //
 // Return Value:
-//     Typical HRESULT symantics, nothing abnormal.
+//     Typical HRESULT semantics, nothing abnormal.
 //
 // Note: this method is pretty in-efficient. It refreshes the patch table, then scans it.
 //     Refreshing the patch table involves a scan, too, so this method could be folded
@@ -7552,7 +7558,7 @@ void CordbProcess::VerifyControlBlock()
     UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolMinSupported),
                            sizeof(GetDCB()->m_rightSideProtocolMinSupported));
 
-    // For Telesto, Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
+    // Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
     // numbers, but the other protocol numbers should still match.
 
@@ -7601,7 +7607,7 @@ void CordbProcess::VerifyControlBlock()
 } // CordbProcess::VerifyControlBlock
 
 //-----------------------------------------------------------------------------
-// This is the CordbProcess objects chance to inspect the DCB and intialize stuff
+// This is the CordbProcess objects chance to inspect the DCB and initialize stuff
 //
 // Return Value:
 //     Typical HRESULT return values, nothing abnormal.
@@ -8904,7 +8910,7 @@ HRESULT CordbProcess::GetObject(ICorDebugValue **ppObject)
 //     ppThread - OUT: Space for storing the thread corresponding to the taskId given.
 //
 // Return Value:
-//     Typical HRESULT symantics, nothing abnormal.
+//     Typical HRESULT semantics, nothing abnormal.
 //
 HRESULT CordbProcess::GetThreadForTaskID(TASKID taskId, ICorDebugThread2 ** ppThread)
 {
@@ -10479,7 +10485,7 @@ void CordbRCEventThread::ThreadProc()
                 // Only listen to unsynchronized processes. Processes that are synchronized will not send events without
                 // being asked by us first, so there is no need to async listen to them.
                 //
-                // Note: if a process is not synchronized then there is no way for it to transition to the syncrhonized
+                // Note: if a process is not synchronized then there is no way for it to transition to the synchronized
                 // state without this thread receiving an event and taking action. So there is no need to lock the
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
@@ -11271,7 +11277,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
 //    pRawRecord - non-null raw bytes of the exception
 //    countBytes - number of bytes in pRawRecord buffer.
 //    format - format of pRawRecord
-//    dwFlags - flags providing auxillary info for exception record.
+//    dwFlags - flags providing auxiliary info for exception record.
 //    dwThreadId - thread that exception occurred on.
 //    pCallback - callback to dispatch potential managed events on.
 //    pContinueStatus - Continuation status for exception. This dictates what
@@ -11440,9 +11446,6 @@ void CordbWin32EventThread::Win32EventLoop()
 
     LOG((LF_CORDB, LL_INFO1000, "W32ET::W32EL: entered win32 event loop\n"));
 
-
-    DEBUG_EVENT event;
-
     // Allow the timeout for WFDE to be adjustable. Default to 25 ms based off perf numbers (see issue VSWhidbey 132368).
     DWORD dwWFDETimeout = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWFDETimeout);
 
@@ -11468,7 +11471,7 @@ void CordbWin32EventThread::Win32EventLoop()
         rghWaitSet[0] = m_threadControlEvent;
 
         DWORD dwWaitTimeout = INFINITE;
-
+        DEBUG_EVENT event = {};
         if (m_pProcess != NULL)
         {
             // Process is always built on Native debugging pipeline, so it needs to always be prepared to call WFDE
@@ -12347,7 +12350,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
 
             // These breakpoint and single step exceptions have to be dispatched to the debugger as
             // out-of-band events. This tells the debugger that they must continue from these events
-            // immediatly, and that no interaction with the Left Side is allowed until they do so. This
+            // immediately, and that no interaction with the Left Side is allowed until they do so. This
             // makes sense, since these events are on the helper thread.
             return REACTION(cOOB);
         }
@@ -12562,7 +12565,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
     _ASSERTE(ThreadHoldsProcessLock());
 
     // Lots of special cases for exception events. The vast majority of hybrid debugging work that takes
-    // place is in response to exception events. The work below will consider certian exception events
+    // place is in response to exception events. The work below will consider certain exception events
     // special cases and rather than letting them be queued and dispatched, they will be handled right
     // here.
     if (pEvent->dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
@@ -12655,7 +12658,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
 //    The process just got a native debug event via WaitForDebugEvent
 //
 // Notes:
-//    The function will Triage the excpetion and then handle it based on the
+//    The function will Triage the exception and then handle it based on the
 //    appropriate reaction (see: code:Reaction).
 //
 // @dbgtodo interop: this should all go into the shim.
@@ -12783,7 +12786,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     }
 #endif
 
-    // This call will decide what to do w/ the the win32 event we just got. It does a lot of work.
+    // This call will decide what to do w/ the win32 event we just got. It does a lot of work.
     Reaction reaction = TriageWin32DebugEvent(pUnmanagedThread, pEvent);
 
 
@@ -13751,7 +13754,7 @@ void CordbWin32EventThread::CreateProcess()
 
     if (SUCCEEDED(hr))
     {
-        // Process ID is filled in after process is succesfully created.
+        // Process ID is filled in after process is successfully created.
         DWORD dwProcessId = m_actionData.createData.lpProcessInformation->dwProcessId;
         ProcessDescriptor pd = ProcessDescriptor::FromPid(dwProcessId);
 
@@ -14020,7 +14023,7 @@ void CordbWin32EventThread::AttachProcess()
 
     _ASSERTE(m_pProcess == NULL);
     m_pProcess.Assign(pProcess);
-    pProcess.Clear();     // ownership transfered to m_pProcess
+    pProcess.Clear();     // ownership transferred to m_pProcess
 
     // Should have succeeded if we got to this point.
     _ASSERTE(SUCCEEDED(hr));
@@ -14362,7 +14365,7 @@ void ExitProcessWorkItem::Do()
         GetProcess()->IncStopCount();
 
         // By the time we release the SG + Process locks here, the process object has been
-        // marked as exiting + terminated (by the w32et which queued us). Future attemps to
+        // marked as exiting + terminated (by the w32et which queued us). Future attempts to
         // continue should fail, and thus we should remain synchronized.
     }
 
@@ -14785,8 +14788,8 @@ LONG CordbProcess::OutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Increment the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::DecrementOutstandingHandles
+// Increment the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::DecrementOutstandingHandles
 void CordbProcess::IncrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());
@@ -14794,8 +14797,8 @@ void CordbProcess::IncrementOutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Decrement the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::IncrementOutstandingHandles
+// Decrement the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::IncrementOutstandingHandles
 void CordbProcess::DecrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());
@@ -14889,7 +14892,7 @@ HRESULT CordbProcess::IsReadyForDetach()
  * Look for any thread which was last seen in the specified AppDomain.
  * The CordbAppDomain object is about to be neutered due to an AD Unload
  * So the thread must no longer be considered to be in that domain.
- * Note that this is a workaround due to the existance of the (possibly incorrect)
+ * Note that this is a workaround due to the existence of the (possibly incorrect)
  * cached AppDomain value.  Ideally we would remove the cached value entirely
  * and there would be no need for this.
  *
@@ -15094,7 +15097,7 @@ bool CordbProcess::IsCompatibleWith(DWORD clrMajorVersion)
     // 1) You should ensure new versions of all ICorDebug users in DevDiv (VS Debugger, MDbg, etc.)
     //    are using a creation path that explicitly specifies that they support this new major
     //    version of the CLR.
-    // 2) You should file an issue to track blocking earlier debuggers from targetting this
+    // 2) You should file an issue to track blocking earlier debuggers from targeting this
     //    version of the CLR (i.e. update requiredVersion to the new CLR major
     //    version).  To enable a smooth internal transition, this often isn't done until absolutely
     //    necessary (sometimes as late as Beta2).

@@ -18,7 +18,7 @@ namespace System
     //       the test infrastructure that prevent OS-specific builds of test binaries. If you
     //       change any of the class / struct / function names, parameters, etc then you need
     //       to also change the test class.
-    internal static class ConsolePal
+    internal static partial class ConsolePal
     {
         // StdInReader is only used when input isn't redirected and we're working
         // with an interactive terminal.  In that case, performance isn't critical
@@ -30,7 +30,7 @@ namespace System
         // We also need to invalidate these values when certain signals occur.
         // We don't want to take the lock in the signal handling thread for this.
         // Instead, we set a flag. Before reading a cached value, a call to CheckTerminalSettingsInvalidated
-        // will invalidate the cached values if a signal has occured.
+        // will invalidate the cached values if a signal has occurred.
         private static int s_cursorVersion; // Gets incremented each time the cursor position changed.
                                             // Used to synchronize between lock (Console.Out) blocks.
         private static int s_cursorLeft;    // Cached CursorLeft, -1 when invalid.
@@ -39,8 +39,9 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
-        /// <summary>Whether to output ansi color strings.</summary>
-        private static volatile int s_emitAnsiColorCodes = -1;
+        /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
+        public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
+        private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
 
         public static Stream OpenStandardInput()
         {
@@ -152,7 +153,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value), distinguishNewLines: !ConsoleUtils.UseNet6KeyParser) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -201,7 +202,7 @@ namespace System
                 if (Console.IsOutputRedirected)
                     return;
 
-                string? titleFormat = TerminalFormatStrings.Instance.Title;
+                string? titleFormat = TerminalFormatStringsInstance.Title;
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
@@ -214,7 +215,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Bell, mayChangeCursorPosition: false);
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
         }
 
@@ -227,7 +228,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Clear);
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
@@ -245,7 +246,7 @@ namespace System
                     return;
                 }
 
-                string? cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
+                string? cursorAddressFormat = TerminalFormatStringsInstance.CursorAddress;
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
@@ -375,8 +376,8 @@ namespace System
                     }
                     else
                     {
-                        s_windowWidth = TerminalFormatStrings.Instance.Columns;
-                        s_windowHeight = TerminalFormatStrings.Instance.Lines;
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
                     }
                 }
                 width = s_windowWidth;
@@ -402,8 +403,8 @@ namespace System
                 if (!Console.IsOutputRedirected)
                 {
                     WriteStdoutAnsiString(value ?
-                        TerminalFormatStrings.Instance.CursorVisible :
-                        TerminalFormatStrings.Instance.CursorInvisible);
+                        TerminalFormatStringsInstance.CursorVisible :
+                        TerminalFormatStringsInstance.CursorInvisible);
                 }
             }
         }
@@ -478,7 +479,7 @@ namespace System
                 // involved in reading/writing, such as when accessing a remote system. We also extend
                 // the timeout on the very first request to 15 seconds, to account for potential latency
                 // before we know if we will receive a response.
-                Interop.Sys.InitializeConsoleBeforeRead(minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
+                Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser, minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
                 try
                 {
                     // Write out the cursor position report request.
@@ -506,9 +507,9 @@ namespace System
                     StdInReader r = StdInReader.Inner;
                     int escPos, bracketPos, semiPos, rPos;
                     if (!AppendToStdInReaderUntil(Esc, r, readBytes, ref readBytesPos, out escPos) ||
-                        !BufferUntil((byte)'[', r, ref readBytes, ref readBytesPos, out bracketPos) ||
-                        !BufferUntil((byte)';', r, ref readBytes, ref readBytesPos, out semiPos) ||
-                        !BufferUntil((byte)'R', r, ref readBytes, ref readBytesPos, out rPos))
+                        !BufferUntil((byte)'[', ref readBytes, ref readBytesPos, out bracketPos) ||
+                        !BufferUntil((byte)';', ref readBytes, ref readBytesPos, out semiPos) ||
+                        !BufferUntil((byte)'R', ref readBytes, ref readBytesPos, out rPos))
                     {
                         // We were unable to read everything from stdin, e.g. a timeout occurred.
                         // Since we couldn't get the complete CPR, transfer any bytes we did read
@@ -553,7 +554,7 @@ namespace System
                 {
                     if (reinitializeForRead)
                     {
-                        Interop.Sys.InitializeConsoleBeforeRead();
+                        Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser);
                     }
                     else
                     {
@@ -562,14 +563,14 @@ namespace System
                     s_firstCursorPositionRequest = false;
                 }
 
-                static unsafe bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
+                static unsafe bool BufferUntil(byte toFind, ref Span<byte> dst, ref int dstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
                     {
                         // Read the next byte from stdin.
                         byte b;
-                        if (src.ReadStdin(&b, 1) != 1)
+                        if (System.IO.StdInReader.ReadStdin(&b, 1) != 1)
                         {
                             foundPos = -1;
                             return false;
@@ -602,7 +603,7 @@ namespace System
                     {
                         // Read the next byte from stdin.
                         byte b;
-                        if (reader.ReadStdin(&b, 1) != 1)
+                        if (System.IO.StdInReader.ReadStdin(&b, 1) != 1)
                         {
                             foundPos = -1;
                             return false;
@@ -618,7 +619,7 @@ namespace System
                         }
 
                         // Otherwise, push it back into the reader's extra buffer.
-                        reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                        reader.AppendExtraBuffer(new ReadOnlySpan<byte>(in b));
                     }
                 }
 
@@ -629,7 +630,7 @@ namespace System
                     for (int i = startExclusive + 1; i < endExclusive; i++)
                     {
                         byte b = source[i];
-                        if (IsDigit(b))
+                        if (char.IsAsciiDigit((char)b))
                         {
                             try
                             {
@@ -639,7 +640,7 @@ namespace System
                         }
                         else
                         {
-                            reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                            reader.AppendExtraBuffer(new ReadOnlySpan<byte>(in b));
                         }
                     }
 
@@ -674,9 +675,6 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
-
-        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
-        private static bool IsDigit(byte c) => c >= '0' && c <= '9';
 
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
@@ -773,7 +771,7 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (!EmitAnsiColorCodes)
+            if (!ConsoleUtils.EmitAnsiColorCodes)
             {
                 return;
             }
@@ -790,10 +788,10 @@ namespace System
             }
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
-            string? formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
+            string? formatString = foreground ? TerminalFormatStringsInstance.Foreground : TerminalFormatStringsInstance.Background;
             if (!string.IsNullOrEmpty(formatString))
             {
-                int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
+                int maxColors = TerminalFormatStringsInstance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     // The values of the ConsoleColor enums unfortunately don't map to the
@@ -835,96 +833,14 @@ namespace System
         /// <summary>Writes out the ANSI string to reset colors.</summary>
         private static void WriteResetColorString()
         {
-            if (EmitAnsiColorCodes)
+            if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
-            }
-        }
-
-        /// <summary>Get whether to emit ANSI color codes.</summary>
-        private static bool EmitAnsiColorCodes
-        {
-            get
-            {
-                // The flag starts at -1.  If it's no longer -1, it's 0 or 1 to represent false or true.
-                int emitAnsiColorCodes = s_emitAnsiColorCodes;
-                if (emitAnsiColorCodes != -1)
-                {
-                    return Convert.ToBoolean(emitAnsiColorCodes);
-                }
-
-                // We've not yet computed whether to emit codes or not.  Do so now.  We may race with
-                // other threads, and that's ok; this is idempotent unless someone is currently changing
-                // the value of the relevant environment variables, in which case behavior here is undefined.
-
-                // By default, we emit ANSI color codes if output isn't redirected, and suppress them if output is redirected.
-                bool enabled = !Console.IsOutputRedirected;
-
-                if (enabled)
-                {
-                    // We subscribe to the informal standard from https://no-color.org/.  If we'd otherwise emit
-                    // ANSI color codes but the NO_COLOR environment variable is set, disable emitting them.
-                    enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
-                }
-                else
-                {
-                    // We also support overriding in the other direction.  If we'd otherwise avoid emitting color
-                    // codes but the DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION environment variable is
-                    // set to 1 or true, enable color.
-                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-                    enabled = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-                }
-
-                // Store and return the computed answer.
-                s_emitAnsiColorCodes = Convert.ToInt32(enabled);
-                return enabled;
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Reset);
             }
         }
 
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
-
-        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKeyInfo key, out int keyLength)
-        {
-            int unprocessedCharCount = endIndex - startIndex;
-
-            // First process special control character codes.  These override anything from terminfo.
-            if (unprocessedCharCount > 0)
-            {
-                // Is this an erase / backspace?
-                char c = givenChars[startIndex];
-                if (c != s_posixDisableValue && c == s_veraseCharacter)
-                {
-                    key = new ConsoleKeyInfo(c, ConsoleKey.Backspace, shift: false, alt: false, control: false);
-                    keyLength = 1;
-                    return true;
-                }
-            }
-
-            // Then process terminfo mappings.
-            int minRange = TerminalFormatStrings.Instance.MinKeyFormatLength;
-            if (unprocessedCharCount >= minRange)
-            {
-                int maxRange = Math.Min(unprocessedCharCount, TerminalFormatStrings.Instance.MaxKeyFormatLength);
-
-                for (int i = maxRange; i >= minRange; i--)
-                {
-                    var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
-
-                    // Check if the string prefix matches.
-                    if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
-                    {
-                        keyLength = currentString.Length;
-                        return true;
-                    }
-                }
-            }
-
-            // Otherwise, not a known special console key.
-            key = default(ConsoleKeyInfo);
-            keyLength = 0;
-            return false;
-        }
 
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
         private static volatile bool s_initialized;
@@ -932,7 +848,7 @@ namespace System
         /// <summary>Value used to indicate that a special character code isn't available.</summary>
         internal static byte s_posixDisableValue;
         /// <summary>Special control character code used to represent an erase (backspace).</summary>
-        private static byte s_veraseCharacter;
+        internal static byte s_veraseCharacter;
         /// <summary>Special control character that represents the end of a line.</summary>
         internal static byte s_veolCharacter;
         /// <summary>Special control character that represents the end of a line.</summary>
@@ -967,7 +883,7 @@ namespace System
                     // the native lib later to handle signals that require re-entering the mode.
                     if (!Console.IsOutputRedirected)
                     {
-                        string? keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
+                        string? keypadXmit = TerminalFormatStringsInstance.KeypadXmit;
                         if (keypadXmit != null)
                         {
                             Interop.Sys.SetKeypadXmit(keypadXmit);
@@ -1002,248 +918,11 @@ namespace System
             }
         }
 
-        /// <summary>Provides format strings and related information for use with the current terminal.</summary>
-        internal sealed class TerminalFormatStrings
-        {
-            /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
-            public static TerminalFormatStrings Instance { get { return s_instance.Value; } }
-            private static readonly Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.Database.ReadActiveDatabase()));
-
-            /// <summary>The format string to use to change the foreground color.</summary>
-            public readonly string? Foreground;
-            /// <summary>The format string to use to change the background color.</summary>
-            public readonly string? Background;
-            /// <summary>The format string to use to reset the foreground and background colors.</summary>
-            public readonly string? Reset;
-            /// <summary>The maximum number of colors supported by the terminal.</summary>
-            public readonly int MaxColors;
-            /// <summary>The number of columns in a format.</summary>
-            public readonly int Columns;
-            /// <summary>The number of lines in a format.</summary>
-            public readonly int Lines;
-            /// <summary>The format string to use to make cursor visible.</summary>
-            public readonly string? CursorVisible;
-            /// <summary>The format string to use to make cursor invisible</summary>
-            public readonly string? CursorInvisible;
-            /// <summary>The format string to use to set the window title.</summary>
-            public readonly string? Title;
-            /// <summary>The format string to use for an audible bell.</summary>
-            public readonly string? Bell;
-            /// <summary>The format string to use to clear the terminal.</summary>
-            public readonly string? Clear;
-            /// <summary>The format string to use to set the position of the cursor.</summary>
-            public readonly string? CursorAddress;
-            /// <summary>The format string to use to move the cursor to the left.</summary>
-            public readonly string? CursorLeft;
-            /// <summary>The format string to use to clear to the end of line.</summary>
-            public readonly string? ClrEol;
-            /// <summary>The ANSI-compatible string for the Cursor Position report request.</summary>
-            /// <remarks>
-            /// This should really be in user string 7 in the terminfo file, but some terminfo databases
-            /// are missing it.  As this is defined to be supported by any ANSI-compatible terminal,
-            /// we assume it's available; doing so means CursorTop/Left will work even if the terminfo database
-            /// doesn't contain it (as appears to be the case with e.g. screen and tmux on Ubuntu), at the risk
-            /// of outputting the sequence on some terminal that's not compatible.
-            /// </remarks>
-            public const string CursorPositionReport = "\x1B[6n";
-            /// <summary>
-            /// The dictionary of keystring to ConsoleKeyInfo.
-            /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
-            /// </summary>
-            public readonly Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> KeyFormatToConsoleKey =
-                new Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo>(new ReadOnlyMemoryContentComparer());
-
-            /// <summary> Max key length </summary>
-            public readonly int MaxKeyFormatLength;
-            /// <summary> Min key length </summary>
-            public readonly int MinKeyFormatLength;
-            /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
-            public readonly string? KeypadXmit;
-
-            public TerminalFormatStrings(TermInfo.Database? db)
-            {
-                if (db == null)
-                    return;
-
-                KeypadXmit = db.GetString(TermInfo.WellKnownStrings.KeypadXmit);
-                Foreground = db.GetString(TermInfo.WellKnownStrings.SetAnsiForeground);
-                Background = db.GetString(TermInfo.WellKnownStrings.SetAnsiBackground);
-                Reset = db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors);
-                Bell = db.GetString(TermInfo.WellKnownStrings.Bell);
-                Clear = db.GetString(TermInfo.WellKnownStrings.Clear);
-                Columns = db.GetNumber(TermInfo.WellKnownNumbers.Columns);
-                Lines = db.GetNumber(TermInfo.WellKnownNumbers.Lines);
-                CursorVisible = db.GetString(TermInfo.WellKnownStrings.CursorVisible);
-                CursorInvisible = db.GetString(TermInfo.WellKnownStrings.CursorInvisible);
-                CursorAddress = db.GetString(TermInfo.WellKnownStrings.CursorAddress);
-                CursorLeft = db.GetString(TermInfo.WellKnownStrings.CursorLeft);
-                ClrEol = db.GetString(TermInfo.WellKnownStrings.ClrEol);
-
-                Title = GetTitle(db);
-
-                Debug.WriteLineIf(db.GetString(TermInfo.WellKnownStrings.CursorPositionReport) != CursorPositionReport,
-                    "Getting the cursor position will only work if the terminal supports the CPR sequence," +
-                    "but the terminfo database does not contain an entry for it.");
-
-                int maxColors = db.GetNumber(TermInfo.WellKnownNumbers.MaxColors);
-                MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none
-                    maxColors >= 16 ? 16 :
-                    maxColors >= 8 ? 8 :
-                    0;
-
-                AddKey(db, TermInfo.WellKnownStrings.KeyF1, ConsoleKey.F1);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF2, ConsoleKey.F2);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF3, ConsoleKey.F3);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF4, ConsoleKey.F4);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF5, ConsoleKey.F5);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF6, ConsoleKey.F6);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF7, ConsoleKey.F7);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF8, ConsoleKey.F8);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF9, ConsoleKey.F9);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF10, ConsoleKey.F10);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF11, ConsoleKey.F11);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF12, ConsoleKey.F12);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF13, ConsoleKey.F13);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF14, ConsoleKey.F14);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF15, ConsoleKey.F15);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF16, ConsoleKey.F16);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF17, ConsoleKey.F17);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF18, ConsoleKey.F18);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF19, ConsoleKey.F19);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF20, ConsoleKey.F20);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF21, ConsoleKey.F21);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF22, ConsoleKey.F22);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF23, ConsoleKey.F23);
-                AddKey(db, TermInfo.WellKnownStrings.KeyF24, ConsoleKey.F24);
-                AddKey(db, TermInfo.WellKnownStrings.KeyBackspace, ConsoleKey.Backspace);
-                AddKey(db, TermInfo.WellKnownStrings.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeyBegin, ConsoleKey.Home);
-                AddKey(db, TermInfo.WellKnownStrings.KeyClear, ConsoleKey.Clear);
-                AddKey(db, TermInfo.WellKnownStrings.KeyDelete, ConsoleKey.Delete);
-                AddKey(db, TermInfo.WellKnownStrings.KeyDown, ConsoleKey.DownArrow);
-                AddKey(db, TermInfo.WellKnownStrings.KeyEnd, ConsoleKey.End);
-                AddKey(db, TermInfo.WellKnownStrings.KeyEnter, ConsoleKey.Enter);
-                AddKey(db, TermInfo.WellKnownStrings.KeyHelp, ConsoleKey.Help);
-                AddKey(db, TermInfo.WellKnownStrings.KeyHome, ConsoleKey.Home);
-                AddKey(db, TermInfo.WellKnownStrings.KeyInsert, ConsoleKey.Insert);
-                AddKey(db, TermInfo.WellKnownStrings.KeyLeft, ConsoleKey.LeftArrow);
-                AddKey(db, TermInfo.WellKnownStrings.KeyPageDown, ConsoleKey.PageDown);
-                AddKey(db, TermInfo.WellKnownStrings.KeyPageUp, ConsoleKey.PageUp);
-                AddKey(db, TermInfo.WellKnownStrings.KeyPrint, ConsoleKey.Print);
-                AddKey(db, TermInfo.WellKnownStrings.KeyRight, ConsoleKey.RightArrow);
-                AddKey(db, TermInfo.WellKnownStrings.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySelect, ConsoleKey.Select);
-                AddKey(db, TermInfo.WellKnownStrings.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
-                AddKey(db, TermInfo.WellKnownStrings.KeyUp, ConsoleKey.UpArrow);
-                AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
-                AddPrefixKey(db, "kRIT", ConsoleKey.RightArrow);
-                AddPrefixKey(db, "kUP", ConsoleKey.UpArrow);
-                AddPrefixKey(db, "kDN", ConsoleKey.DownArrow);
-                AddPrefixKey(db, "kDC", ConsoleKey.Delete);
-                AddPrefixKey(db, "kEND", ConsoleKey.End);
-                AddPrefixKey(db, "kHOM", ConsoleKey.Home);
-                AddPrefixKey(db, "kNXT", ConsoleKey.PageDown);
-                AddPrefixKey(db, "kPRV", ConsoleKey.PageUp);
-
-                if (KeyFormatToConsoleKey.Count > 0)
-                {
-                    MaxKeyFormatLength = int.MinValue;
-                    MinKeyFormatLength = int.MaxValue;
-
-                    foreach (KeyValuePair<ReadOnlyMemory<char>, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
-                    {
-                        if (entry.Key.Length > MaxKeyFormatLength)
-                        {
-                            MaxKeyFormatLength = entry.Key.Length;
-                        }
-                        if (entry.Key.Length < MinKeyFormatLength)
-                        {
-                            MinKeyFormatLength = entry.Key.Length;
-                        }
-                    }
-                }
-            }
-
-            private static string GetTitle(TermInfo.Database db)
-            {
-                // Try to get the format string from tsl/fsl and use it if they're available
-                string? tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
-                string? fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
-                if (tsl != null && fsl != null)
-                {
-                    return tsl + "%p1%s" + fsl;
-                }
-
-                string term = db.Term;
-                if (term == null)
-                {
-                    return string.Empty;
-                }
-
-                if (term.StartsWith("xterm", StringComparison.Ordinal)) // normalize all xterms to enable easier matching
-                {
-                    term = "xterm";
-                }
-
-                switch (term)
-                {
-                    case "aixterm":
-                    case "dtterm":
-                    case "linux":
-                    case "rxvt":
-                    case "xterm":
-                        return "\x1B]0;%p1%s\x07";
-                    case "cygwin":
-                        return "\x1B];%p1%s\x07";
-                    case "konsole":
-                        return "\x1B]30;%p1%s\x07";
-                    case "screen":
-                        return "\x1Bk%p1%s\x1B";
-                    default:
-                        return string.Empty;
-                }
-            }
-
-            private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key)
-            {
-                AddKey(db, keyId, key, shift: false, alt: false, control: false);
-            }
-
-            private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
-            {
-                ReadOnlyMemory<char> keyFormat = db.GetString(keyId).AsMemory();
-                if (!keyFormat.IsEmpty)
-                    KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
-            }
-
-            private void AddPrefixKey(TermInfo.Database db, string extendedNamePrefix, ConsoleKey key)
-            {
-                AddKey(db, extendedNamePrefix + "3", key, shift: false, alt: true,  control: false);
-                AddKey(db, extendedNamePrefix + "4", key, shift: true,  alt: true,  control: false);
-                AddKey(db, extendedNamePrefix + "5", key, shift: false, alt: false, control: true);
-                AddKey(db, extendedNamePrefix + "6", key, shift: true,  alt: false, control: true);
-                AddKey(db, extendedNamePrefix + "7", key, shift: false, alt: false, control: true);
-            }
-
-            private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
-            {
-                ReadOnlyMemory<char> keyFormat = db.GetExtendedString(extendedName).AsMemory();
-                if (!keyFormat.IsEmpty)
-                    KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
-            }
-        }
-
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
+        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
+        private static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
             fixed (byte* bufPtr = buffer)
             {
@@ -1409,7 +1088,7 @@ namespace System
             if (string.IsNullOrEmpty(value))
                 return;
 
-            Span<byte> data = stackalloc byte[0];
+            scoped Span<byte> data;
             if (value.Length <= 256) // except for extremely rare cases, ANSI escape strings are very short
             {
                 data = stackalloc byte[Encoding.UTF8.GetMaxByteCount(value.Length)];
@@ -1473,15 +1152,6 @@ namespace System
                 }
                 base.Flush();
             }
-        }
-
-        private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
-        {
-            public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>
-                x.Span.SequenceEqual(y.Span);
-
-            public int GetHashCode(ReadOnlyMemory<char> obj) =>
-                string.GetHashCode(obj.Span);
         }
     }
 }

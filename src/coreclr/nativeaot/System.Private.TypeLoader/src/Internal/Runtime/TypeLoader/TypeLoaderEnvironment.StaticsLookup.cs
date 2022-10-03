@@ -3,13 +3,10 @@
 
 
 using System;
-using System.Runtime;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 using Internal.NativeFormat;
@@ -18,15 +15,12 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        private const int DynamicTypeTlsOffsetFlag = unchecked((int)0x80000000);
-
         // To keep the synchronization simple, we execute all TLS registration/lookups under a global lock
         private Lock _threadStaticsLock = new Lock();
 
         // Counter to keep track of generated offsets for TLS cells of dynamic types;
-        private int _maxTlsCells;
-        private LowLevelDictionary<RuntimeTypeHandle, uint> _dynamicGenericsThreadStatics = new LowLevelDictionary<RuntimeTypeHandle, uint>();
-        private LowLevelDictionary<uint, int> _dynamicGenericsThreadStaticSizes = new LowLevelDictionary<uint, int>();
+        private LowLevelDictionary<IntPtr, uint> _maxThreadLocalIndex = new LowLevelDictionary<IntPtr, uint>();
+        private LowLevelDictionary<IntPtr, LowLevelDictionary<uint, IntPtr>> _dynamicGenericsThreadStaticDescs = new LowLevelDictionary<IntPtr, LowLevelDictionary<uint, IntPtr>>();
 
         // Various functions in static access need to create permanent pointers for use by thread static lookup.
         #region GC/Non-GC Statics
@@ -54,7 +48,7 @@ namespace Internal.Runtime.TypeLoader
                     else
                     {
                         // If the type does not have a Cctor context, search for the field on the type in the field map which has the lowest offset,
-                        // yet has the the correct type of storage.
+                        // yet has the correct type of storage.
                         IntPtr staticAddress;
                         if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.NonGC, out staticAddress))
                         {
@@ -118,7 +112,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!typeAsEEType->IsDynamicType && !typeAsEEType->IsGeneric)
                 {
                     //search for the field on the type in the field map which has the lowest offset,
-                    // yet has the the correct type of storage.
+                    // yet has the correct type of storage.
                     IntPtr staticAddress;
                     if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.GC, out staticAddress))
                     {
@@ -197,62 +191,64 @@ namespace Internal.Runtime.TypeLoader
                 return index.HasValue ? staticInfoLookup.GetIntPtrFromIndex(index.Value) : IntPtr.Zero;
             }
 
-            // Not found in hashtable... must be a dynamically created type
-            Debug.Assert(!runtimeTypeHandle.IsDynamicType());
-            // Not yet implemented...
+            // Not found in hashtable... might be a dynamically created type
+            if (runtimeTypeHandle.IsDynamicType())
+            {
+                unsafe
+                {
+                    MethodTable* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                    if (typeAsEEType->DynamicThreadStaticsIndex != IntPtr.Zero)
+                        return typeAsEEType->DynamicThreadStaticsIndex;
+                }
+            }
 
             // Type has no GC statics
             return IntPtr.Zero;
         }
 
-        public int TryGetThreadStaticsSizeForDynamicType(int index, out int numTlsCells)
+        public IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, uint index)
         {
-            Debug.Assert((index & DynamicTypeTlsOffsetFlag) == DynamicTypeTlsOffsetFlag);
-
-            numTlsCells = _maxTlsCells;
-
             using (LockHolder.Hold(_threadStaticsLock))
             {
-                int storageSize;
-                if (_dynamicGenericsThreadStaticSizes.TryGetValue((uint)index, out storageSize))
-                    return storageSize;
+                return _dynamicGenericsThreadStaticDescs[typeManagerHandle.GetIntPtrUNSAFE()][index];
             }
-
-            Debug.Assert(false);
-            return 0;
         }
 
-        public uint GetNextThreadStaticsOffsetValue()
+        public uint GetNextThreadStaticsOffsetValue(TypeManagerHandle typeManagerHandle)
         {
-            // Highest bit of the TLS offset used as a flag to indicate that it's a special TLS offset of a dynamic type
-            var result = 0x80000000 | (uint)_maxTlsCells;
-            // Use checked arithmetics to ensure there aren't any overflows/truncations
-            _maxTlsCells = checked(_maxTlsCells + 1);
+            if (!_maxThreadLocalIndex.TryGetValue(typeManagerHandle.GetIntPtrUNSAFE(), out uint result))
+                result = (uint)RuntimeAugments.GetHighestStaticThreadStaticIndex(typeManagerHandle);
+
+            _maxThreadLocalIndex[typeManagerHandle.GetIntPtrUNSAFE()] = checked(++result);
+
             return result;
         }
 
-        public void RegisterDynamicThreadStaticsInfo(RuntimeTypeHandle runtimeTypeHandle, uint offsetValue, int storageSize)
+        public void RegisterDynamicThreadStaticsInfo(RuntimeTypeHandle runtimeTypeHandle, uint offsetValue, IntPtr gcDesc)
         {
             bool registered = false;
-            Debug.Assert(offsetValue != 0 && storageSize > 0 && runtimeTypeHandle.IsDynamicType());
+            Debug.Assert(offsetValue != 0 && runtimeTypeHandle.IsDynamicType());
+
+            IntPtr typeManager = runtimeTypeHandle.GetTypeManager().GetIntPtrUNSAFE();
 
             _threadStaticsLock.Acquire();
             try
             {
-                // Sanity check to make sure we do not register thread statics for the same type more than once
-                uint temp;
-                Debug.Assert(!_dynamicGenericsThreadStatics.TryGetValue(runtimeTypeHandle, out temp) && storageSize > 0);
-
-                _dynamicGenericsThreadStatics.Add(runtimeTypeHandle, offsetValue);
-                _dynamicGenericsThreadStaticSizes.Add(offsetValue, storageSize);
+                if (!_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
+                {
+                    _dynamicGenericsThreadStaticDescs.Add(typeManager, gcDescs = new LowLevelDictionary<uint, IntPtr>());
+                }
+                gcDescs.Add(offsetValue, gcDesc);
                 registered = true;
             }
             finally
             {
                 if (!registered)
                 {
-                    _dynamicGenericsThreadStatics.Remove(runtimeTypeHandle);
-                    _dynamicGenericsThreadStaticSizes.Remove(offsetValue);
+                    if (_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
+                    {
+                        gcDescs.Remove(offsetValue);
+                    }
                 }
 
                 _threadStaticsLock.Release();
@@ -264,7 +260,7 @@ namespace Internal.Runtime.TypeLoader
         #region Privates
         // get the statics hash table, external references, and static info table for a module
         // TODO multi-file: consider whether we want to cache this info
-        private unsafe bool GetStaticsInfoHashtable(NativeFormatModuleInfo module, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
+        private static unsafe bool GetStaticsInfoHashtable(NativeFormatModuleInfo module, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
         {
             byte* pBlob;
             uint cbBlob;
@@ -290,7 +286,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
+        private static NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
         {
             TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(instantiatedType);
             NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
@@ -316,7 +312,7 @@ namespace Internal.Runtime.TypeLoader
             return new NativeParser();
         }
 
-        private unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
+        private static unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
         {
             return PermanentAllocatedMemoryBlobs.GetPointerToUInt(value);
         }

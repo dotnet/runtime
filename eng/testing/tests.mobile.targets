@@ -8,12 +8,16 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <PublishingTestsRun>true</PublishingTestsRun>
-    <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 
   <PropertyGroup>
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotnetPgoToolDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRToolPath)', 'dotnet-pgo'))</DotnetPgoToolDir>
+    <DotnetPgoToolPath>$([MSBuild]::NormalizePath('$(DotnetPgoToolDir)', 'dotnet-pgo'))</DotnetPgoToolPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
@@ -39,6 +43,10 @@
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DiagnosticPorts Condition="'$(DiagnosticStartupMode)' != ''">$(DiagnosticPorts),$(DiagnosticStartupMode)</DiagnosticPorts>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
@@ -55,9 +63,8 @@
     <Compile Include="$(RepoRoot)src\libraries\Common\tests\Tests\RandomizedTestOrderAssemblyInfo.cs" />
   </ItemGroup>
 
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
-
+  <Import Project="$(MSBuildThisFileDirectory)tests.android.targets"
+          Condition="'$(TargetOS)' == 'Android'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
           Condition="'$(TargetsAppleMobile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets"
@@ -66,98 +73,6 @@
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
   </PropertyGroup>
-
-  <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
-             Condition="'$(MonoTargetsTasksAssemblyPath)' != ''" />
-
-  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
-                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json"
-                                       Outputs="$(PublishDir)runtimeconfig.bin">
-    <PropertyGroup>
-      <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
-      <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <!-- Parse runtimeconfig.template.json file -->
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(RuntimeConfigFilePath)"
-        OutputFile="$(ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
-  </Target>
-
-  <!-- Generate a self-contained app bundle for Android with tests. -->
-  <UsingTask Condition="'$(TargetOS)' == 'Android'"
-             TaskName="AndroidAppBuilderTask"
-             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
-
-  <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" DependsOnTargets="GenerateRuntimeConfig">
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-
-    <PropertyGroup>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
-
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
-      <AotInputAssemblies Include="$(PublishDir)\*.dll">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
-    </ItemGroup>
-
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
-
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
-             Condition="'$(RunAOTCompilation)' == 'true'"/>
-    <RemoveDir Directories="$(BundleDir)" />
-
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="Full"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        AotModulesTablePath="$(BundleDir)\modules.c"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-
-    <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="$(MainLibraryFileName)"
-        ForceAOT="$(RunAOTCompilation)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        StripDebugSymbols="False"
-        OutputDir="$(BundleDir)"
-        AppDir="$(PublishDir)">
-        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
-        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
-    </AndroidAppBuilderTask>
-
-    <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
-    <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
-    <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
-
-    <Copy SourceFiles="$(ApkBundlePath)"
-          DestinationFolder="$(TestArchiveTestsDir)"
-          SkipUnchangedFiles="true"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
-  </Target>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->

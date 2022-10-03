@@ -647,7 +647,7 @@ namespace System.Drawing
         public void TranslateTransform(float dx, float dy) { }
         public void TranslateTransform(float dx, float dy, System.Drawing.Drawing2D.MatrixOrder order) { }
         public delegate bool DrawImageAbort(System.IntPtr callbackdata);
-        public delegate bool EnumerateMetafileProc(System.Drawing.Imaging.EmfPlusRecordType recordType, int flags, int dataSize, System.IntPtr data, System.Drawing.Imaging.PlayRecordCallback callbackData);
+        public delegate bool EnumerateMetafileProc(System.Drawing.Imaging.EmfPlusRecordType recordType, int flags, int dataSize, System.IntPtr data, System.Drawing.Imaging.PlayRecordCallback? callbackData);
     }
     public enum GraphicsUnit
     {

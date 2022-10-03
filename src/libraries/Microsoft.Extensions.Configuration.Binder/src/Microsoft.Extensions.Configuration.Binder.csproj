@@ -2,22 +2,26 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IsPackable>true</IsPackable>
     <PackageDescription>Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" />
+  </ItemGroup>
 </Project>

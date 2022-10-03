@@ -12,7 +12,7 @@ namespace ILCompiler
     internal class JitHelper
     {
         /// <summary>
-        /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or 
+        /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or
         /// by a method in class library.
         /// </summary>
         public static void GetEntryPoint(TypeSystemContext context, ReadyToRunHelper id, out string mangledName, out MethodDesc methodDesc)
@@ -247,6 +247,9 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.CheckInstanceAny:
                     mangledName = "RhTypeCast_IsInstanceOf";
+                    break;
+                case ReadyToRunHelper.IsInstanceOfException:
+                    mangledName = "RhTypeCast_IsInstanceOfException";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";

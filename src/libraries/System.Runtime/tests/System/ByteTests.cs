@@ -88,9 +88,12 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo emptyFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { (byte)0, "G", emptyFormat, "0" };
-                yield return new object[] { (byte)123, "G", emptyFormat, "123" };
-                yield return new object[] { byte.MaxValue, "G", emptyFormat, "255" };
+                foreach (string glike in new[] { "G", "R" })
+                {
+                    yield return new object[] { (byte)0, glike, emptyFormat, "0" };
+                    yield return new object[] { (byte)123, glike, emptyFormat, "123" };
+                    yield return new object[] { byte.MaxValue, glike, emptyFormat, "255" };
+                }
 
                 yield return new object[] { (byte)123, "D", emptyFormat, "123" };
                 yield return new object[] { (byte)123, "D99", emptyFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
@@ -163,10 +166,6 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             byte b = 123;
-            Assert.Throws<FormatException>(() => b.ToString("r")); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("r", null)); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("R")); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("R", null)); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y", null)); // Invalid format
         }

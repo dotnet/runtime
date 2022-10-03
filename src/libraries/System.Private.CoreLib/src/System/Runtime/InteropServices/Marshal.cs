@@ -96,20 +96,26 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static int SizeOf(object structure!!)
+        public static int SizeOf(object structure)
         {
+            ArgumentNullException.ThrowIfNull(structure);
+
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
         }
 
-        public static int SizeOf<T>(T structure!!)
+        public static int SizeOf<T>(T structure)
         {
+            ArgumentNullException.ThrowIfNull(structure);
+
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static int SizeOf(Type t!!)
+        public static int SizeOf(Type t)
         {
+            ArgumentNullException.ThrowIfNull(t);
+
             if (t is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
@@ -164,14 +170,18 @@ namespace System.Runtime.InteropServices
         /// an array that is not pinned can cause unexpected results.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr!!, int index)
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
+            ArgumentNullException.ThrowIfNull(arr);
+
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr!!, int index)
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
+            ArgumentNullException.ThrowIfNull(arr);
+
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
@@ -218,8 +228,10 @@ namespace System.Runtime.InteropServices
             CopyToNative(source, startIndex, destination, length);
         }
 
-        private static unsafe void CopyToNative<T>(T[] source!!, int startIndex, IntPtr destination, int length)
+        private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             ArgumentNullException.ThrowIfNull(destination);
 
             // The rest of the argument validation is done by CopyTo
@@ -266,8 +278,10 @@ namespace System.Runtime.InteropServices
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination!!, int startIndex, int length)
+        private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination, int startIndex, int length)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             ArgumentNullException.ThrowIfNull(source);
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -510,15 +524,19 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt64(IntPtr ptr, long val) => WriteInt64(ptr, 0, val);
 
-        public static void Prelink(MethodInfo m!!)
+        public static void Prelink(MethodInfo m)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             PrelinkCore(m);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "This only needs to prelink methods that are actually used")]
-        public static void PrelinkAll(Type c!!)
+        public static void PrelinkAll(Type c)
         {
+            ArgumentNullException.ThrowIfNull(c);
+
             MethodInfo[] mi = c.GetMethods();
 
             for (int i = 0; i < mi.Length; i++)
@@ -542,8 +560,10 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? PtrToStructure(IntPtr ptr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type structureType!!)
+            Type structureType)
         {
+            ArgumentNullException.ThrowIfNull(structureType);
+
             if (ptr == IntPtr.Zero)
             {
                 return null;
@@ -605,6 +625,8 @@ namespace System.Runtime.InteropServices
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -817,20 +839,10 @@ namespace System.Runtime.InteropServices
                             HResult = errorCode
                         };
                     }
-                case HResults.FUSION_E_INVALID_PRIVATE_ASM_LOCATION:
-                case HResults.FUSION_E_SIGNATURE_CHECK_FAILED:
-                case HResults.FUSION_E_LOADFROM_BLOCKED:
                 case HResults.FUSION_E_CACHEFILE_FAILED:
-                case HResults.FUSION_E_ASM_MODULE_MISSING:
                 case HResults.FUSION_E_INVALID_NAME:
                 case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
-                case HResults.FUSION_E_HOST_GAC_ASM_MISMATCH:
-                case HResults.COR_E_MODULE_HASH_CHECK_FAILED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:
-                case HResults.SECURITY_E_INCOMPATIBLE_SHARE:
-                case HResults.SECURITY_E_INCOMPATIBLE_EVIDENCE:
-                case HResults.SECURITY_E_UNVERIFIABLE:
-                case HResults.COR_E_FIXUPSINEXE:
                 case HResults.ERROR_TOO_MANY_OPEN_FILES:
                 case HResults.ERROR_SHARING_VIOLATION:
                 case HResults.ERROR_LOCK_VIOLATION:
@@ -838,8 +850,6 @@ namespace System.Runtime.InteropServices
                 case HResults.ERROR_DISK_CORRUPT:
                 case HResults.ERROR_UNRECOGNIZED_VOLUME:
                 case HResults.ERROR_DLL_INIT_FAILED:
-                case HResults.FUSION_E_CODE_DOWNLOAD_DISABLED:
-                case HResults.CORSEC_E_MISSING_STRONGNAME:
                 case HResults.MSEE_E_ASSEMBLYLOADINPROGRESS:
                 case HResults.ERROR_FILE_INVALID:
                     {
@@ -985,16 +995,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1032,16 +1036,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1074,8 +1072,10 @@ namespace System.Runtime.InteropServices
         /// metadata then it is returned otherwise a stable guid is generated based
         /// on the fully qualified name of the type.
         /// </summary>
-        public static Guid GenerateGuidForType(Type type!!)
+        public static Guid GenerateGuidForType(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -1089,8 +1089,10 @@ namespace System.Runtime.InteropServices
         /// a PROGID in the metadata then it is returned otherwise a stable PROGID
         /// is generated based on the fully qualified name of the type.
         /// </summary>
-        public static string? GenerateProgIdForType(Type type!!)
+        public static string? GenerateProgIdForType(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type.IsImport)
             {
                 throw new ArgumentException(SR.Argument_TypeMustNotBeComImport, nameof(type));
@@ -1112,8 +1114,10 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t!!)
+        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
         {
+            ArgumentNullException.ThrowIfNull(t);
+
             ArgumentNullException.ThrowIfNull(ptr);
             if (t is not RuntimeType)
             {
@@ -1158,8 +1162,10 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr GetFunctionPointerForDelegate(Delegate d!!)
+        public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
+            ArgumentNullException.ThrowIfNull(d);
+
             return GetFunctionPointerForDelegateInternal(d);
         }
 
@@ -1187,7 +1193,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, SysStringByteLen(s));
+            NativeMemory.Clear((void*)s, SysStringByteLen(s));
             FreeBSTR(s);
         }
 
@@ -1202,7 +1208,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeCoTaskMem(s);
         }
 
@@ -1212,7 +1218,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeCoTaskMem(s);
         }
 
@@ -1222,7 +1228,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeHGlobal(s);
         }
 
@@ -1232,7 +1238,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeHGlobal(s);
         }
 
@@ -1279,6 +1285,15 @@ namespace System.Runtime.InteropServices
         public static int GetLastWin32Error()
         {
             return GetLastPInvokeError();
+        }
+
+        /// <summary>
+        /// Gets the system error message for the last PInvoke error code.
+        /// </summary>
+        /// <returns>The error message associated with the last PInvoke error code.</returns>
+        public static string GetLastPInvokeErrorMessage()
+        {
+            return GetPInvokeErrorMessage(GetLastPInvokeError());
         }
     }
 }

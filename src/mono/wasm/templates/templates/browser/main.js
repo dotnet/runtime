@@ -1,13 +1,18 @@
-import createDotnetRuntime from './dotnet.js'
+import { App } from './app-support.js'
 
-try {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime();
-    const managedMethod = BINDING.bind_static_method("[browser] MyClass:CallMeFromJS");
-    const text = managedMethod();
+async function main(applicationArguments) {
+    App.runtime.setModuleImports("main.js", {
+        window: {
+            location: {
+                href: () => globalThis.window.location.href
+            }
+        }
+    });
+    const exports = await App.runtime.getAssemblyExports("browser.0.dll");
+    const text = exports.MyClass.Greeting();
     document.getElementById("out").innerHTML = `${text}`;
 
-    await MONO.mono_run_main("browser.dll", []);
-} catch (err) {
-    console.log(`WASM ERROR ${err}`);
-    document.getElementById("out").innerHTML = `error: ${err}`;
+    await App.runtime.runMain("browser.0.dll", applicationArguments);
 }
+
+App.run(main);

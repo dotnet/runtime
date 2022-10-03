@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices
                 //
                 // Marshalling a managed delegate created from managed code into a native function pointer
                 //
-                return GetPInvokeDelegates().GetValue(del, s_AllocateThunk ?? (s_AllocateThunk = AllocateThunk)).Thunk;
+                return GetPInvokeDelegates().GetValue(del, s_AllocateThunk ??= AllocateThunk).Thunk;
             }
         }
 
@@ -118,9 +118,10 @@ namespace System.Runtime.InteropServices
                     // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
                     // We will store this pointer on the context slot of thunk data
                     //
-                    ContextData = Marshal.AllocHGlobal(2 * IntPtr.Size);
                     unsafe
                     {
+                        ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
+
                         ThunkContextData* thunkData = (ThunkContextData*)ContextData;
 
                         // allocate a weak GChandle for the delegate
@@ -148,7 +149,7 @@ namespace System.Runtime.InteropServices
                         }
 
                         // Free the allocated context data memory
-                        Marshal.FreeHGlobal(ContextData);
+                        NativeMemory.Free((void*)ContextData);
                     }
                 }
             }
@@ -174,7 +175,7 @@ namespace System.Runtime.InteropServices
             //
             bool openStaticDelegate = del.GetRawFunctionPointerForOpenStaticDelegate() != IntPtr.Zero;
 
-            IntPtr pTarget = RuntimeAugments.InteropCallbacks.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
+            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
             Debug.Assert(pTarget != IntPtr.Zero);
 
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
@@ -224,7 +225,7 @@ namespace System.Runtime.InteropServices
             // We need to create the delegate that points to the invoke method of a
             // NativeFunctionPointerWrapper derived class
             //
-            IntPtr pDelegateCreationStub = RuntimeAugments.InteropCallbacks.GetForwardDelegateCreationStub(delegateType);
+            IntPtr pDelegateCreationStub = RuntimeInteropData.GetForwardDelegateCreationStub(delegateType);
             Debug.Assert(pDelegateCreationStub != IntPtr.Zero);
 
             return ((delegate*<IntPtr, Delegate>)pDelegateCreationStub)(ptr);

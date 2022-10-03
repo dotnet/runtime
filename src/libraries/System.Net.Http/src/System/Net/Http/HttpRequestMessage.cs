@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace System.Net.Http
 {
@@ -119,8 +120,10 @@ namespace System.Net.Http
         {
         }
 
-        public HttpRequestMessage(HttpMethod method!!, Uri? requestUri)
+        public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
+            ArgumentNullException.ThrowIfNull(method);
+
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
             // Note that we also allow the string to be empty: null and empty are considered equivalent.
@@ -130,7 +133,7 @@ namespace System.Net.Http
             _versionPolicy = DefaultVersionPolicy;
         }
 
-        public HttpRequestMessage(HttpMethod method, string? requestUri)
+        public HttpRequestMessage(HttpMethod method, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri)
             : this(method, string.IsNullOrEmpty(requestUri) ? null : new Uri(requestUri, UriKind.RelativeOrAbsolute))
         {
         }
@@ -165,6 +168,8 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
+        internal bool IsWebSocketH2Request() => _version.Major == 2 && Method == HttpMethod.Connect && HasHeaders && string.Equals(Headers.Protocol, "websocket", StringComparison.OrdinalIgnoreCase);
+
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)
@@ -174,10 +179,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 
@@ -191,10 +193,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

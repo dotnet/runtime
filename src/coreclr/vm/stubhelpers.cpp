@@ -219,14 +219,6 @@ FORCEINLINE static SOleTlsData *GetOrCreateOleTlsData()
     return pOleTlsData;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTargetNoInterception(IUnknown *pUnk, ComPlusCallInfo *pComInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LPVOID *lpVtbl = *(LPVOID **)pUnk;
-    return lpVtbl[pComInfo->m_cachedComSlot];
-}
-
 FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, MethodTable * pItfMT)
 {
     LIMITED_METHOD_CONTRACT;
@@ -243,35 +235,6 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
             if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
             {
                 return pRCW->m_aInterfaceEntries[i].m_pUnknown;
-            }
-        }
-    }
-
-    return NULL;
-}
-
-// Like GetCOMIPFromRCW_GetIUnknownFromRCWCache but also computes the target. This is a couple of instructions
-// faster than GetCOMIPFromRCW_GetIUnknownFromRCWCache + GetCOMIPFromRCW_GetTargetNoInterception.
-FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(RCW *pRCW, ComPlusCallInfo *pComInfo, void **ppTarget)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // The code in this helper is the "fast path" that used to be generated directly
-    // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
-    SOleTlsData *pOleTlsData = GetOrCreateOleTlsData();
-    MethodTable *pItfMT = pComInfo->m_pInterfaceMT;
-
-    // test for free-threaded after testing for context match to optimize for apartment-bound objects
-    if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
-    {
-        for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
-        {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
-            {
-                IUnknown *pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
-                _ASSERTE(pUnk != NULL);
-                *ppTarget = GetCOMIPFromRCW_GetTargetNoInterception(pUnk, pComInfo);
-                return pUnk;
             }
         }
     }
@@ -569,17 +532,6 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
     HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
 
-    bool fReverseInterop = false;
-
-    if (NULL == pThread)
-    {
-        // This is our signal for the reverse interop cases.
-        fReverseInterop = true;
-        pThread = GET_THREAD();
-        // the secret param in this casee is the UMEntryThunk
-        pRealMD = ((UMEntryThunk*)pSecretParam)->GetMethod();
-    }
-    else
     if (pSecretParam == 0)
     {
         // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
@@ -611,14 +563,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     {
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
-        else
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
+        ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -646,25 +591,9 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
     // and the transition requires us to set up a HMF.
     HELPER_METHOD_FRAME_BEGIN_0();
     {
-        bool fReverseInterop = false;
-
-        if (NULL == pThread)
-        {
-            // if pThread is null, we are doing reverse interop
-            pThread = GET_THREAD();
-            fReverseInterop = true;
-        }
-
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
-        else
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
+        ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
     }
     HELPER_METHOD_FRAME_END();
 

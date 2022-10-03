@@ -21,8 +21,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8, aot: false, config: "Release")]
-        [BuildAndRun(host: RunHost.V8, aot: false, config: "Debug")]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";
@@ -50,7 +50,6 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             // relink by default for Release+publish
             relinked = buildArgs.Config == "Release";
@@ -71,8 +70,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.V8, aot: true, config: "Debug")]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";
@@ -109,7 +108,6 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             // relink by default for Release+publish
             (_, output) = BuildProject(buildArgs,

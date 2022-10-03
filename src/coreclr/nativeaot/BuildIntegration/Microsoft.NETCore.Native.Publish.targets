@@ -13,20 +13,13 @@
     a target called ComputeFilesToPublish which produces the ItemGroup
     ResolvedFileToPublish based on the inputs of @(IntermediateAssembly)
     and @(ResolvedAssembliesToPublish). We modify those two item groups
-    to control what gets published after CoreRT optimizes the application.
-
-    For .NET Core 3.0:
-    - The property has been renamed to _ResolvedCopyLocalPublishAssets in https://github.com/dotnet/sdk/pull/2646
-    - The target has been renamed to ComputeResolvedFilesToPublishList in https://github.com/dotnet/sdk/pull/3281
+    to control what gets published after NativeAOT optimizes the application.
   -->
   <Target Name="ComputeLinkedFilesToPublish"
-          BeforeTargets="ComputeFilesToPublish;ComputeResolvedFilesToPublishList"
+          BeforeTargets="ComputeResolvedFilesToPublishList"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
-      <ResolvedAssembliesToPublish Remove="@(_AssembliesToSkipPublish)" />
-      <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
-
       <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
       <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
     </ItemGroup>
@@ -49,6 +42,7 @@
 
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
+    <Error Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))" Text="For native compilation, the project needs to target .NET 6 or higher." />
     <Error Condition="'$(RuntimeIdentifier)' == ''"
       Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
@@ -58,14 +52,14 @@
 
     <!-- Fail with descriptive error message for common unsupported cases. -->
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))"
-      Text="Cross-OS native compilation is not supported. https://github.com/dotnet/corert/issues/5458" />
+      Text="Cross-OS native compilation is not supported." />
 
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))"
-      Text="Cross-OS native compilation is not supported. https://github.com/dotnet/corert/issues/5458" />
+      Text="Cross-OS native compilation is not supported." />
 
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and !($(RuntimeIdentifier.EndsWith('x64')) or
       ($(RuntimeIdentifier.EndsWith('arm64')) and !$(RuntimeIdentifier.StartsWith('osx'))))"
-      Text="Native compilation does not support targeting $(RuntimeIdentifier) yet. https://github.com/dotnet/corert/issues/4589" />
+      Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
 
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
       Text="Native compilation can run on x64 and arm64 hosts only." />
@@ -73,12 +67,12 @@
     <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
       Text="Add a PackageReference for '$(IlcHostPackageName)' to allow cross-compilation for $(TargetArchitecture)" />
 
-    <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
+    <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
     <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
-      Assemblies="@(ResolvedAssembliesToPublish);@(_ResolvedCopyLocalPublishAssets)"
+      Assemblies="@(_ResolvedCopyLocalPublishAssets)"
       DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)"
       DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)"
       DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
@@ -92,15 +86,22 @@
   </Target>
 
   <Target Name="CopyNativeBinary" AfterTargets="Publish">
-    <!-- override apphost with binary we generated during native compilation -->
+    <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
-  </Target>
 
-  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" AfterTargets="Publish">
-    <!-- dotnet CLI produces managed debug symbols - substitute with those we generated during native compilation -->
+    <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />
+
+    <PropertyGroup>
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+    </PropertyGroup>    
+
+    <!-- replace native symbol file if it exists -->
+    <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
   </Target>
 
 </Project>

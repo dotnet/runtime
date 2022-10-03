@@ -283,10 +283,7 @@ namespace System.Runtime.Serialization.Json
                         while (collectionDataContract != null)
                         {
                             DataContract itemContract = collectionDataContract.ItemContract;
-                            if (_knownDataContracts == null)
-                            {
-                                _knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
-                            }
+                            _knownDataContracts ??= new Dictionary<XmlQualifiedName, DataContract>();
 
                             _knownDataContracts.TryAdd(itemContract.StableName, itemContract);
 

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_nested_etc_cs
 {
     internal struct Struct1
     {
@@ -26,9 +27,10 @@ namespace JitTest
         }
     }
 
-    internal class Test
+    public class Test
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Struct1 str1 = new Struct1();
             TypedReference _ref = __makeref(str1);

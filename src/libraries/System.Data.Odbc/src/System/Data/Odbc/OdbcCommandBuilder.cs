@@ -226,7 +226,7 @@ namespace System.Data.Odbc
                             parameter.Direction = ParameterDirection.ReturnValue;
                             break;
                         default:
-                            Debug.Fail("Unexpected Parametertype while DeriveParamters");
+                            Debug.Fail("Unexpected Parametertype while DeriveParameters");
                             break;
                     }
                     parameter.OdbcType = TypeMap.FromSqlType((ODBC32.SQL_TYPE)reader.GetInt16(ODBC32.DATA_TYPE - 1))._odbcType;
@@ -255,7 +255,7 @@ namespace System.Data.Odbc
         {
             ADP.CheckArgumentNull(unquotedIdentifier, nameof(unquotedIdentifier));
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;

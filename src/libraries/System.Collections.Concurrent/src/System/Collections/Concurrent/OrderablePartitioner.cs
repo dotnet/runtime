@@ -229,11 +229,7 @@ namespace System.Collections.Concurrent
             }
             public void Dispose()
             {
-                IDisposable? d = _source as IDisposable;
-                if (d != null)
-                {
-                    d.Dispose();
-                }
+                (_source as IDisposable)?.Dispose();
             }
         }
 

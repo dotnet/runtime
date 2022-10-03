@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_lcs_gcref_port
 {
     internal class LCSO
     {
@@ -11,7 +12,7 @@ namespace JitTest
         public LCSO(LCSO child) { _m_child = child; }
     }
 
-    internal struct LCSV
+    public struct LCSV
     {
         private int _v;
         private LCSO[] _gcref;
@@ -98,7 +99,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for longest common subsequence of 4 strings\n\n");
             String[] str = new String[RANK] {

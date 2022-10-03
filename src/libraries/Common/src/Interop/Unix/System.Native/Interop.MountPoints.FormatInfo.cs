@@ -12,7 +12,7 @@ internal static partial class Interop
 #if DEBUG
         static Sys()
         {
-            foreach (string name in Enum.GetNames(typeof(UnixFileSystemTypes)))
+            foreach (string name in Enum.GetNames<UnixFileSystemTypes>())
             {
                 System.Diagnostics.Debug.Assert(GetDriveType(name) != DriveType.Unknown,
                     $"Expected {nameof(UnixFileSystemTypes)}.{name} to have an entry in {nameof(GetDriveType)}.");
@@ -31,11 +31,11 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
-        internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPStr)]string name, out MountPointInformation mpi);
+        internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)]string name, out MountPointInformation mpi);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
         private static unsafe partial int GetFormatInfoForMountPoint(
-            [MarshalAs(UnmanagedType.LPStr)]string name,
+            [MarshalAs(UnmanagedType.LPUTF8Str)]string name,
             byte* formatNameBuffer,
             int bufferLength,
             long* formatType);
@@ -60,7 +60,7 @@ internal static partial class Interop
                 // Check if we have a numeric answer or string
                 format = numericFormat != -1 ?
                     Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
-                    Marshal.PtrToStringAnsi((IntPtr)formatBuffer)!;
+                    Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
                 type = GetDriveType(format);
             }
             else

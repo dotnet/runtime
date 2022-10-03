@@ -75,7 +75,7 @@ namespace System.Configuration
             }
         }
 
-        private bool IsHostedInAspnet()
+        private static bool IsHostedInAspnet()
         {
             // See System.Web.Hosting.ApplicationManager::PopulateDomainBindings
             return AppDomain.CurrentDomain.GetData(".appDomain") != null;

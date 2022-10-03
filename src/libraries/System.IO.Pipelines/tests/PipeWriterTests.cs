@@ -163,6 +163,71 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task WriteNothingThenWriteToNewSegment()
+        {
+            // Regression test: write nothing to force a segment to be created, then do a large write that's larger than the currently empty segment to force another new segment
+            // Verify that no 0 length segments are returned from the Reader.
+            PipeWriter buffer = Pipe.Writer;
+            Memory<byte> memory = buffer.GetMemory();
+            buffer.Advance(0); // doing nothing, the hard way
+            await buffer.FlushAsync();
+
+            memory = buffer.GetMemory(memory.Length + 1);
+            buffer.Advance(memory.Length);
+            await buffer.FlushAsync();
+
+            var res = await Pipe.Reader.ReadAsync();
+            Assert.True(res.Buffer.IsSingleSegment);
+            Assert.Equal(memory.Length, res.Buffer.Length);
+        }
+
+        [Fact]
+        public async Task WriteNothingBetweenTwoFullWrites()
+        {
+            int totalWrittenLength = 0;
+            PipeWriter buffer = Pipe.Writer;
+            Memory<byte> memory = buffer.GetMemory();
+            buffer.Advance(memory.Length); // doing nothing, the hard way
+            totalWrittenLength += memory.Length;
+            await buffer.FlushAsync();
+
+            memory = buffer.GetMemory();
+            buffer.Advance(0); // doing nothing, the hard way
+            await buffer.FlushAsync();
+
+            memory = buffer.GetMemory(memory.Length + 1);
+            buffer.Advance(memory.Length);
+            totalWrittenLength += memory.Length;
+            await buffer.FlushAsync();
+
+            var res = await Pipe.Reader.ReadAsync();
+            var segmentCount = 0;
+            foreach (ReadOnlyMemory<byte> _ in res.Buffer)
+            {
+                segmentCount++;
+            }
+            Assert.Equal(2, segmentCount);
+            Assert.Equal(totalWrittenLength, res.Buffer.Length);
+        }
+
+        [Fact]
+        public async Task WriteNothingThenWriteSomeBytes()
+        {
+            PipeWriter buffer = Pipe.Writer;
+            _ = buffer.GetMemory();
+            buffer.Advance(0); // doing nothing, the hard way
+            await buffer.FlushAsync();
+
+            var memory = buffer.GetMemory();
+            buffer.Advance(memory.Length);
+            await buffer.FlushAsync();
+
+            var res = await Pipe.Reader.ReadAsync();
+            Assert.True(res.Buffer.IsSingleSegment);
+            Assert.Equal(memory.Length, res.Buffer.Length);
+        }
+
+        [Fact]
         public void EmptyWriteDoesNotThrow()
         {
             Pipe.Writer.Write(new byte[0]);
@@ -185,7 +250,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetSpanWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 
@@ -208,7 +273,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetMemoryWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 

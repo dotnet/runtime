@@ -90,13 +90,6 @@ jobs:
     - name: buildLinuxDacStagingPath
       value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
 
-    - name: crossDacHostArch
-      value: x64
-
-    - ${{ if eq(parameters.archType, 'arm') }}:
-      - name: crossDacHostArch
-        value: x86
-
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
@@ -129,7 +122,7 @@ jobs:
       value: ''
 
     # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
-    # 'gc-standalone' is forced to run pri0 as well to start with. 
+    # 'gc-standalone' is forced to run pri0 as well to start with.
     - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: priorityArg

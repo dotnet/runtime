@@ -422,7 +422,7 @@ namespace System.Reflection.Emit.Tests
             setMethodGenerator.Emit(OpCodes.Ret);
             propertyBuilder.SetSetMethod(setMethod);
 
-            Type createdType = typeBuilder.CreateTypeInfo().AsType();
+            Type createdType = typeBuilder.CreateType();
 
             // ConstructorBuilder, PropertyInfo, FieldInfo
             yield return new object[]
@@ -555,7 +555,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, callingConvention, new Type[0]);
             constructorBuilder.GetILGenerator().Emit(OpCodes.Ret);
 
-            ConstructorInfo con = typeBuilder.CreateTypeInfo().AsType().GetConstructor(new Type[0]);
+            ConstructorInfo con = typeBuilder.CreateType().GetConstructor(new Type[0]);
 
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, new object[0], new FieldInfo[0], new object[0]));
@@ -1017,7 +1017,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertValues causes a corrupt created binary.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertyValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -1068,7 +1068,7 @@ namespace System.Reflection.Emit.Tests
             {
                 enumBuilder.DefineLiteral("Value" + i, literalValues[i]);
             }
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
     }
 

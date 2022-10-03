@@ -129,12 +129,15 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     return i;
 }
 
-// We use whatever ICU give us as the default locale except if it is en_US_POSIX. We'll map
-// this POSIX locale to Invariant instead. The reason is POSIX locale collation behavior
-// is not desirable at all because it doesn't support case insensitive string comparisons.
+// We use whatever ICU give us as the default locale except if it is en_US_POSIX. 
+//
+// On Apple related platforms (OSX, iOS, tvOS, MacCatalyst), we'll take what the system locale is.  
+// On all other platforms we'll map this POSIX locale to Invariant instead. 
+// The reason is POSIX locale collation behavior is not desirable at all because it doesn't support case insensitive string comparisons.
 const char* DetectDefaultLocaleName()
 {
     const char* icuLocale = uloc_getDefault();
+
     if (strcmp(icuLocale, "en_US_POSIX") == 0)
     {
         return "";
@@ -216,6 +219,16 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
 
     const char* defaultLocale = DetectDefaultLocaleName();
 
+#ifdef __APPLE__
+    char* appleLocale = NULL;
+    
+    if (strcmp(defaultLocale, "") == 0)
+    {
+        appleLocale = DetectDefaultAppleLocaleName();
+        defaultLocale = appleLocale;
+    }
+#endif
+
     uloc_getBaseName(defaultLocale, localeNameBuffer, ULOC_FULLNAME_CAPACITY, &status);
     u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
@@ -235,6 +248,11 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
             u_charsToUChars_safe(collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1, &status);
         }
     }
+
+#ifdef __APPLE__
+    if (appleLocale)
+        free(appleLocale);
+#endif
 
     return UErrorCodeToBool(status);
 }

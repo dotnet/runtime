@@ -77,9 +77,9 @@ Crst AppDomainCache
     AcquiredBefore UniqueStack UnresolvedClassLock
 End
 
-Crst AppDomainHandleTable
+Crst PinnedHeapHandleTable
     AcquiredBefore AvailableParamTypes HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList
-                   ThreadStore SystemDomain
+                   SystemDomain
 End
 
 Crst ArgBasedStubCache
@@ -185,7 +185,7 @@ Crst DelegateToFPtrHash
 End
 
 Crst DomainLocalBlock
-    AcquiredBefore AppDomainHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
+    AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
 
 Crst DynamicIL
@@ -230,7 +230,7 @@ Crst GCCover
 End
 
 Crst GlobalStrLiteralMap
-    AcquiredBefore HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
+    AcquiredBefore PinnedHeapHandleTable HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
 End
 
 Crst HandleTable
@@ -256,7 +256,7 @@ Crst InstMethodHashTable
 End
 
 Crst Interop
-    AcquiredBefore AppDomainHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
+    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
                    HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
@@ -305,7 +305,7 @@ Crst LeafLock
 End
 
 Crst LoaderAllocator
-    AcquiredBefore AppDomainHandleTable HandleTable UniqueStack ThreadStore
+    AcquiredBefore PinnedHeapHandleTable HandleTable UniqueStack ThreadStore
     AcquiredAfter DomainLocalBlock
 End
 
@@ -334,7 +334,7 @@ Crst Module
 End
 
 Crst ModuleFixup
-    AcquiredBefore AppDomainHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
+    AcquiredBefore PinnedHeapHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
 End
 
 Crst ModuleLookupTable
@@ -353,7 +353,7 @@ Crst PEImage
 End
 
 Crst PendingTypeLoadEntry
-    AcquiredBefore AppDomainCache AppDomainHandleTable AssemblyLoader AvailableClass AvailableParamTypes
+    AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
                    DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
@@ -544,7 +544,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning ThreadStore LoaderAllocator
+    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe
@@ -568,8 +568,8 @@ Crst COMCallWrapper
 End
 
 Crst MethodDescBackpatchInfoTracker
-    AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
-    AcquiredAfter ReJITGlobalRequest
+    AcquiredBefore FuncPtrStubs
+    AcquiredAfter ReJITGlobalRequest ThreadStore SystemDomain
 End
 
 Crst NativeImageEagerFixups

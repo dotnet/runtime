@@ -19,6 +19,12 @@ Build using "arm" as the architecture. For example:
 
     C:\runtime> src\coreclr\build-runtime.cmd -arm -debug
 
+Cross Compilation for ARM64 on macOS
+================================================
+
+The toolset required to do native compilation described in [macOS requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md) has cross compilation capabilities with no additional installs required. The only needed change is to use the `-cross` flag in the build scripts. For example, a release CoreCLR runtime that targets ARM64 can be built using the following commandline from the root of the repo:
+
+    ./build.sh -subset clr.runtime -c release -cross -arch arm64 /p:CrossBuild=true
 
 Cross Compilation for ARM, ARM64 or x86 on Linux
 ================================================
@@ -136,6 +142,28 @@ If you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compi
 ```
 ./src/coreclr/build-runtime.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
 ```
+
+Building the Cross-Targeting Tools
+------------------------------------
+
+Some parts of our build process need some native components that are built for the current machine architecture, even when you are building for a different target architecture. These tools are referred to as cross-targeting tools or "cross tools". There are two categories of these tools today:
+
+- Crossgen2 JIT tools
+- Diagnostic libraries
+
+The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the current build, such as during the clr.nativecorelib stage. These tools are automatically built when using the `./build.cmd` or `./build.sh` scripts at the root of the repo to build any of the CoreCLR native files, but they are not automatically built when using the `build-runtime.cmd/sh` scripts. To build these tools, you need to pass the `-hostarch` flag with the architecture of the host machine and the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. For example:
+
+```
+./src/coreclr/build-runtime.sh -arm -hostarch x64 -component crosscomponents -cmakeargs  -DCLR_CROSS_COMPONENTS_BUILD=1
+```
+
+On Windows, the cross-targeting diagnostic libraries are built with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script, but they can also be built manually with the `build-runtime.cmd` scripts. These builds also require you to pass the `-os` flag to specify the target OS. For example:
+
+```
+src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os Linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+```
+
+If you're building the cross-components in powershell, you'll need to wrap `"-DCLR_CROSS_COMPONENTS_BUILD=1"` with single quotes (`'`) to ensure things are escaped correctly for CMD.
 
 Build System.Private.CoreLib on Ubuntu
 --------------------------------------

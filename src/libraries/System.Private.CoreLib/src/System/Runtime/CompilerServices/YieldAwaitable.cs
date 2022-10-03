@@ -69,8 +69,10 @@ namespace System.Runtime.CompilerServices
             /// <param name="continuation">The action to invoke asynchronously.</param>
             /// <param name="flowContext">true to flow ExecutionContext; false if flowing is not required.</param>
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            private static void QueueContinuation(Action continuation!!, bool flowContext)
+            private static void QueueContinuation(Action continuation, bool flowContext)
             {
+                ArgumentNullException.ThrowIfNull(continuation);
+
                 if (TplEventSource.Log.IsEnabled())
                 {
                     continuation = OutputCorrelationEtwEvent(continuation);
@@ -145,7 +147,7 @@ namespace System.Runtime.CompilerServices
 
             private static Action OutputCorrelationEtwEvent(Action continuation)
             {
-#if CORERT
+#if NATIVEAOT
                 // TODO
                 return continuation;
 #else

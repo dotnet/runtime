@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
     [SupportedOSPlatform("windows")]
     internal static class Win32
     {
-        internal static Process GetParentProcess()
+        internal static Process? GetParentProcess()
         {
             var snapshotHandle = IntPtr.Zero;
             try

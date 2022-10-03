@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -262,7 +264,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>
+        public static bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -301,7 +303,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
+        public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -339,7 +341,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>
+        public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -377,7 +379,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -405,7 +407,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>
+        public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -431,7 +433,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
@@ -443,12 +445,325 @@ namespace System
             return SpanHelpers.LastIndexOf<T>(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
         }
 
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">A value to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value"/>.
+        /// If all of the values are <paramref name="value"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+            IndexOfAnyExcept((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
+        /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
+            IndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1);
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <param name="value2">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
+        /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
+            IndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2);
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyExcept((ReadOnlySpan<T>)span, values);
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">A value to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value"/>.
+        /// If all of the values are <paramref name="value"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
+        /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <param name="value2">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
+        /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value2))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
+        {
+            switch (values.Length)
+            {
+                case 0:
+                    // If the span is empty, we want to return -1.
+                    // If the span is non-empty, we want to return the index of the first char that's not in the empty set,
+                    // which is every character, and so the first char in the span.
+                    return span.IsEmpty ? -1 : 0;
+
+                case 1:
+                    return IndexOfAnyExcept(span, values[0]);
+
+                case 2:
+                    return IndexOfAnyExcept(span, values[0], values[1]);
+
+                case 3:
+                    return IndexOfAnyExcept(span, values[0], values[1], values[2]);
+
+                default:
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (!values.Contains(span[i]))
+                        {
+                            return i;
+                        }
+                    }
+
+                    return -1;
+            }
+        }
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">A value to avoid.</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value"/>.
+        /// If all of the values are <paramref name="value"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+            LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
+        /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
+            LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1);
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <param name="value2">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
+        /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
+            LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2);
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
+            LastIndexOfAnyExcept((ReadOnlySpan<T>)span, values);
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">A value to avoid.</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value"/>.
+        /// If all of the values are <paramref name="value"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
+        {
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value0"/> and <paramref name="value1"/>.
+        /// If all of the values are <paramref name="value0"/> or <paramref name="value1"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
+        {
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">A value to avoid.</param>
+        /// <param name="value1">A value to avoid</param>
+        /// <param name="value2">A value to avoid</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value other than <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>.
+        /// If all of the values are <paramref name="value0"/>, <paramref name="value1"/>, and <paramref name="value2"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
+        {
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value2))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
+        {
+            switch (values.Length)
+            {
+                case 0:
+                    // If the span is empty, we want to return -1.
+                    // If the span is non-empty, we want to return the index of the last char that's not in the empty set,
+                    // which is every character, and so the last char in the span.
+                    // Either way, we want to return span.Length - 1.
+                    return span.Length - 1;
+
+                case 1:
+                    return LastIndexOfAnyExcept(span, values[0]);
+
+                case 2:
+                    return LastIndexOfAnyExcept(span, values[0], values[1]);
+
+                case 3:
+                    return LastIndexOfAnyExcept(span, values[0], values[1], values[2]);
+
+                default:
+                    for (int i = span.Length - 1; i >= 0; i--)
+                    {
+                        if (!values.Contains(span[i]))
+                        {
+                            return i;
+                        }
+                    }
+
+                    return -1;
+            }
+        }
+
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>?
         {
             int length = span.Length;
 
@@ -469,7 +784,7 @@ namespace System
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
         public static int SequenceCompareTo<T>(this Span<T> span, ReadOnlySpan<T> other)
-            where T : IComparable<T>
+            where T : IComparable<T>?
         {
             // Can't use IsBitwiseEquatable<T>() below because that only tells us about
             // equality checks, not about CompareTo checks.
@@ -497,7 +812,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -523,7 +838,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -551,7 +866,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -577,7 +892,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -609,7 +924,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -639,7 +954,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -669,7 +984,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> =>
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
             IndexOfAny((ReadOnlySpan<T>)span, values);
 
         /// <summary>
@@ -679,7 +994,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -709,7 +1024,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -739,7 +1054,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -860,7 +1175,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -880,7 +1195,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -899,7 +1214,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -918,7 +1233,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -938,7 +1253,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>?
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -957,7 +1272,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -1025,7 +1340,7 @@ namespace System
         /// </summary>
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>?
         {
             int length = span.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1111,7 +1426,7 @@ namespace System
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
-            where T : IComparable<T>
+            where T : IComparable<T>?
         {
             // Can't use IsBitwiseEquatable<T>() below because that only tells us about
             // equality checks, not about CompareTo checks.
@@ -1138,7 +1453,7 @@ namespace System
         /// </summary>
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1159,7 +1474,7 @@ namespace System
         /// </summary>
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1179,7 +1494,7 @@ namespace System
         /// Determines whether the specified sequence appears at the end of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             int spanLength = span.Length;
             int valueLength = value.Length;
@@ -1204,7 +1519,7 @@ namespace System
         /// Determines whether the specified sequence appears at the end of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
             int spanLength = span.Length;
             int valueLength = value.Length;
@@ -1230,21 +1545,10 @@ namespace System
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
         {
-            if (span.Length <= 1)
+            if (span.Length > 1)
             {
-                return;
+                SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
             }
-
-            ref T first = ref MemoryMarshal.GetReference(span);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
-            do
-            {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
 
         /// <summary>
@@ -2009,12 +2313,123 @@ namespace System
             }
         }
 
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this Span<T> span, ReadOnlySpan<T> other) =>
+            CommonPrefixLength((ReadOnlySpan<T>)span, other);
+
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer) =>
+            CommonPrefixLength((ReadOnlySpan<T>)span, other, comparer);
+
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
+        {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint length = Math.Min((nuint)(uint)span.Length, (nuint)(uint)other.Length);
+                nuint size = (uint)Unsafe.SizeOf<T>();
+                nuint index = SpanHelpers.CommonPrefixLength(
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                    length * size);
+
+                // A byte-wise comparison in CommonPrefixLength can be used for multi-byte types,
+                // that are bitwise-equatable, too. In order to get the correct index in terms of type T
+                // of the first mismatch, integer division by the size of T is used.
+                //
+                // Example for short:
+                // index (byte-based):   b-1,  b,    b+1,    b+2,  b+3
+                // index (short-based):  s-1,  s,            s+1
+                // byte sequence 1:    { ..., [0x42, 0x43], [0x37, 0x38], ... }
+                // byte sequence 2:    { ..., [0x42, 0x43], [0x37, 0xAB], ... }
+                // So the mismatch is a byte-index b+3, which gives integer divided by the size of short:
+                // 3 / 2 = 1, thus the expected index short-based.
+                return (int)(index / size);
+            }
+
+            // Shrink one of the spans if necessary to ensure they're both the same length. We can then iterate until
+            // the Length of one of them and at least have bounds checks removed from that one.
+            SliceLongerSpanToMatchShorterLength(ref span, ref other);
+
+            // Find the first element pairwise that is not equal, and return its index as the length
+            // of the sequence before it that matches.
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                {
+                    return i;
+                }
+            }
+
+            return span.Length;
+        }
+
+        /// <summary>Determines the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the sequences.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer)
+        {
+            // If the comparer is null or the default, and T is a value type, we want to use EqualityComparer<T>.Default.Equals
+            // directly to enable devirtualization.  The non-comparer overload already does so, so just use it.
+            if (typeof(T).IsValueType && (comparer is null || comparer == EqualityComparer<T>.Default))
+            {
+                return CommonPrefixLength(span, other);
+            }
+
+            // Shrink one of the spans if necessary to ensure they're both the same length. We can then iterate until
+            // the Length of one of them and at least have bounds checks removed from that one.
+            SliceLongerSpanToMatchShorterLength(ref span, ref other);
+
+            // Ensure we have a comparer, then compare the spans.
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return i;
+                }
+            }
+
+            return span.Length;
+        }
+
+        /// <summary>Determines if one span is longer than the other, and slices the longer one to match the length of the shorter.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void SliceLongerSpanToMatchShorterLength<T>(ref ReadOnlySpan<T> span, ref ReadOnlySpan<T> other)
+        {
+            if (other.Length > span.Length)
+            {
+                other = other.Slice(0, span.Length);
+            }
+            else if (span.Length > other.Length)
+            {
+                span = span.Slice(0, other.Length);
+            }
+            Debug.Assert(span.Length == other.Length);
+        }
+
         /// <summary>Writes the specified interpolated string to the character span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <param name="charsWritten">The number of characters written to the span.</param>
         /// <returns>true if the entire interpolated string could be formatted successfully; otherwise, false.</returns>
-        public static bool TryWrite(this Span<char> destination, [InterpolatedStringHandlerArgument("destination")] ref TryWriteInterpolatedStringHandler handler, out int charsWritten)
+        public static bool TryWrite(this Span<char> destination, [InterpolatedStringHandlerArgument(nameof(destination))] ref TryWriteInterpolatedStringHandler handler, out int charsWritten)
         {
             // The span argument isn't used directly in the method; rather, it'll be used by the compiler to create the handler.
             // We could validate here that span == handler._destination, but that doesn't seem necessary.

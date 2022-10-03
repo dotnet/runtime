@@ -16,8 +16,10 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Computes the signature of a hash that was produced by the hash algorithm specified by "hashAlgorithm."
         /// </summary>
-        public override byte[] SignHash(byte[] hash!!)
+        public override byte[] SignHash(byte[] hash)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+
             int estimatedSize = KeySize switch
             {
                 256 => 64,
@@ -84,8 +86,11 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
         /// </summary>
-        public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+        public override bool VerifyHash(byte[] hash, byte[] signature)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 

@@ -139,8 +139,7 @@ namespace System.Reflection
         public override
         FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (IsResource())
                 return null;
@@ -394,6 +393,8 @@ namespace System.Reflection
         }
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
+        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
 
         // This calls ves_icall_reflection_get_token, so needs a Module argument
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

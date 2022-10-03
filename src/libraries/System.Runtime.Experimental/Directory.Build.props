@@ -1,8 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <!-- Disable all binplacing since this assembly will clash with the real System.Runtime -->
-    <EnableBinPlacing>false</EnableBinPlacing>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-  </PropertyGroup>
-</Project>

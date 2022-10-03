@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {15FE650F-7944-4B46-86D7-2ECCFDC924C2}
-.namespace JitTest
+.namespace JitTest_catchfinally_ind_SEH_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .field private static bool globalFlag
@@ -32,9 +32,9 @@
                method bool *(int32) FTN1,
                method bool *(int32) FTN2)
                
-        		ldftn      bool JitTest.Test::TestTryFinally(int32)
+        		ldftn      bool JitTest_catchfinally_ind_SEH_il.Test::TestTryFinally(int32)
         		stloc.2
-        		ldftn      bool JitTest.Test::TestTryCatch(int32)
+        		ldftn      bool JitTest_catchfinally_ind_SEH_il.Test::TestTryCatch(int32)
         		stloc.3
         		
       IL_0000:  ldarg.0
@@ -43,11 +43,11 @@
 
       .try
       {
-        IL_0004:  ldsfld     bool JitTest.Test::globalFlag
+        IL_0004:  ldsfld     bool JitTest_catchfinally_ind_SEH_il.Test::globalFlag
         IL_0009:  ldc.i4.0
         IL_000a:  ceq
         IL_000c:  dup
-        IL_000d:  stsfld     bool JitTest.Test::globalFlag
+        IL_000d:  stsfld     bool JitTest_catchfinally_ind_SEH_il.Test::globalFlag
         IL_0012:  brfalse.s  IL_001f
 
         IL_0014:  ldarg.0
@@ -102,9 +102,9 @@
                method bool *(int32) FTN1,
                method bool *(int32) FTN2)
                
-        		ldftn      bool JitTest.Test::TestTryFinally(int32)
+        		ldftn      bool JitTest_catchfinally_ind_SEH_il.Test::TestTryFinally(int32)
         		stloc	FTN1
-        		ldftn      bool JitTest.Test::TestTryCatch(int32)
+        		ldftn      bool JitTest_catchfinally_ind_SEH_il.Test::TestTryCatch(int32)
         		stloc	FTN2
         		
       IL_0000:  ldarg.0
@@ -119,11 +119,11 @@
         IL_0007:  stloc.1
         .try
         {
-          IL_0008:  ldsfld     bool JitTest.Test::globalFlag
+          IL_0008:  ldsfld     bool JitTest_catchfinally_ind_SEH_il.Test::globalFlag
           IL_000d:  ldc.i4.0
           IL_000e:  ceq
           IL_0010:  dup
-          IL_0011:  stsfld     bool JitTest.Test::globalFlag
+          IL_0011:  stsfld     bool JitTest_catchfinally_ind_SEH_il.Test::globalFlag
           IL_0016:  brfalse.s  IL_0023
 
           IL_0018:  ldarg.0
@@ -180,7 +180,7 @@
       IL_0055:  ret
     } // end of method 'Test::TestTryFinally'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -193,11 +193,11 @@
       .try
       {
         IL_0000:  ldc.i4.s   15
-        IL_0002:  call       bool JitTest.Test::TestTryCatch(int32)
+        IL_0002:  call       bool JitTest_catchfinally_ind_SEH_il.Test::TestTryCatch(int32)
         IL_0007:  brtrue.s   IL_0012
 
         IL_0009:  ldc.i4.s   18
-        IL_000b:  call       bool JitTest.Test::TestTryCatch(int32)
+        IL_000b:  call       bool JitTest_catchfinally_ind_SEH_il.Test::TestTryCatch(int32)
         IL_0010:  brtrue.s   IL_0020
 
         IL_0012:  ldstr      "try...catch test failed."
@@ -207,11 +207,11 @@
         IL_001e:  leave.s    IL_005f
 
         IL_0020:  ldc.i4.s   19
-        IL_0022:  call       bool JitTest.Test::TestTryFinally(int32)
+        IL_0022:  call       bool JitTest_catchfinally_ind_SEH_il.Test::TestTryFinally(int32)
         IL_0027:  brtrue.s   IL_0032
 
         IL_0029:  ldc.i4.s   12
-        IL_002b:  call       bool JitTest.Test::TestTryFinally(int32)
+        IL_002b:  call       bool JitTest_catchfinally_ind_SEH_il.Test::TestTryFinally(int32)
         IL_0030:  brtrue.s   IL_0040
 
         IL_0032:  ldstr      "try...finally test failed."
@@ -249,7 +249,7 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldc.i4.0
-      IL_0001:  stsfld     bool JitTest.Test::globalFlag
+      IL_0001:  stsfld     bool JitTest_catchfinally_ind_SEH_il.Test::globalFlag
       IL_0006:  ret
     } // end of method 'Test::.cctor'
 
@@ -265,6 +265,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_catchfinally_ind_SEH_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

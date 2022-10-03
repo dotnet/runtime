@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {AA806490-3696-4693-BEEE-68E449C58639}
-.namespace JitTest
+.namespace JitTest_deep1_deep_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static float64[] Method(float64 arg1, float32 arg2, float64& refarg) il managed
@@ -42,7 +42,7 @@
       IL_0023:  add
       IL_0024:  ldarg.1
       IL_0025:  ldarg.2
-      IL_0026:  call       float64[] JitTest.Test::Method(float64,
+      IL_0026:  call       float64[] JitTest_deep1_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_002b:  ldc.i4.0
@@ -60,7 +60,7 @@
       IL_003f:  ldloc.0
       IL_0040:  ldc.i4.0
       IL_0041:  ldelema    ['mscorlib']System.Double
-      IL_0046:  call       float64[] JitTest.Test::Method(float64,
+      IL_0046:  call       float64[] JitTest_deep1_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_004b:  ldc.i4.1
@@ -80,7 +80,7 @@
       IL_0061:  ldloc.0
       IL_0062:  ldc.i4.1
       IL_0063:  ldelema    ['mscorlib']System.Double
-      IL_0068:  call       float64[] JitTest.Test::Method(float64,
+      IL_0068:  call       float64[] JitTest_deep1_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_006d:  ldc.i4.2
@@ -102,7 +102,7 @@
       IL_0089:  ldloc.0
       IL_008a:  ldc.i4.2
       IL_008b:  ldelema    ['mscorlib']System.Double
-      IL_0090:  call       float64[] JitTest.Test::Method(float64,
+      IL_0090:  call       float64[] JitTest_deep1_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_0095:  ldc.i4.3
@@ -147,7 +147,7 @@
       IL_0020:  add
       IL_0021:  ldarg.1
       IL_0022:  ldarg.2
-      IL_0023:  call       float64 JitTest.Test::Method2(float64,
+      IL_0023:  call       float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_0028:  add
@@ -163,7 +163,7 @@
       IL_003a:  ldloc.0
       IL_003b:  ldc.i4.0
       IL_003c:  ldelem.r8
-      IL_003d:  call       float64 JitTest.Test::Method2(float64,
+      IL_003d:  call       float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_0042:  add
@@ -181,7 +181,7 @@
       IL_0056:  ldloc.0
       IL_0057:  ldc.i4.1
       IL_0058:  ldelem.r8
-      IL_0059:  call       float64 JitTest.Test::Method2(float64,
+      IL_0059:  call       float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_005e:  add
@@ -201,7 +201,7 @@
       IL_0074:  ldloc.0
       IL_0075:  ldc.i4.2
       IL_0076:  ldelem.r8
-      IL_0077:  call       float64 JitTest.Test::Method2(float64,
+      IL_0077:  call       float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_007c:  add
@@ -228,7 +228,7 @@
       IL_0091:  ret
     } // end of method 'Test::Method2'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -243,9 +243,9 @@
                method float64 *(float64, int32, float64) FPTR2
                )
                
-	ldftn float64[] JitTest.Test::Method(float64, float32, float64&)
+	ldftn float64[] JitTest_deep1_deep_il.Test::Method(float64, float32, float64&)
 	stloc FPTR1                             
-	ldftn float64 JitTest.Test::Method2(float64, int32, float64)
+	ldftn float64 JitTest_deep1_deep_il.Test::Method2(float64, int32, float64)
 	stloc FPTR2
 
       .try
@@ -255,7 +255,7 @@
         IL_000a:  ldc.r8     0.
         IL_0013:  ldc.r4     1.
         IL_0018:  ldloca.s   V_0
-        IL_001a:  call       float64[] JitTest.Test::Method(float64,
+        IL_001a:  call       float64[] JitTest_deep1_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_001f:  ldc.i4.3
@@ -493,7 +493,7 @@
         IL_0356:  ldloc FPTR2   calli       float64 (float64,
                                                            int32,
                                                            float64)
-        IL_035b:  call      float64 JitTest.Test::Method2(float64,
+        IL_035b:  call      float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
         IL_0360:  ldloc FPTR2   calli       float64 (float64,
@@ -511,13 +511,13 @@
         IL_0374:  ldloc FPTR2   calli       float64 (float64,
                                                            int32,
                                                            float64)
-        IL_0379:  call      float64 JitTest.Test::Method2(float64,
+        IL_0379:  call      float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
         IL_037e:  ldloc FPTR2   calli       float64 (float64,
                                                            int32,
                                                            float64)
-        IL_0383:  call      float64 JitTest.Test::Method2(float64,
+        IL_0383:  call      float64 JitTest_deep1_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
         IL_0388:  ldloc FPTR2   calli       float64 (float64,
@@ -568,6 +568,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_deep1_deep_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

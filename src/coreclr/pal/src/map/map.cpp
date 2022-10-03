@@ -427,7 +427,7 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
-    
+
     maximumSize = ((off_t)dwMaximumSizeHigh << 32) | (off_t)dwMaximumSizeLow;
 
     palError = g_pObjectManager->AllocateObject(
@@ -1600,7 +1600,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
-    less efficent way.*/
+    less efficient way.*/
     TruncateRetVal = ftruncate( UnixFD, NewSize );
     fstat( UnixFD, &FileInfo );
 
@@ -1612,7 +1612,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         UINT x = 0;
         UINT CurrentPosition = 0;
 
-        TRACE( "Trying the less efficent way.\n" );
+        TRACE( "Trying the less efficient way.\n" );
 
         CurrentPosition = lseek( UnixFD, 0, SEEK_CUR );
         OrigSize = lseek( UnixFD, 0, SEEK_END );
@@ -2041,14 +2041,48 @@ MAPmmapAndRecord(
         // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an
         // anonymous mapping and read the file contents into it instead.
 
+#if defined(HOST_ARM64)
+        // Set the requested mapping with forced PROT_WRITE, mmap the file, and copy its contents there.
+        // Once PROT_WRITE and PROT_EXEC are set together, Apple Silicon will require the use of
+        // PAL_JitWriteProtect to switch between executable and writable.
+        LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_PRIVATE, fd, offset - adjust);
+        if (MAP_FAILED == pvMappedFile)
+        {
+            ERROR_(LOADER)("mmap failed with code %d: %s.\n", errno, strerror(errno));
+            palError = FILEGetLastErrorFromErrno();
+        }
+        else
+        {
+            if (-1 == mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE))
+            {
+                ERROR_(LOADER)("mprotect failed with code %d: %s.\n", errno, strerror(errno));
+                palError = FILEGetLastErrorFromErrno();
+            }
+            else
+            {
+                PAL_JitWriteProtect(true);
+                memcpy(pvBaseAddress, pvMappedFile, len + adjust);
+                PAL_JitWriteProtect(false);
+            }
+            if (-1 == munmap(pvMappedFile, len + adjust))
+            {
+                ERROR_(LOADER)("Unable to unmap the file. Expect trouble.\n");
+                if (NO_ERROR == palError)
+                    palError = FILEGetLastErrorFromErrno();
+            }
+        }
+#else
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
-        // read the data in and finally remove the forced PROT_WRITE
+        // read the data in and finally remove the forced PROT_WRITE. On Intel we can still switch the
+        // protection later with mprotect.
         if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
             (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
             (mprotect(pvBaseAddress, len + adjust, prot) == -1))
         {
             palError = FILEGetLastErrorFromErrno();
         }
+#endif
+
     }
     else
 #endif
@@ -2178,7 +2212,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //don't need more directories.
 
     //I now know how big the file is.  Reserve enough address space for the whole thing.  Try to get the
-    //preferred base.  Create the intial mapping as "no access".  We'll use that for the guard pages in the
+    //preferred base.  Create the initial mapping as "no access".  We'll use that for the guard pages in the
     //"holes" between sections.
     SIZE_T preferredBase, virtualSize;
     preferredBase = ntHeader.OptionalHeader.ImageBase;
@@ -2250,7 +2284,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    if (!g_useDefaultBaseAddr)
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    {
+        loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+    }
 #endif // HOST_64BIT
 
     if (loadedBase == NULL)
@@ -2360,8 +2400,9 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         goto doneReleaseMappingCriticalSection;
     }
 
-    void* prevSectionEnd;
-    prevSectionEnd = (char*)loadedHeader + headerSize; // the first "section" for our purposes is the header
+    void* prevSectionEndAligned;
+    // the first "section" for our purposes is the header
+    prevSectionEndAligned = ALIGN_UP((char*)loadedHeader + headerSize, GetVirtualPageSize());
 
     for (unsigned i = 0; i < numSections; ++i)
     {
@@ -2378,7 +2419,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         if (   (sectionBase < loadedHeader)                                                           // Did computing the section base overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize) // Does the section extend past the end of the image as the header stated?
-            || (prevSectionEnd > sectionBase)                                                       // Does this section overlap the previous one?
+            || (prevSectionEndAligned > sectionBase)                                                       // Does this section overlap the previous one?
             )
         {
             ERROR_(LOADER)( "section %d is corrupt\n", i );
@@ -2401,12 +2442,12 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         }
 
         // Is there space between the previous section and this one? If so, add a PROT_NONE mapping to cover it.
-        if (prevSectionEnd < sectionBaseAligned)
+        if (prevSectionEndAligned < sectionBaseAligned)
         {
             palError = MAPRecordMapping(pFileObject,
                             loadedBase,
-                            prevSectionEnd,
-                            (char*)sectionBaseAligned - (char*)prevSectionEnd,
+                            prevSectionEndAligned,
+                            (char*)sectionBaseAligned - (char*)prevSectionEndAligned,
                             PROT_NONE);
             if (NO_ERROR != palError)
             {
@@ -2454,18 +2495,18 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         }
 #endif // _DEBUG
 
-        prevSectionEnd = ALIGN_UP((char*)sectionBase + currentHeader.SizeOfRawData, GetVirtualPageSize()); // round up to page boundary
+        prevSectionEndAligned = ALIGN_UP((char*)sectionBase + currentHeader.SizeOfRawData, GetVirtualPageSize()); // round up to page boundary
     }
 
     // Is there space after the last section and before the end of the mapped image? If so, add a PROT_NONE mapping to cover it.
     char* imageEnd;
     imageEnd = (char*)loadedBase + virtualSize; // actually, points just after the mapped end
-    if (prevSectionEnd < imageEnd)
+    if (prevSectionEndAligned < imageEnd)
     {
         palError = MAPRecordMapping(pFileObject,
                         loadedBase,
-                        prevSectionEnd,
-                        offset + (char*)imageEnd - (char*)prevSectionEnd,
+                        prevSectionEndAligned,
+                        offset + (char*)imageEnd - (char*)prevSectionEndAligned,
                         PROT_NONE);
         if (NO_ERROR != palError)
         {

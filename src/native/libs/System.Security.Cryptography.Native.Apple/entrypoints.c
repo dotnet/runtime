@@ -96,7 +96,6 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_CryptorFree)
     DllImportEntry(AppleCryptoNative_CryptorCreate)
     DllImportEntry(AppleCryptoNative_CryptorUpdate)
-    DllImportEntry(AppleCryptoNative_CryptorFinal)
     DllImportEntry(AppleCryptoNative_CryptorReset)
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserRoot)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineRoot)

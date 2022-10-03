@@ -907,7 +907,6 @@ static const UINT64 SBUFFER_CANARY_VALUE = UI64(0xD00BED00BED00BAA);
 #ifdef ALIGN_ACCESS
 static const int SBUFFER_ALIGNMENT = ALIGN_ACCESS;
 #else
-// This is only 4 bytes on win98 and below
 static const int SBUFFER_ALIGNMENT = 4;
 #endif
 

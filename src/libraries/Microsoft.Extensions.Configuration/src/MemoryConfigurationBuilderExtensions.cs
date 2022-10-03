@@ -17,8 +17,10 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="configurationBuilder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddInMemoryCollection(this IConfigurationBuilder configurationBuilder!!)
+        public static IConfigurationBuilder AddInMemoryCollection(this IConfigurationBuilder configurationBuilder)
         {
+            ThrowHelper.ThrowIfNull(configurationBuilder);
+
             configurationBuilder.Add(new MemoryConfigurationSource());
             return configurationBuilder;
         }
@@ -30,9 +32,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="initialData">The data to add to memory configuration provider.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddInMemoryCollection(
-            this IConfigurationBuilder configurationBuilder!!,
+            this IConfigurationBuilder configurationBuilder,
             IEnumerable<KeyValuePair<string, string?>>? initialData)
         {
+            ThrowHelper.ThrowIfNull(configurationBuilder);
+
             configurationBuilder.Add(new MemoryConfigurationSource { InitialData = initialData });
             return configurationBuilder;
         }

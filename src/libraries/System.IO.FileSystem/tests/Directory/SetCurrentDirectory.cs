@@ -40,6 +40,8 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
+
+                Directory.SetCurrentDirectory(Path.GetTempPath());
             }).Dispose();
         }
 
@@ -76,6 +78,8 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
+
+                    Directory.SetCurrentDirectory(Path.GetTempPath());
                 }).Dispose();
             }
         }

@@ -57,12 +57,15 @@ namespace System.Security.Cryptography
             if (key.Length > _blockSize && _blockSize > 0)
             {
                 // Perform RFC 2104, section 2 key adjustment.
-                if (_lazyHashProvider == null)
+                modifiedKey = _hashAlgorithmId switch
                 {
-                    _lazyHashProvider = HashProviderDispenser.CreateHashProvider(_hashAlgorithmId);
-                }
-                _lazyHashProvider.AppendHashData(key);
-                modifiedKey = _lazyHashProvider.FinalizeHashAndReset();
+                    HashAlgorithmNames.SHA256 => SHA256.HashData(key),
+                    HashAlgorithmNames.SHA384 => SHA384.HashData(key),
+                    HashAlgorithmNames.SHA512 => SHA512.HashData(key),
+                    HashAlgorithmNames.SHA1 => SHA1.HashData(key),
+                    HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(key),
+                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, _hashAlgorithmId)),
+                };
             }
 
             HashProvider? oldHashProvider = _hMacProvider;
@@ -105,14 +108,11 @@ namespace System.Security.Cryptography
             {
                 _hMacProvider?.Dispose(true);
                 _hMacProvider = null!;
-                _lazyHashProvider?.Dispose(true);
-                _lazyHashProvider = null;
             }
         }
 
         private readonly string _hashAlgorithmId;
         private HashProvider _hMacProvider;
-        private volatile HashProvider? _lazyHashProvider;
         private readonly int _blockSize;
     }
 }

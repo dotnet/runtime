@@ -10,8 +10,6 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net.Security
 {
     internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
@@ -99,15 +97,8 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            if (_certHandle != null)
-            {
-                _certHandle.Dispose();
-            }
-
-            if (_certKeyHandle != null)
-            {
-                _certKeyHandle.Dispose();
-            }
+            _certHandle?.Dispose();
+            _certKeyHandle?.Dispose();
 
             _isInvalid = true;
             return true;

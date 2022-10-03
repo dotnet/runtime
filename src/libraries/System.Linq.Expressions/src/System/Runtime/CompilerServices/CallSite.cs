@@ -82,8 +82,8 @@ namespace System.Runtime.CompilerServices
         /// <returns>The new CallSite.</returns>
         public static CallSite Create(Type delegateType, CallSiteBinder binder)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
             CacheDict<Type, Func<CallSiteBinder, CallSite>>? ctors = s_siteCtors;
@@ -171,7 +171,7 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        internal CallSite<T> CreateMatchMaker()
+        internal static CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
         }
@@ -209,7 +209,7 @@ namespace System.Runtime.CompilerServices
         public static CallSite<T> Create(CallSiteBinder binder)
         {
             if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return new CallSite<T>(binder);
         }
 
@@ -221,18 +221,11 @@ namespace System.Runtime.CompilerServices
             return GetUpdateDelegate(ref s_cachedUpdate);
         }
 
-        private T GetUpdateDelegate(ref T? addr)
-        {
-            if (addr == null)
-            {
-                // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
-                // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
-                // create 2 delegates with no other harm caused.
-                addr = MakeUpdateDelegate();
-            }
-            return addr;
-        }
-
+        private T GetUpdateDelegate(ref T? addr) =>
+            // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
+            // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
+            // create 2 delegates with no other harm caused.
+            addr ??= MakeUpdateDelegate();
 
         private const int MaxRules = 10;
 

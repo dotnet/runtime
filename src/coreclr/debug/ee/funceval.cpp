@@ -686,7 +686,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
 
 
 /*
- * GetRegsiterValueAndReturnAddress
+ * GetRegisterValueAndReturnAddress
  *
  * This routine takes out a value from a register, or set of registers, into one of
  * the given buffers (depending on size), and returns a pointer to the filled in
@@ -904,7 +904,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 #endif // TARGET_AMD64
                    )
                 {
-                    memcpyNoGCRefs(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pAddr, size);
+                    memcpyNoGCRefs(ArgSlotEndiannessFixup(pArgument, sizeof(LPVOID)), pAddr, size);
                 }
                 else
                 {
@@ -1126,7 +1126,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     if (size <= sizeof(ARG_SLOT))
                     {
                         // Its not ByRef, so we need to copy the value class onto the ARG_SLOT.
-                        CopyValueClass(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
+                        CopyValueClass(ArgSlotEndiannessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
                     }
                     else
                     {
@@ -2168,7 +2168,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
             // object ref as the stack.
             //
             // Note that we are passing ELEMENT_TYPE_END in the last parameter because we want to
-            // supress the the valid object ref check.
+            // suppress the valid object ref check.
             //
             GetFuncEvalArgValue(pDE,
                                 &(argData[0]),
@@ -3155,10 +3155,10 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
  *
  * Does the main body of work (steps 1c onward) for the normal func-eval algorithm detailed at the
  * top of this file. The args have already been GC protected and we've transitioned into the appropriate
- * domain (steps 1a & 1b).  This has to be a seperate function from GCProtectArgsAndDoNormalFuncEval
+ * domain (steps 1a & 1b).  This has to be a separate function from GCProtectArgsAndDoNormalFuncEval
  * because otherwise we can't reliably find the right GCFrames to pop when unwinding the stack due to
  * an exception on 64-bit platforms (we have some GCFrames outside of the TRY, and some inside,
- * and they won't necesarily be layed out sequentially on the stack if they are all in the same function).
+ * and they won't necessarily be laid out sequentially on the stack if they are all in the same function).
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
@@ -3783,7 +3783,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
 
 //
 // FuncEvalHijackWorker is the function that managed threads start executing in order to perform a function
-// evaluation. Control is transfered here on the proper thread by hijacking that that's IP to this method in
+// evaluation. Control is transferred here on the proper thread by hijacking that that's IP to this method in
 // Debugger::FuncEvalSetup. This function can also be called directly by a Runtime thread that is stopped sending a
 // first or second chance exception to the Right Side.
 //
@@ -3888,7 +3888,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     if (pDE->m_thread->IsAbortRequested())
     {
-        // noone else shoud be requesting aborts,
+        // noone else should be requesting aborts,
         // so this must be our request that did not have a chance to run.
         _ASSERTE((pDE->m_aborting != DebuggerEval::FE_ABORT_NONE) && !pDE->m_aborted);
 

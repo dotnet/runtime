@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop.Analyzers
@@ -12,32 +13,24 @@ namespace Microsoft.Interop.Analyzers
         /// </summary>
         public static class Ids
         {
-            public const string Prefix = "DLLIMPORTGENANALYZER";
-
-            // ManualTypeMarshalling
-            public const string BlittableTypeMustBeBlittable = Prefix + "001";
-            public const string CannotHaveMultipleMarshallingAttributes = Prefix + "002";
-            public const string NativeTypeMustBeNonNull = Prefix + "003";
-            public const string NativeTypeMustBeBlittable = Prefix + "004";
-            public const string GetPinnableReferenceReturnTypeBlittable = Prefix + "005";
-            public const string NativeTypeMustBePointerSized = Prefix + "006";
-            public const string NativeTypeMustHaveRequiredShape = Prefix + "007";
-            public const string ValuePropertyMustHaveSetter = Prefix + "008";
-            public const string ValuePropertyMustHaveGetter = Prefix + "009";
-            public const string GetPinnableReferenceShouldSupportAllocatingMarshallingFallback = Prefix + "010";
-            public const string CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback = Prefix + "011";
-            public const string CallerAllocConstructorMustHaveStackBufferSizeConstant = Prefix + "012";
-            public const string RefValuePropertyUnsupported = Prefix + "014";
-            public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
-            public const string MarshallerGetPinnableReferenceRequiresValueProperty = Prefix + "018";
+            public const string Prefix = "SYSLIB";
 
             // Migration from DllImport to LibraryImport
-            public const string ConvertToLibraryImport = Prefix + "015";
+            public const string ConvertToLibraryImport = Prefix + "1054";
+
+            // CustomTypeMarshaller
+            public const string InvalidCustomMarshallerAttributeUsage = Prefix + "1055";
+            public const string InvalidNativeType = Prefix + "1056";
+            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "1057";
+            public const string InvalidNativeMarshallingAttributeUsage = Prefix + "1058";
+            public const string MissingAllocatingMarshallingFallback = Prefix + "1059";
+            public const string InvalidMarshallerType = Prefix + "1060";
+            public const string InvalidSignaturesInMarshallerShape = Prefix + "1061";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)
         {
-            return new LocalizableResourceString(resourceName, Resources.ResourceManager, typeof(Resources));
+            return new LocalizableResourceString(resourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
         }
     }
 }

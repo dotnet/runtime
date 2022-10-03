@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -132,14 +132,11 @@
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
-  <data name="ShorthandClassInCharacterRangeNoPlaceholder" xml:space="preserve">
-    <value>Cannot include class in character range.</value>
-  </data>
   <data name="BeginIndexNotNegative" xml:space="preserve">
     <value>Start index cannot be less than 0 or greater than input length.</value>
   </data>
   <data name="QuantifierOrCaptureGroupOutOfRange" xml:space="preserve">
-    <value>Capture group numbers must be less than or equal to Int32.MaxValue.</value>
+    <value>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</value>
   </data>
   <data name="CaptureGroupOfZero" xml:space="preserve">
     <value>Capture number cannot be zero.</value>
@@ -165,15 +162,8 @@
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
     <value>Incomplete \\p{X} character escape.</value>
   </data>
-  <data name="InternalError_ScanRegex" xml:space="preserve">
-    <value>Internal error in ScanRegex.</value>
-    <comment>{Locked="ScanRegex"}</comment>
-  </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
-  </data>
-  <data name="InvalidEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be zero-length.</value>
   </data>
   <data name="LengthNotNegative" xml:space="preserve">
     <value>Length cannot be less than 0 or exceed input length.</value>
@@ -182,10 +172,7 @@
     <value>Malformed \\k&lt;...&gt; named back reference.</value>
   </data>
   <data name="AlternationHasMalformedReference" xml:space="preserve">
-    <value>(?({0}) ) malformed.</value>
-  </data>
-  <data name="AlternationHasMalformedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Alternation has malformed reference.</value>
+    <value>Conditional alternation is missing a closing parenthesis after the group number {0}.</value>
   </data>
   <data name="MalformedUnicodePropertyEscape" xml:space="preserve">
     <value>Malformed \\p{X} character escape.</value>
@@ -199,9 +186,6 @@
   <data name="NestedQuantifiersNotParenthesized" xml:space="preserve">
     <value>Nested quantifier '{0}'.</value>
   </data>
-  <data name="NestedQuantifiersNotParenthesizedNoPlaceholder" xml:space="preserve">
-    <value>Nested quantifier no parenthesized.</value>
-  </data>
   <data name="NoResultOnFailed" xml:space="preserve">
     <value>Result cannot be called on a failed Match.</value>
   </data>
@@ -212,16 +196,13 @@
     <value>Collection is read-only.</value>
   </data>
   <data name="PlatformNotSupported_CompileToAssembly" xml:space="preserve">
-    <value>This platform does not support writing compiled regular expressions to an assembly. Use RegexGeneratorAttribute with the regular expression source generator instead.</value>
+    <value>This platform does not support writing compiled regular expressions to an assembly. Use GeneratedRegexAttribute with the regular expression source generator instead.</value>
   </data>
   <data name="QuantifierAfterNothing" xml:space="preserve">
-    <value>Quantifier {x,y} following nothing.</value>
+    <value>Quantifier '{0}' following nothing.</value>
   </data>
   <data name="RegexMatchTimeoutException_Occurred" xml:space="preserve">
-    <value>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
-  </data>
-  <data name="ReplacementError" xml:space="preserve">
-    <value>Replacement pattern error.</value>
+    <value>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
   </data>
   <data name="ReversedCharacterRange" xml:space="preserve">
     <value>[x-y] range in reverse order.</value>
@@ -241,26 +222,14 @@
   <data name="UndefinedNumberedReference" xml:space="preserve">
     <value>Reference to undefined group number {0}.</value>
   </data>
-  <data name="UndefinedNumberedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Reference to undefined group number.</value>
-  </data>
   <data name="UndefinedNamedReference" xml:space="preserve">
     <value>Reference to undefined group name '{0}'.</value>
   </data>
-  <data name="UndefinedNamedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Reference to undefined group name.</value>
-  </data>
   <data name="AlternationHasUndefinedReference" xml:space="preserve">
-    <value>(?({0}) ) reference to undefined group.</value>
-  </data>
-  <data name="AlternationHasUndefinedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Alternation has a reference to undefined group.</value>
+    <value>Conditional alternation refers to an undefined group number {0}.</value>
   </data>
   <data name="UnrecognizedUnicodeProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
-  </data>
-  <data name="UnrecognizedUnicodePropertyNoPlaceholder" xml:space="preserve">
-    <value>Unknown property Unicode property.</value>
   </data>
   <data name="UnrecognizedControlCharacter" xml:space="preserve">
     <value>Unrecognized control character.</value>
@@ -281,12 +250,12 @@
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
-  <data name="NotSupported_NonBacktrackingConflictingOption" xml:space="preserve">
-    <value>RegexOptions.NonBacktracking is not supported in conjunction with RegexOptions.{0}.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
-  </data>
   <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
+  <data name="NotSupported_NonBacktrackingUnsafeSize" xml:space="preserve">
+    <value>The specified pattern with RegexOptions.NonBacktracking could result in an automata as large as '{0}' nodes, which is larger than the configured limit of '{1}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">

@@ -6,7 +6,7 @@
 // Metadata version: v2.0.50509
 .assembly extern mscorlib { auto }
 
-.assembly tailcall
+.assembly tailcall_nonvirtualcall
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .hash algorithm 0x00008004

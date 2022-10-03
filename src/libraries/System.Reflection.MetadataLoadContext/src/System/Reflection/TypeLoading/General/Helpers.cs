@@ -11,7 +11,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-        [return: NotNullIfNotNull("original")]
+        [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
         {
             if (original == null)
@@ -239,8 +239,11 @@ namespace System.Reflection.TypeLoading
             return sb.ToString();
         }
 
-        public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other!!) where M : MemberInfo
+        public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other) where M : MemberInfo
         {
+            if (other is null)
+                throw new ArgumentNullException(nameof(other));
+
             // Ensure that "other" is one of our MemberInfo objects. Do this check before calling any methods on it!
             if (!(other is M))
                 return false;
@@ -270,16 +273,12 @@ namespace System.Reflection.TypeLoading
             MetadataLoadContext loader = defaultAssembly.Loader;
 
             Func<AssemblyName, Assembly> assemblyResolver =
-                delegate (AssemblyName assemblyName)
-                {
-                    return loader.LoadFromAssemblyName(assemblyName);
-                };
+                loader.LoadFromAssemblyName;
 
             Func<Assembly?, string, bool, Type?> typeResolver =
                 delegate (Assembly? assembly, string fullName, bool ignoreCase2)
                 {
-                    if (assembly == null)
-                        assembly = defaultAssembly;
+                    assembly ??= defaultAssembly;
 
                     Debug.Assert(assembly is RoAssembly);
                     RoAssembly roAssembly = (RoAssembly)assembly;

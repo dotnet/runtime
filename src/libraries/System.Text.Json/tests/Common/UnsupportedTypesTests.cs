@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,117 +15,123 @@ namespace System.Text.Json.Serialization.Tests
         private bool SupportsJsonPathOnSerialize { get; init; }
 
         public UnsupportedTypesTests(
-            JsonSerializerWrapperForString serializerWrapper,
+            JsonSerializerWrapper serializerWrapper,
             bool supportsJsonPathOnSerialize) : base(serializerWrapper)
         {
             SupportsJsonPathOnSerialize = supportsJsonPathOnSerialize;
         }
 
-        [Fact]
-        public async Task DeserializeUnsupportedType()
+        [Theory]
+        [MemberData(nameof(GetUnsupportedValues))]
+        public async Task DeserializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
-            // Any test payload is fine.
-            string json = @"""Some string""";
+            _ = wrapper; // only used to instantiate T
 
-            await RunTest<Type>(json);
-            await RunTest<SerializationInfo>(json);
-            await RunTest<IntPtr>(json);
-            await RunTest<IntPtr?>(json); // One nullable variation.
-            await RunTest<UIntPtr>(json);
-#if NETCOREAPP
-            await RunTest<DateOnly>(json);
-            await RunTest<TimeOnly>(json);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest<IAsyncEnumerable<int>>(json);
-            await RunTest<ClassThatImplementsIAsyncEnumerable>(json);
-#endif
+            string json = @"""Some string"""; // Any test payload is fine.
 
-            async Task RunTest<T>(string json)
+            Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
+            string fullName = type.FullName;
+
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<T>(json));
+            string exAsStr = ex.ToString();
+            Assert.Contains(fullName, exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            json = $@"{{""Prop"":{json}}}";
+
+            ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ClassWithType<T>>(json));
+            exAsStr = ex.ToString();
+            Assert.Contains(fullName, exAsStr);
+            Assert.Contains("$.Prop", exAsStr);
+
+            // Verify Nullable<> semantics. NSE is not thrown because the serializer handles null.
+            if (isNullableOfT)
             {
-                Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
-                string fullName = type.FullName;
+                Assert.Null(JsonSerializer.Deserialize<T>("null"));
 
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<T>(json));
-                string exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$", exAsStr);
-
-                json = $@"{{""Prop"":{json}}}";
-
-                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithType<T>>(json));
-                exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$.Prop", exAsStr);
-
-                // Verify Nullable<> semantics. NSE is not thrown because the serializer handles null.
-                if (isNullableOfT)
-                {
-                    Assert.Null(JsonSerializer.Deserialize<T>("null"));
-
-                    json = $@"{{""Prop"":null}}";
-                    ClassWithType<T> obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithType<T>>(json);
-                    Assert.Null(obj.Prop);
-                }
+                json = $@"{{""Prop"":null}}";
+                ClassWithType<T> obj = await Serializer.DeserializeWrapper<ClassWithType<T>>(json);
+                Assert.Null(obj.Prop);
             }
         }
 
-        [Fact]
-        public async Task SerializeUnsupportedType()
+        [Theory]
+        [MemberData(nameof(GetUnsupportedValues))]
+        public async Task SerializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
-            await RunTest(typeof(int));
-            await RunTest(new SerializationInfo(typeof(Type), new FormatterConverter()));
-            await RunTest((IntPtr)123);
-            await RunTest<IntPtr?>(new IntPtr(123)); // One nullable variation.
-            await RunTest((UIntPtr)123);
-#if NETCOREAPP
-            await RunTest(DateOnly.MaxValue);
-            await RunTest(TimeOnly.MinValue);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest(new ClassThatImplementsIAsyncEnumerable());
-#endif
+            T value = wrapper.value;
 
-            async Task RunTest<T>(T value)
+            Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
+            string fullName = type.FullName;
+
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(value));
+            string exAsStr = ex.ToString();
+            Assert.Contains(fullName, exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
+            ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(obj));
+            exAsStr = ex.ToString();
+            Assert.Contains(fullName, exAsStr);
+
+            if (SupportsJsonPathOnSerialize)
             {
-                Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
-                string fullName = type.FullName;
-
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(value));
-                string exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$", exAsStr);
-
-                ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
-
-                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(obj));
-                exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-
-                if (SupportsJsonPathOnSerialize)
-                {
-                    Assert.Contains("$.Prop", exAsStr);
-                }
-                else
-                {
-                    Assert.Contains("$.", exAsStr);
-                    Assert.DoesNotContain("$.Prop", exAsStr);
-                }
-
-                // Verify null semantics. NSE is not thrown because the serializer handles null.
-                if (!type.IsValueType || isNullableOfT)
-                {
-                    string serialized = await JsonSerializerWrapperForString.SerializeWrapper<T>((T)(object)null);
-                    Assert.Equal("null", serialized);
-
-                    obj.Prop = (T)(object)null;
-                    serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj);
-                    Assert.Equal(@"{""Prop"":null}", serialized);
-
-                    serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-                    Assert.Equal(@"{}", serialized);
-                }
+                Assert.Contains("$.Prop", exAsStr);
             }
+            else
+            {
+                Assert.Contains("$.", exAsStr);
+                Assert.DoesNotContain("$.Prop", exAsStr);
+            }
+
+            // Verify null semantics. NSE is not thrown because the serializer handles null.
+            if (!type.IsValueType || isNullableOfT)
+            {
+                string serialized = await Serializer.SerializeWrapper<T>((T)(object)null);
+                Assert.Equal("null", serialized);
+
+                obj.Prop = (T)(object)null;
+                serialized = await Serializer.SerializeWrapper(obj);
+                Assert.Equal(@"{""Prop"":null}", serialized);
+
+                serialized = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions { IgnoreNullValues = true });
+                Assert.Equal(@"{}", serialized);
+            }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            Type runtimeType = GetNullableOfTUnderlyingType(value.GetType(), out bool _);
+
+            ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper<object>(value));
+            exAsStr = ex.ToString();
+            Assert.Contains(runtimeType.FullName, exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            ClassWithType<object> polyObj = new ClassWithType<object> { Prop = value };
+            ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(polyObj));
+            exAsStr = ex.ToString();
+            Assert.Contains(runtimeType.FullName, exAsStr);
+#endif
+        }
+
+        public static IEnumerable<object[]> GetUnsupportedValues()
+        {
+            yield return WrapArgs(typeof(int));
+            yield return WrapArgs(typeof(ClassWithExtensionProperty).GetConstructor(Array.Empty<Type>()));
+            yield return WrapArgs(typeof(ClassWithExtensionProperty).GetProperty(nameof(ClassWithExtensionProperty.MyInt)));
+            yield return WrapArgs(new SerializationInfo(typeof(Type), new FormatterConverter()));
+            yield return WrapArgs((IntPtr)123);
+            yield return WrapArgs<IntPtr?>(new IntPtr(123)); // One nullable variation.
+            yield return WrapArgs((UIntPtr)123);
+
+            static object[] WrapArgs<T>(T value) => new object[] { new ValueWrapper<T>(value) };
+        }
+
+        // Helper record used to path both value & type information to generic theories.
+        // This is needed e.g. when passing System.Type instances whose runtime type
+        // actually is System.Reflection.RuntimeType.
+        public record ValueWrapper<T>(T value)
+        {
+            public override string ToString() => value.ToString();
         }
 
         public class ClassWithIntPtr
@@ -152,6 +159,21 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public async Task TypeWithNullConstructorParameterName_ThrowsNotSupportedException()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/58690
+            Type type = Assembly.GetExecutingAssembly().GetType("System.Runtime.CompilerServices.NullableContextAttribute")!;
+            ConstructorInfo ctorInfo = type.GetConstructor(new Type[] { typeof(byte) });
+            Assert.True(string.IsNullOrEmpty(ctorInfo.GetParameters()[0].Name));
+            object value = ctorInfo.Invoke(new object[] { (byte)0 });
+
+            await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
+            await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+        }
+#endif
+
         [Fact]
         public async Task RuntimeConverterIsSupported_IntPtr()
         {
@@ -160,17 +182,17 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new();
             options.Converters.Add(new IntPtrConverter());
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new IntPtr(42), options);
+            serialized = await Serializer.SerializeWrapper(new IntPtr(42), options);
             Assert.Equal("42", serialized);
 
-            IntPtr intPtr = await JsonSerializerWrapperForString.DeserializeWrapper<IntPtr>("42", options);
+            IntPtr intPtr = await Serializer.DeserializeWrapper<IntPtr>("42", options);
             Assert.Equal(42, intPtr.ToInt32());
 
             ClassWithIntPtr obj = new() { MyIntPtr = new IntPtr(42) };
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
+            serialized = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal(Json, serialized);
 
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIntPtr>(Json, options);
+            obj = await Serializer.DeserializeWrapper<ClassWithIntPtr>(Json, options);
             Assert.Equal(42, obj.MyIntPtr.ToInt32());
         }
 
@@ -180,10 +202,10 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = "{\"MyIntPtr\":42}";
 
             ClassWithIntPtrConverter obj = new() { MyIntPtr = new IntPtr(42) };
-            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            string serialized = await Serializer.SerializeWrapper(obj);
             Assert.Equal(Json, serialized);
 
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIntPtrConverter>(Json);
+            obj = await Serializer.DeserializeWrapper<ClassWithIntPtrConverter>(Json);
             Assert.Equal(42, obj.MyIntPtr.ToInt32());
         }
 
@@ -230,19 +252,19 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassThatImplementsIAsyncEnumerable obj = new();
             Assert.Equal("Created", obj.Status);
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
+            serialized = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("[]", serialized);
             Assert.Equal("Write", obj.Status);
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassThatImplementsIAsyncEnumerable>("[]", options);
+            obj = await Serializer.DeserializeWrapper<ClassThatImplementsIAsyncEnumerable>("[]", options);
             Assert.Equal("Read", obj.Status);
 
             ClassWithAsyncEnumerableConverter poco = new();
-            poco.MyAsyncEnumerable = new();
+            poco.MyAsyncEnumerable = new ClassThatImplementsIAsyncEnumerable();
             Assert.Equal("Created", poco.MyAsyncEnumerable.Status);
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(poco, options);
+            serialized = await Serializer.SerializeWrapper(poco, options);
             Assert.Equal(Json, serialized);
             Assert.Equal("Write", poco.MyAsyncEnumerable.Status);
-            poco = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithAsyncEnumerableConverter>(Json, options);
+            poco = await Serializer.DeserializeWrapper<ClassWithAsyncEnumerableConverter>(Json, options);
             Assert.Equal("Read", poco.MyAsyncEnumerable.Status);
         }
 
@@ -252,14 +274,14 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = "{\"MyAsyncEnumerable\":[]}";
 
             ClassWithAsyncEnumerableConverter obj = new();
-            obj.MyAsyncEnumerable = new();
+            obj.MyAsyncEnumerable = new ClassThatImplementsIAsyncEnumerable();
             Assert.Equal("Created", obj.MyAsyncEnumerable.Status);
 
-            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            string serialized = await Serializer.SerializeWrapper(obj);
             Assert.Equal(Json, serialized);
             Assert.Equal("Write", obj.MyAsyncEnumerable.Status);
 
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithAsyncEnumerableConverter>(Json);
+            obj = await Serializer.DeserializeWrapper<ClassWithAsyncEnumerableConverter>(Json);
             Assert.Equal("Read", obj.MyAsyncEnumerable.Status);
         }
 

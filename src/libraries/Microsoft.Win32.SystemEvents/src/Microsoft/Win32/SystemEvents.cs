@@ -370,7 +370,7 @@ namespace Microsoft.Win32
             return false;
         }
 
-        private IntPtr DefWndProc
+        private static IntPtr DefWndProc
         {
             get
             {
@@ -517,7 +517,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
@@ -703,7 +703,7 @@ namespace Microsoft.Win32
         ///  This empties this control's callback queue, propagating any exceptions
         ///  back as needed.
         /// </summary>
-        private void InvokeMarshaledCallbacks()
+        private static void InvokeMarshaledCallbacks()
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 
@@ -1004,10 +1004,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
                     if (invokeItems != null)
@@ -1068,10 +1066,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     invokeItems.Remove(new SystemEventInvokeInfo(value));
                 }
             }

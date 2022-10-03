@@ -176,7 +176,7 @@ void CompileResult::dmpAllocMem(DWORD key, const Agnostic_AllocMemDetails& value
            value.coldCodeBlock, value.roDataBlock);
 }
 
-// We can't allocate memory in the same place is was during recording, so we pass back code/data block pointers
+// We can't allocate memory at the same address used during recording, so we pass back code/data block pointers
 // that point into the AllocMem LightWeightMap, but also return what the original addresses were during recording.
 void CompileResult::repAllocMem(ULONG*              hotCodeSize,
                                 ULONG*              coldCodeSize,
@@ -220,7 +220,7 @@ void CompileResult::repAllocMem(ULONG*              hotCodeSize,
     *orig_roDataBlock   = (void*)value.roDataBlock;
 }
 
-// Note - Ownership of pMap is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of pMap is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping* pMap)
 {
     if (SetBoundaries == nullptr)
@@ -267,7 +267,7 @@ bool CompileResult::repSetBoundaries(CORINFO_METHOD_HANDLE* ftn, ULONG32* cMap, 
     return true;
 }
 
-// Note - Ownership of vars is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of vars is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
     if (SetVars == nullptr)
@@ -317,7 +317,7 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorD
     return true;
 }
 
-// Note - Ownership of patchpointInfo is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of patchpointInfo is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     if (SetPatchpointInfo == nullptr)
@@ -644,12 +644,12 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
 {
     repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
 }
 
-const char* relocationTypeToString(WORD fRelocType)
+const char* relocationTypeToString(uint16_t fRelocType)
 {
     switch (fRelocType)
     {
@@ -678,11 +678,11 @@ const char* relocationTypeToString(WORD fRelocType)
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
-    printf("RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) slotNum-%u addlDelta-%d", key,
-           value.location, value.target, value.fRelocType, relocationTypeToString((WORD)value.fRelocType),
-           value.slotNum, (INT32)value.addlDelta);
+    printf("RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) slotNum-%u addlDelta:%d", key,
+           value.location, value.target, value.fRelocType, relocationTypeToString((uint16_t)value.fRelocType),
+           value.slotNum, (int32_t)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
 {
     if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
@@ -718,7 +718,8 @@ void CompileResult::repRecordRelocation(void* location, void* target, WORD fRelo
 // current section (using originalAddr), assuming we needed a jump stub. We'll let multiple calls to potentially
 // different functions use the same address because even if they used different ones, and diffs were generated,
 // no textual diffs would appear because most of the textual call names are "hackishMethodName".
-void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* originalAddr)
+//
+void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr)
 {
     if (RecordRelocation == nullptr)
         return;
@@ -758,7 +759,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
+                    LogDebug("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                         (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
@@ -861,6 +862,11 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64)
+        {
+            Assert(!"FIXME: Not Implements on loongarch64");
+        }
+
         if (IsSpmiTarget64Bit())
         {
             if (relocType == IMAGE_REL_BASED_DIR64)
@@ -871,7 +877,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
+                    LogDebug("    fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
                         *(DWORDLONG*)address, tmp.target);
                     *(DWORDLONG*)address = tmp.target;
                 }
@@ -884,64 +890,204 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             continue;
 
         // Now do all-platform relocations.
-
-        switch (tmp.fRelocType)
+        if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
         {
-            case IMAGE_REL_BASED_REL32:
+            DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+
+            size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+            if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
             {
-                DWORDLONG target        = tmp.target + tmp.addlDelta;
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+                DWORDLONG target        = tmp.target + (int32_t)tmp.addlDelta;
                 DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
                 INT64     delta         = (INT64)(target - baseAddr);
+                bool      deltaIsFinal  = false;
 
                 if (IsSpmiTarget64Bit())
                 {
+                    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64)
+                    {
+                        // For just AMD64:
+                        // The VM attempts to allocate the JIT code buffer near the CLR assemblies, so 32-bit
+                        // offsets (and REL32 relocations) can be used in the code. If this doesn't work out,
+                        // such that a REL32 relocation doesn't fit, the VM throws away the JIT result, disables
+                        // using REL32 relocations, and restarts compilation. SuperPMI doesn't know where the
+                        // original compilation (during the collection) was allocated (though maybe we should
+                        // add that to the MC, not just the CompileResult), and we don't have any control over
+                        // where the JIT buffer is allocated. To handle this, if the getRelocTypeHint() was
+                        // called on the target address, and the VM returned IMAGE_REL_BASED_REL32, then simply
+                        // use the low-order 32 bits of the target address. This is unique enough for assembly
+                        // diffs, because the delta will compare identically and won't be dependent on where
+                        // SuperPMI allocated the JIT memory.
+
+                        if (rc->mc->GetRelocTypeHint != nullptr)
+                        {
+                            DWORDLONG key   = tmp.target;
+                            int       index = rc->mc->GetRelocTypeHint->GetIndex(key);
+                            if (index == -1)
+                            {
+                                // See if the original address is in the replay address map. This happens for
+                                // relocations on static field addresses found via getFieldAddress().
+                                void* origAddr = repAddressMap((void*)tmp.target);
+                                if ((origAddr != (void*)-1) && (origAddr != nullptr))
+                                {
+                                    key   = CastPointer(origAddr);
+                                    index = rc->mc->GetRelocTypeHint->GetIndex(key);
+                                    if (index != -1)
+                                    {
+                                        LogDebug("    Using address map: target %016llX, original target %016llX",
+                                            tmp.target, key);
+                                    }
+                                }
+                            }
+
+                            if (index != -1)
+                            {
+                                WORD retVal = (WORD)rc->mc->GetRelocTypeHint->Get(key);
+                                if (retVal == IMAGE_REL_BASED_REL32)
+                                {
+                                    LogDebug("    REL32 target used as argument to getRelocTypeHint: setting delta=%d (0x%X)",
+                                             (int)key, (int)key);
+                                    delta        = (INT64)(int)key;
+                                    deltaIsFinal = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!deltaIsFinal)
+                    {
+                        // Check if tmp.target is the result of a call to getHelperFtn(). If so, the VM would create a
+                        // jump stub if the REL32 address doesn't fit. We don't want to fail with a REL32 overflow if
+                        // the actual target address doesn't fit, so use the low-order 32 bits of the address.
+                        // We need to iterate the entire table since we don't know the helper function id.
+
+                        if (rc->mc->GetHelperFtn != nullptr)
+                        {
+                            for (unsigned int idx = 0; idx < rc->mc->GetHelperFtn->GetCount(); idx++)
+                            {
+                                DLDL value = rc->mc->GetHelperFtn->GetItem(idx);
+                                if (value.B == tmp.target)
+                                {
+                                    LogDebug("    REL32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
+                                             (int)tmp.target, (int)tmp.target);
+                                    delta        = (INT64)(int)tmp.target;
+                                    deltaIsFinal = true;
+                                    break; // No need to consider the remaining GetHelperFtn entries
+                                }
+                            }
+                        }
+                    }
+
+                    if (!deltaIsFinal)
+                    {
+                        // Check if tmp.target is the result of a call to GetFunctionEntryPoint(). As for helper
+                        // functions, above, the VM would create a jump stub if the REL32 address doesn't fit.
+
+                        if (rc->mc->GetFunctionEntryPoint != nullptr)
+                        {
+                            for (unsigned int idx = 0; idx < rc->mc->GetFunctionEntryPoint->GetCount(); idx++)
+                            {
+                                DLD value = rc->mc->GetFunctionEntryPoint->GetItem(idx);
+                                if (value.A == tmp.target)
+                                {
+                                    LogDebug("    REL32 target is result of getFunctionEntryPoint(): setting delta=%d (0x%X)",
+                                             (int)tmp.target, (int)tmp.target);
+                                    delta        = (INT64)(int)tmp.target;
+                                    deltaIsFinal = true;
+                                    break; // No need to consider the remaining GetFunctionEntryPoint entries
+                                }
+                            }
+                        }
+                    }
+
+                    if (!deltaIsFinal)
+                    {
+                        // If the relocation points to the RO-data section, we need to be careful that the relocation
+                        // fits in 32-bits for both the baseline and diff compilations. To do that, we pretend the RO
+                        // data section exists immediately after the current code section.
+
+                        if ((rc->originalRoDataAddress <= (size_t)target) &&
+                            ((size_t)target < rc->originalRoDataAddress + rc->roDataSize))
+                        {
+                            size_t ro_section_offset     = (size_t)target - rc->originalRoDataAddress;
+                            size_t ro_section_fake_start = (size_t)-1;
+
+                            // Looks like the target is in the RO data section.
+                            if ((rc->originalHotCodeAddress <= (size_t)fixupLocation) &&
+                                ((size_t)fixupLocation < rc->originalHotCodeAddress + rc->hotCodeSize))
+                            {
+                                // Fixup location is in the hot section
+                                ro_section_fake_start = rc->originalHotCodeAddress + rc->hotCodeSize;
+                                delta                 = (INT64)(ro_section_fake_start + ro_section_offset - baseAddr);
+                                deltaIsFinal          = true;
+                                LogDebug("    REL32 hot code target is in RO data section: setting delta=%d (0x%X)",
+                                         delta, delta);
+                            }
+                            else if ((rc->originalColdCodeAddress <= (size_t)fixupLocation) &&
+                                     ((size_t)fixupLocation < rc->originalColdCodeAddress + rc->coldCodeSize))
+                            {
+                                // Fixup location is in the cold section
+                                ro_section_fake_start = rc->originalColdCodeAddress + rc->coldCodeSize;
+                                delta                 = (INT64)(ro_section_fake_start + ro_section_offset - baseAddr);
+                                deltaIsFinal          = true;
+                                LogDebug("    REL32 cold code target is in RO data section: setting delta=%d (0x%X)",
+                                         delta, delta);
+                            }
+                        }
+                    }
+
                     if (delta != (INT64)(int)delta)
                     {
                         // This isn't going to fit in a signed 32-bit address. Use something that will fit,
-                        // since we assume that original compilation fit fine. This is only an issue for
-                        // 32-bit offsets on 64-bit targets.
+                        // since we assume that original compilation fit fine.
+                        // This is only an issue for 32-bit offsets on 64-bit targets.
                         target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
                         INT64 newdelta = (INT64)(target - baseAddr);
 
-                        LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
-                                 delta, newdelta);
+                        LogDebug("    REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX",
+                                 target, delta, newdelta);
 
                         delta = newdelta;
                     }
                 }
 
-                if (delta != (INT64)(int)delta)
+                if (IsSpmiTarget32Bit())
                 {
-                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                    // Only 32 bits matters. And we don't care about sign. Note that SuperPMI will sometimes return
+                    // arbitrary values, such as 0xCAFE0003 from MethodContext::repGetHelperFtn().
+                    delta &= 0xFFFFFFFF;
+                }
+                else
+                {
+                    if (delta != (INT64)(int)delta)
+                    {
+                        LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                    }
+                }
+
+                if ((targetArch == SPMI_TARGET_ARCHITECTURE_AMD64) && !deltaIsFinal)
+                {
+                    // During an actual compile, recordRelocation() will be called before the compile
+                    // is actually finished, and it will write the relative offset into the fixupLocation.
+                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                    // to overestimation of instruction sizes. Because we're applying the relocs after the
+                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                    // that's now in the fixupLocation.
+                    INT32 adjustment = *(INT32*)address;
+                    delta += adjustment;
                 }
 
                 // Write 32-bits into location
-                size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
-                {
-                    if (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64)
-                    {
-                        // During an actual compile, recordRelocation() will be called before the compile
-                        // is actually finished, and it will write the relative offset into the fixupLocation.
-                        // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
-                        // to overestimation of instruction sizes. Because we're applying the relocs after the
-                        // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
-                        // that's now in the fixupLocation.
-                        INT32 adjustment = *(INT32*)address;
-                        delta += adjustment;
-                    }
-
-                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
-                             delta);
-                    *(DWORD*)address = (DWORD)delta;
-                }
+                LogDebug("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address, delta);
+                *(DWORD*)address = (DWORD)delta;
             }
-            break;
 
-            default:
-                LogError("Unknown reloc type %u", tmp.fRelocType);
-                break;
+            wasRelocHandled = true;
+        }
+
+        if (!wasRelocHandled)
+        {
+            LogError("Unknown reloc type %u", tmp.fRelocType);
         }
     }
 }
@@ -1090,10 +1236,10 @@ void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG metho
 
 void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
-    
+
     if (RecordCallSiteWithSignature == nullptr)
     {
-        // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
+        // The most call site records have only `methodHandle`, so creating two separate maps give us better performance
         // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
         RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
         if (recordCallSitesWithoutSig)
@@ -1136,7 +1282,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
 
 bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle)
 {
-    
+
     if (RecordCallSiteWithSignature != nullptr && RecordCallSiteWithSignature->GetIndex(instrOffset) != -1)
     {
         Agnostic_RecordCallSite value = RecordCallSiteWithSignature->Get(instrOffset);

@@ -75,8 +75,13 @@ namespace System.Text.Json.Reflection
                 "may return fewer results when trimmed but it will return the 'interfaceType' " +
                 "if the type implemented it, even after trimming.")]
 #endif
-        public static Type? GetCompatibleGenericInterface(this Type type, Type interfaceType)
+        public static Type? GetCompatibleGenericInterface(this Type type, Type? interfaceType)
         {
+            if (interfaceType is null)
+            {
+                return null;
+            }
+
             Debug.Assert(interfaceType.IsGenericType);
             Debug.Assert(interfaceType.IsInterface);
             Debug.Assert(interfaceType == interfaceType.GetGenericTypeDefinition());

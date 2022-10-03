@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- .NETCoreApp,Version=v3.1 is out of support and dropped from the package. -->
   <Suppression>
     <DiagnosticId>PKV006</DiagnosticId>
     <Target>.NETCoreApp,Version=v3.1</Target>
@@ -8,5 +7,17 @@
   <Suppression>
     <DiagnosticId>PKV007</DiagnosticId>
     <Target>.NETCoreApp,Version=v3.1-win</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2UI.DisplayCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Windows.Extensions.dll</Left>
+    <Right>lib/net7.0/System.Windows.Extensions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2UI.SelectFromCollection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.String,System.String,System.Security.Cryptography.X509Certificates.X509SelectionFlag,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Windows.Extensions.dll</Left>
+    <Right>lib/net7.0/System.Windows.Extensions.dll</Right>
   </Suppression>
 </Suppressions>

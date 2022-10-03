@@ -233,7 +233,7 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 #endif // !TARGET_UNIX
 
     WCHAR randomString[randomStringLength + 1];
-    swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
+    FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
     wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
 
     // Append extension
@@ -251,6 +251,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unsupported architecture
 #endif

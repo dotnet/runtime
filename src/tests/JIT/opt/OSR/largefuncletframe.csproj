@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DebugType />
+    <Optimize>True</Optimize>
+   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_TieredCompilation=1
+set COMPlus_TC_QuickJitForLoops=1
+set COMPlus_TC_OnStackReplacement=1
+set COMPlus_OSR_HitLimit=2
+set COMPlus_JitRandomOnStackReplacement=15
+set COMPlus_JitStress=2
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_TieredCompilation=1
+export COMPlus_TC_QuickJitForLoops=1
+export COMPlus_TC_OnStackReplacement=1
+export COMPlus_OSR_HitLimit=2
+export COMPlus_JitRandomOnStackReplacement=15
+export COMPlus_JitStress=2
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

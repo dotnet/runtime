@@ -20,9 +20,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace GCTest
+.namespace GCTest_gcarr_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .field private int32 m_magic
@@ -30,7 +30,7 @@
     {
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      int32 GCTest.Test::m_magic
+      IL_0001:  ldfld      int32 GCTest_gcarr_il.Test::m_magic
       IL_0006:  ldc.i4     0x12345678
       IL_000b:  beq.s      IL_0013
 
@@ -40,7 +40,7 @@
       IL_0013:  ret
     } // end of method 'Test::CheckValid'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -48,13 +48,13 @@
       )
       .entrypoint
       .maxstack  3
-      .locals (class GCTest.Test[-10...10] V_0,
+      .locals (class GCTest_gcarr_il.Test[-10...10] V_0,
                int32 V_1,
                int32 V_2,
                int32 V_3)
       			ldc.i4 -10
       			ldc.i4 21
-      			newobj      instance void class GCTest.Test[-10...10]::.ctor(int32, int32)
+      			newobj      instance void class GCTest_gcarr_il.Test[-10...10]::.ctor(int32, int32)
       IL_0007:  stloc.0
       IL_0008:  ldc.i4	-10
       IL_0009:  stloc.1
@@ -64,8 +64,8 @@
       IL_000d:  ldloc.1
       			dup
       			call		void [System.Console]System.Console::WriteLine(int32)
-      IL_000e:  newobj     instance void GCTest.Test::.ctor()
-      			callvirt   instance void class GCTest.Test[-10...10]::Set(int32, class GCTest.Test)
+      IL_000e:  newobj     instance void GCTest_gcarr_il.Test::.ctor()
+      			callvirt   instance void class GCTest_gcarr_il.Test[-10...10]::Set(int32, class GCTest_gcarr_il.Test)
       IL_0014:  ldloc.1
       IL_0015:  ldc.i4.1
       IL_0016:  add
@@ -83,9 +83,9 @@
 
       IL_0030:  ldloc.0
       IL_0031:  ldloc.2
-      			callvirt   instance class GCTest.Test class GCTest.Test[-10...10]::Get(int32)
+      			callvirt   instance class GCTest_gcarr_il.Test class GCTest_gcarr_il.Test[-10...10]::Get(int32)
       			
-      IL_0033:  callvirt   instance void GCTest.Test::CheckValid()
+      IL_0033:  callvirt   instance void GCTest_gcarr_il.Test::CheckValid()
       IL_0038:  ldloc.2
       IL_0039:  ldc.i4.1
       IL_003a:  add
@@ -115,7 +115,7 @@
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldc.i4     0x12345678
-      IL_0006:  stfld      int32 GCTest.Test::m_magic
+      IL_0006:  stfld      int32 GCTest_gcarr_il.Test::m_magic
       IL_000b:  ldarg.0
       IL_000c:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0011:  ret
@@ -123,5 +123,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'GCTest'
+} // end of namespace 'GCTest_gcarr_il'
 

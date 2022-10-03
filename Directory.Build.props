@@ -18,10 +18,11 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
     <HostOS>$(_hostOS)</HostOS>
-    <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
     <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
+    <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -34,7 +35,8 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'loongarch64'">loongarch64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'ppc64le'">ppc64le</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'Browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
@@ -53,7 +55,7 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
 
-    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
@@ -61,13 +63,19 @@
     <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
     <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
 
-    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
+    <!-- Don't build for NETFramework during source-build. -->
+    <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -93,6 +101,7 @@
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WorkloadBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
+    <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetFrameworkToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
@@ -101,10 +110,13 @@
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
+    <WasmAppHostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppHost', 'wasm', '$(Configuration)'))</WasmAppHostDir>
     <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
-    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
+    <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
+    <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreCLRToolPath>
+    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -137,6 +149,7 @@
 
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
     <_portableOS Condition="'$(_hostOS)' == 'OSX'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'FreeBSD' or '$(TargetOS)' == 'FreeBSD'">freebsd</_portableOS>
@@ -153,7 +166,8 @@
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageLibc Condition="$(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)$(_packageLibc)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
@@ -169,9 +183,9 @@
     <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android'">linux-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
     <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iOSSimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvOSSimulator'">osx-x64</_toolsRID>
@@ -182,10 +196,6 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
-
-    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
@@ -246,9 +256,11 @@
 
   <PropertyGroup>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
+    <CoreLibRefDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'ref'))</CoreLibRefDir>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(UseNativeAotCoreLib)' == 'true'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <UriProject>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Private.Uri', 'src', 'System.Private.Uri.csproj'))</UriProject>
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
@@ -268,9 +280,6 @@
     <Copyright>$(CopyrightNetFoundation)</Copyright>
     <PackageThirdPartyNoticesFile>$(MSBuildThisFileDirectory)Third Party Notices.md</PackageThirdPartyNoticesFile>
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</PackageReleaseNotes>
-    <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
-    <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
-    <IsPrerelease>true</IsPrerelease>
     <IsPrivateAssembly>$(MSBuildProjectName.Contains('Private'))</IsPrivateAssembly>
     <!-- Private packages should not be stable -->
     <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(IsPrivateAssembly)">true</SuppressFinalPackageVersion>

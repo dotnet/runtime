@@ -12,8 +12,10 @@ namespace System.Security.Authentication.ExtendedProtection
 {
     public class ServiceNameCollection : ReadOnlyCollectionBase
     {
-        public ServiceNameCollection(ICollection items!!)
+        public ServiceNameCollection(ICollection items)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);
         }
@@ -156,7 +158,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        [return: NotNullIfNotNull("inputServiceName")]
+        [return: NotNullIfNotNull(nameof(inputServiceName))]
         private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))

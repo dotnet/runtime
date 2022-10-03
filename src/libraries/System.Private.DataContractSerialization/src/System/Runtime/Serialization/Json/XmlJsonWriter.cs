@@ -166,17 +166,8 @@ namespace System.Runtime.Serialization.Json
             get { return XmlSpace.None; }
         }
 
-        private static BinHexEncoding BinHexEncoding
-        {
-            get
-            {
-                if (s_binHexEncoding == null)
-                {
-                    s_binHexEncoding = new BinHexEncoding();
-                }
-                return s_binHexEncoding;
-            }
-        }
+        private static BinHexEncoding BinHexEncoding =>
+            s_binHexEncoding ??= new BinHexEncoding();
 
         private bool HasOpenAttribute => (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
 
@@ -228,8 +219,10 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.Flush();
         }
 
-        public override string? LookupPrefix(string ns!!)
+        public override string? LookupPrefix(string ns)
         {
+            ArgumentNullException.ThrowIfNull(ns);
+
             if (ns == Globals.XmlnsNamespace)
             {
                 return Globals.XmlnsPrefix;
@@ -245,8 +238,11 @@ namespace System.Runtime.Serialization.Json
             return null;
         }
 
-        public void SetOutput(Stream stream!!, Encoding encoding!!, bool ownsStream)
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new JsonEncodingStreamWrapper(stream, encoding, false);
@@ -255,10 +251,8 @@ namespace System.Runtime.Serialization.Json
             {
                 encoding = null!;
             }
-            if (_nodeWriter == null)
-            {
-                _nodeWriter = new JsonNodeWriter();
-            }
+
+            _nodeWriter ??= new JsonNodeWriter();
 
             _nodeWriter.SetOutput(stream, ownsStream, encoding);
             InitializeWriter();
@@ -364,8 +358,10 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteBase64(byte[] buffer!!, int index, int count)
+        public override void WriteBase64(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -385,8 +381,10 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteBase64Text(buffer, 0, buffer, index, count);
         }
 
-        public override void WriteBinHex(byte[] buffer!!, int index, int count)
+        public override void WriteBinHex(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -416,8 +414,10 @@ namespace System.Runtime.Serialization.Json
             WriteString(ch.ToString());
         }
 
-        public override void WriteChars(char[] buffer!!, int index, int count)
+        public override void WriteChars(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -693,18 +693,16 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteQualifiedName(string localName!!, string? ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+
             if (localName.Length == 0)
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
-            if (ns == null)
-            {
-                ns = string.Empty;
-            }
 
-            base.WriteQualifiedName(localName, ns);
+            base.WriteQualifiedName(localName, ns ?? string.Empty);
         }
 
         public override void WriteRaw(string data)
@@ -712,8 +710,10 @@ namespace System.Runtime.Serialization.Json
             WriteString(data);
         }
 
-        public override void WriteRaw(char[] buffer!!, int index, int count)
+        public override void WriteRaw(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -857,8 +857,10 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteStartElement(string? prefix, string localName!!, string? ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+
             if (localName.Length == 0)
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
@@ -972,10 +974,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // do work only when not indenting whitespace
                 if (!((_dataType == JsonDataType.Array || _dataType == JsonDataType.Object || _nodeType == JsonNodeType.EndElement) && XmlConverter.IsWhitespace(text)))
@@ -1050,14 +1049,18 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteTimeSpanText(value);
         }
 
-        public override void WriteValue(UniqueId value!!)
+        public override void WriteValue(UniqueId value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             StartText();
             _nodeWriter.WriteUniqueIdText(value);
         }
 
-        public override void WriteValue(object value!!)
+        public override void WriteValue(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (IsClosed)
             {
                 ThrowClosed();
@@ -1085,16 +1088,10 @@ namespace System.Runtime.Serialization.Json
             }
             ArgumentNullException.ThrowIfNull(ws);
 
-            for (int i = 0; i < ws.Length; ++i)
+            int pos = ws.AsSpan().IndexOfAnyExcept(" \t\r\n");
+            if (pos >= 0)
             {
-                char c = ws[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                {
-                    throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, c.ToString(), "WriteWhitespace"), nameof(ws));
-                }
+                throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, ws[pos].ToString(), "WriteWhitespace"), nameof(ws));
             }
 
             WriteString(ws);
@@ -1402,8 +1399,10 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteText(JsonGlobals.QuoteChar);
         }
 
-        private void WritePrimitiveValue(object value!!)
+        private void WritePrimitiveValue(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (IsClosed)
             {
                 ThrowClosed();

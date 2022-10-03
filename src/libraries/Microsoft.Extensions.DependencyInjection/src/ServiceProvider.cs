@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                     catch (Exception e)
                     {
-                        exceptions = exceptions ?? new List<Exception>();
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }

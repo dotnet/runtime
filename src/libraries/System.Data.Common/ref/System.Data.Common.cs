@@ -1577,6 +1577,7 @@ namespace System.Data
     public enum SerializationFormat
     {
         Xml = 0,
+        [System.ObsoleteAttribute("SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.", DiagnosticId = "SYSLIB0038")]
         Binary = 1,
     }
     public enum SqlDbType
@@ -2404,6 +2405,24 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
+    public abstract class DbDataSource : IDisposable, IAsyncDisposable
+    {
+        public abstract string ConnectionString { get; }
+        protected abstract System.Data.Common.DbConnection CreateDbConnection();
+        protected virtual System.Data.Common.DbConnection OpenDbConnection() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenDbConnectionAsync(System.Threading.CancellationToken cancellationToken = default)  { throw null; }
+        protected virtual System.Data.Common.DbCommand CreateDbCommand(string? commandText = null) { throw null; }
+        protected virtual System.Data.Common.DbBatch CreateDbBatch() { throw null; }
+        public System.Data.Common.DbConnection CreateConnection() { throw null; }
+        public System.Data.Common.DbConnection OpenConnection() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenConnectionAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Data.Common.DbCommand CreateCommand(string? commandText = null) { throw null; }
+        public System.Data.Common.DbBatch CreateBatch() { throw null; }
+        public void Dispose() { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
+    }
     public abstract partial class DbDataSourceEnumerator
     {
         protected DbDataSourceEnumerator() { }
@@ -2605,6 +2624,7 @@ namespace System.Data.Common
         public virtual System.Data.Common.DbDataAdapter? CreateDataAdapter() { throw null; }
         public virtual System.Data.Common.DbDataSourceEnumerator? CreateDataSourceEnumerator() { throw null; }
         public virtual System.Data.Common.DbParameter? CreateParameter() { throw null; }
+        public virtual System.Data.Common.DbDataSource CreateDataSource(string connectionString) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public sealed partial class DbProviderSpecificTypePropertyAttribute : System.Attribute
@@ -2776,6 +2796,7 @@ namespace System.Data.SqlTypes
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
         public override string ToString() { throw null; }
+        public static SqlBinary WrapBytes(byte[] bytes) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBoolean>
@@ -3127,6 +3148,8 @@ namespace System.Data.SqlTypes
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public int WriteTdsValue(System.Span<uint> destination) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDouble>
@@ -3481,7 +3504,9 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public bool Equals(System.Data.SqlTypes.SqlMoney other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
+        public static System.Data.SqlTypes.SqlMoney FromTdsValue(long value) { throw null; }
         public override int GetHashCode() { throw null; }
+        public long GetTdsValue() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }

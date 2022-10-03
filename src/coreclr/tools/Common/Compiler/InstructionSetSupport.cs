@@ -19,7 +19,7 @@ namespace ILCompiler
         private readonly InstructionSetFlags _unsupportedInstructionSets;
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) : 
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
             this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
         {
         }
@@ -110,6 +110,10 @@ namespace ILCompiler
             {
                 return SimdVectorLength.None;
             }
+            else if (_targetArchitecture == TargetArchitecture.LoongArch64)
+            {
+                return SimdVectorLength.None;
+            }
             else
             {
                 Debug.Assert(false); // Unknown architecture
@@ -186,11 +190,32 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Add a supported instruction set to the specified list. 
+        /// Add a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool AddSupportedInstructionSet(string instructionSet)
         {
+            // First, check if it's a "known cpu family" group of instruction sets e.g. "haswell"
+            var sets = InstructionSetFlags.CpuNameToInstructionSets(instructionSet, _architecture);
+            if (sets != null)
+            {
+                foreach (string set in sets)
+                {
+                    if (!s_instructionSetSupport[_architecture].ContainsKey(set))
+                    {
+                        // Groups can contain other groups
+                        if (AddSupportedInstructionSet(set))
+                        {
+                            continue;
+                        }
+                        return false;
+                    }
+                    _supportedInstructionSets.Add(set);
+                    _unsupportedInstructionSets.Remove(set);
+                }
+                return true;
+            }
+
             if (!s_instructionSetSupport[_architecture].ContainsKey(instructionSet))
                 return false;
 
@@ -200,7 +225,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Removes a supported instruction set to the specified list. 
+        /// Removes a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool RemoveInstructionSetSupport(string instructionSet)
@@ -242,13 +267,13 @@ namespace ILCompiler
 
                 foreach (string unsupported in _unsupportedInstructionSets)
                 {
-                    InstructionSetFlags checkForExplictUnsupport = new InstructionSetFlags();
-                    checkForExplictUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
-                    checkForExplictUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
-                    checkForExplictUnsupport.Set64BitInstructionSetVariants(_architecture);
+                    InstructionSetFlags checkForExplicitUnsupport = new InstructionSetFlags();
+                    checkForExplicitUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
+                    checkForExplicitUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
+                    checkForExplicitUnsupport.Set64BitInstructionSetVariants(_architecture);
 
                     InstructionSetFlags supportedTemp = supportedInstructionSets;
-                    supportedTemp.Remove(checkForExplictUnsupport);
+                    supportedTemp.Remove(checkForExplicitUnsupport);
 
                     // If removing the explicitly unsupported instruction sets, changes the set of
                     // supported instruction sets, then the parameter is invalid

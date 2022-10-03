@@ -195,7 +195,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
             double adjacentPeriod2 = sampleCount / (((double)sampleCount / (double)m_wavePeriod) - 1);
 
             //
-            // Get the the three different frequency components of the throughput (scaled by average
+            // Get the three different frequency components of the throughput (scaled by average
             // throughput).  Our "error" estimate (the amount of noise that might be present in the
             // frequency band we're really interested in) is the average of the adjacent bands.
             //

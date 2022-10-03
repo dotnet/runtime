@@ -41,12 +41,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;
@@ -103,8 +98,13 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
-        public virtual void LoadXml(XmlElement value!!)
+        public virtual void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             ReferenceType = value.LocalName;
 
             string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);

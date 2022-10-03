@@ -128,8 +128,6 @@ namespace System.Text
 
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            // Validate input parameters
-
             if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars, ExceptionResource.ArgumentNull_Array);
@@ -158,8 +156,6 @@ namespace System.Text
 
         public override unsafe int GetByteCount(string chars)
         {
-            // Validate input parameters
-
             if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
@@ -178,9 +174,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
-            // Validate Parameters
-
-            if (chars == null)
+            if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
             }
@@ -210,7 +204,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
             // Don't bother providing a fallback mechanism; our fast path doesn't use it.
@@ -261,8 +255,6 @@ namespace System.Text
         public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
-            // Validate Parameters
-
             if (s is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -284,7 +276,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = s)
@@ -311,8 +303,6 @@ namespace System.Text
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
-            // Validate parameters
-
             if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -334,7 +324,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = chars)
@@ -351,9 +341,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
-            // Validate Parameters
-
-            if (chars == null || bytes == null)
+            if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
                     argument: (chars is null) ? ExceptionArgument.chars : ExceptionArgument.bytes,
@@ -388,9 +376,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -433,8 +421,6 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            // Validate Parameters
-
             if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
@@ -463,9 +449,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
-            // Validate Parameters
-
-            if (bytes == null)
+            if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
             }
@@ -496,8 +480,6 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
-            // Validate Parameters
-
             if (bytes is null || chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -519,7 +501,7 @@ namespace System.Text
 
             if ((uint)charIndex > (uint)chars.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (byte* pBytes = bytes)
@@ -536,8 +518,6 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
-            // Validate Parameters
-
             if (bytes is null || chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -580,9 +560,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -660,8 +640,6 @@ namespace System.Text
 
         public override unsafe string GetString(byte[] bytes, int index, int count)
         {
-            // Validate Parameters
-
             if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
@@ -700,7 +678,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
             // Don't bother providing a fallback mechanism; our fast path doesn't use it.
@@ -783,8 +761,20 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charCount),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            // Characters would be # of characters + 1 in case left over high surrogate is ? * max fallback
-            long byteCount = (long)charCount + 1;
+            // GetMaxByteCount assumes that the caller might have a stateful Encoder instance. If the
+            // Encoder instance already has a captured high surrogate, then one of two things will
+            // happen:
+            //
+            // - The next char is a low surrogate, at which point the two chars together result in 4
+            //   UTF-8 bytes in the output; or
+            // - The next char is not a low surrogate (or the input reaches EOF), at which point the
+            //   standalone captured surrogate will go through the fallback routine.
+            //
+            // The second case is the worst-case scenario for expansion, so it's what we use for any
+            // pessimistic "max byte count" calculation: assume there's a captured surrogate and that
+            // it must fall back.
+
+            long byteCount = (long)charCount + 1; // +1 to account for captured surrogate, per above
 
             if (EncoderFallback.MaxCharCount > 1)
                 byteCount *= EncoderFallback.MaxCharCount;
@@ -804,8 +794,23 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(byteCount),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            // Figure out our length, 1 char per input byte + 1 char if 1st byte is last byte of 4 byte surrogate pair
-            long charCount = ((long)byteCount + 1);
+            // GetMaxCharCount assumes that the caller might have a stateful Decoder instance. If the
+            // Decoder instance already has a captured partial UTF-8 subsequence, then one of two
+            // thngs will happen:
+            //
+            // - The next byte(s) won't complete the subsequence but will instead be consumed into
+            //   the Decoder's internal state, resulting in no character output; or
+            // - The next byte(s) will complete the subsequence, and the previously captured
+            //   subsequence and the next byte(s) will result in 1 - 2 chars output; or
+            // - The captured subsequence will be treated as a singular ill-formed subsequence, at
+            //   which point the captured subsequence will go through the fallback routine.
+            //   (See The Unicode Standard, Sec. 3.9 for more information on this.)
+            //
+            // The third case is the worst-case scenario for expansion, since it means 0 bytes of
+            // new input could cause any existing captured state to expand via fallback. So it's
+            // what we'll use for any pessimistic "max char count" calculation.
+
+            long charCount = ((long)byteCount + 1); // +1 to account for captured subsequence, as above
 
             // Non-shortest form would fall back, so get max count from fallback.
             // So would 11... followed by 11..., so you could fall back every byte

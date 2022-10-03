@@ -5,6 +5,7 @@
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
+#include "pal_x509.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -18,6 +19,12 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
+#else
+c_static_assert(CRYPTO_EX_INDEX_X509 == 10);
+#endif
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -966,7 +973,7 @@ Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateRea
 to turn the contents of a file into an ICertificatePal object.
 
 Return values:
-If bio containns a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
+If bio contains a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
 otherwise NULL.
 */
 X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)
@@ -1172,6 +1179,70 @@ int64_t CryptoNative_OpenSslVersionNumber()
     return (int64_t)OpenSSL_version_num();
 }
 
+static void ExDataFree(
+    void* parent,
+    void* ptr,
+    CRYPTO_EX_DATA* ad,
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)parent;
+    (void)ad;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    if (ptr != NULL)
+    {
+        if (idx == g_x509_ocsp_index)
+        {
+            OCSP_RESPONSE_free((OCSP_RESPONSE*)ptr);
+        }
+    }
+}
+
+// In the OpenSSL 1.0.2 headers, the `from` argument is not const (became const in 1.1.0)
+// In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
+static int ExDataDup(
+    CRYPTO_EX_DATA* to,
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+    const CRYPTO_EX_DATA* from,
+#else
+    CRYPTO_EX_DATA* from,
+#endif
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+    void** from_d,
+#else
+    void* from_d,
+#endif
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)to;
+    (void)from;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    // From the docs (https://www.openssl.org/docs/man1.1.1/man3/CRYPTO_get_ex_new_index.html):
+    // "The from_d parameter needs to be cast to a void **pptr as the API has currently the wrong signature ..."
+    void** pptr = (void**)from_d;
+
+    if (pptr != NULL)
+    {
+        if (idx == g_x509_ocsp_index)
+        {
+            *pptr = NULL;
+        }
+    }
+
+    // If the dup_func() returns 0 the whole CRYPTO_dup_ex_data() will fail.
+    // So, return 1 unless we returned 0 already.
+    return 1;
+}
+
 void CryptoNative_RegisterLegacyAlgorithms()
 {
 #ifdef NEED_OPENSSL_3_0
@@ -1304,6 +1375,9 @@ static int32_t EnsureOpenSsl10Initialized()
     // Ensure that the error message table is loaded.
     ERR_load_crypto_strings();
 
+    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_X509 is 10.
+    g_x509_ocsp_index = CRYPTO_get_ex_new_index(10, 0, NULL, NULL, ExDataDup, ExDataFree);
+
 done:
     if (ret != 0)
     {
@@ -1368,6 +1442,9 @@ static int32_t EnsureOpenSsl11Initialized()
     // atexit handler, so we will indicate that we're in the shutdown state
     // and stop asking problematic questions from other threads.
     atexit(HandleShutdown);
+
+    // In OpenSSL 1.1.0+, CRYPTO_EX_INDEX_X509 is 3.
+    g_x509_ocsp_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDup, ExDataFree);
     return 0;
 }
 
@@ -1385,9 +1462,12 @@ int32_t CryptoNative_OpenSslAvailable()
 }
 
 static int32_t g_initStatus = 1;
+int g_x509_ocsp_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore()
 {
+    int ret = 0;
+
     // If portable then decide which OpenSSL we are, and call the right one.
     // If 1.0, call the 1.0 one.
     // Otherwise call the 1.1 one.
@@ -1396,17 +1476,26 @@ static int32_t EnsureOpenSslInitializedCore()
 
     if (API_EXISTS(SSL_state))
     {
-        return EnsureOpenSsl10Initialized();
+        ret = EnsureOpenSsl10Initialized();
     }
     else
     {
-        return EnsureOpenSsl11Initialized();
+        ret = EnsureOpenSsl11Initialized();
     }
 #elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    return EnsureOpenSsl10Initialized();
+    ret = EnsureOpenSsl10Initialized();
 #else
-    return EnsureOpenSsl11Initialized();
+    ret = EnsureOpenSsl11Initialized();
 #endif
+
+    if (ret == 0)
+    {
+        // On OpenSSL 1.0.2 our expected index is 0.
+        // On OpenSSL 1.1.0+ 0 is a reserved value and we expect 1.
+        assert(g_x509_ocsp_index != -1);
+    }
+
+    return ret;
 }
 
 static void EnsureOpenSslInitializedOnce()

@@ -197,8 +197,6 @@ namespace System.IO.Compression
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
             {
-                _zStream.Init();
-
                 _initializationState = State.NotInitialized;
                 SetHandle(IntPtr.Zero);
             }
@@ -250,8 +248,7 @@ namespace System.IO.Compression
 
             private void EnsureNotDisposed()
             {
-                if (InitializationState == State.Disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
+                ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
             }
 
 
@@ -368,7 +365,7 @@ namespace System.IO.Compression
             }
 
             // This can work even after XxflateEnd().
-            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringAnsi(_zStream.msg)! : string.Empty;
+            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
         }
 
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,

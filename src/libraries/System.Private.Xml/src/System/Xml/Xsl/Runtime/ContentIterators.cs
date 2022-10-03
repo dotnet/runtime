@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Xml;
 using System.Xml.XPath;
@@ -303,7 +302,7 @@ namespace System.Xml.Xsl.Runtime
     public struct ContentMergeIterator
     {
         private XmlNavigatorFilter _filter;
-        private XPathNavigator _navCurrent, _navNext;
+        private XPathNavigator? _navCurrent, _navNext;
         private XmlNavigatorStack _navStack;
         private IteratorState _state;
 
@@ -387,8 +386,8 @@ namespace System.Xml.Xsl.Runtime
                 case IteratorState.HaveCurrentNoNext:
                 case IteratorState.HaveCurrentHaveNext:
                     // If the current node has no more matching siblings,
-                    if (isContent ? !_filter.MoveToNextContent(_navCurrent) :
-                                    !_filter.MoveToFollowingSibling(_navCurrent))
+                    if (isContent ? !_filter.MoveToNextContent(_navCurrent!) :
+                                    !_filter.MoveToFollowingSibling(_navCurrent!))
                     {
                         if (_navStack.IsEmpty)
                         {
@@ -399,7 +398,7 @@ namespace System.Xml.Xsl.Runtime
                             }
 
                             // Make navNext the new current node and fetch a new navNext
-                            _navCurrent = XmlQueryRuntime.SyncToNavigator(_navCurrent, _navNext);
+                            _navCurrent = XmlQueryRuntime.SyncToNavigator(_navCurrent, _navNext!);
                             _state = IteratorState.HaveCurrentNeedNext;
                             return IteratorResult.NeedInputNode;
                         }
@@ -425,7 +424,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XPathNavigator Current
         {
-            get { return _navCurrent; }
+            get { return _navCurrent!; }
         }
 
         /// <summary>
@@ -441,7 +440,7 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(_state == IteratorState.HaveCurrentHaveNext);
 
             // Compare location of navCurrent with navNext
-            cmp = _navCurrent.ComparePosition(_navNext);
+            cmp = _navCurrent!.ComparePosition(_navNext);
 
             // If navCurrent is before navNext in document order,
             // If cmp = XmlNodeOrder.Unknown, then navCurrent is before navNext (since input is in doc order)

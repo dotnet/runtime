@@ -52,10 +52,7 @@ namespace System.Reflection.Emit
             SignatureHelper sigHelp;
             MdSigCallingConvention intCall;
 
-            if (returnType == null)
-            {
-                returnType = typeof(void);
-            }
+            returnType ??= typeof(void);
 
             intCall = MdSigCallingConvention.Default;
 
@@ -150,10 +147,7 @@ namespace System.Reflection.Emit
         {
             SignatureHelper sigHelp;
 
-            if (returnType == null)
-            {
-                returnType = typeof(void);
-            }
+            returnType ??= typeof(void);
 
             MdSigCallingConvention intCall = MdSigCallingConvention.Property;
 
@@ -167,8 +161,11 @@ namespace System.Reflection.Emit
             return sigHelp;
         }
 
-        internal static SignatureHelper GetTypeSigToken(Module module!!, Type type!!)
+        internal static SignatureHelper GetTypeSigToken(Module module, Type type)
         {
+            ArgumentNullException.ThrowIfNull(module);
+            ArgumentNullException.ThrowIfNull(type);
+
             return new SignatureHelper(module, type);
         }
         #endregion
@@ -492,7 +489,7 @@ namespace System.Reflection.Emit
 
         private void AddElementType(CorElementType cvt)
         {
-            // Adds an element to the signature.  A managed represenation of CorSigCompressElement
+            // Adds an element to the signature.  A managed representation of CorSigCompressElement
             if (m_currSig + 1 > m_signature.Length)
                 m_signature = ExpandArray(m_signature);
 
@@ -501,7 +498,7 @@ namespace System.Reflection.Emit
 
         private void AddToken(int token)
         {
-            // A managed represenation of CompressToken
+            // A managed representation of CompressToken
             // Pulls the token appart to get a rid, adds some appropriate bits
             // to the token and then adds this to the signature.
 
@@ -731,6 +728,61 @@ namespace System.Reflection.Emit
             return temp;
         }
 
+        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            IncrementArgCounts();
+
+            Debug.Assert(clsArgument != null);
+
+            if (optionalCustomModifiers != null)
+            {
+                for (int i = 0; i < optionalCustomModifiers.Length; i++)
+                {
+                    Type t = optionalCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(optionalCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
+
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
+
+                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
+                    AddToken(token);
+                }
+            }
+
+            if (requiredCustomModifiers != null)
+            {
+                for (int i = 0; i < requiredCustomModifiers.Length; i++)
+                {
+                    Type t = requiredCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(requiredCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
+
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
+
+                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
+                    AddToken(token);
+                }
+            }
+
+            AddOneArgTypeHelper(clsArgument);
+        }
+
         #endregion
 
         #region Public Methods
@@ -739,8 +791,10 @@ namespace System.Reflection.Emit
             AddArgument(clsArgument, null, null);
         }
 
-        public void AddArgument(Type argument!!, bool pinned)
+        public void AddArgument(Type argument, bool pinned)
         {
+            ArgumentNullException.ThrowIfNull(argument);
+
             IncrementArgCounts();
             AddOneArgTypeHelper(argument, pinned);
         }
@@ -783,27 +837,13 @@ namespace System.Reflection.Emit
             AddElementType(CorElementType.ELEMENT_TYPE_SENTINEL);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (!(obj is SignatureHelper))
-            {
-                return false;
-            }
-
-            SignatureHelper temp = (SignatureHelper)obj;
-
-            if (!temp.m_module!.Equals(m_module) || temp.m_currSig != m_currSig || temp.m_sizeLoc != m_sizeLoc || temp.m_sigDone != m_sigDone)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < m_currSig; i++)
-            {
-                if (m_signature[i] != temp.m_signature[i])
-                    return false;
-            }
-            return true;
-        }
+        public override bool Equals(object? obj) =>
+            obj is SignatureHelper other &&
+            other.m_module!.Equals(m_module) &&
+            other.m_currSig == m_currSig &&
+            other.m_sizeLoc == m_sizeLoc &&
+            other.m_sigDone == m_sigDone &&
+            m_signature.AsSpan(0, m_currSig).SequenceEqual(other.m_signature.AsSpan(0, m_currSig));
 
         public override int GetHashCode()
         {

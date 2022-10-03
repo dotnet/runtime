@@ -18,6 +18,6 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets or sets <see cref="LoggerFactoryOptions"/> value to indicate which parts of the tracing context information should be included with the logging scopes.
         /// </summary>
-        public ActivityTrackingOptions ActivityTrackingOptions   { get; set; }
+        public ActivityTrackingOptions ActivityTrackingOptions { get; set; }
     }
 }

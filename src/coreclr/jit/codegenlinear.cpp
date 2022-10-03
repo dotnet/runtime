@@ -424,10 +424,12 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-
-        bool addPreciseMappings =
-            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
+
+        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
+
+        INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
+        INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
@@ -445,12 +447,12 @@ void CodeGen::genCodeForBBlist()
                     firstMapping = false;
                 }
 
-#ifdef DEBUG
-                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                if (addRichMappings && ilOffset->gtStmtDI.IsValid())
                 {
-                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                    genAddRichIPMappingHere(ilOffset->gtStmtDI);
                 }
 
+#ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -753,7 +755,27 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
+#ifdef TARGET_XARCH
+            {
+                // If a block was selected to place an alignment instruction because it ended
+                // with a jump, do not remove jumps from such blocks.
+                // Do not remove a jump between hot and cold regions.
+                bool isRemovableJmpCandidate =
+                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->bbJumpDest);
+
+#ifdef TARGET_AMD64
+                // AMD64 requires an instruction after a call instruction for unwinding
+                // inside an EH region so if the last instruction generated was a call instruction
+                // do not allow this jump to be marked for possible later removal.
+                isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
+#endif // TARGET_AMD64
+
+                inst_JMP(EJ_jmp, block->bbJumpDest, isRemovableJmpCandidate);
+            }
+#else
                 inst_JMP(EJ_jmp, block->bbJumpDest);
+#endif // TARGET_XARCH
+
                 FALLTHROUGH;
 
             case BBJ_COND:
@@ -889,7 +911,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         // therefore be store-normalized (rather than load-normalized). In fact, not performing store normalization
         // can lead to problems on architectures where a lclVar may be allocated to a register that is not
         // addressable at the granularity of the lclVar's defined type (e.g. x86).
-        var_types lclType = varDsc->GetActualRegisterType();
+        var_types lclType = varDsc->GetStackSlotHomeType();
         emitAttr  size    = emitTypeSize(lclType);
 
         // If this is a write-thru or a single-def variable, we don't actually spill at a use,
@@ -1211,25 +1233,25 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // Load local variable from its home location.
-            // In most cases the tree type will indicate the correct type to use for the load.
-            // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
-            // widened when loaded into a register), and its size is not the same as the actual register type
-            // of the lclVar, then we need to change the type of the tree node when loading.
-            // This situation happens due to "optimizations" that avoid a cast and
-            // simply retype the node when using long type lclVar as an int.
-            // While loading the int in that case would work for this use of the lclVar, if it is
-            // later used as a long, we will have incorrectly truncated the long.
-            // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
-            // extending load.
-            var_types lclActualType = varDsc->GetActualRegisterType();
-            assert(lclActualType != TYP_UNDEF);
-            if (spillType != lclActualType && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
+            // Never allow truncating the locals here, otherwise a subsequent
+            // use of the local with a wider type would see the truncated
+            // value. We do allow wider loads as those can be efficient even
+            // when unaligned and might be smaller encoding wise (on xarch).
+            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
+            assert(lclLoadType != TYP_UNDEF);
+            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
             {
-                assert(!varTypeIsGC(varDsc));
-                spillType = lclActualType;
+                spillType = lclLoadType;
             }
+
+#if defined(TARGET_LOONGARCH64)
+            if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
+            {
+                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+            }
+#endif
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
 #else
@@ -1328,13 +1350,6 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
 void CodeGen::genNumberOperandUse(GenTree* const operand, int& useNum) const
 {
     assert(operand != nullptr);
-
-    // Ignore argument placeholders.
-    if (operand->OperGet() == GT_ARGPLACE)
-    {
-        return;
-    }
-
     assert(operand->gtUseNum == -1);
 
     if (!operand->isContained() && !operand->IsCopyOrReload())
@@ -1607,6 +1622,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIs(GT_CAST))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {
@@ -1646,7 +1668,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -1660,7 +1682,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_SIMD
             // (In)Equality operation that produces bool result, when compared
             // against Vector zero, marks its Vector Zero operand as contained.
-            assert(tree->OperIsLeaf() || tree->IsSIMDZero() || tree->IsVectorZero());
+            assert(tree->OperIsLeaf() || tree->IsVectorZero());
 #else
             assert(tree->OperIsLeaf());
 #endif
@@ -1745,21 +1767,21 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
                                         regNumber         sizeReg)
 {
     // The putArgNode children are always contained. We should not consume any registers.
-    assert(putArgNode->gtGetOp1()->isContained());
+    assert(putArgNode->Data()->isContained());
 
-    // Get the source address.
-    GenTree* src = putArgNode->gtGetOp1();
+    // Get the source.
+    GenTree*  src        = putArgNode->Data();
+    regNumber srcAddrReg = REG_NA;
     assert(varTypeIsStruct(src));
-    assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
-    GenTree* srcAddr = src->gtGetOp1();
+    assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
 
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
 
-    // Consume the registers only if they are not contained or set to REG_NA.
-    if (srcAddr->GetRegNum() != REG_NA)
+    // Consume the register for the source address if needed.
+    if (src->OperIsIndir())
     {
-        genConsumeReg(srcAddr);
+        srcAddrReg = genConsumeReg(src->AsIndir()->Addr());
     }
 
     // If the op1 is already in the dstReg - nothing to do.
@@ -1781,22 +1803,17 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 #endif // !TARGET_X86
 
-    if (srcAddr->OperIsLocalAddr())
+    if (srcAddrReg != REG_NA)
     {
-        // The OperLocalAddr is always contained.
-        assert(srcAddr->isContained());
-        const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
-
-        // Generate LEA instruction to load the LclVar address in RSI.
-        // Source is known to be on the stack. Use EA_PTRSIZE.
-        unsigned int offset = lclNode->GetLclOffs();
-        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
+        // Source is not known to be on the stack. Use EA_BYREF.
+        GetEmitter()->emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddrReg, /* canSkip */ true);
     }
     else
     {
-        assert(srcAddr->GetRegNum() != REG_NA);
-        // Source is not known to be on the stack. Use EA_BYREF.
-        GetEmitter()->emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddr->GetRegNum(), /* canSkip */ true);
+        // Generate LEA instruction to load the LclVar address in RSI.
+        // Source is known to be on the stack. Use EA_PTRSIZE.
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, src->AsLclVarCommon()->GetLclNum(),
+                                  src->AsLclVarCommon()->GetLclOffs());
     }
 
     if (sizeReg != REG_NA)
@@ -1976,7 +1993,9 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
         {
             // This must be a local struct.
             // Load its address into srcReg.
-            inst_RV_TT(INS_lea, srcReg, src, 0, EA_BYREF);
+            unsigned varNum = src->AsLclVarCommon()->GetLclNum();
+            unsigned offset = src->AsLclVarCommon()->GetLclOffs();
+            GetEmitter()->emitIns_R_S(INS_lea, EA_BYREF, srcReg, varNum, offset);
             return;
         }
     }
@@ -2049,7 +2068,7 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
 void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum)
 {
     const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-    assert(!varDsc->lvNormalizeOnStore() || (type == varDsc->GetActualRegisterType()));
+    assert(!varDsc->lvNormalizeOnStore() || (type == varDsc->GetStackSlotHomeType()));
 
     // We have a register candidate local that is marked with GTF_SPILL.
     // This flag generally means that we need to spill this local.
@@ -2516,7 +2535,13 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_checkKind = CHECK_NONE;
         }
 
-        m_extendKind    = COPY;
+#ifdef TARGET_LOONGARCH64
+        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
+        // the upper 32bits be sign-extended to 64 bits.
+        m_extendKind = SIGN_EXTEND_INT;
+#else
+        m_extendKind = COPY;
+#endif
         m_extendSrcSize = 4;
     }
 #endif
@@ -2593,6 +2618,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 }
 #endif // !defined(TARGET_64BIT)
 
+#ifndef TARGET_LOONGARCH64
 //------------------------------------------------------------------------
 // genCodeForJumpTrue: Generate code for a GT_JTRUE node.
 //
@@ -2604,7 +2630,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
+    GenTreeOp* relop;
+    if (jtrue->gtGetOp1()->OperIsCompare())
+    {
+        relop = jtrue->gtGetOp1()->AsOp();
+    }
+    else
+    {
+        assert(jtrue->gtGetOp1()->OperIsConditionalCompare());
+        relop = jtrue->gtGetOp1()->AsConditional();
+    }
     GenCondition condition = GenCondition::FromRelop(relop);
 
     if (condition.PreferSwap())
@@ -2695,3 +2730,4 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->GetRegNum());
     genProduceReg(setcc);
 }
+#endif // !TARGET_LOONGARCH64

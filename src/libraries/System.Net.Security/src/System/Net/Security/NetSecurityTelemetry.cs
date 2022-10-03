@@ -12,9 +12,7 @@ namespace System.Net.Security
     [EventSource(Name = "System.Net.Security")]
     internal sealed class NetSecurityTelemetry : EventSource
     {
-#if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
 
         private IncrementingPollingCounter? _tlsHandshakeRateCounter;
@@ -247,10 +245,8 @@ namespace System.Net.Security
         }
 
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, string? arg2)
         {
@@ -279,10 +275,8 @@ namespace System.Net.Security
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, SslProtocols arg1)
         {
@@ -298,10 +292,8 @@ namespace System.Net.Security
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, double arg2, string? arg3)
         {

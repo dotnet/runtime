@@ -272,7 +272,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	switch (ins->opcode) {
 	case OP_ICONST:
 		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-		value->value.constant.value = ins->inst_c0;
+		value->value.constant.value = GTMREG_TO_INT (ins->inst_c0);
 		value->value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 		break;
 	case OP_MOVE:
@@ -296,7 +296,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_IADD_IMM:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
-		value->value.variable.delta = ins->inst_imm;
+		value->value.variable.delta = GTMREG_TO_INT (ins->inst_imm);
 		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
@@ -304,7 +304,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_ISUB_IMM:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
-		value->value.variable.delta = -ins->inst_imm;
+		value->value.variable.delta = GTMREG_TO_INT (-ins->inst_imm);
 		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
@@ -493,7 +493,7 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 			symmetric_relation = MONO_SYMMETRIC_RELATION (branch_relation);
 
 			/* FIXME: Other compare opcodes */
-			if (compare->opcode == OP_ICOMPARE) {
+			if (compare->opcode == OP_ICOMPARE && compare->sreg1 != compare->sreg2) {
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
@@ -511,7 +511,7 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-				relations->relation1.relation.related_value.value.constant.value = compare->inst_imm;
+				relations->relation1.relation.related_value.value.constant.value = GTMREG_TO_INT (compare->inst_imm);
 				relations->relation1.relation.related_value.value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 			}
 		}
@@ -737,7 +737,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				printf ("\n");
 			}
 
-			// We decie what to do according the the type of the related value
+			// We decie what to do according the type of the related value
 			switch (relation->related_value.type) {
 			case MONO_ANY_SUMMARIZED_VALUE:
 				// No added information, skip it
@@ -950,14 +950,14 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 
 			current_context = father_context;
 			while (current_context != last_context) {
-				int index = current_context - area->contexts;
+				ptrdiff_t index = current_context - area->contexts;
 				MonoRelationsEvaluationStatus *current_status = &(area->statuses [index]);
 				*current_status = (MonoRelationsEvaluationStatus)(*current_status | recursive_status);
 				current_context = current_context->father;
 			}
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Recursivity rejected (some relation in the cycle is not a defintion)\n");
+				printf ("Recursivity rejected (some relation in the cycle is not a definition)\n");
 			}
 		}
 		break;
@@ -1191,6 +1191,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 		}
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1229,6 +1231,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 			*/
 		}
+
+MONO_RESTORE_WARNING
 	}
 
 	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {
@@ -1303,7 +1307,6 @@ mono_perform_abc_removal (MonoCompile *cfg)
 {
 	MonoVariableRelationsEvaluationArea area;
 	MonoBasicBlock *bb;
-	int i;
 
 	verbose_level = cfg->verbose_level;
 
@@ -1320,7 +1323,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
 	area.defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
-	for (i = 0; i < cfg->next_vreg; i++) {
+	for (guint32 i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
@@ -1406,7 +1409,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	}
 
 	/* Add symmetric relations */
-	for (i = 0; i < cfg->next_vreg; i++) {
+	for (guint32 i = 0; i < cfg->next_vreg; i++) {
 		if (area.relations [i].related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			int related_index = cfg->next_vreg + i;
 			int related_variable = area.relations [i].related_value.value.variable.variable;

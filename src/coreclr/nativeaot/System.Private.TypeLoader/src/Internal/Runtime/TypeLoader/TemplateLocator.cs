@@ -20,9 +20,9 @@ namespace Internal.Runtime.TypeLoader
         private const uint BadTokenFixupValue = 0xFFFFFFFF;
 
         //
-        // Returns the template type handle for a generic instantation type
+        // Returns the template type handle for a generic instantiation type
         //
-        public TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
+        public static TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
 #if GENERICS_FORCE_USG
             return TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
@@ -31,14 +31,13 @@ namespace Internal.Runtime.TypeLoader
             TypeDesc result = TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
+            result ??= TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
 
             return result;
 #endif
         }
 
-        public TypeDesc TryGetUniversalTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
+        public static TypeDesc TryGetUniversalTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
             return TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Universal, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
         }
@@ -53,7 +52,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a type from a ReadyToRun image.
         /// </summary>
-        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public static bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -109,7 +108,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a method from a ReadyToRun image.
         /// </summary>
-        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public static bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -161,7 +160,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private static TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -210,20 +209,19 @@ namespace Internal.Runtime.TypeLoader
         }
 
         //
-        // Returns the template method for a generic method instantation
+        // Returns the template method for a generic method instantiation
         //
-        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public static InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             // First, see if there is a specific canonical template
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
+            result ??= TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             return result;
         }
-        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private static InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -232,7 +230,7 @@ namespace Internal.Runtime.TypeLoader
 
             foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleInfo.Handle);
+                NativeReader nativeLayoutReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(moduleInfo.Handle);
                 if (nativeLayoutReader == null)
                     continue;
 
@@ -286,7 +284,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Lazy loadings of hashtables (load on-demand only)
-        private unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
+        private static unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
         {
             // Load the common fixups table
             externalFixupsTable = default(ExternalReferencesTable);

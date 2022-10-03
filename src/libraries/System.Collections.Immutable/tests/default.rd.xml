@@ -1,0 +1,27 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Collections.Immutable.Tests">
+      <Type Name="System.Collections.Immutable.Tests.ImmutableArrayTest">
+        <Method Name="Insert" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="Remove" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="Replace" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="SetItem" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

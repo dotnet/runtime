@@ -18,8 +18,10 @@ namespace System.Collections.Concurrent
         /// Constructs a new debugger view object for the provided collection object.
         /// </summary>
         /// <param name="collection">A collection to browse in the debugger.</param>
-        public IProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection!!)
+        public IProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _collection = collection;
         }
 

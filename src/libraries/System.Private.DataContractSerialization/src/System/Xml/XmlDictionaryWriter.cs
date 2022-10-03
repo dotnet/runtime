@@ -68,16 +68,11 @@ namespace System.Xml
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
-        public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer!!)
+        public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)
         {
-            XmlDictionaryWriter? dictionaryWriter = writer as XmlDictionaryWriter;
+            ArgumentNullException.ThrowIfNull(writer);
 
-            if (dictionaryWriter == null)
-            {
-                dictionaryWriter = new XmlWrappedWriter(writer);
-            }
-
-            return dictionaryWriter;
+            return writer as XmlDictionaryWriter ?? new XmlWrappedWriter(writer);
         }
 
         public override Task WriteBase64Async(byte[] buffer, int index, int count)
@@ -111,8 +106,10 @@ namespace System.Xml
             WriteAttributeString((string?)null, localName, namespaceUri, value);
         }
 
-        public virtual void WriteXmlnsAttribute(string? prefix, string namespaceUri!!)
+        public virtual void WriteXmlnsAttribute(string? prefix, string namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             if (prefix == null)
             {
                 if (LookupPrefix(namespaceUri) != null)
@@ -161,11 +158,11 @@ namespace System.Xml
             WriteString(XmlDictionaryString.GetString(value));
         }
 
-        public virtual void WriteQualifiedName(XmlDictionaryString localName!!, XmlDictionaryString? namespaceUri)
+        public virtual void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
-#pragma warning suppress 56506 // Microsoft, XmlDictionaryString.Empty is never null
+            ArgumentNullException.ThrowIfNull(localName);
+
+            namespaceUri ??= XmlDictionaryString.Empty;
             WriteQualifiedName(localName.Value, namespaceUri.Value);
         }
 
@@ -175,8 +172,10 @@ namespace System.Xml
         }
 
 
-        public virtual void WriteValue(UniqueId value!!)
+        public virtual void WriteValue(UniqueId value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             WriteString(value.ToString());
         }
 
@@ -190,8 +189,10 @@ namespace System.Xml
             WriteString(XmlConvert.ToString(value));
         }
 
-        public virtual void WriteValue(IStreamProvider value!!)
+        public virtual void WriteValue(IStreamProvider value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Stream stream = value.GetStream();
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.XmlInvalidStream));
@@ -207,7 +208,7 @@ namespace System.Xml
                     break;
                 if (blockSize < 65536 && bytesRead == blockSize)
                 {
-                    blockSize = blockSize * 16;
+                    blockSize *= 16;
                     block = new byte[blockSize];
                 }
             }
@@ -381,8 +382,10 @@ namespace System.Xml
                 base.WriteNode(reader, defattr);
         }
 
-        public virtual void WriteNode(XmlDictionaryReader reader!!, bool defattr)
+        public virtual void WriteNode(XmlDictionaryReader reader, bool defattr)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             int d = (reader.NodeType == XmlNodeType.None ? -1 : reader.Depth);
             do
             {
@@ -432,8 +435,10 @@ namespace System.Xml
             while (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement));
         }
 
-        private void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)
@@ -833,8 +838,10 @@ namespace System.Xml
                 _writer.WriteValue(value);
             }
 
-            public override void WriteXmlnsAttribute(string? prefix, string namespaceUri!!)
+            public override void WriteXmlnsAttribute(string? prefix, string namespaceUri)
             {
+                ArgumentNullException.ThrowIfNull(namespaceUri);
+
                 if (prefix == null)
                 {
                     if (LookupPrefix(namespaceUri) != null)

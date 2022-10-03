@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _symbolNodeFactory = symbolNodeFactory;
         }
 
-        class PgoValueEmitter : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
+        class PgoValueEmitter : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             public PgoValueEmitter(CompilationModuleGroup compilationGroup, ReadyToRunSymbolNodeFactory factory, bool actuallyCaptureOutput)
             {
@@ -52,14 +52,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _longs.Clear();
                 _imports.Clear();
                 _typeConversions.Clear();
+                _methodConversions.Clear();
                 _unknownTypesFound = 0;
+                _unknownMethodsFound = 0;
             }
 
             public IReadOnlyList<Import> ReferencedImports => _imports;
             List<long> _longs = new List<long>();
             List<Import> _imports = new List<Import>();
             Dictionary<TypeSystemEntityOrUnknown, int> _typeConversions = new Dictionary<TypeSystemEntityOrUnknown, int>();
+            Dictionary<TypeSystemEntityOrUnknown, int> _methodConversions = new Dictionary<TypeSystemEntityOrUnknown, int>();
             int _unknownTypesFound = 0;
+            int _unknownMethodsFound = 0;
             CompilationModuleGroup _compilationGroup;
             ReadyToRunSymbolNodeFactory _symbolFactory;
             bool _actuallyCaptureOutput;
@@ -84,18 +88,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 EmitLong(TypeToInt(type), TypeToInt(previousValue));
             }
 
-            private int TypeToInt(TypeSystemEntityOrUnknown type)
+            public void EmitMethod(TypeSystemEntityOrUnknown method, TypeSystemEntityOrUnknown previousValue)
             {
-                if (type.IsNull || (type.AsType == null && type.AsUnknown == 0))
+                EmitLong(MethodToInt(method), MethodToInt(previousValue));
+            }
+
+            private int TypeToInt(TypeSystemEntityOrUnknown handle)
+            {
+                if (handle.IsNull || (handle.AsType == null && handle.AsUnknown == 0))
                     return 0;
 
-                if (_typeConversions.TryGetValue(type, out int computedInt))
+                if (_typeConversions.TryGetValue(handle, out int computedInt))
                 {
                     return computedInt;
                 }
-                if (type.AsType != null && _compilationGroup.VersionsWithTypeReference(type.AsType))
+                if (handle.AsType != null && _compilationGroup.VersionsWithTypeReference(handle.AsType))
                 {
-                    Import typeHandleImport = (Import)_symbolFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type.AsType);
+                    Import typeHandleImport = (Import)_symbolFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, handle.AsType);
                     _imports.Add(typeHandleImport);
 
                     if (_actuallyCaptureOutput)
@@ -120,7 +129,51 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     computedInt = ((++_unknownTypesFound) << 4) | 0xF;
                 }
-                _typeConversions.Add(type, computedInt);
+                _typeConversions.Add(handle, computedInt);
+                return computedInt;
+            }
+
+            private int MethodToInt(TypeSystemEntityOrUnknown handle)
+            {
+                if (handle.IsNull || (handle.AsMethod == null && handle.AsUnknown == 0))
+                    return 0;
+
+                if (_methodConversions.TryGetValue(handle, out int computedInt))
+                {
+                    return computedInt;
+                }
+                if (handle.AsMethod != null && _compilationGroup.VersionsWithMethodBody(handle.AsMethod))
+                {
+                    EcmaMethod typicalMethod = (EcmaMethod)handle.AsMethod.GetTypicalMethodDefinition();
+                    ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+
+                    MethodWithToken tok = new MethodWithToken(handle.AsMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
+                    Import methodHandleImport = (Import)_symbolFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, tok);
+                    _imports.Add(methodHandleImport);
+
+                    if (_actuallyCaptureOutput)
+                    {
+                        if (methodHandleImport.Table.IndexFromBeginningOfArray >= 0xF)
+                        {
+                            // The current implementation of this table only allows for 15 different
+                            // import tables to be used. This is probably enough for long term
+                            // but this code will throw if we use more import tables and attempt
+                            // to encode pgo data
+                            throw new Exception("Unexpected high index for table import");
+                        }
+
+                        computedInt = (methodHandleImport.IndexFromBeginningOfArray << 4) | methodHandleImport.Table.IndexFromBeginningOfArray;
+                    }
+                    else
+                    {
+                        computedInt = _imports.Count << 1;
+                    }
+                }
+                else
+                {
+                    computedInt = ((++_unknownMethodsFound) << 4) | 0xF;
+                }
+                _methodConversions.Add(handle, computedInt);
                 return computedInt;
             }
         }
@@ -169,18 +222,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 pgoEmitter.Clear();
                 PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
 
-                // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
-                EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
-                ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
-
-                ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
-                signatureBuilder.EmitMethodSignature(
-                    new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
-                    enforceDefEncoding: true,
-                    enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
-                    factory.SignatureContext,
-                    isInstantiatingStub: false);
-                byte[] signature = signatureBuilder.ToArray();
+                byte[] signature = InstanceEntryPointTableNode.BuildSignatureForMethodDefinedInModule(method, factory);
                 BlobVertex signatureBlob = new BlobVertex(signature);
 
                 byte[] encodedInstrumentationData = pgoEmitter.ToByteArray();

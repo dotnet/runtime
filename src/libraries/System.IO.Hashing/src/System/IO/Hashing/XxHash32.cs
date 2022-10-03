@@ -73,7 +73,7 @@ namespace System.IO.Hashing
             {
                 int remain = StripeSize - held;
 
-                if (source.Length > remain)
+                if (source.Length >= remain)
                 {
                     source.Slice(0, remain).CopyTo(_holdback.AsSpan(held));
                     _state.ProcessStripe(_holdback);
@@ -130,8 +130,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source!!)
+        public static byte[] Hash(byte[] source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             return Hash(new ReadOnlySpan<byte>(source));
         }
 
@@ -144,8 +149,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public static byte[] Hash(byte[] source!!, int seed)
+        public static byte[] Hash(byte[] source, int seed)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
 

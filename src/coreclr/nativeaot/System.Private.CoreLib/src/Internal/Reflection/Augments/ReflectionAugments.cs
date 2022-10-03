@@ -115,7 +115,7 @@ namespace Internal.Reflection.Augments
 
     //
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
-    // of Type.GetTypeInfo() and (on Project N) (Assembly.Load()).
+    // of Type.GetTypeInfo() and Assembly.Load().
     //
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
@@ -166,5 +166,7 @@ namespace Internal.Reflection.Augments
         public abstract Assembly[] GetLoadedAssemblies();
 
         public abstract EnumInfo GetEnumInfo(Type type);
+
+        public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
     }
 }

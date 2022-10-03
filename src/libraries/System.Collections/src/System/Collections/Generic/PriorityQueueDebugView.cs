@@ -10,8 +10,10 @@ namespace System.Collections.Generic
         private readonly PriorityQueue<TElement, TPriority> _queue;
         private readonly bool _sort;
 
-        public PriorityQueueDebugView(PriorityQueue<TElement, TPriority> queue!!)
+        public PriorityQueueDebugView(PriorityQueue<TElement, TPriority> queue)
         {
+            ArgumentNullException.ThrowIfNull(queue);
+
             _queue = queue;
             _sort = true;
         }

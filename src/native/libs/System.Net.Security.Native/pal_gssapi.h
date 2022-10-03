@@ -40,6 +40,13 @@ typedef enum
     PAL_GSS_C_DELEG_POLICY_FLAG = 0x8000
 } PAL_GssFlags;
 
+typedef enum
+{
+    PAL_GSS_NEGOTIATE = 0,
+    PAL_GSS_NTLM = 1,
+    PAL_GSS_KERBEROS = 2,
+} PAL_GssPackageType;
+
 /*
 Issue: #7342
 Disable padded warning which occurs in case of 32-bit builds
@@ -111,7 +118,7 @@ Shims the gss_init_sec_context method with SPNEGO oids.
 PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     GssCredId* claimantCredHandle,
                                                     GssCtxId** contextHandle,
-                                                    uint32_t isNtlm,
+                                                    uint32_t packageType,
                                                     GssName* targetName,
                                                     uint32_t reqFlags,
                                                     uint8_t* inputBytes,
@@ -123,7 +130,7 @@ PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
 PALEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
                                                       GssCredId* claimantCredHandle,
                                                       GssCtxId** contextHandle,
-                                                      uint32_t isNtlm,
+                                                      uint32_t packageType,
                                                       void* cbt,
                                                       int32_t cbtSize,
                                                       GssName* targetName,
@@ -157,7 +164,7 @@ Shims the gss_wrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                           GssCtxId* contextHandle,
-                                          int32_t isEncrypt,
+                                          int32_t* isEncrypt,
                                           uint8_t* inputBytes,
                                           int32_t count,
                                           PAL_GssBuffer* outBuffer);
@@ -167,16 +174,35 @@ Shims the gss_unwrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
                                             GssCtxId* contextHandle,
+                                            int32_t* isEncrypt,
                                             uint8_t* inputBytes,
-                                            int32_t offset,
                                             int32_t count,
                                             PAL_GssBuffer* outBuffer);
+
+/*
+Shims the gss_get_mic method.
+*/
+PALEXPORT uint32_t NetSecurityNative_GetMic(uint32_t* minorStatus,
+                                            GssCtxId* contextHandle,
+                                            uint8_t* inputBytes,
+                                            int32_t inputLength,
+                                            PAL_GssBuffer* outBuffer);
+
+/*
+Shims the gss_verify_mic method.
+*/
+PALEXPORT uint32_t NetSecurityNative_VerifyMic(uint32_t* minorStatus,
+                                               GssCtxId* contextHandle,
+                                               uint8_t* inputBytes,
+                                               int32_t inputLength,
+                                               uint8_t* tokenBytes,
+                                               int32_t tokenLength);
 
 /*
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
 PALEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
-                                                              int32_t isNtlm,
+                                                              int32_t packageType,
                                                               GssName* desiredName,
                                                               char* password,
                                                               uint32_t passwdLen,

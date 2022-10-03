@@ -21,7 +21,7 @@ namespace System.Runtime
         [RuntimeExport("RhNewObject")]
         public static unsafe object RhNewObject(MethodTable* pEEType)
         {
-            // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
+            // This is structured in a funny way because at the present state of things, the Debug.Assert
             // below will call into the assert defined in the class library (and not the MRT version of it). The one
             // in the class library is not low level enough to be callable when GC statics are not initialized yet.
             // Feel free to restructure once that's not a problem.
@@ -75,8 +75,8 @@ namespace System.Runtime
         {
             ref byte dataAdjustedForNullable = ref data;
 
-            // Can box value types only (which also implies no finalizers).
-            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
+            // Can box non-ByRefLike value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsByRefLike && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
@@ -171,11 +171,11 @@ namespace System.Runtime
 
                 if (ptrUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.MethodTable, ptrUnboxToEEType->NullableType);
+                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.GetMethodTable(), ptrUnboxToEEType->NullableType);
                 }
                 else
                 {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.MethodTable, ptrUnboxToEEType);
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
                 }
 
                 if (!isValid)
@@ -207,7 +207,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox2")]
         public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj == null) || !UnboxAnyTypeCompare(obj.MethodTable, pUnboxToEEType))
+            if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
             {
                 ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
                 throw pUnboxToEEType->GetClasslibException(exID);
@@ -218,7 +218,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnboxNullable")]
         public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.MethodTable, pUnboxToEEType->NullableType))
+            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.GetMethodTable(), pUnboxToEEType->NullableType))
             {
                 throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
@@ -242,7 +242,7 @@ namespace System.Runtime
                 return;
             }
 
-            MethodTable* pEEType = obj.MethodTable;
+            MethodTable* pEEType = obj.GetMethodTable();
 
             // Can unbox value types only.
             Debug.Assert(pEEType->IsValueType);
@@ -282,10 +282,10 @@ namespace System.Runtime
         {
             object objClone;
 
-            if (src.MethodTable->IsArray)
-                objClone = RhNewArray(src.MethodTable, Unsafe.As<Array>(src).Length);
+            if (src.GetMethodTable()->IsArray)
+                objClone = RhNewArray(src.GetMethodTable(), Unsafe.As<Array>(src).Length);
             else
-                objClone = RhNewObject(src.MethodTable);
+                objClone = RhNewObject(src.GetMethodTable());
 
             InternalCalls.RhpCopyObjectContents(objClone, src);
 
@@ -300,9 +300,10 @@ namespace System.Runtime
                 return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
         }
 
-        [LibraryImport(Redhawk.BaseName)]
+        // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
+        [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        private static unsafe partial int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
+        private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.
@@ -342,68 +343,6 @@ namespace System.Runtime
             }
 
             return success ? (int)nFrames : -(int)nFrames;
-        }
-
-        // The GC conservative reporting descriptor is a special structure of data that the GC
-        // parses to determine whether there are specific regions of memory that it should not
-        // collect or move around.
-        // During garbage collection, the GC will inspect the data in this structure, and verify that:
-        //  1) _magic is set to the magic number (also hard coded on the GC side)
-        //  2) The reported region is valid (checks alignments, size, within bounds of the thread memory, etc...)
-        //  3) The ConservativelyReportedRegionDesc pointer must be reported by a frame which does not make a pinvoke transition.
-        //  4) The value of the _hash field is the computed hash of _regionPointerLow with _regionPointerHigh
-        //  5) The region must be IntPtr aligned, and have a size which is also IntPtr aligned
-        // If all conditions are satisfied, the region of memory starting at _regionPointerLow and ending at
-        // _regionPointerHigh will be conservatively reported.
-        // This can only be used to report memory regions on the current stack and the structure must itself
-        // be located on the stack.
-        public struct ConservativelyReportedRegionDesc
-        {
-            internal const ulong MagicNumber64 = 0x87DF7A104F09E0A9UL;
-            internal const uint MagicNumber32 = 0x4F09E0A9;
-
-            internal UIntPtr _magic;
-            internal UIntPtr _regionPointerLow;
-            internal UIntPtr _regionPointerHigh;
-            internal UIntPtr _hash;
-        }
-
-        [RuntimeExport("RhInitializeConservativeReportingRegion")]
-        public static unsafe void RhInitializeConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc, void* bufferBegin, int cbBuffer)
-        {
-            Debug.Assert((((int)bufferBegin) & (sizeof(IntPtr) - 1)) == 0, "Buffer not IntPtr aligned");
-            Debug.Assert((cbBuffer & (sizeof(IntPtr) - 1)) == 0, "Size of buffer not IntPtr aligned");
-
-            UIntPtr regionPointerLow = (UIntPtr)bufferBegin;
-            UIntPtr regionPointerHigh = (UIntPtr)(((byte*)bufferBegin) + cbBuffer);
-
-            // Setup pointers to start and end of region
-            regionDesc->_regionPointerLow = regionPointerLow;
-            regionDesc->_regionPointerHigh = regionPointerHigh;
-
-            // Activate the region for processing
-#if TARGET_64BIT
-            ulong hash = ConservativelyReportedRegionDesc.MagicNumber64;
-            hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerLow;
-            hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerHigh;
-
-            regionDesc->_hash = new UIntPtr(hash);
-            regionDesc->_magic = new UIntPtr(ConservativelyReportedRegionDesc.MagicNumber64);
-#else
-            uint hash = ConservativelyReportedRegionDesc.MagicNumber32;
-            hash = ((hash << 13) ^ hash) ^ (uint)regionPointerLow;
-            hash = ((hash << 13) ^ hash) ^ (uint)regionPointerHigh;
-
-            regionDesc->_hash = new UIntPtr(hash);
-            regionDesc->_magic = new UIntPtr(ConservativelyReportedRegionDesc.MagicNumber32);
-#endif
-        }
-
-        // Disable conservative reporting
-        [RuntimeExport("RhDisableConservativeReportingRegion")]
-        public static unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc)
-        {
-            regionDesc->_magic = default(UIntPtr);
         }
 
         [RuntimeExport("RhCreateThunksHeap")]

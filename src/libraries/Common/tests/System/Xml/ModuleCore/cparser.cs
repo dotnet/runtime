@@ -34,7 +34,7 @@ namespace OLEDB.Test.ModuleCore
         public class Tokens
         {
             public string Equal = "=";
-            public string Seperator = ";";
+            public string Separator = ";";
             public string SingleQuote = "'";
             public string DoubleQuote = "\"";
         };
@@ -94,7 +94,7 @@ namespace OLEDB.Test.ModuleCore
                             {
                                 state = PARSE.DoubleBegin;
                             }
-                            else if (tokens.Seperator.IndexOf(ch) >= 0)
+                            else if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 keywords[key] = string.Empty;
                                 state = PARSE.Initial;
@@ -107,7 +107,7 @@ namespace OLEDB.Test.ModuleCore
                             break;
 
                         case PARSE.Value:
-                            if (tokens.Seperator.IndexOf(ch) >= 0)
+                            if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 keywords[key] = (builder.ToString()).Trim();
                                 state = PARSE.Initial;
@@ -161,7 +161,7 @@ namespace OLEDB.Test.ModuleCore
                             break;
 
                         case PARSE.End:
-                            if (tokens.Seperator.IndexOf(ch) >= 0)
+                            if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 state = PARSE.Initial;
                             }

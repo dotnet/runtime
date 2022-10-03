@@ -15,6 +15,11 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 - [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
+- [Checked user-defined operators](#checked-user-defined-operators)
+- [Atomic reads and writes](#atomic-reads-and-writes)
+- [Backward branch constraints](#backward-branch-constraints)
+- [API documentation](#api-documentation)
+- [Debug Interchange Format](#debug-interchange-format)
 
 ## Signatures
 
@@ -720,7 +725,7 @@ operations.
 T Exponential<T, TFloat>(T exponent) where
     T : IArithmetic<T>,
     T : IMultiplicationBy<T, TFloat>
-        
+
 {
     T result = T.One();
     T powerOfValue = exponent;
@@ -836,7 +841,7 @@ compile calls to “methods on `base`” (i.e., the statically known parent clas
 
 Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/records.md) C# language features implemented in C# 9.0.
 
-This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1.
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compatibility rules are defined in ECMA I.8.7.1.
 
 Example:
 ```
@@ -847,7 +852,7 @@ class Base
 
 class Derived : Base
 {
-  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the 
+  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the
   // return types are not the same. However, the return types are compatible in a covariant fashion.
   public override string VirtualMethod() { return null;}
 }
@@ -876,7 +881,7 @@ Edit the first paragraph "The .override directive specifies that a virtual metho
 
 ### II.10.3.4 Impact of overrides on derived classes
 Add a third bullet
-"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overriden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implementation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
 
 
 ```
@@ -885,8 +890,8 @@ Add a third bullet
 }
 .class B extends A {
   .method virtual DerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFunction
     ...
   }
 }
@@ -900,8 +905,8 @@ Add a third bullet
 .class D extends C
 {
   .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFunction
     ...
   }
 }
@@ -977,10 +982,14 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 - Remove the rest of this section. Its contents have been moved into sections I.8.6.1.1 and I.8.6.1.2
 
 ### I.8.7
-- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 insetad of I.8.6.1.3
+- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 instead of I.8.6.1.3
 
 ### I.8.9.2
 - Insert at the end of the first paragraph “An unmanaged pointer type cannot point to a managed pointer.”
+
+### II.14.4.2
+- Replace the sentence "Managed pointers (&) can point to an instance of a value type, a field of an object, a field of a value type, an element of an array, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with  "Managed pointers (&) can point to a local variable, a method argument, a field of an object or a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. A null managed pointer must not be dereferenced."
 
 Changes to signatures:
 ### II.23.2.10
@@ -992,11 +1001,49 @@ Changes to signatures:
 ### II.23.2.12
 - Add TYPEDBYREF as a form of Type
 
+### III.1.1.5.2
+- Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Remove the sentence "Managed pointers cannot be null."
+- Add a bullet point
+  - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
 
 1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
-2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section describes metadata which will be processed by IL rewriters in order to maintain the required alignment.
 
 In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.
+
+## Checked user-defined operators
+
+Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+
+Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
+*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
+implementing checked explicit conversion operator.
+
+A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
+
+## Atomic reads and writes
+
+Section "I.12.6.6 Atomic reads and writes" adds clarification that the atomicity guarantees apply to built-in primitive value types and pointers only.
+
+A conforming CLI shall guarantee that read and write access of *built-in primitive value types and pointers* to properly aligned memory locations no larger than the native word size (the size of type native int) is atomic (see §I.12.6.2) when all the write accesses to a location are the same size.
+
+## Backward branch constraints
+
+Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## API documentation
+
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+
+The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
+
+## Debug Interchange Format
+
+The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).

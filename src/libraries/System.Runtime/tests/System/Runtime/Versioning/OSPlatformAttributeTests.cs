@@ -28,6 +28,19 @@ namespace System.Runtime.Versioning.Tests
             var tpa = new UnsupportedOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
+            Assert.Null(tpa.Message);
+        }
+
+        [Theory]
+        [InlineData("Windows8.0", "Message in a bottle")]
+        [InlineData("Android4.1", "Message on a pigeon")]
+        [InlineData("", null)]
+        public void TestUnsupportedOSPlatformAttributeWithMessage(string platformName, string? message)
+        {
+            var tpa = new UnsupportedOSPlatformAttribute(platformName, message);
+
+            Assert.Equal(platformName, tpa.PlatformName);
+            Assert.Equal(message, tpa.Message);
         }
 
         [Theory]
@@ -39,6 +52,29 @@ namespace System.Runtime.Versioning.Tests
             var tpa = new SupportedOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
+        }
+
+        [Theory]
+        [InlineData("Windows8.0")]
+        [InlineData("Android4.1")]
+        [InlineData("")]
+        public void TestObsoletedInOSPlatformAttribute(string platformName)
+        {
+            var tpa = new ObsoletedInOSPlatformAttribute(platformName);
+
+            Assert.Equal(platformName, tpa.PlatformName);
+        }
+
+        [Theory]
+        [InlineData("Windows8.0", "Message in a bottle")]
+        [InlineData("Android4.1", "Message on a pigeon")]
+        [InlineData("", null)]
+        public void TestObsoletedInOSPlatformAttributeWithMessage(string platformName, string? message)
+        {
+            var tpa = new ObsoletedInOSPlatformAttribute(platformName, message);
+
+            Assert.Equal(platformName, tpa.PlatformName);
+            Assert.Equal(message, tpa.Message);
         }
 
         [Theory]

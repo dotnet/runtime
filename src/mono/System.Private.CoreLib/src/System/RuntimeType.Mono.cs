@@ -147,8 +147,7 @@ namespace System
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             return RuntimeTypeHandle.GetTypeByName(
                 typeName, throwOnError, ignoreCase, ref stackMark);
@@ -331,10 +330,9 @@ namespace System
             #endregion
 
             #region Filter by name wrt prefixLookup and implicitly by case sensitivity
-            if (prefixLookup == true)
+            if (prefixLookup && !FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
             {
-                if (!FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
-                    return false;
+                return false;
             }
             #endregion
 
@@ -704,7 +702,6 @@ namespace System
             return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, -1, false).ToArray();
         }
 
-        [ComVisible(true)]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
@@ -805,8 +802,7 @@ namespace System
                 }
             }
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
         }
@@ -835,8 +831,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -845,7 +840,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -875,8 +870,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
         }
@@ -884,7 +878,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out _, out listType);
@@ -912,7 +906,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(name);
 
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out _, out listType);
@@ -931,7 +925,7 @@ namespace System
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException();
 
-                        if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
+                        if (match.DeclaringType!.IsInterface && fieldInfo.DeclaringType!.IsInterface)
                             multipleStaticFieldMatches = true;
                     }
 
@@ -954,7 +948,7 @@ namespace System
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
+            ArgumentNullException.ThrowIfNull(fullname);
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -971,14 +965,12 @@ namespace System
             StringComparison nameComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (RuntimeType t in GetInterfaces())
             {
-
                 if (!string.Equals(t.Name, name, nameComparison))
                 {
                     continue;
                 }
 
-                if (list == null)
-                    list = new List<RuntimeType>(2);
+                list ??= new List<RuntimeType>(2);
 
                 list.Add(t);
             }
@@ -1007,7 +999,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
+            ArgumentNullException.ThrowIfNull(fullname);
 
             bindingAttr &= ~BindingFlags.Static;
             string? name, ns;
@@ -1035,7 +1027,7 @@ namespace System
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -1117,7 +1109,7 @@ namespace System
 
         public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
-            if (member is null) throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             RuntimeType? runtimeType = this;
             while (runtimeType != null)
@@ -1270,7 +1262,22 @@ namespace System
             return GetBaseType() == typeof(System.MulticastDelegate);
         }
 
+        protected override bool IsValueTypeImpl()
+        {
+            // We need to return true for generic parameters with the ValueType constraint.
+            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
+            // false for all generic parameters.
+            if (this == typeof(ValueType) || this == typeof(Enum))
+                return false;
+
+            return IsSubclassOf(typeof(ValueType));
+        }
+
+        // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
+
+        // Returns true for actual enum types only.
+        internal bool IsActualEnum => RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -1300,16 +1307,13 @@ namespace System
             Type[]? types = null;
             var this_type = this;
             GetGenericArgumentsInternal(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref types), false);
-            if (types == null)
-                types = Type.EmptyTypes;
-            return types;
+            return types ?? Type.EmptyTypes;
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(Type[] instantiation)
         {
-            if (instantiation == null)
-                throw new ArgumentNullException(nameof(instantiation));
+            ArgumentNullException.ThrowIfNull(instantiation);
 
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
 
@@ -1413,8 +1417,7 @@ namespace System
                     int argCnt = args.Length;
 
                     // Without a binder we need to do use the default binder...
-                    if (binder == null)
-                        binder = DefaultBinder;
+                    binder ??= DefaultBinder;
 
                     // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
                     // so a call to GetMemberCons would fail
@@ -1579,16 +1582,14 @@ namespace System
 
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
-            if (fromNoninstanciated == null)
-                throw new ArgumentNullException(nameof(fromNoninstanciated));
+            ArgumentNullException.ThrowIfNull(fromNoninstanciated);
             var this_type = this;
             return (MethodInfo)GetCorrespondingInflatedMethod(new QCallTypeHandle(ref this_type), fromNoninstanciated);
         }
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
-            if (fromNoninstanciated == null)
-                throw new ArgumentNullException(nameof(fromNoninstanciated));
+            ArgumentNullException.ThrowIfNull(fromNoninstanciated);
             var this_type = this;
             return (ConstructorInfo)GetCorrespondingInflatedMethod(new QCallTypeHandle(ref this_type), fromNoninstanciated);
         }
@@ -1609,24 +1610,6 @@ namespace System
             return att.Length != 0 ? ((DefaultMemberAttribute)att[0]).MemberName : null;
         }
 
-        private RuntimeConstructorInfo? m_serializationCtor;
-        internal RuntimeConstructorInfo? GetSerializationCtor()
-        {
-            if (m_serializationCtor == null)
-            {
-                var s_SICtorParamTypes = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-
-                m_serializationCtor = GetConstructor(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                    null,
-                    CallingConventions.Any,
-                    s_SICtorParamTypes,
-                    null) as RuntimeConstructorInfo;
-            }
-
-            return m_serializationCtor;
-        }
-
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
         {
             RuntimeConstructorInfo? ctor = GetDefaultConstructor();
@@ -1641,7 +1624,8 @@ namespace System
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
                     throw new NotSupportedException("NotSupported_ContainsStackPtr");
 
-                if (IsValueType) {
+                if (IsValueType)
+                {
                     var this_type = this;
                     return CreateInstanceInternal(new QCallTypeHandle(ref this_type));
                 }
@@ -1655,75 +1639,137 @@ namespace System
                 throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
             }
 
-            return ctor.InvokeWorker(null, wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions, Span<object?>.Empty);
+            unsafe
+            {
+                return ctor.Invoker.InlinedInvoke(
+                    obj: null,
+                    args: default,
+                    wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
+            }
         }
 
-        internal object? CheckValue(object? value, Binder? binder, CultureInfo? culture, BindingFlags invokeAttr)
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
+        /// </summary>
+        /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
+        internal bool CheckValue(
+            ref object? value,
+            ref ParameterCopyBackAction copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
         {
-            bool failed = false;
-            object? res = TryConvertToType(value, ref failed);
-            if (!failed)
-                return res;
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+
+            copyBack = ParameterCopyBackAction.Copy;
+
+            CheckValueStatus status = TryConvertToType(ref value);
+            if (status == CheckValueStatus.Success)
+            {
+                return true;
+            }
+
+            if (status == CheckValueStatus.NotSupported_ByRefLike)
+            {
+                throw new NotSupportedException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
+            }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
+            }
 
             if (binder != null && binder != DefaultBinder)
-                return binder.ChangeType(value!, this, culture);
+            {
+                value = binder.ChangeType(value!, this, culture);
+                return true;
+            }
 
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
         }
 
-        private object? TryConvertToType(object? value, ref bool failed)
+        private enum CheckValueStatus
+        {
+            Success = 0,
+            ArgumentException,
+            NotSupported_ByRefLike
+        }
+
+        private CheckValueStatus TryConvertToType(ref object? value)
         {
             if (IsInstanceOfType(value))
-            {
-                return value;
-            }
+                return CheckValueStatus.Success;
 
             if (IsByRef)
             {
-                Type? elementType = GetElementType();
+                Type elementType = GetElementType();
+                if (elementType.IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
-                    return value;
+                    return CheckValueStatus.Success;
                 }
             }
 
             if (value == null)
-                return value;
+            {
+                if (IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
+                return CheckValueStatus.Success;
+            }
 
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
-                    return value;
+                    return CheckValueStatus.Success;
+
                 object? res = IsConvertibleToPrimitiveType(value, type);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    return CheckValueStatus.Success;
+                }
             }
             else if (IsPrimitive)
             {
                 object? res = IsConvertibleToPrimitiveType(value, this);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    return CheckValueStatus.Success;
+                }
             }
             else if (IsPointer)
             {
                 Type? vtype = value.GetType();
                 if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
-                    return value;
+                    return CheckValueStatus.Success;
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
                     if (pointerType == this)
-                        return pointer.GetPointerValue();
+                    {
+                        value = pointer.GetPointerValue();
+                        return CheckValueStatus.Success;
+                    }
                 }
             }
 
-            failed = true;
-            return null;
+            return CheckValueStatus.ArgumentException;
         }
+
+        // Stub method to allow for shared code with CoreClr.
+#pragma warning disable CA1822
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
+#pragma warning restore CA1822
 
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
@@ -1973,17 +2019,24 @@ namespace System
 
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
-            RuntimeType genericArgument)
+            RuntimeType genericArgument,
+            RuntimeType? genericArgument2 = null)
         {
             RuntimeType? gt = null;
-            MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
+            if (genericArgument2 != null)
+                MakeGenericType(genericType, new Type[] { genericArgument, genericArgument2 }, ObjectHandleOnStack.Create(ref gt));
+            else
+                MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
             RuntimeConstructorInfo? ctor = gt!.GetDefaultConstructor();
 
             // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
-            return ctor.InvokeCtorWorker(BindingFlags.Default, Span<object?>.Empty)!;
+            unsafe
+            {
+                return ctor.Invoker.InlinedInvoke(obj: null, args: default, BindingFlags.Default)!;
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -2056,8 +2109,7 @@ namespace System
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            if (ifaceType is null)
-                throw new ArgumentNullException(nameof(ifaceType));
+            ArgumentNullException.ThrowIfNull(ifaceType);
 
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
@@ -2293,6 +2345,8 @@ namespace System
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
+        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
+
         public override bool IsSZArray
         {
             get
@@ -2311,8 +2365,7 @@ namespace System
 
         public override bool IsSubclassOf(Type type)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             RuntimeType? rtType = type as RuntimeType;
             if (rtType == null)

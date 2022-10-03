@@ -3,11 +3,12 @@
 
 
 using System;
+using Xunit;
 
 
-namespace SinCalc
+namespace SinCalc_sin_morph_cs
 {
-    internal class SinCalc
+    public class SinCalc
     {
         protected static object PI = 3.1415926535897932384626433832795d;
 
@@ -28,7 +29,8 @@ namespace SinCalc
             return sumOfTerms;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             object i;
             object Angle;

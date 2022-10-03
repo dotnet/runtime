@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -117,6 +117,18 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
+  <data name="ContentWasDetached" xml:space="preserve">
+    <value>Content was not included in the message (detached message), provide a content to verify.</value>
+  </data>
+  <data name="ContentWasEmbedded" xml:space="preserve">
+    <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
+  </data>
+  <data name="CoseHeaderMapArgumentCoseHeaderValueIncorrect" xml:space="preserve">
+    <value>Not a valid CBOR encoded value on CoseHeaderValue on header '{0}', see inner exception for details.</value>
+  </data>
   <data name="CoseHeaderMapCborEncodedValueNotValid" xml:space="preserve">
     <value>Not a valid CBOR encoded value, it must be a single value with no trailing data.</value>
   </data>
@@ -126,8 +138,32 @@
   <data name="CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue" xml:space="preserve">
     <value>Header '{0}' does not accept the specified value.</value>
   </data>
-  <data name="CoseHeaderMapLabelDoeNotExist" xml:space="preserve">
-    <value>Label '{0}' does not exist is the map.</value>
+  <data name="CoseHeaderValueErrorWhileDecoding" xml:space="preserve">
+    <value>Error while decoding CBOR encoded value, see inner exception for details.</value>
+  </data>
+  <data name="CoseSignerRSAKeyNeedsPadding" xml:space="preserve">
+    <value>RSA key needs a signature padding.</value>
+  </data>
+  <data name="CriticalHeaderMissing" xml:space="preserve">
+    <value>Critical Header '{0}' missing from protected map.</value>
+  </data>
+  <data name="CriticalHeadersLabelWasIncorrect" xml:space="preserve">
+    <value>Label in Critical Headers array was incorrect.</value>
+  </data>
+  <data name="CriticalHeadersMustBeArrayOfAtLeastOne" xml:space="preserve">
+    <value>Critical Headers must be a definite-length CBOR array of at least one element.</value>
+  </data>
+  <data name="DecodeCoseSignatureMustBeArrayOfThree" xml:space="preserve">
+    <value>COSE Signature must be a definite-length array of 3 elements.</value>
+  </data>
+  <data name="DecodeErrorWhileDecoding" xml:space="preserve">
+    <value>Error while decoding COSE message. {0}</value>
+  </data>
+  <data name="DecodeErrorWhileDecodingSeeInnerEx" xml:space="preserve">
+    <value>Error while decoding COSE message. See the inner exception for details.</value>
+  </data>
+  <data name="DecodeMultiSignIncorrectTag" xml:space="preserve">
+    <value>Incorrect tag. Expected Sign(98) or Untagged, Actual '{0}'.</value>
   </data>
   <data name="DecodeSign1ArrayLengthMustBeFour" xml:space="preserve">
     <value>Array length for COSE_Sign1 must be four.</value>
@@ -135,32 +171,38 @@
   <data name="DecodeSign1EncodedProtectedMapIncorrect" xml:space="preserve">
     <value>Protected map was incorrect.</value>
   </data>
-  <data name="DecodeSign1ErrorWhileDecoding" xml:space="preserve">
-    <value>Error while decoding COSE message. {0}</value>
-  </data>
-  <data name="DecodeSign1ErrorWhileDecodingSeeInnerEx" xml:space="preserve">
-    <value>Error while decoding COSE message. See the inner exception for details.</value>
-  </data>
   <data name="DecodeSign1IncorrectTag" xml:space="preserve">
     <value>Incorrect tag. Expected Sign1(18) or Untagged, Actual '{0}'.</value>
   </data>
   <data name="DecodeSign1MapLabelWasIncorrect" xml:space="preserve">
     <value>Map label was incorrect.</value>
   </data>
-  <data name="DecodeSign1MesageContainedTrailingData" xml:space="preserve">
+  <data name="DecodeSign1MessageContainedTrailingData" xml:space="preserve">
     <value>CBOR payload contained trailing data after Sign1 message was complete.</value>
   </data>
   <data name="DecodeSign1PayloadWasIncorrect" xml:space="preserve">
     <value>Payload was incorrect.</value>
   </data>
+  <data name="MultiSignMessageMustCarryAtLeastOneSignature" xml:space="preserve">
+    <value>COSE Sign message must carry at least one signature.</value>
+  </data>
   <data name="Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey" xml:space="preserve">
     <value>COSE algorithm '{0}' doesn't match with the supported algorithms of '{1}'.</value>
+  </data>
+  <data name="Sign1ArgumentStreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="Sign1ArgumentStreamNotSeekable" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
   </data>
   <data name="Sign1SignAlgMustBeProtected" xml:space="preserve">
     <value>If specified, Algorithm (alg) must be a protected header.</value>
   </data>
-  <data name="Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm" xml:space="preserve">
+  <data name="Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm" xml:space="preserve">
     <value>COSE Algorithm '{0}' doesn't match with the specified Key '{1}' and Hash Algorithm '{2}'.</value>
+  </data>
+  <data name="Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding" xml:space="preserve">
+    <value>COSE Algorithm '{0}' doesn't match with the specified Key '{1}', Hash Algorithm '{2}', and Signature Padding {3}.</value>
   </data>
   <data name="Sign1SignHeaderDuplicateLabels" xml:space="preserve">
     <value>Protected and Unprotected buckets must not contain duplicate labels.</value>
@@ -168,28 +210,16 @@
   <data name="Sign1SignUnsupportedHashAlgorithm" xml:space="preserve">
     <value>Unsuppoerted hash algorithm '{0}'.</value>
   </data>
-  <data name="Sign1SignUnsupportedKey" xml:space="preserve">
-    <value>Unsupported key '{0}'.</value>
-  </data>
   <data name="Sign1UnknownCoseAlgorithm" xml:space="preserve">
     <value>COSE algorithm '{0}' is unknown.</value>
+  </data>
+  <data name="Sign1UnsupportedKey" xml:space="preserve">
+    <value>Unsupported key '{0}'.</value>
   </data>
   <data name="Sign1VerifyAlgHeaderWasIncorrect" xml:space="preserve">
     <value>Algorithm header CBOR type was incorrect, expected int or tstr.</value>
   </data>
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
-  </data>
-  <data name="Sign1VerifyAlgorithmHeaderParameterWasMissing" xml:space="preserve">
-    <value>Algorithm (alg) header parameter was missing.</value>
-  </data>
-  <data name="Sign1VerifyContentWasDetached" xml:space="preserve">
-    <value>Content was not included in the message (detached message), provide a content to verify.</value>
-  </data>
-  <data name="Sign1VerifyContentWasEmbedded" xml:space="preserve">
-    <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
-  </data>
-  <data name="Sign1VerifyCriticalAndCounterSignNotSupported" xml:space="preserve">
-    <value>Critical and Counter Signature headers are currently not supported.</value>
   </data>
 </root>

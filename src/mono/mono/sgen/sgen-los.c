@@ -275,7 +275,7 @@ static LOSObject*
 get_los_section_memory (size_t size)
 {
 	LOSSection *section;
-	LOSFreeChunks *free_chunks;
+	LOSFreeChunks *free_chunks = NULL;
 	size_t num_chunks;
 	size_t obj_size = size;
 
@@ -782,7 +782,6 @@ sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 	long long marked_cards = 0;
 
 	FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK (obj, has_references) {
-		int i;
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) obj->data);
 		guint8 *cards_end = sgen_card_table_get_card_scan_address ((mword) obj->data + sgen_los_object_size (obj) - 1);
 		mword num_cards = (cards_end - cards) + 1;
@@ -791,7 +790,7 @@ sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 			continue;
 
 		total_cards += num_cards;
-		for (i = 0; i < num_cards; ++i) {
+		for (mword i = 0; i < num_cards; ++i) {
 			if (cards [i])
 				++marked_cards;
 		}

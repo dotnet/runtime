@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +44,8 @@ namespace System.Net.NetworkInformation
         private static Timer? s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -83,6 +86,8 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
@@ -159,15 +164,20 @@ namespace System.Net.NetworkInformation
         {
             Debug.Assert(Monitor.IsEntered(s_gate));
             Debug.Assert(Socket == null, "Socket is not null, must close existing socket before opening another.");
+
+            var sh = new SafeSocketHandle();
+
             IntPtr newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
+                sh.Dispose();
                 throw new NetworkInformationException(message);
             }
 
-            Socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
+            Marshal.InitHandle(sh, newSocket);
+            Socket = new Socket(sh);
 
             // Don't capture ExecutionContext.
             ThreadPool.UnsafeQueueUserWorkItem(
@@ -277,7 +287,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -319,7 +329,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, args);
                     }

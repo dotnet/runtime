@@ -268,7 +268,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Send non-success error code so that SocketsHttpHandler won't retry.
                 await connection.SendResponseAsync(statusCode: HttpStatusCode.Forbidden);
-                connection.Dispose();
+                await connection.DisposeAsync();
             }));
 
             Assert.True(connectionAccepted);

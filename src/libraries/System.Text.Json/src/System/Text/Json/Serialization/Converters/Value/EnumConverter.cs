@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
         // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
+        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
         private const string ValueSeparator = ", ";
 
@@ -47,8 +48,13 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
             _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
 
+#if NETCOREAPP
+            string[] names = Enum.GetNames<T>();
+            T[] values = Enum.GetValues<T>();
+#else
             string[] names = Enum.GetNames(TypeToConvert);
             Array values = Enum.GetValues(TypeToConvert);
+#endif
             Debug.Assert(names.Length == values.Length);
 
             JavaScriptEncoder? encoder = serializerOptions.Encoder;
@@ -60,7 +66,11 @@ namespace System.Text.Json.Serialization.Converters
                     break;
                 }
 
+#if NETCOREAPP
+                T value = values[i];
+#else
                 T value = (T)values.GetValue(i)!;
+#endif
                 ulong key = ConvertToUInt64(value);
                 string name = names[i];
 
@@ -169,6 +179,8 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // We are dealing with a combination of flag constants since
                     // all constant values were cached during warm-up.
+                    Debug.Assert(original.Contains(ValueSeparator));
+
                     JavaScriptEncoder? encoder = options.Encoder;
 
                     if (_nameCache.Count < NameCacheSizeSoftLimit)
@@ -263,7 +275,7 @@ namespace System.Text.Json.Serialization.Converters
             // so we'll just pick the first valid one and check for a negative sign
             // if needed.
             return (value[0] >= 'A' &&
-                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
+                (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
         }
 
         private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
@@ -286,7 +298,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
                 string[] enumValues = value.Split(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     ValueSeparator
 #else
                     new string[] { ValueSeparator }, StringSplitOptions.None
@@ -306,11 +318,31 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string? enumString = reader.GetString();
+#if NETCOREAPP
+            char[]? rentedBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int charsWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
             // Try parsing case sensitive first
-            if (!Enum.TryParse(enumString, out T value)
-                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            bool success = Enum.TryParse(source, out T value) || Enum.TryParse(source, ignoreCase: true, out value);
+
+            if (rentedBuffer != null)
+            {
+                charBuffer.Slice(0, charsWritten).Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+#else
+            string? enumString = reader.GetString();
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(enumString, out T value) || Enum.TryParse(enumString, ignoreCase: true, out value);
+#endif
+            if (!success)
             {
                 ThrowHelper.ThrowJsonException();
             }
@@ -348,6 +380,8 @@ namespace System.Text.Json.Serialization.Converters
             string original = value.ToString();
             if (IsValidIdentifier(original))
             {
+                Debug.Assert(original.Contains(ValueSeparator));
+
                 if (options.DictionaryKeyPolicy != null)
                 {
                     original = options.DictionaryKeyPolicy.ConvertName(original);

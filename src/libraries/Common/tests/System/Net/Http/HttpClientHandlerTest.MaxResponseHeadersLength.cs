@@ -90,7 +90,10 @@ namespace System.Net.Http.Functional.Tests
                                     await Task.Delay(1);
                                 }
                             }
-                            catch { }
+                            catch (Exception ex)
+                            {
+                                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                            }
                         });
 
                         Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
@@ -136,7 +139,14 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                             }
-                            try { await serverTask; } catch { }
+                            try
+                            {
+                                await serverTask;
+                            }
+                            catch (Exception ex)
+                            {
+                                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                            }
                         }
                     });
                 }

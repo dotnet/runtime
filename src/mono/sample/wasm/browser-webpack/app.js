@@ -4,7 +4,7 @@ import _ from 'underscore'
 async function dotnetMeaning() {
     try {
         const { BINDING } = await createDotnetRuntime({
-            configSrc: "./mono-config.json",
+            configSrc: "./mono-config.json"
         });
         const meaningFunction = BINDING.bind_static_method("[Wasm.Browser.WebPack.Sample] Sample.Test:Main");
         return meaningFunction();
@@ -16,7 +16,8 @@ async function dotnetMeaning() {
 
 export async function main() {
 
-    const element = document.getElementById("out")
+    const element = document.getElementById("out");
+    element.textContent = "loading dotnet...";
 
     const ret = await dotnetMeaning();
     const template = _.template('<%=ret%> as computed on dotnet');

@@ -228,7 +228,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     TypeHandle srcTH = pSrcMT->GetArrayElementTypeHandle();
     TypeHandle destTH = pDestMT->GetArrayElementTypeHandle();
     _ASSERTE(srcTH != destTH);  // Handled by fast path
-    
+
     // Value class boxing
     if (srcTH.IsValueType() && !destTH.IsValueType())
     {
@@ -862,7 +862,7 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
 
     TypeHandle elementType(pElementType->GetType());
-    
+
     CheckElementType(elementType);
 
     CorElementType CorType = elementType.GetSignatureCorElementType();
@@ -936,44 +936,6 @@ Done: ;
 }
 FCIMPLEND
 
-FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
-
-    BASEARRAYREF refThis(refThisUNSAFE);
-
-    TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
-
-    // Legacy behavior
-    if (arrayElementType.IsTypeDesc())
-    {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowRes(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
-    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj;
-
-    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
-    if (pElementTypeMT->IsValueType())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        Obj = pElementTypeMT->Box(pData);
-        HELPER_METHOD_FRAME_END();
-    }
-    else
-    {
-        Obj = ObjectToOBJECTREF(*((Object**)pData));
-    }
-
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {
     FCALL_CONTRACT;
@@ -983,12 +945,10 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    // Legacy behavior
+    // Legacy behavior (this handles pointers and function pointers)
     if (arrayElementType.IsTypeDesc())
     {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
+        FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
@@ -1055,7 +1015,7 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
             pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
 
             UINT cbSize = CorTypeInfo::Size(targetType);
-            memcpyNoGCRefs(pData, ArgSlotEndianessFixup(&value, cbSize), cbSize);
+            memcpyNoGCRefs(pData, ArgSlotEndiannessFixup(&value, cbSize), cbSize);
 
             HELPER_METHOD_FRAME_END();
         }
@@ -1080,9 +1040,6 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
 
     if (!pField->IsRVA())
         COMPlusThrow(kArgumentException);
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     // Note that we do not check that the field is actually in the PE file that is initializing
     // the array. Basically the data being published is can be accessed by anyone with the proper
@@ -1146,7 +1103,7 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
     } gc;
     gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
     gc.refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(FCALL_RTH_TO_REFLECTCLASS(targetTypeUnsafe));
-    void* data;
+    void* data = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
@@ -1160,9 +1117,6 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
 
     DWORD totalSize = pField->LoadSize();
     DWORD targetTypeSize = targetTypeHandle.GetSize();
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     data = pField->GetStaticAddressHandle(NULL);
     _ASSERTE(data != NULL);

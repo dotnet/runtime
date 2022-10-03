@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
     public partial class FileVersionInfoTest
     {
         [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks mkfifo")]
         [Fact]
         public void NonRegularFile_Throws()
         {

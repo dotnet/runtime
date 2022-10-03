@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
@@ -138,17 +139,14 @@ namespace System.Net
         {
             Interop.Winsock.EnsureInitialized();
 
-            GetAddrInfoExContext* context = GetAddrInfoExContext.AllocateContext();
-
-            GetAddrInfoExState state;
+            GetAddrInfoExState? state = null;
             try
             {
-                state = new GetAddrInfoExState(context, hostName, justAddresses);
-                context->QueryStateHandle = state.CreateHandle();
+                state = new GetAddrInfoExState(hostName, justAddresses);
             }
             catch
             {
-                GetAddrInfoExContext.FreeContext(context);
+                state?.Dispose();
                 throw;
             }
 
@@ -157,6 +155,8 @@ namespace System.Net
             {
                 hints.ai_flags = AddressInfoHints.AI_CANONNAME;
             }
+
+            GetAddrInfoExContext* context = state.Context;
 
             SocketError errorCode = (SocketError)Interop.Winsock.GetAddrInfoExW(
                 hostName, null, Interop.Winsock.NS_ALL, IntPtr.Zero, &hints, &context->Result, IntPtr.Zero, &context->Overlapped, &GetAddressInfoExCallback, &context->CancelHandle);
@@ -172,7 +172,7 @@ namespace System.Net
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
                 // impersonated context. Windows 8 and Server 2012 fail for same reason with different errorCode.
-                GetAddrInfoExContext.FreeContext(context);
+                state.Dispose();
                 return null;
             }
             else
@@ -194,10 +194,10 @@ namespace System.Net
 
         private static unsafe void ProcessResult(SocketError errorCode, GetAddrInfoExContext* context)
         {
+            GetAddrInfoExState state = GetAddrInfoExState.FromHandleAndFree(context->QueryStateHandle);
+
             try
             {
-                GetAddrInfoExState state = GetAddrInfoExState.FromHandleAndFree(context->QueryStateHandle);
-
                 CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
 
                 if (errorCode == SocketError.Success)
@@ -222,7 +222,7 @@ namespace System.Net
             }
             finally
             {
-                GetAddrInfoExContext.FreeContext(context);
+                state.Dispose();
             }
         }
 
@@ -360,18 +360,21 @@ namespace System.Net
             return new IPAddress(address, scope);
         }
 
-        private sealed unsafe class GetAddrInfoExState : IThreadPoolWorkItem
+        // GetAddrInfoExState is a SafeHandle that manages the lifetime of GetAddrInfoExContext*
+        // to make sure GetAddrInfoExCancel always takes a valid memory address regardless of the race
+        // between cancellation and completion callbacks.
+        private sealed unsafe class GetAddrInfoExState : SafeHandleZeroOrMinusOneIsInvalid, IThreadPoolWorkItem
         {
-            private GetAddrInfoExContext* _cancellationContext;
             private CancellationTokenRegistration _cancellationRegistration;
 
             private AsyncTaskMethodBuilder<IPHostEntry> IPHostEntryBuilder;
             private AsyncTaskMethodBuilder<IPAddress[]> IPAddressArrayBuilder;
             private object? _result;
+            private volatile bool _completed;
 
-            public GetAddrInfoExState(GetAddrInfoExContext *context, string hostName, bool justAddresses)
+            public GetAddrInfoExState(string hostName, bool justAddresses)
+                : base(true)
             {
-                _cancellationContext = context;
                 HostName = hostName;
                 JustAddresses = justAddresses;
                 if (justAddresses)
@@ -384,6 +387,10 @@ namespace System.Net
                     IPHostEntryBuilder = AsyncTaskMethodBuilder<IPHostEntry>.Create();
                     _ = IPHostEntryBuilder.Task; // force initialization
                 }
+
+                GetAddrInfoExContext* context = GetAddrInfoExContext.AllocateContext();
+                context->QueryStateHandle = CreateHandle();
+                SetHandle((IntPtr)context);
             }
 
             public string HostName { get; }
@@ -392,52 +399,62 @@ namespace System.Net
 
             public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
 
+            internal GetAddrInfoExContext* Context => (GetAddrInfoExContext*)handle;
+
             public void RegisterForCancellation(CancellationToken cancellationToken)
             {
                 if (!cancellationToken.CanBeCanceled) return;
 
-                lock (this)
+                if (_completed)
                 {
-                    if (_cancellationContext == null)
+                    // The operation completed before registration could be done.
+                    return;
+                }
+
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static o =>
+                {
+                    var @this = (GetAddrInfoExState)o!;
+                    if (@this._completed)
                     {
-                        // The operation completed before registration could be done.
+                        // Escape early and avoid ObjectDisposedException in DangerousAddRef
                         return;
                     }
 
-                    _cancellationRegistration = cancellationToken.UnsafeRegister(o =>
+                    bool needRelease = false;
+                    try
                     {
-                        var @this = (GetAddrInfoExState)o!;
-                        int cancelResult = 0;
+                        @this.DangerousAddRef(ref needRelease);
 
-                        lock (@this)
-                        {
-                            GetAddrInfoExContext* context = @this._cancellationContext;
+                        // If DangerousAddRef didn't throw ODE, the handle should contain a valid pointer.
+                        GetAddrInfoExContext* context = @this.Context;
 
-                            if (context != null)
-                            {
-                                // An outstanding operation will be completed with WSA_E_CANCELLED, and GetAddrInfoExCancel will return NO_ERROR.
-                                // If this thread has lost the race between cancellation and completion, this will be a NOP
-                                // with GetAddrInfoExCancel returning WSA_INVALID_HANDLE.
-                                cancelResult = Interop.Winsock.GetAddrInfoExCancel(&context->CancelHandle);
-                            }
-                        }
-
-                        if (cancelResult != 0 && cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.Log.IsEnabled())
+                        // An outstanding operation will be completed with WSA_E_CANCELLED, and GetAddrInfoExCancel will return NO_ERROR.
+                        // If this thread has lost the race between cancellation and completion, this will be a NOP
+                        // with GetAddrInfoExCancel returning WSA_INVALID_HANDLE.
+                        int cancelResult = Interop.Winsock.GetAddrInfoExCancel(&context->CancelHandle);
+                        if (cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
                         }
-                    }, this);
-                }
+                    }
+                    finally
+                    {
+                        if (needRelease)
+                        {
+                            @this.DangerousRelease();
+                        }
+                    }
+
+                }, this);
             }
 
             public CancellationToken UnregisterAndGetCancellationToken()
             {
-                lock (this)
-                {
-                    _cancellationContext = null;
-                    _cancellationRegistration.Unregister();
-                }
+                _completed = true;
 
+                // We should not wait for pending cancellation callbacks with CTR.Dispose(),
+                // since we are in a completion routine and GetAddrInfoExCancel may get blocked until it's finished.
+                _cancellationRegistration.Unregister();
                 return _cancellationRegistration.Token;
             }
 
@@ -479,8 +496,6 @@ namespace System.Net
                 }
             }
 
-            public IntPtr CreateHandle() => GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Normal));
-
             public static GetAddrInfoExState FromHandleAndFree(IntPtr handle)
             {
                 GCHandle gcHandle = GCHandle.FromIntPtr(handle);
@@ -488,6 +503,15 @@ namespace System.Net
                 gcHandle.Free();
                 return state;
             }
+
+            protected override bool ReleaseHandle()
+            {
+                GetAddrInfoExContext.FreeContext(Context);
+
+                return true;
+            }
+
+            private IntPtr CreateHandle() => GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Normal));
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -498,12 +522,7 @@ namespace System.Net
             public IntPtr CancelHandle;
             public IntPtr QueryStateHandle;
 
-            public static GetAddrInfoExContext* AllocateContext()
-            {
-                var context = (GetAddrInfoExContext*)Marshal.AllocHGlobal(sizeof(GetAddrInfoExContext));
-                *context = default;
-                return context;
-            }
+            public static GetAddrInfoExContext* AllocateContext() => (GetAddrInfoExContext*)NativeMemory.AllocZeroed((nuint)sizeof(GetAddrInfoExContext));
 
             public static void FreeContext(GetAddrInfoExContext* context)
             {
@@ -511,8 +530,7 @@ namespace System.Net
                 {
                     Interop.Winsock.FreeAddrInfoExW(context->Result);
                 }
-
-                Marshal.FreeHGlobal((IntPtr)context);
+                NativeMemory.Free(context);
             }
         }
     }

@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Caching.Abstractions.cs" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
+    <Compile Include="Microsoft.Extensions.Caching.Abstractions.net6.0.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="Microsoft.Extensions.Caching.Abstractions.Typeforwards.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"/>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'"
+             Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Runtime" />
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 </Project>

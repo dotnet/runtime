@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="Base\BaseGetSetAttributes.cs" />
     <Compile Include="Base\BaseGetSetTimes.cs" />
+    <Compile Include="Base\BaseGetSetUnixFileMode.cs" />
     <Compile Include="Base\FileGetSetAttributes.cs" />
     <Compile Include="Base\InfoGetSetAttributes.cs" />
     <Compile Include="Base\InfoGetSetTimes.cs" />
@@ -21,7 +22,9 @@
     <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="Directory\SymbolicLinks.cs" />
     <Compile Include="DirectoryInfo\SymbolicLinks.cs" />
+    <Compile Include="DirectoryInfo\GetSetUnixFileMode.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
+    <Compile Include="FileInfo\GetSetUnixFileMode.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileInfo\SymbolicLinks.cs" />
@@ -31,7 +34,13 @@
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
-    <Compile Include="File\GetSetAttributesCommon.cs" />
+    <Compile Include="File\GetSetAttributes_String.cs" />
+    <Compile Include="File\GetSetAttributes_SafeFileHandle.cs" />
+    <Compile Include="File\GetSetTimes.cs" />
+    <Compile Include="File\GetSetTimes_SafeFileHandle.cs" />
+    <Compile Include="File\GetSetTimes_SafeFileHandle_Pathless.cs" />
+    <Compile Include="File\GetSetUnixFileMode.cs" />
+    <Compile Include="File\GetSetUnixFileMode_SafeFileHandle.cs" />
     <Compile Include="File\Replace.cs" />
     <Compile Include="File\AppendAsync.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
@@ -75,9 +84,11 @@
     <Compile Include="FileSystemTest.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="FileStream\ctor_options.Unix.cs" />
+    <Compile Include="Directory\CreateDirectory_UnixFileMode.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
+    <Compile Include="Directory\CreateDirectory_UnixFileMode.Windows.cs" />
     <Compile Include="File\EncryptDecrypt.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />
@@ -92,6 +103,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
+	<Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
@@ -195,7 +208,7 @@
     <Compile Include="File\ChangeExtension.cs" />
     <Compile Include="File\Copy.cs" />
     <Compile Include="File\Exists.cs" />
-    <Compile Include="File\GetSetTimes.cs" />
+    <Compile Include="File\GetSetTimes_String.cs" />
     <Compile Include="File\Open.cs" />
     <Compile Include="File\OpenHandle.cs" />
     <Compile Include="FileInfo\Create.cs" />

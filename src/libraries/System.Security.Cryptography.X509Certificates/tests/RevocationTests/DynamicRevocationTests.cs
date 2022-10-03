@@ -640,7 +640,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -673,7 +672,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (OperatingSystem.IsLinux())
+                        if (!OperatingSystem.IsWindows())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }

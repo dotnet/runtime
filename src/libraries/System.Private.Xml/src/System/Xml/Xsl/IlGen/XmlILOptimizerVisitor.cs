@@ -123,10 +123,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode VisitReference(QilNode oldNode)
         {
-            QilNode? newNode = _subs.FindReplacement(oldNode);
-
-            if (newNode == null)
-                newNode = oldNode;
+            QilNode? newNode = _subs.FindReplacement(oldNode) ?? oldNode;
 
             // Fold reference to constant value
             // This is done here because "p" currently cannot match references
@@ -168,7 +165,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         protected override QilNode? NoReplace(QilNode? node)
         {
             // Calculate MaybeSideEffects pattern.  This is done here rather than using P because every node needs
@@ -5112,7 +5109,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Returns true if any operator within the "expr" subtree references "target".
         /// </summary>
-        private bool DependsOn(QilNode expr, QilNode target)
+        private static bool DependsOn(QilNode expr, QilNode target)
         {
             return new NodeFinder().Find(expr, target);
         }
@@ -5120,7 +5117,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Returns true if there is no PositionOf operator within the "expr" subtree that references iterator "iter".
         /// </summary>
-        private bool NonPositional(QilNode expr, QilNode iter)
+        private static bool NonPositional(QilNode expr, QilNode iter)
         {
             return !(new PositionOfFinder().Find(expr, iter));
         }
@@ -5167,7 +5164,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "typ" is xs:decimal=, xs:integer=, xs:int=, xs:double=, or xs:float=.
         /// </summary>
-        private bool IsPrimitiveNumeric(XmlQueryType? typ)
+        private static bool IsPrimitiveNumeric(XmlQueryType? typ)
         {
             if (typ == XmlQueryTypeFactory.IntX) return true;
             if (typ == XmlQueryTypeFactory.IntegerX) return true;
@@ -5181,7 +5178,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Returns true if "typ" matches one of the XPath content node tests: *, text(), comment(), pi(), or node().
         /// </summary>
-        private bool MatchesContentTest(XmlQueryType typ)
+        private static bool MatchesContentTest(XmlQueryType typ)
         {
             if (typ == XmlQueryTypeFactory.Element) return true;
             if (typ == XmlQueryTypeFactory.Text) return true;
@@ -5256,7 +5253,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// True if the specified expression is a literal value.
         /// </summary>
-        private bool IsLiteral(QilNode nd)
+        private static bool IsLiteral(QilNode nd)
         {
             switch (nd.NodeType)
             {
@@ -5276,7 +5273,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if all children of "nd" are constant.
         /// </summary>
-        private bool AreLiteralArgs(QilNode nd)
+        private static bool AreLiteralArgs(QilNode nd)
         {
             foreach (QilNode child in nd)
                 if (!IsLiteral(child))
@@ -5288,7 +5285,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Extract the value of a literal.
         /// </summary>
-        private object ExtractLiteralValue(QilNode nd)
+        private static object ExtractLiteralValue(QilNode nd)
         {
             if (nd.NodeType == QilNodeType.True)
                 return true;
@@ -5304,7 +5301,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "nd" has a child of type Sequence.
         /// </summary>
-        private bool HasNestedSequence(QilNode nd)
+        private static bool HasNestedSequence(QilNode nd)
         {
             foreach (QilNode child in nd)
             {
@@ -5317,7 +5314,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// True if the JoinAndDod pattern is allowed to match the specified node.
         /// </summary>
-        private bool AllowJoinAndDod(QilNode nd)
+        private static bool AllowJoinAndDod(QilNode nd)
         {
             OptimizerPatterns patt = OptimizerPatterns.Read(nd);
 
@@ -5338,7 +5335,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// True if the DodReverse pattern is allowed to match the specified node.
         /// </summary>
-        private bool AllowDodReverse(QilNode nd)
+        private static bool AllowDodReverse(QilNode nd)
         {
             OptimizerPatterns patt = OptimizerPatterns.Read(nd);
 
@@ -5588,7 +5585,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Mark the specified node as matching the Step pattern and set the step node and step input arguments.
         /// </summary>
-        private void AddStepPattern(QilNode nd, QilNode input)
+        private static void AddStepPattern(QilNode nd, QilNode input)
         {
             OptimizerPatterns patt = OptimizerPatterns.Write(nd);
             patt.AddPattern(OptimizerPatternName.Step);
@@ -5599,7 +5596,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "nd" matches the Step pattern and the StepType argument is equal to "stepType".
         /// </summary>
-        private bool IsDocOrderDistinct(QilNode nd)
+        private static bool IsDocOrderDistinct(QilNode nd)
         {
             return OptimizerPatterns.Read(nd).MatchesPattern(OptimizerPatternName.IsDocOrderDistinct);
         }
@@ -5607,7 +5604,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "nd" matches the Step pattern and the StepType argument is equal to "stepType".
         /// </summary>
-        private bool IsStepPattern(QilNode nd, QilNodeType stepType)
+        private static bool IsStepPattern(QilNode nd, QilNodeType stepType)
         {
             return IsStepPattern(OptimizerPatterns.Read(nd), stepType);
         }
@@ -5615,7 +5612,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if "patt" matches the Step pattern and the StepType argument is equal to "stepType".
         /// </summary>
-        private bool IsStepPattern(OptimizerPatterns patt, QilNodeType stepType)
+        private static bool IsStepPattern(OptimizerPatterns patt, QilNodeType stepType)
         {
             return patt.MatchesPattern(OptimizerPatternName.Step) && ((QilNode)patt.GetArgument(OptimizerPatternArgument.StepNode)).NodeType == stepType;
         }

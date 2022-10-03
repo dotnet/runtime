@@ -157,8 +157,10 @@ namespace System.Collections.Generic
         ///  Constructs the heap using a heapify operation,
         ///  which is generally faster than enqueuing individual elements sequentially.
         /// </remarks>
-        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items!!, IComparer<TPriority>? comparer)
+        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items, IComparer<TPriority>? comparer)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             _nodes = EnumerableHelpers.ToArray(items, out _size);
             _comparer = InitializeComparer(comparer);
 
@@ -308,7 +310,7 @@ namespace System.Collections.Generic
         /// <remarks>
         ///  Implements an insert-then-extract heap operation that is generally more efficient
         ///  than sequencing Enqueue and Dequeue operations: in the worst case scenario only one
-        ///  sift-down operation is required.
+        ///  shift-down operation is required.
         /// </remarks>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
@@ -346,8 +348,10 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items!!)
+        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             int count = 0;
             var collection = items as ICollection<(TElement Element, TPriority Priority)>;
             if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
@@ -407,8 +411,10 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="elements"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<TElement> elements!!, TPriority priority)
+        public void EnqueueRange(IEnumerable<TElement> elements, TPriority priority)
         {
+            ArgumentNullException.ThrowIfNull(elements);
+
             int count;
             if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
@@ -563,12 +569,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (index - 1) >> Log2Arity;
+        private static int GetParentIndex(int index) => (index - 1) >> Log2Arity;
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        private int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
+        private static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 
         /// <summary>
         /// Converts an unordered list into a heap.
@@ -800,8 +806,10 @@ namespace System.Collections.Generic
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
-            void ICollection.CopyTo(Array array!!, int index)
+            void ICollection.CopyTo(Array array, int index)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -814,7 +822,7 @@ namespace System.Collections.Generic
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 if (array.Length - index < _queue._size)

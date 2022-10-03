@@ -67,18 +67,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(certSubjectObsolete, cert.GetIssuerName());
 #pragma warning restore CS0618
 
-                int snlen = cert.GetSerialNumber().Length;
-                Assert.Equal(16, snlen);
+                byte[] serial1 = cert.GetSerialNumber();
+                byte[] serial2 = cert.GetSerialNumber();
+                Assert.NotSame(serial1, serial2);
+                AssertExtensions.SequenceEqual(serial1, serial2);
 
-                byte[] serialNumber = new byte[snlen];
-                Buffer.BlockCopy(cert.GetSerialNumber(), 0,
-                                     serialNumber, 0,
-                                     snlen);
+                // Big-endian value
+                byte[] expectedSerial = "2A98A8770374E7B34195EBE04D9B17F6".HexToByteArray();
+                AssertExtensions.SequenceEqual(expectedSerial, cert.SerialNumberBytes.Span);
 
-                Assert.Equal(0xF6, serialNumber[0]);
-                Assert.Equal(0xB3, serialNumber[snlen / 2]);
-                Assert.Equal(0x2A, serialNumber[snlen - 1]);
-
+                // GetSerialNumber() returns in little-endian order.
+                Array.Reverse(expectedSerial);
+                AssertExtensions.SequenceEqual(expectedSerial, serial1);
+                
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
 
                 int pklen = cert.GetPublicKey().Length;
@@ -377,6 +378,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKey());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
+                Assert.ThrowsAny<CryptographicException>(() => c.SerialNumberBytes);
                 Assert.ThrowsAny<CryptographicException>(() => c.Issuer);
                 Assert.ThrowsAny<CryptographicException>(() => c.Subject);
                 Assert.ThrowsAny<CryptographicException>(() => c.NotBefore);
@@ -433,6 +435,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(certSubject, cert.Issuer);
 
                 Assert.Equal("9E7A5CCC9F951A8700", cert.GetSerialNumber().ByteArrayToHex());
+                Assert.Equal("00871A959FCC5C7A9E", cert.SerialNumberBytes.ByteArrayToHex());
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
 
                 Assert.Equal(74, cert.GetPublicKey().Length);

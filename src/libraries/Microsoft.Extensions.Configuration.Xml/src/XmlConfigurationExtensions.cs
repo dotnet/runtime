@@ -62,8 +62,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder!!, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
+            ThrowHelper.ThrowIfNull(builder);
+
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException(SR.Error_InvalidFilePath, nameof(path));
@@ -85,7 +87,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, Action<XmlConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, Action<XmlConfigurationSource>? configureSource)
             => builder.Add(configureSource);
 
         /// <summary>
@@ -94,8 +96,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="stream">The <see cref="Stream"/> to read the XML configuration data from.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddXmlStream(this IConfigurationBuilder builder!!, Stream stream)
+        public static IConfigurationBuilder AddXmlStream(this IConfigurationBuilder builder, Stream stream)
         {
+            ThrowHelper.ThrowIfNull(builder);
+
             return builder.Add<XmlStreamConfigurationSource>(s => s.Stream = stream);
         }
     }

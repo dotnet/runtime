@@ -504,9 +504,9 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             continue;
         }
-        _ASSERTE(waitResult == WAIT_TIMEOUT);
 
-        // The wait timed out, see if the worker can exit
+        // The wait timed out, see if the worker can exit. When using the PAL, it may be possible to get WAIT_FAILED in some
+        // shutdown scenarios, treat that as a timeout too since a signal would not have been observed anyway.
 
         LockHolder tieredCompilationLockHolder;
 
@@ -579,13 +579,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
         COUNT_T methodCount = methodsPendingCounting->GetCount();
         CodeVersionManager *codeVersionManager = GetAppDomain()->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
-
-        // Backpatching entry point slots requires cooperative GC mode, see
-        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-        // must be used here to prevent deadlock.
-        GCX_COOP();
+        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
         CodeVersionManager::LockHolder codeVersioningLockHolder;
 
         for (COUNT_T i = 0; i < methodCount; ++i)
@@ -946,14 +940,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     HRESULT hr = S_OK;
     {
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-            mayHaveEntryPointSlotsToBackpatch);
-
-        // Backpatching entry point slots requires cooperative GC mode, see
-        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-        // must be used here to prevent deadlock.
-        GCX_MAYBE_COOP(mayHaveEntryPointSlotsToBackpatch);
+        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
 
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
@@ -973,7 +960,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     }
 }
 
-// Dequeues the next method in the optmization queue.
+// Dequeues the next method in the optimization queue.
 // This runs on the background thread.
 NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 {

@@ -83,10 +83,7 @@ namespace System.Net.WebSockets
             _closeStatus = null;
             _closeStatusDescription = null;
             _innerStreamAsWebSocketStream = innerStream as IWebSocketStream;
-            if (_innerStreamAsWebSocketStream != null)
-            {
-                _innerStreamAsWebSocketStream.SwitchToOpaqueMode(this);
-            }
+            _innerStreamAsWebSocketStream?.SwitchToOpaqueMode(this);
             _keepAliveTracker = KeepAliveTracker.Create(keepAliveInterval);
         }
 
@@ -372,10 +369,7 @@ namespace System.Net.WebSockets
                 _sendOutstandingOperationHelper.CancelIO();
                 _closeOutputOutstandingOperationHelper.CancelIO();
                 _closeOutstandingOperationHelper.CancelIO();
-                if (_innerStreamAsWebSocketStream != null)
-                {
-                    _innerStreamAsWebSocketStream.Abort();
-                }
+                _innerStreamAsWebSocketStream?.Abort();
                 CleanUp();
             }
             finally
@@ -564,11 +558,8 @@ namespace System.Net.WebSockets
 
                 try
                 {
-                    if (_closeNetworkConnectionTask == null)
-                    {
-                        _closeNetworkConnectionTask =
-                            _innerStreamAsWebSocketStream.CloseNetworkConnectionAsync(cancellationToken);
-                    }
+                    _closeNetworkConnectionTask ??=
+                        _innerStreamAsWebSocketStream.CloseNetworkConnectionAsync(cancellationToken);
 
                     if (thisLockTaken && sessionHandleLockTaken)
                     {
@@ -875,7 +866,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
+        private static void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
         {
             Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
             thisLockTaken = false;
@@ -922,10 +913,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_receiveOperation == null)
-                    {
-                        _receiveOperation = new WebSocketOperation.ReceiveOperation(this);
-                    }
+                    _receiveOperation ??= new WebSocketOperation.ReceiveOperation(this);
                 }
             }
         }
@@ -936,10 +924,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_sendOperation == null)
-                    {
-                        _sendOperation = new WebSocketOperation.SendOperation(this);
-                    }
+                    _sendOperation ??= new WebSocketOperation.SendOperation(this);
                 }
             }
         }
@@ -966,10 +951,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_closeOutputOperation == null)
-                    {
-                        _closeOutputOperation = new WebSocketOperation.CloseOutputOperation(this);
-                    }
+                    _closeOutputOperation ??= new WebSocketOperation.CloseOutputOperation(this);
                 }
             }
         }
@@ -1163,35 +1145,12 @@ namespace System.Net.WebSockets
 
             _cleanedUp = true;
 
-            if (SessionHandle != null)
-            {
-                SessionHandle.Dispose();
-            }
-
-            if (_internalBuffer != null)
-            {
-                _internalBuffer.Dispose(this.State);
-            }
-
-            if (_receiveOutstandingOperationHelper != null)
-            {
-                _receiveOutstandingOperationHelper.Dispose();
-            }
-
-            if (_sendOutstandingOperationHelper != null)
-            {
-                _sendOutstandingOperationHelper.Dispose();
-            }
-
-            if (_closeOutputOutstandingOperationHelper != null)
-            {
-                _closeOutputOutstandingOperationHelper.Dispose();
-            }
-
-            if (_closeOutstandingOperationHelper != null)
-            {
-                _closeOutstandingOperationHelper.Dispose();
-            }
+            SessionHandle?.Dispose();
+            _internalBuffer?.Dispose(this.State);
+            _receiveOutstandingOperationHelper?.Dispose();
+            _sendOutstandingOperationHelper?.Dispose();
+            _closeOutputOutstandingOperationHelper?.Dispose();
+            _closeOutstandingOperationHelper?.Dispose();
 
             if (_innerStream != null)
             {
@@ -1458,13 +1417,13 @@ namespace System.Net.WebSockets
                                                 {
                                                     // If an exception is thrown we know that the locks have been released,
                                                     // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     throw;
                                                 }
 
                                                 if (callCompleteOnCloseCompleted)
                                                 {
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     _webSocket.FinishOnCloseCompleted();
                                                 }
                                             }
@@ -1614,7 +1573,7 @@ namespace System.Net.WebSockets
                         // RECEIVE thread has finished sending out the PONG response.
                         //
                         // So, we need to release the lock briefly to give the other thread a chance to finish
-                        // processing.  We won't actually exit this outter loop and return from this async method
+                        // processing.  We won't actually exit this outer loop and return from this async method
                         // until the caller's async operation has been fully completed.
                         ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                         Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
@@ -2110,10 +2069,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                if (snapshot != null)
-                {
-                    snapshot.Dispose();
-                }
+                snapshot?.Dispose();
             }
 
             // Has to be called under _ThisLock lock
@@ -2175,10 +2131,7 @@ namespace System.Net.WebSockets
                     _cancellationTokenSource = null;
                 }
 
-                if (snapshot != null)
-                {
-                    snapshot.Dispose();
-                }
+                snapshot?.Dispose();
             }
 
             private void ThrowIfDisposed()

@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class SignatureVariable
     {
         protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)

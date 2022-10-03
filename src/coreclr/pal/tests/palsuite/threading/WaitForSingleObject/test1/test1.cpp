@@ -3,10 +3,10 @@
 
 /*============================================================
 **
-** Source: test1.c 
+** Source: test1.c
 **
 ** Purpose: Test for WaitForSingleObjectTest. Create two events, one
-** with a TRUE and one with FALSE intial state.  Ensure that WaitForSingle
+** with a TRUE and one with FALSE initial state.  Ensure that WaitForSingle
 ** returns correct values for each of these.
 **
 **
@@ -21,24 +21,24 @@ BOOL WaitForSingleObjectTest()
     DWORD dwRet = 0;
 
     LPSECURITY_ATTRIBUTES lpEventAttributes = 0;
-    BOOL bManualReset = TRUE; 
+    BOOL bManualReset = TRUE;
     BOOL bInitialState = TRUE;
 
     HANDLE hEvent;
 
     /* Create an event, and ensure the HANDLE is valid */
-    hEvent  = CreateEvent(lpEventAttributes, bManualReset, 
-                          bInitialState, NULL); 
+    hEvent  = CreateEvent(lpEventAttributes, bManualReset,
+                          bInitialState, NULL);
 
     if (hEvent != INVALID_HANDLE_VALUE)
     {
-        
+
         /* Call WaitForSingleObject with 0 time on the event.  It
            should return WAIT_OBJECT_0
         */
-        
+
         dwRet = WaitForSingleObject(hEvent,0);
-    
+
         if (dwRet != WAIT_OBJECT_0)
         {
             Trace("WaitForSingleObjectTest:WaitForSingleObject failed (%x)\n", GetLastError());
@@ -46,7 +46,7 @@ BOOL WaitForSingleObjectTest()
         else
         {
             bRet = CloseHandle(hEvent);
-        
+
             if (!bRet)
             {
                 Trace("WaitForSingleObjectTest:CloseHandle failed (%x)\n", GetLastError());
@@ -57,9 +57,9 @@ BOOL WaitForSingleObjectTest()
     {
         Trace("WaitForSingleObjectTest:CreateEvent failed (%x)\n", GetLastError());
     }
-    
+
     /* If the first section passed, Create another event, with the
-       intial state being FALSE this time.
+       initial state being FALSE this time.
     */
 
     if (bRet)
@@ -68,16 +68,16 @@ BOOL WaitForSingleObjectTest()
 
         bInitialState = FALSE;
 
-        hEvent = CreateEvent( lpEventAttributes, 
-                              bManualReset, bInitialState, NULL); 
- 
+        hEvent = CreateEvent( lpEventAttributes,
+                              bManualReset, bInitialState, NULL);
+
         if (hEvent != INVALID_HANDLE_VALUE)
         {
-            
+
             /* Test WaitForSingleObject and ensure that it returns
                WAIT_TIMEOUT in this case.
             */
-            
+
             dwRet = WaitForSingleObject(hEvent,0);
 
             if (dwRet != WAIT_TIMEOUT)
@@ -108,12 +108,12 @@ PALTEST(threading_WaitForSingleObject_test1_paltest_waitforsingleobject_test1, "
     {
         return ( FAIL );
     }
-        
+
     if(!WaitForSingleObjectTest())
     {
         Fail ("Test failed\n");
     }
-        
+
     PAL_Terminate();
     return ( PASS );
 

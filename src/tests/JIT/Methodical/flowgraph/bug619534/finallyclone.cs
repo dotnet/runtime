@@ -11,12 +11,16 @@
  * */
 
 using System;
+using Xunit;
 
+namespace Test_finallyclone
+{
 class ApplicationException : Exception { }
 
 public class TestClass
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //this should return true;
         return Test() ? 100 : 101;
@@ -68,3 +72,4 @@ public class TestClass
     }
 }
 
+}

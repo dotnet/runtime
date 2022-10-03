@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_dh ?? (s_dh = new CngAlgorithmGroup("DH")); // NCRYPT_DH_ALGORITHM_GROUP
+                return s_dh ??= new CngAlgorithmGroup("DH"); // NCRYPT_DH_ALGORITHM_GROUP
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_dsa ?? (s_dsa = new CngAlgorithmGroup("DSA")); // NCRYPT_DSA_ALGORITHM_GROUP
+                return s_dsa ??= new CngAlgorithmGroup("DSA"); // NCRYPT_DSA_ALGORITHM_GROUP
             }
         }
 
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdh ?? (s_ecdh = new CngAlgorithmGroup("ECDH")); // NCRYPT_ECDH_ALGORITHM_GROUP
+                return s_ecdh ??= new CngAlgorithmGroup("ECDH"); // NCRYPT_ECDH_ALGORITHM_GROUP
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdsa ?? (s_ecdsa = new CngAlgorithmGroup("ECDSA")); // NCRYPT_ECDSA_ALGORITHM_GROUP
+                return s_ecdsa ??= new CngAlgorithmGroup("ECDSA"); // NCRYPT_ECDSA_ALGORITHM_GROUP
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_rsa ?? (s_rsa = new CngAlgorithmGroup("RSA")); // NCRYPT_RSA_ALGORITHM_GROUP
+                return s_rsa ??= new CngAlgorithmGroup("RSA"); // NCRYPT_RSA_ALGORITHM_GROUP
             }
         }
 

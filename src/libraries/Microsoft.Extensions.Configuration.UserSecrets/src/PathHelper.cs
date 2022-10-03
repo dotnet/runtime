@@ -25,6 +25,22 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
         /// <returns>The full path to the secret file.</returns>
         public static string GetSecretsPathFromSecretsId(string userSecretsId)
         {
+            return InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: true);
+        }
+
+        /// <summary>
+        /// <para>
+        /// Returns the path to the JSON file that stores user secrets or throws exception if not found.
+        /// </para>
+        /// <para>
+        /// This uses the current user profile to locate the secrets file on disk in a location outside of source control.
+        /// </para>
+        /// </summary>
+        /// <param name="userSecretsId">The user secret ID.</param>
+        /// <param name="throwIfNoRoot">specifies if an exception should be thrown when no root for user secrets is found</param>
+        /// <returns>The full path to the secret file.</returns>
+        internal static string InternalGetSecretsPathFromSecretsId(string userSecretsId, bool throwIfNoRoot)
+        {
             if (string.IsNullOrEmpty(userSecretsId))
             {
                 throw new ArgumentException(SR.Common_StringNullOrEmpty, nameof(userSecretsId));
@@ -52,7 +68,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
             if (string.IsNullOrEmpty(root))
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_Missing_UserSecretsLocation, userSecretsFallbackDir));
+                if (throwIfNoRoot)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_Missing_UserSecretsLocation, userSecretsFallbackDir));
+                }
+
+                return string.Empty;
             }
 
             return !string.IsNullOrEmpty(appData)

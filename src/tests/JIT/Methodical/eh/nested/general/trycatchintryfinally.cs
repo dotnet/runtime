@@ -4,7 +4,10 @@
 // Throw from a try block nested in finally, non error case
 
 using System;
+using Xunit;
 
+namespace Test_trycatchintryfinally_general
+{
 public class a
 {
     private static TestUtil.TestLog testLog;
@@ -48,7 +51,8 @@ public class a
         Console.WriteLine("Done.");
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -60,4 +64,5 @@ public class a
 
         return testLog.VerifyOutput();
     }
+}
 }

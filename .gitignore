@@ -188,6 +188,8 @@ node_modules/
 *.metaproj.tmp
 bin.localpkg/
 src/mono/wasm/runtime/dotnet.d.ts.sha256
+src/mono/wasm/runtime/dotnet-legacy.d.ts.sha256
+
 src/mono/sample/wasm/browser-nextjs/public/
 
 # RIA/Silverlight projects
@@ -282,6 +284,9 @@ Session.vim
 
 # Visual Studio Code
 .vscode/
+
+# Codespaces
+.venv/
 
 # Private test configuration and binaries.
 config.ps1

@@ -380,10 +380,12 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnPlatform(TestPlatforms.Windows, "Applies to managed PAL only.")]
-        public static void FromManagedPal_CompatWithOctetStringWrappedContents_Decrypt()
+        public static void Decrypt_DoesNotAlterAsnOctetStringContent()
         {
-            byte[] expectedContent = new byte[] { 1, 2, 3 };
+            // The content in the message happens to be an ASN.1 OCTET STRING.
+            // We used to decode this for compatibility purposes, but that has
+            // been removed. Instead, test that the content remains untouched.
+            byte[] expectedContent = new byte[] { 4, 3, 1, 2, 3 };
             byte[] encodedMessage =
                 ("3082010C06092A864886F70D010703A081FE3081FB0201003181C83081C5020100302" +
                  "E301A311830160603550403130F5253414B65795472616E7366657231021031D935FB" +

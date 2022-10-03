@@ -47,7 +47,7 @@ namespace System.Net.Mime
             _encoder = new QEncoder(_writeState);
         }
 
-        private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
+        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState;
 

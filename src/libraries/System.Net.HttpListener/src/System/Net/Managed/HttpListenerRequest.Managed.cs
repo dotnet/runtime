@@ -64,7 +64,7 @@ namespace System.Net
         private HttpListenerContext _context;
         private bool _isChunked;
 
-        private static byte[] s_100continue = Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n");
+        private static byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
 
         internal HttpListenerRequest(HttpListenerContext context)
         {
@@ -73,11 +73,9 @@ namespace System.Net
             _version = HttpVersion.Version10;
         }
 
-        private static readonly char[] s_separators = new char[] { ' ' };
-
         internal void SetRequestLine(string req)
         {
-            string[] parts = req.Split(s_separators, 3);
+            string[] parts = req.Split(' ', 3);
             if (parts.Length != 3)
             {
                 _context.ErrorMessage = "Invalid request line (parts).";
@@ -87,10 +85,8 @@ namespace System.Net
             _method = parts[0];
             foreach (char c in _method)
             {
-                int ic = (int)c;
-
-                if ((ic >= 'A' && ic <= 'Z') ||
-                    (ic > 32 && c < 127 && c != '(' && c != ')' && c != '<' &&
+                if (char.IsAsciiLetterUpper(c) ||
+                    (c > 32 && c < 127 && c != '(' && c != ')' && c != '<' &&
                      c != '<' && c != '>' && c != '@' && c != ',' && c != ';' &&
                      c != ':' && c != '\\' && c != '"' && c != '/' && c != '[' &&
                      c != ']' && c != '?' && c != '=' && c != '{' && c != '}'))
@@ -392,8 +388,10 @@ namespace System.Net
             return asyncResult;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             GetClientCertificateAsyncResult? clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
@@ -413,7 +411,7 @@ namespace System.Net
         public TransportContext TransportContext => new Context();
 
         private Uri? RequestUri => _requestUri;
-        private bool SupportsWebSockets => true;
+        private static bool SupportsWebSockets => true;
 
         private sealed class GetClientCertificateAsyncResult : LazyAsyncResult
         {

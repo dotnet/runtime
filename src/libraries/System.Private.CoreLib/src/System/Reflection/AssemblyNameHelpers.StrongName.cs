@@ -33,7 +33,7 @@ namespace System.Reflection
         }
 
         //
-        // This validation logic is a manual port of StrongNameIsValidPublicKey() in the desktop CLR (see clr\src\StrongName\api\StrongNameInternal.cpp)
+        // This validation logic is a port of StrongNameIsValidPublicKey() from src\coreclr\md\runtime\strongnameinternal.cpp
         //
         private static bool IsValidPublicKey(byte[] publicKey)
         {
@@ -61,7 +61,7 @@ namespace System.Reflection
                 return true;
 
             // If a hash algorithm is specified, it must be a sensible value
-            bool fHashAlgorithmValid = GetAlgClass(hashAlgID) == ALG_CLASS_HASH && GetAlgSid(hashAlgID) == ALG_SID_SHA1;
+            bool fHashAlgorithmValid = GetAlgClass(hashAlgID) == ALG_CLASS_HASH && GetAlgSid(hashAlgID) >= ALG_SID_SHA1;
             if (hashAlgID != 0 && !fHashAlgorithmValid)
                 return false;
 

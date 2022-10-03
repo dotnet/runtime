@@ -13,8 +13,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private readonly Type _exportFactoryType;
 
-        public ExportFactoryCreator(Type exportFactoryType!!)
+        public ExportFactoryCreator(Type exportFactoryType)
         {
+            ArgumentNullException.ThrowIfNull(exportFactoryType);
+
             _exportFactoryType = exportFactoryType;
         }
 
@@ -36,7 +38,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             Func<Export, object> exportFactoryFactory = (Func<Export, object>)Delegate.CreateDelegate(typeof(Func<Export, object>), this, genericMethod);
-            return (e) => exportFactoryFactory.Invoke(e);
+            return exportFactoryFactory.Invoke;
         }
 
         private object CreateStronglyTypedExportFactoryOfT<T>(Export export)
@@ -44,9 +46,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Type[] typeArgs = { typeof(T) };
             Type constructed = _exportFactoryType.MakeGenericType(typeArgs);
 
-            var lifetimeContext = new LifetimeContext();
-
-            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => lifetimeContext.GetExportLifetimeContextFromExport<T>(export);
+            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => LifetimeContext.GetExportLifetimeContextFromExport<T>(export);
             object[] args = { exportLifetimeContextCreator };
 
             var instance = Activator.CreateInstance(constructed, args);
@@ -59,9 +59,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Type[] typeArgs = { typeof(T), typeof(M) };
             Type constructed = _exportFactoryType.MakeGenericType(typeArgs);
 
-            var lifetimeContext = new LifetimeContext();
-
-            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => lifetimeContext.GetExportLifetimeContextFromExport<T>(export);
+            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => LifetimeContext.GetExportLifetimeContextFromExport<T>(export);
             var metadataView = AttributedModelServices.GetMetadataView<M>(export.Metadata);
             object?[] args = { exportLifetimeContextCreator, metadataView };
 

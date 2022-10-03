@@ -12,7 +12,7 @@
 .assembly 'u_seq'
 { }
 .assembly extern xunit.core {}
-.class private auto ansi Test_u_seq extends [mscorlib]System.Object
+.class public auto ansi Test_u_seq extends [mscorlib]System.Object
 {
 .method private hidebysig static native unsigned int calc(native unsigned int, native unsigned int) il managed
 {
@@ -46,7 +46,7 @@ stop:
 	ret
 }
 
-.method private hidebysig static int32 Main() il managed
+.method public hidebysig static int32 Main() il managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00

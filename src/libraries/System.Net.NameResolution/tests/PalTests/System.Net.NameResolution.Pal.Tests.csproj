@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
@@ -25,6 +24,8 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
              Link="Common\System\Net\Sockets\SocketType.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
+              Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
@@ -69,8 +70,6 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
-             Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
@@ -81,10 +80,6 @@
              Link="Common\System\Net\Internals\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
-             Link="ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.Unix.cs"
-             Link="ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.Unix.cs" />
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Unix.cs"
              Link="ProductionCode\System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"

@@ -82,8 +82,10 @@ namespace System.Globalization
             return o;
         }
 
-        public static Calendar ReadOnly(Calendar calendar!!)
+        public static Calendar ReadOnly(Calendar calendar)
         {
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (calendar.IsReadOnly)
             {
                 return calendar;
@@ -352,7 +354,7 @@ namespace System.Globalization
         /// </summary>
         /// <remarks>
         ///  The CalendarWeekRule.FirstDay rule: Week 1 begins on the first day of the year.
-        ///  Assume f is the specifed firstDayOfWeek,
+        ///  Assume f is the specified firstDayOfWeek,
         ///  and n is the day of week for January 1 of the specified year.
         ///  Assign offset = n - f;
         ///  Case 1: offset = 0

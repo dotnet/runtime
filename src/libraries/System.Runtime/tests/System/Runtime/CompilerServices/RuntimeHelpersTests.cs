@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
-            char[] expected = new char[] { 'a', 'b', 'c' }; // Compiler will use RuntimeHelpers.InitializeArrary these
+            char[] expected = new char[] { 'a', 'b', 'c' }; // Compiler will use RuntimeHelpers.InitializeArray these
         }
 
         [Fact]
@@ -236,7 +236,7 @@ namespace System.Runtime.CompilerServices.Tests
             Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
             if (canonType != null)
             {
-                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
             }
 
             Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
@@ -285,7 +285,7 @@ namespace System.Runtime.CompilerServices.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
-        public static void GetUninitalizedObject_DoesNotRunBeforeFieldInitCctors()
+        public static void GetUninitializedObject_DoesNotRunBeforeFieldInitCctors()
         {
             object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithBeforeFieldInitCctor));
             Assert.IsType<ClassWithBeforeFieldInitCctor>(o);
@@ -294,7 +294,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static void GetUninitalizedObject_RunsNormalStaticCtors()
+        public static void GetUninitializedObject_RunsNormalStaticCtors()
         {
             object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithNormalCctor));
             Assert.IsType<ClassWithNormalCctor>(o);

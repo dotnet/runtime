@@ -24,15 +24,7 @@
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
-    <!--<AppleAppDir Condition="'$(AppleAppDir)' == ''">$(OutputPath)</AppleAppDir>
-    
-    <AppleAppBundleDir Condition="'$(AppleAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</AppleAppBundleDir>
-    
-    <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">$(TargetFileName)</MainLibraryFileName>
 
-    <AppleAppDir>$([MSBuild]::NormalizeDirectory($(AppleAppDir)))</AppleAppDir>
-    <AppleAppBundleDir>$([MSBuild]::NormalizeDirectory($(AppleAppBundleDir)))</AppleAppBundleDir>
--->
     <RemoveDir Directories="$(AppleAppBundleDir)" />
   </Target>
 
@@ -67,11 +59,11 @@
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
-      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
+      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=21000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=31000" />
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>
@@ -83,11 +75,6 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
-    
-      <DebugTestItem Include="@(_AppleAssembliesInternal)">
-        <_InternalForceInterpret>%(_AppleAssembliesInternal._InternalForceInterpret)</_InternalForceInterpret>
-        <_IsNative>%(_AppleAssembliesInternal._IsNative)</_IsNative>
-      </DebugTestItem>
 
       <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" 
                            Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
@@ -142,6 +129,8 @@
         BuildAppBundle="$(GenerateXcodeProject)"
         Optimized="$(Optimized)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         OutputDirectory="$(AppleAppBundleDir)"
         AppDir="$(AppleAppDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

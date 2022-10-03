@@ -84,13 +84,13 @@ private:
     FORCEINLINE void Acquire()
     {
         WRAPPER_NO_CONTRACT;
-        YIELD_WHILE(FastInterlockExchange(&m_value, 1) == 1);
+        YIELD_WHILE(InterlockedExchange(&m_value, 1) == 1);
     }
 
     FORCEINLINE BOOL TryAcquire()
     {
         WRAPPER_NO_CONTRACT;
-        return (FastInterlockExchange(&m_value, 1) == 0);
+        return (InterlockedExchange(&m_value, 1) == 0);
     }
 
     FORCEINLINE void Release()
@@ -267,7 +267,7 @@ class SpinLockProfiler
     // Pointer to spinlock names.
     //
     static ULONG    s_ulBackOffs;
-    static ULONG    s_ulCollisons [LOCK_TYPE_DEFAULT + 1];
+    static ULONG    s_ulCollisions [LOCK_TYPE_DEFAULT + 1];
     static ULONG    s_ulSpins [LOCK_TYPE_DEFAULT + 1];
 
 public:

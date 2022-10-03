@@ -13,11 +13,6 @@ namespace Internal.Runtime.CompilerHelpers
     public static partial class StartupCodeHelpers
     {
         /// <summary>
-        /// Initial module array allocation used when adding modules dynamically.
-        /// </summary>
-        private const int InitialModuleCount = 8;
-
-        /// <summary>
         /// Table of logical modules. Only the first s_moduleCount elements of the array are in use.
         /// </summary>
         private static TypeManagerHandle[] s_modules;
@@ -48,18 +43,8 @@ namespace Internal.Runtime.CompilerHelpers
 
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
-            if (s_modules != null)
-            {
-                for (int i = 0; i < modules.Length; i++)
-                {
-                    AddModule(modules[i]);
-                }
-            }
-            else
-            {
-                s_modules = modules;
-                s_moduleCount = modules.Length;
-            }
+            s_modules = modules;
+            s_moduleCount = modules.Length;
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -84,29 +69,6 @@ namespace Internal.Runtime.CompilerHelpers
                 }
             }
             return s_moduleCount;
-        }
-
-        private static void AddModule(TypeManagerHandle newModuleHandle)
-        {
-            if (s_modules == null || s_moduleCount >= s_modules.Length)
-            {
-                // Reallocate logical module array
-                int newModuleLength = 2 * s_moduleCount;
-                if (newModuleLength < InitialModuleCount)
-                {
-                    newModuleLength = InitialModuleCount;
-                }
-
-                TypeManagerHandle[] newModules = new TypeManagerHandle[newModuleLength];
-                for (int copyIndex = 0; copyIndex < s_moduleCount; copyIndex++)
-                {
-                    newModules[copyIndex] = s_modules[copyIndex];
-                }
-                s_modules = newModules;
-            }
-
-            s_modules[s_moduleCount] = newModuleHandle;
-            s_moduleCount++;
         }
 
         private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
@@ -239,7 +201,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
                         IntPtr pPreInitDataAddr = *(pBlock + 1);
-                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawDataSize());
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
                     // Call write barrier directly. Assigning object reference does a type check.

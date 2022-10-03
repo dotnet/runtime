@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             // Check encrypted import with the wrong password.
             // It shouldn't do enough work to realize it was wrong.
             pwBytes = Array.Empty<byte>();
-            Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
@@ -781,7 +781,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
 
             ReadBase64EncryptedPkcs8(
                 base64,
-                Encoding.UTF8.GetBytes("rc2"),
+                "rc2"u8.ToArray(),
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes192Cbc,
                     HashAlgorithmName.SHA256,
@@ -1288,7 +1288,7 @@ gms2YM+honjUS1sXk1zdm/8=");
             using (RSA key = RSAFactory.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
             }
         }
 

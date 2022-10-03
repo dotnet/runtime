@@ -98,7 +98,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Public m_oFile As VB6File
 
-        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile
@@ -220,7 +220,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Dim m_oFile As VB6File
 
-        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile
@@ -579,7 +579,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         'Function Seek
         '
         'RANDOM MODE - Returns number of next record
-        'other modes - Returns the byte position at which the next operation 
+        'other modes - Returns the byte position at which the next operation
         '              will take place
         Friend Overridable Overloads Function Seek() As Long
             'm_position is the last read byte as a zero based offset
@@ -1773,7 +1773,7 @@ NewLine:
                             If iElementY > ArrUBoundY OrElse iElementX > ArrUBoundX Then
                                 obj = Nothing
                             Else
-                                'These are supposed to be ordered Y, X 
+                                'These are supposed to be ordered Y, X
                                 ' because of the order VB6 writes out
                                 obj = arr.GetValue(iElementY, iElementX)
                             End If
@@ -1868,7 +1868,7 @@ NewLine:
                                         ByteLength = FixedStringLength
                                     Else
                                         'String contains multi-byte characters.  Truncate to 'FixedStringLength'
-                                        '  bytes (if cuts off half of a DBCS character, that character 
+                                        '  bytes (if cuts off half of a DBCS character, that character
                                         '  is replaced with a single Chr(0))
                                         Dim Bytes() As Byte = m_Encoding.GetBytes(sTemp)
                                         sTemp = m_Encoding.GetString(Bytes, 0, FixedStringLength)

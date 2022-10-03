@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set DOTNET_TieredCompilation=1
+      set DOTNET_TieredPGO=1
+      set DOTNET_JitProfileCasts=1
+      set DOTNET_JitConsumeProfileForCasts=1
+      set DOTNET_JitRandomGuardedDevirtualization=1
+      ]]></CLRTestBatchPreCommands>
+          <BashCLRTestPreCommands><![CDATA[
+      $(BashCLRTestPreCommands)
+      export DOTNET_TieredCompilation=1
+      export DOTNET_TieredPGO=1
+      export DOTNET_JitProfileCasts=1
+      export DOTNET_JitConsumeProfileForCasts=1
+      export DOTNET_JitRandomGuardedDevirtualization=1
+      ]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ProfileCastClassAndIsInst.cs" />
+  </ItemGroup>
+</Project>

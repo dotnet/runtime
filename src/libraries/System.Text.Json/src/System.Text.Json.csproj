@@ -1,34 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Workaround for overriding the XML comments related warnings that are being suppressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn>CS8969</NoWarn>
-    <Nullable>enable</Nullable>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
+    <!-- This library has been annotated to be AOT safe -->
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
-Commonly Used Types:
-System.Text.Json.JsonSerializer
-System.Text.Json.JsonDocument
-System.Text.Json.JsonElement
-System.Text.Json.Utf8JsonWriter
-System.Text.Json.Utf8JsonReader
-System.Text.Json.Nodes.JsonNode
-System.Text.Json.Nodes.JsonArray
-System.Text.Json.Nodes.JsonObject
-System.Text.Json.Nodes.JsonValue</PackageDescription>
+The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
-    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
@@ -98,12 +90,16 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonDerivedTypeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonExtensionDataAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonPolymorphicAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonRequiredAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\CastingConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
@@ -121,11 +117,20 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Element.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Converters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\IJsonTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonDerivedType.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonPolymorphismOptions.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\CustomJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
-    <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
+    <Compile Include="System\Text\Json\Serialization\ConfigurationList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
@@ -204,6 +209,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Value\VersionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonConverter.MetadataHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
@@ -225,6 +231,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
@@ -242,13 +249,15 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoValuesOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\SourceGenJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitMemberAccessor.cs" />
@@ -307,51 +316,62 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
   </ItemGroup>
+
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Buffers" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
@@ -360,8 +380,9 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Pack="true" ReferenceAnalyzer="false" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" Pack="true" ReferenceAnalyzer="false" />
   </ItemGroup>
 </Project>

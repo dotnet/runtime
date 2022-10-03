@@ -652,7 +652,7 @@ namespace System.Runtime.Intrinsics
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((destination.Length - startIndex) < Vector128<T>.Count)
@@ -742,37 +742,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<byte> Create(byte value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            byte* pResult = stackalloc byte[16]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<byte> SoftwareFallback(byte value)
-            {
-                byte* pResult = stackalloc byte[16]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<byte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with all elements initialized to the specified value.</summary>
@@ -782,23 +771,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<double> Create(double value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            double* pResult = stackalloc double[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<double> SoftwareFallback(double value)
-            {
-                double* pResult = stackalloc double[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<double>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<double>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with all elements initialized to the specified value.</summary>
@@ -808,29 +786,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<short> Create(short value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            short* pResult = stackalloc short[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<short> SoftwareFallback(short value)
-            {
-                short* pResult = stackalloc short[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<short>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with all elements initialized to the specified value.</summary>
@@ -840,25 +807,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<int> Create(int value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            int* pResult = stackalloc int[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<int> SoftwareFallback(int value)
-            {
-                int* pResult = stackalloc int[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<int>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with all elements initialized to the specified value.</summary>
@@ -868,23 +824,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<long> Create(long value)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            long* pResult = stackalloc long[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<long> SoftwareFallback(long value)
-            {
-                long* pResult = stackalloc long[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<long>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<long>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -893,21 +838,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<nint> Create(nint value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<nint> SoftwareFallback(nint value)
-            {
 #if TARGET_64BIT
-                return Create((long)value).AsNInt();
+            return Create((long)value).AsNInt();
 #else
-                return Create((int)value).AsNInt();
+            return Create((int)value).AsNInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -917,21 +852,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<nuint> Create(nuint value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<nuint> SoftwareFallback(nuint value)
-            {
 #if TARGET_64BIT
-                return Create((ulong)value).AsNUInt();
+            return Create((ulong)value).AsNUInt();
 #else
-                return Create((uint)value).AsNUInt();
+            return Create((uint)value).AsNUInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with all elements initialized to the specified value.</summary>
@@ -942,37 +867,26 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            sbyte* pResult = stackalloc sbyte[16]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<sbyte> SoftwareFallback(sbyte value)
-            {
-                sbyte* pResult = stackalloc sbyte[16]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<sbyte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with all elements initialized to the specified value.</summary>
@@ -982,25 +896,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<float> Create(float value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            float* pResult = stackalloc float[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<float> SoftwareFallback(float value)
-            {
-                float* pResult = stackalloc float[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<float>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with all elements initialized to the specified value.</summary>
@@ -1011,29 +914,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            ushort* pResult = stackalloc ushort[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<ushort> SoftwareFallback(ushort value)
-            {
-                ushort* pResult = stackalloc ushort[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<ushort>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with all elements initialized to the specified value.</summary>
@@ -1044,25 +936,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint value)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            uint* pResult = stackalloc uint[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<uint> SoftwareFallback(uint value)
-            {
-                uint* pResult = stackalloc uint[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<uint>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with all elements initialized to the specified value.</summary>
@@ -1073,23 +954,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong value)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            ulong* pResult = stackalloc ulong[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector128<ulong> SoftwareFallback(ulong value)
-            {
-                ulong* pResult = stackalloc ulong[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector128<ulong>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector128<ulong>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> from a given array.</summary>
@@ -1108,6 +978,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Create<T>(T[] values, int index)
             where T : struct
         {
@@ -1120,7 +991,7 @@ namespace System.Runtime.Intrinsics
 
             if ((index < 0) || ((values.Length - index) < Vector128<T>.Count))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref values[index]));
@@ -1131,6 +1002,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="values">The readonly span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Create<T>(ReadOnlySpan<T> values)
             where T : struct
         {
@@ -1166,37 +1038,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            byte* pResult = stackalloc byte[16]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-
-            static Vector128<byte> SoftwareFallback(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
-            {
-                byte* pResult = stackalloc byte[16]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                };
-
-                return Unsafe.AsRef<Vector128<byte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+            };
+            return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1207,23 +1068,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<double> Create(double e0, double e1)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            double* pResult = stackalloc double[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector128<double> SoftwareFallback(double e0, double e1)
-            {
-                double* pResult = stackalloc double[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector128<double>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector128<double>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1240,29 +1090,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            short* pResult = stackalloc short[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector128<short> SoftwareFallback(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
-            {
-                short* pResult = stackalloc short[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector128<short>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector128<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1275,25 +1114,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<int> Create(int e0, int e1, int e2, int e3)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            int* pResult = stackalloc int[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector128<int> SoftwareFallback(int e0, int e1, int e2, int e3)
-            {
-                int* pResult = stackalloc int[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector128<int>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector128<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1304,23 +1132,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<long> Create(long e0, long e1)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            long* pResult = stackalloc long[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector128<long> SoftwareFallback(long e0, long e1)
-            {
-                long* pResult = stackalloc long[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector128<long>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector128<long>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1346,37 +1163,26 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            sbyte* pResult = stackalloc sbyte[16]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-
-            static Vector128<sbyte> SoftwareFallback(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
-            {
-                sbyte* pResult = stackalloc sbyte[16]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                };
-
-                return Unsafe.AsRef<Vector128<sbyte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+            };
+            return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1389,25 +1195,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<float> Create(float e0, float e1, float e2, float e3)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            float* pResult = stackalloc float[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector128<float> SoftwareFallback(float e0, float e1, float e2, float e3)
-            {
-                float* pResult = stackalloc float[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector128<float>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector128<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1425,29 +1220,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            ushort* pResult = stackalloc ushort[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector128<ushort> SoftwareFallback(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
-            {
-                ushort* pResult = stackalloc ushort[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector128<ushort>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1461,25 +1245,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint e0, uint e1, uint e2, uint e3)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            uint* pResult = stackalloc uint[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector128<uint> SoftwareFallback(uint e0, uint e1, uint e2, uint e3)
-            {
-                uint* pResult = stackalloc uint[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector128<uint>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1491,23 +1264,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong e0, ulong e1)
         {
-            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            ulong* pResult = stackalloc ulong[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector128<ulong> SoftwareFallback(ulong e0, ulong e1)
-            {
-                ulong* pResult = stackalloc ulong[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector128<ulong>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector128<ulong>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance from two <see cref="Vector64{Byte}" /> instances.</summary>
@@ -3412,6 +3174,250 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            Unsafe.SkipInit(out Vector128<byte> result);
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                byte selectedIndex = indices.GetElementUnsafe(index);
+                byte selectedValue = 0;
+
+                if (selectedIndex < Vector128<byte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> vector, Vector128<sbyte> indices)
+        {
+            Unsafe.SkipInit(out Vector128<sbyte> result);
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
+                sbyte selectedValue = 0;
+
+                if (selectedIndex < Vector128<sbyte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<short> Shuffle(Vector128<short> vector, Vector128<short> indices)
+        {
+            Unsafe.SkipInit(out Vector128<short> result);
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
+                short selectedValue = 0;
+
+                if (selectedIndex < Vector128<short>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ushort> Shuffle(Vector128<ushort> vector, Vector128<ushort> indices)
+        {
+            Unsafe.SkipInit(out Vector128<ushort> result);
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                ushort selectedIndex = indices.GetElementUnsafe(index);
+                ushort selectedValue = 0;
+
+                if (selectedIndex < Vector128<ushort>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<int> Shuffle(Vector128<int> vector, Vector128<int> indices)
+        {
+            Unsafe.SkipInit(out Vector128<int> result);
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
+                int selectedValue = 0;
+
+                if (selectedIndex < Vector128<int>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<uint> Shuffle(Vector128<uint> vector, Vector128<uint> indices)
+        {
+            Unsafe.SkipInit(out Vector128<uint> result);
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                uint selectedIndex = indices.GetElementUnsafe(index);
+                uint selectedValue = 0;
+
+                if (selectedIndex < Vector128<uint>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<float> Shuffle(Vector128<float> vector, Vector128<int> indices)
+        {
+            Unsafe.SkipInit(out Vector128<float> result);
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
+                float selectedValue = 0;
+
+                if (selectedIndex < Vector128<float>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<long> Shuffle(Vector128<long> vector, Vector128<long> indices)
+        {
+            Unsafe.SkipInit(out Vector128<long> result);
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
+                long selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector128<long>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ulong> Shuffle(Vector128<ulong> vector, Vector128<ulong> indices)
+        {
+            Unsafe.SkipInit(out Vector128<ulong> result);
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                ulong selectedIndex = indices.GetElementUnsafe(index);
+                ulong selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector128<ulong>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector128<double> Shuffle(Vector128<double> vector, Vector128<long> indices)
+        {
+            Unsafe.SkipInit(out Vector128<double> result);
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
+                double selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector128<double>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <param name="vector">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3593,7 +3599,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="vector">The vector to copy.</param>
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
-        /// <returns><c>true</c> if <paramref name="vector" /> was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector128{T}.Count" />.</returns>
+        /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector128{T}.Count" />.</returns>
         public static bool TryCopyTo<T>(this Vector128<T> vector, Span<T> destination)
             where T : struct
         {

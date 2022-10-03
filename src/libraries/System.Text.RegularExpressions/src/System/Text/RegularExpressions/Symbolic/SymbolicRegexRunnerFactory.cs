@@ -13,53 +13,36 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
         {
-            // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
-            if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
-            {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NonBacktrackingConflictingOption,
-                        (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
-            }
+            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
-            var converter = new RegexNodeConverter(culture, regexTree.CaptureNumberSparseMapping);
-            CharSetSolver solver = CharSetSolver.Instance;
-            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            var charSetSolver = new CharSetSolver();
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
+            var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
-            BDD[] minterms = root.ComputeMinterms();
-            if (minterms.Length > 64)
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+
+            // Determine if the root node is supported for safe handling
+            int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
+            Debug.Assert(threshold > 0);
+
+            // Skip the threshold check if the threshold equals int.MaxValue
+            if (threshold != int.MaxValue)
             {
-                // Use BitVector to represent a predicate
-                var algebra = new BitVectorAlgebra(solver, minterms);
-                var builder = new SymbolicRegexBuilder<BitVector>(algebra)
+                int size = rootNode.EstimateNfaSize();
+                if (size > threshold)
                 {
-                    // The default constructor sets the following predicates to False; this update happens after the fact.
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
-                    _wordLetterPredicateForAnchors = algebra.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algebra.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
-
-                // Convert the BDD-based AST to BitVector-based AST
-                SymbolicRegexNode<BitVector> rootNode = converter._builder.Transform(root, builder, bdd => builder._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BitVector>(rootNode, regexTree, minterms, matchTimeout);
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, size, threshold));
+                }
             }
-            else
-            {
-                // Use ulong to represent a predicate
-                var algebra = new BitVector64Algebra(solver, minterms);
-                var builder = new SymbolicRegexBuilder<ulong>(algebra)
-                {
-                    // The default constructor sets the following predicates to False, this update happens after the fact
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False
-                    _wordLetterPredicateForAnchors = algebra.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algebra.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
 
-                // Convert the BDD-based AST to ulong-based AST
-                SymbolicRegexNode<ulong> rootNode = converter._builder.Transform(root, builder, bdd => builder._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(rootNode, regexTree, minterms, matchTimeout);
-            }
+            rootNode = rootNode.AddFixedLengthMarkers(bddBuilder);
+            BDD[] minterms = rootNode.ComputeMinterms(bddBuilder);
+
+            _matcher = minterms.Length > 64 ?
+                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
+                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Solver(minterms, charSetSolver), matchTimeout);
         }
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
@@ -73,16 +56,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSetType> : RegexRunner where TSetType : notnull
+        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>, IEquatable<TSet>
         {
             /// <summary>The matching engine.</summary>
             /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>
-            private readonly SymbolicRegexMatcher<TSetType> _matcher;
+            private readonly SymbolicRegexMatcher<TSet> _matcher;
             /// <summary>Runner-specific data to pass to the matching engine.</summary>
             /// <remarks>This state is per runner and is thus only used by one thread at a time.</remarks>
-            private readonly SymbolicRegexMatcher<TSetType>.PerThreadData _perThreadData;
+            private readonly SymbolicRegexMatcher<TSet>.PerThreadData _perThreadData;
 
-            internal Runner(SymbolicRegexMatcher<TSetType> matcher)
+            internal Runner(SymbolicRegexMatcher<TSet> matcher)
             {
                 _matcher = matcher;
                 _perThreadData = matcher.CreatePerThreadData();
@@ -91,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
             protected internal override void Scan(ReadOnlySpan<char> text)
             {
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, text, runtextpos, _perThreadData);
+                SymbolicMatch pos = _matcher.FindMatch(_mode, text, runtextpos, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
@@ -99,7 +82,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index;
                     int end = start + pos.Length;
-                    if (!quick && pos.CaptureStarts != null)
+                    if (_mode == RegexRunnerMode.FullMatchRequired && pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
                         Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
@@ -116,13 +99,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Capture(0, start, end);
                     }
+
                     runtextpos = end;
                 }
                 else
                 {
                     // If we failed to find a match in the entire remainder of the input, skip the current position to the end.
                     // The calling scan loop will then exit.
-                    runtextpos = runtextend;
+                    runtextpos = text.Length;
                 }
             }
         }

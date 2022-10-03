@@ -27,7 +27,7 @@ Install the following packages:
 
 - cmake 3.15.5 or newer
 - icu4c
-- openssl 1.1
+- openssl@1.1 or openssl@3
 - pkg-config
 - python3
 - ninja (optional, enables building native code with ninja instead of make)

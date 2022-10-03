@@ -32,8 +32,10 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContractSet(DataContractSet dataContractSet!!)
+        internal DataContractSet(DataContractSet dataContractSet)
         {
+            ArgumentNullException.ThrowIfNull(dataContractSet);
+
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;
@@ -52,39 +54,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private Dictionary<XmlQualifiedName, DataContract> Contracts
-        {
-            get
-            {
-                if (_contracts == null)
-                {
-                    _contracts = new Dictionary<XmlQualifiedName, DataContract>();
-                }
-                return _contracts;
-            }
-        }
+        private Dictionary<XmlQualifiedName, DataContract> Contracts =>
+            _contracts ??= new Dictionary<XmlQualifiedName, DataContract>();
 
-        private Dictionary<DataContract, object> ProcessedContracts
-        {
-            get
-            {
-                if (_processedContracts == null)
-                {
-                    _processedContracts = new Dictionary<DataContract, object>();
-                }
-                return _processedContracts;
-            }
-        }
+        private Dictionary<DataContract, object> ProcessedContracts =>
+            _processedContracts ??= new Dictionary<DataContract, object>();
+
 #if SUPPORT_SURROGATE
-        private Hashtable SurrogateDataTable
-        {
-            get
-            {
-                if (_surrogateDataTable == null)
-                    _surrogateDataTable = new Hashtable();
-                return _surrogateDataTable;
-            }
-        }
+        private Hashtable SurrogateDataTable => _surrogateDataTable ??= new Hashtable();
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -220,7 +197,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetDataContract(Type clrType)
+        internal static DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE
             if (_dataContractSurrogate == null)
@@ -250,7 +227,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetMemberTypeDataContract(DataMember dataMember)
+        internal static DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
             Type dataMemberType = dataMember.MemberType;
             if (dataMember.IsGetOnlyCollection)
@@ -275,7 +252,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
+        internal static DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)
                 return GetDataContract(collectionContract.ItemType);

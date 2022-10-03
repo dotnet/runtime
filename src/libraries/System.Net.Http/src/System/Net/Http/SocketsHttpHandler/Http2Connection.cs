@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
-using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -19,6 +18,13 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection : HttpConnectionBase
     {
+        // Equivalent to the bytes returned from HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol")
+        private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
+
+        private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompletedTcs();
+
+        private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
+
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
@@ -38,7 +44,7 @@ namespace System.Net.Http
         private RttEstimator _rttEstimator;
 
         private int _nextStream;
-        private bool _expectingSettingsAck;
+        private bool _receivedSettingsAck;
         private int _initialServerStreamWindowSize;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
@@ -75,7 +81,7 @@ namespace System.Net.Http
         // Temporary workaround for request burst handling on connection start.
         private const int InitialMaxConcurrentStreams = 100;
 
-        private static readonly byte[] s_http2ConnectionPreface = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
+        private static ReadOnlySpan<byte> Http2ConnectionPreface => "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
 
 #if DEBUG
         // In debug builds, start with a very small buffer to induce buffer growing logic.
@@ -164,7 +170,8 @@ namespace System.Net.Http
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
 
-            static long TimeSpanToMs(TimeSpan value) {
+            static long TimeSpanToMs(TimeSpan value)
+            {
                 double milliseconds = value.TotalMilliseconds;
                 return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
             }
@@ -174,17 +181,24 @@ namespace System.Net.Http
 
         private object SyncObject => _httpStreams;
 
-        public async ValueTask SetupAsync()
+        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived =>
+            _initialSettingsReceived ??
+            Interlocked.CompareExchange(ref _initialSettingsReceived, new(), null) ??
+            _initialSettingsReceived;
+
+        internal bool IsConnectEnabled { get; private set; }
+
+        public async ValueTask SetupAsync(CancellationToken cancellationToken)
         {
             try
             {
-                _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
+                _outgoingBuffer.EnsureAvailableSpace(Http2ConnectionPreface.Length +
                     FrameHeader.Size + FrameHeader.SettingLength +
                     FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
                 // Send connection preface
-                s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
-                _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
+                Http2ConnectionPreface.CopyTo(_outgoingBuffer.AvailableSpan);
+                _outgoingBuffer.Commit(Http2ConnectionPreface.Length);
 
                 // Send SETTINGS frame.  Disable push promise & set initial window size.
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2 * FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
@@ -208,19 +222,27 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
-                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
+                // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
+                _ = ProcessIncomingFramesAsync();
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
-                _expectingSettingsAck = true;
             }
             catch (Exception e)
             {
                 Dispose();
+
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
+                    throw;
+                }
+
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
-            _ = ProcessIncomingFramesAsync();
             _ = ProcessOutgoingFramesAsync();
         }
 
@@ -229,11 +251,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -279,11 +298,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -337,11 +353,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
@@ -472,7 +485,15 @@ namespace System.Net.Http
                     frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                     if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                     {
-                        ThrowProtocolError();
+                        if (frameHeader.Type == FrameType.GoAway)
+                        {
+                            var (_, errorCode) = ReadGoAwayFrame(frameHeader);
+                            ThrowProtocolError(errorCode, SR.net_http_http2_connection_close);
+                        }
+                        else
+                        {
+                            ThrowProtocolError();
+                        }
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
@@ -656,7 +677,7 @@ namespace System.Net.Http
             void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
         }
 
-        private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
+        private static ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
         {
             if (hasPad)
             {
@@ -772,14 +793,14 @@ namespace System.Net.Http
                     ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
-                if (!_expectingSettingsAck)
+                if (_receivedSettingsAck)
                 {
                     ThrowProtocolError();
                 }
 
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
-                _expectingSettingsAck = false;
+                _receivedSettingsAck = true;
                 _rttEstimator.OnInitialSettingsAckReceived(this);
             }
             else
@@ -826,6 +847,20 @@ namespace System.Net.Http
                             // We don't actually store this value; we always send frames of the minimum size (16K).
                             break;
 
+                        case SettingId.EnableConnect:
+                            if (settingValue == 1)
+                            {
+                                IsConnectEnabled = true;
+                            }
+                            else if (settingValue == 0 && IsConnectEnabled)
+                            {
+                                // Accroding to RFC: a sender MUST NOT send a SETTINGS_ENABLE_CONNECT_PROTOCOL parameter
+                                // with the value of 0 after previously sending a value of 1.
+                                // https://datatracker.ietf.org/doc/html/rfc8441#section-3
+                                ThrowProtocolError();
+                            }
+                            break;
+
                         default:
                             // All others are ignored because we don't care about them.
                             // Note, per RFC, unknown settings IDs should be ignored.
@@ -833,10 +868,20 @@ namespace System.Net.Http
                     }
                 }
 
-                if (initialFrame && !maxConcurrentStreamsReceived)
+                if (initialFrame)
                 {
-                    // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
-                    ChangeMaxConcurrentStreams(int.MaxValue);
+                    if (!maxConcurrentStreamsReceived)
+                    {
+                        // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
+                        ChangeMaxConcurrentStreams(int.MaxValue);
+                    }
+
+                    if (_initialSettingsReceived is null)
+                    {
+                        Interlocked.CompareExchange(ref _initialSettingsReceived, s_settingsReceivedSingleton, null);
+                    }
+                    // Set result in case if CompareExchange lost the race
+                    InitialSettingsReceived.TrySetResult(true);
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -993,38 +1038,16 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
-            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: true);
-            }
-            else
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError);
-            }
+            bool canRetry = protocolError == Http2ProtocolErrorCode.RefusedStream;
+            http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
         {
-            Debug.Assert(frameHeader.Type == FrameType.GoAway);
-
-            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
-            {
-                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
-            }
-
-            if (frameHeader.StreamId != 0)
-            {
-                ThrowProtocolError();
-            }
-
-            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
-            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
-            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
-
-            _incomingBuffer.Discard(frameHeader.PayloadLength);
+            var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
             Debug.Assert(lastStreamId >= 0);
-            Exception resetException = new Http2ConnectionException(errorCode);
+            Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1051,6 +1074,29 @@ namespace System.Net.Http
             {
                 s.OnReset(resetException, canRetry: true);
             }
+        }
+
+        private (int lastStreamId, Http2ProtocolErrorCode errorCode) ReadGoAwayFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.GoAway);
+
+            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
+            {
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            if (frameHeader.StreamId != 0)
+            {
+                ThrowProtocolError();
+            }
+
+            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
+            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
+
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
+
+            return (lastStreamId, errorCode);
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
@@ -1214,7 +1260,7 @@ namespace System.Net.Http
                 Debug.Assert(sizeof(long) == FrameHeader.PingLength);
 
                 Span<byte> span = writeBuffer.Span;
-                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack: FrameFlags.None, streamId: 0);
+                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack : FrameFlags.None, streamId: 0);
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
                 return true;
@@ -1424,7 +1470,7 @@ namespace System.Net.Http
                 WriteIndexedHeader(H2StaticTable.MethodGet, normalizedMethod.Method, ref headerBuffer);
             }
 
-            WriteIndexedHeader(_stream is SslStream ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
+            WriteIndexedHeader(_pool.IsSecure ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
 
             if (request.HasHeaders && request.Headers.Host != null)
             {
@@ -1448,6 +1494,13 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
+                if (request.Headers.Protocol != null)
+                {
+                    WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
+                    Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
+                    WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+                }
+
                 WriteHeaderCollection(request, request.Headers, ref headerBuffer);
             }
 
@@ -1547,7 +1600,7 @@ namespace System.Net.Http
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
                 // streams are created and started in order.
-                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null), mustFlush), static (s, writeBuffer) =>
+                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null && !http2Stream.ConnectProtocolEstablished), mustFlush), static (s, writeBuffer) =>
                 {
                     if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
 
@@ -1888,7 +1941,15 @@ namespace System.Net.Http
             MaxConcurrentStreams = 0x3,
             InitialWindowSize = 0x4,
             MaxFrameSize = 0x5,
-            MaxHeaderListSize = 0x6
+            MaxHeaderListSize = 0x6,
+            EnableConnect = 0x8
+        }
+
+        private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompletedTcs()
+        {
+            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            tcs.TrySetResult(true);
+            return tcs;
         }
 
         // Note that this is safe to be called concurrently by multiple threads.
@@ -1964,7 +2025,7 @@ namespace System.Net.Http
             {
                 if (e is IOException ||
                     e is ObjectDisposedException ||
-                    e is Http2ProtocolException ||
+                    e is HttpProtocolException ||
                     e is InvalidOperationException)
                 {
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);
@@ -2070,7 +2131,7 @@ namespace System.Net.Http
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
@@ -2081,7 +2142,7 @@ namespace System.Net.Http
             ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError);
 
         [DoesNotReturn]
-        private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
-            throw new Http2ConnectionException(errorCode);
+        private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode, string? message = null) =>
+            throw HttpProtocolException.CreateHttp2ConnectionException(errorCode, message);
     }
 }

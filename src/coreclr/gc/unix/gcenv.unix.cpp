@@ -463,7 +463,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -569,6 +569,9 @@ void GCToOSInterface::FlushProcessWriteBuffers()
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
@@ -761,7 +764,7 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // TODO: This can fail, however the GC does not handle the failure gracefully
     // Explicitly calling mmap instead of mprotect here makes it
     // that much more clear to the operating system that we no
-    // longer need these pages. Also, GC depends on re-commited pages to
+    // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
     return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
 }
@@ -876,21 +879,29 @@ done:
     return result;
 }
 
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
+    size_t cacheLevel = 0;
     size_t cacheSize = 0;
+    size_t size;
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -901,25 +912,39 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
         //
-        size_t size;
+        size_t level;
+        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+        int index = 40;
+        assert(path_to_size_file[index] == '-');
+        assert(path_to_level_file[index] == '-');
 
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
-            cacheSize = std::max(cacheSize, size);
+        for (int i = 0; i < 5; i++)
+        {
+            path_to_size_file[index] = (char)(48 + i);
+
+            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            {
+                path_to_level_file[index] = (char)(48 + i);
+
+                if (ReadMemoryValueFromFile(path_to_level_file, &level))
+                {
+                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
+                }
+                else
+                {
+                    cacheSize = std::max(cacheSize, size);
+                }
+            }
+        }
     }
 #endif
 
-#if defined(HOST_ARM64) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
     if (cacheSize == 0)
     {
-        // It is currently expected to be missing cache size info
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
         //
         // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
         //
@@ -949,8 +974,8 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
         const bool success = false
-            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency 
-            // and performance cores separetely. "perflevel0" stands for "performance"
+            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+            // and performance cores separately. "perflevel0" stands for "performance"
             || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             // macOS-arm64: these report cache sizes for efficiency cores only:
             || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
@@ -961,6 +986,38 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             assert(cacheSizeFromSysctl > 0);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
+    }
+#endif
+
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+    if (cacheLevel != 3)
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_totalCpuCount;
+        if (logicalCPUs < 5)
+        {
+            cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            cacheSize = 16;
+        }
+        else
+        {
+            cacheSize = 32;
+        }
+
+        cacheSize *= (1024 * 1024);
     }
 #endif
 
@@ -1037,15 +1094,10 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     size_t maxSize, maxTrueSize;
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
 
-#if defined(HOST_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
-
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
@@ -1177,7 +1229,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return 0;
     }
 
-    return pages * pageSize;
+    return (uint64_t)pages * (uint64_t)pageSize;
 #elif HAVE_SYSCTL
     int mib[3];
     mib[0] = CTL_HW;

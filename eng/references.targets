@@ -29,15 +29,6 @@
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
 
-  <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
-  <Target Name="DisableProjectReferenceArchitectureMismatchWarningForCoreLib"
-          Condition="'@(_coreLibProjectReference)' != ''"
-          BeforeTargets="ResolveAssemblyReferences">
-    <PropertyGroup>
-      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    </PropertyGroup>
-  </Target>
-
   <!-- Filter out transitive P2Ps which should be excluded. -->
   <Target Name="FilterTransitiveProjectReferences"
           AfterTargets="IncludeTransitiveProjectReferences"
@@ -74,12 +65,14 @@
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
-  <Target Name="ValidateReferenceAssemblyProjectReferences"
+  <Target Name="ValidateReferenceAssemblyProjectReferencesAndTargetFramework"
           AfterTargets="ResolveReferences"
           Condition="'$(IsReferenceAssemblyProject)' == 'true' and
                      '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
-    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''"
-           Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
+    <Error Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'."
+           Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''" />
+    <Error Text="Reference assemblies must be TargetPlatform agnostic. $(MSBuildProjectName) incorrectly targets $(TargetFramework), platform: $(TargetPlatformIdentifier)."
+           Condition="'$(TargetPlatformIdentifier)' != ''" />
   </Target>
 
   <!-- An opt-in target to trim out private assemblies from the ref assembly ReferencePath. -->
@@ -90,5 +83,30 @@
       <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
                                       Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
+          AfterTargets="FindReferenceAssembliesForReferences"
+          Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">
+    <ItemGroup>
+      <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
+      <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- For experimental ref assemblies (which typically have the same name as a regular ref
+       assembly), bump their minor file version by 100 to make it distinguishable from the regular
+       ref assembly. -->
+  <Target Name="UpdateExperimentalRefAssemblyFileVersion"
+          AfterTargets="_InitializeAssemblyVersion"
+	        Condition="'$(IsReferenceAssemblyProject)' == 'true' and '$(IsExperimentalRefAssembly)' == 'true'">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
   </Target>
 </Project>

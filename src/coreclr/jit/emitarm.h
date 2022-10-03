@@ -43,6 +43,14 @@ void emitDispAddrRR(regNumber reg1, regNumber reg2, emitAttr attr);
 void emitDispAddrRRI(regNumber reg1, regNumber reg2, int imm, emitAttr attr);
 void emitDispAddrPUW(regNumber reg, int imm, insOpts opt, emitAttr attr);
 void emitDispGC(emitAttr attr);
+void emitDispLargeJmp(instrDesc* id,
+                      bool       isNew,
+                      bool       doffs,
+                      bool       asmfm,
+                      unsigned   offs = 0,
+                      BYTE*      code = 0,
+                      size_t     sz   = 0,
+                      insGroup*  ig   = NULL);
 
 void emitDispInsHelp(instrDesc* id,
                      bool       isNew,
@@ -193,6 +201,12 @@ inline static unsigned getBitWidth(emitAttr size)
 }
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+
+/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -339,7 +353,7 @@ inline bool emitIsCondJump(instrDesc* jmp)
 
 /*****************************************************************************
  *
- *  Given an instrDesc, return true if it's a comapre and jump.
+ *  Given an instrDesc, return true if it's a compare and jump.
  */
 
 inline bool emitIsCmpJump(instrDesc* jmp)

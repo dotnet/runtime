@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_format_cs
 {
     public enum PlatformID
     {
@@ -22,7 +23,7 @@ namespace JitTest
         worse
     }
 
-    internal class TestClass
+    public class TestClass
     {
         private static String Format(TypedReference format, TypedReference _ref)
         {
@@ -278,7 +279,8 @@ namespace JitTest
             Test("{%e}", __makeref(mood[0]), "{good}");
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestLocals();
             new TestClass().TestFields();

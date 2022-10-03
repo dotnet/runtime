@@ -1,10 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
     public sealed class HostApplicationBuilder
     {
         private readonly HostBuilderContext _hostBuilderContext;
-        private readonly CheckedServiceCollection _checkedServiceCollection = new();
+        private readonly ServiceCollection _serviceCollection = new();
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
@@ -130,7 +127,7 @@ namespace Microsoft.Extensions.Hosting
                 hostingEnvironment,
                 physicalFileProvider,
                 Configuration,
-                () => _appServices);
+                () => _appServices!);
 
             Logging = new LoggingBuilder(Services);
 
@@ -165,7 +162,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
         /// </summary>
-        public IServiceCollection Services => _checkedServiceCollection;
+        public IServiceCollection Services => _serviceCollection;
 
         /// <summary>
         /// A collection of logging providers for the application to compose. This is useful for adding new logging providers.
@@ -224,7 +221,7 @@ namespace Microsoft.Extensions.Hosting
             _appServices = _createServiceProvider();
 
             // Prevent further modification of the service collection now that the provider is built.
-            _checkedServiceCollection.IsReadOnly = true;
+            _serviceCollection.MakeReadOnly();
 
             return HostBuilder.ResolveHost(_appServices, diagnosticListener);
         }
@@ -324,104 +321,51 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
             {
-                _configureHostConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureHostConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
             {
-                _configureAppConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureAppConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
             {
-                _configureServicesActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureServicesActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
                 return this;
 
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory);
                 return this;
             }
 
             public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
             {
-                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate
-                    ?? throw new ArgumentNullException(nameof(configureDelegate))));
+                ThrowHelper.ThrowIfNull(configureDelegate);
 
+                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
                 return this;
-            }
-        }
-
-        private sealed class CheckedServiceCollection : IServiceCollection
-        {
-            private readonly IServiceCollection _services = new ServiceCollection();
-
-            public bool IsReadOnly { get; set; }
-            public int Count => _services.Count;
-
-            public ServiceDescriptor this[int index]
-            {
-                get => _services[index];
-                set
-                {
-                    CheckReadOnly();
-                    _services[index] = value;
-                }
-            }
-
-            public IEnumerator<ServiceDescriptor> GetEnumerator() => _services.GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-            public int IndexOf(ServiceDescriptor item) => _services.IndexOf(item);
-            public bool Contains(ServiceDescriptor item) => _services.Contains(item);
-            public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => _services.CopyTo(array, arrayIndex);
-
-            public void Add(ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                _services.Add(item);
-            }
-
-            public void Clear()
-            {
-                CheckReadOnly();
-                _services.Clear();
-            }
-
-            public void Insert(int index, ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                _services.Insert(index, item);
-            }
-
-            public bool Remove(ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                return _services.Remove(item);
-            }
-
-            public void RemoveAt(int index)
-            {
-                CheckReadOnly();
-                _services.RemoveAt(index);
-            }
-
-            private void CheckReadOnly()
-            {
-                if (IsReadOnly)
-                {
-                    throw new InvalidOperationException(SR.ServiceCollectionModificationInvalidAfterBuild);
-                }
             }
         }
 

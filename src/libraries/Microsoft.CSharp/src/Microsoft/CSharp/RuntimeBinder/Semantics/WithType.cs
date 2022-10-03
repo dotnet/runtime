@@ -171,14 +171,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal sealed class EventWithType : SymWithType
-    {
-        public EventWithType(EventSymbol @event, AggregateType ats)
-        {
-            Set(@event, ats);
-        }
-    }
-
     internal sealed class FieldWithType : SymWithType
     {
         public FieldWithType(FieldSymbol field, AggregateType ats)

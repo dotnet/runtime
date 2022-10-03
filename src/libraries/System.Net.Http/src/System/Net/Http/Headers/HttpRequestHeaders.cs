@@ -21,6 +21,7 @@ namespace System.Net.Http.Headers
         private HttpGeneralHeaders? _generalHeaders;
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
+        private string? _protocol;
 
         #region Request Headers
 
@@ -47,7 +48,7 @@ namespace System.Net.Http.Headers
 
         public AuthenticationHeaderValue? Authorization
         {
-            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.Authorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetSingleParsedValue(KnownHeaders.Authorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Authorization.Descriptor, value); }
         }
 
@@ -87,7 +88,7 @@ namespace System.Net.Http.Headers
 
         public string? From
         {
-            get { return (string?)GetParsedValues(KnownHeaders.From.Descriptor); }
+            get { return (string?)GetSingleParsedValue(KnownHeaders.From.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the From header value (if any).
@@ -104,7 +105,7 @@ namespace System.Net.Http.Headers
 
         public string? Host
         {
-            get { return (string?)GetParsedValues(KnownHeaders.Host.Descriptor); }
+            get { return (string?)GetSingleParsedValue(KnownHeaders.Host.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the Host header value (if any).
@@ -135,7 +136,7 @@ namespace System.Net.Http.Headers
 
         public RangeConditionHeaderValue? IfRange
         {
-            get { return (RangeConditionHeaderValue?)GetParsedValues(KnownHeaders.IfRange.Descriptor); }
+            get { return (RangeConditionHeaderValue?)GetSingleParsedValue(KnownHeaders.IfRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.IfRange.Descriptor, value); }
         }
 
@@ -149,7 +150,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                object? storedValue = GetParsedValues(KnownHeaders.MaxForwards.Descriptor);
+                object? storedValue = GetSingleParsedValue(KnownHeaders.MaxForwards.Descriptor);
                 if (storedValue != null)
                 {
                     return (int)storedValue;
@@ -159,22 +160,31 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
+        public string? Protocol
+        {
+            get => _protocol;
+            set
+            {
+                CheckContainsNewLine(value);
+                _protocol = value;
+            }
+        }
 
         public AuthenticationHeaderValue? ProxyAuthorization
         {
-            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.ProxyAuthorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetSingleParsedValue(KnownHeaders.ProxyAuthorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ProxyAuthorization.Descriptor, value); }
         }
 
         public RangeHeaderValue? Range
         {
-            get { return (RangeHeaderValue?)GetParsedValues(KnownHeaders.Range.Descriptor); }
+            get { return (RangeHeaderValue?)GetSingleParsedValue(KnownHeaders.Range.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Range.Descriptor, value); }
         }
 
         public Uri? Referrer
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.Referer.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.Referer.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Referer.Descriptor, value); }
         }
 
@@ -276,6 +286,6 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ??= new HttpGeneralHeaders(this);
     }
 }

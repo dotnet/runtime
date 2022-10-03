@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class InstantiatedType
     {
         protected internal override int ClassCode => 1150020412;
@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
             // to each other. This is a better heuristic than sorting by method definition
             // then by instantiation.
             //
-            // The goal is to sort classes like SomeClass<UserStruct>, 
+            // The goal is to sort classes like SomeClass<UserStruct>,
             // near SomeOtherClass<UserStruct, int>
 
             int result = 0;

@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal class Parser
+        internal sealed class Parser
         {
-            private const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
+            internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
@@ -29,36 +29,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 _compilation = compilation;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
-            }
-
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
-                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
-
-            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
-            {
-                var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
-
-                foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
-                {
-                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
-                    {
-                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
-                        if (attributeSymbol == null)
-                        {
-                            continue;
-                        }
-
-                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
-
-                        if (fullName == LoggerMessageAttribute)
-                        {
-                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
-                        }
-                    }
-                }
-
-                return null;
             }
 
             /// <summary>
@@ -141,15 +111,20 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool hasMisconfiguredInput = false;
-                                    ImmutableArray<AttributeData>? boundAttrbutes = logMethodSymbol?.GetAttributes();
+                                    ImmutableArray<AttributeData>? boundAttributes = logMethodSymbol?.GetAttributes();
 
-                                    if (boundAttrbutes == null)
+                                    if (boundAttributes == null || boundAttributes!.Value.Length == 0)
                                     {
                                         continue;
                                     }
 
-                                    foreach (AttributeData attributeData in boundAttrbutes)
+                                    foreach (AttributeData attributeData in boundAttributes)
                                     {
+                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
+                                        {
+                                            continue;
+                                        }
+
                                         // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
                                         // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
                                         if (attributeData.ConstructorArguments.Any())
@@ -504,7 +479,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             LoggerClass currentLoggerClass = lc;
                                             var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
 
-                                            bool IsAllowedKind(SyntaxKind kind) =>
+                                            static bool IsAllowedKind(SyntaxKind kind) =>
                                                 kind == SyntaxKind.ClassDeclaration ||
                                                 kind == SyntaxKind.StructDeclaration ||
                                                 kind == SyntaxKind.RecordDeclaration;
@@ -561,29 +536,33 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 string? loggerField = null;
 
-                foreach (MemberDeclarationSyntax m in classDec.Members)
+                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
+
+                bool onMostDerivedType = true;
+
+                while (classType is { SpecialType: not SpecialType.System_Object })
                 {
-                    if (m is FieldDeclarationSyntax fds)
+                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
                     {
-                        foreach (VariableDeclaratorSyntax v in fds.Declaration.Variables)
+                        if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
                         {
-                            var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
-                            if (fs != null)
+                            continue;
+                        }
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                        {
+                            if (loggerField == null)
                             {
-                                if (IsBaseOrIdentity(fs.Type, loggerSymbol))
-                                {
-                                    if (loggerField == null)
-                                    {
-                                        loggerField = v.Identifier.Text;
-                                    }
-                                    else
-                                    {
-                                        return (null, true);
-                                    }
-                                }
+                                loggerField = fs.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
                             }
                         }
                     }
+
+                    onMostDerivedType = false;
+                    classType = classType.BaseType;
                 }
 
                 return (loggerField, false);
@@ -712,7 +691,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// A logger class holding a bunch of logger methods.
         /// </summary>
-        internal class LoggerClass
+        internal sealed class LoggerClass
         {
             public readonly List<LoggerMethod> Methods = new();
             public string Keyword = string.Empty;
@@ -724,7 +703,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// A logger method in a logger class.
         /// </summary>
-        internal class LoggerMethod
+        internal sealed class LoggerMethod
         {
             public readonly List<LoggerParameter> AllParameters = new();
             public readonly List<LoggerParameter> TemplateParameters = new();
@@ -745,7 +724,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// A single parameter to a logger method.
         /// </summary>
-        internal class LoggerParameter
+        internal sealed class LoggerParameter
         {
             public string Name = string.Empty;
             public string Type = string.Empty;

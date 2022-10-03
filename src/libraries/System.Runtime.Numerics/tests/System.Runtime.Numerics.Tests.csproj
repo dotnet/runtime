@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -10,6 +10,7 @@
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
     <Compile Include="BigInteger\BigInteger.AddTests.cs" />
     <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
+    <Compile Include="BigInteger\BigNumberTools.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
     <Compile Include="BigInteger\cast_from.cs" />
     <Compile Include="BigInteger\cast_to.cs" />
@@ -52,5 +53,14 @@
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="BigInteger\TryWriteBytes.cs" />
     <Compile Include="ComplexTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="BigIntegerTests.GenericMath.cs" />
+    <Compile Include="ComplexTests.GenericMath.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.Runtime.Numerics.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

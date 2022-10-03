@@ -325,13 +325,15 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly bool _isDisposalRequired;
 
         public ReflectionPartCreationInfo(
-            Lazy<Type> partType!!,
+            Lazy<Type> partType,
             bool isDisposalRequired,
             Lazy<IEnumerable<ImportDefinition>>? imports,
             Lazy<IEnumerable<ExportDefinition>>? exports,
             Lazy<IDictionary<string, object?>>? metadata,
             ICompositionElement? origin)
         {
+            ArgumentNullException.ThrowIfNull(partType);
+
             _partType = partType;
             _isDisposalRequired = isDisposalRequired;
             _imports = imports;
@@ -392,7 +394,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public IDictionary<string, object?>? GetMetadata()
         {
-            return (_metadata != null) ? _metadata.Value : null;
+            return _metadata?.Value;
         }
 
         public IEnumerable<ExportDefinition> GetExports()

@@ -26,8 +26,8 @@
 extern "C" {
 
 /***************************************************************************/
-/* Note that this construtor does not set the LocalSig, but has the
-   advantage that it does not have any dependancy on EE structures.
+/* Note that this constructor does not set the LocalSig, but has the
+   advantage that it does not have any dependency on EE structures.
    inside the EE use the FunctionDesc constructor */
 
 void __stdcall DecoderInit(void *pThis, COR_ILMETHOD *header)
@@ -48,7 +48,7 @@ void __stdcall DecoderInit(void *pThis, COR_ILMETHOD *header)
 #ifdef HOST_64BIT
         if((((size_t) header) & 3) == 0)        // header is aligned
 #else
-        _ASSERTE((((size_t) header) & 3) == 0);        // header is aligned
+        assert((((size_t) header) & 3) == 0);        // header is aligned
 #endif
         {
             *((COR_ILMETHOD_FAT *)decoder) = header->Fat;
@@ -129,18 +129,18 @@ unsigned __stdcall IlmethodEmit(unsigned size, COR_ILMETHOD_FAT* header,
     }
     else {
             // Fat format
-        _ASSERTE((((size_t) outBuff) & 3) == 0);               // header is dword aligned
+        assert((((size_t) outBuff) & 3) == 0);               // header is dword aligned
         COR_ILMETHOD_FAT* fatHeader = (COR_ILMETHOD_FAT*) outBuff;
         outBuff += sizeof(COR_ILMETHOD_FAT);
         *fatHeader = *header;
         fatHeader->SetFlags(fatHeader->GetFlags() | CorILMethod_FatFormat);
-        _ASSERTE((fatHeader->GetFlags() & CorILMethod_FormatMask) == CorILMethod_FatFormat);
+        assert((fatHeader->GetFlags() & CorILMethod_FormatMask) == CorILMethod_FatFormat);
         if (moreSections)
             fatHeader->SetFlags(fatHeader->GetFlags() | CorILMethod_MoreSects);
         fatHeader->SetSize(sizeof(COR_ILMETHOD_FAT) / 4);
     }
 #ifndef SOS_INCLUDE
-    _ASSERTE(&origBuff[size] == outBuff);
+    assert(&origBuff[size] == outBuff);
 #endif // !SOS_INCLUDE
     return(size);
 }
@@ -211,7 +211,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
     if (size == 0)
        return(0);
 
-    _ASSERTE((((size_t) outBuff) & 3) == 0);               // header is dword aligned
+    assert((((size_t) outBuff) & 3) == 0);               // header is dword aligned
     BYTE* origBuff = outBuff;
     if (ehCount <= 0)
         return 0;
@@ -234,11 +234,11 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
                     fatClause->GetHandlerLength() > 0xFF) {
                 break;  // fall through and generate as FAT
             }
-            _ASSERTE((fatClause->GetFlags() & ~0xFFFF) == 0);
-            _ASSERTE((fatClause->GetTryOffset() & ~0xFFFF) == 0);
-            _ASSERTE((fatClause->GetTryLength() & ~0xFF) == 0);
-            _ASSERTE((fatClause->GetHandlerOffset() & ~0xFFFF) == 0);
-            _ASSERTE((fatClause->GetHandlerLength() & ~0xFF) == 0);
+            assert((fatClause->GetFlags() & ~0xFFFF) == 0);
+            assert((fatClause->GetTryOffset() & ~0xFFFF) == 0);
+            assert((fatClause->GetTryLength() & ~0xFF) == 0);
+            assert((fatClause->GetHandlerOffset() & ~0xFFFF) == 0);
+            assert((fatClause->GetHandlerLength() & ~0xFF) == 0);
 
             COR_ILMETHOD_SECT_EH_CLAUSE_SMALL* smallClause = (COR_ILMETHOD_SECT_EH_CLAUSE_SMALL*)&EHSect->Clauses[i];
             smallClause->SetFlags((CorExceptionFlag) fatClause->GetFlags());
@@ -253,13 +253,9 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
             EHSect->Kind = CorILMethod_Sect_EHTable;
             if (moreSections)
                 EHSect->Kind |= CorILMethod_Sect_MoreSects;
-#ifndef SOS_INCLUDE
-            EHSect->DataSize = EHSect->Size(ehCount);
-#else
             EHSect->DataSize = (BYTE) EHSect->Size(ehCount);
-#endif // !SOS_INCLUDE
             EHSect->Reserved = 0;
-            _ASSERTE(EHSect->DataSize == EHSect->Size(ehCount)); // make sure didn't overflow
+            assert(EHSect->DataSize == EHSect->Size(ehCount)); // make sure didn't overflow
             outBuff = (BYTE*) &EHSect->Clauses[ehCount];
             // Set the offsets for the exception type tokens.
             if (ehTypeOffsets)
@@ -268,7 +264,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
                     COR_ILMETHOD_SECT_EH_CLAUSE_SMALL* smallClause = (COR_ILMETHOD_SECT_EH_CLAUSE_SMALL*)&EHSect->Clauses[i];
                     if (smallClause->GetFlags() == COR_ILEXCEPTION_CLAUSE_NONE)
                     {
-                        _ASSERTE(! IsNilToken(smallClause->GetClassToken()));
+                        assert(! IsNilToken(smallClause->GetClassToken()));
                         ehTypeOffsets[i] = (ULONG)((BYTE *)&smallClause->ClassToken - origBuff);
                     }
                 }
@@ -285,7 +281,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
     EHSect->SetDataSize(EHSect->Size(ehCount));
     memcpy(EHSect->Clauses, clauses, ehCount * sizeof(COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
     outBuff = (BYTE*) &EHSect->Clauses[ehCount];
-    _ASSERTE(&origBuff[size] == outBuff);
+    assert(&origBuff[size] == outBuff);
     // Set the offsets for the exception type tokens.
     if (ehTypeOffsets)
     {
@@ -293,7 +289,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
             COR_ILMETHOD_SECT_EH_CLAUSE_FAT* fatClause = (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)&EHSect->Clauses[i];
             if (fatClause->GetFlags() == COR_ILEXCEPTION_CLAUSE_NONE)
             {
-                _ASSERTE(! IsNilToken(fatClause->GetClassToken()));
+                assert(! IsNilToken(fatClause->GetClassToken()));
                 ehTypeOffsets[i] = (ULONG)((BYTE *)&fatClause->ClassToken - origBuff);
             }
         }

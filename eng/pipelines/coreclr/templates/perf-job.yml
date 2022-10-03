@@ -19,6 +19,13 @@ parameters:
   pgoRunType: ''
   javascriptEngine: 'NoJS'
   iOSLlvmBuild: 'False'
+  skipLiveLibrariesDownload: false
+  collectHelixLogsScript: ''
+  timeoutInMinutes: 320
+  compare: false
+  onlySanityCheck: false
+  downloadSpecificBuild: null # buildId, pipeline, branchName, project
+  perfForkToUse: {} # url, branch
 
 ### Perf job
 
@@ -48,49 +55,79 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
-    # Test job depends on the corresponding build job
-    dependsOn:
-    - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono')) }}:
-      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
-      - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if eq(parameters.runtimeType, 'wasm')}}:
-      - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
-    - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
-      - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
-    - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
-      - ${{ 'build_Android_arm64_release_AndroidMono' }}
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
-    - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
-      - ${{ 'build_iOS_arm64_release_iOSMono' }}
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
+    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
 
-    ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
+    ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
+      helixTypeSuffix: '/wasm/aot'
+    ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'aot')) }}:
+      helixTypeSuffix: '/wasm'
+
+    collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
+
+    # Test job depends on the corresponding build job
+    ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
+      dependsOn:
+      - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6', 'wasm')) }}:
+        - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
+        - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if eq(parameters.runtimeType, 'wasm')}}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
+      - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
+      - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
+        - ${{ 'build_Android_arm64_release_AndroidMono' }}
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+      - ${{ if eq(parameters.runtimeType, 'AndroidMobileNet6')}}:
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+      - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
+        - ${{ 'build_iOS_arm64_release_iOSMono' }}
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+      - ${{ if eq(parameters.runtimeType, 'iOSMobileNet6')}}:
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+
+    ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6',  'iOSMobileNet6'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
         extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono
       ${{ if eq(parameters.runtimeType, 'coreclr') }}:
         extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
-    ${{ if and(ne(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
+    ${{ if and(ne(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6'))) }}:
       ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
       ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }} --alpine
-    ${{ if eq(parameters.runtimeType, 'AndroidMono') }}:
+    ${{ if in(parameters.runtimeType, 'AndroidMono', 'AndroidMobileNet6') }}:
       extraSetupParameters: -Architecture ${{ parameters.archType }} -AndroidMono
-    ${{ if eq(parameters.runtimeType, 'iosMono') }}:
-      extraSetupParameters: -Architecture ${{ parameters.archType }} -iOSMono -iOSLlvmBuild:$${{ parameters.iOSLlvmBuild }}
+    ${{ if in(parameters.runtimeType, 'iosMono', 'iOSMobileNet6') }}:
+      extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }}
 
-    variables: ${{ parameters.variables }}
+    variables:
+    - ${{ each variable in parameters.variables }}:
+      - name: ${{ variable.name }}
+        value: ${{ variable.value }}
+
+    - name: _compareArg
+      ${{ if eq(parameters.compare, 'true') }}:
+        value: '--compare'
+    - name: _onlySanityCheckArg
+      ${{ if eq(parameters.onlySanityCheck, 'true') }}:
+        value: '--only-sanity'
+    - name: _perfForkArg
+      ${{ if ne(parameters.perfForkToUse.url, '') }}:
+        value: --perffork ${{ parameters.perfForkToUse.url }} --perfforkbranch ${{ coalesce(parameters.perfForkToUse.branch, 'main') }}
+
+    - name: extraSetupParametersSuffix
+      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
 
     frameworks:
       - ${{ parameters.framework }}
@@ -98,7 +135,7 @@ jobs:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
 
     # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)
@@ -108,7 +145,7 @@ jobs:
           displayName: 'live-built libraries'
 
     # Download coreclr
-    - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono')) }}:
+    - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6', 'wasm')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(buildProductRootFolderPath)
@@ -116,7 +153,7 @@ jobs:
           artifactName: '$(buildProductArtifactName)'
           displayName: 'Coreclr product build'
 
-    # Download mono 
+    # Download mono
     - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -128,14 +165,29 @@ jobs:
 
     # Download wasm
     - ${{ if eq(parameters.runtimeType, 'wasm') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)/BrowserWasm
-          artifactFileName: BrowserWasm.zip
-          artifactName: BrowserWasm
-          displayName: BrowserWasm
+      - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+      - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-specific-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+            ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
-      - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm.7.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/test-main.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
+      - script: >-
+          mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
+          mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
+          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload/* $(librariesDownloadDir)/bin/wasm/dotnet &&
+          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          find $(librariesDownloadDir)/bin/wasm -type d &&
+          find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
 
     # Download mono AOT
@@ -166,23 +218,79 @@ jobs:
           artifactFileName: 'MauiAndroidApp.tar.gz'
           artifactName: 'MauiAndroidApp'
           displayName: 'Maui Android App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidPodcast.tar.gz'
+          artifactName: 'MauiAndroidPodcast'
+          displayName: 'Maui Android Podcast'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorAndroidApp.tar.gz'
+          artifactName: 'MauiBlazorAndroidApp'
+          displayName: 'Maui Blazor Android App'
+
+    # Download Maui Android net6 stuff
+    - ${{ if eq(parameters.runtimeType, 'AndroidMobileNet6')}}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidAppNet6.tar.gz'
+          artifactName: 'MauiAndroidAppNet6'
+          displayName: 'Maui Android App Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidPodcastNet6.tar.gz'
+          artifactName: 'MauiAndroidPodcastNet6'
+          displayName: 'Maui Android Podcast Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorAndroidAppNet6.tar.gz'
+          artifactName: 'MauiBlazorAndroidAppNet6'
+          displayName: 'Maui Blazor Android App Net6'
 
     # Download iOSMono tests and MauiiOS/MacCatalyst
-    - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
+    - ${{ if eq(parameters.runtimeType, 'iOSMono') }}: 
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvm
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleAppNoLLVM.tar.gz'
+          artifactFileName: 'iOSSampleAppNoLLVM.zip'
           artifactName: 'iOSSampleAppNoLLVM'
           displayName: 'iOS Sample App NoLLVM'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvm
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleAppLLVM.tar.gz'
+          artifactFileName: 'iOSSampleAppLLVM.zip'
           artifactName: 'iOSSampleAppLLVM'
           displayName: 'iOS Sample App LLVM'
+      # same artifact as above but don't extract .zip
+      - task: DownloadBuildArtifacts@0
+        displayName: 'Download iOS Sample App NoLLVM'
+        inputs:
+          buildType: current
+          downloadType: single
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nollvmzip'
+          artifactName: 'iOSSampleAppNoLLVM'
+          checkDownloadedFiles: true
+      # same artifact as above but don't extract .zip
+      - task: DownloadBuildArtifacts@0
+        displayName: 'Download iOS Sample App LLVM'
+        inputs:
+          buildType: current
+          downloadType: single
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/llvmzip'
+          artifactName: 'iOSSampleAppLLVM'
+          checkDownloadedFiles: true
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
@@ -197,17 +305,77 @@ jobs:
           artifactFileName: 'MauiMacCatalystDefault.tar.gz'
           artifactName: 'MauiMacCatalystDefault'
           displayName: 'Maui MacCatalyst App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSPodcastIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiiOSPodcastIPA.tar.gz'
+          artifactName: 'MauiiOSPodcastIPA'
+          displayName: 'Maui iOS Podcast IPA'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazoriOSDefaultIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazoriOSDefaultIPA.tar.gz'
+          artifactName: 'MauiBlazoriOSDefaultIPA'
+          displayName: 'Maui Blazor iOS IPA'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazorMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorMacCatalystDefault.tar.gz'
+          artifactName: 'MauiBlazorMacCatalystDefault'
+          displayName: 'Maui Blazor MacCatalyst App'
+
+
+    # Download Maui iOS net6 stuff
+    - ${{ if eq(parameters.runtimeType, 'iOSMobileNet6') }}: 
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiiOSDefaultIPANet6.tar.gz'
+          artifactName: 'MauiiOSDefaultIPANet6'
+          displayName: 'Maui iOS IPA Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiMacCatalystDefaultNet6.tar.gz'
+          artifactName: 'MauiMacCatalystDefaultNet6'
+          displayName: 'Maui MacCatalyst App Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSPodcastIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiiOSPodcastIPANet6.tar.gz'
+          artifactName: 'MauiiOSPodcastIPANet6'
+          displayName: 'Maui iOS Podcast IPA Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazoriOSDefaultIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazoriOSDefaultIPANet6.tar.gz'
+          artifactName: 'MauiBlazoriOSDefaultIPANet6'
+          displayName: 'Maui Blazor iOS IPA Net6'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazorMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorMacCatalystDefaultNet6.tar.gz'
+          artifactName: 'MauiBlazorMacCatalystDefaultNet6'
+          displayName: 'Maui Blazor MacCatalyst App Net6'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
-      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'))
 
     # Copy the runtime directory into the testhost folder to include OOBs.
     - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\7.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\7.0.0\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono')))
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6')))
 
     - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/7.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/7.0.0/corerun"
       displayName: "Create mono dotnet (Linux)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono')))
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6')))

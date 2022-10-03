@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -783,7 +781,7 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
         PRECONDITION(CheckPointer(pFD));
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldAddr_Framed, obj, pFD);
@@ -827,7 +825,7 @@ HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
@@ -843,7 +841,7 @@ HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
@@ -859,7 +857,7 @@ HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
@@ -875,7 +873,7 @@ HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
@@ -891,7 +889,7 @@ HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
@@ -908,7 +906,7 @@ HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
@@ -952,7 +950,7 @@ HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
@@ -967,7 +965,7 @@ HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
@@ -982,7 +980,7 @@ HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
@@ -997,7 +995,7 @@ HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
@@ -1012,7 +1010,7 @@ HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
@@ -1027,7 +1025,7 @@ HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
@@ -1072,7 +1070,7 @@ HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
@@ -1116,7 +1114,7 @@ HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
@@ -1174,7 +1172,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, M
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
@@ -1228,7 +1226,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFie
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
@@ -1259,7 +1257,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 
     // We don't want to be calling JIT_InitClass at all for perf reasons
     // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Gloabl Class <Module>
+    // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
     pMT->CheckRestore();
@@ -2126,7 +2124,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // to a given type.
         if (pMT->IsICastable())
         {
-            // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
+            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
             GCPROTECT_BEGIN(exception);
 
@@ -2433,7 +2431,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent());
+    return module->ResolveStringRef(metaTok);
 }
 
 /*********************************************************************/
@@ -2693,6 +2691,10 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
     GCPROTECT_BEGININTERIOR(unboxedData);
     HELPER_METHOD_POLL();
 
+    // A null can be passed for boxing of a null ref.
+    if (unboxedData == NULL)
+        COMPlusThrow(kNullReferenceException);
+
     TypeHandle clsHnd(type);
 
     _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
@@ -2701,9 +2703,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     pMT->CheckRestore();
 
-    // You can only box valuetypes
-    if (!pMT->IsValueType())
-        COMPlusThrow(kInvalidCastException, W("Arg_ObjObj"));
+    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2776,7 +2776,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
-        // we allow enums and their primitive type to be interchangable
+        // we allow enums and their primitive type to be interchangeable
         result = objRef->GetData();
     }
     else if (pMT1->IsEquivalentTo(pMT2))
@@ -2810,7 +2810,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 
     MethodTable* pMT2 = obj->GetMethodTable();
 
-    // we allow enums and their primitive type to be interchangable.
+    // we allow enums and their primitive type to be interchangeable.
     // if suspension is requested, defer to the framed helper.
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -2832,7 +2832,6 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     FCALL_CONTRACT;
 
     TypeHandle clsHnd(type);
-
     // <TODO>@TODO right now we check for precisely the correct type.
     // do we want to allow inheritance?  (watch out since value
     // classes inherit from object but do not normal object layout).</TODO>
@@ -2841,6 +2840,16 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     }
 
     return(typedByRef.data);
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+    TypeHandle clsHnd(type);
+    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
 }
 HCIMPLEND
 
@@ -2855,7 +2864,7 @@ HCIMPLEND
 // JIT_GenericHandle and its cache
 //
 // Perform a "polytypic" operation related to shared generic code at runtime, possibly filling in an entry in
-// either a generic dictionary cache assocaited with a descriptor or placing an entry in the global
+// either a generic dictionary cache associated with a descriptor or placing an entry in the global
 // JitGenericHandle cache.
 //
 // A polytypic operation is one such as
@@ -2885,7 +2894,7 @@ HCIMPLEND
 //         !SharedByGenericMethodInstantiations but will be SharedByGenericClassInstantiations). Let's say
 //         this code is C<repr>::m().
 //     * the type D will be a descendent of type C. In particular D<exact> will relate to some type C<exact'>
-//         where C<repr> is the represntative instantiation of C<exact>'
+//         where C<repr> is the representative instantiation of C<exact>'
 //     * the relevant dictionary will be the one attached to C<exact'>.
 //
 // The JitGenericHandleCache is a global data structure shared across all application domains. It is only
@@ -3028,7 +3037,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
+        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
         // could put it in a "ifdef _DEBUG" block
         CrstHolder lock(&g_pJitGenericHandleCacheCrst);
         EEHashTableIteration iter;
@@ -3094,7 +3103,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
 
         pDeclaringMT = pMT;
-        for (;;)
+        while (true)
         {
             MethodTable * pParentMT = pDeclaringMT->GetParentMethodTable();
             if (pParentMT->GetNumDicts() <= dictionaryIndex)
@@ -3150,7 +3159,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         if (pMTDictionary != pDeclaringMTDictionary)
         {
             TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
-            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
+            InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
 
@@ -3243,8 +3252,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
-    g_IBCLogger.LogMethodDescAccess(GetMethod(methodHnd));
-
     JitGenericHandleCacheKey key(NULL, methodHnd, signature);
     HashDatum res;
     if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
@@ -3308,8 +3315,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
         PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableAccess((MethodTable *)classHnd);
 
     JitGenericHandleCacheKey key(classHnd, NULL, signature);
     HashDatum res;
@@ -4162,6 +4167,35 @@ HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_Overflow)
 {
     FCALL_CONTRACT;
@@ -4540,12 +4574,6 @@ HCIMPL1(void, JIT_LogMethodEnter, CORINFO_METHOD_HANDLE methHnd_)
     // Record an access to this method desc
     //
 
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    g_IBCLogger.LogMethodCodeAccess(GetMethod(methHnd_));
-
-    HELPER_METHOD_FRAME_END_POLL();
-
 HCIMPLEND
 
 
@@ -4708,7 +4736,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 HCIMPLEND
 
 /*********************************************************************/
-// This is called by the JIT after every instruction in fully interuptable
+// This is called by the JIT after every instruction in fully interruptible
 // code to make certain our GC tracking is OK
 HCIMPL0(VOID, JIT_StressGC_NOP)
 {
@@ -4738,7 +4766,7 @@ HCIMPL0(VOID, JIT_StressGC)
         BYTE* retInstrs = ((BYTE*) *__ms->pRetAddr()) - 4;
         _ASSERTE(retInstrs[-1] == 0xE8);                // it is a call instruction
                 // Wack it to point to the JITStressGCNop instead
-        FastInterlockExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
+        InterlockedExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
 #endif // _X86
 
     HELPER_METHOD_FRAME_END();
@@ -4770,8 +4798,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     if (obj != 0) {
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
-            _ASSERTE(!"Bad Method Table");
-            FreeBuildDebugBreak();
+            _ASSERTE_ALL_BUILDS(!"Bad Method Table");
         }
     }
     return obj;
@@ -5066,33 +5093,69 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
 
     // Find context for the original method
+    CONTEXT *pFrameContext = NULL;
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = 0;
+    DWORD contextFlags = CONTEXT_FULL;
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        xStateCompactionMask = XSTATE_MASK_CET_U;
+        contextFlags |= CONTEXT_XSTATE;
+    }
+
+    // The initialize call should fail but return contextSize
+    BOOL success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+    PVOID pBuffer = _alloca(contextSize);
+    success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
+        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+    _ASSERTE(success);
+#else // TARGET_WINDOWS && TARGET_AMD64
     CONTEXT frameContext;
     frameContext.ContextFlags = CONTEXT_FULL;
-    RtlCaptureContext(&frameContext);
+    pFrameContext = &frameContext;
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+    // Find context for the original method
+    RtlCaptureContext(pFrameContext);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    if (Thread::AreCetShadowStacksEnabled())
+    {
+        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
+        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+        SetSSP(pFrameContext, _rdsspq());
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
     // Walk back to the original method frame
-    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
     // Remember original method FP and SP because new method will inherit them.
-    UINT_PTR currentSP = GetSP(&frameContext);
-    UINT_PTR currentFP = GetFP(&frameContext);
+    UINT_PTR currentSP = GetSP(pFrameContext);
+    UINT_PTR currentFP = GetFP(pFrameContext);
 
     // We expect to be back at the right IP
-    if ((UINT_PTR)ip != GetIP(&frameContext))
+    if ((UINT_PTR)ip != GetIP(pFrameContext))
     {
         // Should be fatal
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+            " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
     // Now unwind back to the original method caller frame.
-    EECodeInfo callerCodeInfo(GetIP(&frameContext));
-    frameContext.ContextFlags = CONTEXT_FULL;
+    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
     ULONG_PTR establisherFrame = 0;
     PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
-        &frameContext, &handlerData, &establisherFrame, NULL);
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
+        pFrameContext, &handlerData, &establisherFrame, NULL);
 
     // Now, set FP and SP back to the values they had just before this helper was called,
     // since the new method must have access to the original method frame.
@@ -5105,13 +5168,19 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // method sees the "expected" SP misalgnment on entry.
     _ASSERTE(currentSP % 16 == 0);
     currentSP -= 8;
-#endif
 
-    SetSP(&frameContext, currentSP);
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pFrameContext);
+    if (ssp != 0)
+    {
+        SetSSP(pFrameContext, ssp - 8);
+    }
+#endif // TARGET_WINDOWS
 
-#if defined(TARGET_AMD64)
-    frameContext.Rbp = currentFP;
-#endif
+    pFrameContext->Rbp = currentFP;
+#endif // TARGET_AMD64
+
+    SetSP(pFrameContext, currentSP);
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
@@ -5119,10 +5188,10 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
 
     // Install new entry point as IP
-    SetIP(&frameContext, osrMethodCode);
+    SetIP(pFrameContext, osrMethodCode);
 
     // Transition!
-    ClrRestoreNonvolatileContext(&frameContext);
+    ClrRestoreNonvolatileContext(pFrameContext);
 }
 
 // Jit helper invoked at a partial compilation patchpoint.
@@ -5313,7 +5382,7 @@ void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-static unsigned ClassProfileRand()
+static unsigned HandleHistogramProfileRand()
 {
     // generate a random number (xorshift32)
     //
@@ -5330,7 +5399,43 @@ static unsigned ClassProfileRand()
     return x;
 }
 
-HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
+template<typename T>
+static int CheckSample(T index)
+{
+    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
+    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
+    static_assert_no_msg(N >= S);
+    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    // If table is not yet full, just add entries in.
+    //
+    if (index < S)
+    {
+        return static_cast<int>(index);
+    }
+
+    unsigned x = HandleHistogramProfileRand();
+    // N is the sampling window size,
+    // it should be larger than the table size.
+    //
+    // If we let N == count then we are building an entire
+    // run sample -- probability of update decreases over time.
+    // Would be a good strategy for an AOT profiler.
+    //
+    // But for TieredPGO we would prefer something that is more
+    // weighted to recent observations.
+    //
+    // For S=4, N=128, we'll sample (on average) every 32nd call.
+    //
+    if ((x % N) >= S)
+    {
+        return -1;
+    }
+
+    return static_cast<int>(x % S);
+}
+
+HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5338,12 +5443,14 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    ICorJitInfo::ClassProfile32* const classProfile = (ICorJitInfo::ClassProfile32*) tableAddress;
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned count = (*pCount)++;
-    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
-    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    const unsigned callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5358,7 +5465,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     //
     if (pMT->GetLoaderAllocator()->IsCollectible())
     {
-        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
 
 #ifdef _DEBUG
@@ -5366,39 +5473,12 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    // If table is not yet full, just add entries in.
-    //
-    if (count < S)
-    {
-        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = ClassProfileRand();
-
-        // N is the sampling window size,
-        // it should be larger than the table size.
-        //
-        // If we let N == count then we are building an entire
-        // run sample -- probability of update decreases over time.
-        // Would be a good strategy for an AOT profiler.
-        //
-        // But for TieredPGO we would prefer something that is more
-        // weighted to recent observations.
-        //
-        // For S=4, N=128, we'll sample (on average) every 32nd call.
-        //
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-    }
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
 HCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
+HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5406,12 +5486,14 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    ICorJitInfo::ClassProfile64* const classProfile = (ICorJitInfo::ClassProfile64*) tableAddress;
     volatile uint64_t* pCount = (volatile uint64_t*) &classProfile->Count;
-    const uint64_t count = (*pCount)++;
-    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
-    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    const uint64_t callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5422,7 +5504,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
 
     if (pMT->GetLoaderAllocator()->IsCollectible())
     {
-        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
 
 #ifdef _DEBUG
@@ -5430,20 +5512,230 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    if (count < S)
-    {
-        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = ClassProfileRand();
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
+}
+HCIMPLEND
 
-        if ((x % N) < S)
+HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    {
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
-            unsigned i = x % S;
-            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
+            pRecordedMD = pMD;
         }
     }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+// Version of helper above used when the count is 64-bit
+HCIMPL3(void, JIT_DelegateProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    {
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        {
+            pRecordedMD = pMD;
+        }
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
+    _ASSERTE(!pBaseMD->IsInterface());
+
+    // Shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+    {
+        pRecordedMD = pMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
+    _ASSERTE(!pBaseMD->IsInterface());
+
+    // Shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+    {
+        pRecordedMD = pMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
 HCIMPLEND
 
@@ -5457,7 +5749,7 @@ HCIMPLEND
 
 /**********************************************************************/
 /* Fills out portions of an InlinedCallFrame for JIT64    */
-/* The idea here is to allocate and initalize the frame to only once, */
+/* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
 Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
 {
@@ -5823,7 +6115,7 @@ void WriteJitHelperCountToSTRESSLOG()
             switch (jitHelperLoggingLevel)
             {
             case 1:
-                // This will print a comma seperated list:
+                // This will print a comma separated list:
                 // CORINFO_XXX_HELPER, 10
                 // CORINFO_YYYY_HELPER, 11
                 STRESS_LOG2(logFacility, logLevel, "%s, %d\n", name, count);

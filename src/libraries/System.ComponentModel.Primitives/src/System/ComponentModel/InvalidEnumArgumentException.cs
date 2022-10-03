@@ -43,12 +43,13 @@ namespace System.ComponentModel
         /// class with a message generated from the argument, invalid value, and
         /// enumeration class.
         /// </summary>
-        public InvalidEnumArgumentException(string? argumentName, int invalidValue, Type enumClass!!)
+        public InvalidEnumArgumentException(string? argumentName, int invalidValue, Type enumClass)
             : base(SR.Format(SR.InvalidEnumArgument,
                                 argumentName,
                                 invalidValue,
-                                enumClass.Name), argumentName)
+                                enumClass?.Name), argumentName)
         {
+            ArgumentNullException.ThrowIfNull(enumClass);
         }
 
         /// <summary>

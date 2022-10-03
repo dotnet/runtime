@@ -28,4 +28,4 @@ Enabling GC Hole Stress causes GCs to always occur in specific locations and tha
 
 **0x1 | 0x2** &ndash; 0x3 are "in the VM". Failures in 0x1 or 0x2 can be due to VM-related reasons, like lack of GC reporting/pinning in interop frames.
 
-**0x4 | 0x8** &ndash; 0xC runs GC stress for each JIT generated instruction (either dynamically or AOT, in R2R). Failures in 0x4 or 0x8 typically mean a failure in GC info. Only happens once for any instruction, so can miss failures that only occur on non-first GCs. This mode replaces the target instuction with a with breakpoint instruction and that affects disassembly.
+**0x4 | 0x8** &ndash; 0xC runs GC stress for each JIT generated instruction (either dynamically or AOT, in R2R). Failures in 0x4 or 0x8 typically mean a failure in GC info. Only happens once for any instruction, so can miss failures that only occur on non-first GCs. This mode replaces the target instruction with a with breakpoint instruction and that affects disassembly.

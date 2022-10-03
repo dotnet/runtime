@@ -6,8 +6,19 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
-    <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
+    <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -15,6 +26,7 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <SystemCryptoNativeDir>$(RepoRoot)\src\native\libs\System.Security.Cryptography.Native.Browser</SystemCryptoNativeDir>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -28,31 +40,6 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
-    <PropertyGroup>
-      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <WasmPInvokeModule Include="libSystem.Native" />
-      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
-    </ItemGroup>
-
-    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
-    <MSBuild Projects="$(CoreLibProject)"
-             Targets="GetTargetPath">
-      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
-    </MSBuild>
-
-    <MakeDir Directories="$(ArtifactsObjDir)wasm" />
-    <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
-                           Assemblies="@(WasmPInvokeAssembly)"
-                           OutputPath="$(WasmPInvokeTablePath)" />
-  </Target>
-
   <UsingTask TaskName="GenerateWasmBundle"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
   <Target Name="BundleTimeZones">
@@ -62,6 +49,38 @@
     <GenerateWasmBundle
       InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
       OutputFileName="$(TimeZonesDataPath)" />
+  </Target>
+
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
+      <WasmInterpToNativeTablePath>$(WasmObjDir)\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmPInvokeModule Include="libSystem.Native" />
+      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeModule Include="libSystem.Security.Cryptography.Native.Browser" />
+      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
+    </ItemGroup>
+
+    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
+    </MSBuild>
+
+    <MakeDir Directories="$(WasmObjDir)" Condition="!Exists('$(WasmObjDir)')" />
+
+    <ManagedToNativeGenerator
+      Assemblies="@(WasmPInvokeAssembly)"
+      PInvokeModules="@(WasmPInvokeModule)"
+      PInvokeOutputPath="$(WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
@@ -92,6 +111,53 @@
            Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
 
     <PropertyGroup>
+      <_DefaultExportedFunctions Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"
+                                >_malloc,stackSave,stackRestore,stackAlloc,_memalign,_memset,_htons,_ntohs,_free</_DefaultExportedFunctions>
+
+      <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname</_DefaultExportedFunctions>
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign</_DefaultExportedFunctions>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
+      <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=4" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
+      <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
+      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_DefaultExportedFunctions)" Condition="'$(_DefaultExportedFunctions)' != ''" />
+      <_EmccLinkFlags Include="--source-map-base http://example.com" />
+      <_EmccLinkFlags Include="-s STRICT_JS=1" />
+      <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
+      <_EmccLinkFlags Include="-s MODULARIZE=1"/>
+      <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
+      <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
+      <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
+           active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
+      <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <_EmccLinkFlags Include="--profiling-funcs" />
+      <_EmccFlags Include="@(_EmccCommonFlags)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <_EmccFlags Include="@(_EmccCommonFlags)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags, '%3B ') </_WasmOptConfigurationFlags>
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -100,6 +166,9 @@
       { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
       { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
       { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
+    ],
+    "WasmOptConfigurationFlags": [
+      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
     ]
   }
 }
@@ -111,32 +180,6 @@
                       Lines="$(_EmccPropsJson)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
-      <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
-      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
-      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
-      <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_memalign,_memset" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))" />
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))" />
-      <_EmccLinkFlags Include="--source-map-base http://example.com" />
-      <_EmccLinkFlags Include="-s STRICT_JS=1" />
-      <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
-      <_EmccLinkFlags Include="-s MODULARIZE=1"/>
-      <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
-      <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_EmccLinkFlags Include="--profiling-funcs" />
-      <_EmccFlags Include="@(_EmccCommonFlags)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_EmccFlags Include="@(_EmccCommonFlags)" />
-    </ItemGroup>
 
     <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
                       Lines="@(_EmccFlags)"
@@ -155,20 +198,24 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a" />
+                                  $(ICULibDir)/libicui18n.a;
+                                  $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
+      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
@@ -177,11 +224,15 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true' and '$(Configuration)' == 'Release'">$(CMakeBuildRuntimeConfigureCmd) -DWASM_OPT_ADDITIONAL_FLAGS=&quot;--enable-simd&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
@@ -197,18 +248,15 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
+    <Copy SourceFiles="$(InterpToNativeTableFile)"
+          DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="runtime/cjs/dotnet.cjs.pre.js;
-                       runtime/cjs/dotnet.cjs.lib.js;
-                       runtime/cjs/dotnet.cjs.post.js;
-                       runtime/cjs/dotnet.cjs.extpost.js;"
-          DestinationFolder="$(NativeBinDir)src/cjs"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
@@ -217,7 +265,7 @@
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime\pinvoke.h"
+    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
@@ -237,17 +285,23 @@
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
-      <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.d.ts;
+                       $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
+                       $(NativeBinDir)\src\dotnet-crypto-worker.js;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(NativeBinDir)dotnet.worker.js"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+	  Condition="Exists('$(NativeBinDir)dotnet.worker.js')"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js.symbols"
@@ -260,10 +314,6 @@
 
     <Copy SourceFiles="@(WasmSrcFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(WasmSrcFilesCjs)"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\cjs"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(WasmSrcFilesEs6)"
@@ -281,7 +331,6 @@
           >
     <!-- install typescript and rollup -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
@@ -289,22 +338,46 @@
   </Target>
 
   <ItemGroup>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
+		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/dotnet-legacy.d.ts;$(MonoProjectRoot)wasm/runtime/diagnostics-mock.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
+		   Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
   </ItemGroup>
 
+  <Target Name="SetMonoRollupEnvironment">
+    <PropertyGroup>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_RollupEnvIntermediateFile>$(WasmObjDir)\.rollup.env</_RollupEnvIntermediateFile>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="WriteRollupEnvToFile" DependsOnTargets="SetMonoRollupEnvironment">
+    <!-- the purpose of this file is to be an input to the BuildWithRollup target.  That way if any
+         of the environment values change, we will do a new rollup build.  For example if the
+         `MonoWasmThreads` property is changed between builds by a developer. -->
+    <WriteLinesToFile File="$(_RollupEnvIntermediateFile)"
+		      Lines="$(MonoRollupEnvironment)"
+		      WriteOnlyWhenDifferent="true"
+		      Overwrite="true" />
+  </Target>
+
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
           Outputs="$(NativeBinDir).rollup-stamp"
+	  DependsOnTargets="WriteRollupEnvToFile"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run rollup -- --environment $(MonoRollupEnvironment)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"

@@ -161,6 +161,29 @@
         "alpine.3.14-x64"
       ]
     },
+    "alpine.3.16": {
+      "#import": [
+        "alpine.3.15"
+      ]
+    },
+    "alpine.3.16-arm": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm"
+      ]
+    },
+    "alpine.3.16-arm64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm64"
+      ]
+    },
+    "alpine.3.16-x64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -255,31 +278,31 @@
     },
     "android": {
       "#import": [
-        "linux"
+        "linux-bionic"
       ]
     },
     "android-arm": {
       "#import": [
         "android",
-        "linux-arm"
+        "linux-bionic-arm"
       ]
     },
     "android-arm64": {
       "#import": [
         "android",
-        "linux-arm64"
+        "linux-bionic-arm64"
       ]
     },
     "android-x64": {
       "#import": [
         "android",
-        "linux-x64"
+        "linux-bionic-x64"
       ]
     },
     "android-x86": {
       "#import": [
         "android",
-        "linux-x86"
+        "linux-bionic-x86"
       ]
     },
     "android.21": {
@@ -599,6 +622,35 @@
       "#import": [
         "android.31",
         "android.30-x86"
+      ]
+    },
+    "android.32": {
+      "#import": [
+        "android.31"
+      ]
+    },
+    "android.32-arm": {
+      "#import": [
+        "android.32",
+        "android.31-arm"
+      ]
+    },
+    "android.32-arm64": {
+      "#import": [
+        "android.32",
+        "android.31-arm64"
+      ]
+    },
+    "android.32-x64": {
+      "#import": [
+        "android.32",
+        "android.31-x64"
+      ]
+    },
+    "android.32-x86": {
+      "#import": [
+        "android.32",
+        "android.31-x86"
       ]
     },
     "any": {
@@ -1146,6 +1198,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.37": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.37-arm64": {
+      "#import": [
+        "fedora.37",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.37-x64": {
+      "#import": [
+        "fedora.37",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -1504,6 +1573,35 @@
         "unix-armv6"
       ]
     },
+    "linux-bionic": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-bionic-arm": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm"
+      ]
+    },
+    "linux-bionic-arm64": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm64"
+      ]
+    },
+    "linux-bionic-x64": {
+      "#import": [
+        "linux-bionic",
+        "linux-x64"
+      ]
+    },
+    "linux-bionic-x86": {
+      "#import": [
+        "linux-bionic",
+        "linux-x86"
+      ]
+    },
     "linux-loongarch64": {
       "#import": [
         "linux",
@@ -1545,6 +1643,12 @@
         "linux-s390x"
       ]
     },
+    "linux-musl-ppc64le": {
+      "#import": [
+        "linux-musl",
+        "linux-ppc64le"
+      ]
+    },
     "linux-musl-x64": {
       "#import": [
         "linux-musl",
@@ -1561,6 +1665,12 @@
       "#import": [
         "linux",
         "unix-s390x"
+      ]
+    },
+    "linux-ppc64le": {
+      "#import": [
+        "linux",
+        "unix-ppc64le"
       ]
     },
     "linux-x64": {
@@ -3527,6 +3637,11 @@
       ]
     },
     "unix-s390x": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-ppc64le": {
       "#import": [
         "unix"
       ]

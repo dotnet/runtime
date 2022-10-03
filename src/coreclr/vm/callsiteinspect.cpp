@@ -39,7 +39,7 @@ namespace
             PVOID* pVal = (PVOID *)val;
             if (!fIsByRef)
             {
-                val = StackElemEndianessFixup(val, pMT->GetNumInstanceFieldBytes());
+                val = StackElemEndiannessFixup(val, pMT->GetNumInstanceFieldBytes());
                 pVal = &val;
             }
 
@@ -62,7 +62,7 @@ namespace
                 }
                 else
                 {
-                    val = StackElemEndianessFixup(val, CorTypeInfo::Size(eType));
+                    val = StackElemEndiannessFixup(val, CorTypeInfo::Size(eType));
                 }
 
                 void *pDest = pObj->UnBox();
@@ -268,28 +268,28 @@ namespace
                     memcpyNoGCRefs(pvDest, srcData, cbsize);
 
                 // need to sign-extend signed types
-                bool fEndianessFixup = false;
+                bool fEndiannessFixup = false;
                 switch (typ)
                 {
                 case ELEMENT_TYPE_I1:
                     ret = *(INT8*)srcData;
-                    fEndianessFixup = true;
+                    fEndiannessFixup = true;
                     break;
                 case ELEMENT_TYPE_I2:
                     ret = *(INT16*)srcData;
-                    fEndianessFixup = true;
+                    fEndiannessFixup = true;
                     break;
                 case ELEMENT_TYPE_I4:
                     ret = *(INT32*)srcData;
-                    fEndianessFixup = true;
+                    fEndiannessFixup = true;
                     break;
                 default:
-                    memcpyNoGCRefs(StackElemEndianessFixup(&ret, cbsize), srcData, cbsize);
+                    memcpyNoGCRefs(StackElemEndiannessFixup(&ret, cbsize), srcData, cbsize);
                     break;
                 }
 
 #if !defined(HOST_64BIT) && BIGENDIAN
-                if (fEndianessFixup)
+                if (fEndiannessFixup)
                     ret <<= 32;
 #endif
             }

@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         // The largest supported path on Unix is 4K bytes of UTF-8 (most only support 1K)
         private const int StandardBufferSize = 4096;
@@ -147,8 +147,7 @@ namespace System.IO.Enumeration
                             if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
-                                if (_pending == null)
-                                    _pending = new Queue<(string Path, int RemainingDepth)>();
+                                _pending ??= new Queue<(string Path, int RemainingDepth)>();
                                 _pending.Enqueue((Path.Join(_currentPath, entry.FileName), _remainingRecursionDepth - 1));
                             }
                         }

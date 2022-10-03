@@ -25,9 +25,13 @@ namespace ILCompiler
             InterfaceDispatch,
             VTableLookup,
             MethodHandle,
+            ConstrainedMethod,
         }
 
         private TargetKind _targetKind;
+
+        private TypeDesc _constrainedType;
+        private MethodDesc _targetMethod;
 
         /// <summary>
         /// Gets the node corresponding to the method that initializes the delegate.
@@ -39,7 +43,21 @@ namespace ILCompiler
 
         public MethodDesc TargetMethod
         {
-            get;
+            get
+            {
+                Debug.Assert(_constrainedType == null);
+                return _targetMethod;
+            }
+        }
+
+        // The target method might be constrained if this was a "constrained ldftn" IL instruction.
+        // The real target can be computed after resolving the constraint.
+        public MethodDesc PossiblyUnresolvedTargetMethod
+        {
+            get
+            {
+                return _targetMethod;
+            }
         }
 
         private bool TargetMethodIsUnboxingThunk
@@ -75,6 +93,10 @@ namespace ILCompiler
                     case TargetKind.MethodHandle:
                         return TargetMethod.IsRuntimeDeterminedExactMethod;
 
+                    case TargetKind.ConstrainedMethod:
+                        Debug.Assert(_targetMethod.IsRuntimeDeterminedExactMethod || _constrainedType.IsRuntimeDeterminedSubtype);
+                        return true;
+
                     default:
                         Debug.Assert(false);
                         return false;
@@ -99,6 +121,9 @@ namespace ILCompiler
 
                 case TargetKind.MethodHandle:
                     return factory.GenericLookup.MethodHandle(TargetMethod);
+
+                case TargetKind.ConstrainedMethod:
+                    return factory.GenericLookup.ConstrainedMethodUse(_targetMethod, _constrainedType, directCall: !_targetMethod.HasInstantiation);
 
                 default:
                     Debug.Assert(false);
@@ -145,12 +170,13 @@ namespace ILCompiler
             get;
         }
 
-        private DelegateCreationInfo(IMethodNode constructor, MethodDesc targetMethod, TargetKind targetKind, IMethodNode thunk = null)
+        private DelegateCreationInfo(IMethodNode constructor, MethodDesc targetMethod, TypeDesc constrainedType, TargetKind targetKind, IMethodNode thunk = null)
         {
             Debug.Assert(targetKind != TargetKind.VTableLookup
                 || MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod) == targetMethod);
             Constructor = constructor;
-            TargetMethod = targetMethod;
+            _targetMethod = targetMethod;
+            _constrainedType = constrainedType;
             _targetKind = targetKind;
             Thunk = thunk;
         }
@@ -159,7 +185,7 @@ namespace ILCompiler
         /// Constructs a new instance of <see cref="DelegateCreationInfo"/> set up to construct a delegate of type
         /// '<paramref name="delegateType"/>' pointing to '<paramref name="targetMethod"/>'.
         /// </summary>
-        public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, NodeFactory factory, bool followVirtualDispatch)
+        public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, TypeDesc constrainedType, NodeFactory factory, bool followVirtualDispatch)
         {
             CompilerTypeSystemContext context = factory.TypeSystemContext;
             DefType systemDelegate = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
@@ -206,7 +232,8 @@ namespace ILCompiler
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(initMethod),
                     targetMethod,
-                    TargetKind.ExactCallableAddress,
+                    constrainedType,
+                    constrainedType == null ? TargetKind.ExactCallableAddress : TargetKind.ConstrainedMethod,
                     factory.MethodEntrypoint(invokeThunk));
             }
             else
@@ -260,9 +287,11 @@ namespace ILCompiler
                     }
                 }
 
+                Debug.Assert(constrainedType == null);
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                     targetMethod,
+                    constrainedType,
                     kind);
             }
         }
@@ -274,7 +303,12 @@ namespace ILCompiler
                 sb.Append("FromVtbl_");
             Constructor.AppendMangledName(nameMangler, sb);
             sb.Append("__");
-            sb.Append(nameMangler.GetMangledMethodName(TargetMethod));
+            sb.Append(nameMangler.GetMangledMethodName(_targetMethod));
+            if (_constrainedType != null)
+            {
+                sb.Append("__");
+                nameMangler.GetMangledTypeName(_constrainedType);
+            }
             if (Thunk != null)
             {
                 sb.Append("__");
@@ -287,14 +321,15 @@ namespace ILCompiler
             var other = obj as DelegateCreationInfo;
             return other != null
                 && Constructor == other.Constructor
-                && TargetMethod == other.TargetMethod
+                && _targetMethod == other._targetMethod
+                && _constrainedType == other._constrainedType
                 && _targetKind == other._targetKind
                 && Thunk == other.Thunk;
         }
 
         public override int GetHashCode()
         {
-            return Constructor.GetHashCode() ^ TargetMethod.GetHashCode();
+            return Constructor.GetHashCode() ^ _targetMethod.GetHashCode();
         }
 
 #if !SUPPORT_JIT
@@ -311,6 +346,20 @@ namespace ILCompiler
             compare = comparer.Compare(Constructor.Method, other.Constructor.Method);
             if (compare != 0)
                 return compare;
+
+            if (_constrainedType != null && other._constrainedType != null)
+            {
+                compare = comparer.Compare(_constrainedType, other._constrainedType);
+                if (compare != 0)
+                    return compare;
+            }
+            else
+            {
+                if (_constrainedType != null)
+                    return 1;
+                if (other._constrainedType != null)
+                    return -1;
+            }
 
             if (Thunk == other.Thunk)
                 return 0;

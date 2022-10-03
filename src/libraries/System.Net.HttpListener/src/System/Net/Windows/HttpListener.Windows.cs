@@ -35,11 +35,7 @@ namespace System.Net
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
         private const int UnknownHeaderLimit = 1000;
 
-        private static readonly byte[] s_wwwAuthenticateBytes = new byte[]
-        {
-            (byte) 'W', (byte) 'W', (byte) 'W', (byte) '-', (byte) 'A', (byte) 'u', (byte) 't', (byte) 'h',
-            (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
-        };
+        private static readonly byte[] s_wwwAuthenticateBytes = "WWW-Authenticate"u8.ToArray();
 
         private HttpListenerSession? _currentSession;
 
@@ -94,10 +90,10 @@ namespace System.Net
         private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults =>
             LazyInitializer.EnsureInitialized(ref _disconnectResults, () => new Dictionary<ulong, DisconnectAsyncResult>());
 
-        private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
+        private unsafe void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, void* info, uint infosize)
         {
             Debug.Assert(_urlGroupId != 0, "SetUrlGroupProperty called with invalid url group id");
-            Debug.Assert(info != IntPtr.Zero, "SetUrlGroupProperty called with invalid pointer");
+            Debug.Assert(info != null, "SetUrlGroupProperty called with invalid pointer");
 
             //
             // Set the url group property using Http Api.
@@ -115,7 +111,7 @@ namespace System.Net
 
         internal void SetServerTimeout(int[] timeouts, uint minSendBytesPerSecond)
         {
-            ValidateV2Property(); // CheckDispose and initilize HttpListener in the case of app.config timeouts
+            ValidateV2Property(); // CheckDispose and initialize HttpListener in the case of app.config timeouts
 
             Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = default;
 
@@ -132,11 +128,9 @@ namespace System.Net
                 (ushort)timeouts[(int)Interop.HttpApi.HTTP_TIMEOUT_TYPE.HeaderWait];
             timeoutinfo.MinSendRate = minSendBytesPerSecond;
 
-            IntPtr infoptr = new IntPtr(&timeoutinfo);
-
             SetUrlGroupProperty(
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerTimeoutsProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO)));
+                &timeoutinfo, (uint)sizeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO));
         }
 
         public HttpListenerTimeoutManager TimeoutManager
@@ -311,10 +305,8 @@ namespace System.Net
             info.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
             info.RequestQueueHandle = _currentSession!.RequestQueueHandle.DangerousGetHandle();
 
-            IntPtr infoptr = new IntPtr(&info);
-
             SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                &info, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
         }
 
         private void DetachRequestQueueFromUrlGroup()
@@ -332,11 +324,9 @@ namespace System.Net
             info.Flags = Interop.HttpApi.HTTP_FLAGS.NONE;
             info.RequestQueueHandle = IntPtr.Zero;
 
-            IntPtr infoptr = new IntPtr(&info);
-
             uint statusCode = Interop.HttpApi.HttpSetUrlGroupProperty(_urlGroupId,
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                &info, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
@@ -577,10 +567,7 @@ namespace System.Net
                     }
 
                     // HandleAuthentication may have cleaned this up.
-                    if (memoryBlob == null)
-                    {
-                        memoryBlob = new SyncRequestContext(checked((int)size));
-                    }
+                    memoryBlob ??= new SyncRequestContext(checked((int)size));
 
                     requestId = 0;
                 }
@@ -792,13 +779,8 @@ namespace System.Net
                 ExtendedProtectionSelector? extendedProtectionSelector = _extendedProtectionSelectorDelegate;
                 if (extendedProtectionSelector != null)
                 {
-                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request);
-
-                    if (extendedProtectionPolicy == null)
-                    {
-                        extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-                    }
                     // Cache the results of extendedProtectionSelector (if any)
+                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request) ?? new ExtendedProtectionPolicy(PolicyEnforcement.Never);
                     httpContext.ExtendedProtectionPolicy = extendedProtectionPolicy;
                 }
 
@@ -807,13 +789,10 @@ namespace System.Net
                 if (authorizationHeader != null && (authenticationScheme & ~AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
                 {
                     // Find the end of the scheme name.  Trust that HTTP.SYS parsed out just our header ok.
-                    for (index = 0; index < authorizationHeader.Length; index++)
+                    index = authorizationHeader.AsSpan().IndexOfAny(" \t\r\n");
+                    if (index < 0)
                     {
-                        if (authorizationHeader[index] == ' ' || authorizationHeader[index] == '\t' ||
-                            authorizationHeader[index] == '\r' || authorizationHeader[index] == '\n')
-                        {
-                            break;
-                        }
+                        index = authorizationHeader.Length;
                     }
 
                     // Currently only allow one Authorization scheme/header per request.
@@ -848,7 +827,7 @@ namespace System.Net
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), (authorizationHeader == null ? "<null>" : authorizationHeader)));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), authorizationHeader ?? "<null>"));
 
                     // If anonymous is allowed, just return the context.  Otherwise go for the 401.
                     if ((authenticationScheme & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
@@ -873,14 +852,8 @@ namespace System.Net
 
                     // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
                     Debug.Assert(authorizationHeader != null);
-                    for (index++; index < authorizationHeader!.Length; index++)
-                    {
-                        if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
-                            authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
-                        {
-                            break;
-                        }
-                    }
+                    int nonWhitespace = authorizationHeader.AsSpan(index + 1).IndexOfAnyExcept(" \t\r\n");
+                    index = nonWhitespace >= 0 ? index + 1 + nonWhitespace : authorizationHeader.Length;
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
                     IPrincipal? principal = null;
@@ -1018,10 +991,7 @@ namespace System.Net
                                     }
                                     finally
                                     {
-                                        if (userContext != null)
-                                        {
-                                            userContext.Dispose();
-                                        }
+                                        userContext?.Dispose();
                                     }
                                 }
                                 else
@@ -1182,10 +1152,7 @@ namespace System.Net
                     Debug.Assert(disconnectResult != null);
                     disconnectResult!.Session = newContext;
 
-                    if (toClose != null)
-                    {
-                        toClose.CloseContext();
-                    }
+                    toClose?.CloseContext();
                 }
 
                 // Send the 401 here.
@@ -1253,10 +1220,7 @@ namespace System.Net
                 {
                     // Check if the connection got deleted while in this method, and clear out the hashtables if it did.
                     // In a nested finally because if this doesn't happen, we leak.
-                    if (disconnectResult != null)
-                    {
-                        disconnectResult.FinishOwningDisconnectHandling();
-                    }
+                    disconnectResult?.FinishOwningDisconnectHandling();
                 }
             }
         }
@@ -1457,7 +1421,7 @@ namespace System.Net
             return (isSecureConnection && scenario == ProtectionScenario.TransportSelected);
         }
 
-        private ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
+        private static ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
             ContextFlagsPal result = ContextFlagsPal.Connection;
             if (policy.PolicyEnforcement != PolicyEnforcement.Never)
@@ -1477,7 +1441,7 @@ namespace System.Net
         }
 
         // This only works for context-destroying errors.
-        private HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
+        private static HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
         {
             if (IsCredentialFailure(statusErrorCode))
             {
@@ -1531,10 +1495,7 @@ namespace System.Net
                 if (challenge.Length > 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "challenge:" + challenge);
-                    if (challenges == null)
-                    {
-                        challenges = new ArrayList(4);
-                    }
+                    challenges ??= new ArrayList(4);
                     challenges.Add(challenge);
                 }
             }
@@ -1758,6 +1719,7 @@ namespace System.Net
                         token = Interop.HttpApi.SafeLocalFreeChannelBinding.LocalAlloc(tokenSize);
                         if (token.IsInvalid)
                         {
+                            token.Dispose();
                             throw new OutOfMemoryException();
                         }
                         Marshal.Copy(blob, tokenOffset, token.DangerousGetHandle(), tokenSize);
@@ -1903,10 +1865,7 @@ namespace System.Net
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
                 listener.DisconnectResults.Remove(_connectionId);
-                if (_session != null)
-                {
-                    _session.CloseContext();
-                }
+                _session?.CloseContext();
 
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
                 // identity caching for unsafe ntlm authentication

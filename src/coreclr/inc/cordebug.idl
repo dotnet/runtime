@@ -654,7 +654,7 @@ interface ICorDebugSymbolProvider2 : IUnknown
      *
      * The format for each instantiation info in heap is as follows:
      *  - Length of this instantiation info (in bytes, not including this length information) in compressed ECMA metadata format.
-     *  - Number of instantatiation types (T, in compressed ECMA metadata format)
+     *  - Number of instantiation types (T, in compressed ECMA metadata format)
      *  - T types, each expressed in ECMA type signature format
      *
      * The inclusion of the length for each heap element enables simple sorting of the directory section without affecting the heap.
@@ -997,7 +997,7 @@ interface ICorDebugManagedCallback : IUnknown
 {
     /*
      * All callbacks are called with the process in the synchronized state
-     * All callbacks are serialized, and are called in in the same thread.
+     * All callbacks are serialized, and are called in the same thread.
      * Each callback implementor must call Continue in a callback to
      *      resume execution.
      * If Continue is not called before returning, the process will
@@ -2364,7 +2364,7 @@ interface ICorDebugAppDomain4 : IUnknown
 
 /* ------------------------------------------------------------------------- *
  * Assembly interface
- * An ICorDebugAssembly instance corresponds to a a managed assembly loaded
+ * An ICorDebugAssembly instance corresponds to a managed assembly loaded
  * into a specific AppDomain in the CLR.  For assemblies shared between multiple
  * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
  * per AppDomain in which it is used.
@@ -2797,7 +2797,7 @@ interface ICorDebugProcess : ICorDebugController
      * Any managed breakpoints will be automatically stripped from the returned buffer.
      * No adjustments will be made for Native breakpoints set by ICorDebugProcess2::SetUnmanagedBreakpoint
      *
-     * No caching of process memory is peformed.
+     * No caching of process memory is performed.
      * These parameters have the same semantics as kernel32!ReadProcessMemory.
      * The entire range must be read for the function to return success.
      */
@@ -3212,11 +3212,11 @@ interface ICorDebugProcess6 : IUnknown
     //                Note: If any container assembly is missing symbols, none of its
     //                sub-assemblies will be enumerated. If any regular assembly is
     //                missing symbols it may or may not be enumerated.
-    // ICorDebugCode.GetCode (when refering to IL code only)
+    // ICorDebugCode.GetCode (when referring to IL code only)
     //     Disabled - Returns the IL in the post-merge assembly image.
     //     Enabled - Returns IL that would be valid in a pre-merge assembly image. Specifically
     //               any inline metadata tokens will correctly be TypeRef or MemberRef tokens
-    //               when the types being refered to are not defined in the virtual module
+    //               when the types being referred to are not defined in the virtual module
     //               containing the IL. These TypeRefs/MemberRefs can be looked up in the
     //               IMetaDataImport for the corresponding virtual ICorDebugModule.
     //
@@ -3232,7 +3232,7 @@ interface ICorDebugProcess6 : IUnknown
     // returns true.
     //
     // Returns
-    //   S_OK - debuggee is succesfully updated
+    //   S_OK - debuggee is successfully updated
     //   CORDBG_E_MODULE_NOT_LOADED - assembly containing System.Debugger.IsAttached API is not loaded
     //   or some other error is preventing it from being recognized such as missing metadata. This error
     //   is common and benign - it is recommended to try the call again when future assemblies load.
@@ -3513,7 +3513,7 @@ interface ICorDebugValueBreakpoint : ICorDebugBreakpoint
  * Also, a stepper may migrate between threads if a cross-thread
  * marshalled call is made by the EE.
  *
- * This object serves several purposes.  Its serves as an identifer between a
+ * This object serves several purposes.  Its serves as an identifier between a
  * step command issued and the completion of that command. It also
  * provides a central interface to encapsulate all of the stepping
  * that can be performed.  Finally it provides a way to prematurely
@@ -3587,7 +3587,7 @@ interface ICorDebugStepper : IUnknown
      *
      * It should be noted that if one doesn't use a stepper to enter a
      * method (for example, the main() method of C++), then one
-     * won't neccessarily step over prologs,etc.
+     * won't necessarily step over prologs,etc.
      *
      * By default, STOP_OTHER_UNMAPPED will be used.
      *
@@ -3919,10 +3919,11 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM64_V31,
 
         // LoongArch64 registers
-        REGISTER_LOONGARCH64_R0 = 0,
+        REGISTER_LOONGARCH64_PC = 0,
+        REGISTER_LOONGARCH64_SP,
+        REGISTER_LOONGARCH64_FP,
         REGISTER_LOONGARCH64_RA,
         REGISTER_LOONGARCH64_TP,
-        REGISTER_LOONGARCH64_SP,
         REGISTER_LOONGARCH64_A0,
         REGISTER_LOONGARCH64_A1,
         REGISTER_LOONGARCH64_A2,
@@ -3941,7 +3942,6 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_T7,
         REGISTER_LOONGARCH64_T8,
         REGISTER_LOONGARCH64_X0,
-        REGISTER_LOONGARCH64_FP,
         REGISTER_LOONGARCH64_S0,
         REGISTER_LOONGARCH64_S1,
         REGISTER_LOONGARCH64_S2,
@@ -3951,7 +3951,6 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_S6,
         REGISTER_LOONGARCH64_S7,
         REGISTER_LOONGARCH64_S8,
-        REGISTER_LOONGARCH64_PC,
 
         REGISTER_LOONGARCH64_F0,
         REGISTER_LOONGARCH64_F1,
@@ -4165,11 +4164,11 @@ interface ICorDebugThread : IUnknown
      * The normal value for this is THREAD_RUNNING.  Only the debugger
      * can affect the debug state of a thread.  Debug states do
      * last across continues, so if you want to keep a thread
-     * THREAD_SUSPENDed over mulitple continues, you can set it once
+     * THREAD_SUSPENDed over multiple continues, you can set it once
      * and thereafter not have to worry about it.
      *
      * Suspending threads and resuming the process can cause deadlocks, though it's
-     * usually unlikely. This is an intrinisc quality of threads and processes and is by-design.
+     * usually unlikely. This is an intrinsic quality of threads and processes and is by-design.
      * A debugger can async break and resume the threads to break the deadlock.
      *
      * If the thread's user state includes USER_UNSAFE_POINT, then the thread may block a GC.
@@ -6060,7 +6059,7 @@ interface ICorDebugClass2 : IUnknown
      * A JMC stepper will skip non-user code.
      * User code must be a subset of debuggable code.
      *
-     * Returns S_OK if all methods are set succesfully.
+     * Returns S_OK if all methods are set successfully.
      * Return failure if any are not set.
      * On failure, some may still be set.
      */
@@ -6277,7 +6276,7 @@ interface ICorDebugEval2 : IUnknown
                         [in, size_is(nTypeArgs)] ICorDebugType *ppTypeArgs[]);
 
     /*
-     * NewParamaterizedArray allocates a new array whose elements may be instances
+     * NewParameterizedArray allocates a new array whose elements may be instances
      * of a generic type.  The array is always created in the AppDomain the thread is
      * currently in.
      */
@@ -6452,7 +6451,7 @@ interface ICorDebugGenericValue : ICorDebugValue
  * An ICorDebugReference will either cooperate with GCs such that its information is updated
  * after the GC, or it will be implicitly neutered before the GC.
  *
- * The ICorDebugReferenceValue inteface may be implicitly neutered after the debuggee
+ * The ICorDebugReferenceValue interface may be implicitly neutered after the debuggee
  * has been continued. The derived ICorDebugHandleValue is not neutered until explicitly
  * released or exposed.
  *
@@ -6638,7 +6637,7 @@ interface ICorDebugObjectValue : ICorDebugValue
     HRESULT GetContext([out] ICorDebugContext **ppContext);
 
     /*
-     * IsValueClass returns true if the the class of this object is
+     * IsValueClass returns true if the class of this object is
      * a value class.
      */
 
@@ -6806,20 +6805,20 @@ interface ICorDebugArrayValue : ICorDebugHeapValue
                            length_is(cdim)] ULONG32 dims[]);
 
     /*
-     * HasBaseIndicies returns whether or not the array has base indicies.
+     * HasBaseIndices returns whether or not the array has base indices.
      * If the answer is no, then all dimensions have a base index of 0.
      */
 
-    HRESULT HasBaseIndicies([out] BOOL *pbHasBaseIndicies);
+    HRESULT HasBaseIndices([out] BOOL *pbHasBaseIndices);
 
     /*
-     * GetBaseIndicies returns the base index of each dimension in
+     * GetBaseIndices returns the base index of each dimension in
      * the array
      */
 
-    HRESULT GetBaseIndicies([in] ULONG32 cdim,
+    HRESULT GetBaseIndices([in] ULONG32 cdim,
                             [out, size_is(cdim),
-                            length_is(cdim)] ULONG32 indicies[]);
+                            length_is(cdim)] ULONG32 indices[]);
 
     /*
      * GetElement returns a value representing the given element in the array.
@@ -6919,7 +6918,7 @@ interface ICorDebugVariableHome : IUnknown
 
  * A normal ICorDebugReference becomes neutered after the debuggee has been
  * continued. A ICorDebugHandleValue will survive across continues and can be
- * dereferenced until the client explcitly disposes the handle.
+ * dereferenced until the client explicitly disposes the handle.
  *
  *
  * ICorDebugHeapValu2::CreateHandle will create ICorDebugHandleValue
@@ -7355,11 +7354,11 @@ interface ICorDebugType : IUnknown
      *        class MyStringDict<T> : Dict<String,T>
      * then the base type of "MyStringDict<int32>" will be "Dict<String,int32>".
      *
-     * This is a helper function - you could compute this from EnumerateTypeParemeters,
+     * This is a helper function - you could compute this from EnumerateTypeParameters,
      * GetClass and the relevant metadata, but it is relatively painful: you would
      * have to lookup the class, then the metadata of that class
      * to find the "generic" base type, then instantiate this generic base type by
-     * looking up the type paramaters to the initial type,
+     * looking up the type parameters to the initial type,
      * and then perform the appropriate instantiation in the case where the class
      * happens to be either a generic class or a normal class with a constructed type
      * as its parent.  Looking up the base types is useful to implement common

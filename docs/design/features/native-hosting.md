@@ -334,7 +334,7 @@ int hostfxr_get_runtime_properties(
 
 Returns the full set of all runtime properties for the specified host context.
 * `host_context_handle` - the initialized host context. If set to `NULL` the function will operate on runtime properties of the first host context in the process.
-* `count` - in/out parameter which must not be `NULL`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `NULL` the function ignores the input value of `count` and just returns the number of properties.
+* `count` - in/out parameter which must not be `NULL`. On input it specifies the size of the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `NULL` the function ignores the input value of `count` and just returns the number of properties.
 * `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
 * `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
 

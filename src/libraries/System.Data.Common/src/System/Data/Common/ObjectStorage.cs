@@ -183,7 +183,7 @@ namespace System.Data.Common
             return _nullValue;
         }
 
-        private Families GetFamily(Type dataType)
+        private static Families GetFamily(Type dataType)
         {
             switch (Type.GetTypeCode(dataType))
             {

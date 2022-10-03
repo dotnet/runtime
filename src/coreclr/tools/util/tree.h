@@ -9,7 +9,7 @@
 // Partially balanced binary tree
 // it does individual rotations on insertion, but does nto allow deletion.
 // thus the worst case depth is not (n), but (n/2)
-// Generic paramter is the element type
+// Generic parameter is the element type
 // Find and Add require a method that compares 2 elements
 template <typename _E>
 struct tree

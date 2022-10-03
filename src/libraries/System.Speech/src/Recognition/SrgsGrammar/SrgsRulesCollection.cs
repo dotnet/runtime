@@ -22,8 +22,10 @@ namespace System.Speech.Recognition.SrgsGrammar
                 base.Add(rules[iRule]);
             }
         }
-        protected override string GetKeyForItem(SrgsRule rule!!)
+        protected override string GetKeyForItem(SrgsRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             return rule.Id;
         }
     }

@@ -55,7 +55,7 @@ jobs:
   timeoutInMinutes: 120
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
+    demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:
   - checkout: self

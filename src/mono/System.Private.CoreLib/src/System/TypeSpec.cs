@@ -243,21 +243,12 @@ namespace System
             return sb;
         }
 
-        internal string DisplayFullName
-        {
-            get
-            {
-                if (display_fullname == null)
-                    display_fullname = GetDisplayFullName(DisplayNameFormat.Default);
-                return display_fullname;
-            }
-        }
+        internal string DisplayFullName => display_fullname ??= GetDisplayFullName(DisplayNameFormat.Default);
 
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)
@@ -313,16 +304,14 @@ namespace System
             }
             else
             {
-                if (nested == null)
-                    nested = new List<ITypeIdentifier>();
+                nested ??= new List<ITypeIdentifier>();
                 nested.Add(ParsedTypeIdentifier(type_name));
             }
         }
 
         private void AddModifier(IModifierSpec md)
         {
-            if (modifier_spec == null)
-                modifier_spec = new List<IModifierSpec>();
+            modifier_spec ??= new List<IModifierSpec>();
             modifier_spec.Add(md);
         }
 

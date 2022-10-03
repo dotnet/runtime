@@ -76,8 +76,9 @@ bool gcGenAnalysisDump = false;
 
 /* static */ void GenAnalysis::EnableGenerationalAwareSession()
 {
-    LPCWSTR outputPath = nullptr;
-    outputPath = GENAWARE_TRACE_FILE_NAME;
+    WCHAR outputPath[MAX_PATH];
+    AppendPid(GENAWARE_TRACE_FILE_NAME, outputPath, MAX_PATH);
+
     NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;
     pProviders = new COR_PRF_EVENTPIPE_PROVIDER_CONFIG[providerCnt];
@@ -109,5 +110,9 @@ bool gcGenAnalysisDump = false;
         EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
         EventPipeAdapter::StartStreaming(gcGenAnalysisEventPipeSessionId);
         gcGenAnalysisState = GcGenAnalysisState::Enabled;
+    }
+    else
+    {
+        gcGenAnalysisTrace = false;
     }
 }

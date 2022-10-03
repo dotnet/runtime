@@ -36,6 +36,112 @@ enum SIMDLevel
 #endif
 };
 
+struct simd8_t
+{
+    union {
+        float    f32[2];
+        double   f64[1];
+        int8_t   i8[8];
+        int16_t  i16[4];
+        int32_t  i32[2];
+        int64_t  i64[1];
+        uint8_t  u8[8];
+        uint16_t u16[4];
+        uint32_t u32[2];
+        uint64_t u64[1];
+    };
+
+    bool operator==(const simd8_t& other) const
+    {
+        return (u64[0] == other.u64[0]);
+    }
+
+    bool operator!=(const simd8_t& other) const
+    {
+        return (u64[0] != other.u64[0]);
+    }
+};
+
+struct simd12_t
+{
+    union {
+        float    f32[3];
+        int8_t   i8[12];
+        int16_t  i16[6];
+        int32_t  i32[3];
+        uint8_t  u8[12];
+        uint16_t u16[6];
+        uint32_t u32[3];
+    };
+
+    bool operator==(const simd12_t& other) const
+    {
+        return (u32[0] == other.u32[0]) && (u32[1] == other.u32[1]) && (u32[2] == other.u32[2]);
+    }
+
+    bool operator!=(const simd12_t& other) const
+    {
+        return (u32[0] != other.u32[0]) || (u32[1] != other.u32[1]) || (u32[2] != other.u32[2]);
+    }
+};
+
+struct simd16_t
+{
+    union {
+        float    f32[4];
+        double   f64[2];
+        int8_t   i8[16];
+        int16_t  i16[8];
+        int32_t  i32[4];
+        int64_t  i64[2];
+        uint8_t  u8[16];
+        uint16_t u16[8];
+        uint32_t u32[4];
+        uint64_t u64[2];
+        simd8_t  v64[2];
+    };
+
+    bool operator==(const simd16_t& other) const
+    {
+        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]);
+    }
+
+    bool operator!=(const simd16_t& other) const
+    {
+        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]);
+    }
+};
+
+struct simd32_t
+{
+    union {
+        float    f32[8];
+        double   f64[4];
+        int8_t   i8[32];
+        int16_t  i16[16];
+        int32_t  i32[8];
+        int64_t  i64[4];
+        uint8_t  u8[32];
+        uint16_t u16[16];
+        uint32_t u32[8];
+        uint64_t u64[4];
+        simd8_t  v64[4];
+        simd16_t v128[2];
+    };
+
+    bool operator==(const simd32_t& other) const
+    {
+        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]) && (u64[2] == other.u64[2]) &&
+               (u64[3] == other.u64[3]);
+    }
+
+    bool operator!=(const simd32_t& other) const
+    {
+        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
+               (u64[3] != other.u64[3]);
+    }
+};
+
 #ifdef FEATURE_SIMD
 
 #ifdef DEBUG

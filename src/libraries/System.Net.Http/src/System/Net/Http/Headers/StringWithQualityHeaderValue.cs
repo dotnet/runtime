@@ -93,7 +93,7 @@ namespace System.Net.Http.Headers
 
             if (_quality.HasValue)
             {
-                result = result ^ _quality.Value.GetHashCode();
+                result ^= _quality.Value.GetHashCode();
             }
 
             return result;
@@ -141,7 +141,7 @@ namespace System.Net.Http.Headers
 
             string value = input.Substring(startIndex, valueLength);
             int current = startIndex + valueLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != ';'))
             {
@@ -150,7 +150,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip ';' separator
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // If we found a ';' separator, it must be followed by a quality information
             if (!TryReadQuality(input, out double quality, ref current))
@@ -174,7 +174,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip 'q' identifier
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // If we found "q" it must be followed by "="
             if ((current == input.Length) || (input[current] != '='))
@@ -183,7 +183,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip '=' separator
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (current == input.Length)
             {
@@ -208,8 +208,8 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            current = current + qualityLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += qualityLength;
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             index = current;
             return true;

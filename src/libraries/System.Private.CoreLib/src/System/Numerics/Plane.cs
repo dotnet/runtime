@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -298,16 +299,20 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Plane other)
         {
-            if (Vector.IsHardwareAccelerated)
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
             {
-                return Normal.Equals(other.Normal) && D == other.D;
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in Normal.X)).Equals(Vector128.LoadUnsafe(ref other.Normal.X));
             }
-            else
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Plane self, Plane other)
             {
-                return (Normal.X == other.Normal.X &&
-                        Normal.Y == other.Normal.Y &&
-                        Normal.Z == other.Normal.Z &&
-                        D == other.D);
+                return self.Normal.Equals(other.Normal)
+                    && self.D.Equals(other.D);
             }
         }
 
@@ -315,7 +320,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return Normal.GetHashCode() + D.GetHashCode();
+            return HashCode.Combine(Normal, D);
         }
 
         /// <summary>Returns the string representation of this plane object.</summary>

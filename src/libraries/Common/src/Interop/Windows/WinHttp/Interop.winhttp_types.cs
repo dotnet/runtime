@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using System.Text;
 
 internal static partial class Interop
@@ -245,7 +248,7 @@ internal static partial class Interop
             uint statusInformationLength);
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_AUTOPROXY_OPTIONS
@@ -259,41 +262,51 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)]
             public bool AutoLoginIfChallenged;
 #if NET7_0_OR_GREATER
-            public struct Native
+            [CustomMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
-                private uint Flags;
-                private uint AutoDetectFlags;
-                private IntPtr AutoConfigUrl;
-                private IntPtr Reserved1;
-                private uint Reserved2;
-                private int AutoLoginIfChallenged;
+                public static Native ConvertToUnmanaged(WINHTTP_AUTOPROXY_OPTIONS managed) => new(managed);
 
-                public Native(WINHTTP_AUTOPROXY_OPTIONS managed)
-                {
-                    Flags = managed.Flags;
-                    AutoDetectFlags = managed.AutoDetectFlags;
-                    AutoConfigUrl = managed.AutoConfigUrl is not null ? Marshal.StringToCoTaskMemUni(managed.AutoConfigUrl) : IntPtr.Zero;
-                    Reserved1 = managed.Reserved1;
-                    Reserved2 = managed.Reserved2;
-                    AutoLoginIfChallenged = managed.AutoLoginIfChallenged ? 1 : 0;
-                }
+                public static WINHTTP_AUTOPROXY_OPTIONS ConvertToManaged(Native native) => native.ToManaged();
 
-                public WINHTTP_AUTOPROXY_OPTIONS ToManaged()
+                public static void Free(Native native) => native.FreeNative();
+
+                public struct Native
                 {
-                    return new WINHTTP_AUTOPROXY_OPTIONS
+                    private uint Flags;
+                    private uint AutoDetectFlags;
+                    private IntPtr AutoConfigUrl;
+                    private IntPtr Reserved1;
+                    private uint Reserved2;
+                    private int AutoLoginIfChallenged;
+
+                    public Native(WINHTTP_AUTOPROXY_OPTIONS managed)
                     {
-                        Flags = Flags,
-                        AutoDetectFlags = AutoDetectFlags,
-                        AutoConfigUrl = AutoConfigUrl != IntPtr.Zero ? Marshal.PtrToStringUni(AutoConfigUrl) : null,
-                        Reserved1 = Reserved1,
-                        Reserved2 = Reserved2,
-                        AutoLoginIfChallenged = AutoLoginIfChallenged != 0
-                    };
-                }
+                        Flags = managed.Flags;
+                        AutoDetectFlags = managed.AutoDetectFlags;
+                        AutoConfigUrl = managed.AutoConfigUrl is not null ? Marshal.StringToCoTaskMemUni(managed.AutoConfigUrl) : IntPtr.Zero;
+                        Reserved1 = managed.Reserved1;
+                        Reserved2 = managed.Reserved2;
+                        AutoLoginIfChallenged = managed.AutoLoginIfChallenged ? 1 : 0;
+                    }
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(AutoConfigUrl);
+                    public WINHTTP_AUTOPROXY_OPTIONS ToManaged()
+                    {
+                        return new WINHTTP_AUTOPROXY_OPTIONS
+                        {
+                            Flags = Flags,
+                            AutoDetectFlags = AutoDetectFlags,
+                            AutoConfigUrl = AutoConfigUrl != IntPtr.Zero ? Marshal.PtrToStringUni(AutoConfigUrl) : null,
+                            Reserved1 = Reserved1,
+                            Reserved2 = Reserved2,
+                            AutoLoginIfChallenged = AutoLoginIfChallenged != 0
+                        };
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(AutoConfigUrl);
+                    }
                 }
             }
 #endif

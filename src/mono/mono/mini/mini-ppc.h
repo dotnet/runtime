@@ -11,7 +11,7 @@
 #include <mono/metadata/object.h>
 #include <glib.h>
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define MONO_ARCH_CPU_SPEC mono_ppc64_cpu_desc
 #else
 #define MONO_ARCH_CPU_SPEC mono_ppcg4
@@ -32,7 +32,7 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define THUNK_SIZE ((2 + 5) * 4)
 #else
 #define THUNK_SIZE ((2 + 2) * 4)
@@ -80,7 +80,7 @@ typedef struct MonoCompileArch {
  *   quantities.
  */
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 
@@ -91,7 +91,7 @@ typedef struct MonoCompileArch {
 #define PPC_USES_FUNCTION_DESCRIPTOR
 #endif
 
-#else /* must be __mono_ppc__ */
+#else /* must be TARGET_POWERPC */
 
 #if defined(_AIX)
 /* 32 and 64 bit AIX use function descriptors */
@@ -113,7 +113,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r12) | (1 << ppc_r11))
 #define MONO_ARCH_CALLEE_SAVED_REGS (0xfffff << ppc_r13) /* ppc_13 - ppc_31 */
 
-#if defined(__APPLE__) || defined(__mono_ppc64__)
+#if defined(__APPLE__) || defined(TARGET_POWERPC64)
 #define MONO_ARCH_CALLEE_FREGS (0x1fff << ppc_f1)
 #else
 #define MONO_ARCH_CALLEE_FREGS (0xff << ppc_f1)
@@ -122,7 +122,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_USE_FPSTACK FALSE
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:\
 					((desc) == 'g'? ppc_f1:-1))
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
@@ -158,7 +158,7 @@ typedef struct MonoCompileArch {
 #elif defined(_AIX)
 /* FIXME: are these values valid? on 32-bit? */
 #define PPC_RET_ADDR_OFFSET 16
-#if defined(__mono_ppc64__)
+#if defined(TARGET_POWERPC64)
 #define PPC_STACK_PARAM_OFFSET 112
 #define PPC_MINIMAL_STACK_SIZE 112
 #else
@@ -180,7 +180,7 @@ typedef struct MonoCompileArch {
 #define PPC_FIRST_FPARG_REG ppc_f1
 #else
 /* Linux */
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define PPC_RET_ADDR_OFFSET 16
  // Power LE abvi2
  #if (_CALL_ELF == 2)
@@ -232,10 +232,10 @@ typedef struct MonoCompileArch {
 
 #define PPC_CALL_REG ppc_r12
 
-#if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
+#if defined(ENABLE_SIGALTSTACK) && !defined(__APPLE__)
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK 1
 #define MONO_ARCH_SIGNAL_STACK_SIZE (12 * 1024)
-#endif /* HAVE_WORKING_SIGALTSTACK */
+#endif /* ENABLE_SIGALTSTACK */
 
 #define MONO_ARCH_IMT_REG ppc_r11
 
@@ -306,7 +306,7 @@ typedef struct {
 
 typedef struct {
 	host_mgreg_t sp;
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 	host_mgreg_t cr;
 #endif
 	host_mgreg_t lr;
@@ -386,7 +386,7 @@ mono_ppc_patch (guchar *code, const guchar *target);
 void
 mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow, gboolean preserve_ips);
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define MONO_PPC_32_64_CASE(c32,c64)	c64
 extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, ...);
 #else

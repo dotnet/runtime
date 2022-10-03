@@ -155,10 +155,7 @@ namespace System.Xml
         internal void ResetOwnerElementInElementIdAttrMap(string oldInnerText)
         {
             XmlElement? ownerElement = OwnerElement;
-            if (ownerElement != null)
-            {
-                ownerElement.Attributes.ResetParentInElementIdAttrMap(oldInnerText, InnerText);
-            }
+            ownerElement?.Attributes.ResetParentInElementIdAttrMap(oldInnerText, InnerText);
         }
 
         internal override bool IsContainer

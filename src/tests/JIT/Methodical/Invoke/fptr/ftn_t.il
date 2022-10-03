@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
-.namespace JitTest
+.namespace JitTest_ftn_t_fptr_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static void DoStuff(method void *()) il managed
@@ -38,7 +38,7 @@
     {
       // Code size       1 (0x1)
       .maxstack  8
-      ldftn 		void JitTest.Test::DummyMethod()
+      ldftn 		void JitTest_ftn_t_fptr_il.Test::DummyMethod()
       ret
     } // end of method 'Test::DoStuff'
     .method private hidebysig static void DummyMethod() il managed
@@ -54,23 +54,23 @@
     {
 		.maxstack  4
 		.locals (int32 V_0)
-		ldftn 		void JitTest.Test::DummyMethod()
-		ldftn		void JitTest.Test::DoStuff(method void *())
+		ldftn 		void JitTest_ftn_t_fptr_il.Test::DummyMethod()
+		ldftn		void JitTest_ftn_t_fptr_il.Test::DoStuff(method void *())
 		calli		void (method void *())
-		ldftn		method void *() JitTest.Test::RetStuff()
+		ldftn		method void *() JitTest_ftn_t_fptr_il.Test::RetStuff()
 		calli		method void *()()
 		tail. calli void()
 		ret
     } // end of method 'Test::TestMain'
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
 		)
 		.entrypoint
 		.maxstack  4
-		ldftn 		void JitTest.Test::TestMain()
+		ldftn 		void JitTest_ftn_t_fptr_il.Test::TestMain()
 		calli		void ()
 		ldc.i4 0x64
 		ret
@@ -88,5 +88,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_ftn_t_fptr_il'
 //*********** DISASSEMBLY COMPLETE ***********************

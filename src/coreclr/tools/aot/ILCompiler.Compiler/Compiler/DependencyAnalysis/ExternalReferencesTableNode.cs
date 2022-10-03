@@ -93,6 +93,7 @@ namespace ILCompiler.DependencyAnalysis
             _insertedSymbolsDictionary = null;
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.SupportsRelativePointers ? 4 : factory.Target.PointerSize);
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {

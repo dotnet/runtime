@@ -16,15 +16,15 @@ GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
 GVAL_DECL(GCHeapType, g_heap_type);
-#ifndef DACCESS_COMPILE
-}
-#endif // !DACCESS_COMPILE
 
 // For single-proc machines, the EE will use a single, shared alloc context
 // for all allocations. In order to avoid extra indirections in assembly
 // allocation helpers, the EE owns the global allocation context and the
 // GC will update it when it needs to.
-extern "C" gc_alloc_context g_global_alloc_context;
+GVAL_DECL(gc_alloc_context, g_global_alloc_context);
+#ifndef DACCESS_COMPILE
+}
+#endif // !DACCESS_COMPILE
 
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
@@ -121,14 +121,7 @@ public:
 
     static bool UseThreadAllocationContexts()
     {
-        // When running on a single-proc Intel system, it's more efficient to use a single global
-        // allocation context for SOH allocations than to use one for every thread.
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
-        return IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups();
-#else
-        return true;
-#endif
-
+        return s_useThreadAllocationContexts;
     }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -191,7 +184,7 @@ public:
         uint8_t* end_pointer = reinterpret_cast<uint8_t*>(address) + length - 1;
         size_t end_index = reinterpret_cast<size_t>(end_pointer) >> SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift;
 
-        // We'll mark the entire region of memory as dirty by memseting all entries in
+        // We'll mark the entire region of memory as dirty by memsetting all entries in
         // the SWW table between the start and end indexes.
         memset(&g_sw_ww_table[base_index], ~0, end_index - base_index + 1);
     }
@@ -216,6 +209,8 @@ public:
 private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
+
+    static bool s_useThreadAllocationContexts;
 };
 
 #endif // _GCHEAPUTILITIES_H_

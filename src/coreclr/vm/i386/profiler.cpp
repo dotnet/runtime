@@ -16,7 +16,7 @@
 
 //
 // The following structure is the format on x86 builds of the data
-// being passed in plaformSpecificHandle for ProfileEnter/Leave/Tailcall
+// being passed in platformSpecificHandle for ProfileEnter/Leave/Tailcall
 //
 typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 {

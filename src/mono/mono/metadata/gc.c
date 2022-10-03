@@ -42,6 +42,7 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/mono-threads-wasm.h>
 #ifndef HOST_WIN32
 #include <pthread.h>
 #endif
@@ -104,7 +105,7 @@ static MonoCoopMutex pending_done_mutex;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
-static void reference_queue_proccess_all (void);
+static void reference_queue_process_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
 static void mono_runtime_do_background_work (void);
@@ -147,7 +148,7 @@ break_coop_alertable_wait (gpointer user_data)
 static gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
-	BreakCoopAlertableWaitUD *ud;
+	BreakCoopAlertableWaitUD *ud = NULL;
 	int res;
 
 	if (alertable) {
@@ -285,7 +286,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* If object has a CCW but has no finalizer, it was only
 	 * registered for finalization in order to free the CCW.
 	 * Else it needs the regular finalizer run.
-	 * FIXME: what to do about ressurection and suppression
+	 * FIXME: what to do about resurrection and suppression
 	 * of finalizer on object with CCW.
 	 */
 	if (mono_marshal_free_ccw (o) && !finalizer) {
@@ -426,7 +427,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gint res;
 	gboolean ret;
-	gint64 start;
+	gint64 start = 0;
 
 	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */
@@ -480,7 +481,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 				break;
 			}
 
-			res = mono_coop_sem_timedwait (&req->done, timeout - elapsed, MONO_SEM_FLAGS_ALERTABLE);
+			res = mono_coop_sem_timedwait (&req->done, GINT64_TO_UINT (timeout - elapsed), MONO_SEM_FLAGS_ALERTABLE);
 		}
 
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
@@ -685,6 +686,21 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
 
+#ifdef HOST_WASM
+
+static void
+mono_wasm_gc_finalize_notify (void)
+{
+#if 0
+	/* use this if we are going to start the finalizer thread on wasm. */
+	mono_coop_sem_post (&finalizer_sem);
+#else
+	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+#endif
+}
+
+#endif /* HOST_WASM */
+
 /*
  * mono_gc_finalize_notify:
  *
@@ -705,7 +721,7 @@ mono_gc_finalize_notify (void)
 #if defined(HOST_WASI)
 	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
 #elif defined(HOST_WASM)
-	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+	mono_wasm_gc_finalize_notify ();
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif
@@ -846,7 +862,7 @@ mono_runtime_do_background_work (void)
 
 	mono_threads_join_threads ();
 
-	reference_queue_proccess_all ();
+	reference_queue_process_all ();
 
 	hazard_free_queue_pump ();
 }
@@ -1051,7 +1067,7 @@ ref_list_push (RefQueueEntry **head, RefQueueEntry *value)
 }
 
 static void
-reference_queue_proccess (MonoReferenceQueue *queue)
+reference_queue_process (MonoReferenceQueue *queue)
 {
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
@@ -1068,12 +1084,12 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 }
 
 static void
-reference_queue_proccess_all (void)
+reference_queue_process_all (void)
 {
 	MonoReferenceQueue **iter;
 	MonoReferenceQueue *queue = ref_queues;
 	for (; queue; queue = queue->next)
-		reference_queue_proccess (queue);
+		reference_queue_process (queue);
 
 restart:
 	mono_coop_mutex_lock (&reference_queue_mutex);
@@ -1085,7 +1101,7 @@ restart:
 		}
 		if (queue->queue) {
 			mono_coop_mutex_unlock (&reference_queue_mutex);
-			reference_queue_proccess (queue);
+			reference_queue_process (queue);
 			goto restart;
 		}
 		*iter = queue->next;
@@ -1100,7 +1116,7 @@ mono_reference_queue_cleanup (void)
 	MonoReferenceQueue *queue = ref_queues;
 	for (; queue; queue = queue->next)
 		queue->should_be_deleted = TRUE;
-	reference_queue_proccess_all ();
+	reference_queue_process_all ();
 }
 
 static void

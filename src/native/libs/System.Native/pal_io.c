@@ -22,6 +22,9 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if !HAVE_MAKEDEV_FILEH && HAVE_MAKEDEV_SYSMACROSH
+#include <sys/sysmacros.h>
+#endif
 #include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
@@ -123,6 +126,7 @@ c_static_assert(PAL_S_ISGID == S_ISGID);
 // accordingly.
 c_static_assert(PAL_S_IFMT == S_IFMT);
 c_static_assert(PAL_S_IFIFO == S_IFIFO);
+c_static_assert(PAL_S_IFBLK == S_IFBLK);
 c_static_assert(PAL_S_IFCHR == S_IFCHR);
 c_static_assert(PAL_S_IFDIR == S_IFDIR);
 c_static_assert(PAL_S_IFREG == S_IFREG);
@@ -186,6 +190,7 @@ c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
+    dst->RDev = (int64_t)src->st_rdev;
     dst->Ino = (int64_t)src->st_ino;
     dst->Flags = FILESTATUS_FLAGS_NONE;
     dst->Mode = (int32_t)src->st_mode;
@@ -211,7 +216,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
     dst->BirthTimeNsec = 0;
 #endif
 
-#if defined(HAVE_STAT_FLAGS) && defined(UF_HIDDEN)
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
     dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
 #else
     dst->UserFlags = 0;
@@ -766,6 +771,29 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
     return result;
 }
 
+void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
+{
+    dev_t castedDev = (dev_t)dev;
+    *majorNumber = (uint32_t)major(castedDev);
+    *minorNumber = (uint32_t)minor(castedDev);
+}
+
+int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
+{
+    dev_t dev = (dev_t)makedev(major, minor);
+
+    int32_t result;
+    while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
+{
+    int32_t result;
+    while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
@@ -1309,7 +1337,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     if (ret == 0)
     {
 #if HAVE_FUTIMENS
-        // futimens is prefered because it has a higher resolution.
+        // futimens is preferred because it has a higher resolution.
         struct timespec origTimes[2];
         origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
         origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
@@ -1444,7 +1472,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-int64_t SystemNative_GetFileSystemType(intptr_t fd)
+uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
 #if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
     int statfsRes;
@@ -1452,19 +1480,25 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
     // which got deprecated in macOS 10.6, in favor of statfs
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+    if (statfsRes == -1) return 0;
+
+    // On Linux, f_type is signed. This causes some filesystem types to be represented as
+    // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
+    uint32_t result = (uint32_t)statfsArgs.f_type;
+    return result;
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-    if (statfsRes == -1) return (int64_t)-1;
+    if (statfsRes == -1) return 0;
 
-    int64_t result = -1;
+    uint32_t result = 0;
 
     if (strcmp(statfsArgs.f_basetype, "adfs") == 0) result = 0xADF5;
     else if (strcmp(statfsArgs.f_basetype, "affs") == 0) result = 0xADFF;
     else if (strcmp(statfsArgs.f_basetype, "afs") == 0) result = 0x5346414F;
     else if (strcmp(statfsArgs.f_basetype, "anoninode") == 0) result = 0x09041934;
+    else if (strcmp(statfsArgs.f_basetype, "apfs") == 0) result = 0x1A;
     else if (strcmp(statfsArgs.f_basetype, "aufs") == 0) result = 0x61756673;
     else if (strcmp(statfsArgs.f_basetype, "autofs") == 0) result = 0x0187;
     else if (strcmp(statfsArgs.f_basetype, "autofs4") == 0) result = 0x6D4A556D;
@@ -1585,7 +1619,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "udev") == 0) result = 0x01021994;
     else if (strcmp(statfsArgs.f_basetype, "zfs") == 0) result = 0x2FC12FC1;
 
-    assert(result != -1);
+    assert(result != 0);
     return result;
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
@@ -1607,7 +1641,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-#if defined(TARGET_ANDROID) && defined(HAVE_FLOCK64)
+#if defined(TARGET_ANDROID) && HAVE_FLOCK64
     // On Android, fcntl is always implemented by fcntl64 but before https://github.com/aosp-mirror/platform_bionic/commit/09e77f35ab8d291bf88302bb9673aaa518c6bcb0
     // there was no remapping of F_SETLK to F_SETLK64 when _FILE_OFFSET_BITS=64 (which we set in eng/native/configurecompiler.cmake) so we need to always pass F_SETLK64
     int command = F_SETLK64;
@@ -1638,9 +1672,22 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 #endif
 }
 
+int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
+{
+#if HAVE_LCHFLAGS
+    int32_t result;
+    while ((result = fchflags(ToFileDescriptor(fd), flags)) < 0 && errno == EINTR);
+    return result;
+#else
+    (void)fd, (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
-#if defined(HAVE_LCHFLAGS)
+#if HAVE_LCHFLAGS
     return SystemNative_CanGetHiddenFlag();
 #else
     return false;
@@ -1649,7 +1696,7 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 
 int32_t SystemNative_CanGetHiddenFlag(void)
 {
-#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS)
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
     return true;
 #else
     return false;
@@ -1728,7 +1775,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }
@@ -1768,7 +1815,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }

@@ -24,790 +24,299 @@ namespace System.Runtime.Serialization
         internal const BindingFlags ScanAllMembers = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
         private static XmlQualifiedName? s_idQualifiedName;
-        internal static XmlQualifiedName IdQualifiedName
-        {
-            get
-            {
-                if (s_idQualifiedName == null)
-                    s_idQualifiedName = new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
-                return s_idQualifiedName;
-            }
-        }
+        internal static XmlQualifiedName IdQualifiedName =>
+            s_idQualifiedName ??= new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_refQualifiedName;
-        internal static XmlQualifiedName RefQualifiedName
-        {
-            get
-            {
-                if (s_refQualifiedName == null)
-                    s_refQualifiedName = new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
-                return s_refQualifiedName;
-            }
-        }
+        internal static XmlQualifiedName RefQualifiedName =>
+            s_refQualifiedName ??= new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
 
         private static Type? s_typeOfObject;
-        internal static Type TypeOfObject
-        {
-            get
-            {
-                if (s_typeOfObject == null)
-                    s_typeOfObject = typeof(object);
-                return s_typeOfObject;
-            }
-        }
+        internal static Type TypeOfObject =>
+            s_typeOfObject ??= typeof(object);
 
         private static Type? s_typeOfValueType;
-        internal static Type TypeOfValueType
-        {
-            get
-            {
-                if (s_typeOfValueType == null)
-                    s_typeOfValueType = typeof(ValueType);
-                return s_typeOfValueType;
-            }
-        }
+        internal static Type TypeOfValueType =>
+            s_typeOfValueType ??= typeof(ValueType);
 
         private static Type? s_typeOfArray;
-        internal static Type TypeOfArray
-        {
-            get
-            {
-                if (s_typeOfArray == null)
-                    s_typeOfArray = typeof(Array);
-                return s_typeOfArray;
-            }
-        }
+        internal static Type TypeOfArray =>
+            s_typeOfArray ??= typeof(Array);
 
         private static Type? s_typeOfString;
-        internal static Type TypeOfString
-        {
-            get
-            {
-                if (s_typeOfString == null)
-                    s_typeOfString = typeof(string);
-                return s_typeOfString;
-            }
-        }
+        internal static Type TypeOfString =>
+            s_typeOfString ??= typeof(string);
 
         private static Type? s_typeOfInt;
-        internal static Type TypeOfInt
-        {
-            get
-            {
-                if (s_typeOfInt == null)
-                    s_typeOfInt = typeof(int);
-                return s_typeOfInt;
-            }
-        }
+        internal static Type TypeOfInt =>
+            s_typeOfInt ??= typeof(int);
 
         private static Type? s_typeOfULong;
-        internal static Type TypeOfULong
-        {
-            get
-            {
-                if (s_typeOfULong == null)
-                    s_typeOfULong = typeof(ulong);
-                return s_typeOfULong;
-            }
-        }
+        internal static Type TypeOfULong =>
+            s_typeOfULong ??= typeof(ulong);
 
         private static Type? s_typeOfVoid;
-        internal static Type TypeOfVoid
-        {
-            get
-            {
-                if (s_typeOfVoid == null)
-                    s_typeOfVoid = typeof(void);
-                return s_typeOfVoid;
-            }
-        }
+        internal static Type TypeOfVoid =>
+            s_typeOfVoid ??= typeof(void);
 
         private static Type? s_typeOfByteArray;
-        internal static Type TypeOfByteArray
-        {
-            get
-            {
-                if (s_typeOfByteArray == null)
-                    s_typeOfByteArray = typeof(byte[]);
-                return s_typeOfByteArray;
-            }
-        }
+        internal static Type TypeOfByteArray =>
+            s_typeOfByteArray ??= typeof(byte[]);
 
         private static Type? s_typeOfTimeSpan;
-        internal static Type TypeOfTimeSpan
-        {
-            get
-            {
-                if (s_typeOfTimeSpan == null)
-                    s_typeOfTimeSpan = typeof(TimeSpan);
-                return s_typeOfTimeSpan;
-            }
-        }
+        internal static Type TypeOfTimeSpan =>
+            s_typeOfTimeSpan ??= typeof(TimeSpan);
 
         private static Type? s_typeOfGuid;
-        internal static Type TypeOfGuid
-        {
-            get
-            {
-                if (s_typeOfGuid == null)
-                    s_typeOfGuid = typeof(Guid);
-                return s_typeOfGuid;
-            }
-        }
+        internal static Type TypeOfGuid =>
+            s_typeOfGuid ??= typeof(Guid);
 
         private static Type? s_typeOfDateTimeOffset;
-        internal static Type TypeOfDateTimeOffset
-        {
-            get
-            {
-                if (s_typeOfDateTimeOffset == null)
-                    s_typeOfDateTimeOffset = typeof(DateTimeOffset);
-                return s_typeOfDateTimeOffset;
-            }
-        }
+        internal static Type TypeOfDateTimeOffset =>
+            s_typeOfDateTimeOffset ??= typeof(DateTimeOffset);
 
         private static Type? s_typeOfDateTimeOffsetAdapter;
-        internal static Type TypeOfDateTimeOffsetAdapter
-        {
-            get
-            {
-                if (s_typeOfDateTimeOffsetAdapter == null)
-                    s_typeOfDateTimeOffsetAdapter = typeof(DateTimeOffsetAdapter);
-                return s_typeOfDateTimeOffsetAdapter;
-            }
-        }
+        internal static Type TypeOfDateTimeOffsetAdapter =>
+            s_typeOfDateTimeOffsetAdapter ??= typeof(DateTimeOffsetAdapter);
 
         private static Type? s_typeOfMemoryStream;
-        internal static Type TypeOfMemoryStream
-        {
-            get
-            {
-                if (s_typeOfMemoryStream == null)
-                    s_typeOfMemoryStream = typeof(MemoryStream);
-                return s_typeOfMemoryStream;
-            }
-        }
+        internal static Type TypeOfMemoryStream =>
+            s_typeOfMemoryStream ??= typeof(MemoryStream);
 
         private static Type? s_typeOfMemoryStreamAdapter;
-        internal static Type TypeOfMemoryStreamAdapter
-        {
-            get
-            {
-                if (s_typeOfMemoryStreamAdapter == null)
-                    s_typeOfMemoryStreamAdapter = typeof(MemoryStreamAdapter);
-                return s_typeOfMemoryStreamAdapter;
-            }
-        }
+        internal static Type TypeOfMemoryStreamAdapter =>
+            s_typeOfMemoryStreamAdapter ??= typeof(MemoryStreamAdapter);
 
         private static Type? s_typeOfUri;
-        internal static Type TypeOfUri
-        {
-            get
-            {
-                if (s_typeOfUri == null)
-                    s_typeOfUri = typeof(Uri);
-                return s_typeOfUri;
-            }
-        }
+        internal static Type TypeOfUri =>
+            s_typeOfUri ??= typeof(Uri);
 
         private static Type? s_typeOfTypeEnumerable;
-        internal static Type TypeOfTypeEnumerable
-        {
-            get
-            {
-                if (s_typeOfTypeEnumerable == null)
-                    s_typeOfTypeEnumerable = typeof(IEnumerable<Type>);
-                return s_typeOfTypeEnumerable;
-            }
-        }
+        internal static Type TypeOfTypeEnumerable =>
+            s_typeOfTypeEnumerable ??= typeof(IEnumerable<Type>);
 
         private static Type? s_typeOfStreamingContext;
-        internal static Type TypeOfStreamingContext
-        {
-            get
-            {
-                if (s_typeOfStreamingContext == null)
-                    s_typeOfStreamingContext = typeof(StreamingContext);
-                return s_typeOfStreamingContext;
-            }
-        }
+        internal static Type TypeOfStreamingContext =>
+            s_typeOfStreamingContext ??= typeof(StreamingContext);
 
         private static Type? s_typeOfISerializable;
-        internal static Type TypeOfISerializable
-        {
-            get
-            {
-                if (s_typeOfISerializable == null)
-                    s_typeOfISerializable = typeof(ISerializable);
-                return s_typeOfISerializable;
-            }
-        }
+        internal static Type TypeOfISerializable =>
+            s_typeOfISerializable ??= typeof(ISerializable);
 
         private static Type? s_typeOfIDeserializationCallback;
-        internal static Type TypeOfIDeserializationCallback
-        {
-            get
-            {
-                if (s_typeOfIDeserializationCallback == null)
-                    s_typeOfIDeserializationCallback = typeof(IDeserializationCallback);
-                return s_typeOfIDeserializationCallback;
-            }
-        }
+        internal static Type TypeOfIDeserializationCallback =>
+            s_typeOfIDeserializationCallback ??= typeof(IDeserializationCallback);
 
         private static Type? s_typeOfIObjectReference;
-        internal static Type TypeOfIObjectReference
-        {
-            get
-            {
-                if (s_typeOfIObjectReference == null)
-                    s_typeOfIObjectReference = typeof(IObjectReference);
-                return s_typeOfIObjectReference;
-            }
-        }
+        internal static Type TypeOfIObjectReference =>
+            s_typeOfIObjectReference ??= typeof(IObjectReference);
 
         private static Type? s_typeOfXmlFormatClassWriterDelegate;
-        internal static Type TypeOfXmlFormatClassWriterDelegate
-        {
-            get
-            {
-                if (s_typeOfXmlFormatClassWriterDelegate == null)
-                    s_typeOfXmlFormatClassWriterDelegate = typeof(XmlFormatClassWriterDelegate);
-                return s_typeOfXmlFormatClassWriterDelegate;
-            }
-        }
+        internal static Type TypeOfXmlFormatClassWriterDelegate =>
+            s_typeOfXmlFormatClassWriterDelegate ??= typeof(XmlFormatClassWriterDelegate);
 
         private static Type? s_typeOfXmlFormatCollectionWriterDelegate;
-        internal static Type TypeOfXmlFormatCollectionWriterDelegate
-        {
-            get
-            {
-                if (s_typeOfXmlFormatCollectionWriterDelegate == null)
-                    s_typeOfXmlFormatCollectionWriterDelegate = typeof(XmlFormatCollectionWriterDelegate);
-                return s_typeOfXmlFormatCollectionWriterDelegate;
-            }
-        }
+        internal static Type TypeOfXmlFormatCollectionWriterDelegate =>
+            s_typeOfXmlFormatCollectionWriterDelegate ??= typeof(XmlFormatCollectionWriterDelegate);
 
         private static Type? s_typeOfXmlFormatClassReaderDelegate;
-        internal static Type TypeOfXmlFormatClassReaderDelegate
-        {
-            get
-            {
-                if (s_typeOfXmlFormatClassReaderDelegate == null)
-                    s_typeOfXmlFormatClassReaderDelegate = typeof(XmlFormatClassReaderDelegate);
-                return s_typeOfXmlFormatClassReaderDelegate;
-            }
-        }
+        internal static Type TypeOfXmlFormatClassReaderDelegate =>
+            s_typeOfXmlFormatClassReaderDelegate ??= typeof(XmlFormatClassReaderDelegate);
 
         private static Type? s_typeOfXmlFormatCollectionReaderDelegate;
-        internal static Type TypeOfXmlFormatCollectionReaderDelegate
-        {
-            get
-            {
-                if (s_typeOfXmlFormatCollectionReaderDelegate == null)
-                    s_typeOfXmlFormatCollectionReaderDelegate = typeof(XmlFormatCollectionReaderDelegate);
-                return s_typeOfXmlFormatCollectionReaderDelegate;
-            }
-        }
+        internal static Type TypeOfXmlFormatCollectionReaderDelegate =>
+            s_typeOfXmlFormatCollectionReaderDelegate ??= typeof(XmlFormatCollectionReaderDelegate);
 
         private static Type? s_typeOfXmlFormatGetOnlyCollectionReaderDelegate;
-        internal static Type TypeOfXmlFormatGetOnlyCollectionReaderDelegate
-        {
-            get
-            {
-                if (s_typeOfXmlFormatGetOnlyCollectionReaderDelegate == null)
-                    s_typeOfXmlFormatGetOnlyCollectionReaderDelegate = typeof(XmlFormatGetOnlyCollectionReaderDelegate);
-                return s_typeOfXmlFormatGetOnlyCollectionReaderDelegate;
-            }
-        }
+        internal static Type TypeOfXmlFormatGetOnlyCollectionReaderDelegate =>
+            s_typeOfXmlFormatGetOnlyCollectionReaderDelegate ??= typeof(XmlFormatGetOnlyCollectionReaderDelegate);
 
         private static Type? s_typeOfKnownTypeAttribute;
-        internal static Type TypeOfKnownTypeAttribute
-        {
-            get
-            {
-                if (s_typeOfKnownTypeAttribute == null)
-                    s_typeOfKnownTypeAttribute = typeof(KnownTypeAttribute);
-                return s_typeOfKnownTypeAttribute;
-            }
-        }
+        internal static Type TypeOfKnownTypeAttribute =>
+            s_typeOfKnownTypeAttribute ??= typeof(KnownTypeAttribute);
 
         private static Type? s_typeOfDataContractAttribute;
-        internal static Type TypeOfDataContractAttribute
-        {
-            get
-            {
-                if (s_typeOfDataContractAttribute == null)
-                    s_typeOfDataContractAttribute = typeof(DataContractAttribute);
-                return s_typeOfDataContractAttribute;
-            }
-        }
+        internal static Type TypeOfDataContractAttribute =>
+            s_typeOfDataContractAttribute ??= typeof(DataContractAttribute);
 
         private static Type? s_typeOfDataMemberAttribute;
-        internal static Type TypeOfDataMemberAttribute
-        {
-            get
-            {
-                if (s_typeOfDataMemberAttribute == null)
-                    s_typeOfDataMemberAttribute = typeof(DataMemberAttribute);
-                return s_typeOfDataMemberAttribute;
-            }
-        }
+        internal static Type TypeOfDataMemberAttribute =>
+            s_typeOfDataMemberAttribute ??= typeof(DataMemberAttribute);
 
         private static Type? s_typeOfEnumMemberAttribute;
-        internal static Type TypeOfEnumMemberAttribute
-        {
-            get
-            {
-                if (s_typeOfEnumMemberAttribute == null)
-                    s_typeOfEnumMemberAttribute = typeof(EnumMemberAttribute);
-                return s_typeOfEnumMemberAttribute;
-            }
-        }
+        internal static Type TypeOfEnumMemberAttribute =>
+            s_typeOfEnumMemberAttribute ??= typeof(EnumMemberAttribute);
 
         private static Type? s_typeOfCollectionDataContractAttribute;
-        internal static Type TypeOfCollectionDataContractAttribute
-        {
-            get
-            {
-                if (s_typeOfCollectionDataContractAttribute == null)
-                    s_typeOfCollectionDataContractAttribute = typeof(CollectionDataContractAttribute);
-                return s_typeOfCollectionDataContractAttribute;
-            }
-        }
+        internal static Type TypeOfCollectionDataContractAttribute =>
+            s_typeOfCollectionDataContractAttribute ??= typeof(CollectionDataContractAttribute);
 
         private static Type? s_typeOfOptionalFieldAttribute;
-        internal static Type TypeOfOptionalFieldAttribute
-        {
-            get
-            {
-                if (s_typeOfOptionalFieldAttribute == null)
-                {
-                    s_typeOfOptionalFieldAttribute = typeof(OptionalFieldAttribute);
-                }
-
-                return s_typeOfOptionalFieldAttribute;
-            }
-        }
+        internal static Type TypeOfOptionalFieldAttribute =>
+            s_typeOfOptionalFieldAttribute ??= typeof(OptionalFieldAttribute);
 
         private static Type? s_typeOfObjectArray;
-        internal static Type TypeOfObjectArray
-        {
-            get
-            {
-                if (s_typeOfObjectArray == null)
-                    s_typeOfObjectArray = typeof(object[]);
-                return s_typeOfObjectArray;
-            }
-        }
+        internal static Type TypeOfObjectArray =>
+            s_typeOfObjectArray ??= typeof(object[]);
 
         private static Type? s_typeOfOnSerializingAttribute;
-        internal static Type TypeOfOnSerializingAttribute
-        {
-            get
-            {
-                if (s_typeOfOnSerializingAttribute == null)
-                    s_typeOfOnSerializingAttribute = typeof(OnSerializingAttribute);
-                return s_typeOfOnSerializingAttribute;
-            }
-        }
+        internal static Type TypeOfOnSerializingAttribute =>
+            s_typeOfOnSerializingAttribute ??= typeof(OnSerializingAttribute);
 
         private static Type? s_typeOfOnSerializedAttribute;
-        internal static Type TypeOfOnSerializedAttribute
-        {
-            get
-            {
-                if (s_typeOfOnSerializedAttribute == null)
-                    s_typeOfOnSerializedAttribute = typeof(OnSerializedAttribute);
-                return s_typeOfOnSerializedAttribute;
-            }
-        }
+        internal static Type TypeOfOnSerializedAttribute =>
+            s_typeOfOnSerializedAttribute ??= typeof(OnSerializedAttribute);
 
         private static Type? s_typeOfOnDeserializingAttribute;
-        internal static Type TypeOfOnDeserializingAttribute
-        {
-            get
-            {
-                if (s_typeOfOnDeserializingAttribute == null)
-                    s_typeOfOnDeserializingAttribute = typeof(OnDeserializingAttribute);
-                return s_typeOfOnDeserializingAttribute;
-            }
-        }
+        internal static Type TypeOfOnDeserializingAttribute =>
+            s_typeOfOnDeserializingAttribute ??= typeof(OnDeserializingAttribute);
 
         private static Type? s_typeOfOnDeserializedAttribute;
-        internal static Type TypeOfOnDeserializedAttribute
-        {
-            get
-            {
-                if (s_typeOfOnDeserializedAttribute == null)
-                    s_typeOfOnDeserializedAttribute = typeof(OnDeserializedAttribute);
-                return s_typeOfOnDeserializedAttribute;
-            }
-        }
+        internal static Type TypeOfOnDeserializedAttribute =>
+            s_typeOfOnDeserializedAttribute ??= typeof(OnDeserializedAttribute);
 
         private static Type? s_typeOfFlagsAttribute;
-        internal static Type TypeOfFlagsAttribute
-        {
-            get
-            {
-                if (s_typeOfFlagsAttribute == null)
-                    s_typeOfFlagsAttribute = typeof(FlagsAttribute);
-                return s_typeOfFlagsAttribute;
-            }
-        }
+        internal static Type TypeOfFlagsAttribute =>
+            s_typeOfFlagsAttribute ??= typeof(FlagsAttribute);
 
         private static Type? s_typeOfIXmlSerializable;
-        internal static Type TypeOfIXmlSerializable
-        {
-            get
-            {
-                if (s_typeOfIXmlSerializable == null)
-                    s_typeOfIXmlSerializable = typeof(IXmlSerializable);
-                return s_typeOfIXmlSerializable;
-            }
-        }
+        internal static Type TypeOfIXmlSerializable =>
+            s_typeOfIXmlSerializable ??= typeof(IXmlSerializable);
 
         private static Type? s_typeOfXmlSchemaProviderAttribute;
-        internal static Type TypeOfXmlSchemaProviderAttribute
-        {
-            get
-            {
-                if (s_typeOfXmlSchemaProviderAttribute == null)
-                    s_typeOfXmlSchemaProviderAttribute = typeof(XmlSchemaProviderAttribute);
-                return s_typeOfXmlSchemaProviderAttribute;
-            }
-        }
+        internal static Type TypeOfXmlSchemaProviderAttribute =>
+            s_typeOfXmlSchemaProviderAttribute ??= typeof(XmlSchemaProviderAttribute);
 
         private static Type? s_typeOfXmlRootAttribute;
-        internal static Type TypeOfXmlRootAttribute
-        {
-            get
-            {
-                if (s_typeOfXmlRootAttribute == null)
-                    s_typeOfXmlRootAttribute = typeof(XmlRootAttribute);
-                return s_typeOfXmlRootAttribute;
-            }
-        }
+        internal static Type TypeOfXmlRootAttribute =>
+            s_typeOfXmlRootAttribute ??= typeof(XmlRootAttribute);
 
         private static Type? s_typeOfXmlQualifiedName;
-        internal static Type TypeOfXmlQualifiedName
-        {
-            get
-            {
-                if (s_typeOfXmlQualifiedName == null)
-                    s_typeOfXmlQualifiedName = typeof(XmlQualifiedName);
-                return s_typeOfXmlQualifiedName;
-            }
-        }
+        internal static Type TypeOfXmlQualifiedName =>
+            s_typeOfXmlQualifiedName ??= typeof(XmlQualifiedName);
 
         private static Type? s_typeOfXmlSchemaType;
-        internal static Type TypeOfXmlSchemaType
-        {
-            get
-            {
-                if (s_typeOfXmlSchemaType == null)
-                {
-                    s_typeOfXmlSchemaType = typeof(XmlSchemaType);
-                }
-
-                return s_typeOfXmlSchemaType;
-            }
-        }
+        internal static Type TypeOfXmlSchemaType =>
+            s_typeOfXmlSchemaType ??= typeof(XmlSchemaType);
 
         private static Type? s_typeOfIExtensibleDataObject;
-        internal static Type TypeOfIExtensibleDataObject => s_typeOfIExtensibleDataObject ?? (s_typeOfIExtensibleDataObject = typeof(IExtensibleDataObject));
+        internal static Type TypeOfIExtensibleDataObject =>
+            s_typeOfIExtensibleDataObject ??= typeof(IExtensibleDataObject);
 
         private static Type? s_typeOfExtensionDataObject;
-        internal static Type TypeOfExtensionDataObject => s_typeOfExtensionDataObject ?? (s_typeOfExtensionDataObject = typeof(ExtensionDataObject));
+        internal static Type TypeOfExtensionDataObject =>
+            s_typeOfExtensionDataObject ??= typeof(ExtensionDataObject);
 
         private static Type? s_typeOfISerializableDataNode;
-        internal static Type TypeOfISerializableDataNode
-        {
-            get
-            {
-                if (s_typeOfISerializableDataNode == null)
-                    s_typeOfISerializableDataNode = typeof(ISerializableDataNode);
-                return s_typeOfISerializableDataNode;
-            }
-        }
+        internal static Type TypeOfISerializableDataNode =>
+            s_typeOfISerializableDataNode ??= typeof(ISerializableDataNode);
 
         private static Type? s_typeOfClassDataNode;
-        internal static Type TypeOfClassDataNode
-        {
-            get
-            {
-                if (s_typeOfClassDataNode == null)
-                    s_typeOfClassDataNode = typeof(ClassDataNode);
-                return s_typeOfClassDataNode;
-            }
-        }
+        internal static Type TypeOfClassDataNode =>
+            s_typeOfClassDataNode ??= typeof(ClassDataNode);
 
         private static Type? s_typeOfCollectionDataNode;
-        internal static Type TypeOfCollectionDataNode
-        {
-            get
-            {
-                if (s_typeOfCollectionDataNode == null)
-                    s_typeOfCollectionDataNode = typeof(CollectionDataNode);
-                return s_typeOfCollectionDataNode;
-            }
-        }
+        internal static Type TypeOfCollectionDataNode =>
+            s_typeOfCollectionDataNode ??= typeof(CollectionDataNode);
 
         private static Type? s_typeOfXmlDataNode;
-        internal static Type TypeOfXmlDataNode => s_typeOfXmlDataNode ?? (s_typeOfXmlDataNode = typeof(XmlDataNode));
+        internal static Type TypeOfXmlDataNode =>
+            s_typeOfXmlDataNode ??= typeof(XmlDataNode);
 
         private static Type? s_typeOfNullable;
-        internal static Type TypeOfNullable
-        {
-            get
-            {
-                if (s_typeOfNullable == null)
-                    s_typeOfNullable = typeof(Nullable<>);
-                return s_typeOfNullable;
-            }
-        }
+        internal static Type TypeOfNullable =>
+            s_typeOfNullable ??= typeof(Nullable<>);
 
         private static Type? s_typeOfIDictionaryGeneric;
-        internal static Type TypeOfIDictionaryGeneric
-        {
-            get
-            {
-                if (s_typeOfIDictionaryGeneric == null)
-                    s_typeOfIDictionaryGeneric = typeof(IDictionary<,>);
-                return s_typeOfIDictionaryGeneric;
-            }
-        }
+        internal static Type TypeOfIDictionaryGeneric =>
+            s_typeOfIDictionaryGeneric ??= typeof(IDictionary<,>);
 
         private static Type? s_typeOfIDictionary;
-        internal static Type TypeOfIDictionary
-        {
-            get
-            {
-                if (s_typeOfIDictionary == null)
-                    s_typeOfIDictionary = typeof(IDictionary);
-                return s_typeOfIDictionary;
-            }
-        }
+        internal static Type TypeOfIDictionary =>
+            s_typeOfIDictionary ??= typeof(IDictionary);
 
         private static Type? s_typeOfIListGeneric;
-        internal static Type TypeOfIListGeneric
-        {
-            get
-            {
-                if (s_typeOfIListGeneric == null)
-                    s_typeOfIListGeneric = typeof(IList<>);
-                return s_typeOfIListGeneric;
-            }
-        }
+        internal static Type TypeOfIListGeneric =>
+            s_typeOfIListGeneric ??= typeof(IList<>);
 
         private static Type? s_typeOfIList;
-        internal static Type TypeOfIList
-        {
-            get
-            {
-                if (s_typeOfIList == null)
-                    s_typeOfIList = typeof(IList);
-                return s_typeOfIList;
-            }
-        }
+        internal static Type TypeOfIList =>
+            s_typeOfIList ??= typeof(IList);
 
         private static Type? s_typeOfICollectionGeneric;
-        internal static Type TypeOfICollectionGeneric
-        {
-            get
-            {
-                if (s_typeOfICollectionGeneric == null)
-                    s_typeOfICollectionGeneric = typeof(ICollection<>);
-                return s_typeOfICollectionGeneric;
-            }
-        }
+        internal static Type TypeOfICollectionGeneric =>
+            s_typeOfICollectionGeneric ??= typeof(ICollection<>);
 
         private static Type? s_typeOfICollection;
-        internal static Type TypeOfICollection
-        {
-            get
-            {
-                if (s_typeOfICollection == null)
-                    s_typeOfICollection = typeof(ICollection);
-                return s_typeOfICollection;
-            }
-        }
+        internal static Type TypeOfICollection =>
+            s_typeOfICollection ??= typeof(ICollection);
 
         private static Type? s_typeOfIEnumerableGeneric;
-        internal static Type TypeOfIEnumerableGeneric
-        {
-            get
-            {
-                if (s_typeOfIEnumerableGeneric == null)
-                    s_typeOfIEnumerableGeneric = typeof(IEnumerable<>);
-                return s_typeOfIEnumerableGeneric;
-            }
-        }
+        internal static Type TypeOfIEnumerableGeneric =>
+            s_typeOfIEnumerableGeneric ??= typeof(IEnumerable<>);
 
         private static Type? s_typeOfIEnumerable;
-        internal static Type TypeOfIEnumerable
-        {
-            get
-            {
-                if (s_typeOfIEnumerable == null)
-                    s_typeOfIEnumerable = typeof(IEnumerable);
-                return s_typeOfIEnumerable;
-            }
-        }
+        internal static Type TypeOfIEnumerable =>
+            s_typeOfIEnumerable ??= typeof(IEnumerable);
 
         private static Type? s_typeOfIEnumeratorGeneric;
-        internal static Type TypeOfIEnumeratorGeneric
-        {
-            get
-            {
-                if (s_typeOfIEnumeratorGeneric == null)
-                    s_typeOfIEnumeratorGeneric = typeof(IEnumerator<>);
-                return s_typeOfIEnumeratorGeneric;
-            }
-        }
+        internal static Type TypeOfIEnumeratorGeneric =>
+            s_typeOfIEnumeratorGeneric ??= typeof(IEnumerator<>);
 
         private static Type? s_typeOfIEnumerator;
-        internal static Type TypeOfIEnumerator
-        {
-            get
-            {
-                if (s_typeOfIEnumerator == null)
-                    s_typeOfIEnumerator = typeof(IEnumerator);
-                return s_typeOfIEnumerator;
-            }
-        }
+        internal static Type TypeOfIEnumerator =>
+            s_typeOfIEnumerator ??= typeof(IEnumerator);
 
         private static Type? s_typeOfKeyValuePair;
-        internal static Type TypeOfKeyValuePair
-        {
-            get
-            {
-                if (s_typeOfKeyValuePair == null)
-                    s_typeOfKeyValuePair = typeof(KeyValuePair<,>);
-                return s_typeOfKeyValuePair;
-            }
-        }
+        internal static Type TypeOfKeyValuePair =>
+            s_typeOfKeyValuePair ??= typeof(KeyValuePair<,>);
 
         private static Type? s_typeOfKeyValuePairAdapter;
-        internal static Type TypeOfKeyValuePairAdapter
-        {
-            get
-            {
-                if (s_typeOfKeyValuePairAdapter == null)
-                    s_typeOfKeyValuePairAdapter = typeof(KeyValuePairAdapter<,>);
-                return s_typeOfKeyValuePairAdapter;
-            }
-        }
+        internal static Type TypeOfKeyValuePairAdapter =>
+            s_typeOfKeyValuePairAdapter ??= typeof(KeyValuePairAdapter<,>);
 
         private static Type? s_typeOfKeyValue;
-        internal static Type TypeOfKeyValue
-        {
-            get
-            {
-                if (s_typeOfKeyValue == null)
-                    s_typeOfKeyValue = typeof(KeyValue<,>);
-                return s_typeOfKeyValue;
-            }
-        }
+        internal static Type TypeOfKeyValue =>
+            s_typeOfKeyValue ??= typeof(KeyValue<,>);
 
         private static Type? s_typeOfIDictionaryEnumerator;
-        internal static Type TypeOfIDictionaryEnumerator
-        {
-            get
-            {
-                if (s_typeOfIDictionaryEnumerator == null)
-                    s_typeOfIDictionaryEnumerator = typeof(IDictionaryEnumerator);
-                return s_typeOfIDictionaryEnumerator;
-            }
-        }
+        internal static Type TypeOfIDictionaryEnumerator =>
+            s_typeOfIDictionaryEnumerator ??= typeof(IDictionaryEnumerator);
 
         private static Type? s_typeOfDictionaryEnumerator;
-        internal static Type TypeOfDictionaryEnumerator
-        {
-            get
-            {
-                if (s_typeOfDictionaryEnumerator == null)
-                    s_typeOfDictionaryEnumerator = typeof(CollectionDataContract.DictionaryEnumerator);
-                return s_typeOfDictionaryEnumerator;
-            }
-        }
+        internal static Type TypeOfDictionaryEnumerator =>
+            s_typeOfDictionaryEnumerator ??= typeof(CollectionDataContract.DictionaryEnumerator);
 
         private static Type? s_typeOfGenericDictionaryEnumerator;
-        internal static Type TypeOfGenericDictionaryEnumerator
-        {
-            get
-            {
-                if (s_typeOfGenericDictionaryEnumerator == null)
-                    s_typeOfGenericDictionaryEnumerator = typeof(CollectionDataContract.GenericDictionaryEnumerator<,>);
-                return s_typeOfGenericDictionaryEnumerator;
-            }
-        }
+        internal static Type TypeOfGenericDictionaryEnumerator =>
+            s_typeOfGenericDictionaryEnumerator ??= typeof(CollectionDataContract.GenericDictionaryEnumerator<,>);
 
         private static Type? s_typeOfDictionaryGeneric;
-        internal static Type TypeOfDictionaryGeneric
-        {
-            get
-            {
-                if (s_typeOfDictionaryGeneric == null)
-                    s_typeOfDictionaryGeneric = typeof(Dictionary<,>);
-                return s_typeOfDictionaryGeneric;
-            }
-        }
+        internal static Type TypeOfDictionaryGeneric =>
+            s_typeOfDictionaryGeneric ??= typeof(Dictionary<,>);
 
         private static Type? s_typeOfHashtable;
         internal static Type TypeOfHashtable
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_typeOfHashtable == null)
-                    s_typeOfHashtable = TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
-                return s_typeOfHashtable;
-            }
+            get => s_typeOfHashtable ??= TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
         }
 
         private static Type? s_typeOfXmlElement;
-        internal static Type TypeOfXmlElement
-        {
-            get
-            {
-                if (s_typeOfXmlElement == null)
-                    s_typeOfXmlElement = typeof(XmlElement);
-                return s_typeOfXmlElement;
-            }
-        }
+        internal static Type TypeOfXmlElement =>
+            s_typeOfXmlElement ??= typeof(XmlElement);
 
         private static Type? s_typeOfXmlNodeArray;
-        internal static Type TypeOfXmlNodeArray
-        {
-            get
-            {
-                if (s_typeOfXmlNodeArray == null)
-                    s_typeOfXmlNodeArray = typeof(XmlNode[]);
-                return s_typeOfXmlNodeArray;
-            }
-        }
+        internal static Type TypeOfXmlNodeArray =>
+            s_typeOfXmlNodeArray ??= typeof(XmlNode[]);
 
         private static Type? s_typeOfDBNull;
-        internal static Type TypeOfDBNull
-        {
-            get
-            {
-                if (s_typeOfDBNull == null)
-                    s_typeOfDBNull = typeof(DBNull);
-                return s_typeOfDBNull;
-            }
-        }
+        internal static Type TypeOfDBNull =>
+            s_typeOfDBNull ??= typeof(DBNull);
 
         private static Uri? s_dataContractXsdBaseNamespaceUri;
-        internal static Uri DataContractXsdBaseNamespaceUri
-        {
-            get
-            {
-                if (s_dataContractXsdBaseNamespaceUri == null)
-                    s_dataContractXsdBaseNamespaceUri = new Uri(DataContractXsdBaseNamespace);
-                return s_dataContractXsdBaseNamespaceUri;
-            }
-        }
+        internal static Uri DataContractXsdBaseNamespaceUri =>
+            s_dataContractXsdBaseNamespaceUri ??= new Uri(DataContractXsdBaseNamespace);
 
         private static readonly Type? s_typeOfScriptObject;
 
@@ -818,10 +327,8 @@ namespace System.Runtime.Serialization
             return new ClassDataContract(s_typeOfScriptObject);
         }
 
-        internal static bool TypeOfScriptObject_IsAssignableFrom(Type type)
-        {
-            return s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
-        }
+        internal static bool TypeOfScriptObject_IsAssignableFrom(Type type) =>
+            s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
 
         public const bool DefaultIsRequired = false;
         public const bool DefaultEmitDefaultValue = true;
@@ -832,7 +339,7 @@ namespace System.Runtime.Serialization
         public static readonly string NewObjectId = string.Empty;
         public const string NullObjectId = null;
         public const string FullSRSInternalsVisiblePattern = @"^[\s]*System\.Runtime\.Serialization[\s]*,[\s]*PublicKey[\s]*=[\s]*(?i:00240000048000009400000006020000002400005253413100040000010001008d56c76f9e8649383049f383c44be0ec204181822a6c31cf5eb7ef486944d032188ea1d3920763712ccb12d75fb77e9811149e6148e5d32fbaab37611c1878ddc19e20ef135d0cb2cff2bfec3d115810c3d9069638fe4be215dbf795861920e5ab6f7db2e2ceef136ac23d5dd2bf031700aec232f6c6b1c785b4305c123b37ab)[\s]*$";
-        [RegexGenerator(FullSRSInternalsVisiblePattern)]
+        [GeneratedRegex(FullSRSInternalsVisiblePattern)]
         public static partial Regex FullSRSInternalsVisibleRegex();
         public const string Space = " ";
         public const string XsiPrefix = "i";

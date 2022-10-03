@@ -92,6 +92,7 @@ namespace System.Security.Cryptography
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
                 {
                     keyHandle.Dispose();
+                    providerHandle.Dispose();
                     throw errorCode.ToCryptographicException();
                 }
             }
@@ -102,52 +103,68 @@ namespace System.Security.Cryptography
         }
 
         internal static CngKey Import(
-            byte[] keyBlob!!,
+            byte[] keyBlob,
             string? curveName,
             CngKeyBlobFormat format,
             CngProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
 
         internal static CngKey Import(
             ReadOnlySpan<byte> keyBlob,
             string? curveName,
-            CngKeyBlobFormat format!!,
-            CngProvider provider!!)
+            CngKeyBlobFormat format,
+            CngProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(provider);
+
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
-            SafeNCryptKeyHandle? keyHandle;
-            ErrorCode errorCode;
-
-            if (curveName == null)
+            SafeNCryptKeyHandle? keyHandle = null;
+            try
             {
-                errorCode = Interop.NCrypt.NCryptImportKey(
-                    providerHandle,
-                    IntPtr.Zero,
-                    format.Format,
-                    IntPtr.Zero,
-                    out keyHandle,
-                    ref MemoryMarshal.GetReference(keyBlob),
-                    keyBlob.Length,
-                    0);
+                ErrorCode errorCode;
 
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                if (curveName == null)
                 {
-                    throw errorCode.ToCryptographicException();
+                    errorCode = Interop.NCrypt.NCryptImportKey(
+                        providerHandle,
+                        IntPtr.Zero,
+                        format.Format,
+                        IntPtr.Zero,
+                        out keyHandle,
+                        ref MemoryMarshal.GetReference(keyBlob),
+                        keyBlob.Length,
+                        0);
+
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    {
+                        providerHandle.Dispose();
+                        keyHandle.Dispose();
+                        throw errorCode.ToCryptographicException();
+                    }
                 }
+                else
+                {
+                    keyHandle = ECCng.ImportKeyBlob(format.Format, keyBlob, curveName, providerHandle);
+                }
+
+                CngKey key = new CngKey(providerHandle, keyHandle);
+
+                // We can't tell directly if an OpaqueTransport blob imported as an ephemeral key or not
+                key.IsEphemeral = format != CngKeyBlobFormat.OpaqueTransportBlob;
+
+                return key;
             }
-            else
+            catch
             {
-                keyHandle = ECCng.ImportKeyBlob(format.Format, keyBlob, curveName, providerHandle);
+                keyHandle?.Dispose();
+                providerHandle.Dispose();
+                throw;
             }
-
-            CngKey key = new CngKey(providerHandle, keyHandle);
-
-            // We can't tell directly if an OpaqueTransport blob imported as an ephemeral key or not
-            key.IsEphemeral = format != CngKeyBlobFormat.OpaqueTransportBlob;
-
-            return key;
         }
     }
 }

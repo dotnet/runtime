@@ -622,7 +622,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(1, dictionary.Values.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentDictionary<string, int>());
@@ -635,7 +635,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(dict, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(new ConcurrentDictionary<string, int>());

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using static System.Text.Tests.StringBuilderTests;
 
 #pragma warning disable xUnit2009 // these are the tests for String and so should be using the explicit methods on String
 
@@ -2623,15 +2624,116 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "a".Equals("b", comparisonType));
         }
 
-        [Fact]
-        public static void Format()
+        public static IEnumerable<object[]> Format_Valid_TestData()
         {
-            string s = string.Format(null, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
-            Assert.Equal("0 = zero 1 = one 2 = two 3 = three 4 = four", s);
+            yield return new object[] { null, "", new object[0], "" };
+            yield return new object[] { null, ", ", new object[0], ", " };
 
-            var testFormatter = new TestFormatter();
-            s = string.Format(testFormatter, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
-            Assert.Equal("0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four", s);
+            yield return new object[] { null, ", Foo {0  }", new object[] { "Bar" }, ", Foo Bar" }; // Ignores whitespace
+
+            yield return new object[] { null, "Foo {0}", new object[] { "Bar" }, "Foo Bar" };
+            yield return new object[] { null, "Foo {0} Baz {1}", new object[] { "Bar", "Foo" }, "Foo Bar Baz Foo" };
+            yield return new object[] { null, "Foo {0} Baz {1} Bar {2}", new object[] { "Bar", "Foo", "Baz" }, "Foo Bar Baz Foo Bar Baz" };
+            yield return new object[] { null, "Foo {0} Baz {1} Bar {2} Foo {3}", new object[] { "Bar", "Foo", "Baz", "Bar" }, "Foo Bar Baz Foo Bar Baz Foo Bar" };
+
+            // Length is positive
+            yield return new object[] { null, "Foo {0,2}", new object[] { "Bar" }, "Foo Bar" }; // MiValue's length > minimum length (so don't prepend whitespace)
+            yield return new object[] { null, "Foo {0,3}", new object[] { "B" }, "Foo   B" }; // Value's length < minimum length (so prepend whitespace)
+            yield return new object[] { null, "Foo {0,     3}", new object[] { "B" }, "Foo   B" }; // Same as above, but verify AppendFormat ignores whitespace
+            yield return new object[] { null, "Foo {0,0}", new object[] { "Bar" }, "Foo Bar" }; // Minimum length is 0
+            yield return new object[] { null, "Foo {0,  2 }", new object[] { "Bar" }, "Foo Bar" }; // whitespace before and after length
+
+            // Length is negative
+            yield return new object[] { null, "Foo {0,-2}", new object[] { "Bar" }, "Foo Bar" }; // Value's length > |minimum length| (so don't prepend whitespace)
+            yield return new object[] { null, "Foo {0,-3}", new object[] { "B" }, "Foo B  " }; // Value's length < |minimum length| (so append whitespace)
+            yield return new object[] { null, "Foo {0,     -3}", new object[] { "B" }, "Foo B  " }; // Same as above, but verify AppendFormat ignores whitespace
+            yield return new object[] { null, "Foo {0,0}", new object[] { "Bar" }, "Foo Bar" }; // Minimum length is 0
+            yield return new object[] { null, "Foo {0, -2  }", new object[] { "Bar" }, "Foo Bar" }; // whitespace before and after length
+
+            yield return new object[] { null, "Foo {0:D6}", new object[] { 1 }, "Foo 000001" }; // Custom format
+            yield return new object[] { null, "Foo {0     :D6}", new object[] { 1 }, "Foo 000001" }; // Custom format with ignored whitespace
+            yield return new object[] { null, "Foo {0:}", new object[] { 1 }, "Foo 1" }; // Missing custom format
+
+            yield return new object[] { null, "Foo {0,9:D6}", new object[] { 1 }, "Foo    000001" }; // Positive minimum length and custom format
+            yield return new object[] { null, "Foo {0,-9:D6}", new object[] { 1 }, "Foo 000001   " }; // Negative length and custom format
+
+            yield return new object[] { null, "Foo {{{0}", new object[] { 1 }, "Foo {1" }; // Escaped open curly braces
+            yield return new object[] { null, "Foo }}{0}", new object[] { 1 }, "Foo }1" }; // Escaped closed curly braces
+            yield return new object[] { null, "Foo {0} {{0}}", new object[] { 1 }, "Foo 1 {0}" }; // Escaped placeholder
+
+
+            yield return new object[] { null, "Foo {0}", new object[] { null }, "Foo " }; // Values has null only
+            yield return new object[] { null, "Foo {0} {1} {2}", new object[] { "Bar", null, "Baz" }, "Foo Bar  Baz" }; // Values has null
+
+            yield return new object[] { CultureInfo.InvariantCulture, "Foo {0,9:D6}", new object[] { 1 }, "Foo    000001" }; // Positive minimum length, custom format and custom format provider
+
+            yield return new object[] { new CustomFormatter(), "{0}", new object[] { 1.2 }, "abc" }; // Custom format provider
+            yield return new object[] { new CustomFormatter(), "{0:0}", new object[] { 1.2 }, "abc" }; // Custom format provider
+
+            // Longer inputs
+            yield return new object[] { null, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", new object[] { "zero", "one", "two", "three", "four" }, "0 = zero 1 = one 2 = two 3 = three 4 = four" };
+            yield return new object[] { new TestFormatter(), "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", new object[] { "zero", "one", "two", "three", "four" }, "0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four" };
+
+            // ISpanFormattable inputs: simple validation of known types that implement the interface
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (byte)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { 'A' }, "A" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0:r}", new object[] { DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal) }, "Mon, 15 Mar 2021 14:52:51 GMT" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0:r}", new object[] { DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal) }, "Mon, 15 Mar 2021 14:52:51 GMT" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (decimal)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (double)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { Guid.Parse("68d9cfaf-feab-4d5b-96d8-a3fd889ae89f") }, "68d9cfaf-feab-4d5b-96d8-a3fd889ae89f" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (Half)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (short)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (int)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (long)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (IntPtr)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { new Rune('A') }, "A" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (sbyte)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (float)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { TimeSpan.FromSeconds(42) }, "00:00:42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (ushort)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (uint)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (ulong)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { (UIntPtr)42 }, "42" };
+            yield return new object[] { CultureInfo.InvariantCulture, "{0}", new object[] { new Version(1, 2, 3, 4) }, "1.2.3.4" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Format_Valid_TestData))]
+        public static void Format_Valid(IFormatProvider provider, string format, object[] values, string expected)
+        {
+            Assert.Equal(expected, string.Format(provider, format, values));
+            if (provider is null)
+            {
+                Assert.Equal(expected, string.Format(format, values));
+            }
+
+            switch (values.Length)
+            {
+                case 1:
+                    Assert.Equal(expected, string.Format(provider, format, values[0]));
+                    if (provider is null)
+                    {
+                        Assert.Equal(expected, string.Format(format, values[0]));
+                    }
+                    break;
+
+                case 2:
+                    Assert.Equal(expected, string.Format(provider, format, values[0], values[1]));
+                    if (provider is null)
+                    {
+                        Assert.Equal(expected, string.Format(format, values[0], values[1]));
+                    }
+                    break;
+
+                case 3:
+                    Assert.Equal(expected, string.Format(provider, format, values[0], values[1], values[2]));
+                    if (provider is null)
+                    {
+                        Assert.Equal(expected, string.Format(format, values[0], values[1], values[2]));
+                    }
+                    break;
+            }
         }
 
         [Fact]
@@ -2661,26 +2763,54 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, (object[])null));
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, null, null));
 
-            // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1));
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2));
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3));
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3, obj4));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3, obj4));
-#pragma warning disable IDE0043 // Format string contains invalid placeholder - the purpose of this is to test the functions
-            // Format has out of range value
-            Assert.Throws<FormatException>(() => string.Format("{1}", obj1));
-            Assert.Throws<FormatException>(() => string.Format("{2}", obj1, obj2));
-            Assert.Throws<FormatException>(() => string.Format("{3}", obj1, obj2, obj3));
-            Assert.Throws<FormatException>(() => string.Format("{4}", obj1, obj2, obj3, obj4));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{1}", obj1));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{2}", obj1, obj2));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{3}", obj1, obj2, obj3));
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{4}", obj1, obj2, obj3, obj4));
-#pragma warning restore IDE0043 // Format string contains invalid placeholder
+            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3)); // Format has value < 0
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
+
+            Assert.Throws<FormatException>(() => string.Format("{1}", obj1)); // Format has value >= 1
+            Assert.Throws<FormatException>(() => string.Format("{2}", obj1, obj2)); // Format has value >= 2
+            Assert.Throws<FormatException>(() => string.Format("{3}", obj1, obj2, obj3)); // Format has value >= 3
+            Assert.Throws<FormatException>(() => string.Format("{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{1}", obj1)); // Format has value >= 1
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{2}", obj1, obj2)); // Format has value >= 2
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{3}", obj1, obj2, obj3)); // Format has value >= 3
+            Assert.Throws<FormatException>(() => string.Format(formatter, "{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
+
+            Assert.Throws<FormatException>(() => string.Format("{", "")); // Format has unescaped {
+            Assert.Throws<FormatException>(() => string.Format("{a", "")); // Format has unescaped {
+
+            Assert.Throws<FormatException>(() => string.Format("}", "")); // Format has unescaped }
+            Assert.Throws<FormatException>(() => string.Format("}a", "")); // Format has unescaped }
+            Assert.Throws<FormatException>(() => string.Format("{0:}}", "")); // Format has unescaped }
+
+            Assert.Throws<FormatException>(() => string.Format("{\0", "")); // Format has invalid character after {
+            Assert.Throws<FormatException>(() => string.Format("{a", "")); // Format has invalid character after {
+
+            Assert.Throws<FormatException>(() => string.Format("{0     ", "")); // Format with index and spaces is not closed
+
+            Assert.Throws<FormatException>(() => string.Format("{1000000", new string[10])); // Format index is too long
+            Assert.Throws<FormatException>(() => string.Format("{10000000}", new string[10])); // Format index is too long
+
+            Assert.Throws<FormatException>(() => string.Format("{0,", "")); // Format with comma is not closed
+            Assert.Throws<FormatException>(() => string.Format("{0,   ", "")); // Format with comma and spaces is not closed
+            Assert.Throws<FormatException>(() => string.Format("{0,-", "")); // Format with comma and minus sign is not closed
+
+            Assert.Throws<FormatException>(() => string.Format("{0,-\0", "")); // Format has invalid character after minus sign
+            Assert.Throws<FormatException>(() => string.Format("{0,-a", "")); // Format has invalid character after minus sign
+
+            Assert.Throws<FormatException>(() => string.Format("{0,1000000", new string[10])); // Format length is too long
+            Assert.Throws<FormatException>(() => string.Format("{0,10000000}", new string[10])); // Format length is too long
+
+            Assert.Throws<FormatException>(() => string.Format("{0:", new string[10])); // Format with colon is not closed
+            Assert.Throws<FormatException>(() => string.Format("{0:    ", new string[10])); // Format with colon and spaces is not closed
+
+            Assert.Throws<FormatException>(() => string.Format("{0:{", new string[10])); // Format with custom format contains unescaped {
+            Assert.Throws<FormatException>(() => string.Format("{0:{}", new string[10])); // Format with custom format contains unescaped {
         }
 
         [ConditionalTheory]
@@ -2918,7 +3048,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -3002,7 +3132,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
             using (new ThreadCultureChange("hu-HU"))
@@ -5129,7 +5259,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 tuples.Add(Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")));
                 tuples.Add(Tuple.Create('\u0130', '\u0069', new CultureInfo("tr-TR")));
@@ -5618,7 +5748,7 @@ namespace System.Tests
         {
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
                 yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
@@ -5694,7 +5824,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -6788,7 +6918,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    false,        1  };
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    true,         1  };
@@ -6810,7 +6940,7 @@ namespace System.Tests
             {
                 // Android has different results w/ tr-TR
                 // See https://github.com/dotnet/runtime/issues/60568
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                     yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -6831,7 +6961,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    false,       false  };
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    true,        false  };
@@ -7288,8 +7418,7 @@ namespace System.Tests
         [Fact]
         public static void CreateStringFromEncoding_0Length_EmptyStringReturned() // basic test for code coverage; more tests in encodings tests
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("hello");
-            Assert.Same(string.Empty, new AsciiEncodingWithZeroReturningGetCharCount().GetString(bytes, 0, 0));
+            Assert.Same(string.Empty, new AsciiEncodingWithZeroReturningGetCharCount().GetString("hello"u8.ToArray(), 0, 0));
         }
 
         private sealed class AsciiEncodingWithZeroReturningGetCharCount : ASCIIEncoding

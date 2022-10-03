@@ -30,7 +30,7 @@ DLLEXPORT errno_t __cdecl _wcslwr_s(char16_t *string, size_t sz)
 
     for (int i = 0; string[i] != 0; i++)
     {
-        string[i] = towlower(string[i]);
+        string[i] = (char16_t)towlower(string[i]);
     }
 
     _FILL_STRING(string, sz, length + 1);

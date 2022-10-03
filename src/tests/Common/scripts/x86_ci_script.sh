@@ -16,9 +16,9 @@ do
     esac
 done
 
-#Check if there are any uncommited changes in the source directory as git adds and removes patches
+#Check if there are any uncommitted changes in the source directory as git adds and removes patches
 if [[ -n $(git status -s) ]]; then
-   echo 'ERROR: There are some uncommited changes. To avoid losing these changes commit them and try again.'
+   echo 'ERROR: There are some uncommitted changes. To avoid losing these changes commit them and try again.'
    echo ''
    git status
    exit 1

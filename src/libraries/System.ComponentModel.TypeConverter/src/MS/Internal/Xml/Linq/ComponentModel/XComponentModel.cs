@@ -240,7 +240,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Name:
                     XElement? e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e?.Name;
                     break;
             }
         }
@@ -368,11 +368,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Remove:
                     XElement? e = sender as XElement;
-                    _changeState = e != null ? e.Parent : null;
+                    _changeState = e?.Parent;
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e?.Name;
                     break;
             }
         }
@@ -500,8 +500,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         internal XElement element;
         internal XName? name;
 
-        public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func!!, XElement element!!, XName? name)
+        public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func, XElement element, XName? name)
         {
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(element);
+
             _func = func;
             this.element = element;
             this.name = name;
@@ -542,8 +545,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         internal XElement element;
         internal XName? name;
 
-        public XDeferredSingleton(Func<XElement, XName, T?> func!!, XElement element!!, XName? name)
+        public XDeferredSingleton(Func<XElement, XName, T?> func, XElement element, XName? name)
         {
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(element);
+
             _func = func;
             this.element = element;
             this.name = name;

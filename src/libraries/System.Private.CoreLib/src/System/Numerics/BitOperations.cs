@@ -161,6 +161,18 @@ namespace System.Numerics
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(Int128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
+        }
+
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
@@ -232,6 +244,18 @@ namespace System.Numerics
             }
 
             return LeadingZeroCount(hi);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(UInt128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
         }
 
         /// <summary>

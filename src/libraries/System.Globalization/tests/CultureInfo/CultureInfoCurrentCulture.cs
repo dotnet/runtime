@@ -34,6 +34,17 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CurrentCulture_Default_Not_Invariant()
+        {
+            // On OSX-like platforms, it should default to what the default system culture is 
+            // set to.  Since we shouldn't assume en-US, we just test if it's not the invariant
+            // culture.
+            Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
+            Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
+        }
+
+        [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
@@ -100,6 +111,7 @@ namespace System.Globalization.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows locale support doesn't rely on LANG variable
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal locales")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("en-US.UTF-8", "en-US")]
         [InlineData("en-US", "en-US")]
@@ -125,7 +137,8 @@ namespace System.Globalization.Tests
             }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // When LANG is empty or unset, should default to the invariant culture on Unix.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
@@ -141,19 +154,34 @@ namespace System.Globalization.Tests
                psi.Environment["LANG"] = langEnvVar;
             }
 
+            // When LANG is empty or unset, on Unix it should default to the invariant culture.
+            // On OSX-like platforms, it should default to what the default system culture is 
+            // set to.  Since we shouldn't assume en-US, we just test if it's not the invariant
+            // culture.
             RemoteExecutor.Invoke(() =>
             {
                 Assert.NotNull(CultureInfo.CurrentCulture);
                 Assert.NotNull(CultureInfo.CurrentUICulture);
 
-                Assert.Equal("", CultureInfo.CurrentCulture.Name);
-                Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+                if (PlatformDetection.IsOSXLike)
+                {
+                    Assert.NotEqual("", CultureInfo.CurrentCulture.Name);
+                    Assert.NotEqual("", CultureInfo.CurrentUICulture.Name);
+
+                    Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
+                    Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                    Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+                }
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         private static void CopyEssentialTestEnvironment(IDictionary<string, string> environment)
         {
-            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH" };
+            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH", "ICU_DATA" };
             string[] prefixedVariables = { "DOTNET_", "COMPlus_" };
 
             foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())

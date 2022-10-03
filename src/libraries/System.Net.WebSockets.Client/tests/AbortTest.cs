@@ -17,7 +17,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63673", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
             using (var cws = new ClientWebSocket())

@@ -167,11 +167,7 @@ namespace System.Linq.Parallel
                 {
                     for (int j = 0; j < _sharedBarriers[i].Length; j++)
                     {
-                        Barrier b = _sharedBarriers[i][j];
-                        if (b != null)
-                        {
-                            b.Dispose();
-                        }
+                        _sharedBarriers[i][j]?.Dispose();
                     }
                 }
             }
@@ -233,10 +229,7 @@ namespace System.Linq.Parallel
                 TKey currentKey = default(TKey)!;
                 bool hadNext = _source.MoveNext(ref current!, ref currentKey);
 
-                if (keys == null)
-                {
-                    keys = new GrowingArray<TKey>();
-                }
+                keys ??= new GrowingArray<TKey>();
 
                 if (hadNext)
                 {

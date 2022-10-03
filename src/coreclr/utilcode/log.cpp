@@ -75,9 +75,11 @@ VOID InitLogging()
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
-        WCHAR szPid[20];
-        swprintf_s(szPid, ARRAY_SIZE(szPid), W(".%d"), GetCurrentProcessId());
-        wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), szPid);
+        WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
+        DWORD pid = GetCurrentProcessId();
+        FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
+        // Append the format ".%u" to the end of the file name
+        wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), pidSuffix);
     }
 
     if ((LogFlags & LOG_ENABLE) &&
@@ -136,8 +138,6 @@ VOID InitLogging()
                 WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
             }
         }
-        if (LogFileHandle == INVALID_HANDLE_VALUE)
-            UtilMessageBoxNonLocalized(NULL, W("Could not open log file"), W("CLR logging"), MB_OK | MB_ICONINFORMATION, FALSE, TRUE);
         if (LogFileHandle != INVALID_HANDLE_VALUE)
         {
             if (LogFlags & LOG_ENABLE_APPEND_FILE)
@@ -309,7 +309,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     // the process heap. Why? Because our debug memory allocator will log out of memory
     // conditions. If we're low on memory, and we try to log an out of memory condition, and we try
     // and allocate memory again using the debug allocator, we could (and probably will) hit
-    // another low memory condition, try to log it, and we spin indefinately until we hit a stack overflow.
+    // another low memory condition, try to log it, and we spin indefinitely until we hit a stack overflow.
 
     const int BUFFERSIZE = 1000;
     static char rgchBuffer[BUFFERSIZE];

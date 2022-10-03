@@ -10,8 +10,8 @@ struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 6;
-    static const uint32_t CurrentMinorVersion = 0;
+    static const uint32_t CurrentMajorVersion = 7;
+    static const uint32_t CurrentMinorVersion = 1;
 };
 
 struct ReadyToRunHeader
@@ -46,11 +46,11 @@ enum class ReadyToRunSectionType
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
     FrozenObjectRegion          = 206,
-    GCStaticDesc                = 207,
+    // 207 is unused - it was used by GCStaticDesc
     ThreadStaticOffsetRegion    = 208,
-    ThreadStaticGCDescRegion    = 209,
-    ThreadStaticIndex           = 210,
-    LoopHijackFlag              = 211,
+    // 209 is unused - it was used by ThreadStaticGCDescRegion
+    // 210 is unused - it was used by ThreadStaticIndex
+    // 211 is unused - it was used by LoopHijackFlag
     ImportAddressTables         = 212,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility

@@ -50,7 +50,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/tokentype.h>
@@ -65,8 +64,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/metadata/w32handle.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/components.h>
 
@@ -131,10 +128,10 @@ mono_install_runtime_load (MonoLoadFunc func)
 }
 
 MonoDomain*
-mono_runtime_load (const char *filename, const char *runtime_version)
+mono_runtime_load (const char *root_domain_name)
 {
 	g_assert (load_function);
-	return load_function (filename, runtime_version);
+	return load_function (root_domain_name);
 }
 
 /**
@@ -445,10 +442,12 @@ mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name
 	if (assembly) {
 		assembly_handle = mono_assembly_get_object_handle (assembly, error);
 		goto_if_nok (error, return_null);
+	} else {
+		assembly_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer args [2];
-	args [0] = assembly ? MONO_HANDLE_RAW (assembly_handle) : NULL;
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
 	args [1] = MONO_HANDLE_RAW (name);
 	ret = mono_runtime_try_invoke_handle (method, NULL_HANDLE, args, error);
 	goto_if_nok (error, return_null);
@@ -507,10 +506,12 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	if (requesting) {
 		requesting_handle = mono_assembly_get_object_handle (requesting, error);
 		goto_if_nok (error, leave);
+	} else {
+		requesting_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer params [2];
-	params [0] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
+	params [0] = MONO_HANDLE_RAW (requesting_handle);
 	params [1] = MONO_HANDLE_RAW (fname);
 	MonoReflectionAssemblyHandle result;
 	result = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_runtime_try_invoke_handle (method, NULL_HANDLE, params, error));
@@ -634,7 +635,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	gint len;
+	size_t len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -938,7 +939,7 @@ runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **
 			g_assert (*file_map);
 			file_len = mono_file_map_size (*file_map);
 			g_assert (file_len > 0);
-			buffer = (char *)mono_file_map (file_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
+			buffer = (char *)mono_file_map (GUINT64_TO_SIZE (file_len), MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
 			g_assert (buffer);
 			return buffer;
 		}

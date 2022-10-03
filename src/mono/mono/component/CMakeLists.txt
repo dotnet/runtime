@@ -65,6 +65,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
   ${MONO_COMPONENT_PATH}/event_pipe.h
+  ${MONO_COMPONENT_PATH}/event_pipe-wasm.h
   ${MONO_COMPONENT_PATH}/diagnostics_server.c
   ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )

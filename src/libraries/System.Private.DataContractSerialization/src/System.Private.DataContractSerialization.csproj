@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
-    <Nullable>enable</Nullable>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
+
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
     <XmlSources>System\Xml</XmlSources>
     <TextSources>System\Text</TextSources>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
@@ -150,7 +150,9 @@
     <Compile Include="System\Xml\XmlCanonicalWriter.cs" />
     <Compile Include="System\Xml\XmlSigningNodeWriter.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -161,7 +163,6 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />

@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">비관리형에서 관리형으로 배열을 마샬링하려면 'MarshalAsAttribute'에 'SizeParamIndex' 또는 'SizeConst' 필드를 설정하거나 'MarshalUsingAttribute'에 'ConstantElementCount' 또는 'CountElementName' 속성을 설정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로, 비관리형에서 관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">컬렉션에 대해 지정된 컬렉션 크기 매개 변수는 정수 형식이어야 합니다. 크기 정보가 중첩된 컬렉션에 적용되는 경우 크기 매개 변수는 정수 요소가 있는 중첩 수준이 한 단계 낮은 컬렉션이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">'ConstantElementCount' 또는 'ElementCountInfo' 중 하나만 지정된 'ElementIndirectionDepth'에 대한 'MarshalUsingAttribute'에서 사용할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">이 요소는 종속성 주기를 생성하지 않고 컬렉션 크기 정보에 대해 '{0}'에 의존할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">주어진 간접 수준에서 주어진 요소에 대한 개수 정보는 한 번만 지정할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">간접 수준당 요소당 여러 마샬링 특성이 지원되지 않지만 간접 수준 {0}에 대해 중복 정보가 제공되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">마샬링 정보가 'ElementIndirectionDepth' {0}에 대해 지정되었지만 마샬링 정보는 간접 참조 수준 {1}에만 필요했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">제공된 그래프에는 주기가 있으며 토폴로지로 정렬할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">'[In]' 특성은 '[Out]' 특성도 함께 사용되지 않는 한 지원되지 않습니다. '[Out]' 특성이 없는 '[In]' 특성의 동작은 기본 동작과 동일합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">'[In]' 및 '[Out]' 특성은 참조로 전달된 매개 변수에서 지원되지 않습니다. 대신 'in', 'ref' 또는 'out' 키워드를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">이 매개 변수에 제공된 '[In]' 및 '[Out]' 특성은 이 매개 변수에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">관리 유형 '{1}'에 대한 마샬러 진입점 유형 '{0}'에는 관리 유형보다 1이 더 커야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">관리되는 형식 '{0}'의 마샬러 형식 '{1}'은(는) 정적 클래스 또는 구조체여야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">명시적 마샬링 정보가 없는 마샬링 bool은 지원되지 않습니다. 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">'StringMarshalling.{0}을(를) 사용한 마샬링 문자는 지원되지 않습니다. 대신 char 형식을 원하는 바이트 표현으로 수동으로 변환하고 소스 생성 P/Invoke에 전달하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">'StringMarshalling.Custom'으로 문자를 마샬링하는 것은 지원되지 않습니다. 사용자 지정 형식 마샬러를 사용하려면 'MarshalUsingAttribute'를 지정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">명시적 마샬링 정보 없이 문자열 또는 문자를 마샬링할 수 없습니다. 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 비관리에서 관리로 마샬링해야 하지만 마샬러 유형 '{0}'이(가) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

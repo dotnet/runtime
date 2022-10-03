@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <typeparam name="T">The type to converter</typeparam>
     internal sealed class JsonMetadataServicesConverter<T> : JsonResumableConverter<T>
     {
-        private readonly Func<JsonConverter<T>> _converterCreator;
+        private readonly Func<JsonConverter<T>>? _converterCreator;
 
         private readonly ConverterStrategy _converterStrategy;
 
@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             get
             {
-                _converter ??= _converterCreator();
+                _converter ??= _converterCreator!();
                 Debug.Assert(_converter != null);
                 Debug.Assert(_converter.ConverterStrategy == _converterStrategy);
                 return _converter;
@@ -40,32 +40,28 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => Converter.ElementType;
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
+        internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
+        internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
         {
+            if (converterCreator is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(converterCreator));
+            }
+
             _converterCreator = converterCreator;
             _converterStrategy = converterStrategy;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
-            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
-            if (_converterStrategy == ConverterStrategy.Object)
-            {
-                if (jsonTypeInfo.PropertyCache == null)
-                {
-                    jsonTypeInfo.InitializePropCache();
-                }
-
-                if (jsonTypeInfo.ParameterCache == null && jsonTypeInfo.IsObjectWithParameterizedCtor)
-                {
-                    jsonTypeInfo.InitializeParameterCache();
-                }
-            }
-
-            return Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+            _converter = converter;
+            _converterStrategy = converter.ConverterStrategy;
         }
+
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+             => Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -74,19 +70,16 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(options == jsonTypeInfo.Options);
 
             if (!state.SupportContinuation &&
-                jsonTypeInfo is JsonTypeInfo<T> info &&
-                info.SerializeHandler != null &&
-                info.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
+                jsonTypeInfo.CanUseSerializeHandler &&
+                !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
-                info.SerializeHandler(writer, value);
+                Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
+                Debug.Assert(options.SerializerContext?.CanUseSerializationLogic == true);
+                ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);
                 return true;
             }
 
-            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
-            {
-                jsonTypeInfo.InitializePropCache();
-            }
-
+            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
 

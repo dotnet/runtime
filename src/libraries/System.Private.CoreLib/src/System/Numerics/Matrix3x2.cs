@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -633,9 +634,30 @@ namespace System.Numerics
         /// <param name="other">The other matrix.</param>
         /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two matrices are equal if all their corresponding elements are equal.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Matrix3x2 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                // We'll two two overlapping comparisons. The first gets M11, M12, M21, and M22
+                // The second will get M21, M22, M31, and M32. This is more efficient overall.
+
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in M11)).Equals(Vector128.LoadUnsafe(ref other.M11))
+                    && Vector128.LoadUnsafe(ref Unsafe.AsRef(in M21)).Equals(Vector128.LoadUnsafe(ref other.M21));
+
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Matrix3x2 self, Matrix3x2 other)
+            {
+                return self.M11.Equals(other.M11) && self.M22.Equals(other.M22) // Check diagonal element first for early out.
+                    && self.M12.Equals(other.M12) && self.M21.Equals(other.M21)
+                    && self.M31.Equals(other.M31) && self.M32.Equals(other.M32);
+            }
         }
 
         /// <summary>Calculates the determinant for this matrix.</summary>

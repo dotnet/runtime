@@ -229,11 +229,11 @@ PAL_fwprintf(
 Function:
   Internal_ScanfExtractFormatW
 
-Paramaters:
+Parameters:
   Fmt
     - format string to parse
     - first character must be a '%'
-    - paramater gets updated to point to the character after
+    - parameter gets updated to point to the character after
       the %<foo> format string
   Out
     - buffer will contain the %<foo> format string
@@ -265,7 +265,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
 
     if (*Fmt && **Fmt == '%')
     {
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
     }
     else
     {
@@ -285,7 +285,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
     if (**Fmt == '*')
     {
         *Store = FALSE;
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
     }
 
     /* grab width specifier */
@@ -294,8 +294,8 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         TempStrPtr = TempStr;
         while (isdigit(**Fmt))
         {
-            *TempStrPtr++ = **Fmt;
-            *Out++ = *(*Fmt)++;
+            *TempStrPtr++ = (CHAR)**Fmt;
+            *Out++ = (CHAR)*(*Fmt)++;
         }
         *TempStrPtr = 0; /* end string */
         *Width = atoi(TempStr);
@@ -406,7 +406,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
 
             Out += strlen(scanf_longlongfmt);
         }
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
         Result = TRUE;
     }
     else if (**Fmt == 'e' || **Fmt == 'E' || **Fmt == 'f' ||
@@ -416,7 +416,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         *Type = SCANF_TYPE_FLOAT;
         /* this gets rid of %E/%G since they're they're the
            same when scanning */
-        *Out++ = tolower( *(*Fmt)++ );
+        *Out++ = (CHAR)tolower( *(*Fmt)++ );
         Result = TRUE;
     }
     else if (**Fmt == 'n')
@@ -425,7 +425,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         {
             *Out++ = 'h';
         }
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
         *Type = SCANF_TYPE_N;
         Result = TRUE;
     }
@@ -489,8 +489,8 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
                     unsigned char prev, next;
 
                     /* get the interval boundaries */
-                    prev = (*Fmt)[-1];
-                    next = (*Fmt)[1];
+                    prev = (unsigned char)(*Fmt)[-1];
+                    next = (unsigned char)(*Fmt)[1];
 
                     /* if boundaries were inverted, replace the already-copied
                        low boundary by the 'real' low boundary */
@@ -514,7 +514,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
             else
             {
                 /* plain character; just copy it */
-                *Out++ = **Fmt;
+                *Out++ = (CHAR)**Fmt;
                 (*Fmt)++;
             }
         }
@@ -625,7 +625,7 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
             {
                 if (Prefix == SCANF_PREFIX_SHORT)
                 {
-                    *(va_arg(ap, short *)) = Buff - Buffer;
+                    *(va_arg(ap, short *)) = (short)(Buff - Buffer);
                 }
                 else
                 {

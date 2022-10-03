@@ -82,7 +82,7 @@ struct FakeStubUnwindInfoHeaderSuffix
     UCHAR nUnwindInfoSize;
 };
 
-// Variable-sized struct that preceeds a Stub when the stub requires unwind
+// Variable-sized struct that precedes a Stub when the stub requires unwind
 // information.  Followed by a StubUnwindInfoHeaderSuffix.
 struct FakeStubUnwindInfoHeader
 {

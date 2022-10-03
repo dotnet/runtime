@@ -17,6 +17,7 @@ namespace System.Diagnostics
     public abstract partial class DiagnosticSource
     {
         internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
+        internal const string WriteRequiresDynamicCode = "DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.";
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
@@ -35,6 +36,7 @@ namespace System.Diagnostics
         /// <param name="value">An object that represent the value being passed as a payload for the event.
         /// This is often an anonymous type which contains several sub-values.</param>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public abstract void Write(string name, object? value);
 
         /// <summary>

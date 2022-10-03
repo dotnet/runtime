@@ -18,9 +18,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
-.namespace AvgTest {
-  .class private auto ansi Test extends [mscorlib]System.Object {
-    .method private hidebysig static int32 Main() il managed {
+.namespace AvgTest_i_flood {
+  .class public auto ansi Test extends [mscorlib]System.Object {
+    .method public hidebysig static int32 Main() il managed {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
 	)
@@ -68,6 +68,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'AvgTest'
+} // end of namespace 'AvgTest_i_flood'
 
 //*********** DISASSEMBLY COMPLETE ***********************

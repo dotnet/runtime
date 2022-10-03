@@ -15,7 +15,6 @@
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeMemoryTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
@@ -48,6 +47,7 @@
     <Compile Include="System\Runtime\InteropServices\IDispatchImplAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\LibraryImportAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\ByteArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\CharArrayTests.cs" />
@@ -99,6 +99,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\LastErrorTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PInvokeErrorMessageTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
@@ -148,6 +149,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
@@ -157,7 +159,6 @@
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
@@ -192,5 +193,9 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.GenericMath.cs" />
   </ItemGroup>
 </Project>

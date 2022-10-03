@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: VirtualCallStub.h
-//
-
-
-
 //
 // See code:VirtualCallStubManager for details
 //
@@ -13,7 +10,6 @@
 
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
-
 
 #define CHAIN_LOOKUP
 
@@ -172,18 +168,18 @@ typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 //     call [DispatchCell]
 //
 // Where we make sure 'DispatchCell' points at stubs that will do the right thing. DispatchCell is writable
-// so we can udpate the code over time. There are three basic types of stubs that the dispatch cell can point
+// so we can update the code over time. There are three basic types of stubs that the dispatch cell can point
 // to.
-//     * Lookup: The intial stub that has no 'fast path' and simply pushes a ID for interface being called
+//     * Lookup: The initial stub that has no 'fast path' and simply pushes a ID for interface being called
 //         and calls into the runtime at code:VirtualCallStubManager.ResolveWorkerStatic.
 //     * Dispatch: Lookup stubs are patched to this stub which has a fast path that checks for a particular
 //         Method Table and if that fails jumps to code that
 //         * Decrements a 'missCount' (starts out as code:STUB_MISS_COUNT_VALUE). If this count goes to zero
 //             code:VirtualCallStubManager.BackPatchWorkerStatic is called, morphs it into a resolve stub
 //             (however since this decrementing logic is SHARED among all dispatch stubs, it may take
-//             multiples of code:STUB_MISS_COUNT_VALUE if mulitple call sites are actively polymorphic (this
-//             seems unlikley).
-//         * Calls a resolve stub (Whenever a dispatch stub is created, it always has a cooresponding resolve
+//             multiples of code:STUB_MISS_COUNT_VALUE if multiple call sites are actively polymorphic (this
+//             seems unlikely).
+//         * Calls a resolve stub (Whenever a dispatch stub is created, it always has a corresponding resolve
 //             stub (but the resolve stubs are shared among many dispatch stubs).
 //     * Resolve: see code:ResolveStub. This looks up the Method table in a process wide cache (see
 //         code:ResolveCacheElem, and if found, jumps to it. This code path is about 17 instructions long (so
@@ -491,7 +487,7 @@ private:
 
 #ifdef TARGET_AMD64
     // Used to allocate a long jump dispatch stub. See comment around
-    // m_fShouldAllocateLongJumpDispatchStubs for explaination.
+    // m_fShouldAllocateLongJumpDispatchStubs for explanation.
     DispatchHolder *GenerateDispatchStubLong(PCODE addrOfCode,
                                              PCODE addrOfFail,
                                              void *pMTExpected,
@@ -972,23 +968,23 @@ size in a table to be a pointer or a pointer sized thing.
 correctly in the face of concurrent updating of the underlying table.  This is accomplished
 by making the underlying structures/entries effectively immutable, if concurrency is in anyway possible.
 By effectively immutatable, we mean that the stub or token structure is either immutable or that
-if it is ever written, all possibley concurrent writes are attempting to write the same value (atomically)
+if it is ever written, all possible concurrent writes are attempting to write the same value (atomically)
 or that the competing (atomic) values do not affect correctness, and that the function operates correctly whether
 or not any of the writes have taken place (is visible yet).  The constraint we maintain is that all competeing
 updates (and their visibility or lack thereof) do not alter the correctness of the program.
 
-3. All tables are inexact.  The counts they hold (e.g. number of contained entries) may be inaccurrate,
+3. All tables are inexact.  The counts they hold (e.g. number of contained entries) may be inaccurate,
 but that inaccurracy cannot affect their correctness.  Table modifications, such as insertion of
 an new entry may not succeed, but such failures cannot affect correctness.  This implies that just
 because a stub/entry is not present in a table, e.g. has been removed, that does not mean that
 it is not in use.  It also implies that internal table structures, such as discarded hash table buckets,
 cannot be freely recycled since another concurrent thread may still be walking thru it.
 
-4. Occassionaly it is necessary to pick up the pieces that have been dropped on the floor
+4. Occasionally it is necessary to pick up the pieces that have been dropped on the floor
 so to speak, e.g. actually recycle hash buckets that aren't in use.  Since we have a natural
 sync point already in the GC, we use that to provide cleanup points.  We need to make sure that code that
 is walking our structures is not a GC safe point.  Hence if the GC calls back into us inside the GC
-sync point, we know that nobody is inside our stuctures and we can safely rearrange and recycle things.
+sync point, we know that nobody is inside our structures and we can safely rearrange and recycle things.
 ********************************************************************************************************/
 
 //initial and increment value for fail stub counters
@@ -1039,7 +1035,7 @@ as and when needed.  This means we don't have to have vtables attached to stubs.
 
 Summarizing so far, there is a struct for each kind of stub or token of the form XXXXStub.
 They provide that actual storage layouts.
-There is a stuct in which each stub which has code is containted of the form XXXXHolder.
+There is a struct in which each stub which has code is contained of the form XXXXHolder.
 They provide alignment and anciliary storage for the stub code.
 There is a subclass of Entry for each kind of stub or token, of the form XXXXEntry.
 They provide the specific implementations of the virtual functions declared in Entry. */
@@ -1078,7 +1074,7 @@ public:
         stub = (LookupStub*) s;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
 
     //implementations of abstract class Entry
@@ -1115,7 +1111,7 @@ public:
         stub = (VTableCallStub*)s;
     }
 
-    //default contructor to allow stack and inline allocation of vtable call entries
+    //default constructor to allow stack and inline allocation of vtable call entries
     VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
 
     //implementations of abstract class Entry
@@ -1156,7 +1152,7 @@ public:
         pElem = (ResolveCacheElem*) elem;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
 
     //access and compare the keys of the entry
@@ -1201,7 +1197,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)s));
         stub = (ResolveStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1239,7 +1235,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)s));
         stub = (DispatchStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1440,7 +1436,7 @@ Typically, an entry of the appropriate type is created on the stack and then the
 in a reference to the entry.  The prober is used for a  complete operation, such as look for and find an
 entry (stub), creating and inserting it as necessary.
 
-The initial index and the stride are orthogonal hashes of the key pair, i.e. we are doing a varient of
+The initial index and the stride are orthogonal hashes of the key pair, i.e. we are doing a variant of
 double hashing.  When we initialize the prober (see FormHash below) we set the initial probe based on
 one hash.  The stride (used as a modulo addition of the probe position) is based on a different hash and
 is such that it will vist every location in the bucket before repeating.  Hence it is imperative that
@@ -1449,7 +1445,7 @@ a power of 2, so we force stride to be odd.
 
 Note -- it must be assumed that multiple probers are walking the same tables and buckets at the same time.
 Additionally, the counts may not be accurate, and there may be duplicates in the tables.  Since the tables
-do not allow concurrrent deletion, some of the concurrency issues are ameliorated.
+do not allow concurrent deletion, some of the concurrency issues are ameliorated.
 */
 class Prober
 {
@@ -1549,7 +1545,7 @@ private:
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
     size_t Find(Prober* probe);
     //add the entry, if it is not already there.  Probe is used to search.
-    //Return the entry actually containted (existing or added)
+    //Return the entry actually contained (existing or added)
     size_t Add(size_t entry, Prober* probe);
     void IncrementCount();
 
@@ -1567,8 +1563,7 @@ private:
         while (size < numberOfEntries) {size = size<<1;}
 //        if (size == CALL_STUB_MIN_ENTRIES)
 //            size += 3;
-        size_t* bucket = new size_t[(sizeof(FastTable)/sizeof(size_t))+size+CALL_STUB_FIRST_INDEX];
-        FastTable* table = new (bucket) FastTable();
+        FastTable* table = new (NumCallStubs, size) FastTable();
         table->InitializeContents(size);
         return table;
     }
@@ -1592,6 +1587,15 @@ private:
     //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
     size_t contents[0];
+
+    void* operator new(size_t) = delete;
+
+    static struct NumCallStubs_t {} NumCallStubs;
+
+    void* operator new(size_t baseSize, NumCallStubs_t, size_t numCallStubs)
+    {
+        return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
+    }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)

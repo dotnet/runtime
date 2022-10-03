@@ -10,15 +10,13 @@ trigger:
     include:
     - '*'
     exclude:
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
   
 schedules:
@@ -38,15 +36,13 @@ pr:
     include:
     - '*'
     exclude:
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 jobs:

@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tests
 
             // Environment Variables are case-insensitive on Windows.
             // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
-            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
             p.StartInfo.Environment
@@ -475,39 +475,40 @@ namespace System.Diagnostics.Tests
             bool hasStarted = false;
             SafeProcessHandle handle = null;
             Process p = null;
+            string workingDirectory = null;
 
             try
             {
                 p = CreateProcessLong();
 
+                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : p.StartInfo.WorkingDirectory;
+
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: true);
                 }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
                 p.StartInfo.PasswordInClearText = password;
 
-                hasStarted = p.Start();
-
-                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
+                try
                 {
-                    SecurityIdentifier sid;
-                    if (Interop.ProcessTokenToSid(handle, out sid))
-                    {
-                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                        int indexOfDomain = actualUserName.IndexOf('\\');
-                        if (indexOfDomain != -1)
-                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
-
-                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
-
-                        Assert.Equal(username, actualUserName);
-                        Assert.True(isProfileLoaded);
-                    }
+                    hasStarted = p.Start();
                 }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+                {
+                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
+                }
+
+
+                Assert.Equal(username, Helpers.GetProcessUserName(p));
+                bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.True(isProfileLoaded);
+
             }
             finally
             {
@@ -523,29 +524,38 @@ namespace System.Diagnostics.Tests
 
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
-                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
                 }
 
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, bool add)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
-            FileSecurity accessControl = fileInfo.GetAccessControl();
-            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
+            fileInfo.SetAccessControl(fileSecurity);
 
-            if (add)
-            {
-                accessControl.AddAccessRule(fileSystemAccessRule);
-            }
-            else
-            {
-                accessControl.RemoveAccessRule(fileSystemAccessRule);
-            }
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+            Apply(userName, directorySecurity, FileSystemRights.Read , add);
+            directoryInfo.SetAccessControl(directorySecurity);
 
-            fileInfo.SetAccessControl(accessControl);
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
+            {
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
+
+                if (add)
+                {
+                    accessControl.AddAccessRule(fileSystemAccessRule);
+                }
+                else
+                {
+                    accessControl.RemoveAccessRule(fileSystemAccessRule);
+                }
+            }
         }
 
         private static List<string> GetNamesOfUserProfiles()
@@ -1210,6 +1220,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_SUCCESS = 0x0;
         private const int ERROR_FILE_NOT_FOUND = 0x2;
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
+        private const int ERROR_SHARING_VIOLATION = 0x20;
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -1252,7 +1263,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void UnintializedArgumentList()
+        public void UninitializedArgumentList()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             Assert.Equal(0, psi.ArgumentList.Count);
@@ -1312,6 +1323,11 @@ namespace System.Diagnostics.Tests
             if (PlatformDetection.IsWindowsServerCore)
             {
                 return; // On Server Core, notepad exists but does not return a title
+            }
+
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                return; // On Windows 11, we aren't able to get the title for some reason; Windows 10 coverage should be sufficient
             }
 
             // On some Windows versions, the file extension is not included in the title

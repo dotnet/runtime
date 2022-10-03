@@ -30,10 +30,7 @@ namespace System.CodeDom.Compiler
                 {
                     lock (this)
                     {
-                        if (_type == null)
-                        {
-                            _type = Type.GetType(_codeDomProviderTypeName);
-                        }
+                        _type ??= Type.GetType(_codeDomProviderTypeName);
                     }
                 }
 
@@ -63,8 +60,13 @@ namespace System.CodeDom.Compiler
             return (CodeDomProvider)Activator.CreateInstance(CodeDomProviderType);
         }
 
-        public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions!!)
+        public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions)
         {
+            if (providerOptions is null)
+            {
+                throw new ArgumentNullException(nameof(providerOptions));
+            }
+
             ConstructorInfo constructor = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
             if (constructor != null)
             {

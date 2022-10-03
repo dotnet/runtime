@@ -20,11 +20,12 @@
 using namespace NativeFormat;
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
+    : m_fForbidLoadILBodyFixups(false)
 {
 }
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo(PEImageLayout* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
-    : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader)
+    : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader), m_fForbidLoadILBodyFixups(false)
 {
 }
 
@@ -379,14 +380,6 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     }
 }
 
-BOOL ReadyToRunInfo::IsReadyToRunEnabled()
-{
-    WRAPPER_NO_CONTRACT;
-
-    static ConfigDWORD configReadyToRun;
-    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun);
-}
-
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
 // -1: Logging not yet initialized.
 // NULL: Logging disabled.
@@ -413,7 +406,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         else
             r2rLogFile = NULL;
 
-        if (r2rLogFile != NULL && !ReadyToRunInfo::IsReadyToRunEnabled())
+        if (r2rLogFile != NULL && !g_pConfig->ReadyToRun())
         {
             fputs("Ready to Run not enabled.\n", r2rLogFile);
             fclose(r2rLogFile);
@@ -464,7 +457,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
     for (READYTORUN_IMPORT_SECTION * pCurSection = pImportSections; pCurSection < pImportSectionsEnd; pCurSection++)
     {
         // The import for the module pointer is always in an eager fixup section, so skip delayed fixup sections.
-        if ((pCurSection->Flags & READYTORUN_IMPORT_SECTION_FLAGS_EAGER) == 0)
+        if ((pCurSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
             continue;
 
         // Found an eager fixup section. Check the signature of each fixup in this section.
@@ -517,7 +510,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     PEAssembly * pFile = pModule->GetPEAssembly();
 
-    if (!IsReadyToRunEnabled())
+    if (!g_pConfig->ReadyToRun())
     {
         // Log message is ignored in this case.
         DoLog(NULL);
@@ -609,13 +602,119 @@ bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModu
     return pModule1->GetReadyToRunInfo()->m_pComposite == pModule2->GetReadyToRunInfo()->m_pComposite;
 }
 
+// -------------------------------
+// Infrastructure for handling R2R modules which have code in them which is not
+// tightly associated with the module itself.
+ReadyToRunInfo* s_pGlobalR2RModules = NULL;
+PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
+void ReadyToRunInfo::RegisterUnrelatedR2RModule()
+{
+    LIMITED_METHOD_CONTRACT; // This function takes no locks, and can never fail
+
+    if (m_pNativeImage == NULL)
+    {
+        // Produce a singly linked list of R2R modules with code in unrelated modules.
+        // This code shouldn't be run until the module is given process lifetime tenure
+        if (m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_UNRELATED_R2R_CODE)
+        {
+            ReadyToRunInfo* oldGlobalValue;
+            oldGlobalValue = s_pGlobalR2RModules;
+            if (InterlockedCompareExchangeT(&m_pNextR2RForUnrelatedCode, oldGlobalValue, NULL) != NULL)
+            {
+                // Some other thread is registering or has registered this R2R image for unrelated generics
+                // ReadyToRun code loading. we can simply return, as this process cannot fail.
+                return;
+            }
+
+            while (InterlockedCompareExchangeT(&s_pGlobalR2RModules, this, oldGlobalValue) != oldGlobalValue)
+            {
+                oldGlobalValue = s_pGlobalR2RModules;
+                m_pNextR2RForUnrelatedCode = oldGlobalValue;
+            }
+        }
+    }
+    else
+    {
+        m_pCompositeInfo->RegisterUnrelatedR2RModule();
+    }
+}
+
+// Helper function for ComputeAlternateGenericLocationForR2RCode
+static Module* ComputeAlternateGenericLocationForR2RCodeFromInstantiation(Module* pDefinitionModule, Instantiation inst)
+{
+    STANDARD_VM_CONTRACT;
+    for (uint32_t i = 0; i < inst.GetNumArgs(); i++)
+    {
+        TypeHandle instArg = inst[i];
+
+        // System.__Canon does not contribute to logical loader module
+        if (instArg == TypeHandle(g_pCanonMethodTableClass))
+            continue;
+
+        CorElementType ety = instArg.GetSignatureCorElementType();
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
+            continue;
+
+        // Any type that is in the same module as the definition module is also ignored
+        Module* instArgModule = instArg.GetLoaderModule();
+        if (instArgModule == pDefinitionModule)
+            continue;
+
+        // Return the R2R module of thist instantiating argument. This may be NULL if that assembly isn't R2R
+        return instArgModule;
+    }
+
+    return NULL;
+}
+
+PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod)
+{
+    STANDARD_VM_CONTRACT;
+    // Alternate algorithm for generic method placement
+    // This is designed to provide a second location to look for a generic instantiation that isn't the
+    // defining module of the method. This algorithm is designed to be:
+    // 1. Cheap to compute
+    // 2. Able to find many generic instantiations assuming a fairly low level of generic complexity
+    // 3. Particularly useful for cases where a second module instantiates a generic from a defining module
+    //    over types entirely defined in a second module.
+    // 4. Simple to implement in a compatible fashion in crossgen2, so that the runtime and compile can agree
+    //    on code that should be useable. See ReadyToRunCompilationGroupBase.CrossModuleCompileableUncached
+    //    for the managed implementation.
+
+    // Collectible assemblies are complex to handle, and currently do not participate in R2R.
+    if (pMethod->GetLoaderAllocator()->IsCollectible())
+        return NULL;
+
+    Module* pDefinitionModule = pMethod->GetModule();
+    Module* resultModule = NULL;
+    if (pMethod->HasMethodInstantiation())
+    {
+        resultModule = ComputeAlternateGenericLocationForR2RCodeFromInstantiation(pDefinitionModule, pMethod->GetMethodInstantiation());
+    }
+    if (resultModule == NULL && pMethod->HasClassInstantiation())
+    {
+        resultModule = ComputeAlternateGenericLocationForR2RCodeFromInstantiation(pDefinitionModule, pMethod->GetClassInstantiation());
+    }
+
+    if (resultModule != NULL)
+    {
+        // This may return NULL, if resultModule is not an R2R module. That is OK and intended.
+        return resultModule->GetReadyToRunInfo();
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pNativeImage),
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
-    m_pPersistentInlineTrackingMap(NULL)
+    m_pPersistentInlineTrackingMap(NULL),
+    m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
 
@@ -626,6 +725,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_pComposite = m_pCompositeInfo->GetComponentInfo();
         m_component = ReadyToRunCoreInfo(m_pComposite->GetLayout(), pNativeImage->GetComponentAssemblyHeader(pModule->GetSimpleName()));
         m_isComponentAssembly = true;
+        m_pNativeManifestModule = pNativeImage->GetReadyToRunInfo()->GetNativeManifestModule();
     }
     else
     {
@@ -633,6 +733,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;
         m_isComponentAssembly = false;
+        IMDInternalImport *pNativeMDImport;
+        IMAGE_DATA_DIRECTORY * pNativeMetadataSection = m_pComposite->FindSection(ReadyToRunSectionType::ManifestMetadata);
+        if (pNativeMetadataSection != NULL)
+        {
+            pNativeMDImport = NULL;
+            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
+                                                        pNativeMetadataSection->Size,
+                                                        ofRead,
+                                                        IID_IMDInternalImport,
+                                                        (void **) &pNativeMDImport));
+        }
+        else
+        {
+            pNativeMDImport = NULL;
+        }
+
+        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -649,8 +766,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
     {
-        m_pImportSections = (CORCOMPILE_IMPORT_SECTION*)m_pComposite->GetLayout()->GetDirectoryData(pImportSectionsDir);
-        m_nImportSections = pImportSectionsDir->Size / sizeof(CORCOMPILE_IMPORT_SECTION);
+        m_pImportSections = (READYTORUN_IMPORT_SECTION*)m_pComposite->GetLayout()->GetDirectoryData(pImportSectionsDir);
+        m_nImportSections = pImportSectionsDir->Size / sizeof(READYTORUN_IMPORT_SECTION);
     }
     else
     {
@@ -706,6 +823,17 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
+    if (IsImageVersionAtLeast(6, 3))
+    {
+        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
+        if (pCrossModuleInlineTrackingInfoDir != NULL)
+        {
+            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
+            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
+                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
+        }
+    }
+
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
@@ -730,19 +858,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         }
     }
 
-    // For format version 2.2 and later, there is an optional profile-data section
-    if (IsImageVersionAtLeast(2, 2))
-    {
-        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::ProfileDataInfo);
-        if (pProfileDataInfoDir != NULL)
-        {
-            CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
-            pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)m_pComposite->GetImage()->GetDirectoryData(pProfileDataInfoDir);
-
-            pModule->SetMethodProfileList(pMethodProfileList);
-        }
-    }
-
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
     if (attributesPresenceDataInfoDir != NULL)
@@ -757,15 +872,27 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 }
 
-static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pModule)
+static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
 {
     STANDARD_VM_CONTRACT;
 
+    ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
+
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
+             ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
+
+    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    {
+        uint32_t updatedModuleIndex;
+        IfFailThrow(sig.GetData(&updatedModuleIndex));
+        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
+    }
 
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
     {
@@ -778,11 +905,42 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
         IfFailThrow(sig.SkipExactlyOne());
     }
 
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
-
     RID rid;
     IfFailThrow(sig.GetData(&rid));
+
+    if ((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) != 0)
+    {
+        // member referenced via Manifest data
+        // But we've already verified that the owner type is defined, so we can assume the type from the passed in methoddesc
+        IMDInternalImport * pInternalImport = pModule->GetMDImport();
+
+        LPCUTF8     szMember;
+        PCCOR_SIGNATURE pSig;
+        DWORD       cSig;
+
+        IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(TokenFromRid(rid, mdtMemberRef), &pSig, &cSig, &szMember));
+
+        _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
+
+        if (strcmp(szMember, pMD->GetName()) != 0)
+        {
+            // Name doesn't match
+            return false;
+        }
+
+        PCCOR_SIGNATURE pTargetMethodSig;
+        DWORD       cTargetMethodSig;
+
+        pMD->GetSig(&pTargetMethodSig, &cTargetMethodSig);
+        if (!MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL, pTargetMethodSig, cTargetMethodSig, pMD->GetModule(), NULL, FALSE))
+        {
+            // Sig doesn't match
+            return false;
+        }
+
+        rid = RidFromToken(pMD->GetMemberDef());
+    }
+
     if (RidFromToken(pMD->GetMemberDef()) != rid)
         return false;
 
@@ -799,7 +957,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
             PCCOR_SIGNATURE pSigArg;
             uint32_t cbSigArg;
             sig.GetSignature(&pSigArg, &cbSigArg);
-            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pModule, inst[i], pZapSigContext))
+            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pOrigModule, inst[i], pZapSigContext))
                 return false;
 
             IfFailThrow(sig.SkipExactlyOne());
@@ -875,10 +1033,16 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
-
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
+#ifdef LOG_R2R_ENTRYPOINT
+    SString tNamespace, tMethodName, tMethodSignature;
+    SString tFullname;
+    StackScratchBuffer scratch;
+    const char* szFullName = "";
+    bool printedStart = false;
+#endif
 
     PCODE pEntryPoint = NULL;
 #ifdef PROFILING_SUPPORTED
@@ -888,7 +1052,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     int rid = RidFromToken(token);
     if (rid == 0)
         goto done;
-
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
         goto done;
@@ -1021,6 +1184,16 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
         return;
     }
 
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
+             ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
+
+    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    {
+        uint32_t updatedModuleIndex;
+        IfFailThrow(sig.GetData(&updatedModuleIndex));
+    }
+
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
     {
         hr = sig.SkipExactlyOne();
@@ -1029,9 +1202,6 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
             return;
         }
     }
-
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
 
     hr = sig.GetData(pRid);
     if (FAILED(hr))
@@ -1237,6 +1407,319 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
 void ReadyToRunInfo::DisableCustomAttributeFilter()
 {
     m_attributesPresence.DisableFilter();
+}
+
+class NativeManifestModule : public ModuleBase
+{
+    IMDInternalImport* m_pMDImport;
+    ReadyToRunInfo *m_pReadyToRunInfo;
+    Module* m_pILModule;
+
+    // Mapping of ModuleRef token to Module *
+    LookupMap<PTR_Module>           m_ModuleReferencesMap;
+public:
+
+    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
+    {
+        // NOTE: Composite images will not set m_pILModule to anything other than NULL. This implies that cross module
+        // type loading outside of System.Private.CoreLib is not supported
+        m_pILModule = pModule;
+        m_loaderAllocator = pLoaderAllocator;
+        m_pMDImport = pManifestMetadata;
+        m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+        {
+            // Get the number of AssemblyReferences in the map
+            m_ManifestModuleReferencesMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtAssemblyRef)+1;
+
+            // Get # ModuleRefs
+            m_ModuleReferencesMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtModuleRef)+1;
+
+            // Get # TypeRefs
+            m_TypeRefToMethodTableMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtTypeRef)+1;
+
+            // Get # of MemberRefs
+            m_MemberRefMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtMemberRef)+1;
+
+            S_SIZE_T nTotal;
+            nTotal += m_ManifestModuleReferencesMap.dwCount;
+            nTotal += m_ModuleReferencesMap.dwCount;
+            nTotal += m_TypeRefToMethodTableMap.dwCount;
+            nTotal += m_MemberRefMap.dwCount;
+            PTR_TADDR pTable = (PTR_TADDR)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR))));
+
+            // Note: Memory allocated on loader heap is zero filled
+            // memset(pTable, 0, nTotal * sizeof(void*));
+
+            m_ManifestModuleReferencesMap.pNext  = NULL;
+            m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
+            m_ManifestModuleReferencesMap.pTable = pTable;
+
+            m_ModuleReferencesMap.pNext  = NULL;
+            m_ModuleReferencesMap.supportedFlags = NO_MAP_FLAGS;
+            m_ModuleReferencesMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
+
+            m_TypeRefToMethodTableMap.pNext  = NULL;
+            m_TypeRefToMethodTableMap.supportedFlags = TYPE_REF_MAP_ALL_FLAGS;
+            m_TypeRefToMethodTableMap.pTable = &m_ModuleReferencesMap.pTable[m_ModuleReferencesMap.dwCount];
+
+            m_MemberRefMap.pNext = NULL;
+            m_MemberRefMap.supportedFlags = MEMBER_REF_MAP_ALL_FLAGS;
+            m_MemberRefMap.pTable = &m_TypeRefToMethodTableMap.pTable[m_TypeRefToMethodTableMap.dwCount];
+        }
+    }
+
+    IMDInternalImport *GetMDImport() const final
+    {
+        return m_pMDImport;
+    }
+
+    PTR_Module LookupModule(mdToken kFile) final
+    {
+        return GetModuleIfLoaded(kFile);
+    }
+
+    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    {
+        STANDARD_VM_CONTRACT;
+        // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // Decompose a null terminated moduleName into a pointer to an internal assemblyName, the length of that, and the associate module index
+    // and return true if it can be decomposed.
+    bool DecomposeModuleRef(LPCSTR moduleName, LPCSTR* pAssemblyName, size_t *pAssemblyNameLen, uint32_t *pIndex)
+    {
+        if (moduleName[0] != '#')
+            return false;
+
+        LPCSTR colonAddress = strchr(moduleName, ':');
+        if (colonAddress == NULL)
+            return false;
+
+        uint32_t index = 0;
+        LPCSTR numberCur = colonAddress + 1;
+
+        // Some number must be specified
+        if (*numberCur == '\0')
+            return false;
+
+        while (*numberCur != '\0')
+        {
+            if (index > 100000)
+                return false; // Check to make sure we stay in a reasonable range for a module index.
+
+            index = index * 10;
+            char numberChar = *numberCur;
+            if (numberChar < '0' || numberChar > '9')
+                return false;
+
+            index += numberChar - '0';
+            numberCur++;
+        }
+
+        *pIndex = index;
+        *pAssemblyNameLen = colonAddress - moduleName - 1;
+        *pAssemblyName = moduleName + 1;
+        return true;
+    }
+
+    // Find the assemblyRef with a given simple name in a module, or return mdTokenNil
+    HRESULT GetAssemblyRefTokenOfIndirectDependency(Module* module, LPCSTR assemblyName, size_t assemblyNameLen, mdToken *pAssemblyRef)
+    {
+        auto pMDImport = module->GetMDImport();
+        //Get the assembly refs.
+        HENUMInternalHolder hEnumTypeRefs(pMDImport);
+        mdToken assemblyRef = mdTokenNil;
+        HRESULT hr;
+
+        hEnumTypeRefs.EnumAllInit(mdtAssemblyRef);
+        while (hEnumTypeRefs.EnumNext(&assemblyRef))
+        {
+            LPCSTR name;
+            IfFailRet(pMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &name, NULL, NULL, NULL, NULL));
+            size_t strIndex = 0;
+            bool nameCompareFailed = false;
+            for (; strIndex < assemblyNameLen; strIndex++)
+            {
+                if (name[strIndex] != assemblyName[strIndex])
+                {
+                    nameCompareFailed = true;
+                    break;
+                }
+            }
+
+            // The loop above checks everything up to the null terminator
+            if (name[strIndex] != '\0')
+                nameCompareFailed = true;
+
+            if (nameCompareFailed)
+            {
+                continue;
+            }
+
+            *pAssemblyRef = assemblyRef;
+            return S_OK;
+        }
+
+        *pAssemblyRef = mdTokenNil;
+        return S_FALSE;
+    }
+    Module *GetModuleIfLoaded(mdFile kFile) final
+    {
+        CONTRACT(Module *)
+        {
+            INSTANCE_CHECK;
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(TypeFromToken(kFile) == mdtFile
+                        || TypeFromToken(kFile) == mdtModuleRef);
+            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+            FORBID_FAULT;
+            SUPPORTS_DAC;
+        }
+        CONTRACT_END;
+
+        // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
+        if (TypeFromToken(kFile) == mdtFile)
+            return NULL;
+
+        _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
+        Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
+        if (module != NULL)
+            RETURN module;
+
+        LPCSTR moduleName;
+        if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
+        {
+            RETURN NULL;
+        }
+
+        LPCSTR assemblyNameInModuleRef;
+        size_t assemblyNameLen;
+        uint32_t index;
+
+        if (strcmp(moduleName, "System.Private.CoreLib") == 0)
+        {
+            // Special handling for CoreLib
+            module = SystemDomain::SystemModule();
+        }
+        else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
+        {
+            // This disable cross module inlining beyond System.Private.CoreLib for composite images
+            if (m_pILModule == NULL)
+                return NULL;
+
+            auto moduleBase = m_pILModule->GetModuleFromIndexIfLoaded(index);
+            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
+            module = static_cast<Module*>(moduleBase);
+
+            if (module != NULL)
+            {
+                if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
+                {
+                    mdToken assemblyRef;
+                    if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
+                    {
+                        RETURN NULL;
+                    }
+
+                    if (assemblyRef == mdTokenNil)
+                    {
+                        module = NULL;
+                    }
+                    else
+                    {
+                        auto assemblyOfFinalModule = module->GetAssemblyIfLoaded(assemblyRef);
+                        if (assemblyOfFinalModule != NULL)
+                            module = assemblyOfFinalModule->GetModule();
+                    }
+                }
+            }
+        }
+
+#ifndef DACCESS_COMPILE
+        if (module != NULL)
+            m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
+#endif
+        RETURN module;
+    }
+
+    DomainAssembly *LoadModule(mdFile kFile) final
+    {
+        // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
+        if (TypeFromToken(kFile) == mdtFile)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
+        Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
+        if (module != NULL)
+            return module->GetDomainAssembly();
+
+        LPCSTR moduleName;
+        if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        LPCSTR assemblyNameInModuleRef;
+        size_t assemblyNameLen;
+        uint32_t index;
+        if (strcmp(moduleName, "System.Private.CoreLib") == 0)
+        {
+            // Special handling for CoreLib
+            module = SystemDomain::SystemModule();
+        }
+        else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
+        {
+            // This disable cross module inlining beyond System.Private.CoreLib for composite images
+            if (m_pILModule == NULL)
+                COMPlusThrowHR(COR_E_FILENOTFOUND);
+
+            auto moduleBase = m_pILModule->GetModuleFromIndex(index);
+            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
+            module = static_cast<Module*>(moduleBase);
+
+            if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
+            {
+                mdToken assemblyRef;
+                
+                IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
+                if (assemblyRef == mdTokenNil)
+                {
+                    COMPlusThrowHR(COR_E_FILENOTFOUND);
+                }
+                auto domainAssemblyOfFinalModule = module->LoadAssembly(assemblyRef);
+                module = domainAssemblyOfFinalModule->GetModule();
+            }
+        }
+        else
+        {
+            // Unexpected ModuleRef string format
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+#ifndef DACCESS_COMPILE
+        m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
+#endif
+
+        return module->GetDomainAssembly();
+    }
+
+    virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
+                                                  mdToken token,
+                                                  UINT resIDWhy)
+    {
+        STANDARD_VM_CONTRACT;
+        // This should never fail
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+};
+
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
+{
+    void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
+    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pModule, pamTracker);
 }
 
 #endif // DACCESS_COMPILE

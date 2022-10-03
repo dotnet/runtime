@@ -527,8 +527,7 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     CorSaveSize               fSave,                // Quick or accurate?
     UINT32                   *pcbSaveSize,          // Put the size here.
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)        // Profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr = S_OK;              // A result.
     UINT32  cbTotal = 0;            // The total size.
@@ -593,40 +592,13 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
 
     if (reorderingOptions & ReArrangeStringPool)
     {
-        if (pProfileData != NULL)
-        {
-            UINT32 cbHotSize = 0;          // Size of pool data.
-            UINT32 cbStream;               // Size of just the stream.
-            DWORD  bCompressed;            // Will the stream be compressed data?
-
-            // Ask the metadata to size its hot data.
-            IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-            cbStream = cbHotSize;
-            m_bSaveCompressed = bCompressed;
-
-            if (cbHotSize != 0)
-            {
-                // Add this item to the save list.
-                IfFailGo(AddStreamToList(cbHotSize, HOT_MODEL_STREAM));
-
-                // Ask the storage system to add stream fixed overhead.
-                IfFailGo(TiggerStorage::GetStreamSaveSize(HOT_MODEL_STREAM, cbHotSize, &cbHotSize));
-
-                // Log the size info.
-                LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-                    HOT_MODEL_STREAM, cbStream, cbHotSize));
-
-                cbTotal += cbHotSize;
-            }
-        }
-
         // get string pool save size
         IfFailGo(GetPoolSaveSize(STRING_POOL_STREAM, MDPoolStrings, &cbSize));
         cbTotal += cbSize;
     }
 
     // Query the MiniMd for its size.
-    IfFailGo(GetTablesSaveSize(fSave, &cbSize, reorderingOptions, pProfileData));
+    IfFailGo(GetTablesSaveSize(fSave, &cbSize, reorderingOptions));
     cbTotal += cbSize;
 
     // Get the pools' sizes.
@@ -744,8 +716,7 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
     CorSaveSize               fSave,
     UINT32                   *pcbSaveSize,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)           // Add pool data to this value.
+    MetaDataReorderingOptions reorderingOptions)
 {
     UINT32  cbSize = 0;             // Size of pool data.
     UINT32  cbHotSize = 0;          // Size of pool data.
@@ -756,31 +727,6 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     *pcbSaveSize = 0;
 
-    if( !(reorderingOptions & ReArrangeStringPool) )
-    {
-        if (pProfileData != NULL)
-        {
-            // Ask the metadata to size its hot data.
-            IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-            cbStream = cbHotSize;
-            m_bSaveCompressed = bCompressed;
-
-            if (cbHotSize != 0)
-            {
-                szName = HOT_MODEL_STREAM;
-
-                // Add this item to the save list.
-                IfFailGo(AddStreamToList(cbHotSize, szName));
-
-                // Ask the storage system to add stream fixed overhead.
-                IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbHotSize, &cbHotSize));
-
-                // Log the size info.
-                LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-                    szName, cbStream, cbHotSize));
-            }
-        }
-    }
     // Ask the metadata to size its data.
     IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbSize, &bCompressed));
     cbStream = cbSize;
@@ -834,8 +780,7 @@ ErrExit:
 __checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStream(
     IStream                  *pIStream,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT     hr = S_OK;              // A result.
     StgIO       *pStgIO = 0;
@@ -856,7 +801,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStream(
     IfFailGo(pStorage->Init(pStgIO, ov.m_RuntimeVersion));
 
     // Save worker will do tables, pools.
-    IfFailGo(SaveToStorage(pStorage, reorderingOptions, pProfileData));
+    IfFailGo(SaveToStorage(pStorage, reorderingOptions));
 
 ErrExit:
     if (pStgIO != NULL)
@@ -871,8 +816,7 @@ ErrExit:
 __checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStorage(
     TiggerStorage            *pStorage,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT  hr;                     // A result.
     LPCWSTR  szName;                 // Name of the tables stream.
@@ -901,28 +845,6 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
         pIStreamTbl = 0;
     }
 
-    if (pProfileData != NULL)
-    {
-        DWORD bCompressed;
-        UINT32 cbHotSize;
-        // Will the stream be compressed data?
-
-        // Only create this additional stream if it will be non-empty
-        IfFailGo(m_MiniMd.GetSaveSize(cssAccurate, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-
-        if (cbHotSize > 0)
-        {
-            // Create a stream and save the hot tables.
-            szName = HOT_MODEL_STREAM;
-            IfFailGo(pStorage->CreateStream(szName,
-                    STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
-                    0, 0, &pIStreamTbl));
-            IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, reorderingOptions, pProfileData));
-            pIStreamTbl->Release();
-            pIStreamTbl = 0;
-        }
-    }
-
     if (reorderingOptions & ReArrangeStringPool)
     {
         // Save the string pool before the tables when we do not have the string pool cache
@@ -934,7 +856,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(pStorage->CreateStream(szName,
             STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStreamTbl));
-    IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, NoReordering, NULL));
+    IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, NoReordering));
     pIStreamTbl->Release();
     pIStreamTbl = 0;
 

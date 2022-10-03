@@ -32,7 +32,7 @@ namespace System.Reflection.Internal
 
             if (buffer == null && length != 0)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             return new MemoryBlock(buffer, length);

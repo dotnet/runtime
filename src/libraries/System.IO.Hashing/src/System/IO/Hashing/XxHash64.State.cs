@@ -90,7 +90,7 @@ namespace System.IO.Hashing
                 return acc;
             }
 
-            internal readonly ulong Complete(int length, ReadOnlySpan<byte> remaining)
+            internal readonly ulong Complete(long length, ReadOnlySpan<byte> remaining)
             {
                 ulong acc = _hadFullStripe ? Converge() : _smallAcc;
 

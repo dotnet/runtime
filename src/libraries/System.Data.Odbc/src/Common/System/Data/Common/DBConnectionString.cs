@@ -31,7 +31,7 @@ namespace System.Data.Common
         // a linked list of key/value and their length in _encryptedUsersConnectionString
         private readonly NameValuePair? _keychain;
 
-        // track the existance of "password" or "pwd" in the connection string
+        // track the existence of "password" or "pwd" in the connection string
         // not used for anything anymore but must keep it set correct for V1.1 serialization
         private readonly bool _hasPassword;
 
@@ -59,7 +59,7 @@ namespace System.Data.Common
             : this(connectionOptions, null, KeyRestrictionBehavior.AllowOnly, null, true)
         {
             // used by DBDataPermission to convert from DbConnectionOptions to DBConnectionString
-            // since backward compatability requires Everett level classes
+            // since backward compatibility requires Everett level classes
         }
 
         private DBConnectionString(DbConnectionOptions connectionOptions, string? restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string>? synonyms, bool mustCloneDictionary)
@@ -180,7 +180,7 @@ namespace System.Data.Common
                         restrictions = builder.ToString();
                     }
                 }
-                return ((null != restrictions) ? restrictions : "");
+                return restrictions ?? "";
             }
         }
 
@@ -294,7 +294,7 @@ namespace System.Data.Common
         }
 
         [Conditional("DEBUG")]
-        private void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
+        private static void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
         {
             Debug.Assert(combinedSet != null, "The combined connection string should not be null");
             if ((componentSet != null) && (combinedSet._restrictionValues != null) && (componentSet._restrictionValues != null))

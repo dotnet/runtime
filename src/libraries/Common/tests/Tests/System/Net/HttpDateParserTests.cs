@@ -59,14 +59,5 @@ namespace Tests.System.Net.Http
             Assert.False(HttpDateParser.TryParse(invalid, out var result));
             Assert.Equal(default, result);
         }
-
-        [Fact]
-        public static void DateToString_UseRfcSampleTimestamp_FormattedAccordingToRfc1123()
-        {
-            // We don't need extensive tests, since we let DateTimeOffset do the formatting. This test is just
-            // to validate that we use the correct parameters when calling into DateTimeOffset.ToString().
-            DateTimeOffset dateTime = new DateTimeOffset(1994, 11, 6, 8, 49, 37, TimeSpan.Zero);
-            Assert.Equal("Sun, 06 Nov 1994 08:49:37 GMT", HttpDateParser.DateToString(dateTime));
-        }
     }
 }

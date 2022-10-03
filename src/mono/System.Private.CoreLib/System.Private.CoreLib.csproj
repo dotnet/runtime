@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -10,7 +10,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm</Platforms>
+    <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -41,7 +41,6 @@
     <DefineConstants>MONO;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
@@ -68,11 +67,23 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 's390x'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_S390X</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'ppc64le'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
@@ -114,21 +125,23 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureGenericMath>true</FeatureGenericMath>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
-    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
+    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != true or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
+    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
@@ -169,7 +182,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Object.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
@@ -199,10 +211,12 @@
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
@@ -244,6 +258,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
@@ -277,21 +292,16 @@
         <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
       </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
-      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
-        <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
-      </Compile>
-      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.iOS.cs">
-        <Link>Common\Interop\OSX\Interop.SearchPath.iOS.cs</Link>
-      </Compile>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Threads.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
@@ -349,5 +359,13 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
+
+  <!-- Import refererence assembly and ApiCompat logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
 </Project>

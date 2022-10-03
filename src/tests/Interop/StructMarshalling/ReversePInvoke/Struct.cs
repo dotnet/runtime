@@ -143,7 +143,7 @@ public struct S8
 {
     public string name;
     public bool gender;
-    [MarshalAs(UnmanagedType.Error)] //In ProjectN, MarshalAsError isnt supported in V1
+    [MarshalAs(UnmanagedType.Error)]
     public int i32;
     [MarshalAs(UnmanagedType.Error)]
     public uint ui32;
@@ -163,22 +163,22 @@ public struct S9
 public delegate void TestDelegate1(S9 myStruct);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct IntergerStructSequential
+public struct IntegerStructSequential
 {
     public int i;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct OuterIntergerStructSequential
+public struct OuterIntegerStructSequential
 {
     public int i;
-    public IntergerStructSequential s_int;
+    public IntegerStructSequential s_int;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct IncludeOuterIntergerStructSequential
+public struct IncludeOuterIntegerStructSequential
 {
-    public OuterIntergerStructSequential s;
+    public OuterIntegerStructSequential s;
 }
 
 [StructLayout(LayoutKind.Sequential)]

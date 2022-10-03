@@ -29,7 +29,6 @@ FOR_ALL_ICU_FUNCTIONS
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
-
 #if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
 
 #define MaxICUVersionStringLength 33
@@ -39,6 +38,7 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 ucol_setVariableTop_func ucol_setVariableTop_ptr = NULL;
+ucol_safeClone_func ucol_safeClone_ptr = NULL;
 
 #if defined (TARGET_UNIX)
 
@@ -100,6 +100,17 @@ static int FindICULibs()
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
     {
+        // On Windows Server 2019, the ICU library is installed as icuuc.dll and icuin.dll. Try to load these.
+        libicuuc = LoadLibraryExW(L"icuuc.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (libicuuc != NULL)
+        {
+            libicui18n = LoadLibraryExW(L"icuin.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+            if (libicui18n != NULL)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -381,6 +392,30 @@ static void ValidateICUDataCanLoad(void)
     }
 }
 
+static void InitializeUColClonePointers(char* symbolVersion)
+{
+    if (ucol_clone_ptr != NULL)
+    {
+        return;
+    }
+
+#if defined(TARGET_WINDOWS)
+    char symbolName[SYMBOL_NAME_SIZE];
+    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_safeClone%s", symbolVersion);
+    ucol_safeClone_ptr = (ucol_safeClone_func)GetProcAddress((HMODULE)libicui18n, symbolName);
+#else
+    char symbolName[SYMBOL_NAME_SIZE];
+    sprintf(symbolName, "ucol_safeClone%s", symbolVersion);
+    ucol_safeClone_ptr = (ucol_safeClone_func)dlsym(libicui18n, symbolName);
+#endif // defined(TARGET_WINDOWS)
+
+    if (ucol_safeClone_ptr == NULL)
+    {
+        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_safeClone or ucol_clone.\n");
+        abort();
+    }
+}
+
 static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 {
     if (ucol_setMaxVariable_ptr != NULL)
@@ -440,10 +475,14 @@ int32_t GlobalizationNative_LoadICU()
     }
 #endif // TARGET_WINDOWS || TARGET_OSX
 
+#if defined(ANDROID_FORCE_ICU_DATA_DIR)
+    setenv ("ICU_DATA", "/system/usr/icu/", 0);
+#endif
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
     InitializeVariableMaxAndTopPointers(symbolVersion);
+    InitializeUColClonePointers(symbolVersion);
 
     return true;
 }

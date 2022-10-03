@@ -35,8 +35,10 @@ namespace System.Security.Cryptography
         {
         }
 
-        public CryptoStream(Stream stream, ICryptoTransform transform!!, CryptoStreamMode mode, bool leaveOpen)
+        public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(transform);
+
             _stream = stream;
             _transform = transform;
             _leaveOpen = leaveOpen;
@@ -657,7 +659,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        public unsafe override void CopyTo(Stream destination, int bufferSize)
+        public override unsafe void CopyTo(Stream destination, int bufferSize)
         {
             CheckCopyToArguments(destination, bufferSize);
 
@@ -714,8 +716,10 @@ namespace System.Security.Cryptography
             ArrayPool<byte>.Shared.Return(rentedBuffer);
         }
 
-        private void CheckCopyToArguments(Stream destination!!, int bufferSize)
+        private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             EnsureNotDisposed(destination, nameof(destination));
 
             if (!destination.CanWrite)

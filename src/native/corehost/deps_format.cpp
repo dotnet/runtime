@@ -98,7 +98,7 @@ void deps_json_t::reconcile_libraries_with_targets(
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("Parsed %s deps entry %d for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
+                    trace::info(_X("Parsed %s deps entry %zu for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
                         deps_entry_t::s_known_asset_types[i],
                         m_deps_entries[i].size() - 1,
                         entry.asset.name.c_str(),
@@ -130,7 +130,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
     // We do the same even when the RID is empty.
     if (currentRid.empty() || (rid_fallback_graph.count(currentRid) == 0))
     {
-        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_arch();
+        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
 
         trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
     }

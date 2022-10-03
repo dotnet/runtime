@@ -261,8 +261,7 @@ namespace System.Data.SqlTypes
         private void SetCompareInfo()
         {
             Debug.Assert(!IsNull);
-            if (m_cmpInfo == null)
-                m_cmpInfo = (CultureInfo.GetCultureInfo(m_lcid)).CompareInfo;
+            m_cmpInfo ??= (CultureInfo.GetCultureInfo(m_lcid)).CompareInfo;
         }
 
         public CompareInfo CompareInfo
@@ -275,7 +274,9 @@ namespace System.Data.SqlTypes
                     return m_cmpInfo!;
                 }
                 else
+                {
                     throw new SqlNullValueException();
+                }
             }
         }
 
@@ -284,9 +285,13 @@ namespace System.Data.SqlTypes
             get
             {
                 if (!IsNull)
+                {
                     return m_flag;
+                }
                 else
+                {
                     throw new SqlNullValueException();
+                }
             }
         }
 
@@ -351,7 +356,7 @@ namespace System.Data.SqlTypes
                 throw new SqlTypeException(SQLResource.ConcatDiffCollationMessage);
 
             return new SqlString(x.m_lcid, x.m_flag, x.m_value + y.m_value,
-                    (x.m_cmpInfo == null) ? y.m_cmpInfo : x.m_cmpInfo);
+                    x.m_cmpInfo ?? y.m_cmpInfo);
         }
 
         // StringCompare: Common compare function which is used by Compare and CompareTo
@@ -836,10 +841,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlString)
+            if (value is SqlString i)
             {
-                SqlString i = (SqlString)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlString));

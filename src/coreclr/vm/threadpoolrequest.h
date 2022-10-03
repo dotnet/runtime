@@ -136,7 +136,7 @@ private:
     TPIndex m_index;
     struct DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) {
         BYTE m_padding1[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
-        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        // Only use with VolatileLoad+VolatileStore+InterlockedCompareExchange
         LONG m_numRequestsPending;
         BYTE m_padding2[MAX_CACHE_LINE_SIZE];
     };
@@ -214,7 +214,7 @@ private:
     ULONG m_NumRequests;
     struct DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) {
         BYTE m_padding1[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
-        // Only use with VolatileLoad+VolatileStore+FastInterlockCompareExchange
+        // Only use with VolatileLoad+VolatileStore+InterlockedCompareExchange
         LONG m_outstandingThreadRequestCount;
         BYTE m_padding2[MAX_CACHE_LINE_SIZE];
     };

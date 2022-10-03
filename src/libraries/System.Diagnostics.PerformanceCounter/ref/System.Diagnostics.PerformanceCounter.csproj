@@ -1,22 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Diagnostics.PerformanceCounter.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
     <Compile Include="System.Diagnostics.PerformanceCounter.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <Compile Include="System.Diagnostics.PerformanceCounter.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

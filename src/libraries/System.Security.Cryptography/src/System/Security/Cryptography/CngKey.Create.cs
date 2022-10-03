@@ -32,38 +32,48 @@ namespace System.Security.Cryptography
         }
 
         [SupportedOSPlatform("windows")]
-        public static CngKey Create(CngAlgorithm algorithm!!, string? keyName, CngKeyCreationParameters? creationParameters)
+        public static CngKey Create(CngAlgorithm algorithm, string? keyName, CngKeyCreationParameters? creationParameters)
         {
-            if (creationParameters == null)
-                creationParameters = new CngKeyCreationParameters();
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            creationParameters ??= new CngKeyCreationParameters();
 
             SafeNCryptProviderHandle providerHandle = creationParameters.Provider!.OpenStorageProvider();
-            SafeNCryptKeyHandle keyHandle;
-            ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(providerHandle, out keyHandle, algorithm.Algorithm, keyName, 0, creationParameters.KeyCreationOptions);
-            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            SafeNCryptKeyHandle? keyHandle = null;
+            try
             {
-                // For ecc, the exception may be caught and re-thrown as PlatformNotSupportedException
-                throw errorCode.ToCryptographicException();
+                ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(providerHandle, out keyHandle, algorithm.Algorithm, keyName, 0, creationParameters.KeyCreationOptions);
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    // For ecc, the exception may be caught and re-thrown as PlatformNotSupportedException
+                    throw errorCode.ToCryptographicException();
+                }
+
+                InitializeKeyProperties(keyHandle, creationParameters);
+
+                errorCode = Interop.NCrypt.NCryptFinalizeKey(keyHandle, 0);
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    // For ecc, the exception may be caught and re-thrown as PlatformNotSupportedException
+                    throw errorCode.ToCryptographicException();
+                }
+
+                CngKey key = new CngKey(providerHandle, keyHandle);
+
+                // No name translates to an ephemeral key
+                if (keyName == null)
+                {
+                    key.IsEphemeral = true;
+                }
+
+                return key;
             }
-
-            InitializeKeyProperties(keyHandle, creationParameters);
-
-            errorCode = Interop.NCrypt.NCryptFinalizeKey(keyHandle, 0);
-            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            catch
             {
-                // For ecc, the exception may be caught and re-thrown as PlatformNotSupportedException
-                throw errorCode.ToCryptographicException();
+                keyHandle?.Dispose();
+                providerHandle.Dispose();
+                throw;
             }
-
-            CngKey key = new CngKey(providerHandle, keyHandle);
-
-            // No name translates to an ephemeral key
-            if (keyName == null)
-            {
-                key.IsEphemeral = true;
-            }
-
-            return key;
         }
 
         /// <summary>

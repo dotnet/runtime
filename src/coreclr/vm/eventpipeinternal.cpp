@@ -255,17 +255,30 @@ extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, Event
     return pNextInstance != NULL;
 }
 
-extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(UINT64 sessionID)
+extern "C" bool QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID)
 {
     QCALL_CONTRACT;
 
-    HANDLE waitHandle;
+    bool result = false;
     BEGIN_QCALL;
 
-    waitHandle = EventPipeAdapter::GetWaitHandle(sessionID);
+    result = EventPipeAdapter::SignalSession(sessionID);
 
     END_QCALL;
-    return waitHandle;
+    return result;
+}
+
+extern "C" bool QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionID, INT32 timeoutMs)
+{
+    QCALL_CONTRACT;
+
+    bool result = false;
+    BEGIN_QCALL;
+
+    result = EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
+
+    END_QCALL;
+    return result;
 }
 
 #endif // FEATURE_PERFTRACING

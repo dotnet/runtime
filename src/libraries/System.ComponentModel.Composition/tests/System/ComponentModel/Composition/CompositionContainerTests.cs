@@ -2475,7 +2475,7 @@ namespace System.ComponentModel.Composition
 
             CompositionBatch batch2 = new CompositionBatch();
             batch2.RemovePart(valueKey);
-            // removing entry from wrong container, shoudl be a no-op
+            // removing entry from wrong container, should be a no-op
             d2.Compose(batch2);
         }
 

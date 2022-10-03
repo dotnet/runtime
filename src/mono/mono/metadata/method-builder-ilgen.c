@@ -131,8 +131,8 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		MonoType *type = (MonoType*)l->data;
 		if (mb->mem_manager) {
 			/* Allocated in mono_mb_add_local () */
-			int size = mono_sizeof_type (type);
-			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, size);
+			size_t size = mono_sizeof_type (type);
+			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, (guint)size);
 			memcpy (header->locals [i], type, size);
 			g_free (type);
 		} else {
@@ -151,10 +151,10 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	if (max_stack < 8)
 		max_stack = 8;
 
-	header->max_stack = max_stack;
+	header->max_stack = GINT_TO_UINT16 (max_stack);
 
 	header->code_size = mb->pos;
-	header->num_locals = mb->locals;
+	header->num_locals = GINT_TO_UINT16 (mb->locals);
 	header->init_locals = mb->init_locals;
 	header->volatile_args = mb->volatile_args;
 	header->volatile_locals = mb->volatile_locals;
@@ -322,7 +322,7 @@ mono_mb_emit_i8 (MonoMethodBuilder *mb, gint64 data)
 		mb->code = (unsigned char *)g_realloc (mb->code, mb->code_size);
 	}
 
-	mono_mb_patch_addr (mb, mb->pos, data);
+	mono_mb_patch_addr (mb, mb->pos, GINT64_TO_INT (data));
 	mono_mb_patch_addr (mb, mb->pos + 4, data >> 32);
 	mb->pos += 8;
 }
@@ -366,14 +366,14 @@ void
 mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
 {
 	if (argnum < 4) {
- 		mono_mb_emit_byte (mb, CEE_LDARG_0 + argnum);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (CEE_LDARG_0 + argnum));
 	} else if (argnum < 256) {
 		mono_mb_emit_byte (mb, CEE_LDARG_S);
-		mono_mb_emit_byte (mb, argnum);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (argnum));
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDARG);
-		mono_mb_emit_i2 (mb, argnum);
+		mono_mb_emit_i2 (mb, GUINT_TO_INT16 (argnum));
 	}
 }
 
@@ -385,11 +385,11 @@ mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum)
 {
 	if (argnum < 256) {
 		mono_mb_emit_byte (mb, CEE_LDARGA_S);
-		mono_mb_emit_byte (mb, argnum);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (argnum));
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDARGA);
-		mono_mb_emit_i2 (mb, argnum);
+		mono_mb_emit_i2 (mb, GUINT_TO_INT16 (argnum));
 	}
 }
 
@@ -401,11 +401,11 @@ mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum)
 {
 	if (locnum < 256) {
 		mono_mb_emit_byte (mb, CEE_LDLOCA_S);
-		mono_mb_emit_byte (mb, locnum);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (locnum));
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDLOCA);
-		mono_mb_emit_i2 (mb, locnum);
+		mono_mb_emit_i2 (mb, GUINT_TO_INT16 (locnum));
 	}
 }
 
@@ -416,14 +416,14 @@ void
 mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num)
 {
 	if (num < 4) {
- 		mono_mb_emit_byte (mb, CEE_LDLOC_0 + num);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (CEE_LDLOC_0 + num));
 	} else if (num < 256) {
 		mono_mb_emit_byte (mb, CEE_LDLOC_S);
-		mono_mb_emit_byte (mb, num);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (num));
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDLOC);
-		mono_mb_emit_i2 (mb, num);
+		mono_mb_emit_i2 (mb, GUINT_TO_INT16 (num));
 	}
 }
 
@@ -434,14 +434,14 @@ void
 mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num)
 {
 	if (num < 4) {
- 		mono_mb_emit_byte (mb, CEE_STLOC_0 + num);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (CEE_STLOC_0 + num));
 	} else if (num < 256) {
 		mono_mb_emit_byte (mb, CEE_STLOC_S);
-		mono_mb_emit_byte (mb, num);
+		mono_mb_emit_byte (mb, GUINT_TO_UINT8 (num));
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_STLOC);
-		mono_mb_emit_i2 (mb, num);
+		mono_mb_emit_i2 (mb, GUINT_TO_INT16 (num));
 	}
 }
 
@@ -452,10 +452,10 @@ void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value)
 {
 	if (value >= -1 && value < 8) {
-		mono_mb_emit_byte (mb, CEE_LDC_I4_0 + value);
+		mono_mb_emit_byte (mb, GINT32_TO_UINT8 (CEE_LDC_I4_0 + value));
 	} else if (value >= -128 && value <= 127) {
 		mono_mb_emit_byte (mb, CEE_LDC_I4_S);
-		mono_mb_emit_byte (mb, value);
+		mono_mb_emit_byte (mb, GINT32_TO_UINT8 (value));
 	} else {
 		mono_mb_emit_byte (mb, CEE_LDC_I4);
 		mono_mb_emit_i4 (mb, value);
@@ -521,7 +521,7 @@ mono_mb_patch_branch (MonoMethodBuilder *mb, guint32 pos)
 void
 mono_mb_patch_short_branch (MonoMethodBuilder *mb, guint32 pos)
 {
-	mono_mb_patch_addr_s (mb, pos, mb->pos - (pos + 1));
+	mono_mb_patch_addr_s (mb, pos, GUINT32_TO_INT8 (mb->pos - (pos + 1)));
 }
 
 void

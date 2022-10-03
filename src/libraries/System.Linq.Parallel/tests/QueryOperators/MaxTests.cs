@@ -246,8 +246,8 @@ namespace System.Linq.Parallel.Tests
         {
             _ = count;
             ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(max, query.Select(x => DelgatedComparable.Delegate(x, Comparer<int>.Default)).Max().Value);
-            Assert.Equal(0, query.Select(x => DelgatedComparable.Delegate(x, ReverseComparer.Instance)).Max().Value);
+            Assert.Equal(max, query.Select(x => DelegatedComparable.Delegate(x, Comparer<int>.Default)).Max().Value);
+            Assert.Equal(0, query.Select(x => DelegatedComparable.Delegate(x, ReverseComparer.Instance)).Max().Value);
         }
 
         [Theory]
@@ -273,8 +273,8 @@ namespace System.Linq.Parallel.Tests
         public static void Max_Other_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(max, query.Max(x => x >= count / 2 ? DelgatedComparable.Delegate(x, Comparer<int>.Default) : null).Value);
-            Assert.Equal(count / 2, query.Max(x => x >= count / 2 ? DelgatedComparable.Delegate(x, ReverseComparer.Instance) : null).Value);
+            Assert.Equal(max, query.Max(x => x >= count / 2 ? DelegatedComparable.Delegate(x, Comparer<int>.Default) : null).Value);
+            Assert.Equal(count / 2, query.Max(x => x >= count / 2 ? DelegatedComparable.Delegate(x, ReverseComparer.Instance) : null).Value);
         }
 
         [Theory]

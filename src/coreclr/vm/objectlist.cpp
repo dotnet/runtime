@@ -179,29 +179,28 @@ UnsynchronizedBlockAllocator::Allocate( size_t size )
 
     _ASSERTE( size <= this->blockSize_ );
 
-    NewHolder<BYTE> buffer;
-
     S_SIZE_T sizecheck = S_SIZE_T(this->offset_) + S_SIZE_T(size) ;
     if( sizecheck.IsOverflow() )
     {
         ThrowOutOfMemory();
     }
 
+    BYTE* bufferPtr;
     if (sizecheck.Value() > this->blockSize_)
     {
-        buffer.Assign( new BYTE[this->blockSize_] );
-        IfFailThrow(this->blockList_.Append( buffer ));
+        NewArrayHolder<BYTE> buffer = new BYTE[this->blockSize_];
+        bufferPtr = (BYTE*)buffer.GetValue();
+        IfFailThrow(this->blockList_.Append( bufferPtr ));
         buffer.SuppressRelease();
         ++this->index_;
         this->offset_ = 0;
     }
     else
     {
-        buffer.Assign( (BYTE*)this->blockList_.Get( index_ ) );
-        buffer.SuppressRelease();
+        bufferPtr = (BYTE*)this->blockList_.Get( index_ );
     }
 
-    void* retval = buffer.GetValue() + this->offset_;
+    void* retval = bufferPtr + this->offset_;
     this->offset_ += size;
 
     return retval;

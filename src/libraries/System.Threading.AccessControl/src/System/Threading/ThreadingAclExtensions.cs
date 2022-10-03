@@ -16,8 +16,10 @@ namespace System.Threading
             return new EventWaitHandleSecurity(handle.GetSafeWaitHandle(), AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static void SetAccessControl(this EventWaitHandle handle, EventWaitHandleSecurity eventSecurity!!)
+        public static void SetAccessControl(this EventWaitHandle handle, EventWaitHandleSecurity eventSecurity)
         {
+            ArgumentNullException.ThrowIfNull(eventSecurity);
+
             eventSecurity.Persist(handle.GetSafeWaitHandle());
         }
 
@@ -26,8 +28,10 @@ namespace System.Threading
             return new MutexSecurity(mutex.GetSafeWaitHandle(), AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static void SetAccessControl(this Mutex mutex, MutexSecurity mutexSecurity!!)
+        public static void SetAccessControl(this Mutex mutex, MutexSecurity mutexSecurity)
         {
+            ArgumentNullException.ThrowIfNull(mutexSecurity);
+
             mutexSecurity.Persist(mutex.GetSafeWaitHandle());
         }
 
@@ -36,8 +40,10 @@ namespace System.Threading
             return new SemaphoreSecurity(semaphore.GetSafeWaitHandle(), AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static void SetAccessControl(this Semaphore semaphore, SemaphoreSecurity semaphoreSecurity!!)
+        public static void SetAccessControl(this Semaphore semaphore, SemaphoreSecurity semaphoreSecurity)
         {
+            ArgumentNullException.ThrowIfNull(semaphoreSecurity);
+
             semaphoreSecurity.Persist(semaphore.GetSafeWaitHandle());
         }
     }

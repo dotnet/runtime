@@ -33,7 +33,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-#if !CORERT
+#if !NATIVEAOT
         internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex + count;
@@ -67,7 +67,7 @@ namespace System.Collections.Generic
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
-    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>?
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T? x, T? y)
@@ -97,14 +97,25 @@ namespace System.Collections.Generic
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
-    public sealed partial class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
+    public sealed partial class NullableEqualityComparer<T> : EqualityComparer<T?>, ISerializable where T : struct
     {
+        public NullableEqualityComparer() { }
+        private NullableEqualityComparer(SerializationInfo info, StreamingContext context) { }
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (!typeof(T).IsAssignableTo(typeof(IEquatable<T>)))
+            {
+                // We used to use NullableComparer only for types implementing IEquatable<T>
+                info.SetType(typeof(ObjectEqualityComparer<T?>));
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T? x, T? y)
         {
             if (x.HasValue)
             {
-                if (y.HasValue) return x.value.Equals(y.value);
+                if (y.HasValue) return EqualityComparer<T>.Default.Equals(x.value, y.value);
                 return false;
             }
             if (y.HasValue) return false;

@@ -359,7 +359,7 @@ namespace System.Reflection
 #pragma warning restore 169
 
         /*
-         * The idea behing this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
+         * The idea behind this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
          * The first delegate cast the this argument to the right type and the second does points to the target method.
          */
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",

@@ -40,6 +40,8 @@ C_FUNC(\Name):
         .global C_FUNC(\Name\()_End)
 C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg

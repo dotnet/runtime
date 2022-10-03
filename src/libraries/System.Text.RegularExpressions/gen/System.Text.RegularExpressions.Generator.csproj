@@ -6,34 +6,40 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- This generator ships as part of the .NET ref pack. Since VS ingests new Roslyn versions at a different cadence than the .NET SDK, we are pinning this generator to build against Roslyn 4.0 to ensure that we don't break users who are using .NET 7 previews in VS. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_0)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Common generator support -->
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
+    <Compile Include="$(CommonPath)Roslyn\ISyntaxHelper.cs" Link="Common\Roslyn\ISyntaxHelper.cs" />
+    <Compile Include="$(CommonPath)Roslyn\CSharpSyntaxHelper.cs" Link="Common\Roslyn\CSharpSyntaxHelper.cs" />
+    <Compile Include="$(CommonPath)Roslyn\GlobalAliases.cs" Link="Common\Roslyn\GlobalAliases.cs" />
+    <Compile Include="$(CommonPath)Roslyn\SyntaxNodeGrouping.cs" Link="Common\Roslyn\SyntaxNodeGrouping.cs" />
+    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" Link="Common\Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" />
+    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" />
+    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" Link="Production\RegexCaseEquivalences.Data.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCaseEquivalences.cs" Link="Production\RegexCaseEquivalences.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCaseBehavior.cs" Link="Production\RegexCaseBehavior.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.cs" Link="Production\RegexCharClass.cs" />
-    <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="Production\RegexCharClass.MappingTable.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexFindOptimizations.cs" Link="Production\RegexFindOptimizations.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexNode.cs" Link="Production\RegexNode.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexNodeKind.cs" Link="Production\RegexNodeKind.cs" />

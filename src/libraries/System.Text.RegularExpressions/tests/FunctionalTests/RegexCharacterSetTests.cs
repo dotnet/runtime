@@ -19,6 +19,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, @"a", RegexOptions.IgnoreCase, new[] { 'a', 'A' } };
                 yield return new object[] { engine, @"ac", RegexOptions.None, new[] { 'a', 'c' } };
+                yield return new object[] { engine, @"\u00E5\u00C5\u212B", RegexOptions.None, new[] { '\u00E5', '\u00C5', '\u212B' } };
                 yield return new object[] { engine, @"ace", RegexOptions.None, new[] { 'a', 'c', 'e' } };
                 yield return new object[] { engine, @"aceg", RegexOptions.None, new[] { 'a', 'c', 'e', 'g' } };
                 yield return new object[] { engine, @"aceg", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'c', 'C', 'e', 'E', 'g', 'G' } };
@@ -37,6 +38,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"a ", RegexOptions.None, new[] { 'a', ' ' } };
                 yield return new object[] { engine, @"a \t\r", RegexOptions.None, new[] { 'a', ' ', '\t', '\r' } };
                 yield return new object[] { engine, @"aeiou", RegexOptions.None, new[] { 'a', 'e', 'i', 'o', 'u' } };
+                yield return new object[] { engine, @"\u0000aeiou\u00FF", RegexOptions.None, new[] { '\u0000', 'a', 'e', 'i', 'o', 'u', '\u00FF' } };
                 yield return new object[] { engine, @"a-a", RegexOptions.None, new[] { 'a' } };
                 yield return new object[] { engine, @"ab", RegexOptions.None, new[] { 'a', 'b' } };
                 yield return new object[] { engine, @"a-b", RegexOptions.None, new[] { 'a', 'b' } };
@@ -45,6 +47,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"ACEGIKMOQSUWY", RegexOptions.None, new[] { 'A', 'C', 'E', 'G', 'I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y' } };
                 yield return new object[] { engine, @"abcAB", RegexOptions.None, new[] { 'A', 'B', 'a', 'b', 'c' } };
                 yield return new object[] { engine, @"a-c", RegexOptions.None, new[] { 'a', 'b', 'c' } };
+                yield return new object[] { engine, @"a-fA-F", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
                 yield return new object[] { engine, @"a-fA-F0-9", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' } };
                 yield return new object[] { engine, @"X-b", RegexOptions.None, new[] { 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b' } };
                 yield return new object[] { engine, @"\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' } };
@@ -55,6 +58,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"[a-z-[d-w-[m-o]]]", RegexOptions.None, new[] { 'a', 'b', 'c', 'm', 'n', 'n', 'o', 'x', 'y', 'z' } };
                 yield return new object[] { engine, @"\p{IsBasicLatin}-[\x00-\x7F]", RegexOptions.None, new char[0] };
                 yield return new object[] { engine, @"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' } };
+                yield return new object[] { engine, @"[\u1000-\u1001\u3000-\u3002\u5000-\u5003]", RegexOptions.None, new[] { '\u1000', '\u1001', '\u3000', '\u3001', '\u3002', '\u5000', '\u5001', '\u5002', '\u5003' } };
             }
         }
 
@@ -69,8 +73,8 @@ namespace System.Text.RegularExpressions.Tests
             }
             else
             {
-                await ValidateSetAsync(engine, $"[{set}]", options, new HashSet<char>(expectedIncluded), null);
-                await ValidateSetAsync(engine, $"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
+                await ValidateSetAsync(engine, $"[{set}]", options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
+                await ValidateSetAsync(engine, $"[^{set}]", options, null, new HashSet<char>(expectedIncluded), validateEveryChar: true);
             }
         }
 
@@ -146,11 +150,19 @@ namespace System.Text.RegularExpressions.Tests
             await ValidateSetAsync(engine, @"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
             await ValidateSetAsync(engine, @"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
             await ValidateSetAsync(engine, @"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
+            foreach (string all in new[] { @"[\d\D]", @"[\D\d]", @"[\w\W]", @"[\W\w]", @"[\s\S]", @"[\S\s]", })
+            {
+                await ValidateSetAsync(engine, all, RegexOptions.None, null, new HashSet<char>(), validateEveryChar: true);
+            }
 
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
+            foreach (string empty in new[] { @"[^\d\D]", @"[^\D\d]", @"[^\w\W]", @"[^\W\w]", @"[^\s\S]", @"[^\S\s]", })
+            {
+                await ValidateSetAsync(engine, empty, RegexOptions.None, set, null, validateEveryChar: true);
+            }
         }
 
         [Theory]
@@ -347,53 +359,77 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "Cc", UnicodeCategory.Control };
-                yield return new object[] { engine, "Cf", UnicodeCategory.Format };
-                yield return new object[] { engine, "Cn", UnicodeCategory.OtherNotAssigned };
-                yield return new object[] { engine, "Co", UnicodeCategory.PrivateUse };
-                yield return new object[] { engine, "Cs", UnicodeCategory.Surrogate };
-                yield return new object[] { engine, "Ll", UnicodeCategory.LowercaseLetter };
-                yield return new object[] { engine, "Lm", UnicodeCategory.ModifierLetter };
-                yield return new object[] { engine, "Lo", UnicodeCategory.OtherLetter };
-                yield return new object[] { engine, "Lt", UnicodeCategory.TitlecaseLetter };
-                yield return new object[] { engine, "Lu", UnicodeCategory.UppercaseLetter };
-                yield return new object[] { engine, "Mc", UnicodeCategory.SpacingCombiningMark };
-                yield return new object[] { engine, "Me", UnicodeCategory.EnclosingMark };
-                yield return new object[] { engine, "Mn", UnicodeCategory.NonSpacingMark };
-                yield return new object[] { engine, "Nd", UnicodeCategory.DecimalDigitNumber };
-                yield return new object[] { engine, "Nl", UnicodeCategory.LetterNumber };
-                yield return new object[] { engine, "No", UnicodeCategory.OtherNumber };
-                yield return new object[] { engine, "Pc", UnicodeCategory.ConnectorPunctuation };
-                yield return new object[] { engine, "Pd", UnicodeCategory.DashPunctuation };
-                yield return new object[] { engine, "Pe", UnicodeCategory.ClosePunctuation };
-                yield return new object[] { engine, "Po", UnicodeCategory.OtherPunctuation };
-                yield return new object[] { engine, "Ps", UnicodeCategory.OpenPunctuation };
-                yield return new object[] { engine, "Pf", UnicodeCategory.FinalQuotePunctuation };
-                yield return new object[] { engine, "Pi", UnicodeCategory.InitialQuotePunctuation };
-                yield return new object[] { engine, "Sc", UnicodeCategory.CurrencySymbol };
-                yield return new object[] { engine, "Sk", UnicodeCategory.ModifierSymbol };
-                yield return new object[] { engine, "Sm", UnicodeCategory.MathSymbol };
-                yield return new object[] { engine, "So", UnicodeCategory.OtherSymbol };
-                yield return new object[] { engine, "Zl", UnicodeCategory.LineSeparator };
-                yield return new object[] { engine, "Zp", UnicodeCategory.ParagraphSeparator };
-                yield return new object[] { engine, "Zs", UnicodeCategory.SpaceSeparator };
+                // https://docs.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-unicode-general-categories
+
+                yield return new object[] { engine, "L", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter } };
+                yield return new object[] { engine, "Lu", new[] { UnicodeCategory.UppercaseLetter } };
+                yield return new object[] { engine, "Ll", new[] { UnicodeCategory.LowercaseLetter } };
+                yield return new object[] { engine, "Lt", new[] { UnicodeCategory.TitlecaseLetter } };
+                yield return new object[] { engine, "Lm", new[] { UnicodeCategory.ModifierLetter } };
+                yield return new object[] { engine, "Lo", new[] { UnicodeCategory.OtherLetter } };
+
+                yield return new object[] { engine, "M", new[] { UnicodeCategory.NonSpacingMark, UnicodeCategory.SpacingCombiningMark, UnicodeCategory.EnclosingMark } };
+                yield return new object[] { engine, "Mn", new[] { UnicodeCategory.NonSpacingMark } };
+                yield return new object[] { engine, "Mc", new[] { UnicodeCategory.SpacingCombiningMark } };
+                yield return new object[] { engine, "Me", new[] { UnicodeCategory.EnclosingMark } };
+
+                yield return new object[] { engine, "N", new[] { UnicodeCategory.DecimalDigitNumber, UnicodeCategory.LetterNumber, UnicodeCategory.OtherNumber } };
+                yield return new object[] { engine, "Nd", new[] { UnicodeCategory.DecimalDigitNumber } };
+                yield return new object[] { engine, "Nl", new[] { UnicodeCategory.LetterNumber } };
+                yield return new object[] { engine, "No", new[] { UnicodeCategory.OtherNumber } };
+
+                yield return new object[] { engine, "P", new[] { UnicodeCategory.ConnectorPunctuation, UnicodeCategory.DashPunctuation, UnicodeCategory.OpenPunctuation, UnicodeCategory.ClosePunctuation, UnicodeCategory.InitialQuotePunctuation, UnicodeCategory.FinalQuotePunctuation, UnicodeCategory.OtherPunctuation } };
+                yield return new object[] { engine, "Pc", new[] { UnicodeCategory.ConnectorPunctuation } };
+                yield return new object[] { engine, "Pd", new[] { UnicodeCategory.DashPunctuation } };
+                yield return new object[] { engine, "Ps", new[] { UnicodeCategory.OpenPunctuation } };
+                yield return new object[] { engine, "Pe", new[] { UnicodeCategory.ClosePunctuation } };
+                yield return new object[] { engine, "Pi", new[] { UnicodeCategory.InitialQuotePunctuation } };
+                yield return new object[] { engine, "Pf", new[] { UnicodeCategory.FinalQuotePunctuation } };
+                yield return new object[] { engine, "Po", new[] { UnicodeCategory.OtherPunctuation } };
+
+                yield return new object[] { engine, "S", new[] { UnicodeCategory.MathSymbol, UnicodeCategory.CurrencySymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherSymbol } };
+                yield return new object[] { engine, "Sm", new[] { UnicodeCategory.MathSymbol } };
+                yield return new object[] { engine, "Sc", new[] { UnicodeCategory.CurrencySymbol } };
+                yield return new object[] { engine, "Sk", new[] { UnicodeCategory.ModifierSymbol } };
+                yield return new object[] { engine, "So", new[] { UnicodeCategory.OtherSymbol } };
+
+                yield return new object[] { engine, "Z", new[] { UnicodeCategory.SpaceSeparator, UnicodeCategory.LineSeparator, UnicodeCategory.ParagraphSeparator } };
+                yield return new object[] { engine, "Zs", new[] { UnicodeCategory.SpaceSeparator } };
+                yield return new object[] { engine, "Zl", new[] { UnicodeCategory.LineSeparator } };
+                yield return new object[] { engine, "Zp", new[] { UnicodeCategory.ParagraphSeparator } };
+
+                yield return new object[] { engine, "C", new[] { UnicodeCategory.Control, UnicodeCategory.Format, UnicodeCategory.Surrogate, UnicodeCategory.PrivateUse, UnicodeCategory.OtherNotAssigned } };
+                yield return new object[] { engine, "Cc", new[] { UnicodeCategory.Control } };
+                yield return new object[] { engine, "Cf", new[] { UnicodeCategory.Format } };
+                yield return new object[] { engine, "Cs", new[] { UnicodeCategory.Surrogate } };
+                yield return new object[] { engine, "Co", new[] { UnicodeCategory.PrivateUse } };
+                yield return new object[] { engine, "Cn", new[] { UnicodeCategory.OtherNotAssigned } };
             }
         }
 
         [Theory]
         [MemberData(nameof(UnicodeCategoriesInclusionsExpected_MemberData))]
-        public async Task UnicodeCategoriesInclusionsExpected(RegexEngine engine, string generalCategory, UnicodeCategory unicodeCategory)
+        public async Task UnicodeCategoriesInclusionsExpected(RegexEngine engine, string generalCategory, UnicodeCategory[] unicodeCategory) =>
+            await ValidateUnicodeCategoryInclusionExclusion(engine, @$"\p{{{generalCategory}}}", @$"\P{{{generalCategory}}}", unicodeCategory);
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task LetterOrDigitsInclusionsExpected(RegexEngine engine) =>
+            await ValidateUnicodeCategoryInclusionExclusion(engine, @"[\p{L}\d]", @"[^\p{L}\d]",
+                new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter, UnicodeCategory.DecimalDigitNumber });
+
+        private async Task ValidateUnicodeCategoryInclusionExclusion(RegexEngine engine, string inclusionPattern, string exclusionPattern, UnicodeCategory[] unicodeCategory)
         {
             Regex r;
 
             char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
-            int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
+            int expectedInCategory = allChars.Count(c => Array.IndexOf(unicodeCategory, char.GetUnicodeCategory(c)) >= 0);
             int expectedNotInCategory = allChars.Length - expectedInCategory;
 
-            r = await RegexHelpers.GetRegexAsync(engine, @$"\p{{{generalCategory}}}");
+            r = await RegexHelpers.GetRegexAsync(engine, inclusionPattern);
             Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
 
-            r = await RegexHelpers.GetRegexAsync(engine, (@$"\P{{{generalCategory}}}"));
+            r = await RegexHelpers.GetRegexAsync(engine, exclusionPattern);
             Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
         }
 

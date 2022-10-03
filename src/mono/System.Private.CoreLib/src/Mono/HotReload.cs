@@ -86,7 +86,7 @@ internal class InstanceFieldTable
 //
 // Additionally Mono uses this for storing added static fields.
 [StructLayout(LayoutKind.Sequential)]
-internal class FieldStore
+internal sealed class FieldStore
 {
     // keep in sync with hot_reload-internals.h
     private object? _loc;

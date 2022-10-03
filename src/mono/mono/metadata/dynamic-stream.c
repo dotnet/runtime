@@ -28,7 +28,7 @@ mono_dynstream_init (MonoDynamicStream *sh)
 }
 
 static void
-make_room_in_stream (MonoDynamicStream *stream, int size)
+make_room_in_stream (MonoDynamicStream *stream, guint32 size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -51,7 +51,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	guint32 idx;
-	guint32 len;
+	size_t len;
 	gpointer oldkey, oldval;
 
 	if (g_hash_table_lookup_extended (sh->hash, str, &oldkey, &oldval))
@@ -60,7 +60,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	len = strlen (str) + 1;
 	idx = sh->index;
 
-	make_room_in_stream (sh, idx + len);
+	make_room_in_stream (sh, idx + GSIZE_TO_UINT32(len));
 
 	/*
 	 * We strdup the string even if we already copy them in sh->data
@@ -69,7 +69,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	 */
 	g_hash_table_insert (sh->hash, g_strdup (str), GUINT_TO_POINTER (idx));
 	memcpy (sh->data + idx, str, len);
-	sh->index += len;
+	sh->index += (guint32)len;
 	return idx;
 }
 

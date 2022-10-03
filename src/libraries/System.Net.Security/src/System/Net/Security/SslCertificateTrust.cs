@@ -20,13 +20,14 @@ namespace System.Net.Security
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_trust_store);
             }
-#else
-            if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())
+#endif
+            if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS() &&
+                // Necessary functions are available only on win 8 onwards
+                !OperatingSystem.IsWindowsVersionAtLeast(6, 2))
             {
                 // to be removed when implemented.
                 throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
             }
-#endif
             if (!store.IsOpen)
             {
                 store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
@@ -38,21 +39,21 @@ namespace System.Net.Security
             return trust;
         }
 
-        [UnsupportedOSPlatform("windows")]
         public static SslCertificateTrust CreateForX509Collection(X509Certificate2Collection trustList, bool sendTrustInHandshake = false)
         {
-            if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())
-            {
-                // to be removed when implemented.
-                throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
-            }
 
 #if TARGET_WINDOWS
             if (sendTrustInHandshake)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_trust_collection);
             }
+#else
+            if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
+            }
 #endif
+
             var trust = new SslCertificateTrust();
             trust._trustList = trustList;
             trust._sendTrustInHandshake = sendTrustInHandshake;

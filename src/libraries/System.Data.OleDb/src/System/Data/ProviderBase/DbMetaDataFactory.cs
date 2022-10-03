@@ -92,7 +92,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataRow row in sourceTable.Rows)
             {
-                if (SupportedByCurrentVersion(row) == true)
+                if (SupportedByCurrentVersion(row))
                 {
                     newRow = destinationTable.NewRow();
                     for (int i = 0; i < destinationColumns.Count; i++)
@@ -201,16 +201,13 @@ namespace System.Data.ProviderBase
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
             }
 
             return resultTable;
         }
 
-        private DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
+        private static DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
         {
             DataColumn newDestinationColumn;
             int currentColumn;
@@ -218,7 +215,7 @@ namespace System.Data.ProviderBase
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
                 {
                     columnCount++;
                 }
@@ -234,7 +231,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
                 {
                     newDestinationColumn = new DataColumn(sourceColumn.ColumnName, sourceColumn.DataType);
                     destinationColumns.Add(newDestinationColumn);
@@ -291,7 +288,7 @@ namespace System.Data.ProviderBase
                     {
                         if (collectionName == candidateCollectionName)
                         {
-                            if (haveExactMatch == true)
+                            if (haveExactMatch)
                             {
                                 throw ADP.CollectionNameIsNotUnique(collectionName);
                             }
@@ -304,7 +301,7 @@ namespace System.Data.ProviderBase
                             // have an inexact match - ok only if it is the only one
                             if (exactCollectionName != null)
                             {
-                                // can't fail here becasue we may still find an exact match
+                                // can't fail here because we may still find an exact match
                                 haveMultipleInexactMatches = true;
                             }
                             requestedCollectionRow = row;
@@ -326,9 +323,9 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if ((haveExactMatch == false) && (haveMultipleInexactMatches == true))
+            if (!haveExactMatch && haveMultipleInexactMatches)
             {
-                throw ADP.AmbigousCollectionName(collectionName);
+                throw ADP.AmbiguousCollectionName(collectionName);
             }
 
             return requestedCollectionRow;
@@ -456,7 +453,7 @@ namespace System.Data.ProviderBase
 
                     // TODO: Consider an alternate method that doesn't involve special casing -- perhaps _prepareCollection
 
-                    // for the data source infomation table we need to fix up the version columns at run time
+                    // for the data source information table we need to fix up the version columns at run time
                     // since the version is determined at run time
                     if (exactCollectionName == DbMetaDataCollectionNames.DataSourceInformation)
                     {
@@ -479,7 +476,7 @@ namespace System.Data.ProviderBase
             return requestedSchema;
         }
 
-        private bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
+        private static bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
         {
             bool result = true;
             string sourceColumnName = sourceColumn.ColumnName;
@@ -540,7 +537,7 @@ namespace System.Data.ProviderBase
             }
 
             // if the minmum version was ok what about the maximum version
-            if (result == true)
+            if (result)
             {
                 versionColumn = tableColumns[_maximumVersion];
                 if (versionColumn != null)

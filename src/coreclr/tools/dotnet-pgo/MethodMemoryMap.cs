@@ -218,7 +218,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 if (cur.EndAddress <= next.StartAddress)
                     continue;
 
-                Debug.Fail("Overlap in memory ranges");
+                logger.PrintWarning($"Overlap in memory ranges {cur.Method} overlaps with {next.Method}");
             }
 #endif
         }

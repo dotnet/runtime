@@ -322,7 +322,7 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        private SafeProvHandle AcquireSafeProviderHandle()
+        private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultDssProviderType), out safeProvHandle);
@@ -335,7 +335,7 @@ namespace System.Security.Cryptography
         /// <param name="keyBlob">A byte array that represents a DSA key blob.</param>
         public void ImportCspBlob(byte[] keyBlob)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SafeCapiKeyHandle safeKeyHandle;
 
@@ -367,7 +367,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
         }
 
@@ -376,7 +376,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
@@ -478,8 +478,10 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The hash value of the data to be signed.</param>
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <returns>The DSA signature for the specified hash value.</returns>
-        public byte[] SignHash(byte[] rgbHash!!, string? str)
+        public byte[] SignHash(byte[] rgbHash, string? str)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
@@ -504,8 +506,11 @@ namespace System.Security.Cryptography
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <param name="rgbSignature">The signature data to be verified.</param>
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
-        public bool VerifyHash(byte[] rgbHash!!, string? str, byte[] rgbSignature!!)
+        public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             return CapiHelper.VerifySign(
@@ -520,8 +525,10 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Find whether a DSS key blob is public.
         /// </summary>
-        private static bool IsPublic(byte[] keyBlob!!)
+        private static bool IsPublic(byte[] keyBlob)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             // The CAPI DSS public key representation consists of the following sequence:
             //  - BLOBHEADER (the first byte is bType)
             //  - DSSPUBKEY or DSSPUBKEY_VER3 (the first field is the magic field)
@@ -539,14 +546,6 @@ namespace System.Security.Cryptography
             }
 
             return true;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(DSACryptoServiceProvider));
-            }
         }
     }
 }

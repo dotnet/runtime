@@ -55,7 +55,7 @@ static const char*descriptor_types [] = {
 	"small pointer-free",
 	"complex",
 	"vector",
-	"complex arrray",
+	"complex array",
 	"complex pointer-free"
 };
 
@@ -177,9 +177,9 @@ static void
 check_consistency_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
-	GCVTable vt = LOAD_VTABLE (obj);
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
+	GCVTable vtable = LOAD_VTABLE (obj);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vtable, sgen_client_vtable_get_name (vtable));
 
 #include "sgen-scan-object.h"
 }
@@ -238,10 +238,10 @@ check_mod_union_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
 	gboolean in_los = (gboolean) (size_t) dummy;
-	GCVTable vt = LOAD_VTABLE (obj);
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
+	GCVTable vtable = LOAD_VTABLE (obj);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
 	guint8 *cards;
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", obj, vt, sgen_client_vtable_get_name (vt));
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", obj, vtable, sgen_client_vtable_get_name (vtable));
 
 	if (!is_major_or_los_object_marked (obj))
 		return;
@@ -676,7 +676,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 }
 
 /*
- * Checks that no objects in the nursery are fowarded or pinned.  This
+ * Checks that no objects in the nursery are forwarded or pinned.  This
  * is a precondition to restarting the mutator while doing a
  * concurrent collection.  Note that we don't clear fragments because
  * we depend on that having happened earlier.
@@ -733,8 +733,7 @@ scan_object_for_specific_ref (GCObject *obj, GCObject *key)
 	} else {
 		mword *words = (mword*)obj;
 		size_t size = safe_object_get_size (obj);
-		int i;
-		for (i = 0; i < size / sizeof (mword); ++i) {
+		for (gsize i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
 				GCVTable vtable = SGEN_LOAD_VTABLE (obj);
 				g_print ("found possible ref to %p in object %p (%s.%s) at offset %ld\n",
@@ -966,13 +965,13 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 
 	field = NULL;
 	for (klass = obj->vtable->klass; klass; klass = m_class_get_parent (klass)) {
-		int i;
-
-		int fcount = mono_class_get_field_count (klass);
-		MonoClassField *klass_fields = m_class_get_fields (klass);
-		for (i = 0; i < fcount; ++i) {
-			if (klass_fields[i].offset == offset) {
-				field = &klass_fields[i];
+		gpointer iter = NULL;
+		MonoClassField *cur;
+		while ((cur = mono_class_get_fields_internal (klass, &iter))) {
+			/* metadata-update: there are no domains in .NET */
+			g_assert (!m_field_is_from_update (cur));
+			if (m_field_get_offset (cur) == offset) {
+				field = cur;
 				break;
 			}
 		}
@@ -1002,9 +1001,9 @@ static void
 scan_object_for_xdomain_refs (GCObject *obj, mword size, void *data)
 {
 	char *start = (char*)obj;
-	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
-	MonoDomain *domain = vt->domain;
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
+	MonoVTable *vtable = SGEN_LOAD_VTABLE (obj);
+	MonoDomain *domain = vtable->domain;
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
 
 	#include "sgen-scan-object.h"
 }
@@ -1136,7 +1135,6 @@ void
 sgen_debug_dump_heap (const char *type, int num, const char *reason)
 {
 	SgenPointerQueue *pinned_objects;
-	int i;
 
 	if (!heap_dump_file)
 		return;
@@ -1155,7 +1153,7 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 
 	fprintf (heap_dump_file, "<pinned-objects>\n");
 	pinned_objects = sgen_pin_stats_get_object_list ();
-	for (i = 0; i < pinned_objects->next_slot; ++i)
+	for (gsize i = 0; i < pinned_objects->next_slot; ++i)
 		dump_object ((GCObject *)pinned_objects->data [i], TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 

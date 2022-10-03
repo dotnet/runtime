@@ -49,6 +49,7 @@ if ($Internal) {
         "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf"  }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
         "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
@@ -154,24 +155,13 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-
-    Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose      
-    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
-    $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
-}
-
-if ($iOSMono) {
-    if(!(Test-Path $WorkItemDirectory))
+    if($Kind -ne "android_scenarios_net6") 
     {
-        mkdir $WorkItemDirectory
+        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
     }
-    if($iOSLlvmBuild) {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
-    } else {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
-        Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
-        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
-    }
+        Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
+        Copy-Item -path "$SourceDirectory\MauiBlazorAndroidDefault.apk" $PayloadDirectory -Verbose
+        Copy-Item -path "$SourceDirectory\MauiAndroidPodcast.apk" $PayloadDirectory -Verbose
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }

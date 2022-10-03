@@ -69,6 +69,9 @@ namespace System.Diagnostics
         [System.ObsoleteAttribute("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize { get { throw null; } }
         public long PrivateMemorySize64 { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
         public System.TimeSpan PrivilegedProcessorTime { get { throw null; } }
         public string ProcessName { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -81,6 +84,9 @@ namespace System.Diagnostics
         public System.IO.StreamWriter StandardInput { get { throw null; } }
         public System.IO.StreamReader StandardOutput { get { throw null; } }
         public System.Diagnostics.ProcessStartInfo StartInfo { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public System.DateTime StartTime { get { throw null; } }
         public System.ComponentModel.ISynchronizeInvoke? SynchronizingObject { get { throw null; } set { } }
         public System.Diagnostics.ProcessThreadCollection Threads { get { throw null; } }
@@ -168,9 +174,11 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
+        public bool WaitForExit(System.TimeSpan timeout) { throw null; }
         public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
+        public bool WaitForInputIdle(System.TimeSpan timeout) { throw null; }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessModule : System.ComponentModel.Component

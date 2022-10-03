@@ -40,10 +40,10 @@ namespace System.Net.Sockets
         {
             Interop.Winsock.EnsureInitialized();
 
-            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
-                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
+            socket = new SafeSocketHandle();
+            Marshal.InitHandle(socket, Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT));
 
-            socket = new SafeSocketHandle(handle, ownsHandle: true);
             if (socket.IsInvalid)
             {
                 SocketError error = GetLastSocketError();
@@ -72,22 +72,22 @@ namespace System.Net.Sockets
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
+                socket = new SafeSocketHandle();
+
                 // Sockets are non-inheritable in .NET Core.
                 // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
                 // we need to disable handle inheritance when constructing the new socket handle from Protocol Info.
                 // Additionally, it looks like WSA_FLAG_NO_HANDLE_INHERIT has no effect when being used with the Protocol Info
                 // variant of WSASocketW, so it is being passed to that call only for consistency.
                 // Inheritance is being disabled with SetHandleInformation(...) after the WSASocketW call.
-                IntPtr handle = Interop.Winsock.WSASocketW(
+                Marshal.InitHandle(socket, Interop.Winsock.WSASocketW(
                     (AddressFamily)(-1),
                     (SocketType)(-1),
                     (ProtocolType)(-1),
                     (IntPtr)protocolInfoBytes,
                     0,
                     Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
-                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
-
-                socket = new SafeSocketHandle(handle, ownsHandle: true);
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT));
 
                 if (socket.IsInvalid)
                 {
@@ -178,9 +178,9 @@ namespace System.Net.Sockets
 
         public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressSize, out SafeSocketHandle socket)
         {
-            IntPtr handle = Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize);
+            socket = new SafeSocketHandle();
+            Marshal.InitHandle(socket, Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize));
 
-            socket = new SafeSocketHandle(handle, ownsHandle: true);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
@@ -207,8 +207,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];
@@ -329,8 +329,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];

@@ -70,6 +70,33 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IndexOf()
+        {
+            var builder = ImmutableSortedSet<int>.Empty.ToBuilder();
+            Assert.Equal(~0, builder.IndexOf(5));
+
+            builder = ImmutableSortedSet<int>.Empty.Union(Enumerable.Range(1, 10).Select(n => n * 10)).ToBuilder();
+            Assert.Equal(0, builder.IndexOf(10));
+            Assert.Equal(1, builder.IndexOf(20));
+            Assert.Equal(4, builder.IndexOf(50));
+            Assert.Equal(8, builder.IndexOf(90));
+            Assert.Equal(9, builder.IndexOf(100));
+
+            Assert.Equal(~0, builder.IndexOf(5));
+            Assert.Equal(~1, builder.IndexOf(15));
+            Assert.Equal(~2, builder.IndexOf(25));
+            Assert.Equal(~5, builder.IndexOf(55));
+            Assert.Equal(~9, builder.IndexOf(95));
+            Assert.Equal(~10, builder.IndexOf(105));
+
+            var nullableSet = ImmutableSortedSet<int?>.Empty.ToBuilder();
+            Assert.Equal(~0, nullableSet.IndexOf(null));
+            nullableSet.Add(null);
+            nullableSet.Add(0);
+            Assert.Equal(0, nullableSet.IndexOf(null));
+        }
+
+        [Fact]
         public void EnumerateBuilderWhileMutating()
         {
             var builder = ImmutableSortedSet<int>.Empty.Union(Enumerable.Range(1, 10)).ToBuilder();
@@ -351,7 +378,7 @@ namespace System.Collections.Immutable.Tests
             Assert.False(builder.Remove(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedSet.CreateBuilder<string>());

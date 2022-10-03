@@ -361,9 +361,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
-            TemplateLocator templateLocator = new TemplateLocator();
             NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
-            InstantiatedMethod templateMethod = templateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
             if (templateMethod == null)
                 return false;
 
@@ -387,6 +386,7 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
 
+#if FEATURE_UNIVERSAL_GENERICS
             if (templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
             {
                 // Check if we need to wrap the method pointer into a calling convention converter thunk
@@ -421,12 +421,13 @@ namespace Internal.Runtime.TypeLoader
                 // TODO! add a new call converter thunk that will pass the instantiating arg through and use a fat function pointer.
                 // should allow us to make fewer thunks.
             }
+#endif
 
             TypeSystemContextFactory.Recycle(context);
             return true;
         }
 
-        #region Privates
+#region Privates
         private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
             result = IntPtr.Zero;
@@ -444,7 +445,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private bool TryGetStaticGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
+        private static bool TryGetStaticGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
             // Search the hashtable for a generic instantiation match
 
@@ -548,6 +549,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        #endregion
+#endregion
     }
 }

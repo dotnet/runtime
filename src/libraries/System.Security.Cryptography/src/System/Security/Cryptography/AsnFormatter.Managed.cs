@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
             return null;
         }
 
-        private string? FormatSubjectAlternativeName(byte[] rawData)
+        private static string? FormatSubjectAlternativeName(byte[] rawData)
         {
             // Because SubjectAlternativeName is a commonly parsed structure, we'll
             // specifically format this one.  And we'll match the OpenSSL format, which

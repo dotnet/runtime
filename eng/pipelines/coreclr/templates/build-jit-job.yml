@@ -62,7 +62,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''
@@ -106,7 +106,7 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits -component spmi
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits -component spmi
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits -component spmi
         displayName: Build CoreCLR JIT
 
     - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:

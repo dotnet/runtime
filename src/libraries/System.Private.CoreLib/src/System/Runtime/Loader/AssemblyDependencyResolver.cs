@@ -31,8 +31,10 @@ namespace System.Runtime.Loader
         private readonly string[] _resourceSearchPaths;
         private readonly string[] _assemblyDirectorySearchPaths;
 
-        public AssemblyDependencyResolver(string componentAssemblyPath!!)
+        public AssemblyDependencyResolver(string componentAssemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(componentAssemblyPath);
+
             string? assemblyPathsList = null;
             string? nativeSearchPathsList = null;
             string? resourceSearchPathsList = null;
@@ -105,8 +107,10 @@ namespace System.Runtime.Loader
             _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath)! };
         }
 
-        public string? ResolveAssemblyToPath(AssemblyName assemblyName!!)
+        public string? ResolveAssemblyToPath(AssemblyName assemblyName)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             // Determine if the assembly name is for a satellite assembly or not
             // This is the same logic as in AssemblyBinder::BindByTpaList in CoreCLR
             // - If the culture name is non-empty and it's not 'neutral'
@@ -151,8 +155,10 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        public string? ResolveUnmanagedDllToPath(string unmanagedDllName!!)
+        public string? ResolveUnmanagedDllToPath(string unmanagedDllName)
         {
+            ArgumentNullException.ThrowIfNull(unmanagedDllName);
+
             string[] searchPaths;
             if (unmanagedDllName.Contains(Path.DirectorySeparatorChar))
             {

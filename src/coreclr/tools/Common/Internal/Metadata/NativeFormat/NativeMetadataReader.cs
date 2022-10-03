@@ -16,6 +16,9 @@ namespace Internal.Metadata.NativeFormat
 {
     // This Enum matches CorMethodSemanticsAttr defined in CorHdr.h
     [Flags]
+#if SYSTEM_PRIVATE_CORELIB
+    [ReflectionBlocked]
+#endif
     public enum MethodSemanticsAttributes
     {
         Setter = 0x0001,
@@ -28,6 +31,9 @@ namespace Internal.Metadata.NativeFormat
 
     // This Enum matches CorPInvokeMap defined in CorHdr.h
     [Flags]
+#if SYSTEM_PRIVATE_CORELIB
+    [ReflectionBlocked]
+#endif
     public enum PInvokeAttributes
     {
         NoMangle = 0x0001,
@@ -148,6 +154,10 @@ namespace Internal.Metadata.NativeFormat
 #endif
     }
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public static class NativeFormatReaderExtensions
     {
         public static string GetString(this MetadataReader reader, ConstantStringValueHandle handle)
@@ -253,7 +263,7 @@ namespace Internal.Metadata.NativeFormat
         public void Decode(NativeReader reader)
         {
             if (reader.ReadUInt32(0) != Signature)
-                reader.ThrowBadImageFormatException();
+                NativeReader.ThrowBadImageFormatException();
             reader.Read(4, out ScopeDefinitions);
         }
     }

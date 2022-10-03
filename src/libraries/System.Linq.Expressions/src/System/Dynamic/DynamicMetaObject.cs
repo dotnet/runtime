@@ -25,8 +25,8 @@ namespace System.Dynamic
         /// <param name="restrictions">The set of binding restrictions under which the binding is valid.</param>
         public DynamicMetaObject(Expression expression, BindingRestrictions restrictions)
         {
-            ContractUtils.RequiresNotNull(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(restrictions, nameof(restrictions));
+            ArgumentNullException.ThrowIfNull(expression);
+            ArgumentNullException.ThrowIfNull(restrictions);
 
             Expression = expression;
             Restrictions = restrictions;
@@ -106,7 +106,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindConvert(ConvertBinder binder)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackConvert(this);
         }
 
@@ -117,7 +117,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindGetMember(GetMemberBinder binder)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackGetMember(this);
         }
 
@@ -129,7 +129,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackSetMember(this, value);
         }
 
@@ -140,7 +140,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackDeleteMember(this);
         }
 
@@ -152,7 +152,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackGetIndex(this, indexes);
         }
 
@@ -165,7 +165,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackSetIndex(this, indexes, value);
         }
 
@@ -177,7 +177,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackDeleteIndex(this, indexes);
         }
 
@@ -189,7 +189,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackInvokeMember(this, args);
         }
 
@@ -201,7 +201,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackInvoke(this, args);
         }
 
@@ -213,7 +213,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackCreateInstance(this, args);
         }
 
@@ -224,7 +224,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindUnaryOperation(UnaryOperationBinder binder)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackUnaryOperation(this);
         }
 
@@ -236,7 +236,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public virtual DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return binder.FallbackBinaryOperation(this, arg);
         }
 
@@ -253,13 +253,13 @@ namespace System.Dynamic
         /// <returns>The array of expressions.</returns>
         internal static Expression[] GetExpressions(DynamicMetaObject[] objects)
         {
-            ContractUtils.RequiresNotNull(objects, nameof(objects));
+            ArgumentNullException.ThrowIfNull(objects);
 
             Expression[] res = new Expression[objects.Length];
             for (int i = 0; i < objects.Length; i++)
             {
                 DynamicMetaObject mo = objects[i];
-                ContractUtils.RequiresNotNull(mo, nameof(objects));
+                ArgumentNullException.ThrowIfNull(mo, nameof(objects));
                 Expression expr = mo.Expression;
                 Debug.Assert(expr != null, "Unexpected null expression; ctor should have caught this.");
                 res[i] = expr;
@@ -280,7 +280,7 @@ namespace System.Dynamic
         /// </returns>
         public static DynamicMetaObject Create(object value, Expression expression)
         {
-            ContractUtils.RequiresNotNull(expression, nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
 
             if (value is IDynamicMetaObjectProvider ido)
             {

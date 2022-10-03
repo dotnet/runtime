@@ -586,7 +586,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -608,7 +608,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -642,7 +642,7 @@ Return Value:
     ULONG UnwindWords;
 
     //
-    // Unless a special frame is enountered, assume that any unwinding
+    // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
     // appropriately (it will be cleared again if the special cases apply).
     //
@@ -1049,7 +1049,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     FunctionEntry - Supplies the address of the function table entry for the
         specified function. If appropriate, this should have already been
@@ -1068,7 +1068,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 

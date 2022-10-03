@@ -8,11 +8,22 @@ const DotNetEntropyLib = {
         // https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
         batchedQuotaMax: 65536,
         getBatchedRandomValues: function (buffer, bufferLength) {
+            // Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
+            const needTempBuf = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer;
+            // if we need a temporary buffer, make one that is big enough and write into it from the beginning
+            // otherwise, use the wasm instance memory and write at the given 'buffer' pointer offset.
+            const buf = needTempBuf ? new ArrayBuffer(bufferLength) : Module.HEAPU8.buffer;
+            const offset = needTempBuf ? 0 : buffer;
             // for modern web browsers
             // map the work array to the memory buffer passed with the length
             for (let i = 0; i < bufferLength; i += this.batchedQuotaMax) {
-                const view = new Uint8Array(Module.HEAPU8.buffer, buffer + i, Math.min(bufferLength - i, this.batchedQuotaMax));
+                const view = new Uint8Array(buf, offset + i, Math.min(bufferLength - i, this.batchedQuotaMax));
                 crypto.getRandomValues(view)
+            }
+            if (needTempBuf) {
+                // copy data out of the temporary buffer into the wasm instance memory
+                const heapView = new Uint8Array(Module.HEAPU8.buffer, buffer, bufferLength);
+                heapView.set(new Uint8Array (buf));
             }
         }
     },

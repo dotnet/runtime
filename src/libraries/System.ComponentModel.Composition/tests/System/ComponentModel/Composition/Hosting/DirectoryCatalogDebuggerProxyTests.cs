@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        public void Constuctor_ValueAsCatalogArgument_ShouldSetPathProperty()
+        public void Constructor_ValueAsCatalogArgument_ShouldSetPathProperty()
         {
             string path = GetTemporaryDirectory();
 
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
-        public void Constuctor_ValueAsCatalogArgument_ShouldSetSearchPatternProperty()
+        public void Constructor_ValueAsCatalogArgument_ShouldSetSearchPatternProperty()
         {
             string directoryPath = GetTemporaryDirectory();
             var expectations = new ExpectationCollection<string, string>();

@@ -9,7 +9,6 @@ namespace System.Diagnostics.Eventing.Reader
 {
     public class EventLogRecord : EventRecord
     {
-        private const int SYSTEM_PROPERTY_COUNT = 18;
         private readonly EventLogSession _session;
 
         private readonly NativeWrapper.SystemProperties _systemProperties;
@@ -58,7 +57,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 if (_systemProperties.filled == false)
                 {
-                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties, SYSTEM_PROPERTY_COUNT);
+                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties);
                     _systemProperties.filled = true;
                 }
             }
@@ -236,11 +235,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _containerChannel;
                 lock (_syncObject)
                 {
-                    if (_containerChannel == null)
-                    {
-                        _containerChannel = (string)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
-                    }
-                    return _containerChannel;
+                    return _containerChannel ??= (string)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
                 }
             }
         }
@@ -253,11 +248,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _matchedQueryIds;
                 lock (_syncObject)
                 {
-                    if (_matchedQueryIds == null)
-                    {
-                        _matchedQueryIds = (int[])NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
-                    }
-                    return _matchedQueryIds;
+                    return _matchedQueryIds ??= (int[])NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
                 }
             }
         }
@@ -343,11 +334,11 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                if (_taskNameReady == true)
+                if (_taskNameReady)
                     return _taskName;
                 lock (_syncObject)
                 {
-                    if (_taskNameReady == false)
+                    if (!_taskNameReady)
                     {
                         _taskNameReady = true;
                         _taskName = _cachedMetadataInformation.GetTaskDisplayName(this.ProviderName, Handle);
@@ -365,11 +356,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _keywordsNames;
                 lock (_syncObject)
                 {
-                    if (_keywordsNames == null)
-                    {
-                        _keywordsNames = _cachedMetadataInformation.GetKeywordDisplayNames(this.ProviderName, Handle);
-                    }
-                    return _keywordsNames;
+                    return _keywordsNames ??= _cachedMetadataInformation.GetKeywordDisplayNames(this.ProviderName, Handle);
                 }
             }
         }
@@ -389,8 +376,10 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector!!)
+        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector)
         {
+            ArgumentNullException.ThrowIfNull(propertySelector);
+
             return NativeWrapper.EvtRenderBufferWithContextUserOrValues(propertySelector.Handle, Handle);
         }
 

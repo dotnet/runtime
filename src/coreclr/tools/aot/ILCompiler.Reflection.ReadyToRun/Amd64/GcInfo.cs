@@ -547,7 +547,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 int finalStateOffset = bitOffset; // points to the finalState bit array (array of bits indicating if the slot is live at the end of the chunk)
                 bitOffset += (int)numCouldBeLiveSlots; // points to the array of code offsets
 
-                int normChunkBaseCodeOffset = currentChunk * _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; // the sum of the sizes of all preceeding chunks
+                int normChunkBaseCodeOffset = currentChunk * _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; // the sum of the sizes of all preceding chunks
                 for (int i = 0; i < numCouldBeLiveSlots; i++)
                 {
                     // get the index of the next couldBeLive slot
@@ -646,7 +646,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         private Dictionary<int, List<BaseGcTransition>> UpdateTransitionCodeOffset(List<GcTransition> transitions)
         {
             Dictionary<int, List<BaseGcTransition>> updatedTransitions = new Dictionary<int, List<BaseGcTransition>>();
-            int cumInterruptibleLength = 0; // the sum of the lengths of all preceeding interruptible ranges
+            int cumInterruptibleLength = 0; // the sum of the lengths of all preceding interruptible ranges
             using (IEnumerator<InterruptibleRange> interruptibleRangesIter = InterruptibleRanges.GetEnumerator())
             {
                 interruptibleRangesIter.MoveNext();

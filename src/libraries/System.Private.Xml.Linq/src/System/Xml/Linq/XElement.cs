@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -13,7 +14,6 @@ using CultureInfo = System.Globalization.CultureInfo;
 using IEnumerable = System.Collections.IEnumerable;
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using StringBuilder = System.Text.StringBuilder;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 
 namespace System.Xml.Linq
@@ -56,8 +56,10 @@ namespace System.Xml.Linq
         /// <param name="name">
         /// The name of the element.
         /// </param>
-        public XElement(XName name!!)
+        public XElement(XName name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             this.name = name;
         }
 
@@ -124,8 +126,10 @@ namespace System.Xml.Linq
         /// The <see cref="XStreamingElement"/> object whose value will be used
         /// to initialize the new element.
         /// </param>
-        public XElement(XStreamingElement other!!)
+        public XElement(XStreamingElement other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             name = other.name;
             AddContentSkipNotify(other.content);
         }
@@ -211,7 +215,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XAttribute? FirstAttribute
         {
-            get { return lastAttr != null ? lastAttr.next : null; }
+            get { return lastAttr?.next; }
         }
 
         /// <summary>
@@ -489,8 +493,10 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="ns">The <see cref="XNamespace"/> for which to get a prefix</param>
         /// <returns>The namespace prefix string</returns>
-        public string? GetPrefixOfNamespace(XNamespace ns!!)
+        public string? GetPrefixOfNamespace(XNamespace ns)
         {
+            ArgumentNullException.ThrowIfNull(ns);
+
             string namespaceName = ns.NamespaceName;
             bool hasInScopeNamespace = false;
             XElement? e = this;
@@ -565,7 +571,7 @@ namespace System.Xml.Linq
         /// An <see cref="XElement"/> initialized with the contents of the file referenced
         /// in the passed in uri parameter.
         /// </returns>
-        public static XElement Load(string uri)
+        public static XElement Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             return Load(uri, LoadOptions.None);
         }
@@ -594,7 +600,7 @@ namespace System.Xml.Linq
         /// in the passed uri parameter.  If LoadOptions.PreserveWhitespace is enabled then
         /// significant whitespace will be preserved.
         /// </returns>
-        public static XElement Load(string uri, LoadOptions options)
+        public static XElement Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri, LoadOptions options)
         {
             XmlReaderSettings rs = GetXmlReaderSettings(options);
             using (XmlReader r = XmlReader.Create(uri, rs))
@@ -799,8 +805,10 @@ namespace System.Xml.Linq
         /// A new <see cref="XElement"/> containing the contents of the passed
         /// in <see cref="XmlReader"/>.
         /// </returns>
-        public static XElement Load(XmlReader reader!!, LoadOptions options)
+        public static XElement Load(XmlReader reader, LoadOptions options)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
             XElement e = new XElement(reader, options);
             reader.MoveToContent();
@@ -825,8 +833,10 @@ namespace System.Xml.Linq
         /// A new <see cref="XElement"/> containing the contents of the passed
         /// in <see cref="XmlReader"/>.
         /// </returns>
-        public static Task<XElement> LoadAsync(XmlReader reader!!, LoadOptions options, CancellationToken cancellationToken)
+        public static Task<XElement> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<XElement>(cancellationToken);
             return LoadAsyncInternal(reader, options, cancellationToken);
@@ -1149,8 +1159,10 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to output the XML to.
         /// </param>
-        public void Save(XmlWriter writer!!)
+        public void Save(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
@@ -1163,8 +1175,10 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to output the XML to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public Task SaveAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public Task SaveAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return SaveAsyncInternal(writer, cancellationToken);
@@ -1272,8 +1286,10 @@ namespace System.Xml.Linq
         /// <exception cref="ArgumentNullException">
         /// Thrown if the specified value is null.
         /// </exception>
-        public void SetValue(object value!!)
+        public void SetValue(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Value = GetStringValue(value);
         }
 
@@ -1283,8 +1299,10 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XElement"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             new ElementWriter(writer).WriteElement(this);
         }
 
@@ -1295,8 +1313,10 @@ namespace System.Xml.Linq
         /// The <see cref="XmlTextWriter"/> to write this <see cref="XElement"/> to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return new ElementWriter(writer).WriteElementAsync(this, cancellationToken);
@@ -1318,7 +1338,7 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XElement"/> as a <see cref="string"/>.
         /// </returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator string?(XElement? element)
         {
             if (element == null) return null;
@@ -1341,8 +1361,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator bool(XElement element!!)
+        public static explicit operator bool(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToBoolean(element.Value.ToLowerInvariant());
         }
 
@@ -1359,7 +1381,7 @@ namespace System.Xml.Linq
         /// Thrown if the element does not contain a valid boolean value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator bool?(XElement? element)
         {
             if (element == null) return null;
@@ -1382,8 +1404,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator int(XElement element!!)
+        public static explicit operator int(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToInt32(element.Value);
         }
 
@@ -1400,7 +1424,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator int?(XElement? element)
         {
             if (element == null) return null;
@@ -1423,8 +1447,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator uint(XElement element!!)
+        public static explicit operator uint(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToUInt32(element.Value);
         }
 
@@ -1441,7 +1467,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator uint?(XElement? element)
         {
             if (element == null) return null;
@@ -1464,8 +1490,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator long(XElement element!!)
+        public static explicit operator long(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToInt64(element.Value);
         }
 
@@ -1482,7 +1510,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid long integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator long?(XElement? element)
         {
             if (element == null) return null;
@@ -1505,8 +1533,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator ulong(XElement element!!)
+        public static explicit operator ulong(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToUInt64(element.Value);
         }
 
@@ -1523,7 +1553,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned long integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator ulong?(XElement? element)
         {
             if (element == null) return null;
@@ -1546,8 +1576,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator float(XElement element!!)
+        public static explicit operator float(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToSingle(element.Value);
         }
 
@@ -1564,7 +1596,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid float value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator float?(XElement? element)
         {
             if (element == null) return null;
@@ -1587,8 +1619,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator double(XElement element!!)
+        public static explicit operator double(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToDouble(element.Value);
         }
 
@@ -1605,7 +1639,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid double value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator double?(XElement? element)
         {
             if (element == null) return null;
@@ -1628,8 +1662,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator decimal(XElement element!!)
+        public static explicit operator decimal(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToDecimal(element.Value);
         }
 
@@ -1646,7 +1682,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid decimal value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator decimal?(XElement? element)
         {
             if (element == null) return null;
@@ -1669,8 +1705,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator DateTime(XElement element!!)
+        public static explicit operator DateTime(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return DateTime.Parse(element.Value, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
         }
 
@@ -1687,7 +1725,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTime"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator DateTime?(XElement? element)
         {
             if (element == null) return null;
@@ -1710,8 +1748,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator DateTimeOffset(XElement element!!)
+        public static explicit operator DateTimeOffset(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToDateTimeOffset(element.Value);
         }
 
@@ -1728,7 +1768,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTimeOffset"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator DateTimeOffset?(XElement? element)
         {
             if (element == null) return null;
@@ -1751,8 +1791,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator TimeSpan(XElement element!!)
+        public static explicit operator TimeSpan(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToTimeSpan(element.Value);
         }
 
@@ -1769,7 +1811,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="TimeSpan"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator TimeSpan?(XElement? element)
         {
             if (element == null) return null;
@@ -1792,8 +1834,10 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        public static explicit operator Guid(XElement element!!)
+        public static explicit operator Guid(XElement element)
         {
+            ArgumentNullException.ThrowIfNull(element);
+
             return XmlConvert.ToGuid(element.Value);
         }
 
@@ -1810,7 +1854,7 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid guid.
         /// </exception>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static explicit operator Guid?(XElement? element)
         {
             if (element == null) return null;
@@ -1832,8 +1876,10 @@ namespace System.Xml.Linq
         /// The <see cref="XmlReader"/> stream from which the <see cref="XElement"/>
         /// is deserialized.
         /// </param>
-        void IXmlSerializable.ReadXml(XmlReader reader!!)
+        void IXmlSerializable.ReadXml(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (parent != null || annotations != null || content != null || lastAttr != null) throw new InvalidOperationException(SR.InvalidOperation_DeserializeInstance);
             if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
             ReadElementFrom(reader, LoadOptions.None);

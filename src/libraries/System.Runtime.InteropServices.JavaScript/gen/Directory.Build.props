@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <IsShipping>false</IsShipping>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <CLSCompliant>false</CLSCompliant>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+  </PropertyGroup>
+</Project>

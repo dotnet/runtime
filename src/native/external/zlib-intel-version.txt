@@ -1,6 +1,13 @@
-bf103c626c6c0d80580748f6b814ec534614ca52
+v1.2.12_jtk.1
+(bf55d56b068467329f5a6f29bee31bc80d694023)
 
-https://github.com/jtkukunas/zlib/commit/bf103c626c6c0d80580748f6b814ec534614ca52
+https://github.com/jtkukunas/zlib/releases/tag/v1.2.12_jtk.1
 
-Note: This library is not using a proper release lifecycle. v1.2.11.1_jtkv6.3 was the last version released in 2019.
-      Therefore, we are pointing to a random commit from 2021 rather than a version tag.
+Note: This library does not use a standard release lifecycle.
+      We're pointing to the latest available tagged version at the time we forked the code.
+
+We have also cherry-picked into our local copy:
+https://github.com/madler/zlib/commit/7ecf7c7458578d05a20fa481436dd5c58db112f7
+
+And applied by hand the deflate_quick.c change from this commit:
+https://github.com/dotnet/runtime/commit/60f6129b3eaef088f4b1ddc30d3320a68f396d85

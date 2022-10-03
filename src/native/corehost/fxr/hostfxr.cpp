@@ -32,7 +32,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
     {
-        trace::error(_X("A fatal error occured while processing application bundle"));
+        trace::error(_X("A fatal error occurred while processing application bundle"));
         return bundleStatus;
     }
 
@@ -106,7 +106,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //        required to store the located SDK.
 //
 //   If resolution succeeds and the positive return value is less than
-//   or equal to buffer_size (i.e. the the buffer is large enough),
+//   or equal to buffer_size (i.e. the buffer is large enough),
 //   then the resolved SDK path is copied to the buffer and null
 //   terminated. Otherwise, no data is written to the buffer.
 //
@@ -170,6 +170,7 @@ enum class hostfxr_resolve_sdk2_result_key_t : int32_t
 {
     resolved_sdk_dir = 0,
     global_json_path = 1,
+    requested_version = 2,
 };
 
 typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
@@ -208,17 +209,22 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      than once. String values passed are valid only for the
 //      duration of a call.
 //
-//      If resolution succeeds, result will be invoked with
-//      resolved_sdk_dir key and the value will hold the
-//      path to the resolved SDK director, otherwise it will
-//      be null.
+//      If resolution succeeds, then result will be invoked with
+//      resolved_sdk_dir key and the value will hold the path to
+//      the resolved SDK directory.
 //
-//      If global.json is used then result will be invoked with
-//      global_json_path key and the value  will hold the path
+//      If global.json is used, then result will be invoked with
+//      global_json_path key and the value will hold the path
 //      to global.json. If there was no global.json found,
 //      or the contents of global.json did not impact resolution
 //      (e.g. no version specified), then result will not be
-//      invoked with global_json_path key.
+//      invoked with global_json_path key. This will occur for
+//      both resolution success and failure.
+//
+//      If a specific version is requested (via global.json), then
+//      result will be invoked with requested_version key and the
+//      value will hold the requested version. This will occur for
+//      both resolution success and failure.
 //
 // Return value:
 //   0 on success, otherwise failure
@@ -263,6 +269,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,
             resolver.global_file_path().c_str());
+    }
+
+    if (!resolver.get_requested_version().is_empty())
+    {
+        result(
+            hostfxr_resolve_sdk2_result_key_t::requested_version,
+            resolver.get_requested_version().as_str().c_str());
     }
 
     return !resolved_sdk_dir.empty()
@@ -425,7 +438,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, _X(""), &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, _X(""), /*disable_multilevel_lookup*/ true, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;
@@ -491,7 +504,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
 //
 //    required_buffer_size
 //      If the return value is HostApiBufferTooSmall, then
-//      required_buffer_size is set to the minimium buffer
+//      required_buffer_size is set to the minimum buffer
 //      size necessary to contain the result including the
 //      null terminator.
 //

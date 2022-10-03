@@ -1,8 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using ILLink.Shared.TypeSystemProxy;
 
 using MethodAttributes = System.Reflection.MethodAttributes;
 using FieldAttributes = System.Reflection.FieldAttributes;
@@ -22,7 +26,7 @@ namespace ILCompiler.Dataflow
         public static bool IsPublic(this FieldDesc field)
         {
             return field.GetTypicalFieldDefinition() is EcmaField ecmaField
-                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;  
+                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
         }
 
         public static bool IsPrivate(this MethodDesc method)
@@ -64,23 +68,51 @@ namespace ILCompiler.Dataflow
             return null;
         }
 
-        public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
+        public static ReferenceKind ParameterReferenceKind(this MethodDesc method, int index)
         {
-            var ecmaAccessor = (EcmaMethod)accessor.GetTypicalMethodDefinition();
-            var type = (EcmaType)ecmaAccessor.OwningType;
-            var reader = type.MetadataReader;
-            var module = type.EcmaModule;
-            foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
+            if (!method.Signature.IsStatic)
             {
-                var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
-                if (ecmaAccessor.Handle == accessors.Getter
-                    || ecmaAccessor.Handle == accessors.Setter)
+                if (index == 0)
                 {
-                    return new PropertyPseudoDesc(type, propertyHandle);
+                    return method.OwningType.IsValueType ? ReferenceKind.Ref : ReferenceKind.None;
                 }
+
+                index--;
             }
 
-            return null;
+            if (!method.Signature[index].IsByRef)
+                return ReferenceKind.None;
+
+            // Parameter metadata index 0 is for return parameter
+            foreach (var parameterMetadata in method.GetParameterMetadata())
+            {
+                if (parameterMetadata.Index != index + 1)
+                    continue;
+
+                if (parameterMetadata.In)
+                    return ReferenceKind.In;
+                if (parameterMetadata.Out)
+                    return ReferenceKind.Out;
+                return ReferenceKind.Ref;
+            }
+
+            return ReferenceKind.None;
+        }
+
+        public static bool IsByRefOrPointer(this TypeDesc type)
+            => type.IsByRef || type.IsPointer;
+
+        public static TypeDesc GetOwningType(this TypeSystemEntity entity)
+        {
+            return entity switch
+            {
+                MethodDesc method => method.OwningType,
+                FieldDesc field => field.OwningType,
+                MetadataType type => type.ContainingType,
+                PropertyPseudoDesc property => property.OwningType,
+                EventPseudoDesc @event => @event.OwningType,
+                _ => throw new NotImplementedException("Unexpected type system entity")
+            };
         }
     }
 }

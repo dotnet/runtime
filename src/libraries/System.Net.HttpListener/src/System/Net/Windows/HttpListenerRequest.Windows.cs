@@ -190,10 +190,7 @@ namespace System.Net
         {
             get
             {
-                if (_webHeaders == null)
-                {
-                    _webHeaders = Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
-                }
+                _webHeaders ??= Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"webHeaders:{_webHeaders}");
                 return _webHeaders;
             }
@@ -203,26 +200,13 @@ namespace System.Net
         {
             get
             {
-                if (_httpMethod == null)
-                {
-                    _httpMethod = Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
-                }
+                _httpMethod ??= Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_httpMethod:{_httpMethod}");
                 return _httpMethod!;
             }
         }
 
-        public Stream InputStream
-        {
-            get
-            {
-                if (_requestStream == null)
-                {
-                    _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
-                }
-                return _requestStream;
-            }
-        }
+        public Stream InputStream => _requestStream ??= HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
 
         public bool IsAuthenticated
         {
@@ -252,8 +236,10 @@ namespace System.Net
             _clientCertificateError = clientCertificateError;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             X509Certificate2? clientCertificate = null;
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
@@ -287,10 +273,7 @@ namespace System.Net
         {
             get
             {
-                if (_remoteEndPoint == null)
-                {
-                    _remoteEndPoint = Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
-                }
+                _remoteEndPoint ??= Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_remoteEndPoint" + _remoteEndPoint);
                 return _remoteEndPoint!;
             }
@@ -300,10 +283,7 @@ namespace System.Net
         {
             get
             {
-                if (_localEndPoint == null)
-                {
-                    _localEndPoint = Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
-                }
+                _localEndPoint ??= Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_localEndPoint={_localEndPoint}");
                 return _localEndPoint!;
             }
@@ -526,11 +506,8 @@ namespace System.Net
         {
             get
             {
-                if (_requestUri == null)
-                {
-                    _requestUri = HttpListenerRequestUriBuilder.GetRequestUri(
-                        _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);
-                }
+                _requestUri ??= HttpListenerRequestUriBuilder.GetRequestUri(
+                    _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
                 return _requestUri;
@@ -547,6 +524,6 @@ namespace System.Net
             ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
-        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
+        private static bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }

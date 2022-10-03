@@ -53,7 +53,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        public void CreatePart_From_InvalidPartDefiniton_ShouldThrowArgumentException()
+        public void CreatePart_From_InvalidPartDefinition_ShouldThrowArgumentException()
         {
             Assert.Throws<ArgumentException>("partDefinition", () =>
             {

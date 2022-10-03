@@ -8,11 +8,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
+using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
         private static volatile OleDbServicesWrapper? idataInitialize;
@@ -46,7 +45,7 @@ namespace System.Data.OleDb
         // In V1.1, we worked around the CreateCommand issue with the same WrapIUnknownWithComObject trick.
 
         // In V2.0, the performance of using WrapIUnknownWithComObject & ReleaseComObject severly degraded.
-        // Using a SafeHandle (for lifetime control) and a delegate to call the apporiate COM method
+        // Using a SafeHandle (for lifetime control) and a delegate to call the appropriate COM method
         // offered much better performance.
 
         // the "Data Source object".
@@ -307,14 +306,8 @@ namespace System.Data.OleDb
         public override void Dispose()
         {
             Debug.Assert(null == LocalTransaction, "why was Deactivate not called first");
-            if (null != _sessionwrp)
-            {
-                _sessionwrp.Dispose();
-            }
-            if (null != _datasrcwrp)
-            {
-                _datasrcwrp.Dispose();
-            }
+            _sessionwrp?.Dispose();
+            _datasrcwrp?.Dispose();
             base.Dispose();
         }
 

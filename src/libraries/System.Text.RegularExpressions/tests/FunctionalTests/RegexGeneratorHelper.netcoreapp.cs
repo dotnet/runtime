@@ -23,7 +23,7 @@ namespace System.Text.RegularExpressions.Tests
 {
     public static class RegexGeneratorHelper
     {
-        private static readonly CSharpParseOptions s_previewParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+        private static readonly CSharpParseOptions s_previewParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview).WithDocumentationMode(DocumentationMode.Diagnose);
         private static readonly EmitOptions s_emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded);
         private static readonly CSharpGeneratorDriver s_generatorDriver = CSharpGeneratorDriver.Create(new[] { new RegexGenerator().AsSourceGenerator() }, parseOptions: s_previewParseOptions);
         private static Compilation? s_compilation;
@@ -95,10 +95,12 @@ namespace System.Text.RegularExpressions.Tests
 
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
-            if (!results.Success || results.Diagnostics.Length != 0 || generatorResults.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            if (!results.Success || resultsDiagnostics.Length != 0 || generatorDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
+                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => t.ToString())));
             }
 
@@ -133,6 +135,7 @@ namespace System.Text.RegularExpressions.Tests
 
             var code = new StringBuilder();
             code.AppendLine("using System.Text.RegularExpressions;");
+            code.AppendLine("/// <summary>Container for generated regex method.</summary>");
             code.AppendLine("public partial class C {");
 
             // Build up the code for all of the regexes
@@ -140,7 +143,8 @@ namespace System.Text.RegularExpressions.Tests
             foreach (var regex in regexes)
             {
                 Assert.True(regex.options is not null || regex.matchTimeout is null);
-                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
+                code.AppendLine("    /// <summary>RegexGenerator method</summary>");
+                code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
                     code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
@@ -170,9 +174,9 @@ namespace System.Text.RegularExpressions.Tests
                         new CSharpCompilationOptions(
                             OutputKind.DynamicallyLinkedLibrary,
                             warningLevel: 9999, // docs recommend using "9999" to catch all warnings now and in the future
-                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1045", ReportDiagnostic.Hidden)) // regex with limited support
+                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1044", ReportDiagnostic.Hidden)) // regex with limited support
                             .WithNullableContextOptions(NullableContextOptions.Enable))
-                            .WithParseOptions(new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose))
+                            .WithParseOptions(s_previewParseOptions)
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;
                 Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
@@ -196,11 +200,12 @@ namespace System.Text.RegularExpressions.Tests
             var dll = new MemoryStream();
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(dll, options: s_emitOptions, cancellationToken: cancellationToken);
-            if (!results.Success || results.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorDiagnostics)));
+                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)));
             }
             dll.Position = 0;
 

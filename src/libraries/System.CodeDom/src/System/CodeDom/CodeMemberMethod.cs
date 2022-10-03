@@ -23,7 +23,7 @@ namespace System.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get => _returnType ?? (_returnType = new CodeTypeReference(typeof(void).FullName));
+            get => _returnType ??= new CodeTypeReference(typeof(void).FullName);
             set => _returnType = value;
         }
 
@@ -61,10 +61,7 @@ namespace System.CodeDom
         {
             get
             {
-                if (_implementationTypes == null)
-                {
-                    _implementationTypes = new CodeTypeReferenceCollection();
-                }
+                _implementationTypes ??= new CodeTypeReferenceCollection();
 
                 if ((_populated & ImplTypesCollection) == 0)
                 {
@@ -76,8 +73,8 @@ namespace System.CodeDom
             }
         }
 
-        public CodeAttributeDeclarationCollection ReturnTypeCustomAttributes => _returnAttributes ?? (_returnAttributes = new CodeAttributeDeclarationCollection());
+        public CodeAttributeDeclarationCollection ReturnTypeCustomAttributes => _returnAttributes ??= new CodeAttributeDeclarationCollection();
 
-        public CodeTypeParameterCollection TypeParameters => _typeParameters ?? (_typeParameters = new CodeTypeParameterCollection());
+        public CodeTypeParameterCollection TypeParameters => _typeParameters ??= new CodeTypeParameterCollection();
     }
 }

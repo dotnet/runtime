@@ -20,7 +20,7 @@ import "mscoree.idl";
 // security sense but short of deliberate 3rd party spoofing it should provide a good identity.
 //
 // Using a different ID allows us to completely hide different CLR SKUs from each other. The recommendation is to keep
-// the ID contant between different versions of the same SKU and use mscordbi's logic to determine whether a given
+// the ID constant between different versions of the same SKU and use mscordbi's logic to determine whether a given
 // version is compatible. This allows debuggers to give different errors for 'future version of the CLR I don't
 // support' vs. 'No CLR is loaded at all.'
 //
@@ -32,8 +32,8 @@ cpp_quote("EXTERN_GUID(CLR_ID_V4_DESKTOP, 0x267f3989, 0xd786, 0x4b9a, 0x9a, 0xf6
 // GUID CLR_ID_CORECLR :   uuid{8CB8E075-0A91-408E-9228-D66E00A3BFF6}
 cpp_quote("EXTERN_GUID(CLR_ID_CORECLR, 0x8CB8E075, 0x0A91, 0x408E, 0x92, 0x28, 0xD6, 0x6E, 0x00, 0xA3, 0xBF, 0xF6 );")
 
-// This guid first appears in the CoreCLR port to Windows Phone 8 - note that it is seperate from the CoreCLR id because it will
-// potentially have a different verioning lineage than CoreCLR
+// This guid first appears in the CoreCLR port to Windows Phone 8 - note that it is separate from the CoreCLR id because it will
+// potentially have a different versioning lineage than CoreCLR
 // GUID CLR_ID_PHONE_CLR :   uuid{E7237E9C-31C0-488C-AD48-324D3E7ED92A}
 cpp_quote("EXTERN_GUID(CLR_ID_PHONE_CLR, 0xE7237E9C, 0x31C0, 0x488C, 0xAD, 0x48, 0x32, 0x4D, 0x3E, 0x7E, 0xD9, 0x2A);")
 

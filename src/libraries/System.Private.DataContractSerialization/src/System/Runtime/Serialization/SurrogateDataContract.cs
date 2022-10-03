@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Security;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Security;
-    using System.Runtime.CompilerServices;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class SurrogateDataContract : DataContract
     {
         private readonly SurrogateDataContractCriticalHelper _helper;
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object GetUninitializedObject(
+        private static object GetUninitializedObject(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type objType)
         {
@@ -72,9 +72,7 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
-            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
-            if (newObj == null)
-                newObj = obj;
+            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext()) ?? obj;
             if (newObj is IDeserializationCallback)
                 ((IDeserializationCallback)newObj).OnDeserialization(null);
             if (newObj is IObjectReference)

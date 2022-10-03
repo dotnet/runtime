@@ -19,7 +19,7 @@ namespace System.Net.Http.Headers
 
         public ContentDispositionHeaderValue? ContentDisposition
         {
-            get { return (ContentDispositionHeaderValue?)GetParsedValues(KnownHeaders.ContentDisposition.Descriptor); }
+            get { return (ContentDispositionHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentDisposition.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentDisposition.Descriptor, value); }
         }
 
@@ -36,7 +36,7 @@ namespace System.Net.Http.Headers
             get
             {
                 // 'Content-Length' can only hold one value. So either we get 'null' back or a boxed long value.
-                object? storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
+                object? storedValue = GetSingleParsedValue(KnownHeaders.ContentLength.Descriptor);
 
                 // Only try to calculate the length if the user didn't set the value explicitly using the setter.
                 if (!_contentLengthSet && (storedValue == null))
@@ -72,25 +72,25 @@ namespace System.Net.Http.Headers
 
         public Uri? ContentLocation
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.ContentLocation.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.ContentLocation.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentLocation.Descriptor, value); }
         }
 
         public byte[]? ContentMD5
         {
-            get { return (byte[]?)GetParsedValues(KnownHeaders.ContentMD5.Descriptor); }
+            get { return (byte[]?)GetSingleParsedValue(KnownHeaders.ContentMD5.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentMD5.Descriptor, value); }
         }
 
         public ContentRangeHeaderValue? ContentRange
         {
-            get { return (ContentRangeHeaderValue?)GetParsedValues(KnownHeaders.ContentRange.Descriptor); }
+            get { return (ContentRangeHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentRange.Descriptor, value); }
         }
 
         public MediaTypeHeaderValue? ContentType
         {
-            get { return (MediaTypeHeaderValue?)GetParsedValues(KnownHeaders.ContentType.Descriptor); }
+            get { return (MediaTypeHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentType.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentType.Descriptor, value); }
         }
 

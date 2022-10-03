@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
@@ -105,19 +104,25 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
-            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
             try
             {
-                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                return con;
+                return await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                {
+                    MaxInboundBidirectionalStreams = 0, // Client doesn't support inbound streams: https://www.rfc-editor.org/rfc/rfc9114.html#name-bidirectional-streams. An extension might change this.
+                    MaxInboundUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
+                    IdleTimeout = idleTimeout,
+                    DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
+                    DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
+                    RemoteEndPoint = endPoint,
+                    ClientAuthenticationOptions = clientAuthenticationOptions
+                }, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                con.Dispose();
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }

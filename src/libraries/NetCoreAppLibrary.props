@@ -60,6 +60,7 @@
       System.Drawing.Primitives;
       System.Dynamic.Runtime;
       System.Formats.Asn1;
+      System.Formats.Tar;
       System.Globalization;
       System.Globalization.Calendars;
       System.Globalization.Extensions;
@@ -104,7 +105,6 @@
       System.ObjectModel;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -126,6 +126,7 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
+      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;
@@ -174,14 +175,19 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
     </NetCoreAppLibraryNoReference>
+    <!-- List .NETCoreApp shared framework generator project names below. -->
+    <NetCoreAppLibraryGenerator>
+      LibraryImportGenerator;
+      JSImportGenerator;
+      System.Text.Json.SourceGeneration.Roslyn4.0;
+      System.Text.RegularExpressions.Generator;
+    </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
       Microsoft.Extensions.Caching.Abstractions;
       Microsoft.Extensions.Caching.Memory;
@@ -219,6 +225,7 @@
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
       Microsoft.Win32.Registry.AccessControl;
@@ -244,6 +251,7 @@
     <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
+    <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>

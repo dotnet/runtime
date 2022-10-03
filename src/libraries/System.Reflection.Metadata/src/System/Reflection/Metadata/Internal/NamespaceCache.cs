@@ -164,7 +164,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// namespace. It has to create 'stringTable' as an intermediate dictionary, so it will hand it
         /// back to the caller should the caller want to use it.
         /// </summary>
-        private void MergeDuplicateNamespaces(Dictionary<NamespaceDefinitionHandle, NamespaceDataBuilder> table, out Dictionary<string, NamespaceDataBuilder> stringTable)
+        private static void MergeDuplicateNamespaces(Dictionary<NamespaceDefinitionHandle, NamespaceDataBuilder> table, out Dictionary<string, NamespaceDataBuilder> stringTable)
         {
             var namespaces = new Dictionary<string, NamespaceDataBuilder>();
             List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>? remaps = null;
@@ -178,10 +178,7 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(data.Namespaces!.Count == 0);
                     data.MergeInto(existingRecord);
 
-                    if (remaps == null)
-                    {
-                        remaps = new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
-                    }
+                    remaps ??= new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
                     remaps.Add(new KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>(group.Key, existingRecord));
                 }
                 else
@@ -227,7 +224,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Quick convenience method that handles linking together child + parent
         /// </summary>
-        private void LinkChildDataToParentData(NamespaceDataBuilder child, NamespaceDataBuilder parent)
+        private static void LinkChildDataToParentData(NamespaceDataBuilder child, NamespaceDataBuilder parent)
         {
             Debug.Assert(child != null && parent != null);
             Debug.Assert(!child.Handle.IsNil);

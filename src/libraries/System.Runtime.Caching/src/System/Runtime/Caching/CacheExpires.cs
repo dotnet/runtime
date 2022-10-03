@@ -784,7 +784,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private int UtcCalcExpiresBucket(DateTime utcDate)
+        private static int UtcCalcExpiresBucket(DateTime utcDate)
         {
             long ticksFromCycleStart = utcDate.Ticks % s_tsPerCycle.Ticks;
             int bucket = (int)(((ticksFromCycleStart / _tsPerBucket.Ticks) + 1) % NUMBUCKETS);

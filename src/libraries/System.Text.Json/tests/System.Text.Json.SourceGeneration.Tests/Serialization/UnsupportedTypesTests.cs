@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
@@ -25,6 +26,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         // Unsupported types:
         [JsonSerializable(typeof(Type))]
         [JsonSerializable(typeof(ClassWithType<Type>))]
+        [JsonSerializable(typeof(ConstructorInfo))]
+        [JsonSerializable(typeof(ClassWithType<ConstructorInfo>))]
+        [JsonSerializable(typeof(PropertyInfo))]
+        [JsonSerializable(typeof(ClassWithType<PropertyInfo>))]
         [JsonSerializable(typeof(SerializationInfo))]
         [JsonSerializable(typeof(ClassWithType<SerializationInfo>))]
         [JsonSerializable(typeof(IntPtr))]
@@ -39,13 +44,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassThatImplementsIAsyncEnumerable))]
         [JsonSerializable(typeof(ClassWithType<ClassThatImplementsIAsyncEnumerable>))]
         [JsonSerializable(typeof(ClassWithAsyncEnumerableConverter))]
-
-#if NETCOREAPP
-        [JsonSerializable(typeof(DateOnly))]
-        [JsonSerializable(typeof(ClassWithType<DateOnly>))]
-        [JsonSerializable(typeof(TimeOnly))]
-        [JsonSerializable(typeof(ClassWithType<TimeOnly>))]
-#endif
         internal sealed partial class UnsupportedTypesTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -67,6 +65,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         // Unsupported types:
         [JsonSerializable(typeof(Type))]
         [JsonSerializable(typeof(ClassWithType<Type>))]
+        [JsonSerializable(typeof(ConstructorInfo))]
+        [JsonSerializable(typeof(ClassWithType<ConstructorInfo>))]
+        [JsonSerializable(typeof(PropertyInfo))]
+        [JsonSerializable(typeof(ClassWithType<PropertyInfo>))]
         [JsonSerializable(typeof(SerializationInfo))]
         [JsonSerializable(typeof(ClassWithType<SerializationInfo>))]
         [JsonSerializable(typeof(IntPtr))]
@@ -81,12 +83,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassThatImplementsIAsyncEnumerable))]
         [JsonSerializable(typeof(ClassWithType<ClassThatImplementsIAsyncEnumerable>))]
         [JsonSerializable(typeof(ClassWithAsyncEnumerableConverter))]
-#if NETCOREAPP
-        [JsonSerializable(typeof(DateOnly))]
-        [JsonSerializable(typeof(ClassWithType<DateOnly>))]
-        [JsonSerializable(typeof(TimeOnly))]
-        [JsonSerializable(typeof(ClassWithType<TimeOnly>))]
-#endif
         internal sealed partial class UnsupportedTypesTestsContext_Default : JsonSerializerContext
         {
         }

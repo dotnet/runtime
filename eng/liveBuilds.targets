@@ -49,6 +49,7 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'armel' and '$(BuildArchitecture)' != 'armel' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
+    <SingleFileHostSourcePath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(ExeSuffix)</SingleFileHostSourcePath>
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
@@ -77,7 +78,6 @@
       <RuntimeFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
       <RuntimeFiles Condition="'$(PgoInstrument)' == 'true'" Include="$(CoreCLRSharedFrameworkDir)PGD/*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
@@ -115,8 +115,7 @@
 
       <FrameworkReleaseFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.release.framework\*.*" />
       <FrameworkDebugFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.debug.framework\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="$(MonoArtifactsPath)\include\**\*.*" />
+      <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
@@ -180,7 +179,9 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)src\dotnet-crypto-worker.js;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
+        $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
@@ -196,10 +197,6 @@
         $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
-                             Include="$(LibrariesNativeArtifactsPath)src\cjs\*.js"
-                             NativeSubDirectory="src\cjs"
-                             IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
                              NativeSubDirectory="src\es6"

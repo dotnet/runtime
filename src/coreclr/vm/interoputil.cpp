@@ -22,7 +22,6 @@
 #include "comcallablewrapper.h"
 #include "../md/compiler/custattr.h"
 #include "siginfo.hpp"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "interoplibinterface.h"
 
@@ -52,7 +51,7 @@
 #define GET_ENUMERATOR_METHOD_NAME          W("GetEnumerator")
 
 #ifdef _DEBUG
-    VOID IntializeInteropLogging();
+    VOID InitializeInteropLogging();
 #endif
 
 struct ByrefArgumentInfo
@@ -135,15 +134,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                         else
                             PrintToStdOutW(W("No exception info available"));
                     }
-
-                    if (g_pConfig->ShouldExposeExceptionsInCOMToMsgBox())
-                    {
-                        GCX_PREEMP();
-                        if (!message.IsEmpty())
-                            EEMessageBoxNonLocalizedDebugOnly((LPWSTR)message.GetUnicode(), W(".NET exception in COM"), MB_ICONSTOP | MB_OK);
-                        else
-                            EEMessageBoxNonLocalizedDebugOnly(W("No exception information available"), W(".NET exception in COM"),MB_ICONSTOP | MB_OK);
-                    }
                 }
                 EX_CATCH
                 {
@@ -189,6 +179,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
+#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
@@ -222,6 +213,7 @@ void FillExceptionData(
         }
     }
 }
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -1026,7 +1018,7 @@ namespace
         if (FAILED(cap.ValidateProlog()))
             return COR_E_BADIMAGEFORMAT;
 
-        U1 u1;
+        UINT8 u1;
         if (FAILED(cap.GetU1(&u1)))
             return COR_E_BADIMAGEFORMAT;
 
@@ -1709,8 +1701,8 @@ void SafeReleaseStream(IStream *pStream)
         HRESULT hr = CoReleaseMarshalData(pStream);
 
 #ifdef _DEBUG
-        WCHAR      logStr[200];
-        swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+        UTF8 logStr[512];
+        sprintf_s(logStr, ARRAY_SIZE(logStr), "Object gone: CoReleaseMarshalData returned %x, file %s, line %d\n", hr, __FILE__, __LINE__);
         LogInterop(logStr);
         if (hr != S_OK)
         {
@@ -1720,7 +1712,7 @@ void SafeReleaseStream(IStream *pStream)
             ULARGE_INTEGER li2;
             pStream->Seek(li, STREAM_SEEK_SET, &li2);
             hr = CoReleaseMarshalData(pStream);
-            swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+            sprintf_s(logStr, ARRAY_SIZE(logStr), "Object gone: CoReleaseMarshalData returned %x, file %s, line %d\n", hr, __FILE__, __LINE__);
             LogInterop(logStr);
         }
 #endif
@@ -3207,7 +3199,7 @@ void IUInvokeDispMethod(
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
-        // Retrieve the IDispath pointer from the wrapper.
+        // Retrieve the IDispatch pointer from the wrapper.
         pDisp = (IDispatch*)pRCW->GetIDispatch();
         if (!pDisp)
             COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
@@ -3699,7 +3691,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
     }
     CONTRACT_END;
 
-    // Work our way up the hierachy until we find the first COM import type.
+    // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
     {
         pClassMT = pClassMT->GetParentMethodTable();
@@ -3761,7 +3753,7 @@ void InitializeComInterop()
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
-    IntializeInteropLogging();
+    InitializeInteropLogging();
 #endif //_DEBUG
 }
 
@@ -3774,7 +3766,7 @@ void InitializeComInterop()
 static int g_TraceCount = 0;
 static IUnknown* g_pTraceIUnknown = NULL;
 
-VOID IntializeInteropLogging()
+VOID InitializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -3785,12 +3777,6 @@ VOID LogInterop(_In_z_ LPCSTR szMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%s\n",szMsg) );
-}
-
-VOID LogInterop(_In_z_ LPCWSTR wszMsg)
-{
-    LIMITED_METHOD_CONTRACT;
-    LOG( (LF_INTEROP, LL_INFO10, "%S\n", wszMsg) );
 }
 
 //-------------------------------------------------------------------

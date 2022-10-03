@@ -163,7 +163,7 @@ HashMap::HashMap()
     STATIC_CONTRACT_FORBID_FAULT;
 
     m_rgBuckets = NULL;
-    m_pCompare = NULL;  // comparsion object
+    m_pCompare = NULL;  // comparison object
     m_cbInserts = 0;        // track inserts
     m_cbDeletes = 0;        // track deletes
     m_cbPrevSlotsInUse = 0; // track valid slots present during previous rehash
@@ -385,7 +385,7 @@ UPTR   HashMap::CompareValues(const UPTR value1, const UPTR value2)
 //---------------------------------------------------------------------
 //  bool HashMap::Enter()
 //  bool HashMap::Leave()
-//  check  valid use of the hash table in synchronus mode
+//  check  valid use of the hash table in synchronous mode
 
 #ifdef _DEBUG
 #ifndef DACCESS_COMPILE
@@ -441,13 +441,13 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
 #ifndef DACCESS_COMPILE
     #ifdef HASHTABLE_PROFILE
         if (ntry < HASHTABLE_LOOKUP_PROBES_DATA - 2)
-            FastInterlockIncrement(&m_rgLookupProbes[ntry]);
+            InterlockedIncrement(&m_rgLookupProbes[ntry]);
         else
-            FastInterlockIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 2]);
+            InterlockedIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 2]);
 
         if (retValue == NULL)
         {   // failure probes
-            FastInterlockIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 1]);
+            InterlockedIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 1]);
             // the following code is usually executed
             // only for special case of lookup done before insert
             // check hash.h SyncHash::InsertValue
@@ -1008,7 +1008,7 @@ LDone:
 //---------------------------------------------------------------------
 //  void HashMap::Compact()
 //  delete obsolete tables, try to compact deleted slots by sliding entries
-//  in the bucket, note we can slide only if the bucket's collison bit is reset
+//  in the bucket, note we can slide only if the bucket's collision bit is reset
 //  otherwise the lookups will break
 //  @perf, use the m_cbDeletes to m_cbInserts ratio to reduce the size of the hash
 //   table

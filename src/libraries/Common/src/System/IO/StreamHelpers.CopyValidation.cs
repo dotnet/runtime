@@ -7,8 +7,13 @@ namespace System.IO
     internal static partial class StreamHelpers
     {
         /// <summary>Validate the arguments to CopyTo, as would Stream.CopyTo.</summary>
-        public static void ValidateCopyToArgs(Stream source, Stream destination!!, int bufferSize)
+        public static void ValidateCopyToArgs(Stream source, Stream destination, int bufferSize)
         {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);

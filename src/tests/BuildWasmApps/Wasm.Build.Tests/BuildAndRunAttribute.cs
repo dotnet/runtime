@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
                     .AsEnumerable()
                     .Multiply(parameters)
                     .WithRunHosts(host)
-                    .UnwrapItemsAsArrays().ToList().Dump();
+                    .UnwrapItemsAsArrays().ToList();
         }
 
         public BuildAndRunAttribute(bool aot=false, RunHost host = RunHost.All, string? config=null, params object?[] parameters)
@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
             _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)
                     .WithRunHosts(host)
-                    .UnwrapItemsAsArrays().ToList().Dump();
+                    .UnwrapItemsAsArrays().ToList();
         }
 
         public override IEnumerable<object?[]> GetData(MethodInfo testMethod) => _data;

@@ -34,11 +34,12 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    
+
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
     ${{ if eq(parameters.displayName, '') }}:
       displayName: '${{ parameters.jobName }}'
+    name: ${{ replace(replace(parameters.jobName, ' ', '_'), '-', '_') }}
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
@@ -54,28 +55,62 @@ jobs:
     - HelixApiAccessToken: ''
     - SharedHelixPreCommands: ''
     - AdditionalHelixPreCommands: ''
+    - AdditionalHelixPostCommands: ''
     # run machine-setup and set PYTHONPATH for both public and private jobs
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - SharedHelixPreCommands: 'call %HELIX_WORKITEM_PAYLOAD%\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD'
-    
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+      - HelixPostCommandsWindows: 'set PYTHONPATH=%ORIGPYPATH%'
+    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), ne(parameters.osSubGroup, '_musl')) }}:
+      - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
+    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), eq(parameters.osSubGroup, '_musl')) }}:
+      - HelixPreCommandMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0 --force-reinstall;pip3 install azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPostCommandOSX: 'export PYTHONPATH=$ORIGPYPATH'
+
     # extra private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-        - AdditionalHelixPostCommands: 'set PYTHONPATH=%ORIGPYPATH%'
-        - IsInternal: -Internal      
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-        - AdditionalHelixPostCommands: 'export PYTHONPATH=$ORIGPYPATH'
+        - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
+        - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
+        - IsInternal: -Internal
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), ne(parameters.osSubGroup, '_musl')) }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
+        - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
         - IsInternal: --internal
-      - ${{ if and(ne(parameters.osGroup, 'windows'), eq(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-        - AdditionalHelixPostCommands: 'export PYTHONPATH=$ORIGPYPATH'
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), eq(parameters.osSubGroup, '_musl')) }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandMusl)
+        - AdditionalHelixPostCommands: $(HelixPostCommandsMusl)
+        - IsInternal: --internal
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
+        - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
         - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
+
+    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
+        - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX')) }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
+        - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
+        - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
+
+    - ${{ if ne(parameters.runtimeType, 'wasm') }}:
+      - ExtraSetupArguments: --install-dir $(PayloadDirectory)/dotnet
+    - ${{ if and(eq(parameters.runtimeType, 'wasm'), in(variables['Build.Reason'], 'PullRequest')) }}:
+      - ExtraSetupArguments: ''
 
     workspace:
       clean: all
@@ -96,26 +131,30 @@ jobs:
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
-      displayName: Performance Setup (Linux)
+      displayName: Performance Setup (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
-      displayName: Run ci setup script (Linux)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh
+      displayName: Run ci setup script (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
-    - script: cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(PayloadDirectory);cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.ref $(PayloadDirectory)
-      displayName: Copy browserwasm and runtime ref packs
+    - script: >-
+        mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
+        cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload $(librariesDownloadDir)/bin/wasm &&
+        cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
+        find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
+      displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
     # copy scenario support files
     - script: xcopy $(PerformanceDirectory)\scripts $(WorkItemDirectory)\scripts\/e && xcopy $(PerformanceDirectory)\src\scenarios\shared $(WorkItemDirectory)\shared\/e && xcopy $(PerformanceDirectory)\src\scenarios\staticdeps $(WorkItemDirectory)\staticdeps\/e
       displayName: Copy scenario support files (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
     - script: cp -r $(PerformanceDirectory)/scripts $(WorkItemDirectory)/scripts/ && cp -r $(PerformanceDirectory)/src/scenarios/shared $(WorkItemDirectory)/shared/ && cp -r $(PerformanceDirectory)/src/scenarios/staticdeps/ $(WorkItemDirectory)/staticdeps/
-      displayName: Copy scenario support files (Linux)
+      displayName: Copy scenario support files (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # build Startup
     - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net6.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj
@@ -127,7 +166,12 @@ jobs:
       displayName: Build Startup tool (Linux)
       env:
         PERFLAB_TARGET_FRAMEWORKS: net6.0
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net6.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
+      displayName: Build Startup tool (MAC)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
     # build SizeOnDisk
     - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f net6.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
       displayName: Build SizeOnDisk tool (Windows)
@@ -138,8 +182,21 @@ jobs:
       displayName: Build SizeOnDisk tool (Linux)
       env:
         PERFLAB_TARGET_FRAMEWORKS: net6.0
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-      
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net6.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj
+      displayName: Build SizeOnDisk tool (MAC)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
+
+    # Zip the workitem directory (for xharness based workitems)
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(WorkItemDirectory)'
+        includeRootFolder: false
+        archiveFile: '$(WorkItemDirectory).zip'
+        verbose: True
+
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:

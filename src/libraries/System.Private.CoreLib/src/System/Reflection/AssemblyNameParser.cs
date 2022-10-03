@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -12,7 +14,7 @@ namespace System.Reflection
     //
     internal ref struct AssemblyNameParser
     {
-        public struct AssemblyNameParts
+        public readonly struct AssemblyNameParts
         {
             public AssemblyNameParts(string name, Version? version, string? cultureName, AssemblyNameFlags flags, byte[]? publicKeyOrToken)
             {
@@ -23,11 +25,11 @@ namespace System.Reflection
                 _publicKeyOrToken = publicKeyOrToken;
             }
 
-            public string _name;
-            public Version? _version;
-            public string? _cultureName;
-            public AssemblyNameFlags _flags;
-            public byte[]? _publicKeyOrToken;
+            public readonly string _name;
+            public readonly Version? _version;
+            public readonly string? _cultureName;
+            public readonly AssemblyNameFlags _flags;
+            public readonly byte[]? _publicKeyOrToken;
         }
 
         // Token categories for the lexer.
@@ -49,13 +51,11 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
-        private string _input;
+        private ReadOnlySpan<char> _input;
         private int _index;
 
-        private AssemblyNameParser(string input)
+        private AssemblyNameParser(ReadOnlySpan<char> input)
         {
-            Debug.Assert(input != null);
             if (input.Length == 0)
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -63,33 +63,34 @@ namespace System.Reflection
             _index = 0;
         }
 
-        public static AssemblyNameParts Parse(string s)
+        public static AssemblyNameParts Parse(string name)
         {
-            return new AssemblyNameParser(s).Parse();
+            return new AssemblyNameParser(name).Parse();
+        }
+
+        public static AssemblyNameParts Parse(ReadOnlySpan<char> name)
+        {
+            return new AssemblyNameParser(name).Parse();
         }
 
         private void RecordNewSeenOrThrow(ref AttributeKind seenAttributes, AttributeKind newAttribute)
         {
             if ((seenAttributes & newAttribute) != 0)
             {
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                ThrowInvalidAssemblyName();
             }
-            else
-            {
-                seenAttributes |= newAttribute;
-            }
+            seenAttributes |= newAttribute;
         }
 
         private AssemblyNameParts Parse()
         {
             // Name must come first.
-            string name;
-            Token token = GetNextToken(out name);
+            Token token = GetNextToken(out string name);
             if (token != Token.String)
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                ThrowInvalidAssemblyName();
 
-            if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+            if (string.IsNullOrEmpty(name) || name.AsSpan().IndexOfAny('/', '\\', ':') != -1)
+                ThrowInvalidAssemblyName();
 
             Version? version = null;
             string? cultureName = null;
@@ -101,23 +102,22 @@ namespace System.Reflection
             while (token != Token.End)
             {
                 if (token != Token.Comma)
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
-                string attributeName;
+                    ThrowInvalidAssemblyName();
 
-                token = GetNextToken(out attributeName);
+                token = GetNextToken(out string attributeName);
                 if (token != Token.String)
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    ThrowInvalidAssemblyName();
+
                 token = GetNextToken();
-
                 if (token != Token.Equals)
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
-                string attributeValue;
-                token = GetNextToken(out attributeValue);
+                    ThrowInvalidAssemblyName();
+
+                token = GetNextToken(out string attributeValue);
                 if (token != Token.String)
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    ThrowInvalidAssemblyName();
 
                 if (attributeName == string.Empty)
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    ThrowInvalidAssemblyName();
 
                 if (attributeName.Equals("Version", StringComparison.OrdinalIgnoreCase))
                 {
@@ -154,22 +154,30 @@ namespace System.Reflection
                 {
                     RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Retargetable);
                     if (attributeValue.Equals("Yes", StringComparison.OrdinalIgnoreCase))
+                    {
                         flags |= AssemblyNameFlags.Retargetable;
+                    }
                     else if (attributeValue.Equals("No", StringComparison.OrdinalIgnoreCase))
                     {
                         // nothing to do
                     }
                     else
-                        ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    {
+                        ThrowInvalidAssemblyName();
+                    }
                 }
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
                 {
                     RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.ContentType);
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
+                    {
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
+                    }
                     else
-                        ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    {
+                        ThrowInvalidAssemblyName();
+                    }
                 }
 
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it.
@@ -183,8 +191,8 @@ namespace System.Reflection
         {
             string[] parts = attributeValue.Split('.');
             if (parts.Length > 4)
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
-            ushort[] versionNumbers = new ushort[4];
+                ThrowInvalidAssemblyName();
+            Span<ushort> versionNumbers = stackalloc ushort[4];
             for (int i = 0; i < versionNumbers.Length; i++)
             {
                 if (i >= parts.Length)
@@ -195,17 +203,17 @@ namespace System.Reflection
                     for (int j = 0; j < parts[i].Length; j++)
                     {
                         if (!char.IsDigit(parts[i][j]))
-                            ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                            ThrowInvalidAssemblyName();
                     }
                     if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
                     {
-                        ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                        ThrowInvalidAssemblyName();
                     }
                 }
             }
 
             if (versionNumbers[0] == ushort.MaxValue || versionNumbers[1] == ushort.MaxValue)
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                ThrowInvalidAssemblyName();
             if (versionNumbers[2] == ushort.MaxValue)
                 return new Version(versionNumbers[0], versionNumbers[1]);
             if (versionNumbers[3] == ushort.MaxValue)
@@ -213,7 +221,7 @@ namespace System.Reflection
             return new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
         }
 
-        private string ParseCulture(string attributeValue)
+        private static string ParseCulture(string attributeValue)
         {
             if (attributeValue.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
             {
@@ -229,7 +237,7 @@ namespace System.Reflection
                 return Array.Empty<byte>();
 
             if (isToken && attributeValue.Length != 8 * 2)
-                ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                ThrowInvalidAssemblyName();
 
             byte[] pkt = new byte[attributeValue.Length / 2];
             int srcIndex = 0;
@@ -254,20 +262,18 @@ namespace System.Reflection
                 return ProcessorArchitecture.Amd64;
             if (attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase))
                 return ProcessorArchitecture.Arm;
-            ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+            ThrowInvalidAssemblyName();
             return default; // unreachable
         }
 
         private byte ParseHexNybble(char c)
         {
-            if (c >= '0' && c <= '9')
-                return (byte)(c - '0');
-            if (c >= 'a' && c <= 'f')
-                return (byte)(c - 'a' + 10);
-            if (c >= 'A' && c <= 'F')
-                return (byte)(c - 'A' + 10);
-            ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
-            return default; // unreachable
+            int value = HexConverter.FromChar(c);
+            if (value == 0xFF)
+            {
+                ThrowInvalidAssemblyName();
+            }
+            return (byte)value;
         }
 
         //
@@ -302,7 +308,7 @@ namespace System.Reflection
                 ch = _input[_index++];
                 if (ch == '\0')
                 {
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    ThrowInvalidAssemblyName();
                 }
             }
             else
@@ -357,13 +363,10 @@ namespace System.Reflection
                     if (quoteChar != 0)
                     {
                         // EOS and unclosed quotes is an error
-                        ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                        ThrowInvalidAssemblyName();
                     }
-                    else
-                    {
-                        // Reached end of input and therefore of string
-                        break;
-                    }
+                    // Reached end of input and therefore of string
+                    break;
                 }
 
                 if (quoteChar != 0 && c == quoteChar)
@@ -376,7 +379,7 @@ namespace System.Reflection
                 }
 
                 if (quoteChar == 0 && (c == '\'' || c == '\"'))
-                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
+                    ThrowInvalidAssemblyName();
 
                 if (c == '\\')
                 {
@@ -401,8 +404,8 @@ namespace System.Reflection
                             sb.Append('\n');
                             break;
                         default:
-                            ThrowHelper.ThrowFileLoadException_InvalidAssemblyName(_input);
-                            return default; //unreachable
+                            ThrowInvalidAssemblyName();
+                            break; //unreachable
                     }
                 }
                 else
@@ -423,5 +426,9 @@ namespace System.Reflection
             tokenString = sb.ToString();
             return Token.String;
         }
+
+        [DoesNotReturn]
+        private void ThrowInvalidAssemblyName()
+            => throw new FileLoadException(SR.InvalidAssemblyName, _input.ToString());
     }
 }

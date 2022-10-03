@@ -14,14 +14,19 @@ namespace Microsoft.Extensions.Http
         private readonly ILoggerFactory _loggerFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
 
-        public LoggingHttpMessageHandlerBuilderFilter(ILoggerFactory loggerFactory!!, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor!!)
+        public LoggingHttpMessageHandlerBuilderFilter(ILoggerFactory loggerFactory, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
+            ThrowHelper.ThrowIfNull(loggerFactory);
+            ThrowHelper.ThrowIfNull(optionsMonitor);
+
             _loggerFactory = loggerFactory;
             _optionsMonitor = optionsMonitor;
         }
 
-        public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next!!)
+        public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
+            ThrowHelper.ThrowIfNull(next);
+
             return (builder) =>
             {
                 // Run other configuration first, we want to decorate.

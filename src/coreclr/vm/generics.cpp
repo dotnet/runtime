@@ -187,9 +187,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
 
-        StackScratchBuffer buf;
-        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8(buf)))
-            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8(buf)));
+        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8()))
+            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8()));
     }
 #endif // _DEBUG
 
@@ -311,7 +310,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -474,8 +473,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Name for debugging
     StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
-    StackScratchBuffer debug_ClassNameBuffer;
-    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8(debug_ClassNameBuffer);
+    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_szClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
 
@@ -500,9 +498,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         {
             pStaticFieldDescs = (FieldDesc*) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FieldDesc)) * S_SIZE_T(pOldMT->GetNumStaticFields())));
             FieldDesc* pOldFD = pOldMT->GetGenericsStaticFieldDescs();
-
-            g_IBCLogger.LogFieldDescsAccess(pOldFD);
-
             for (DWORD i = 0; i < pOldMT->GetNumStaticFields(); i++)
             {
                 pStaticFieldDescs[i].InitializeFrom(pOldFD[i], pMT);
@@ -573,8 +568,6 @@ BOOL CheckInstantiation(Instantiation inst)
             return TRUE;
         }
 
-        g_IBCLogger.LogTypeMethodTableAccess(&th);
-
         if (   type == ELEMENT_TYPE_BYREF
             || type == ELEMENT_TYPE_TYPEDBYREF
             || type == ELEMENT_TYPE_VOID
@@ -582,15 +575,6 @@ BOOL CheckInstantiation(Instantiation inst)
             || type == ELEMENT_TYPE_FNPTR)
         {
             return FALSE;
-        }
-
-        MethodTable* pMT = th.GetMethodTable();
-        if (pMT != NULL)
-        {
-            if (pMT->IsByRefLike())
-            {
-                return FALSE;
-            }
         }
     }
     return TRUE;

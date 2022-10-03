@@ -57,7 +57,10 @@ namespace System.Diagnostics.Tracing
         internal static extern unsafe bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr GetWaitHandle(ulong sessionID);
+        internal static extern unsafe bool SignalSession(ulong sessionID);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern unsafe bool WaitForSessionSignal(ulong sessionID, int timeoutMs);
 #endif // FEATURE_PERFTRACING
 
         //

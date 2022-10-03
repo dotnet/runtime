@@ -183,7 +183,7 @@ namespace System.Data.OleDb
         internal readonly int dbPart;    // the DBPart w or w/out length
         internal readonly bool isfixed;   // IsFixedLength
         internal readonly bool islong;    // IsLongLength
-        internal readonly byte maxpre;    // maxium precision for numeric types // $CONSIDER - are we going to use this?
+        internal readonly byte maxpre;    // maximum precision for numeric types // $CONSIDER - are we going to use this?
         internal readonly int fixlen;    // fixed length size in bytes (-1 for variable)
 
         internal readonly string dataSourceType; // ICommandWithParameters.SetParameterInfo standard type name

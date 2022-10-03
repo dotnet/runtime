@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_lcsval_lcs_cs
 {
     internal struct Data
     {
         public int b, c;
     };
 
-    internal class LCS
+    public class LCS
     {
         private const int RANK = 4;
 
@@ -87,7 +88,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for longest common subsequence of 4 strings\n\n");
             String[] str = new String[RANK] {

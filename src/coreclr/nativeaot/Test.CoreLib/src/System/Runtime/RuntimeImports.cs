@@ -73,20 +73,20 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static unsafe extern object RhNewObject(MethodTable* pEEType);
+        private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        private static unsafe extern Array RhNewArray(MethodTable* pEEType, int length);
+        private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
 
         internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
             => RhNewArray(pEEType.ToPointer(), length);
 
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
+        [DllImport(RuntimeLibrary)]
+        internal static extern unsafe void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]

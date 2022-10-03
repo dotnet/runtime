@@ -50,6 +50,7 @@ namespace System.IO
         protected void OnRenamed(System.IO.RenamedEventArgs e) { }
         public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType) { throw null; }
         public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, int timeout) { throw null; }
+        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, System.TimeSpan timeout) { throw null; }
     }
     public partial class InternalBufferOverflowException : System.SystemException
     {

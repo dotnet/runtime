@@ -29,11 +29,11 @@
 #endif
 #endif
 
-int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
-#if defined(HAVE_STATFS)
+#if HAVE_STATFS
     struct statfs* mounts = NULL;
 #else
     struct statvfs* mounts = NULL;
@@ -41,7 +41,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
     int count = getmntinfo(&mounts, MNT_WAIT);
     for (int32_t i = 0; i < count; i++)
     {
-        onFound(mounts[i].f_mntonname);
+        onFound(context, mounts[i].f_mntonname);
     }
 
     return 0;
@@ -56,7 +56,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
         struct mnttab entry;
         while(getmntent(fp, &entry) == 0)
         {
-            onFound(entry.mnt_mountp);
+            onFound(context, entry.mnt_mountp);
         }
 
         result = fclose(fp);
@@ -79,7 +79,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
         struct mntent entry;
         while (getmntent_r(fp, &entry, buffer, STRING_BUFFER_SIZE) != NULL)
         {
-            onFound(entry.mnt_dir);
+            onFound(context, entry.mnt_dir);
         }
 
         result = endmntent(fp);

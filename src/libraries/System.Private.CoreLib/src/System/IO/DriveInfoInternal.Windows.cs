@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.IO
 {
@@ -18,20 +19,13 @@ namespace System.IO
 
             // GetLogicalDrives returns a bitmask starting from
             // position 0 "A" indicating whether a drive is present.
-            // Loop over each bit, creating a string for each one
-            // that is set.
+            // Create a string for each bit that is set.
 
-            uint d = (uint)drives;
-            int count = 0;
-            while (d != 0)
-            {
-                if (((int)d & 1) != 0) count++;
-                d >>= 1;
-            }
+            int count = BitOperations.PopCount((uint)drives);
 
             string[] result = new string[count];
             Span<char> root = stackalloc char[] { 'A', ':', '\\' };
-            d = (uint)drives;
+            uint d = (uint)drives;
             count = 0;
             while (d != 0)
             {
@@ -73,8 +67,7 @@ namespace System.IO
 
             // Now verify that the drive letter could be a real drive name.
             // On Windows this means it's between A and Z, ignoring case.
-            char letter = driveName[0];
-            if (!((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z')))
+            if (!char.IsAsciiLetter(driveName[0]))
             {
                 throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
             }

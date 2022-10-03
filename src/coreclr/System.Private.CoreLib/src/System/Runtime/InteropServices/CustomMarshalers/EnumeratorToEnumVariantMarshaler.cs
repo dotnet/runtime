@@ -33,8 +33,10 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object ManagedObj!!)
+        public IntPtr MarshalManagedToNative(object ManagedObj)
         {
+            ArgumentNullException.ThrowIfNull(ManagedObj);
+
             if (ManagedObj is EnumeratorViewOfEnumVariant view)
             {
                 return Marshal.GetComInterfaceForObject<object, ComTypes.IEnumVARIANT>(view.GetUnderlyingObject());

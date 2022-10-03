@@ -282,7 +282,7 @@ public:
 
 private:
     UINT_PTR         m_IPForEHClause;   // the entry point of the current notified exception clause
-    StackFrame       m_sfForEHClause;   // the assocated frame pointer of the current notified exception clause
+    StackFrame       m_sfForEHClause;   // the associated frame pointer of the current notified exception clause
     CallerStackFrame m_csfEHClause;     // the caller SP of the funclet; only used on WIN64
 
     COR_PRF_CLAUSE_TYPE m_ClauseType;   // this has a value from COR_PRF_CLAUSE_TYPE while an exception notification is pending

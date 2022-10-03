@@ -155,12 +155,12 @@ namespace System.Linq.Parallel
             }
         }
 
-        private IComparer<Pair<bool, TRightKey>> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
+        private static IComparer<Pair<bool, TRightKey>> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
         {
             return CreateComparer(Comparer<bool>.Default, comparer);
         }
 
-        private IComparer<Pair<TLeftKey, TRightKey>> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
+        private static IComparer<Pair<TLeftKey, TRightKey>> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
         {
             return new PairComparer<TLeftKey, TRightKey>(leftKeyComparer, rightKeyComparer);
         }
@@ -398,7 +398,7 @@ namespace System.Linq.Parallel
                 return new Pair<IEnumerable<TElement>, Pair<bool, TOrderKey>>(baseValue._grouping, Wrap(baseValue._orderKey));
             }
 
-            private Pair<bool, TOrderKey> Wrap(TOrderKey orderKey)
+            private static Pair<bool, TOrderKey> Wrap(TOrderKey orderKey)
             {
                 return new Pair<bool, TOrderKey>(true, orderKey);
             }

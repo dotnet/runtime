@@ -63,7 +63,7 @@ namespace System.Net.Http
 
                 // The cumulative number of HTTP requests failed since the process started.
                 // Failed means that an exception occurred during the handler's Send(Async) call as a result of a connection related error, timeout, or explicitly cancelled.
-                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occured while buffering the response content
+                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occurred while buffering the response content
                 // In case of using HttpClient's helper methods (GetString/ByteArray/Stream), this includes responses with non-success status codes
                 _failedRequestsCounter ??= new PollingCounter("requests-failed", this, () => Interlocked.Read(ref _failedRequests))
                 {

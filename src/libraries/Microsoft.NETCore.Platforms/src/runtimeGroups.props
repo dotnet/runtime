@@ -3,27 +3,31 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;s390x</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;s390x;ppc64le</Architectures>
     </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;arm;arm64</Architectures>
-      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14;3.15</Versions>
+      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14;3.15;3.16</Versions>
     </RuntimeGroup>
 
-    <RuntimeGroup Include="android">
+    <RuntimeGroup Include="linux-bionic">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>21;22;23;24;25;26;27;28;29;30;31</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="android">
+      <Parent>linux-bionic</Parent>
+      <Architectures>x64;x86;arm;arm64</Architectures>
+      <Versions>21;22;23;24;25;26;27;28;29;30;31;32</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="arch">
@@ -77,7 +81,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36;37</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -269,7 +273,7 @@
       <Architectures>x64;x86;arm;arm64</Architectures>
       <Versions>7;8;81;10</Versions>
     </RuntimeGroup>
-    <!-- add corert to all RIDs -->
+
     <RuntimeGroupWithQualifiers Include="@(RuntimeGroup)" />
 
     <!-- root RIDs -->

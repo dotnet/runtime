@@ -7,23 +7,25 @@ using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
-#pragma warning disable CA2252 // This API requires opting into preview features
     internal interface IReadWriteAdapter
     {
         static abstract ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
-        static abstract ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
+        static abstract ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken);
+        static abstract ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
         static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
         static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
     }
-#pragma warning restore CA2252
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, cancellationToken);
 
-        public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            stream.ReadAtLeastAsync(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
+
+        public static ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            stream.WriteAsync(buffer, cancellationToken);
 
         public static Task FlushAsync(Stream stream, CancellationToken cancellationToken) => stream.FlushAsync(cancellationToken);
 
@@ -35,9 +37,12 @@ namespace System.Net.Security
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             new ValueTask<int>(stream.Read(buffer.Span));
 
-        public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            new ValueTask<int>(stream.ReadAtLeast(buffer.Span, minimumBytes, throwOnEndOfStream));
+
+        public static ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            stream.Write(buffer, offset, count);
+            stream.Write(buffer.Span);
             return default;
         }
 

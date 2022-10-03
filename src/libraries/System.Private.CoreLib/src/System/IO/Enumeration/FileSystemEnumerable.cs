@@ -9,7 +9,7 @@ using System.Threading;
 namespace System.IO.Enumeration
 {
     /// <summary>
-    /// Enumerable that allows utilizing custom filter predicates and tranform delegates.
+    /// Enumerable that allows utilizing custom filter predicates and transform delegates.
     /// </summary>
     public class FileSystemEnumerable<TResult> : IEnumerable<TResult>
     {
@@ -23,8 +23,11 @@ namespace System.IO.Enumeration
         {
         }
 
-        internal FileSystemEnumerable(string directory!!, FindTransform transform!!, EnumerationOptions? options, bool isNormalized)
+        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(transform);
+
             _directory = directory;
             _transform = transform;
             _options = options ?? EnumerationOptions.Default;

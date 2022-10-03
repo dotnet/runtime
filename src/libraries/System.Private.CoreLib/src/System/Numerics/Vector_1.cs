@@ -81,7 +81,7 @@ namespace System.Numerics
 
             if ((index < 0) || ((values.Length - index) < Count))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
@@ -150,7 +150,9 @@ namespace System.Numerics
             }
         }
 
-        internal static bool IsTypeSupported
+        /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
+        /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -191,7 +193,7 @@ namespace System.Numerics
         {
             get
             {
-                if (IsTypeSupported)
+                if (IsSupported)
                 {
                     return ToString();
                 }
@@ -536,7 +538,7 @@ namespace System.Numerics
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((destination.Length - startIndex) < Count)
@@ -587,9 +589,39 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector<T> other)
-            => this == other;
+        {
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector.IsHardwareAccelerated)
+            {
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
+                {
+                    Vector<T> result = Vector.Equals(this, other) | ~(Vector.Equals(this, this) | Vector.Equals(other, other));
+                    return result.As<T, int>() == Vector<int>.AllBitsSet;
+                }
+                else
+                {
+                    return this == other;
+                }
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector<T> self, Vector<T> other)
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
@@ -614,14 +646,14 @@ namespace System.Numerics
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
             => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements and the given IFormatProvider.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <param name="formatProvider">The format provider to use when formatting elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format, IFormatProvider? formatProvider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -644,7 +676,7 @@ namespace System.Numerics
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
-        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
+        /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
         public bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -660,7 +692,7 @@ namespace System.Numerics
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
-        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
+        /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
         public bool TryCopyTo(Span<T> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();

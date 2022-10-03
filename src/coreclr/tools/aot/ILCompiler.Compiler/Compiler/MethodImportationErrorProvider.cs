@@ -6,7 +6,7 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     /// <summary>
-    /// Class that provides cached information about method body importation errors that occured in previous phases.
+    /// Class that provides cached information about method body importation errors that occurred in previous phases.
     /// </summary>
     public class MethodImportationErrorProvider
     {

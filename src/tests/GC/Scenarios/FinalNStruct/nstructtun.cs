@@ -24,14 +24,14 @@ namespace NStruct
             }
 
             [MethodImplAttribute(MethodImplOptions.NoInlining)]
-            public void DestoryStrmap()
+            public void DestroyStrmap()
             {
                 Strmap = null;
-            }                       
+            }
 
             public bool RunTest()
             {
-                DestoryStrmap();
+                DestroyStrmap();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();

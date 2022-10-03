@@ -242,17 +242,21 @@ bool hostpolicy_resolver::try_get_dir(
     pal::string_t resolved_deps = get_deps_file(is_framework_dependent, app_candidate, specified_deps_file, fx_definitions);
 
     // Resolve hostpolicy version out of the deps file.
-    pal::string_t version = resolve_hostpolicy_version_from_deps(resolved_deps);
-    if (trace::is_enabled() && version.empty() && pal::file_exists(resolved_deps))
+    pal::string_t version;
+    if (pal::file_exists(resolved_deps))
     {
-        trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
-            resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
-    }
+        version = resolve_hostpolicy_version_from_deps(resolved_deps);
+        if (trace::is_enabled() && version.empty())
+        {
+            trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
+                resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
+        }
 
-    // Check if the given version of the hostpolicy exists in servicing.
-    if (hostpolicy_exists_in_svc(version, impl_dir))
-    {
-        return true;
+        // Check if the given version of the hostpolicy exists in servicing.
+        if (hostpolicy_exists_in_svc(version, impl_dir))
+        {
+            return true;
+        }
     }
 
     // Get the expected directory that would contain hostpolicy.

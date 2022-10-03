@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+  </PropertyGroup>
+
+  <ItemGroup>
+   <Compile Include="Class.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TestInterface.csproj" />
+  </ItemGroup>
+
+</Project>

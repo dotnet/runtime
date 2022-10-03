@@ -93,8 +93,13 @@ namespace System.Security.Cryptography.Xml
         /// <exception cref="CryptographicException">
         /// The XML has the incorrect schema or the RSA parameters are invalid.
         /// </exception>
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (value.LocalName != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {

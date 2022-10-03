@@ -34,16 +34,12 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             Debug.Assert(certificate != null);
 
-            X509Extension? extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
-
-            if (extension == null)
-            {
-                // Construct the value from the public key info.
-                extension = new X509SubjectKeyIdentifierExtension(
+            X509Extension extension =
+                certificate.Extensions[Oids.SubjectKeyIdentifier] ??
+                new X509SubjectKeyIdentifierExtension( // Construct the value from the public key info.
                     certificate.PublicKey,
                     X509SubjectKeyIdentifierHashAlgorithm.CapiSha1,
                     false);
-            }
 
             try
             {
@@ -78,7 +74,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             return GetPrivateKey<T>(certificate);
         }
 
-        private T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
+        private static T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
         {
             if (typeof(T) == typeof(RSA))
                 return (T?)(object?)certificate.GetRSAPrivateKey();

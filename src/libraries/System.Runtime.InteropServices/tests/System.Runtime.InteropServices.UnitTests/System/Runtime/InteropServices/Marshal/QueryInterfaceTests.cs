@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> QueryInterface_NoSuchInterface_TestData()
         {
             yield return new object[] { new object(), Guid.Empty.ToString() };
-            yield return new object[] { new object(), "927971f5-0939-11d1-8be1-00c04fd8d503" };
+            yield return new object[] { new object(), "639610C8-26EA-48BB-BD74-4BC18EECC6EA" };
         }
 
         [Theory]

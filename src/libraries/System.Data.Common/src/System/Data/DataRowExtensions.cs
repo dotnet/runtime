@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Data
 {
@@ -141,31 +142,56 @@ namespace System.Data
 
         private static class UnboxT<T>
         {
-            internal static readonly Converter<object, T?> s_unbox = Create();
+            internal static readonly Func<object, T?> s_unbox = Create();
 
-            private static Converter<object, T?> Create()
+            private static Func<object, T?> Create()
             {
-                if (typeof(T).IsValueType)
+                if (typeof(T).IsValueType && default(T) == null)
                 {
-                    return typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>)
-                        ? (Converter<object, T>)Delegate.CreateDelegate(
-                            typeof(Converter<object, T>),
-                                typeof(UnboxT<T>)
-                                    .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-                                    .MakeGenericMethod(typeof(T).GetGenericArguments()[0]))
-                        : ValueField;
-                }
+                    if (!RuntimeFeature.IsDynamicCodeSupported)
+                        return NullableFieldUsingReflection;
 
-                return ReferenceField;
+#pragma warning disable IL3050 // There is a path that is safe for AOT executed when IsDynamicCodeSupported is false.
+                    return typeof(UnboxT<T>)
+                        .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+                        .MakeGenericMethod(Nullable.GetUnderlyingType(typeof(T))!)
+                        .CreateDelegate<Func<object, T>>();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                }
+                return NonNullableField;
             }
 
-            private static T? ReferenceField(object value)
-                => value == DBNull.Value ? default : (T)value;
+            private static T? NonNullableField(object value)
+            {
+                if (value == DBNull.Value)
+                {
+                    if (default(T) is null)
+                        return default;
+                    throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
+                }
+                return (T)value;
+            }
 
-            private static T ValueField(object value)
-                => value == DBNull.Value
-                    ? throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)))
-                    : (T)value;
+            private static T? NullableFieldUsingReflection(object value)
+            {
+                if (value == DBNull.Value)
+                    return default;
+
+                // Try regular cast first
+                if (value is T t)
+                    return t;
+
+                Type valueType = value.GetType();
+                Type nullableType = Nullable.GetUnderlyingType(typeof(T))!;
+
+                // Convert does all sorts of conversions. We are only interested in conversions for enums.
+                Type fromType = valueType.IsEnum ? Enum.GetUnderlyingType(valueType) : valueType;
+                Type toType = nullableType.IsEnum ? Enum.GetUnderlyingType(nullableType) : nullableType;
+                if (fromType == toType)
+                    value = nullableType.IsEnum ? Enum.ToObject(nullableType, value) : Convert.ChangeType(value, nullableType, null);
+
+                return (T)value;
+            }
 
             private static Nullable<TElem> NullableField<TElem>(object value) where TElem : struct
                 => value == DBNull.Value ? default : new Nullable<TElem>((TElem)value);

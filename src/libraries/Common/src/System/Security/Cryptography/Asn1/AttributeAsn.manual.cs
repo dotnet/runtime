@@ -5,8 +5,13 @@ namespace System.Security.Cryptography.Asn1
 {
     internal partial struct AttributeAsn
     {
-        public AttributeAsn(AsnEncodedData attribute!!)
+        public AttributeAsn(AsnEncodedData attribute)
         {
+            if (attribute is null)
+            {
+                throw new ArgumentNullException(nameof(attribute));
+            }
+
             AttrType = attribute.Oid!.Value!;
             AttrValues = new[] { new ReadOnlyMemory<byte>(attribute.RawData) };
         }

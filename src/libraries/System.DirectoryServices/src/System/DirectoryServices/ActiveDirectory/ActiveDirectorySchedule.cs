@@ -55,8 +55,10 @@ namespace System.DirectoryServices.ActiveDirectory
 #pragma warning restore 612, 618
         }
 
-        public ActiveDirectorySchedule(ActiveDirectorySchedule schedule!!) : this()
+        public ActiveDirectorySchedule(ActiveDirectorySchedule schedule) : this()
         {
+            ArgumentNullException.ThrowIfNull(schedule);
+
             bool[] tmpSchedule = schedule._scheduleArray;
             for (int i = 0; i < 672; i++)
                 _scheduleArray[i] = tmpSchedule[i];
@@ -121,8 +123,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 _scheduleArray[i] = true;
         }
 
-        public void SetSchedule(DayOfWeek[] days!!, HourOfDay fromHour, MinuteOfHour fromMinute, HourOfDay toHour, MinuteOfHour toMinute)
+        public void SetSchedule(DayOfWeek[] days, HourOfDay fromHour, MinuteOfHour fromMinute, HourOfDay toHour, MinuteOfHour toMinute)
         {
+            ArgumentNullException.ThrowIfNull(days);
+
             for (int i = 0; i < days.Length; i++)
             {
                 if (days[i] < DayOfWeek.Sunday || days[i] > DayOfWeek.Saturday)

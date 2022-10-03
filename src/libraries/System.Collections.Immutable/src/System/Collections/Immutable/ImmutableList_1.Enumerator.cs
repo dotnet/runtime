@@ -26,15 +26,6 @@ namespace System.Collections.Immutable
         public struct Enumerator : IEnumerator<T>, ISecurePooledObjectUser, IStrongEnumerator<T>
         {
             /// <summary>
-            /// The resource pool of reusable mutable stacks for purposes of enumeration.
-            /// </summary>
-            /// <remarks>
-            /// We utilize this resource pool to make "allocation free" enumeration achievable.
-            /// </remarks>
-            private static readonly SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator> s_EnumeratingStacks =
-                new SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>();
-
-            /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
             private readonly Builder? _builder;
@@ -113,9 +104,9 @@ namespace System.Collections.Immutable
                 _stack = null;
                 if (_count > 0)
                 {
-                    if (!s_EnumeratingStacks.TryTake(this, out _stack))
+                    if (!SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.TryTake(this, out _stack))
                     {
-                        _stack = s_EnumeratingStacks.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
+                        _stack = SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
                     }
 
                     this.ResetStack();
@@ -157,7 +148,7 @@ namespace System.Collections.Immutable
                 if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
-                    s_EnumeratingStacks.TryAdd(this, _stack!);
+                    SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.TryAdd(this, _stack!);
                 }
 
                 _stack = null;

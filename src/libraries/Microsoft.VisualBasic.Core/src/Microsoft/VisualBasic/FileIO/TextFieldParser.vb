@@ -1201,9 +1201,9 @@ Namespace Microsoft.VisualBasic.FileIO
             m_SpaceChars = WhitespaceCharacters
 
             ' Get rid of trailing | and set regex
-            m_DelimiterRegex = New Regex(Builder.ToString(0, Builder.Length - 1), REGEX_OPTIONS)
+            m_DelimiterRegex = New Regex(Builder.ToString(0, Builder.Length - 1))
             Builder.Append(vbCr & "|" & vbLf)
-            m_DelimiterWithEndCharsRegex = New Regex(Builder.ToString(), REGEX_OPTIONS)
+            m_DelimiterWithEndCharsRegex = New Regex(Builder.ToString())
 
             ' Add end of line (either Cr, Ln, or nothing) and set regex
             QuoteBuilder.Append(vbCr & "|" & vbLf & ")|""$")
@@ -1345,7 +1345,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 If m_BeginQuotesRegex Is Nothing Then
                     ' Get the pattern
                     Dim pattern As String = String.Format(CultureInfo.InvariantCulture, BEGINS_WITH_QUOTE, WhitespacePattern)
-                    m_BeginQuotesRegex = New Regex(pattern, REGEX_OPTIONS)
+                    m_BeginQuotesRegex = New Regex(pattern)
                 End If
 
                 Return m_BeginQuotesRegex
@@ -1463,9 +1463,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ' Regex used with BuildField
         Private m_DelimiterWithEndCharsRegex As Regex
 
-        ' Options used for regular expressions
-        Private Const REGEX_OPTIONS As RegexOptions = RegexOptions.CultureInvariant
-
         ' Codes for whitespace as used by String.Trim excluding line end chars as those are handled separately
         Private m_WhitespaceCodes() As Integer = {&H9, &HB, &HC, &H20, &H85, &HA0, &H1680, &H2000, &H2001, &H2002, &H2003, &H2004, &H2005, &H2006, &H2007, &H2008, &H2009, &H200A, &H200B, &H2028, &H2029, &H3000, &HFEFF}
 
@@ -1473,7 +1470,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private m_BeginQuotesRegex As Regex
 
         ' Regular expression for whitespace
-        Private m_WhiteSpaceRegEx As Regex = New Regex("\s", REGEX_OPTIONS)
+        Private m_WhiteSpaceRegEx As Regex = New Regex("\s")
 
         ' Indicates whether or not white space should be removed from a returned field
         Private m_TrimWhiteSpace As Boolean = True

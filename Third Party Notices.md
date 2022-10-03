@@ -62,7 +62,7 @@ Copyright © 1991-2020 Unicode, Inc. All rights reserved.
 ```
 https://www.unicode.org/license.html
 
-Copyright © 1991-2020 Unicode, Inc. All rights reserved.
+Copyright © 1991-2022 Unicode, Inc. All rights reserved.
 Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -103,13 +103,13 @@ License Type: Zlib
 Copyright © 1995-2017 Jean-loup Gailly and Mark Adler
 
 https://github.com/madler/zlib
-http://zlib.net/zlib_license.html
+https://zlib.net/zlib_license.html
 
 ```
 /* zlib.h -- interface of the 'zlib' general purpose compression library
-  version 1.2.11, January 15th, 2017
+  version 1.2.12, March 27th, 2022
 
-  Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
+  Copyright (C) 1995-2022 Jean-loup Gailly and Mark Adler
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -1202,6 +1202,31 @@ SOFTWARE.
 ```
 ---------
 
+ComponentName: License for remote stack unwind
+
+License Type: Apache License, Version 2.0.
+
+Copyright © 2019 LLVM Project
+```
+
+License for remote stack unwind (https://github.com/llvm/llvm-project/blob/main/lldb/source/Symbol/CompactUnwindInfo.cpp)
+
+Copyright 2019 LLVM Project
+
+Licensed under the Apache License, Version 2.0 (the "License") with LLVM Exceptions;
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://llvm.org/LICENSE.txt
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+```
+---------
 Component Name: Apple header files
 
 License Type: Unknown
@@ -1289,4 +1314,111 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+---------
+
+Component Name: MsQuic
+
+License Type: MIT
+
+```
+Copyright (c) Microsoft Corporation.
+Licensed under the MIT License.
+
+Available at
+https://github.com/microsoft/msquic/blob/main/LICENSE
+
+License notice for m-ou-se/floatconv
+-------------------------------
+
+Copyright (c) 2020 Mara Bos <m-ou.se@m-ou.se>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+---------
+
+Component Name: code from The Practice of Programming
+
+License Type: Unknown
+
+Copyright © 1999 Lucent Technologies
+
+```
+License notice for code from The Practice of Programming
+-------------------------------
+
+Copyright (C) 1999 Lucent Technologies
+
+Excerpted from 'The Practice of Programming
+by Brian W. Kernighan and Rob Pike
+
+You may use this code for any purpose, as long as you leave the copyright notice and book citation attached.
+```
+---------
+
+Component Name: Euclidean Affine Functions and Applications to Calendar Algorithms
+
+License Type: Unknown
+
+Copyright © 1999 Lucent Technologies
+
+```
+Copyright © 1999 Lucent Technologies
+
+Aspects of Date/Time processing based on algorithm described in "Euclidean Affine Functions and Applications to Calendar
+Algorithms", Cassio Neri and Lorenz Schneider. https://arxiv.org/pdf/2102.06959.pdf
+```
+---------
+
+Component Name:amd/aocl-libm-ose
+
+License Type: Unknown
+
+Copyright © 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+```
+License notice for amd/aocl-libm-ose
+-------------------------------
+
+Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 ```

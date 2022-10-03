@@ -256,10 +256,10 @@ typedef struct {
 	gpointer addr;
 	/* The trampoline reads this, so keep the size explicit */
 	int ret_marshal;
-	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 (used in out case) */
+	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 (used bu "out" case) */
 	/* Equivalent of vret_arg_slot in the x86 implementation. */
 	int vret_arg_reg;
-	/* The stack slot where the return value will be stored (used in in case) */
+	/* The stack slot where the return value will be stored (used by "in" case) */
 	int vret_slot;
 	int stack_usage, map_count;
 	/* If not -1, then make a virtual call using this vtable offset */
@@ -382,7 +382,7 @@ typedef struct {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-#ifdef HAVE_WORKING_SIGALTSTACK
+#ifdef ENABLE_SIGALTSTACK
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
@@ -434,8 +434,6 @@ typedef struct {
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_AOT_SUPPORTED 1
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
-
-#define MONO_ARCH_SUPPORT_TASKLETS 1
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1

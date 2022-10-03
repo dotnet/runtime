@@ -27,8 +27,10 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="source">The configuration source to add.</param>
         /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
-        public IConfigurationBuilder Add(IConfigurationSource source!!)
+        public IConfigurationBuilder Add(IConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             Sources.Add(source);
             return this;
         }

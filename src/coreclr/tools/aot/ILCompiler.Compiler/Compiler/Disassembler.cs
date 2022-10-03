@@ -107,7 +107,7 @@ namespace ILCompiler
                     size = DumpInstruction(_handle, (ulong)offset, (IntPtr)pByte, bytes.Length - offset);
                 }
 
-                instruction = Marshal.PtrToStringAnsi(GetOutputBuffer());
+                instruction = Marshal.PtrToStringUTF8(GetOutputBuffer());
                 ClearOutputBuffer();
                 return size;
             }

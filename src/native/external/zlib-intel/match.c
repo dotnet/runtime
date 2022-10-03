@@ -26,7 +26,7 @@ uInt longest_match(deflate_state *z_const s, IPos cur_match)
 #endif
 }
 
-local uInt std1_longest_match(deflate_state *z_const s, IPos cur_match)
+local inline uInt std1_longest_match(deflate_state *z_const s, IPos cur_match)
 {
     unsigned chain_length = s->max_chain_length;/* max hash chain length */
     register Bytef *scan = s->window + s->strstart; /* current string */
@@ -118,7 +118,7 @@ local uInt std1_longest_match(deflate_state *z_const s, IPos cur_match)
     return s->lookahead;
 }
 
-local __forceinline uInt std2_longest_match(deflate_state *z_const s, IPos cur_match)
+local zalways_inline uInt std2_longest_match(deflate_state *z_const s, IPos cur_match)
 {
     z_const Posf *prev = s->prev;
     z_const uInt wmask = s->w_mask;
@@ -186,7 +186,7 @@ local __forceinline uInt std2_longest_match(deflate_state *z_const s, IPos cur_m
          * to check more often for insufficient lookahead.
          */
         Assert(scan[2] == match[2], "scan[2]?");
-	if (scan[2] != match[2]) continue;
+        if (scan[2] != match[2]) continue;
         scan++, match++;
         do {
         } while (*(ushf*)(scan+=2) == *(ushf*)(match+=2) &&
@@ -216,7 +216,7 @@ local __forceinline uInt std2_longest_match(deflate_state *z_const s, IPos cur_m
     return s->lookahead;
 }
 
-local uInt fastest_longest_match(deflate_state *z_const s, IPos cur_match)
+local inline uInt fastest_longest_match(deflate_state *z_const s, IPos cur_match)
 {
     register Bytef *scan = s->window + s->strstart; /* current string */
     register Bytef *match;                       /* matched string */

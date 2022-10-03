@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace hello
+namespace hello_rangecheckinfinally_interactions_cs
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -22,7 +23,8 @@ namespace hello
             // Create and initialize test log object
             testLog = new TestUtil.TestLog(expectedOut);
         }
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             int[] a;
             //Start recording

@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 VisitCallSiteMain(callSite, context));
         }
 
-        private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
+        private static Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {
             if (!callSite.CaptureDisposable)
             {
@@ -269,7 +269,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 );
         }
 
-        public Expression GetCaptureDisposable(ParameterExpression scope)
+        public static Expression GetCaptureDisposable(ParameterExpression scope)
         {
             if (scope != ScopeParameter)
             {

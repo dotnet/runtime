@@ -6,17 +6,6 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
-#ifdef Sleep
-// This is a funny workaround for the fact that "common.h" defines Sleep to be
-// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
-//
-// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
-// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
-// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
-// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
-#undef Sleep
-#endif // Sleep
-
 #ifdef HAS_SYSTEM_YIELDPROCESSOR
 // YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
 #undef YieldProcessor
@@ -57,7 +46,7 @@ struct VirtualReserveFlags
 };
 
 // An event is a synchronization object whose state can be set and reset
-// indicating that an event has occured. It is used pervasively throughout
+// indicating that an event has occurred. It is used pervasively throughout
 // the GC.
 //
 // Note that GCEvent deliberately leaks its contents by not having a non-trivial destructor.
@@ -81,7 +70,7 @@ public:
     // is a logic error.
     void CloseEvent();
 
-    // "Sets" the event, indicating that a particular event has occured. May
+    // "Sets" the event, indicating that a particular event has occurred. May
     // wake up other threads waiting on this event. Depending on whether or
     // not this event is an auto-reset event, the state of the event may
     // or may not be automatically reset after Set is called.
@@ -366,7 +355,7 @@ public:
     static bool GetCurrentThreadIdealProc(uint16_t* procNo);
 
     // Get numeric id of the current thread if possible on the
-    // current platform. It is indended for logging purposes only.
+    // current platform. It is intended for logging purposes only.
     // Return:
     //  Numeric id of the current thread or 0 if the
     static uint64_t GetCurrentThreadIdForLogging();

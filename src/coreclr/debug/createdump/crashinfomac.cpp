@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+int g_readProcessMemoryResult = KERN_SUCCESS;
+
 bool
 CrashInfo::Initialize()
 {
@@ -12,7 +14,9 @@ CrashInfo::Initialize()
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        // Regardless of the reason (invalid process id or invalid signing/entitlements) it always returns KERN_FAILURE (5)
+        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
+        printf_error("This failure may be because createdump or the application is not properly signed and entitled.\n");
         return false;
     }
     return true;
@@ -37,14 +41,14 @@ CrashInfo::EnumerateAndSuspendThreads()
     kern_return_t result = ::task_suspend(Task());
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("Problem suspending process: task_suspend(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
     result = ::task_threads(Task(), &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("Problem enumerating threads: task_threads(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
@@ -57,7 +61,7 @@ CrashInfo::EnumerateAndSuspendThreads()
         result = ::thread_info(threadList[i], THREAD_IDENTIFIER_INFO, (thread_info_t)&tident, &tident_count);
         if (result != KERN_SUCCESS)
         {
-            TRACE("%d thread_info(%x) FAILED %x %s\n", i, threadList[i], result, mach_error_string(result));
+            TRACE("%d thread_info(%x) FAILED %s (%x)\n", i, threadList[i], mach_error_string(result), result);
             tid = (int)threadList[i];
         }
         else
@@ -68,6 +72,12 @@ CrashInfo::EnumerateAndSuspendThreads()
         // Add to the list of threads
         ThreadInfo* thread = new ThreadInfo(*this, tid, threadList[i]);
         m_threads.push_back(thread);
+    }
+
+    result = ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
+    if (result != KERN_SUCCESS)
+    {
+        TRACE("vm_deallocate FAILED %x %s\n", result, mach_error_string(result));
     }
 
     return true;
@@ -95,6 +105,7 @@ CrashInfo::EnumerateMemoryRegions()
     vm_region_submap_info_data_64_t info;
     mach_vm_address_t address = 1;
     mach_vm_size_t size = 0;
+    uint64_t cbAllMemoryRegions = 0;
     uint32_t depth = 0;
 
     // First enumerate and add all the regions
@@ -105,18 +116,18 @@ CrashInfo::EnumerateMemoryRegions()
         if (result != KERN_SUCCESS) {
             // Iteration can be ended on a KERN_INVALID_ADDRESS
             // Allow other kernel errors to continue too so we can get at least part of a dump
-            TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
+            TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %s (%x)\n", address, size, mach_error_string(result), result);
             break;
         }
-        TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
+        TRACE_VERBOSE("%016llx - %016llx (%06llx, %06llx) %08llx %s %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
+            info.pages_resident,
             info.offset,
             info.is_submap ? "sub" : "   ",
-            info.user_wired_count,
-            info.share_mode,
             depth,
+            info.share_mode,
             (info.protection & VM_PROT_READ) ? 'r' : '-',
             (info.protection & VM_PROT_WRITE) ? 'w' : '-',
             (info.protection & VM_PROT_EXECUTE) ? 'x' : '-',
@@ -127,10 +138,11 @@ CrashInfo::EnumerateMemoryRegions()
         }
         else
         {
-            if ((info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
+            if (info.share_mode != SM_EMPTY && (info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
             {
                 MemoryRegion memoryRegion(ConvertProtectionFlags(info.protection), address, address + size, info.offset);
                 m_allMemoryRegions.insert(memoryRegion);
+                cbAllMemoryRegions += memoryRegion.Size();
             }
             address += size;
         }
@@ -147,22 +159,31 @@ CrashInfo::EnumerateMemoryRegions()
             break;
         }
     }
+    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
+    return true;
+}
 
-    // Filter out the module regions from the memory regions gathered
+void
+CrashInfo::InitializeOtherMappings()
+{
+    uint64_t cbOtherMappings = 0;
+
+    // Filter out the module regions from the memory regions gathered. The m_moduleMappings list needs
+    // to include all the native and managed module regions.
     for (const MemoryRegion& region : m_allMemoryRegions)
     {
         std::set<MemoryRegion>::iterator found = m_moduleMappings.find(region);
         if (found == m_moduleMappings.end())
         {
             m_otherMappings.insert(region);
+            cbOtherMappings += region.Size();
         }
         else
         {
             // Skip any region that is fully contained in a module region
             if (!found->Contains(region))
             {
-                TRACE("Region:   ");
-                region.Trace();
+                region.Trace("Region:   ");
 
                 // Now add all the gaps in "region" left by the module regions
                 uint64_t previousEndAddress = region.StartAddress();
@@ -174,9 +195,9 @@ CrashInfo::EnumerateMemoryRegions()
                         MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset());
                         if (gap.Size() > 0)
                         {
-                            TRACE("     Gap: ");
-                            gap.Trace();
+                            gap.Trace("     Gap: ");
                             m_otherMappings.insert(gap);
+                            cbOtherMappings += gap.Size();
                         }
                         previousEndAddress = found->EndAddress();
                     }
@@ -185,14 +206,14 @@ CrashInfo::EnumerateMemoryRegions()
                 MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset());
                 if (endgap.Size() > 0)
                 {
-                    TRACE("   EndGap:");
-                    endgap.Trace();
+                    endgap.Trace("  EndGap: ");
                     m_otherMappings.insert(endgap);
+                    cbOtherMappings += endgap.Size();
                 }
             }
         }
     }
-    return true;
+    TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
 }
 
 bool
@@ -248,13 +269,33 @@ void CrashInfo::VisitModule(MachOModule& module)
     if (m_coreclrPath.empty())
     {
         size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
-        if (last != std::string::npos) {
+        if (last != std::string::npos)
+        {
             m_coreclrPath = module.Name().substr(0, last + 1);
+            m_runtimeBaseAddress = module.BaseAddress();
 
             uint64_t symbolOffset;
-            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
             {
-                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
+            }
+        }
+        else if (g_checkForSingleFile)
+        {
+            uint64_t symbolOffset;
+            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+            {
+                m_coreclrPath = GetDirectory(module.Name());
+                m_runtimeBaseAddress = module.BaseAddress();
+
+                RuntimeInfo runtimeInfo { };
+                if (ReadMemory((void*)(module.BaseAddress() + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                {
+                    if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
+                    {
+                        TRACE("Found valid single-file runtime info\n");
+                    }
+                }
             }
         }
     }
@@ -289,24 +330,45 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             _ASSERTE(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion moduleRegion(regionFlags, start, end, offset);
-            const auto& found = m_moduleMappings.find(moduleRegion);
-            if (found == m_moduleMappings.end())
+            MemoryRegion newModule(regionFlags, start, end, offset, module.Name());
+            std::set<MemoryRegion>::iterator existingModule = m_moduleMappings.find(newModule);
+            if (existingModule == m_moduleMappings.end())
             {
                 if (g_diagnosticsVerbose)
                 {
-                    TRACE_VERBOSE("VisitSegment: ");
-                    moduleRegion.Trace();
+                    newModule.Trace("VisitSegment: ");
                 }
                 // Add this module segment to the module mappings list
-                m_moduleMappings.insert(moduleRegion);
+                m_moduleMappings.insert(newModule);
+                m_cbModuleMappings += newModule.Size();
             }
             else
             {
-                TRACE("VisitSegment: WARNING: ");
-                moduleRegion.Trace();
-                TRACE("       is overlapping: ");
-                found->Trace();
+                // Skip the new module region if it is fully contained in an existing module region
+                if (!existingModule->Contains(newModule))
+                {
+                    if (g_diagnosticsVerbose)
+                    {
+                        newModule.Trace("VisitSegment: ");
+                        existingModule->Trace(" overlapping: ");
+                    }
+                    uint64_t numberPages = newModule.SizeInPages();
+                    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
+                    {
+                        MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+
+                        const auto& found = m_moduleMappings.find(gap);
+                        if (found != m_moduleMappings.end())
+                        {
+                            if (g_diagnosticsVerbose)
+                            {
+                                gap.Trace("VisitSegment: *");
+                            }
+                            m_moduleMappings.insert(gap);
+                            m_cbModuleMappings += gap.Size();
+                        }
+                    }
+                }
             }
         }
     }
@@ -328,7 +390,7 @@ CrashInfo::VisitSection(MachOModule& module, const section_64& section)
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE);
+    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
     const MemoryRegion* region = SearchMemoryRegions(m_allMemoryRegions, search);
     if (region != nullptr) {
         return region->Flags();
@@ -362,8 +424,9 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
-            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
-                address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
+            g_readProcessMemoryResult = result;
+            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %s (%x)\n",
+                address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
             break;
         }
         ssize_t bytesToCopy = PAGE_SIZE - offset;
@@ -400,6 +463,10 @@ ModuleInfo::LoadModule()
                 {
                     g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
                 }
+                else
+                {
+                    TRACE("LoadModule: task_info(self) FAILED %x %s\n", result, mach_error_string(result));
+                }
             }
             if (g_image_infos != nullptr)
             {
@@ -412,7 +479,15 @@ ModuleInfo::LoadModule()
                         break;
                     }
                 }
+                if (m_localBaseAddress == 0)
+                {
+                    TRACE("LoadModule: local base address not found for %s\n", m_moduleName.c_str());
+                }
             }
+        }
+        else
+        {
+            TRACE("LoadModule: dlopen(%s) FAILED %d %s\n", m_moduleName.c_str(), errno, strerror(errno));
         }
     }
 }

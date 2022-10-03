@@ -80,7 +80,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT
     EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD, szwFullName));
 }
 
-void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pMT, LPCSTR szMember, Module *pModule, PCCOR_SIGNATURE pSig,DWORD cSig,const SigTypeContext *pTypeContext)
+void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pMT, LPCSTR szMember, ModuleBase *pModule, PCCOR_SIGNATURE pSig,DWORD cSig,const SigTypeContext *pTypeContext)
 {
     CONTRACTL
     {
@@ -106,9 +106,9 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         szClassName = "?";
     };
 
-    if (pSig && cSig && pModule)
+    if (pSig && cSig && pModule && pModule->IsFullModule())
     {
-        MetaSig tmp(pSig, cSig, pModule, pTypeContext);
+        MetaSig tmp(pSig, cSig, static_cast<Module*>(pModule), pTypeContext);
         SigFormat sf(tmp, szMember ? szMember : "?", szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
@@ -121,7 +121,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
 
 //---------------------------------------------------------------------------------------
 //
-void MemberLoader::GetDescFromMemberRef(Module * pModule,
+void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
                                         mdToken MemberRef,
                                         MethodDesc ** ppMD,
                                         FieldDesc ** ppFD,
@@ -191,30 +191,41 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
             return;
         }
 
-        MethodDesc *pMethodDef = pModule->LookupMethodDef(parent);
-        if (!pMethodDef)
+        MethodDesc *pMethodDef = NULL;
+
+        if (pModule->IsFullModule())
         {
-            // There is no value for this def so we haven't yet loaded the class.
-            mdTypeDef typeDef;
-            IfFailThrow(pInternalImport->GetParentToken(parent, &typeDef));
-
-            // Make sure it is a typedef
-            if (TypeFromToken(typeDef) != mdtTypeDef)
+            Module* pNormalModule = static_cast<Module*>(pModule);
+            pMethodDef = pNormalModule->LookupMethodDef(parent);
+            if (!pMethodDef)
             {
-                COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_WO_TYPEDEF_PARENT);
+                // There is no value for this def so we haven't yet loaded the class.
+                mdTypeDef typeDef;
+                IfFailThrow(pInternalImport->GetParentToken(parent, &typeDef));
+
+                // Make sure it is a typedef
+                if (TypeFromToken(typeDef) != mdtTypeDef)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_WO_TYPEDEF_PARENT);
+                }
+
+                // load the class
+
+                TypeHandle th = ClassLoader::LoadTypeDefThrowing(
+                    pNormalModule,
+                    typeDef,
+                    ClassLoader::ThrowIfNotFound,
+                    strictMetadataChecks ?
+                        ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
+
+                // the class has been loaded and the method should be in the rid map!
+                pMethodDef = pNormalModule->LookupMethodDef(parent);
             }
-
-            // load the class
-
-            TypeHandle th = ClassLoader::LoadTypeDefThrowing(
-                pModule,
-                typeDef,
-                ClassLoader::ThrowIfNotFound,
-                strictMetadataChecks ?
-                    ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
-
-            // the class has been loaded and the method should be in the rid map!
-            pMethodDef = pModule->LookupMethodDef(parent);
+        }
+        else
+        {
+            // Only normal modules may have MethodDefs
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
         LPCUTF8 szMember;
@@ -277,7 +288,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
     {
     case mdtModuleRef:
         {
-            DomainAssembly *pTargetModule = pModule->LoadModule(GetAppDomain(), parent);
+            DomainAssembly *pTargetModule = pModule->LoadModule(parent);
             if (pTargetModule == NULL)
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
             typeHnd = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
@@ -438,7 +449,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
 
 //---------------------------------------------------------------------------------------
 //
-MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
+MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(ModuleBase * pModule,
                                                              mdToken MemberRef,
                                                              MethodTable * pMT)
 {
@@ -508,7 +519,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
 
 //---------------------------------------------------------------------------------------
 //
-FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
+FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
                                                            mdToken MemberRef,
                                                            MethodTable * pMT)
 {
@@ -584,12 +595,12 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         // For internal purposes we wish to resolve MethodDef from generic classes or for generic methods to
         // the corresponding fully uninstantiated descriptor.  For example, for
         //     class C<T> { void m(); }
-        // then then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
+        // then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
         // descriptor that gets stored in the RID map.
         //
         // Normal IL code that uses generic code cannot use MethodDefs in this way: all calls
         // to generic code must be emitted as MethodRefs and MethodSpecs.  However, at other
-        // points in tthe codebase we need to resolve MethodDefs to generic uninstantiated
+        // points in the codebase we need to resolve MethodDefs to generic uninstantiated
         // method descriptors, and this is the best place to implement that.
         //
         mdTypeDef typeDef;
@@ -1023,7 +1034,7 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
 BOOL CompareMethodSigWithCorrectSubstitution(
             PCCOR_SIGNATURE pSignature,
             DWORD       cSignature,
-            Module*     pModule,
+            ModuleBase* pModule,
             MethodDesc *pCurDeclMD,
             const Substitution *pDefSubst,
             MethodTable *pCurMT
@@ -1070,7 +1081,7 @@ MemberLoader::FindMethod(
     MethodTable * pMT,
     LPCUTF8 pszName,
     PCCOR_SIGNATURE pSignature, DWORD cSignature,
-    Module* pModule,
+    ModuleBase* pModule,
     FM_Flags flags,                       // = FM_Default
     const Substitution *pDefSubst)        // = NULL
 {
@@ -1082,7 +1093,7 @@ MemberLoader::FindMethod(
         MODE_ANY;
     } CONTRACT_END;
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
 
     SString targetName(SString::Utf8Literal, pszName);
@@ -1316,7 +1327,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
         // There is no need to check virtuals for parent types, since by definition they have the same name.
         //
-        // Warning: This is not entirely true as virtuals can be overriden explicitly regardless of their name.
+        // Warning: This is not entirely true as virtuals can be overridden explicitly regardless of their name.
         // We should be fine though as long as we do not use this code to find arbitrary user-defined methods.
         flags = (FM_Flags)(flags | FM_ExcludeVirtual);
     }
@@ -1440,7 +1451,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
             continue;
         }
 
-        // Find only the constructor for for this object
+        // Find only the constructor for this object
         _ASSERTE(pCurMethod->GetMethodTable() == pMT->GetCanonicalMethodTable());
 
         PCCOR_SIGNATURE pCurMethodSig;
@@ -1459,7 +1470,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
 #endif // DACCESS_COMPILE
 
 FieldDesc *
-MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSignature, DWORD cSignature, Module* pModule, BOOL bCaseSensitive)
+MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSignature, DWORD cSignature, ModuleBase* pModule, BOOL bCaseSensitive)
 {
     CONTRACTL
     {
@@ -1476,7 +1487,7 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
 
     CONSISTENCY_CHECK(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp : stricmpUTF8;
 
     // Array classes don't have fields, and don't have metadata

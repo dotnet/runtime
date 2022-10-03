@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Text;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Collections;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Collections;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class NamespaceInfo
     {
         internal string? prefix;
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
             throw new NotImplementedException();
         }
 
-        internal void CompileStylesheetAttributes(Compiler compiler)
+        internal static void CompileStylesheetAttributes(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -109,7 +109,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal void CompileSingleTemplate(Compiler compiler)
+        internal static void CompileSingleTemplate(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
 
@@ -266,7 +266,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        internal void CompileNamespaceAlias(Compiler compiler)
+        internal static void CompileNamespaceAlias(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -311,7 +311,7 @@ namespace System.Xml.Xsl.XsltOld
             compiler.AddNamespaceAlias(namespace1!, new NamespaceInfo(prefix2, namespace2, compiler.Stylesheetid));
         }
 
-        internal void CompileKey(Compiler compiler)
+        internal static void CompileKey(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -362,7 +362,7 @@ namespace System.Xml.Xsl.XsltOld
             compiler.InsertKey(Name!, MatchKey, UseKey);
         }
 
-        protected void CompileDecimalFormat(Compiler compiler)
+        protected static void CompileDecimalFormat(Compiler compiler)
         {
             NumberFormatInfo info = new NumberFormatInfo();
             DecimalFormat format = new DecimalFormat(info, '#', '0', ';');
@@ -435,15 +435,12 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
             info.NegativeInfinitySymbol = string.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
-            if (Name == null)
-            {
-                Name = new XmlQualifiedName();
-            }
+            Name ??= new XmlQualifiedName();
             compiler.AddDecimalFormat(Name, format);
             CheckEmpty(compiler);
         }
 
-        internal bool CheckAttribute(bool valid, Compiler compiler)
+        internal static bool CheckAttribute(bool valid, Compiler compiler)
         {
             if (!valid)
             {
@@ -456,7 +453,7 @@ namespace System.Xml.Xsl.XsltOld
             return true;
         }
 
-        protected void CompileSpace(Compiler compiler, bool preserve)
+        protected static void CompileSpace(Compiler compiler, bool preserve)
         {
             string value = compiler.GetSingleAttribute(compiler.Input.Atoms.Elements);
             string[] elements = XmlConvert.SplitString(value);
@@ -468,7 +465,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        private double NameTest(string name)
+        private static double NameTest(string name)
         {
             if (name == "*")
             {
@@ -860,10 +857,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAction(Action? action)
         {
-            if (this.containedActions == null)
-            {
-                this.containedActions = new ArrayList();
-            }
+            this.containedActions ??= new ArrayList();
             this.containedActions.Add(action);
             lastCopyCodeAction = null;
         }
@@ -891,7 +885,7 @@ namespace System.Xml.Xsl.XsltOld
             lastCopyCodeAction.AddEvents(copyEvents);
         }
 
-        private void AddScript(Compiler compiler)
+        private static void AddScript(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
 

@@ -12,8 +12,10 @@ namespace System.Diagnostics
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
     /// </summary>
-    public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
+    public readonly partial struct ActivityLink : IEquatable<ActivityLink>
     {
+        private readonly Activity.TagsLinkedList? _tags;
+
         /// <summary>
         /// Construct a new <see cref="ActivityLink"/> object which can be linked to an Activity object.
         /// </summary>
@@ -22,7 +24,8 @@ namespace System.Diagnostics
         public ActivityLink(ActivityContext context, ActivityTagsCollection? tags = null)
         {
             Context = context;
-            Tags = tags;
+
+            _tags = tags?.Count > 0 ? new Activity.TagsLinkedList(tags) : null;
         }
 
         /// <summary>
@@ -33,12 +36,18 @@ namespace System.Diagnostics
         /// <summary>
         /// Retrieve the key-value pair list of tags attached with the <see cref="ActivityContext"/>.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
+        public IEnumerable<KeyValuePair<string, object?>>? Tags => _tags;
 
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ActivityLink link) && this.Equals(link);
 
         public bool Equals(ActivityLink value) => Context == value.Context && value.Tags == Tags;
         public static bool operator ==(ActivityLink left, ActivityLink right) => left.Equals(right);
         public static bool operator !=(ActivityLink left, ActivityLink right) => !left.Equals(right);
+
+        /// <summary>
+        /// Enumerate the tags attached to this <see cref="ActivityLink"/> object.
+        /// </summary>
+        /// <returns><see cref="Activity.Enumerator{T}"/>.</returns>
+        public Activity.Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => new Activity.Enumerator<KeyValuePair<string, object?>>(_tags?.First);
     }
 }

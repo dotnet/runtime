@@ -20,7 +20,7 @@
 
 ; UPDATE JIT/EE INTERFACE GUID WHEN CHANGING THESE DEFINITIONS. The instruction set definitions are part of JIT/EE interface contract.
 
-; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numberic values definitions would be R2R format breaking change.
+; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit     ,X64
@@ -44,6 +44,8 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
+instructionset     ,X86   ,Movbe     ,        ,27 ,MOVBE    ,movbe
+instructionset     ,X86   ,X86Serialize ,     ,28 ,X86Serialize  ,serialize
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -62,6 +64,8 @@ instructionset64bit,X86   ,LZCNT
 instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
+instructionset64bit,X86   ,MOVBE
+instructionset64bit,X86   ,X86Serialize
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -84,6 +88,8 @@ implication        ,X86   ,POPCNT    ,SSE42
 implication        ,X86   ,Vector128 ,SSE
 implication        ,X86   ,Vector256 ,AVX
 implication        ,X86   ,AVXVNNI   ,AVX2
+implication        ,X86   ,MOVBE     ,SSE42
+implication        ,X86   ,X86Serialize, X86Base
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64
@@ -105,6 +111,7 @@ instructionset     ,ARM64 ,          ,Atomics ,21 ,Atomics  ,lse
 instructionset     ,ARM64 ,          ,        ,   ,Vector64 ,
 instructionset     ,ARM64 ,          ,        ,   ,Vector128,
 instructionset     ,ARM64 ,          ,        ,   ,Dczva    ,
+instructionset     ,ARM64 ,          ,Rcpc    ,26 ,Rcpc     ,rcpc
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -127,3 +134,22 @@ implication        ,ARM64 ,Sha1      ,ArmBase
 implication        ,ARM64 ,Sha256    ,ArmBase
 implication        ,ARM64 ,Vector64  ,AdvSimd
 implication        ,ARM64 ,Vector128 ,AdvSimd
+
+
+;                    ,name and aliases           ,archs    ,lower baselines included by implication
+;
+instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
+instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt
+instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma
+instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3
+
+instructionsetgroup  ,armv8-a                    ,ARM64    ,neon
+instructionsetgroup  ,armv8.1-a                  ,ARM64    ,armv8-a lse crc rdma
+instructionsetgroup  ,armv8.2-a                  ,ARM64    ,armv8.1-a
+instructionsetgroup  ,armv8.3-a                  ,ARM64    ,armv8.2-a rcpc
+instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod
+instructionsetgroup  ,armv8.5-a                  ,ARM64    ,armv8.4-a
+instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
+
+; Technically, apple-m1 is v8.5+
+instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a

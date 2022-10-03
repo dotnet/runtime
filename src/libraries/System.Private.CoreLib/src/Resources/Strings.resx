@@ -522,6 +522,9 @@
   <data name="Arg_MustBeInt64" xml:space="preserve">
     <value>Object must be of type Int64.</value>
   </data>
+  <data name="Arg_MustBeInt128" xml:space="preserve">
+    <value>Object must be of type Int128.</value>
+  </data>
   <data name="Arg_MustBeIntPtr" xml:space="preserve">
     <value>Object must be of type IntPtr.</value>
   </data>
@@ -566,6 +569,9 @@
   </data>
   <data name="Arg_MustBeUInt64" xml:space="preserve">
     <value>Object must be of type UInt64.</value>
+  </data>
+  <data name="Arg_MustBeUInt128" xml:space="preserve">
+    <value>Object must be of type UInt128.</value>
   </data>
   <data name="Arg_MustBeUIntPtr" xml:space="preserve">
     <value>Object must be of type UIntPtr.</value>
@@ -636,9 +642,6 @@
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
-  <data name="Arg_NullIndex" xml:space="preserve">
-    <value>Arrays indexes must be set to an object instance.</value>
-  </data>
   <data name="Arg_NullReferenceException" xml:space="preserve">
     <value>Object reference not set to an instance of an object.</value>
   </data>
@@ -696,8 +699,8 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  <data name="Arg_RegValueTooLarge" xml:space="preserve">
+    <value>RegistryKey.GetValue does not support values with more than Int32.MaxValue bytes.</value>
   </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
@@ -771,7 +774,7 @@
   <data name="Arg_TypeLoadNullStr" xml:space="preserve">
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
-  <data name="Arg_TypeRefPrimitve" xml:space="preserve">
+  <data name="Arg_TypeRefPrimitive" xml:space="preserve">
     <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
   </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
@@ -1095,6 +1098,9 @@
   <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
     <value>Preallocation size can be requested only for new files.</value>
   </data>
+  <data name="Argument_InvalidUnixCreateMode" xml:space="preserve">
+    <value>UnixCreateMode can be requested only for modes that can create new files.</value>
+  </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
   </data>
@@ -1105,7 +1111,7 @@
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid.</value>
+    <value>The given assembly name was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
@@ -1315,9 +1321,6 @@
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
-  <data name="Argument_MustBeRuntimeReflectionObject" xml:space="preserve">
-    <value>The object must be a runtime Reflection object.</value>
-  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
@@ -1513,9 +1516,6 @@
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
-  <data name="Argument_TypeNotValid" xml:space="preserve">
-    <value>The Type object is not valid.</value>
-  </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
   </data>
@@ -1547,7 +1547,7 @@
     <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
-    <value>Object contains non-primitive or non-blittable data.</value>
+    <value>Object contains references.</value>
   </data>
   <data name="ArgumentException_TupleIncorrectType" xml:space="preserve">
     <value>Argument must be of type {0}.</value>
@@ -1702,8 +1702,11 @@
   <data name="ArgumentOutOfRange_HugeArrayNotSupported" xml:space="preserve">
     <value>Arrays larger than 2GB are not supported.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
     <value>Index and count must refer to a location within the string.</value>
@@ -2159,6 +2162,9 @@
   <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
     <value>Could not resolve assembly '{0}'.</value>
   </data>
+  <data name="FileNotFound_LoadFile" xml:space="preserve">
+    <value>Could not load file or assembly '{0}'. The system cannot find the file specified.</value>
+  </data>
   <data name="Format_AttributeUsage" xml:space="preserve">
     <value>Duplicate AttributeUsageAttribute found on attribute type {0}.</value>
   </data>
@@ -2262,6 +2268,9 @@
   </data>
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
+  </data>
+  <data name="Format_InvalidStringWithValue" xml:space="preserve">
+    <value>The input string '{0}' was not in a correct format.</value>
   </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
     <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
@@ -2404,10 +2413,10 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
-  <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
+  <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
-  <data name="InvalidOperation_CannotSupressFlowMultipleTimes" xml:space="preserve">
+  <data name="InvalidOperation_CannotSuppressFlowMultipleTimes" xml:space="preserve">
     <value>Context flow is already suppressed.</value>
   </data>
   <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
@@ -2490,6 +2499,10 @@
   </data>
   <data name="InvalidOperation_NativeOverlappedReused" xml:space="preserve">
     <value>NativeOverlapped cannot be reused for multiple operations.</value>
+  </data>
+  <data name="InvalidOperation_NestedControlledExecutionRun" xml:space="preserve">
+    <value>The thread is already executing the ControlledExecution.Run method.</value>
+    <comment>{Locked="ControlledExecution.Run"}</comment>
   </data>
   <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
     <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
@@ -2602,7 +2615,7 @@
   <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
     <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>
   </data>
-  <data name="InvalidTimeZone_UnparseablePosixMDateString" xml:space="preserve">
+  <data name="InvalidTimeZone_UnparsablePosixMDateString" xml:space="preserve">
     <value>'{0}' is not a valid POSIX-TZ-environment-variable MDate rule.  A valid rule has the format 'Mm.w.d'.</value>
   </data>
   <data name="InvariantFailed" xml:space="preserve">
@@ -2735,7 +2748,7 @@
     <value>Field not found.</value>
   </data>
   <data name="MissingField_Name" xml:space="preserve">
-    <value>Field '{0}' not found.</value>
+    <value>Field '{0}.{1}' not found.</value>
   </data>
   <data name="MissingManifestResource_MultipleBlobs" xml:space="preserve">
     <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
@@ -2750,7 +2763,7 @@
     <value>Member not found.</value>
   </data>
   <data name="MissingMember_Name" xml:space="preserve">
-    <value>Member '{0}' not found.</value>
+    <value>Member '{0}.{1}' not found.</value>
   </data>
   <data name="MissingMemberNestErr" xml:space="preserve">
     <value>TypedReference can only be made on nested value Types.</value>
@@ -2759,7 +2772,7 @@
     <value>FieldInfo does not match the target Type.</value>
   </data>
   <data name="MissingMethod_Name" xml:space="preserve">
-    <value>Method '{0}' not found.</value>
+    <value>Method '{0}.{1}' not found.</value>
   </data>
   <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
     <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
@@ -2787,6 +2800,9 @@
   </data>
   <data name="NotSupported_ByRefLikeArray" xml:space="preserve">
     <value>Cannot create arrays of ByRef-like values.</value>
+  </data>
+  <data name="CannotUseByRefLikeTypeInInstantiation" xml:space="preserve">
+    <value>Cannot instantiate a generic type on a ByRef-like type.</value>
   </data>
   <data name="NotSupported_ByRefToByRefLikeReturn" xml:space="preserve">
     <value>ByRef to ByRef-like return values are not supported in reflection invocation.</value>
@@ -3025,6 +3041,9 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_Int128" xml:space="preserve">
+    <value>Value was either too large or too small for an Int128.</value>
+  </data>
   <data name="Overflow_MutexReacquireCount" xml:space="preserve">
     <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
   </data>
@@ -3052,6 +3071,9 @@
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
   </data>
+  <data name="Overflow_UInt128" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt128.</value>
+  </data>
   <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
     <value>ArgIterator is not supported on this platform.</value>
   </data>
@@ -3078,6 +3100,9 @@
   </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_UnixFileMode" xml:space="preserve">
+    <value>Unix file modes are not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
@@ -3520,6 +3545,15 @@
   <data name="Arg_NullArgumentNullRef" xml:space="preserve">
     <value>The method was called with a null array argument.</value>
   </data>
+  <data name="Argument_AggressiveGCRequiresMaxGeneration" xml:space="preserve">
+    <value>AggressiveGC requires setting the generation parameter to MaxGeneration</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresBlocking" xml:space="preserve">
+    <value>AggressiveGC requires setting the blocking parameter to true.</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresCompacting" xml:space="preserve">
+    <value>AggressiveGC requires setting the compacting parameter to true.</value>
+  </data>
   <data name="Argument_CannotPrepareAbstract" xml:space="preserve">
     <value>Abstract methods cannot be prepared.</value>
   </data>
@@ -3727,6 +3761,9 @@
   <data name="NotSupported_COM" xml:space="preserve">
     <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
   </data>
+  <data name="NotSupported_CppCli" xml:space="preserve">
+    <value>C++/CLI activation has been disabled via a feature switch. See https://aka.ms/dotnet-illink/nativehost for more information.</value>
+  </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>
   </data>
@@ -3735,6 +3772,9 @@
   </data>
   <data name="Arg_InvalidFileAttrs" xml:space="preserve">
     <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_InvalidUnixFileMode" xml:space="preserve">
+    <value>Invalid UnixFileMode value.</value>
   </data>
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
@@ -3889,6 +3929,9 @@
   <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
     <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
   </data>
+  <data name="InvalidProgram_MultipleCallConv" xml:space="preserve">
+    <value>Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.</value>
+  </data>
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
@@ -3898,10 +3941,58 @@
   <data name="Arg_EntryPointNotFoundExceptionParameterizedNoLibrary" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in native library.</value>
   </data>
-  <data name="Arg_DllNotFoundExceptionParameterized" xml:space="preserve">
-    <value>Unable to native library '{0}' or one of its dependencies.</value>
+  <data name="DllNotFound_Windows" xml:space="preserve">
+    <value>Unable to load DLL '{0}' or one of its dependencies: {1}</value>
+  </data>
+  <data name="DllNotFound_Linux" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: {1}</value>
+  </data>
+  <data name="DllNotFound_Mac" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: {1}</value>
   </data>
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
+    <value>Must not be greater than the length of the buffer.</value>
+  </data>
+  <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing structure marshalling data. To enable structure marshalling data, add a MarshalStructure directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
+  <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
+  <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
+    <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
+  </data>
+  <data name="NoMetadataTokenAvailable" xml:space="preserve">
+    <value>There is no metadata token available for the given member.</value>
+  </data>
+  <data name="ArgumentException_InvalidTypeArgument" xml:space="preserve">
+    <value>The type '{0}' may not be used as a type argument.</value>
+  </data>
+  <data name="ArgumentException_InvalidArrayElementType" xml:space="preserve">
+    <value>The type '{0}' may not be used as an array element type.</value>
+  </data>
+  <data name="PlatformNotSupported_NoTypeHandleForOpenTypes" xml:space="preserve">
+    <value>TypeHandles are not supported for types that return true for ContainsGenericParameters.</value>
+  </data>
+  <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
+    <value>The type '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
+  </data>
+  <data name="CannotCreateByRefOfByRef" xml:space="preserve">
+    <value>Cannot create a byref of a byref: {0}</value>
+  </data>
+  <data name="CannotCreatePointerOfByRef" xml:space="preserve">
+    <value>Cannot create a pointer to a byref: {0}</value>
+  </data>
+  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
+    <value>The type '{0}' cannot be found.</value>
+  </data>
+  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
+    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
+  </data>
+  <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
+    <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
 </root>

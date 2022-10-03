@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
-                    Assert.Null(env.ApplicationName);
+                    Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -194,7 +194,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
-                Assert.Null(env.ApplicationName);
+                Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void UseEnvironmentIsNotOverriden()
+        public void UseEnvironmentIsNotOverridden()
         {
             var vals = new Dictionary<string, string>
             {
@@ -644,7 +644,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var hostBuilder = Host.CreateDefaultBuilder();
             var host = hostBuilder.Build();
 
-            var type = hostBuilder.GetType();
+            // Use typeof so that trimming can see the field being used below
+            var type = typeof(HostBuilder);
+            Assert.Equal(hostBuilder.GetType(), type);
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);

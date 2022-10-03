@@ -60,6 +60,10 @@ class ReadyToRunInfo;
 class PEAssembly;
 class PEImage;
 
+#ifndef DACCESS_COMPILE
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker);
+#endif
+
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
 // this file format is used as the compiled native code cache in composite R2R Crossgen2
 // build mode. Moving forward we plan to add support for OS-specific native executables
@@ -81,6 +85,7 @@ private:
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
     PTR_Assembly *m_pNativeMetadataAssemblyRefMap;
+    PTR_ModuleBase m_pNativeManifestModule;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblyMvids;
@@ -94,7 +99,6 @@ private:
 
 private:
     NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
-    void AddComponentAssemblyToCache(Assembly *assembly);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);

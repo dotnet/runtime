@@ -38,15 +38,20 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static Task SerializeAsync<TValue>(
-            Stream utf8Json!!,
+            Stream utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            Type runtimeType = GetRuntimeType(value);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -64,14 +69,19 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
-            Stream utf8Json!!,
+            Stream utf8Json,
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeType(value);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            WriteStream(utf8Json, value!, jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -94,16 +104,22 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static Task SerializeAsync(
-            Stream utf8Json!!,
+            Stream utf8Json,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteStreamAsync(utf8Json, value!, jsonTypeInfo, cancellationToken);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -124,15 +140,21 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize(
-            Stream utf8Json!!,
+            Stream utf8Json,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            WriteStream(utf8Json, value!, jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -152,11 +174,20 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static Task SerializeAsync<TValue>(
-            Stream utf8Json!!,
+            Stream utf8Json,
             TValue value,
-            JsonTypeInfo<TValue> jsonTypeInfo!!,
+            JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
@@ -175,10 +206,19 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static void Serialize<TValue>(
-            Stream utf8Json!!,
+            Stream utf8Json,
             TValue value,
-            JsonTypeInfo<TValue> jsonTypeInfo!!)
+            JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
@@ -202,17 +242,26 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         public static Task SerializeAsync(
-            Stream utf8Json!!,
+            Stream utf8Json,
             object? value,
             Type inputType,
-            JsonSerializerContext context!!,
+            JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
+            ValidateInputType(value, inputType);
             return WriteStreamAsync(
                 utf8Json,
-                value!,
-                GetTypeInfo(context, runtimeType),
+                value,
+                GetTypeInfo(context, inputType),
                 cancellationToken);
         }
 
@@ -234,13 +283,22 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         public static void Serialize(
-            Stream utf8Json!!,
+            Stream utf8Json,
             object? value,
             Type inputType,
-            JsonSerializerContext context!!)
+            JsonSerializerContext context)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteStream(utf8Json, value!, GetTypeInfo(context, runtimeType));
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
+            ValidateInputType(value, inputType);
+            WriteStream(utf8Json, value, GetTypeInfo(context, inputType));
         }
 
         private static async Task WriteStreamAsync<TValue>(
@@ -249,14 +307,17 @@ namespace System.Text.Json
             JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken)
         {
+            jsonTypeInfo.EnsureConfigured();
             JsonSerializerOptions options = jsonTypeInfo.Options;
             JsonWriterOptions writerOptions = options.GetWriterOptions();
 
             using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
-                WriteStack state = new WriteStack { CancellationToken = cancellationToken };
-                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true);
+                WriteStack state = default;
+                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+                state.Initialize(jsonTypeInfo, supportAsync: true, supportContinuation: true);
+                state.CancellationToken = cancellationToken;
 
                 bool isFinalBlock;
 
@@ -268,7 +329,7 @@ namespace System.Text.Json
 
                         try
                         {
-                            isFinalBlock = WriteCore(converter, writer, value, options, ref state);
+                            isFinalBlock = WriteCore(writer, value, jsonTypeInfo, ref state);
 
                             if (state.SuppressFlush)
                             {
@@ -322,6 +383,7 @@ namespace System.Text.Json
             in TValue value,
             JsonTypeInfo jsonTypeInfo)
         {
+            jsonTypeInfo.EnsureConfigured();
             JsonSerializerOptions options = jsonTypeInfo.Options;
             JsonWriterOptions writerOptions = options.GetWriterOptions();
 
@@ -329,7 +391,8 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 WriteStack state = default;
-                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true);
+                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+                state.Initialize(jsonTypeInfo, supportContinuation: true, supportAsync: false);
 
                 bool isFinalBlock;
 
@@ -337,7 +400,7 @@ namespace System.Text.Json
                 {
                     state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
 
-                    isFinalBlock = WriteCore(converter, writer, value, options, ref state);
+                    isFinalBlock = WriteCore(writer, value, jsonTypeInfo, ref state);
 
                     bufferWriter.WriteToStream(utf8Json);
                     bufferWriter.Clear();

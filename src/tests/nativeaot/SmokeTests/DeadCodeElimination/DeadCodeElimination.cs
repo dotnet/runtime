@@ -16,6 +16,9 @@ class Program
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
+        TestUnusedDefaultInterfaceMethod.Run();
+        TestArrayElementTypeOperations.Run();
+        TestStaticVirtualMethodOptimizations.Run();
 
         return 100;
     }
@@ -46,9 +49,7 @@ class Program
             public Type DoSomething() => typeof(UnreferencedType);
         }
 
-#if DEBUG
-        static NeverAllocatedType s_instance = null;
-#else
+#if !DEBUG
         static object s_instance = new object[10];
 #endif
 
@@ -57,8 +58,9 @@ class Program
             Console.WriteLine("Testing instance methods on unallocated types");
 
 #if DEBUG
-            if (s_instance != null)
-                s_instance.DoSomething();
+            NeverAllocatedType instance = null;
+            if (instance != null)
+                instance.DoSomething();
 #else
             // In release builds additionally test that the "is" check didn't introduce the constructed type
             if (s_instance is NeverAllocatedType never)
@@ -187,6 +189,128 @@ class Program
         }
     }
 
+    class TestUnusedDefaultInterfaceMethod
+    {
+        interface IFoo<T>
+        {
+            void DoSomething();
+        }
+
+        interface IBar<T> : IFoo<T>
+        {
+            void IFoo<T>.DoSomething()
+            {
+                Activator.CreateInstance(typeof(NeverReferenced));
+            }
+        }
+
+        class NeverReferenced { }
+
+        class SomeInstance : IBar<object>
+        {
+            void IFoo<object>.DoSomething() { }
+        }
+
+        static IFoo<object> s_instance = new SomeInstance();
+
+        public static void Run()
+        {
+            s_instance.DoSomething();
+
+            ThrowIfPresent(typeof(TestUnusedDefaultInterfaceMethod), nameof(NeverReferenced));
+        }
+    }
+
+    class TestArrayElementTypeOperations
+    {
+        public static void Run()
+        {
+            Console.WriteLine("Testing array element type optimizations");
+
+            // We consider valuetype elements of arrays constructed...
+            {
+                Array arr = new NeverAllocated1[1];
+                ThrowIfNotPresent(typeof(TestArrayElementTypeOperations), nameof(Marker1));
+
+                // The reason they're considered constructed is runtime magic here
+                // Make sure that works too.
+                object o = arr.GetValue(0);
+                if (!o.ToString().Contains(nameof(Marker1)))
+                    throw new Exception();
+            }
+
+            // ...but not nullable...
+            {
+                Array arr = new Nullable<NeverAllocated2>[1];
+                arr.GetValue(0);
+                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
+            }
+
+
+            // ...or reference type element types
+            {
+                Array arr = new NeverAllocated3[1];
+                arr.GetValue(0);
+                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker3));
+            }
+        }
+
+        class Marker1 { }
+        struct NeverAllocated1
+        {
+            public override string ToString() => typeof(Marker1).ToString();
+        }
+
+        class Marker2 { }
+        struct NeverAllocated2
+        {
+            public override string ToString() => typeof(Marker2).ToString();
+        }
+
+        class Marker3 { }
+        class NeverAllocated3
+        {
+            public override string ToString() => typeof(Marker3).ToString();
+        }
+    }
+
+    class TestStaticVirtualMethodOptimizations
+    {
+        interface IFoo
+        {
+            static abstract Type Frob();
+        }
+
+        struct StructWithReachableStaticVirtual : IFoo
+        {
+            public static Type Frob() => typeof(Marker1);
+        }
+
+        class ClassWithUnreachableStaticVirtual : IFoo
+        {
+            public static Type Frob() => typeof(Marker2);
+        }
+
+        class Marker1 { }
+        class Marker2 { }
+
+        static Type Call<T>() where T : IFoo => T.Frob();
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing unused static virtual method optimization");
+
+            // No shared generic code - we should not see IFoo.Frob as "virtually used"
+            Call<StructWithReachableStaticVirtual>();
+
+            // Implements IFoo.Frob, but there's no consumption place, so won't be generated.
+            new ClassWithUnreachableStaticVirtual().ToString();
+
+            ThrowIfNotPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker1));
+            ThrowIfPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker2));
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
@@ -194,6 +318,14 @@ class Program
     private static void ThrowIfPresent(Type testType, string typeName)
     {
         if (IsTypePresent(testType, typeName))
+        {
+            throw new Exception(typeName);
+        }
+    }
+
+    private static void ThrowIfNotPresent(Type testType, string typeName)
+    {
+        if (!IsTypePresent(testType, typeName))
         {
             throw new Exception(typeName);
         }

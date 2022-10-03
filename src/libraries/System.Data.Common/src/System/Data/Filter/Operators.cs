@@ -3,10 +3,8 @@
 
 namespace System.Data
 {
-    internal sealed class Operators
+    internal static class Operators
     {
-        private Operators() { /* prevent utility class from being insantiated*/ }
-
         internal const int Noop = 0;
 
         /* Unary operations */
@@ -91,64 +89,57 @@ namespace System.Data
         /// <summary>
         ///     Operator priorities
         /// </summary>
-        internal const int priStart = 0;
-        internal const int priSubstr = 1;
-        internal const int priParen = 2;
-        internal const int priLow = 3;
-        internal const int priImp = 4;
-        internal const int priEqv = 5;
-        internal const int priXor = 6;
-        internal const int priOr = 7;
-        internal const int priAnd = 8;
-        internal const int priNot = 9;
-        internal const int priIs = 10;
-        internal const int priBetweenInLike = 11;
-        internal const int priBetweenAnd = 12;
-        internal const int priRelOp = 13;
-        internal const int priConcat = 14;
-        internal const int priContains = 15;
-        internal const int priPlusMinus = 16;
-        internal const int priMod = 17;
-        internal const int priIDiv = 18;
-        internal const int priMulDiv = 19;
-        internal const int priNeg = 20;
-        internal const int priExp = 21;
-        internal const int priProc = 22;
-        internal const int priDot = 23;
-        internal const int priMax = 24;
+        internal const byte PriStart = 0;
+        internal const byte PriSubstr = 1;
+        internal const byte PriParen = 2;
+        internal const byte PriLow = 3;
+        internal const byte PriImp = 4;
+        internal const byte PriEqv = 5;
+        internal const byte PriXor = 6;
+        internal const byte PriOr = 7;
+        internal const byte PriAnd = 8;
+        internal const byte PriNot = 9;
+        internal const byte PriIs = 10;
+        internal const byte PriBetweenInLike = 11;
+        internal const byte PriBetweenAnd = 12;
+        internal const byte PriRelOp = 13;
+        internal const byte PriConcat = 14;
+        internal const byte PriContains = 15;
+        internal const byte PriPlusMinus = 16;
+        internal const byte PriMod = 17;
+        internal const byte PriIDiv = 18;
+        internal const byte PriMulDiv = 19;
+        internal const byte PriNeg = 20;
+        internal const byte PriExp = 21;
+        internal const byte PriProc = 22;
+        internal const byte PriDot = 23;
+        internal const byte PriMax = 24;
 
-        /// <summary>
-        ///     Mapping from Operator to priorities
-        ///     CONSIDER: fast, but hard to maintain
-        /// </summary>
-
-        private static readonly int[] s_priority = new int[] {
-            priStart,  // Noop
-            priNeg, priNeg, priNot, // Unary -, +, Not
-            priBetweenAnd, priBetweenInLike, priBetweenInLike,
-            priRelOp, priRelOp, priRelOp, priRelOp, priRelOp, priRelOp,
-            priIs,
-            priBetweenInLike,                       // Like
-
-            priPlusMinus, priPlusMinus,             // +, -
-            priMulDiv, priMulDiv, priIDiv, priMod,  // *, /, \, Mod
-            priExp,                                 // **
-
-            priAnd, priOr, priXor, priNot,
-            priAnd, priOr,
-
-            priParen, priProc, priDot, priDot,      // Proc, Iff, Qula, Dot..
-
-            priMax, priMax, priMax, priMax, priMax, priMax, priMax,
-            priMax, priMax, priMax, priMax,
-            priMax,
-        };
-
+        /// <summary>Mapping from Operator to priorities.</summary>
         internal static int Priority(int op)
         {
-            if (op > s_priority.Length)
-                return priMax;
-            return s_priority[op];
+            ReadOnlySpan<byte> priorities = new byte[]
+            {
+                PriStart,  // Noop
+                PriNeg, PriNeg, PriNot, // Unary -, +, Not
+                PriBetweenAnd, PriBetweenInLike, PriBetweenInLike,
+                PriRelOp, PriRelOp, PriRelOp, PriRelOp, PriRelOp, PriRelOp,
+                PriIs,
+                PriBetweenInLike,                       // Like
+
+                PriPlusMinus, PriPlusMinus,             // +, -
+                PriMulDiv, PriMulDiv, PriIDiv, PriMod,  // *, /, \, Mod
+                PriExp,                                 // **
+
+                PriAnd, PriOr, PriXor, PriNot,
+                PriAnd, PriOr,
+
+                PriParen, PriProc, PriDot, PriDot,      // Proc, Iff, Qula, Dot..
+
+                // anything beyond is PriMax
+            };
+
+            return (uint)op < (uint)priorities.Length ? priorities[op] : PriMax;
         }
 
         /// <summary>
@@ -228,7 +219,7 @@ namespace System.Data
         {
             string st;
 
-            if (op <= s_looks.Length)
+            if ((uint)op < (uint)s_looks.Length)
                 st = s_looks[op];
             else
                 st = "Unknown op";

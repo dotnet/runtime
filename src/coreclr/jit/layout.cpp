@@ -322,7 +322,7 @@ ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
 
 ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
 {
-    bool     isValueClass = compiler->info.compCompHnd->isValueClass(classHandle);
+    bool     isValueClass = compiler->eeIsValueClass(classHandle);
     unsigned size;
 
     if (isValueClass)
@@ -334,11 +334,15 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
         size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
     }
 
-    INDEBUG(const char* className = compiler->info.compCompHnd->getClassName(classHandle);)
+    var_types type = compiler->impNormStructType(classHandle);
 
-    ClassLayout* layout =
-        new (compiler, CMK_ClassLayout) ClassLayout(classHandle, isValueClass, size DEBUGARG(className));
+    INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
+    INDEBUG(const char16_t* shortClassName = compiler->eeGetShortClassName(classHandle);)
+
+    ClassLayout* layout = new (compiler, CMK_ClassLayout)
+        ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
     layout->InitializeGCPtrs(compiler);
+
     return layout;
 }
 
@@ -399,7 +403,11 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 // static
 bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
 {
-    assert((layout1 != nullptr) && (layout2 != nullptr));
+    if ((layout1 == nullptr) || (layout2 == nullptr))
+    {
+        return false;
+    }
+
     CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
     CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
 
@@ -414,6 +422,11 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
     }
 
     if (layout1->HasGCPtr() != layout2->HasGCPtr())
+    {
+        return false;
+    }
+
+    if (layout1->GetType() != layout2->GetType())
     {
         return false;
     }

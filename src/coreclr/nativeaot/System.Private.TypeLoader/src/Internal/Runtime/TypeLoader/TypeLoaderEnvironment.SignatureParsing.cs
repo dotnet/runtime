@@ -163,7 +163,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
+        internal static MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, parser.Offset);
             string methodName = parser.GetString();
@@ -177,7 +177,7 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(methodName, methodSig);
         }
 
-        internal bool IsStaticMethodSignature(RuntimeSignature methodSig)
+        internal static bool IsStaticMethodSignature(RuntimeSignature methodSig)
         {
             if (methodSig.IsNativeLayoutSignature)
             {
@@ -479,7 +479,7 @@ namespace Internal.Runtime.TypeLoader
                             for (uint i = 0; i < data; i++)
                                 result = TypeSignatureHasVarsNeedingCallingConventionConverter(ref parser, moduleHandle, context, HasVarsInvestigationLevel.NotParameter) || result;
 
-                            if ((result == true) && (investigationLevel == HasVarsInvestigationLevel.Parameter))
+                            if (result && (investigationLevel == HasVarsInvestigationLevel.Parameter))
                             {
                                 if (!TryComputeHasInstantiationDeterminedSize(genericTypeDef, context, out result))
                                     Environment.FailFast("Unable to setup calling convention converter correctly");
@@ -526,7 +526,7 @@ namespace Internal.Runtime.TypeLoader
                     return false;
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return true;
             }
         }
@@ -557,7 +557,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private RuntimeTypeHandle GetExternalTypeHandle(NativeFormatModuleInfo moduleHandle, uint typeIndex)
+        private static RuntimeTypeHandle GetExternalTypeHandle(NativeFormatModuleInfo moduleHandle, uint typeIndex)
         {
             Debug.Assert(moduleHandle != null);
 
@@ -578,7 +578,7 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        private uint GetGenericArgCountFromSig(NativeParser parser)
+        private static uint GetGenericArgCountFromSig(NativeParser parser)
         {
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
 

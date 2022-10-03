@@ -6,7 +6,6 @@
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>UNITTEST</DefineConstants>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
@@ -117,6 +116,6 @@
     <Compile Include="WinHttpRequestStreamTest.cs" />
     <Compile Include="WinHttpResponseHeaderReaderTest.cs" />
     <Compile Include="WinHttpResponseStreamTest.cs" />
-    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
 </Project>

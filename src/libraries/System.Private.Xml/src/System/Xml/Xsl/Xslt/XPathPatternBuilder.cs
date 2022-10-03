@@ -10,11 +10,10 @@ using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
 using System.Diagnostics.CodeAnalysis;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     internal sealed class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
     {
         private readonly XPathPredicateEnvironment _predicateEnvironment;
@@ -48,7 +47,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [Conditional("DEBUG")]
-        public void AssertFilter(QilLoop filter)
+        public static void AssertFilter(QilLoop filter)
         {
             Debug.Assert(filter.NodeType == QilNodeType.Filter, "XPathPatternBuilder expected to generate list of Filters on top level");
             Debug.Assert(filter.Variable.XmlType!.IsSubtypeOf(T.NodeNotRtf));
@@ -56,20 +55,16 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(filter.Body.XmlType!.IsSubtypeOf(T.Boolean));
         }
 
-        private void FixupFilterBinding(QilLoop filter, QilNode newBinding)
+        private static void FixupFilterBinding(QilLoop filter, QilNode newBinding)
         {
             AssertFilter(filter);
             filter.Variable.Binding = newBinding;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
-            if (result == null)
-            {
-                // Special door to clean builder state in exception handlers
-            }
 
             // All these variables will be positive for "false() and (. = position() + last())"
             // since QilPatternFactory eliminates the right operand of 'and'

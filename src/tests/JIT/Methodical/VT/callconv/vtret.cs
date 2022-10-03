@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace MS
+namespace MS_vtret_cs
 {
-    internal struct VT
+    public struct VT
     {
         private int _m_n;
         private VT[] _m_dummyGCRef;
@@ -14,7 +15,8 @@ namespace MS
         private static VT add(VT me, VT what) { me._m_n += what._m_n; return me; }
         private static VT sub(VT me, VT what) { me._m_n -= what._m_n; return me; }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             VT vt = new VT(100);
             VT what = new VT(99);

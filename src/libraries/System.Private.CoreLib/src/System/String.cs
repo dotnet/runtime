@@ -21,6 +21,7 @@ namespace System
     // positions (indices) are zero-based.
 
     [Serializable]
+    [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
@@ -28,7 +29,7 @@ namespace System
         /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
         internal const int MaxLength = 0x3FFFFFDF;
 
-#if !CORERT
+#if !NATIVEAOT
         // The Empty constant holds the empty string value. It is initialized by the EE during startup.
         // It is treated as intrinsic by the JIT as so the static constructor would never run.
         // Leaving it uninitialized would confuse debuggers.
@@ -81,8 +82,10 @@ namespace System
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
-        private static string Ctor(char[] value!!, int startIndex, int length)
+        private static string Ctor(char[] value, int startIndex, int length)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
@@ -90,7 +93,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
 
             if (startIndex > value.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (length == 0)
                 return Empty;
@@ -233,7 +236,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;
 #else
-            return Encoding.UTF8.GetString(pb, numBytes);
+            return CreateStringFromEncoding(pb, numBytes, Encoding.UTF8);
 #endif
         }
 
@@ -305,8 +308,10 @@ namespace System
             return result;
         }
 
-        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action!!)
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             if (length <= 0)
             {
                 if (length == 0)
@@ -323,7 +328,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
-        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
+        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument(nameof(provider))] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
         /// <summary>Creates a new string by using the specified provider to control the formatting of the specified interpolated string.</summary>
@@ -368,8 +373,10 @@ namespace System
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
-        public static unsafe string Copy(string str!!)
+        public static unsafe string Copy(string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             string result = FastAllocateString(str.Length);
 
             Buffer.Memmove(
@@ -385,12 +392,14 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
+        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (count > Length - sourceIndex)
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexCount);
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
@@ -410,7 +419,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -427,7 +436,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;
@@ -455,13 +464,13 @@ namespace System
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (length <= 0)
             {
                 if (length == 0)
                     return Array.Empty<char>();
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             char[] chars = new char[length];
@@ -474,12 +483,9 @@ namespace System
             return chars;
         }
 
-        [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
-            // Ternary operator returning true/false prevents redundant asm generation:
-            // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0 == value.Length) ? true : false;
+            return value == null || value.Length == 0;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)

@@ -478,13 +478,13 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;
@@ -552,7 +552,7 @@ public:
 // done and allow us to add new entries one at a time (AddToUnwindInfoTable)
 //
 // Each _rangesection has a UnwindInfoTable's which hold the
-// RUNTIME_FUNCTION array as well as other bookeeping (the current and maximum
+// RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
 // Ideally we would just use this new API when it is available, however to mininmize
@@ -753,6 +753,14 @@ public:
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars) = 0;
 
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings) = 0;
+
     virtual BOOL JitCodeToMethodInfo(
             RangeSection * pRangeSection,
             PCODE currentPC,
@@ -941,6 +949,14 @@ public:
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
 
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings);
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
@@ -1107,6 +1123,16 @@ public:
         return m_CPUCompileFlags;
     }
 
+private:
+    bool m_storeRichDebugInfo;
+
+public:
+    bool IsStoringRichDebugInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_storeRichDebugInfo;
+    }
+
 private :
     PTR_HostCodeHeap    m_cleanupList;
     //When EH Clauses are resolved we need to atomically update the TypeHandle
@@ -1154,7 +1180,7 @@ public:
 //*****************************************************************************
 //
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
-// members.  It should never be constucted.
+// members.  It should never be constructed.
 //
 //*****************************************************************************
 
@@ -1313,19 +1339,13 @@ private:
 #endif
 
     static CrstStatic       m_JumpStubCrst;
-    static CrstStatic       m_RangeCrst;        // Aquire before writing into m_CodeRangeList and m_DataRangeList
+    static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
 
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-#ifndef DACCESS_COMPILE
-    static Volatile<RangeSection *> m_CodeRangeList;
-    static Volatile<LONG>   m_dwReaderCount;
-    static Volatile<LONG>   m_dwWriterLock;
-#else
-    SPTR_DECL(RangeSection,  m_CodeRangeList);
-    SVAL_DECL(LONG, m_dwReaderCount);
-    SVAL_DECL(LONG, m_dwWriterLock);
-#endif
+    VOLATILE_SPTR_DECL(RangeSection,  m_CodeRangeList);
+    VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
+    VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
 
 #ifndef DACCESS_COMPILE
     class WriterLockHolder
@@ -1420,6 +1440,13 @@ private:
     static unsigned m_LCG_JumpStubBlockFullCount;
 
 public:
+
+    static void DumpExecutionManagerUsage()
+    {
+        fprintf(stderr, "JumpStub usage count:\n");
+        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+    }
+
     struct JumpStubCache
     {
         JumpStubCache()
@@ -1525,6 +1552,14 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,

@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {AA806490-3696-4693-BEEE-68E449C58639}
-.namespace JitTest
+.namespace JitTest_deep2_deep_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static float64[] 
@@ -45,7 +45,7 @@
       IL_0023:  add
       IL_0024:  ldarg.1
       IL_0025:  ldarg.2
-      IL_0026:  call       float64[] JitTest.Test::Method(float64,
+      IL_0026:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_002b:  ldc.i4.0
@@ -63,7 +63,7 @@
       IL_003f:  ldloc.0
       IL_0040:  ldc.i4.0
       IL_0041:  ldelema    ['mscorlib']System.Double
-      IL_0046:  call       float64[] JitTest.Test::Method(float64,
+      IL_0046:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_004b:  ldc.i4.1
@@ -83,7 +83,7 @@
       IL_0061:  ldloc.0
       IL_0062:  ldc.i4.1
       IL_0063:  ldelema    ['mscorlib']System.Double
-      IL_0068:  call       float64[] JitTest.Test::Method(float64,
+      IL_0068:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_006d:  ldc.i4.2
@@ -105,7 +105,7 @@
       IL_0089:  ldloc.0
       IL_008a:  ldc.i4.2
       IL_008b:  ldelema    ['mscorlib']System.Double
-      IL_0090:  call       float64[] JitTest.Test::Method(float64,
+      IL_0090:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                           float32,
                                                           float64&)
       IL_0095:  ldc.i4.3
@@ -150,7 +150,7 @@
       IL_0020:  add
       IL_0021:  ldarg.1
       IL_0022:  ldarg.2
-      IL_0023:  call       float64 JitTest.Test::Method2(float64,
+      IL_0023:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_0028:  add
@@ -166,7 +166,7 @@
       IL_003a:  ldloc.0
       IL_003b:  ldc.i4.0
       IL_003c:  ldelem.r8
-      IL_003d:  call       float64 JitTest.Test::Method2(float64,
+      IL_003d:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_0042:  add
@@ -184,7 +184,7 @@
       IL_0056:  ldloc.0
       IL_0057:  ldc.i4.1
       IL_0058:  ldelem.r8
-      IL_0059:  call       float64 JitTest.Test::Method2(float64,
+      IL_0059:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_005e:  add
@@ -204,7 +204,7 @@
       IL_0074:  ldloc.0
       IL_0075:  ldc.i4.2
       IL_0076:  ldelem.r8
-      IL_0077:  call       float64 JitTest.Test::Method2(float64,
+      IL_0077:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                          int32,
                                                          float64)
       IL_007c:  add
@@ -231,7 +231,7 @@
       IL_0091:  ret
     } // end of method 'Test::Method2'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -249,7 +249,7 @@
         IL_000a:  ldc.r8     0.
         IL_0013:  ldc.r4     1.
         IL_0018:  ldloca.s   V_0
-        IL_001a:  call       float64[] JitTest.Test::Method(float64,
+        IL_001a:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_001f:  ldc.i4.3
@@ -305,112 +305,112 @@
         IL_0158:  ldc.r8     0.
         IL_0161:  ldc.r4     12.
         IL_0166:  ldloca.s   V_0
-        IL_0168:  call       float64[] JitTest.Test::Method(float64,
+        IL_0168:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_016d:  ldc.i4.1
         IL_016e:  ldelema    ['mscorlib']System.Double
-        IL_0173:  call       float64[] JitTest.Test::Method(float64,
+        IL_0173:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0178:  ldc.i4.2
         IL_0179:  ldelema    ['mscorlib']System.Double
-        IL_017e:  call       float64[] JitTest.Test::Method(float64,
+        IL_017e:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0183:  ldc.i4.3
         IL_0184:  ldelema    ['mscorlib']System.Double
-        IL_0189:  call       float64[] JitTest.Test::Method(float64,
+        IL_0189:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_018e:  ldc.i4.0
         IL_018f:  ldelema    ['mscorlib']System.Double
-        IL_0194:  call       float64[] JitTest.Test::Method(float64,
+        IL_0194:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0199:  ldc.i4.1
         IL_019a:  ldelema    ['mscorlib']System.Double
-        IL_019f:  call       float64[] JitTest.Test::Method(float64,
+        IL_019f:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01a4:  ldc.i4.2
         IL_01a5:  ldelema    ['mscorlib']System.Double
-        IL_01aa:  call       float64[] JitTest.Test::Method(float64,
+        IL_01aa:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01af:  ldc.i4.3
         IL_01b0:  ldelema    ['mscorlib']System.Double
-        IL_01b5:  call       float64[] JitTest.Test::Method(float64,
+        IL_01b5:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01ba:  ldc.i4.2
         IL_01bb:  ldelema    ['mscorlib']System.Double
-        IL_01c0:  call       float64[] JitTest.Test::Method(float64,
+        IL_01c0:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01c5:  ldc.i4.1
         IL_01c6:  ldelema    ['mscorlib']System.Double
-        IL_01cb:  call       float64[] JitTest.Test::Method(float64,
+        IL_01cb:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01d0:  ldc.i4.0
         IL_01d1:  ldelema    ['mscorlib']System.Double
-        IL_01d6:  call       float64[] JitTest.Test::Method(float64,
+        IL_01d6:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01db:  ldc.i4.0
         IL_01dc:  ldelema    ['mscorlib']System.Double
-        IL_01e1:  call       float64[] JitTest.Test::Method(float64,
+        IL_01e1:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01e6:  ldc.i4.1
         IL_01e7:  ldelema    ['mscorlib']System.Double
-        IL_01ec:  call       float64[] JitTest.Test::Method(float64,
+        IL_01ec:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01f1:  ldc.i4.2
         IL_01f2:  ldelema    ['mscorlib']System.Double
-        IL_01f7:  call       float64[] JitTest.Test::Method(float64,
+        IL_01f7:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_01fc:  ldc.i4.2
         IL_01fd:  ldelema    ['mscorlib']System.Double
-        IL_0202:  call       float64[] JitTest.Test::Method(float64,
+        IL_0202:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0207:  ldc.i4.3
         IL_0208:  ldelema    ['mscorlib']System.Double
-        IL_020d:  call       float64[] JitTest.Test::Method(float64,
+        IL_020d:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0212:  ldc.i4.2
         IL_0213:  ldelema    ['mscorlib']System.Double
-        IL_0218:  call       float64[] JitTest.Test::Method(float64,
+        IL_0218:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_021d:  ldc.i4.1
         IL_021e:  ldelema    ['mscorlib']System.Double
-        IL_0223:  call       float64[] JitTest.Test::Method(float64,
+        IL_0223:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0228:  ldc.i4.0
         IL_0229:  ldelema    ['mscorlib']System.Double
-        IL_022e:  call       float64[] JitTest.Test::Method(float64,
+        IL_022e:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0233:  ldc.i4.1
         IL_0234:  ldelema    ['mscorlib']System.Double
-        IL_0239:  call       float64[] JitTest.Test::Method(float64,
+        IL_0239:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_023e:  ldc.i4.1
         IL_023f:  ldelema    ['mscorlib']System.Double
-        IL_0244:  call       float64[] JitTest.Test::Method(float64,
+        IL_0244:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0249:  ldc.i4.1
         IL_024a:  ldelema    ['mscorlib']System.Double
-        IL_024f:  call       float64[] JitTest.Test::Method(float64,
+        IL_024f:  call       float64[] JitTest_deep2_deep_il.Test::Method(float64,
                                                             float32,
                                                             float64&)
         IL_0254:  ldc.i4.1
@@ -459,70 +459,70 @@
         IL_0322:  ldc.r8     0.
         IL_032b:  ldc.i4.s   12
         IL_032d:  ldloc.0
-        IL_032e:  call       float64 JitTest.Test::Method2(float64,
+        IL_032e:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0333:  call       float64 JitTest.Test::Method2(float64,
+        IL_0333:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0338:  call       float64 JitTest.Test::Method2(float64,
+        IL_0338:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_033d:  call       float64 JitTest.Test::Method2(float64,
+        IL_033d:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0342:  call       float64 JitTest.Test::Method2(float64,
+        IL_0342:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0347:  call       float64 JitTest.Test::Method2(float64,
+        IL_0347:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_034c:  call       float64 JitTest.Test::Method2(float64,
+        IL_034c:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0351:  call       float64 JitTest.Test::Method2(float64,
+        IL_0351:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0356:  call       float64 JitTest.Test::Method2(float64,
+        IL_0356:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_035b:  call       float64 JitTest.Test::Method2(float64,
+        IL_035b:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0360:  call       float64 JitTest.Test::Method2(float64,
+        IL_0360:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0365:  call       float64 JitTest.Test::Method2(float64,
+        IL_0365:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_036a:  call       float64 JitTest.Test::Method2(float64,
+        IL_036a:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_036f:  call       float64 JitTest.Test::Method2(float64,
+        IL_036f:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0374:  call       float64 JitTest.Test::Method2(float64,
+        IL_0374:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0379:  call       float64 JitTest.Test::Method2(float64,
+        IL_0379:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_037e:  call       float64 JitTest.Test::Method2(float64,
+        IL_037e:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0383:  call       float64 JitTest.Test::Method2(float64,
+        IL_0383:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0388:  call       float64 JitTest.Test::Method2(float64,
+        IL_0388:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_038d:  call       float64 JitTest.Test::Method2(float64,
+        IL_038d:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0392:  call       float64 JitTest.Test::Method2(float64,
+        IL_0392:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
-        IL_0397:  call       float64 JitTest.Test::Method2(float64,
+        IL_0397:  call       float64 JitTest_deep2_deep_il.Test::Method2(float64,
                                                            int32,
                                                            float64)
         IL_039c:  stloc.0
@@ -561,6 +561,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_deep2_deep_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

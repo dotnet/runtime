@@ -5,31 +5,6 @@ using System;
 
 namespace Internal.CorConstants
 {
-    /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/corcompile.h">src/inc/corcompile.h</a> CorCompileImportType
-    /// </summary>
-    public enum CorCompileImportType
-    {
-        CORCOMPILE_IMPORT_TYPE_UNKNOWN = 0,
-        CORCOMPILE_IMPORT_TYPE_EXTERNAL_METHOD = 1,
-        CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH = 2,
-        CORCOMPILE_IMPORT_TYPE_STRING_HANDLE = 3,
-        CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE = 4,
-        CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE = 5,
-        CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD = 6,
-    };
-
-    /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/corcompile.h">src/inc/corcompile.h</a> CorCompileImportFlags
-    /// </summary>
-    public enum CorCompileImportFlags
-    {
-        CORCOMPILE_IMPORT_FLAGS_UNKNOWN = 0x0000,
-        CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,     // Section at module load time.
-        CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,      // Section contains code.
-        CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,     // Section contains pointers to code.
-    };
-
     public enum CorElementType : byte
     {
         Invalid = 0,

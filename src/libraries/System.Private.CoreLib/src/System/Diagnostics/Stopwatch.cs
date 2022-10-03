@@ -7,6 +7,7 @@ namespace System.Diagnostics
     // hardware supports it. Otherwise, the class will fall back to DateTime
     // and uses ticks as a measurement.
 
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public partial class Stopwatch
     {
         private const long TicksPerMillisecond = 10000;
@@ -150,5 +151,7 @@ namespace System.Diagnostics
             // convert high resolution perf counter to DateTime ticks
             return unchecked((long)(GetRawElapsedTicks() * s_tickFrequency));
         }
+
+        private string DebuggerDisplay => $"{Elapsed} (IsRunning = {_isRunning})";
     }
 }

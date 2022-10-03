@@ -175,8 +175,7 @@ mono_bitset_set_all (MonoBitSet *set) {
  */
 void
 mono_bitset_invert (MonoBitSet *set) {
-	int i;
-	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i)
+	for (gsize i = 0; i < set->size / BITS_PER_CHUNK; ++i)
 		set->data [i] = ~set->data [i];
 }
 
@@ -187,11 +186,11 @@ mono_bitset_invert (MonoBitSet *set) {
  */
 guint32
 mono_bitset_size (const MonoBitSet *set) {
-	return set->size;
+	return (guint32)set->size;
 }
 
 /*
- * should test wich version is faster.
+ * should test which version is faster.
  */
 #if 1
 
@@ -388,9 +387,7 @@ find_first_unset (gsize mask, gint nth_bit)
 int
 mono_bitset_find_start   (const MonoBitSet *set)
 {
-	int i;
-
-	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i])
 			return my_g_bit_nth_lsf_nomask (set->data [i]) + i * BITS_PER_CHUNK;
 	}
@@ -406,9 +403,9 @@ mono_bitset_find_start   (const MonoBitSet *set)
  */
 int
 mono_bitset_find_first (const MonoBitSet *set, gint pos) {
-	int j;
+	guint j;
 	int bit;
-	int result, i;
+	int result;
 
 	if (pos < 0) {
 		j = 0;
@@ -416,7 +413,7 @@ mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 	} else {
 		j = pos / BITS_PER_CHUNK;
 		bit = pos % BITS_PER_CHUNK;
-		g_assert (pos < set->size);
+		g_assert (GINT_TO_UINT(pos) < set->size);
 	}
 	/*g_print ("find first from %d (j: %d, bit: %d)\n", pos, j, bit);*/
 
@@ -425,7 +422,7 @@ mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 		if (result != -1)
 			return result + j * BITS_PER_CHUNK;
 	}
-	for (i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i])
 			return my_g_bit_nth_lsf (set->data [i], -1) + i * BITS_PER_CHUNK;
 	}
@@ -444,12 +441,12 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	int j, bit, result, i;
 
 	if (pos < 0)
-		pos = set->size - 1;
+		pos = (gint)(set->size - 1);
 
 	j = pos / BITS_PER_CHUNK;
 	bit = pos % BITS_PER_CHUNK;
 
-	g_return_val_if_fail (pos < set->size, -1);
+	g_return_val_if_fail (GINT_TO_UINT(pos) < set->size, -1);
 
 	if (set->data [j]) {
 		result = my_g_bit_nth_msf (set->data [j], bit);
@@ -472,9 +469,9 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
  */
 int
 mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
-	int j;
+	guint j;
 	int bit;
-	int result, i;
+	int result;
 
 	if (pos < 0) {
 		j = 0;
@@ -482,7 +479,7 @@ mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
 	} else {
 		j = pos / BITS_PER_CHUNK;
 		bit = pos % BITS_PER_CHUNK;
-		g_return_val_if_fail (pos < set->size, -1);
+		g_return_val_if_fail (GINT_TO_UINT(pos) < set->size, -1);
 	}
 	/*g_print ("find first from %d (j: %d, bit: %d)\n", pos, j, bit);*/
 
@@ -491,7 +488,7 @@ mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
 		if (result != -1)
 			return result + j * BITS_PER_CHUNK;
 	}
-	for (i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i] != -1) {
 			return find_first_unset (set->data [i], -1) + i * BITS_PER_CHUNK;
 		}
@@ -512,8 +509,8 @@ mono_bitset_clone (const MonoBitSet *set, guint32 new_size) {
 	MonoBitSet *result;
 
 	if (!new_size)
-		new_size = set->size;
-	result = mono_bitset_new (new_size, set->flags);
+		new_size = (guint32)set->size;
+	result = mono_bitset_new (new_size, (guint32)set->flags);
 	result->flags &= ~MONO_BITSET_DONT_FREE;
 	memcpy (result->data, set->data, set->size / 8);
 	return result;
@@ -542,12 +539,12 @@ mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest) {
  */
 void
 mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
-	int i, size;
+	size_t size;
 
 	g_assert (src->size <= dest->size);
 
 	size = dest->size / BITS_PER_CHUNK;
-	for (i = 0; i < size; ++i)
+	for (gsize i = 0; i < size; ++i)
 		dest->data [i] |= src->data [i];
 }
 
@@ -560,12 +557,12 @@ mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
-	int i, size;
+	size_t size;
 
 	g_assert (src->size <= dest->size);
 
 	size = dest->size / BITS_PER_CHUNK;
-	for (i = 0; i < size; ++i)
+	for (gsize i = 0; i < size; ++i)
 		dest->data [i] &= src->data [i];
 }
 
@@ -579,13 +576,13 @@ mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2) {
-	int i, size;
+	size_t size;
 
 	g_assert (src1->size <= dest->size);
 	g_assert (src2->size <= dest->size);
 
 	size = dest->size / BITS_PER_CHUNK;
-	for (i = 0; i < size; ++i)
+	for (gsize i = 0; i < size; ++i)
 		dest->data [i] = src1->data [i] & src2->data [i];
 }
 
@@ -598,12 +595,12 @@ mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const Mono
  */
 void
 mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
-	int i, size;
+	size_t size;
 
 	g_assert (src->size <= dest->size);
 
 	size = src->size / BITS_PER_CHUNK;
-	for (i = 0; i < size; ++i)
+	for (gsize i = 0; i < size; ++i)
 		dest->data [i] &= ~src->data [i];
 }
 
@@ -616,11 +613,10 @@ mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
  */
 gboolean
 mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
-	int i;
 	if (src->size != src1->size)
 		return FALSE;
 
-	for (i = 0; i < src->size / BITS_PER_CHUNK; ++i)
+	for (gsize i = 0; i < src->size / BITS_PER_CHUNK; ++i)
 		if (src->data [i] != src1->data [i])
 			return FALSE;
 	return TRUE;
@@ -637,10 +633,9 @@ mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
 void
 mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data)
 {
-	int i, j;
-	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i]) {
-			for (j = 0; j < BITS_PER_CHUNK; ++j)
+			for (guint j = 0; j < BITS_PER_CHUNK; ++j)
 				if (set->data [i] & ((gsize)1 << j))
 					func (j + i * BITS_PER_CHUNK, data);
 		}

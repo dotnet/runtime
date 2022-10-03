@@ -199,7 +199,7 @@ namespace System.Linq.Expressions
 
         private static void Validate(Type type, bool allowByRef)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type), allowByRef, allowPointer: false);
 
             if (type == typeof(void))

@@ -64,6 +64,16 @@ namespace System.IO.Compression.Tests
                 bytesLeftToRead -= bytesRead;
             }
         }
+        public static async Task<int> ReadAllBytesAsync(Stream stream, byte[] buffer, int offset, int count)
+        {
+            int bytesRead;
+            int totalRead = 0;
+            while ((bytesRead = await stream.ReadAsync(buffer, offset + totalRead, count - totalRead)) != 0)
+            {
+                totalRead += bytesRead;
+            }
+            return totalRead;
+        }
 
         public static int ReadAllBytes(Stream stream, byte[] buffer, int offset, int count)
         {
@@ -133,7 +143,7 @@ namespace System.IO.Compression.Tests
                 Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
 
                 blocksRead++;
-            } while (ac == 4096);
+            } while (ac == bufSize);
         }
 
         public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode)
@@ -215,16 +225,16 @@ namespace System.IO.Compression.Tests
                         if (entry == null) //entry not found
                         {
                             string entryNameOtherSlash = FlipSlashes(entryName);
-                            bool isEmtpy = !files.Any(
+                            bool isEmpty = !files.Any(
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (requireExplicit || isEmtpy)
+                            if (requireExplicit || isEmpty)
                             {
                                 Assert.Contains("emptydir", entryName);
                             }
 
-                            if ((!requireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
+                            if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
                                 count--; //discount this entry
                         }
                         else

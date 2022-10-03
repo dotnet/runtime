@@ -252,15 +252,14 @@ namespace System.Security.Cryptography
                 ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-sha384", HMACSHA384Type);
                 ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", HMACSHA512Type);
                 // X509 Extensions (custom decoders)
-                // Basic Constraints OID value
                 ht.Add("2.5.29.10", typeof(X509Certificates.X509BasicConstraintsExtension));
                 ht.Add("2.5.29.19", typeof(X509Certificates.X509BasicConstraintsExtension));
-                // Subject Key Identifier OID value
                 ht.Add("2.5.29.14", typeof(X509Certificates.X509SubjectKeyIdentifierExtension));
-                // Key Usage OID value
                 ht.Add("2.5.29.15", typeof(X509Certificates.X509KeyUsageExtension));
-                // Enhanced Key Usage OID value
+                ht.Add("2.5.29.35", typeof(X509Certificates.X509AuthorityKeyIdentifierExtension));
                 ht.Add("2.5.29.37", typeof(X509Certificates.X509EnhancedKeyUsageExtension));
+                ht.Add(Oids.AuthorityInformationAccess, typeof(X509Certificates.X509AuthorityInformationAccessExtension));
+                ht.Add(Oids.SubjectAltName, typeof(X509Certificates.X509SubjectAlternativeNameExtension));
 
                 // X509Chain class can be overridden to use a different chain engine.
                 ht.Add("X509Chain", typeof(X509Certificates.X509Chain));
@@ -333,13 +332,15 @@ namespace System.Security.Cryptography
         }
 
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
-        public static object? CreateFromName(string name!!, params object?[]? args)
+        public static object? CreateFromName(string name, params object?[]? args)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
 #if BROWSER
             switch (name)
             {
 #pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
-                // hardcode mapping for SHA* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
+                // hardcode mapping for SHA* and HMAC* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
                 case "SHA":
                 case "SHA1":
                 case "System.Security.Cryptography.SHA1":
@@ -356,6 +357,35 @@ namespace System.Security.Cryptography
                 case "SHA-512":
                 case "System.Security.Cryptography.SHA512":
                     return new SHA512Managed();
+#pragma warning restore SYSLIB0021
+
+                case "System.Security.Cryptography.HMAC":
+                case "HMACSHA1":
+                case "System.Security.Cryptography.HMACSHA1":
+                case "System.Security.Cryptography.KeyedHashAlgorithm":
+                    return new HMACSHA1();
+                case "HMACSHA256":
+                case "System.Security.Cryptography.HMACSHA256":
+                    return new HMACSHA256();
+                case "HMACSHA384":
+                case "System.Security.Cryptography.HMACSHA384":
+                    return new HMACSHA384();
+                case "HMACSHA512":
+                case "System.Security.Cryptography.HMACSHA512":
+                    return new HMACSHA512();
+
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
+                case "AES":
+                case "System.Security.Cryptography.AesCryptoServiceProvider":
+                    return new AesCryptoServiceProvider();
+                case "AesManaged":
+                case "System.Security.Cryptography.AesManaged":
+                    return new AesManaged();
+                case "Rijndael":
+                case "System.Security.Cryptography.Rijndael":
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+                    return new RijndaelManaged();
+#pragma warning restore SYSLIB0022
 #pragma warning restore SYSLIB0021
             }
 
@@ -426,10 +456,7 @@ namespace System.Security.Cryptography
                 return null;
             }
 
-            if (args == null)
-            {
-                args = Array.Empty<object>();
-            }
+            args ??= Array.Empty<object>();
 
             List<MethodBase> candidates = new List<MethodBase>();
             for (int i = 0; i < cons.Length; i++)

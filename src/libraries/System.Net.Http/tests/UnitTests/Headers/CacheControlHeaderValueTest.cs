@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -652,6 +653,18 @@ namespace System.Net.Http.Tests
             CheckInvalidTryParse("no-cache no-store", 0);
             CheckInvalidTryParse("invalid =", 0);
             CheckInvalidTryParse("\u4F1A", 0);
+        }
+
+        [Fact]
+        public void TryParseAndAddRawHeaderValue_AddEmptyAfterValid_NoEmptyValuesAdded()
+        {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
+
+            request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, "min-fresh=123");
+            request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, string.Empty);
+
+            Assert.True(request.Headers.TryGetValues(KnownHeaders.CacheControl.Descriptor, out IEnumerable<string>? values));
+            Assert.Equal("min-fresh=123", Assert.Single(values));
         }
 
         #region Helper methods

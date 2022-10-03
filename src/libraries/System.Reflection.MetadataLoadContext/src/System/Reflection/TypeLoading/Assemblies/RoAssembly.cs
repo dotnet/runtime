@@ -33,11 +33,11 @@ namespace System.Reflection.TypeLoading
 
         // Naming
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
-        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ?? (_lazyAssemblyNameData = ComputeNameData());
+        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ??= ComputeNameData();
         protected abstract AssemblyNameData ComputeNameData();
         private volatile AssemblyNameData? _lazyAssemblyNameData;
 
-        public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
+        public sealed override string FullName => _lazyFullName ??= GetName().FullName;
         private volatile string? _lazyFullName;
 
         internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
@@ -96,8 +96,13 @@ namespace System.Reflection.TypeLoading
         }
 
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
-        public sealed override Type? GetType(string name!!, bool throwOnError, bool ignoreCase)
+        public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
             // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.
             // (We can't just throw in the assemblyResolve delegate because assembly qualifications are permitted inside generic arguments,
@@ -147,7 +152,7 @@ namespace System.Reflection.TypeLoading
             return result;
         }
 
-        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ?? (_lazyAssemblyReferences = ComputeAssemblyReferences());
+        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ??= ComputeAssemblyReferences();
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
         private volatile AssemblyNameData[]? _lazyAssemblyReferences;
 

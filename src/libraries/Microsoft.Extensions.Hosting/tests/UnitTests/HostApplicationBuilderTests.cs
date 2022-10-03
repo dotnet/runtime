@@ -181,7 +181,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
             HostApplicationBuilder builder = CreateEmptyBuilder();
@@ -207,7 +206,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(builder.Environment.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
-            Assert.Null(builder.Environment.ApplicationName);
+            Assert.Equal(string.Empty, builder.Environment.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -222,7 +221,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
-            Assert.Null(env.ApplicationName);
+            Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -261,7 +260,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void DirectSetttingsOverrideConfigurationSetting()
+        public void DirectSettingsOverrideConfigurationSetting()
         {
             using var config = new ConfigurationManager();
 
@@ -370,7 +369,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Environments.Development, builder.Environment.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), builder.Environment.ContentRootPath);
 
-            using IHost host = builder.Build(); 
+            using IHost host = builder.Build();
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal("MyProjectReference", env.ApplicationName);
@@ -432,7 +431,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithDefaults(BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
             var builder = new HostApplicationBuilder();

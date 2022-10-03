@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -10,13 +11,14 @@ namespace System.IO
     {
         private const int NanosecondsPerTick = 100;
 
+        private const int InitializedExistsBrokenLink = -4;  // target is link with no target.
         private const int InitializedExistsDir = -3;  // target is directory.
         private const int InitializedExistsFile = -2; // target is file.
         private const int InitializedNotExists = -1;  // entry does not exist.
         private const int Uninitialized = 0;          // uninitialized, '0' to make default(FileStatus) uninitialized.
 
         // Tracks the initialization state.
-        // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile or InitializedExistsDir.
+        // < 0 : initialized successfully. Value is InitializedNotExists, InitializedExistsFile, InitializedExistsDir or InitializedExistsBrokenLink.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
         private int _state;
@@ -28,6 +30,8 @@ namespace System.IO
         private bool EntryExists => _state <= InitializedExistsFile;
 
         private bool IsDir => _state == InitializedExistsDir;
+
+        private bool IsBrokenLink => _state == InitializedExistsBrokenLink;
 
         // Check if the main path (without following symlinks) has the hidden attribute set.
         private bool HasHiddenFlag
@@ -47,15 +51,15 @@ namespace System.IO
             {
                 Debug.Assert(_state != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
-                if (!EntryExists)
+                if (!EntryExists || IsBrokenLink)
                 {
                     return false;
                 }
 
 #if TARGET_BROWSER
-                var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
-                bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
-                                      (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
+                var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
+                bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 && // has read permission
+                                      (mode & UnixFileMode.UserWrite) == 0;  // but not write permission
                 return isUserReadOnly;
 #else
                 if (_isReadOnlyCache == 0)
@@ -83,14 +87,14 @@ namespace System.IO
 
         private bool IsModeReadOnlyCore()
         {
-            var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
+            var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
 
-            bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
-                                  (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
-            bool isGroupReadOnly = (mode & Interop.Sys.Permissions.S_IRGRP) != 0 && // has read permission
-                                    (mode & Interop.Sys.Permissions.S_IWGRP) == 0;   // but not write permission
-            bool isOtherReadOnly = (mode & Interop.Sys.Permissions.S_IROTH) != 0 && // has read permission
-                                    (mode & Interop.Sys.Permissions.S_IWOTH) == 0;   // but not write permission
+            bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 &&    // has read permission
+                                  (mode & UnixFileMode.UserWrite) == 0;     // but not write permission
+            bool isGroupReadOnly = (mode & UnixFileMode.GroupRead) != 0 &&  // has read permission
+                                   (mode & UnixFileMode.GroupWrite) == 0;   // but not write permission
+            bool isOtherReadOnly = (mode & UnixFileMode.OtherRead) != 0 &&  // has read permission
+                                   (mode & UnixFileMode.OtherWrite) == 0;   // but not write permission
 
             // If they are all the same, no need to check user/group.
             if ((isUserReadOnly == isGroupReadOnly) && (isGroupReadOnly == isOtherReadOnly))
@@ -180,8 +184,15 @@ namespace System.IO
         }
 
         internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
+            => GetAttributes(handle: null, path, fileName, continueOnError);
+
+        internal FileAttributes GetAttributes(SafeFileHandle handle, bool continueOnError = false)
+            => GetAttributes(handle, handle.Path, Path.GetFileName(handle.Path), continueOnError);
+
+        private FileAttributes GetAttributes(SafeFileHandle? handle, ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            Debug.Assert(handle is not null || path.Length > 0);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return (FileAttributes)(-1);
@@ -204,6 +215,12 @@ namespace System.IO
         }
 
         internal void SetAttributes(string path, FileAttributes attributes, bool asDirectory)
+            => SetAttributes(handle: null, path, attributes, asDirectory);
+
+        internal void SetAttributes(SafeFileHandle handle, FileAttributes attributes, bool asDirectory)
+            => SetAttributes(handle, handle.Path, attributes, asDirectory);
+
+        private void SetAttributes(SafeFileHandle? handle, string? path, FileAttributes attributes, bool asDirectory)
         {
             // Validate that only flags from the attribute are being provided.  This is an
             // approximation for the validation done by the Win32 function.
@@ -220,43 +237,45 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidFileAttrs, "Attributes");
             }
 
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
-                if ((attributes & FileAttributes.Hidden) != 0 && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                bool hidden = (attributes & FileAttributes.Hidden) != 0;
+                if (hidden ^ HasHiddenFlag)
                 {
-                    // If Hidden flag is set and cached file status does not have the flag set then set it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
-                }
-                else if (HasHiddenFlag)
-                {
-                    // If Hidden flag is not set and cached file status does have the flag set then remove it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
+                    uint flags = hidden ? _fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN :
+                                          _fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN;
+                    int rv = handle is not null ? Interop.Sys.FChflags(handle, flags) :
+                                                  Interop.Sys.LChflags(path!, flags);
+                    Interop.CheckIo(rv, path, asDirectory);
                 }
             }
 
             // The only thing we can reasonably change is whether the file object is readonly by changing permissions.
 
-            int newMode = _fileCache.Mode;
+            int oldMode = _fileCache.Mode & (int)FileSystem.ValidUnixFileModes;
+            int newMode = oldMode;
             if ((attributes & FileAttributes.ReadOnly) != 0)
             {
                 // Take away all write permissions from user/group/everyone
-                newMode &= ~(int)(Interop.Sys.Permissions.S_IWUSR | Interop.Sys.Permissions.S_IWGRP | Interop.Sys.Permissions.S_IWOTH);
+                newMode &= ~(int)(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite);
             }
-            else if ((newMode & (int)Interop.Sys.Permissions.S_IRUSR) != 0)
+            else if ((newMode & (int)UnixFileMode.UserRead) != 0)
             {
                 // Give write permission to the owner if the owner has read permission
-                newMode |= (int)Interop.Sys.Permissions.S_IWUSR;
+                newMode |= (int)UnixFileMode.UserWrite;
             }
 
             // Change the permissions on the file
-            if (newMode != _fileCache.Mode)
+            if (newMode != oldMode)
             {
-                Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, asDirectory);
+                int rv = handle is not null ? Interop.Sys.FChMod(handle, newMode) :
+                                              Interop.Sys.ChMod(path!, newMode);
+                Interop.CheckIo(rv, path, asDirectory);
             }
 
             InvalidateCaches();
@@ -269,8 +288,14 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetCreationTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetCreationTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetCreationTime(handle, handle.Path, continueOnError);
+
+        private DateTimeOffset GetCreationTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -287,8 +312,14 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetLastAccessTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetLastAccessTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetLastAccessTime(handle, handle.Path, continueOnError);
+
+        private DateTimeOffset GetLastAccessTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -297,11 +328,23 @@ namespace System.IO
         }
 
         internal void SetLastAccessTime(string path, DateTimeOffset time, bool asDirectory)
-            => SetAccessOrWriteTime(path, time, isAccessTime: true, asDirectory);
+            => SetLastAccessTime(handle: null, path, time, asDirectory);
+
+        internal void SetLastAccessTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
+            => SetLastAccessTime(handle, handle.Path, time, asDirectory);
+
+        private void SetLastAccessTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(handle, path, time, isAccessTime: true, asDirectory);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetLastWriteTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetLastWriteTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetLastWriteTime(handle, handle.Path, continueOnError);
+
+        private DateTimeOffset GetLastWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -310,14 +353,20 @@ namespace System.IO
         }
 
         internal void SetLastWriteTime(string path, DateTimeOffset time, bool asDirectory)
-            => SetAccessOrWriteTime(path, time, isAccessTime: false, asDirectory);
+            => SetLastWriteTime(handle: null, path, time, asDirectory);
 
-        private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
+        internal void SetLastWriteTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
+            => SetLastWriteTime(handle, handle.Path, time, asDirectory);
+
+        internal void SetLastWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(handle, path, time, isAccessTime: false, asDirectory);
+
+        private static DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
+        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
             // The reason why we use it to set 'creation time' is the below comment:
@@ -333,7 +382,7 @@ namespace System.IO
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             InvalidateCaches();
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
@@ -365,7 +414,10 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
-            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, asDirectory);
+            int rv = handle is not null
+                ? Interop.Sys.FUTimens(handle, buf)
+                : Interop.Sys.UTimensat(path!, buf);
+            Interop.CheckIo(rv, path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
             // when the modification time is already less than but access time is being set), the creation
@@ -382,7 +434,7 @@ namespace System.IO
 
             if (updateCreationTime)
             {
-                Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
+                Interop.Error error = SetCreationTimeCore(handle, path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
                     Interop.CheckIo(error, path, asDirectory);
@@ -399,17 +451,69 @@ namespace System.IO
             return EntryExists ? _fileCache.Size : 0;
         }
 
+        internal UnixFileMode GetUnixFileMode(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetUnixFileMode(handle: null, path, continueOnError);
+
+        internal UnixFileMode GetUnixFileMode(SafeFileHandle handle, bool continueOnError = false)
+            => GetUnixFileMode(handle, handle.Path, continueOnError);
+
+        private UnixFileMode GetUnixFileMode(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
+        {
+            EnsureCachesInitialized(handle, path, continueOnError);
+
+            if (!EntryExists || IsBrokenLink)
+                return (UnixFileMode)(-1);
+
+            return (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
+        }
+
+        internal void SetUnixFileMode(string path, UnixFileMode mode)
+            => SetUnixFileMode(handle: null, path, mode);
+
+        internal void SetUnixFileMode(SafeFileHandle handle, UnixFileMode mode)
+            => SetUnixFileMode(handle, handle.Path, mode);
+
+        private void SetUnixFileMode(SafeFileHandle? handle, string? path, UnixFileMode mode)
+        {
+            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
+            {
+                throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
+            }
+
+            // Use ThrowNotFound to throw the appropriate exception when the file doesn't exist.
+            if (handle is null && path is not null)
+            {
+                EnsureCachesInitialized(path);
+
+                if (!EntryExists || IsBrokenLink)
+                    FileSystemInfo.ThrowNotFound(path);
+            }
+
+            // Linux does not support link permissions.
+            // To have consistent cross-platform behavior we operate on the link target.
+            int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode)
+                                        : Interop.Sys.ChMod(path!, (int)mode);
+            Interop.CheckIo(rv, path);
+
+            InvalidateCaches();
+        }
+
+        internal void RefreshCaches(ReadOnlySpan<char> path)
+            => RefreshCaches(handle: null, path);
+
         // Tries to refresh the lstat cache (_fileCache).
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
-        internal void RefreshCaches(ReadOnlySpan<char> path)
+        internal void RefreshCaches(SafeFileHandle? handle, ReadOnlySpan<char> path)
         {
-            path = Path.TrimEndingDirectorySeparator(path);
+            Debug.Assert(handle is not null || path.Length > 0);
 
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
+            int rv = handle is not null ?
+                Interop.Sys.FStat(handle, out _fileCache) :
+                Interop.Sys.LStat(Path.TrimEndingDirectorySeparator(path), out _fileCache);
 
-            int rv = Interop.Sys.LStat(path, out _fileCache);
             if (rv < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -430,21 +534,37 @@ namespace System.IO
 
             // Check if the main path is a directory, or a link to a directory.
             int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
-            bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
-                               (fileType == Interop.Sys.FileTypes.S_IFLNK
-                                && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0
-                                && (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+            bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR;
+
+            if (fileType == Interop.Sys.FileTypes.S_IFLNK)
+            {
+                if (Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0)
+                {
+                    isDirectory = (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+
+                    // Make GetUnixFileMode return target permissions.
+                    _fileCache.Mode = Interop.Sys.FileTypes.S_IFLNK | (target.Mode & (int)FileSystem.ValidUnixFileModes);
+                }
+                else
+                {
+                    _state = InitializedExistsBrokenLink;
+                    return;
+                }
+            }
 
             _state = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }
 
+        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+            => EnsureCachesInitialized(handle: null, path, continueOnError);
+
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
-        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+        internal void EnsureCachesInitialized(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_state == Uninitialized)
             {
-                RefreshCaches(path);
+                RefreshCaches(handle, path);
             }
 
             if (!continueOnError)

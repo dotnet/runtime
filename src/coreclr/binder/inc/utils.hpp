@@ -18,8 +18,6 @@
 
 namespace BINDER_SPACE
 {
-    void MutateUrlToPath(SString &urlOrPath);
-
     // It is safe to use either A or B as CombinedPath.
     void CombinePath(const SString &pathA,
                      const SString &pathB,

@@ -9,8 +9,8 @@
 }
 .assembly comp32 { }
 .assembly extern xunit.core {}
-.namespace JitTest {
-.class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.namespace JitTest_comp32_NaN_il {
+.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
 .method private hidebysig static void RunTests(float32 nan,
                      	float32 plusinf, float32 zero, float32 minusinf) cil managed
@@ -662,7 +662,7 @@ IL_THROW:
 	throw
 }
 
-.method private hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
@@ -674,7 +674,7 @@ IL_THROW:
   	ldc.r4     (00 00 80 7F)
   	ldc.r4     0
 	ldc.r4     (00 00 80 FF)
-	call       void JitTest.Test::RunTests(float32,
+	call       void JitTest_comp32_NaN_il.Test::RunTests(float32,
                                            float32,
                                            float32,
                                            float32)

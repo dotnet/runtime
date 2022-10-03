@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -56,15 +57,18 @@ namespace System
     // the range of the Decimal type.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Decimal : ISpanFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISerializable, IDeserializationCallback
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IMinMaxValue<decimal>,
-          ISignedNumber<decimal>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
+    [NonVersionable] // This only applies to field layout
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly partial struct Decimal
+        : ISpanFormattable,
+          IComparable,
+          IConvertible,
+          IComparable<decimal>,
+          IEquatable<decimal>,
+          ISerializable,
+          IDeserializationCallback,
+          IFloatingPoint<decimal>,
+          IMinMaxValue<decimal>
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -98,6 +102,15 @@ namespace System
         // Constant representing the smallest possible Decimal value. The value of
         // this constant is -79,228,162,514,264,337,593,543,950,335.
         public const decimal MinValue = -79228162514264337593543950335m;
+
+        /// <summary>Represents the additive identity (0).</summary>
+        private const decimal AdditiveIdentity = 0m;
+
+        /// <summary>Represents the multiplicative identity (1).</summary>
+        private const decimal MultiplicativeIdentity = 1m;
+
+        /// <summary>Represents the number negative one (-1).</summary>
+        private const decimal NegativeOne = -1m;
 
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
@@ -182,15 +195,19 @@ namespace System
             DecCalc.VarDecFromR8(value, out AsMutable(ref this));
         }
 
-        private Decimal(SerializationInfo info!!, StreamingContext context)
+        private Decimal(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             _flags = info.GetInt32("flags");
             _hi32 = (uint)info.GetInt32("hi");
             _lo64 = (uint)info.GetInt32("lo") + ((ulong)info.GetInt32("mid") << 32);
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             // Serialize both the old and the new format
             info.AddValue("flags", _flags);
             info.AddValue("hi", (int)High);
@@ -260,8 +277,8 @@ namespace System
         // The possible binary representations of a particular value are all
         // equally valid, and all are numerically equivalent.
         //
-        public Decimal(int[] bits!!) :
-            this((ReadOnlySpan<int>)bits)
+        public Decimal(int[] bits) :
+            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
         {
         }
 
@@ -331,13 +348,40 @@ namespace System
         /// </summary>
         public byte Scale => (byte)(_flags >> ScaleShift);
 
-        // Returns the absolute value of the given Decimal. If d is
-        // positive, the result is d. If d is negative, the result
-        // is -d.
-        //
-        internal static decimal Abs(in decimal d)
+        private sbyte Exponent
         {
-            return new decimal(in d, d._flags & ~SignMask);
+            get
+            {
+                // Decimal tracks its exponent as a scale between 0 and 28. This scale is used
+                // with the significand as `significand / 10^scale`
+                //
+                // The IFloatingPoint contract however follows the general IEEE 754 algorithm
+                // which is `-1^s * b^e * (b^(1-p) * m)`
+                //
+                // In this algorithm
+                // * `s` is the sign
+                // * `b` is the radix (10 for decimal)
+                // * `e` is the exponent
+                // * `p` is the number of bits in the significand
+                // * `m` is the significand itself
+                //
+                // For a value such as decimal.MaxValue, the significand is 79228162514264337593543950335
+                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm (simplified)
+                // gives us 7.9228162514264337593543950335 * 10^-67 * 10^e. To get back to our original value we
+                // then need the exponent to be 95.
+                //
+                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm (simplified)
+                // gives us 1.0 * 10^-95 * 10^e. To get back to our original value we need the exponent to be 67.
+                //
+                // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
+                // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
+                //
+                // The generalized algorithm for converting from scale to exponent is then `exponent = 95 - scale`.
+
+                sbyte exponent = (sbyte)(95 - Scale);
+                Debug.Assert((exponent >= 67) && (exponent <= 95));
+                return exponent;
+            }
         }
 
         // Adds two Decimal values.
@@ -440,7 +484,7 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -450,12 +494,12 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -558,7 +602,7 @@ namespace System
         /// <exception cref="ArgumentException">The destination span was not long enough to store the binary representation.</exception>
         public static int GetBits(decimal d, Span<int> destination)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -579,7 +623,7 @@ namespace System
         /// <returns>true if the decimal's binary representation was written to the destination; false if the destination wasn't long enough.</returns>
         public static bool TryGetBits(decimal d, Span<int> destination, out int valuesWritten)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 valuesWritten = 0;
                 return false;
@@ -611,20 +655,6 @@ namespace System
             int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));
             int flags = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(12));
             return new decimal(lo, mid, hi, flags);
-        }
-
-        // Returns the larger of two Decimal values.
-        //
-        internal static ref readonly decimal Max(in decimal d1, in decimal d2)
-        {
-            return ref DecCalc.VarDecCmp(in d1, in d2) >= 0 ? ref d1 : ref d2;
-        }
-
-        // Returns the smaller of two Decimal values.
-        //
-        internal static ref readonly decimal Min(in decimal d1, in decimal d2)
-        {
-            return ref DecCalc.VarDecCmp(in d1, in d2) < 0 ? ref d1 : ref d2;
         }
 
         public static decimal Remainder(decimal d1, decimal d2)
@@ -674,8 +704,6 @@ namespace System
                 DecCalc.InternalRound(ref AsMutable(ref d), (uint)scale, mode);
             return d;
         }
-
-        internal static int Sign(in decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //
@@ -764,7 +792,7 @@ namespace System
             if ((d.High | d.Mid) == 0)
             {
                 int i = (int)d.Low;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (i >= 0) return i;
                 }
@@ -787,7 +815,7 @@ namespace System
             if (d.High == 0)
             {
                 long l = (long)d.Low64;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (l >= 0) return l;
                 }
@@ -832,7 +860,7 @@ namespace System
             if ((d.High| d.Mid) == 0)
             {
                 uint i = d.Low;
-                if (!d.IsNegative || i == 0)
+                if (!IsNegative(d) || i == 0)
                     return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -849,7 +877,7 @@ namespace System
             if (d.High == 0)
             {
                 ulong l = d.Low64;
-                if (!d.IsNegative || l == 0)
+                if (!IsNegative(d) || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);
@@ -949,8 +977,10 @@ namespace System
 
         public static decimal operator -(decimal d) => new decimal(in d, d._flags ^ SignMask);
 
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         public static decimal operator ++(decimal d) => Add(d, One);
 
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static decimal operator --(decimal d) => Subtract(d, One);
 
         public static decimal operator +(decimal d1, decimal d2)
@@ -965,34 +995,43 @@ namespace System
             return d1;
         }
 
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static decimal operator *(decimal d1, decimal d2)
         {
             DecCalc.VarDecMul(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static decimal operator /(decimal d1, decimal d2)
         {
             DecCalc.VarDecDiv(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         public static decimal operator %(decimal d1, decimal d2)
         {
             DecCalc.VarDecMod(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) <= 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) > 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) >= 0;
 
         //
@@ -1079,534 +1118,718 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
 
-#if FEATURE_GENERIC_MATH
-        //
-        // IAdditionOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
-            => checked(left + right);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
-        //     => checked(left + right);
-
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => 0.0m;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => AdditiveIdentity;
 
         //
-        // IComparisonOperators
+        // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right)
-            => left < right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right)
-            => left <= right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+            return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right)
-            => left > right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right)
-            => left >= right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
+            {
+                uint hi32 = _hi32;
+                ulong lo64 = _lo64;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
+                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, hi32);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
+
+                bytesWritten = sizeof(uint) + sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
+            {
+                ulong lo64 = _lo64;
+                uint hi32 = _hi32;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
+                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, lo64);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), hi32);
+
+                bytesWritten = sizeof(ulong) + sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
-        // IDecrementOperators
+        // IFloatingPointConstants
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IDecrementOperators<decimal>.operator --(decimal value)
-            => --value;
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        static decimal IFloatingPointConstants<decimal>.E => 2.7182818284590452353602874714m;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IDecrementOperators<decimal>.operator --(decimal value)
-        //     => checked(--value);
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        static decimal IFloatingPointConstants<decimal>.Pi => 3.1415926535897932384626433833m;
 
-        //
-        // IDivisionOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
-            => left / right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
-        //     => checked(left / right);
-
-        //
-        // IEqualityOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right)
-            => left == right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right)
-            => left != right;
-
-        //
-        // IIncrementOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IIncrementOperators<decimal>.operator ++(decimal value)
-            => ++value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IIncrementOperators<decimal>.operator ++(decimal value)
-        //     => checked(++value);
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        static decimal IFloatingPointConstants<decimal>.Tau => 6.2831853071795864769252867666m;
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static decimal IMinMaxValue<decimal>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static decimal IMinMaxValue<decimal>.MaxValue => MaxValue;
-
-        //
-        // IModulusOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
-            => left % right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
-        //     => checked(left % right);
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => 1.0m;
-
-        //
-        // IMultiplyOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
-            => left * right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
-        //     => checked(left * right);
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => MultiplicativeIdentity;
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.One => 1.0m;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Zero => 0.0m;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Abs(decimal value)
-            => Math.Abs(value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.Create<TOther>(TOther value)
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static decimal CopySign(decimal value, decimal sign)
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+            return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateSaturating<TOther>(TOther value)
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static decimal Max(decimal x, decimal y)
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+            return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateTruncating<TOther>(TOther value)
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MaxNumber(decimal x, decimal y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static decimal Min(decimal x, decimal y)
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+            return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Clamp(decimal value, decimal min, decimal max)
-            => Math.Clamp(value, min, max);
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MinNumber(decimal x, decimal y) => Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (decimal Quotient, decimal Remainder) INumber<decimal>.DivRem(decimal left, decimal right)
-            => (left / right, left % right);
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Max(decimal x, decimal y)
-            => Math.Max(x, y);
+        //
+        // INumberBase
+        //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Min(decimal x, decimal y)
-            => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<decimal>.Radix => 10;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Sign(decimal value)
-            => Math.Sign(value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result)
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static decimal Abs(decimal value)
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
+            return new decimal(in value, value._flags & ~SignMask);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
             {
                 result = (decimal)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        public static bool IsCanonical(decimal value)
+        {
+            uint scale = (byte)(value._flags >> ScaleShift);
+
+            if (scale == 0)
+            {
+                // We have an exact integer represented with no trailing zero
                 return true;
             }
-            else if (typeof(TOther) == typeof(double))
+
+            // We have some value where some fractional part is specified. So,
+            // if the least significant digit is 0, then we are not canonical
+
+            if (value._hi32 == 0)
             {
-                result = (decimal)(double)(object)value;
+                return (value._lo64 % 10) != 0;
+            }
+
+            var significand = new UInt128(value._hi32, value._lo64);
+            return (significand % 10U) != 0U;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsComplexNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) == 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<decimal>.IsFinite(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsImaginaryNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(decimal value) => value == Truncate(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<decimal>.IsNaN(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(decimal value) => value._flags < 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsNegativeInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) != 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(decimal value) => value._flags >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsPositiveInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsRealNumber(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y)
+        {
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
+
+            if (ax > ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) => MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y)
+        {
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
+
+            if (ax < ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out decimal result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(short))
+            else if (typeof(TOther) == typeof(char))
             {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (decimal)(float)(object)value;
+                char actualValue = (char)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                result = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                result = (uint)(object)value;
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                result = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = checked((decimal)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
                 return true;
             }
             else
             {
-                ThrowHelper.ThrowNotSupportedException();
                 result = default;
                 return false;
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<decimal>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
-            => TryParse(s, style, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<decimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
-            => TryParse(s, style, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out decimal result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (actualValue >= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = checked((double)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = checked((Half)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = checked((float)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value >= short.MaxValue) ? short.MaxValue :
+                                     (value <= short.MinValue) ? short.MinValue : (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value >= int.MaxValue) ? int.MaxValue :
+                                   (value <= int.MinValue) ? int.MinValue : (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value >= long.MaxValue) ? long.MaxValue :
+                                    (value <= long.MinValue) ? long.MinValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
+                                    (value <= nint.MinValue) ? nint.MinValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
-        // IParseable
+        // IParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IParseable<decimal>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<decimal>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result)
-            => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISignedNumber<decimal>.NegativeOne => -1;
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        static decimal ISignedNumber<decimal>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISpanParseable<decimal>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Number, provider);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static decimal Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<decimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result)
-            => TryParse(s, NumberStyles.Number, provider, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
-            => left - right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
-        //     => checked(left - right);
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
-            => -value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
-        //     => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
-            => +value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
-        //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
     }
 }

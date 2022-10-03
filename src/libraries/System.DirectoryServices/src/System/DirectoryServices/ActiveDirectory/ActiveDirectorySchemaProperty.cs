@@ -100,8 +100,10 @@ namespace System.DirectoryServices.ActiveDirectory
                                               /* ReplicaLink */ new Syntax("2.5.5.10", 127, s_replicaLinkOMObjectClass)};
 
         #region constructors
-        public ActiveDirectorySchemaProperty(DirectoryContext context!!, string ldapDisplayName)
+        public ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
@@ -116,10 +118,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
-            {
-                throw new ArgumentNullException(nameof(ldapDisplayName));
-            }
+            ArgumentNullException.ThrowIfNull(ldapDisplayName);
 
             if (ldapDisplayName.Length == 0)
             {
@@ -261,10 +260,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         _abstractPropertyEntry = null;
                     }
                     // dispose the schema object
-                    if (_schema != null)
-                    {
-                        _schema.Dispose();
-                    }
+                    _schema?.Dispose();
                 }
 
                 _disposed = true;
@@ -273,8 +269,10 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context!!, string ldapDisplayName)
+        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             ActiveDirectorySchemaProperty? schemaProperty = null;
             if ((context.Name == null) && (!context.isRootDomain()))
             {
@@ -290,10 +288,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
-            {
-                throw new ArgumentNullException(nameof(ldapDisplayName));
-            }
+            ArgumentNullException.ThrowIfNull(ldapDisplayName);
 
             if (ldapDisplayName.Length == 0)
             {
@@ -318,10 +313,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // create a new directory entry for this class
-                    if (_schemaEntry == null)
-                    {
-                        _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                    }
+                    _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                     // this will create the class and set the CN value
                     string rdn = "CN=" + _commonName;
@@ -424,10 +416,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (schemaRoleOwner != null)
-                        {
-                            schemaRoleOwner.Dispose();
-                        }
+                        schemaRoleOwner?.Dispose();
                         if (!alreadyUsingSchemaRoleOwnerContext)
                         {
                             schemaObject.Dispose();
@@ -501,11 +490,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_commonName == null)
-                    {
-                        // get the property from the server
-                        _commonName = (string)GetValueFromCache(PropertyManager.Cn, true)!;
-                    }
+                    // get the property from the server
+                    _commonName ??= (string)GetValueFromCache(PropertyManager.Cn, true)!;
                 }
                 return _commonName;
             }
@@ -989,10 +975,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             try
                             {
-                                if (_schemaEntry == null)
-                                {
-                                    _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                                }
+                                _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                                 string filter = "(&(" + PropertyManager.ObjectCategory + "=attributeSchema)" + "(" + PropertyManager.LinkID + "=" + linkIdToSearch + "))";
                                 ReadOnlyActiveDirectorySchemaPropertyCollection linkedProperties = ActiveDirectorySchema.GetAllProperties(_context, _schemaEntry, filter);
@@ -1076,11 +1059,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_schemaGuidBinaryForm == null)
-                    {
-                        // get the property from the server
-                        _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true)!;
-                    }
+                    // get the property from the server
+                    _schemaGuidBinaryForm ??= (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true)!;
                 }
 
                 // we cache the byte array and create a new guid each time
@@ -1157,10 +1137,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (!_propertiesFromSchemaContainerInitialized)
             {
-                if (_schemaEntry == null)
-                {
-                    _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                }
+                _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                 _propertyValuesFromServer = GetPropertiesFromSchemaContainer(_context, _schemaEntry, (_isDefunctOnServer) ? _commonName! : _ldapDisplayName, _isDefunctOnServer);
                 _propertiesFromSchemaContainerInitialized = true;

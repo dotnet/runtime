@@ -103,6 +103,7 @@ namespace System.Security.Cryptography
 
             if (!Interop.AndroidCrypto.EcKeyUpRef(handle))
             {
+                safeHandle.Dispose();
                 throw new CryptographicException();
             }
 

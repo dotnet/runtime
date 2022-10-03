@@ -53,15 +53,21 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_X86,
     SPMI_TARGET_ARCHITECTURE_AMD64,
     SPMI_TARGET_ARCHITECTURE_ARM64,
-    SPMI_TARGET_ARCHITECTURE_ARM
+    SPMI_TARGET_ARCHITECTURE_ARM,
+    SPMI_TARGET_ARCHITECTURE_LOONGARCH64
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
 void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 
+inline bool IsSpmiTarget32Bit()
+{
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_X86) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM);
+}
+
 inline bool IsSpmiTarget64Bit()
 {
-    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64);
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
 }
 
 inline size_t SpmiTargetPointerSize()
@@ -75,5 +81,11 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12);
 
 void PutThumb2Mov32(UINT16* p, UINT32 imm32);
 void PutThumb2BlRel24(UINT16* p, INT32 imm24);
+
+template <typename T, int size>
+inline constexpr unsigned ArrLen(T (&)[size])
+{
+    return size;
+}
 
 #endif // !_SPMIUtil

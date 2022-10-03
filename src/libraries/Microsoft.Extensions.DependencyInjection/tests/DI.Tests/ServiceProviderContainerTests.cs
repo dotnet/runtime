@@ -146,11 +146,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         class CustomService6 : ICustomService { }
 
         [Theory]
-        // GenericTypeDefintion, Abstract GenericTypeDefintion
+        // GenericTypeDefinition, Abstract GenericTypeDefinition
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(AbstractFakeOpenGenericService<>))]
-        // GenericTypeDefintion, Interface GenericTypeDefintion
+        // GenericTypeDefinition, Interface GenericTypeDefinition
         [InlineData(typeof(ICollection<>), typeof(IList<>))]
-        // Implementation type is GenericTypeDefintion
+        // Implementation type is GenericTypeDefinition
         [InlineData(typeof(IList<int>), typeof(List<>))]
         // Implementation type is Abstract
         [InlineData(typeof(IFakeService), typeof(AbstractClass))]
@@ -187,9 +187,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             get
             {
                 Type serviceType = typeof(IFakeOpenGenericService<>);
-                // Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
+                // Service type is GenericTypeDefinition, implementation type is ConstructedGenericType
                 yield return new object[] { serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type." };
-                // Service type is GenericTypeDefintion, implementation type has different generic type definition arity
+                // Service type is GenericTypeDefinition, implementation type has different generic type definition arity
                 yield return new object[] { serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'." };
             }
         }

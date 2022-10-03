@@ -1,7 +1,0 @@
-This directory is used by some tests in <root>/mono/tests that require a GAC (set via MONO_GAC_PREFIX).
-
-The gac will be in this directory, under lib/mono/gac/
-
-
-
-When clean, this directory should have no files other than this README and Makefile

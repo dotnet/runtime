@@ -22,6 +22,7 @@ namespace HostApiInvokerApp
             {
                 resolved_sdk_dir = 0,
                 global_json_path = 1,
+                requested_version = 2,
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

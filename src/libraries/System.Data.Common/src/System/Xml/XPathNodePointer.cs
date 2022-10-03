@@ -28,10 +28,10 @@ namespace System.Xml
         {
 #if DEBUG
             int max = 0, tempVal = 0;
-            Array enumValues = Enum.GetValues(typeof(XmlNodeType));
+            XmlNodeType[] enumValues = Enum.GetValues<XmlNodeType>();
             for (int i = 0; i < enumValues.Length; i++)
             {
-                tempVal = (int)enumValues.GetValue(i)!;
+                tempVal = (int)enumValues[i];
                 if (tempVal > max)
                     max = tempVal;
             }
@@ -103,7 +103,7 @@ namespace System.Xml
             return (XPathNodeType)xnt;
         }
 
-        private bool IsNamespaceNode(XmlNodeType nt, string ns) => nt == XmlNodeType.Attribute && ns == StrReservedXmlns;
+        private static bool IsNamespaceNode(XmlNodeType nt, string ns) => nt == XmlNodeType.Attribute && ns == StrReservedXmlns;
 
         //when the constructor is called, the node has to be a valid XPath node at the valid location ( for example, the first
         //text/WS/SWS/CData nodes of a series continuous text-like nodes.
@@ -453,7 +453,7 @@ namespace System.Xml
                 return rowElem;
             }
 
-            _doc.Mapper.GetRegion(_node, out rowElem);
+            DataSetMapper.GetRegion(_node, out rowElem);
             return rowElem;
         }
 
@@ -504,7 +504,7 @@ namespace System.Xml
             _fOnValue = fOnValue;
         }
 
-        private bool IsFoliated(XmlNode node)
+        private static bool IsFoliated(XmlNode node)
         {
             if (node != null && node is XmlBoundElement)
                 return ((XmlBoundElement)node).IsFoliated;
@@ -693,7 +693,7 @@ namespace System.Xml
             return false;
         }
 
-        private bool IsValidChild(XmlNode parent, XmlNode child)
+        private static bool IsValidChild(XmlNode parent, XmlNode child)
         {
             int xntChildInt = s_xmlNodeType_To_XpathNodeType_Map[(int)(child.NodeType)];
             if (xntChildInt == -1)
@@ -719,7 +719,7 @@ namespace System.Xml
             };
         }
 
-        private bool IsValidChild(XmlNode parent, DataColumn c)
+        private static bool IsValidChild(XmlNode parent, DataColumn c)
         {
             int xntInt = s_xmlNodeType_To_XpathNodeType_Map[(int)(parent.NodeType)];
             Debug.Assert(xntInt != -1);
@@ -1664,7 +1664,7 @@ namespace System.Xml
                 Debug.Assert(!Convert.IsDBNull(row[_column, rowVersion]));
 
                 // If we are on the Text column, we should always have _fOnValue == true
-                Debug.Assert((_column.ColumnMapping == MappingType.SimpleContent) ? (_fOnValue == true) : true);
+                Debug.Assert((_column.ColumnMapping == MappingType.SimpleContent) ? _fOnValue : true);
             }
             if (_column == null)
                 Debug.Assert(!_fOnValue);

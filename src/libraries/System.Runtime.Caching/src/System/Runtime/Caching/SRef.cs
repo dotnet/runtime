@@ -16,10 +16,13 @@ namespace System.Runtime.Caching
         internal SRefMultiple(object[] targets)
         {
         }
+
+#pragma warning disable CA1822
         internal long ApproximateSize => 0;
         internal void Dispose()
         {
         }
+#pragma warning restore CA1822
     }
 
     internal sealed class GCHandleRef<T> : IDisposable

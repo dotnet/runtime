@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_deep_deep_cs
 {
-    internal class Test
+    public class Test
     {
         private static double[] Method(double arg1, float arg2, ref double refarg)
         {
@@ -34,7 +35,8 @@ namespace JitTest
             return ret[0] + ret[1] + ret[2] + ret[3];
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

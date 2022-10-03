@@ -209,7 +209,7 @@ typedef target_mword SgenDescriptor;
 #define SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO 0.33
 
 /*
- * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
+ * Default ratio of memory we want to release in a major collection in relation to the current heap size.
  *
  * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.
  *

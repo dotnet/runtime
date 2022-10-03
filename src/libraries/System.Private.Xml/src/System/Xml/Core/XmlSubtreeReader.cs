@@ -1300,10 +1300,7 @@ namespace System.Xml
             _nsManager.AddNamespace(prefix, ns);
 
             int index = _nsAttrCount++;
-            if (_nsAttributes == null)
-            {
-                _nsAttributes = new NodeData[InitialNamespaceAttributeCount];
-            }
+            _nsAttributes ??= new NodeData[InitialNamespaceAttributeCount];
 
             if (index == _nsAttributes.Length)
             {
@@ -1580,8 +1577,10 @@ namespace System.Xml
             }
         }
 
-        private void CheckBuffer(Array buffer!!, int index, int count)
+        private static void CheckBuffer(Array buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

@@ -695,7 +695,7 @@ ULONG MDInternalRW::GetCountWithTokenKind(     // return hresult
         ulCount = m_pStgdb->m_MiniMd.getCountEvents();
         break;
     case mdtProperty:
-        ulCount = m_pStgdb->m_MiniMd.getCountPropertys();
+        ulCount = m_pStgdb->m_MiniMd.getCountProperties();
         break;
     case mdtModuleRef:
         ulCount = m_pStgdb->m_MiniMd.getCountModuleRefs();
@@ -1144,7 +1144,7 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
             IfFailGo(m_pStgdb->m_MiniMd.GetPropertyMapRecord(ridPropertyMap, &pPropertyMapRec));
             ulStart = m_pStgdb->m_MiniMd.getPropertyListOfPropertyMap(pPropertyMapRec);
             IfFailGo(m_pStgdb->m_MiniMd.getEndPropertyListOfPropertyMap(ridPropertyMap, &ulEnd));
-            ulMax = m_pStgdb->m_MiniMd.getCountPropertys() + 1;
+            ulMax = m_pStgdb->m_MiniMd.getCountProperties() + 1;
             if(ulStart == 0) ulStart = 1;
             if(ulEnd > ulMax) ulEnd = ulMax;
             if(ulStart > ulEnd) ulStart = ulEnd;
@@ -1797,7 +1797,7 @@ ErrExit:
 
 //*****************************************************************************
 // return a pointer which points to meta data's internal string
-// return the the type name in utf8
+// return the type name in utf8
 //*****************************************************************************
 __checkReturn
 HRESULT
@@ -3898,7 +3898,7 @@ BOOL MDInternalRW::IsValidToken(        // True or False.
     case mdtEvent:
         return (rid <= m_pStgdb->m_MiniMd.getCountEvents());
     case mdtProperty:
-        return (rid <= m_pStgdb->m_MiniMd.getCountPropertys());
+        return (rid <= m_pStgdb->m_MiniMd.getCountProperties());
     case mdtModuleRef:
         return (rid <= m_pStgdb->m_MiniMd.getCountModuleRefs());
     case mdtTypeSpec:

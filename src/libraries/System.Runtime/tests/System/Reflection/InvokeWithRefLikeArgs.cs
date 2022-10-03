@@ -17,27 +17,21 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void MethodTakesRefStructAsArg_DoesNotCopyValueBack()
+        public static void MethodTakesRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArg));
 
             object[] args = new object[] { null };
-            mi.Invoke(null, args);
-
-            Assert.Null(args[0]); // no value should have been copied back
+            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, args));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void MethodTakesRefStructAsArgWithDefaultValue_DoesNotCopyValueBack()
+        public static void MethodTakesRefStructAsArgWithDefaultValue_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArgWithDefaultValue));
 
             object[] args = new object[] { Type.Missing };
-            mi.Invoke(null, args);
-
-            Assert.Null(args[0]); // no value should have been copied back
+            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, args));
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
@@ -80,8 +74,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void PropertyIndexerWithRefStructArg_DoesNotCopyValueBack()
+        public static void PropertyIndexerWithRefStructArg_ThrowsNSE()
         {
             PropertyInfo pi = typeof(TestClassWithIndexerWithRefStructArg).GetProperty("Item");
             Assert.NotNull(pi);
@@ -89,12 +82,8 @@ namespace System.Reflection.Tests
             object obj = new TestClassWithIndexerWithRefStructArg();
             object[] args = new object[] { null };
 
-            object retVal = pi.GetValue(obj, args);
-            Assert.Equal(42, retVal);
-            Assert.Null(args[0]); // no value should have been copied back
-
-            pi.SetValue(obj, 42, args);
-            Assert.Null(args[0]); // no value should have been copied back
+            Assert.Throws<NotSupportedException>(() => pi.GetValue(obj, args));
+            Assert.Throws<NotSupportedException>(() => pi.SetValue(obj, 42, args));
         }
 
         private sealed class TestClass

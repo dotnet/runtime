@@ -13,6 +13,8 @@
 /* both for DLL and LIB callbacks, so no need to protect this variable. */
 static MonoWin32TLSCallbackType mono_win32_tls_callback_type = MONO_WIN32_TLS_CALLBACK_TYPE_NONE;
 
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
+
 /* NOTE, this function needs to be in this source file to make sure linker */
 /* resolve this symbol from mini-windows.c, picking up callback and */
 /* included it in TLS Directory PE header. Function makes sure we only activate */
@@ -32,6 +34,8 @@ mono_win32_handle_tls_callback_type (MonoWin32TLSCallbackType callback_type)
 
 	return TRUE;
 }
+
+MONO_RESTORE_WARNING
 
 VOID NTAPI mono_win32_tls_callback (PVOID module_handle, DWORD reason, PVOID reserved);
 

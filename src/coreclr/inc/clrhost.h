@@ -69,7 +69,7 @@ HANDLE ClrGetProcessExecutableHeap();
 extern int RFS_HashStack();
 #endif
 
-// Critical section support for CLR DLLs other than the the EE.
+// Critical section support for CLR DLLs other than the EE.
 // Include the header defining each Crst type and its corresponding level (relative rank). This is
 // auto-generated from a tool that takes a high-level description of each Crst type and its dependencies.
 #include "crsttypes.h"

@@ -32,6 +32,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+namespace Test_GCOverReporting_cs
+{
 public struct MB8
 {
     public object foo;
@@ -106,4 +108,5 @@ public class Repro
         DoTest();
         return 100;
     }
+}
 }

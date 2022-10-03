@@ -11,3 +11,15 @@ public partial class LazyMath
         return c;
     }
 }
+
+namespace DebuggerTests
+{
+    public class ClassToCheckFieldValue
+    {
+        public int valueToCheck;
+        public ClassToCheckFieldValue()
+        {
+            valueToCheck = 20;
+        }
+    }
+}

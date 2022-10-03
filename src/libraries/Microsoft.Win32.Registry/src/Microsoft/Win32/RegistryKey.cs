@@ -323,8 +323,10 @@ namespace Microsoft.Win32
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName!!, RegistryView view)
+        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
+            ArgumentNullException.ThrowIfNull(machineName);
+
             ValidateKeyView(view);
 
             return OpenRemoteBaseKeyCore(hKey, machineName, view);
@@ -440,8 +442,10 @@ namespace Microsoft.Win32
             return FromHandle(handle, RegistryView.Default);
         }
 
-        public static RegistryKey FromHandle(SafeRegistryHandle handle!!, RegistryView view)
+        public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
             ValidateKeyView(view);
 
             return new RegistryKey(handle, writable: true, view: view);
@@ -505,11 +509,13 @@ namespace Microsoft.Win32
         /// <param name="name">Name of value to retrieve.</param>
         /// <param name="defaultValue">Value to return if <i>name</i> doesn't exist.</param>
         /// <returns>The data associated with the value.</returns>
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public object? GetValue(string? name, object? defaultValue)
         {
             return InternalGetValue(name, defaultValue, false);
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public object? GetValue(string? name, object? defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
@@ -520,6 +526,7 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand);
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private object? InternalGetValue(string? name, object? defaultValue, bool doNotExpand)
         {
             EnsureNotDisposed();
@@ -549,8 +556,10 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public void SetValue(string? name, object value!!, RegistryValueKind valueKind)
+        public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (name != null && name.Length > MaxValueLength)
             {
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
@@ -573,7 +582,7 @@ namespace Microsoft.Win32
             SetValueCore(name, value, valueKind);
         }
 
-        private RegistryValueKind CalculateValueKind(object value)
+        private static RegistryValueKind CalculateValueKind(object value)
         {
             // This logic matches what used to be in SetValue(string name, object value) in the v1.0 and v1.1 days.
             // Even though we could add detection for an int64 in here, we want to maintain compatibility with the
@@ -708,8 +717,10 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void ValidateKeyName(string name!!)
+        private static void ValidateKeyName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             int nextSlash = name.IndexOf('\\');
             int current = 0;
             while (nextSlash >= 0)
@@ -756,7 +767,7 @@ namespace Microsoft.Win32
         {
             if (0 != (rights & ~RegistryRights.FullControl))
             {
-                // We need to throw SecurityException here for compatiblity reason,
+                // We need to throw SecurityException here for compatibility reason,
                 // although UnauthorizedAccessException will make more sense.
                 throw new SecurityException(SR.Security_RegistryPermission);
             }

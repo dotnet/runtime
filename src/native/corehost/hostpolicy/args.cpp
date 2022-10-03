@@ -36,14 +36,14 @@ void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,co
     }
 
     // Environment variable DOTNET_SHARED_STORE
-    (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), tfm);
+    (void) get_env_shared_store_dirs(&args->env_shared_store, get_current_arch_name(), tfm);
 
     // "dotnet.exe" relative shared store folder
     if (host_mode == host_mode_t::muxer)
     {
         args->dotnet_shared_store = own_dir;
         append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
-        append_path(&args->dotnet_shared_store, get_arch());
+        append_path(&args->dotnet_shared_store, get_current_arch_name());
         append_path(&args->dotnet_shared_store, tfm.c_str());
     }
 
@@ -51,7 +51,7 @@ void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,co
     bool multilevel_lookup = multilevel_lookup_enabled();
     if (multilevel_lookup)
     {
-        get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), tfm);
+        get_global_shared_store_dirs(&args->global_shared_stores, get_current_arch_name(), tfm);
     }
 }
 
@@ -114,7 +114,7 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
 
     if (args.managed_application.empty())
     {
-        // Managed app being empty by itself is not a failure. Host may be initialized from a config file. 
+        // Managed app being empty by itself is not a failure. Host may be initialized from a config file.
         assert(args.host_mode != host_mode_t::apphost);
         return true;
     }

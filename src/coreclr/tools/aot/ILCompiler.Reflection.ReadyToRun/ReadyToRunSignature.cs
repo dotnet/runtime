@@ -14,7 +14,7 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// This represents all possible signatures that is 
+    /// This represents all possible signatures that is
     /// </summary>
     public abstract class ReadyToRunSignature
     {
@@ -94,7 +94,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public static ReadyToRunSignature FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset)
         {
             SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
-            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, dummyOptions, r2rReader.GetGlobalMetadata()?.MetadataReader, r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, dummyOptions, r2rReader.GetGlobalMetadata()?.MetadataReader, r2rReader, imageOffset, forFixup: true);
             StringBuilder dummyBuilder = new StringBuilder();
             return decoder.ReadR2RSignature(dummyBuilder);
         }
@@ -301,7 +301,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
             string typeName = EmitString(typeRef.Name);
             string output = "";
-            if (typeRef.ResolutionScope.Kind != HandleKind.AssemblyReference)
+            if ((typeRef.ResolutionScope.Kind != HandleKind.AssemblyReference) && (typeRef.ResolutionScope.Kind != HandleKind.ModuleReference))
             {
                 // Nested type - format enclosing type followed by the nested type
                 return EmitHandleName(typeRef.ResolutionScope, namespaceQualified, owningTypeOverride: null) + "+" + typeName;
@@ -524,6 +524,22 @@ namespace ILCompiler.Reflection.ReadyToRun
         public byte ReadByte()
         {
             return _image[_offset++];
+        }
+
+        public void SkipBytes(uint bytesToSkip)
+        {
+            checked
+            {
+                _offset += (int)bytesToSkip;
+            }
+        }
+
+        public void SkipBytes(int bytesToSkip)
+        {
+            checked
+            {
+                _offset += bytesToSkip;
+            }
         }
 
         /// <summary>
@@ -813,6 +829,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 int moduleIndex = (int)ReadUInt();
                 IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+
                 var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader.MetadataReader, _image, _offset, _outerReader, _contextReader, skipOverrideMetadataReader: true);
                 var result = refAsmDecoder.ParseMethodWithMethodFlags(methodFlags);
                 _offset = refAsmDecoder.Offset;
@@ -1015,8 +1032,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="options">SignatureFormattingOptions for signature formatting</param>
         /// <param name="r2rReader">R2RReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public SignatureDecoder(IAssemblyResolver assemblyResolver, SignatureFormattingOptions options, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset) :
-            base(TextTypeProvider.Singleton, new TextSignatureDecoderContext(assemblyResolver, options), metadataReader, r2rReader, offset)
+        public SignatureDecoder(IAssemblyResolver assemblyResolver, SignatureFormattingOptions options, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset, bool forFixup = false) :
+            base(TextTypeProvider.Singleton, new TextSignatureDecoderContext(assemblyResolver, options), metadataReader, r2rReader, offset, skipOverrideMetadataReader: !forFixup)
         {
         }
 
@@ -1376,14 +1393,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     ParseMethod(builder);
                     builder.Append($" ImplType :");
                     ParseType(builder);
-                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverriden))
+                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverridden))
                     {
                         builder.Append($" ImplMethod :");
                         ParseMethod(builder);
                     }
                     else
                     {
-                        builder.Append("Not Overriden");
+                        builder.Append("Not Overridden");
                     }
 
                     if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
@@ -1437,6 +1454,20 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunFixupKind.PInvokeTarget:
                     ParseMethod(builder);
                     builder.Append(" (PINVOKE_TARGET)");
+                    break;
+
+                case ReadyToRunFixupKind.Check_IL_Body:
+                case ReadyToRunFixupKind.Verify_IL_Body:
+                    uint ilBodyByteBlobSize = ReadUInt();
+                    SkipBytes(ilBodyByteBlobSize);
+                    uint types = ReadUInt();
+                    for (uint i = 0; i < types; i++)
+                        ParseType();
+                    ParseMethod(builder);
+                    if (fixupType == ReadyToRunFixupKind.Check_IL_Body)
+                        builder.Append(" (CHECK_IL_BODY)");
+                    else
+                        builder.Append(" (VERIFY_IL_BODY)");
                     break;
 
                 default:
@@ -1751,6 +1782,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("CHECK_INSTANCE_ANY");
                     break;
 
+                case ReadyToRunHelper.IsInstanceOfException:
+                    builder.Append("SIMPLE_ISINSTANCE_OF");
+                    break;
+
                 case ReadyToRunHelper.GenericGcStaticBase:
                     builder.Append("GENERIC_GC_STATIC_BASE");
                     break;
@@ -1884,7 +1919,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("FLT_ROUND");
                     break;
 
-                // Personality rountines
+                // Personality routines
                 case ReadyToRunHelper.PersonalityRoutine:
                     builder.Append("PERSONALITY_ROUTINE");
                     break;

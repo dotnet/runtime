@@ -699,7 +699,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
@@ -707,7 +706,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
@@ -837,6 +835,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.OSX, "Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)")]
         [Fact]
         public void TooLargeCapacity()
@@ -975,6 +974,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -994,6 +994,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();

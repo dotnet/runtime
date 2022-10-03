@@ -61,7 +61,7 @@ typedef struct _DAC_SLOT_LOCATION
 
 typedef void (*GCEnumCallback)(
     LPVOID          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
     DAC_ARG(DacSlotLocation loc)    // where the reference came from
 );
@@ -211,9 +211,9 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
 virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
                       DWORD           dwRelOffset) = 0;
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
@@ -455,10 +455,10 @@ virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
@@ -707,7 +707,7 @@ struct hdrInfo
     bool                editNcontinue;  // has been compiled in EnC mode
     bool                varargs;        // is this a varargs routine
     bool                profCallbacks;  // does the method have Enter-Leave callbacks
-    bool                genericsContext;// has a reported generic context paramter
+    bool                genericsContext;// has a reported generic context parameter
     bool                genericsContextIsMethodDesc;// reported generic context parameter is methoddesc
     bool                isSpeculativeStackWalk; // is the stackwalk seeded by an untrusted source (e.g., sampling profiler)?
 

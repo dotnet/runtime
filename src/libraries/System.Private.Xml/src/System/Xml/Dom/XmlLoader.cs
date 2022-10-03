@@ -125,10 +125,7 @@ namespace System.Xml
                         // recursively load all children.
                         if (!fEmptyElement)
                         {
-                            if (parent != null)
-                            {
-                                parent.AppendChildForLoad(element, _doc);
-                            }
+                            parent?.AppendChildForLoad(element, _doc);
                             parent = element;
                             continue;
                         }
@@ -315,8 +312,7 @@ namespace System.Xml
 
             XmlUnspecifiedAttribute? defAttr = attr as XmlUnspecifiedAttribute;
             // If user overrides CreateDefaultAttribute, then attr will NOT be a XmlUnspecifiedAttribute instance.
-            if (defAttr != null)
-                defAttr.SetSpecified(false);
+            defAttr?.SetSpecified(false);
 
             return attr;
         }
@@ -735,10 +731,10 @@ namespace System.Xml
             return new XmlParserContext(
                 nt,
                 mgr,
-                (docType == null) ? null : docType.Name,
-                (docType == null) ? null : docType.PublicId,
-                (docType == null) ? null : docType.SystemId,
-                (docType == null) ? null : docType.InternalSubset,
+                docType?.Name,
+                docType?.PublicId,
+                docType?.SystemId,
+                docType?.InternalSubset,
                 baseURI,
                 lang,
                 spaceMode
@@ -863,7 +859,7 @@ namespace System.Xml
             mgr.PopScope();
         }
 
-        private string EntitizeName(string name)
+        private static string EntitizeName(string name)
         {
             return $"&{name};";
         }
@@ -929,7 +925,7 @@ namespace System.Xml
 
 #pragma warning disable 618
         // Creates a XmlValidatingReader suitable for parsing InnerXml strings
-        private XmlReader CreateInnerXmlReader(string xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
+        private static XmlReader CreateInnerXmlReader(string xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
         {
             XmlNodeType contentNT = nt;
             if (contentNT == XmlNodeType.Entity || contentNT == XmlNodeType.EntityReference)

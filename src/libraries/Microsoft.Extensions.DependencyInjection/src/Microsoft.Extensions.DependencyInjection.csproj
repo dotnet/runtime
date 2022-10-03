@@ -2,23 +2,20 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>false</ILEmitBackendSaveAssemblies>
-    <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwaded down.-->
+    <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwarded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
-  
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <ILEmitBackend Condition="'$(TargetFramework)' != 'netstandard2.0'">true</ILEmitBackend>
     <DefineConstants Condition="'$(ILEmitBackend)' == 'true'">$(DefineConstants);IL_EMIT</DefineConstants>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework' and
-                                '$(ILEmitBackendSaveAssemblies)' == 'true'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>  
+                                '$(ILEmitBackendSaveAssemblies)' == 'true'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,17 +34,17 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Include="**\*.cs" />
     <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
-    <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
+    <Compile Condition="'$(ILEmitBackend)' == 'true'" Include="ServiceLookup\ILEmit\*.cs" />
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
     <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
              Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>

@@ -291,17 +291,17 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
         _STRINGIFY(HOST_POLICY_PKG_NAME),
         _STRINGIFY(HOST_POLICY_PKG_VER),
         _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_arch(),
+        get_current_arch_name(),
         entryPointName.c_str());
 }
 
 //
-// Loads and initilizes the hostpolicy.
+// Loads and initializes the hostpolicy.
 //
-// If hostpolicy is already initalized, the library will not be
+// If hostpolicy is already initialized, the library will not be
 // reinitialized.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init)
 {
     assert(init != nullptr);
     std::lock_guard<std::mutex> lock{ g_init_lock };
@@ -654,7 +654,7 @@ namespace
 //      [out] if initialization is successful, populated with a contract for performing operations on hostpolicy
 //
 // Return value:
-//    Success                            - Initialization was succesful
+//    Success                            - Initialization was successful
 //    Success_HostAlreadyInitialized     - Request is compatible with already initialized hostpolicy
 //    Success_DifferentRuntimeProperties - Request has runtime properties that differ from already initialized hostpolicy
 //
@@ -903,7 +903,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actuall root framework, so take that from the g_init.fx_definitions
+    // The RID graph still has to come from the actual root framework, so take that from the g_init.fx_definitions
     // which are the frameworks for the app.
     deps_resolver_t resolver(
         args,
@@ -961,7 +961,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 // By default no callback is registered in which case the errors are written to stderr.
 //
 // Each call to the error writer is sort of like writing a single line (the EOL character is omitted).
-// Multiple calls to the error writer may occure for one failure.
+// Multiple calls to the error writer may occur for one failure.
 //
 SHARED_API corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer)
 {

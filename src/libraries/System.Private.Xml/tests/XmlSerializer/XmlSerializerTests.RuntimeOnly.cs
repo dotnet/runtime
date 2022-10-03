@@ -1737,6 +1737,48 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void SoapEncodedSerialization_IncludeTypes_NullProvider()
+    {
+        var soapImporter = new SoapReflectionImporter();
+        Assert.Throws<ArgumentNullException>(() => soapImporter.IncludeTypes(default(ICustomAttributeProvider)));
+    }
+
+    [Fact]
+    public static void SoapEncodedSerialization_ImportMembersMapping_NullMembers()
+    {
+        var soapImporter = new SoapReflectionImporter();
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members:
+            default(XmlReflectionMember[])));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default,
+            validate: default));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default,
+            validate: default,
+            access: default));
+    }
+
+    [Fact]
     public static void SoapEncodedSerialization_CircularLink()
     {
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(MyCircularLink));
@@ -1971,6 +2013,20 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XmlReflectionMember_NullXmlAttributes()
+    {
+        XmlReflectionMember member = new();
+        Assert.Throws<ArgumentNullException>(() => member.XmlAttributes = null);
+    }
+
+    [Fact]
+    public static void XmlReflectionMember_NullSoapAttributes()
+    {
+        XmlReflectionMember member = new();
+        Assert.Throws<ArgumentNullException>(() => member.SoapAttributes = null);
+    }
+
+    [Fact]
     public static void XmlSerializerVersionAttributeTest()
     {
         XmlSerializerVersionAttribute attr = new XmlSerializerVersionAttribute();
@@ -1998,6 +2054,14 @@ public static partial class XmlSerializerTests
         Assert.Equal("camelText", CodeIdentifier.MakeCamel("Camel Text"));
         Assert.Equal("PascalText", CodeIdentifier.MakePascal("Pascal Text"));
         Assert.Equal("ValidText", CodeIdentifier.MakeValid("Valid  Text!"));
+    }
+
+    [Fact]
+    public static void CodeIdentifierNullArgumentTest()
+    {
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakeValid(default(string)));
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakeCamel(default(string)));
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakePascal(default(string)));
     }
 
     [Fact]

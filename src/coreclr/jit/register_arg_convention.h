@@ -23,6 +23,7 @@ struct InitVarDscInfo
     // handles arguments.
     regMaskTP fltArgSkippedRegMask;
     bool      anyFloatStackArgs;
+    bool      hasSplitParam;
 #endif // TARGET_ARM
 
 #if FEATURE_FASTTAILCALL
@@ -45,6 +46,7 @@ public:
 #ifdef TARGET_ARM
         fltArgSkippedRegMask = RBM_NONE;
         anyFloatStackArgs    = false;
+        hasSplitParam        = false;
 #endif // TARGET_ARM
 
 #if FEATURE_FASTTAILCALL

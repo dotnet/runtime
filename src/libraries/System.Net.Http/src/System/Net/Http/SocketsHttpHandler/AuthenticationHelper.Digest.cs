@@ -263,7 +263,7 @@ namespace System.Net.Http
                     key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) || key.Equals(Qop, StringComparison.OrdinalIgnoreCase);
             }
 
-            private string? GetNextKey(string data, int currentIndex, out int parsedIndex)
+            private static string? GetNextKey(string data, int currentIndex, out int parsedIndex)
             {
                 // Skip leading space or tab.
                 while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
@@ -318,7 +318,7 @@ namespace System.Net.Http
                 return data.Substring(start, length);
             }
 
-            private string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
+            private static string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
             {
                 Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 

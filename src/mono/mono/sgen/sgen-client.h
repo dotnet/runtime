@@ -250,7 +250,7 @@ gsize *sgen_client_get_weak_bitmap (GCVTable vt, int *nbits);
 /*
  * Scheduled @cv to be invoked later in the background.
  *
- * This function is idepotent WRT background execution. Meaning that calling it multiple times with the same funciton pointer before any bg execution happens will only call @cb once.
+ * This function is idepotent WRT background execution. Meaning that calling it multiple times with the same function pointer before any bg execution happens will only call @cb once.
  */
 void sgen_client_schedule_background_job (void (*cb)(void));
 

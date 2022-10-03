@@ -65,9 +65,9 @@ namespace System.Diagnostics
 
             EnsureState(State.HaveId);
 
-            // Check if we know the process has exited. This avoids us targetting another
+            // Check if we know the process has exited. This avoids us targeting another
             // process that has a recycled PID. This only checks our internal state, the Kill call below
-            // activly checks if the process is still alive.
+            // actively checks if the process is still alive.
             if (GetHasExited(refresh: false))
             {
                 return;
@@ -121,7 +121,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            IReadOnlyList<Process> children = GetChildProcesses();
+            List<Process> children = GetChildProcesses();
 
             int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
             if (killResult != 0)
@@ -142,10 +142,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Discards any information about the associated process.</summary>
-        private void RefreshCore()
-        {
-            // Nop.  No additional state to reset.
-        }
+        partial void RefreshCore();
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
         private void CloseCore()
@@ -249,7 +246,7 @@ namespace System.Diagnostics
         /// should be temporarily boosted by the operating system when the main window
         /// has focus.
         /// </summary>
-        private bool PriorityBoostEnabledCore
+        private static bool PriorityBoostEnabledCore
         {
             get { return false; } //Nop
             set { } // Nop
@@ -766,10 +763,12 @@ namespace System.Diagnostics
                 return false;
             }
 
-            Interop.Sys.Permissions permissions = ((Interop.Sys.Permissions)fileinfo.Mode) & Interop.Sys.Permissions.S_IXUGO;
+            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
 
             // Avoid checking user/group when permission.
-            if (permissions == Interop.Sys.Permissions.S_IXUGO)
+            if (permissions == AllExecute)
             {
                 return true;
             }
@@ -788,11 +787,11 @@ namespace System.Diagnostics
             if (euid == fileinfo.Uid)
             {
                 // We own the file.
-                return (permissions & Interop.Sys.Permissions.S_IXUSR) != 0;
+                return (permissions & UnixFileMode.UserExecute) != 0;
             }
 
-            bool groupCanExecute = (permissions & Interop.Sys.Permissions.S_IXGRP) != 0;
-            bool otherCanExecute = (permissions & Interop.Sys.Permissions.S_IXOTH) != 0;
+            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
+            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
 
             // Avoid group check when group and other have same permissions.
             if (groupCanExecute == otherCanExecute)
@@ -1055,13 +1054,13 @@ namespace System.Diagnostics
 
         public IntPtr MainWindowHandle => IntPtr.Zero;
 
-        private bool CloseMainWindowCore() => false;
+        private static bool CloseMainWindowCore() => false;
 
         public string MainWindowTitle => string.Empty;
 
         public bool Responding => true;
 
-        private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
+        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
         private static unsafe void EnsureInitialized()
         {

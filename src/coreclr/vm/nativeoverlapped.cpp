@@ -28,7 +28,7 @@
 FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, DWORD* numBytes)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
 #ifndef TARGET_UNIX
     Thread *pThread = GetThread();
@@ -92,10 +92,9 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
 {
     FCALL_CONTRACT;
 
-    LPOVERLAPPED lpOverlapped;
-
-    OVERLAPPEDDATAREF   overlapped   = ObjectToOVERLAPPEDDATAREF(overlappedUNSAFE);
-    OBJECTREF       userObject = overlapped->m_userObject;
+    LPOVERLAPPED lpOverlapped       = NULL;
+    OVERLAPPEDDATAREF   overlapped  = ObjectToOVERLAPPEDDATAREF(overlappedUNSAFE);
+    OBJECTREF           userObject  = overlapped->m_userObject;
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_NONE, overlapped, userObject);
 

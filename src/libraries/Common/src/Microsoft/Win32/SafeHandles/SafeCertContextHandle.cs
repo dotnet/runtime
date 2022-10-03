@@ -1,24 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // some projects have types deriving from this
+
 using System;
 using System.Diagnostics;
 using static Interop.Crypt32;
 
 namespace Microsoft.Win32.SafeHandles
 {
-#nullable disable
     /// <summary>
     /// SafeHandle for the CERT_CONTEXT structure defined by crypt32.
     /// </summary>
     internal class SafeCertContextHandle : SafeCrypt32Handle<SafeCertContextHandle>
     {
-        private SafeCertContextHandle _parent;
+        private SafeCertContextHandle? _parent;
 
         public SafeCertContextHandle() { }
 
-        public SafeCertContextHandle(SafeCertContextHandle parent!!)
+        public SafeCertContextHandle(SafeCertContextHandle parent)
         {
+            ArgumentNullException.ThrowIfNull(parent);
+
             Debug.Assert(!parent.IsInvalid);
             Debug.Assert(!parent.IsClosed);
 
@@ -28,8 +31,6 @@ namespace Microsoft.Win32.SafeHandles
 
             SetHandle(_parent.handle);
         }
-
-        internal new void SetHandle(IntPtr handle) => base.SetHandle(handle);
 
         protected override bool ReleaseHandle()
         {

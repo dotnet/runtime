@@ -172,7 +172,7 @@ HRESULT RegMeta::_SaveToStream(         // S_OK or error.
     HRESULT     hr=S_OK;
 
     IfFailGo(PreSave());
-    IfFailGo( m_pStgdb->SaveToStream(pIStream, m_ReorderingOptions, m_pCorProfileData) );
+    IfFailGo( m_pStgdb->SaveToStream(pIStream, m_ReorderingOptions) );
 
     // Reset m_bSaveOptimized, this is to handle the incremental and ENC
     // scenerios where one may do multiple saves.
@@ -281,7 +281,7 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
 
     IfFailGo(PreSave());
 
-    hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions, m_pCorProfileData);
+    hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions);
 
 ErrExit:
     STOP_MD_PERF(GetSaveSize);
@@ -362,7 +362,7 @@ HRESULT RegMeta::UnmarkAll()
                       IsTdNestedFamORAssem(pRec->GetFlags()) )
             {
                 // This nested class would potentially be visible outside, either
-                // directly or through inheritence.  If the enclosing class is
+                // directly or through inheritance.  If the enclosing class is
                 // marked, this nested class must be marked.
                 //
                 IfFailGo(m_pStgdb->m_MiniMd.FindNestedClassHelper(TokenFromRid(i, mdtTypeDef), &ulEncloser));
@@ -792,7 +792,7 @@ HRESULT RegMeta::PreSave()              // Return code.
     m_bSaveOptimized = true;
 
     // call get save size to trigger the PreSaveXXX on MetaModelRW class.
-    IfFailGo(m_pStgdb->m_MiniMd.PreSave(m_ReorderingOptions, m_pCorProfileData));
+    IfFailGo(m_pStgdb->m_MiniMd.PreSave(m_ReorderingOptions));
 
 ErrExit:
     m_bRemap =  bRemapOld;
@@ -890,7 +890,7 @@ HRESULT RegMeta::RefToDefOptimization()
             }
 
             // In the case of global function, we have tkParent as m_tdModule.
-            // We will always do the optmization.
+            // We will always do the optimization.
             if (TypeFromToken(tkParent) == mdtTypeRef)
             {
                 // If we're preserving local typerefs, skip this token
@@ -920,7 +920,7 @@ HRESULT RegMeta::RefToDefOptimization()
 
             // Look for a member with the same def.  Might not be found if it is
             // inherited from a base class.
-            //<TODO>@future: this should support inheritence checking.
+            //<TODO>@future: this should support inheritance checking.
             // Look for a member with the same name and signature.</TODO>
             hr = ImportHelper::FindMember(pMiniMd, tkParent, szName, pvSig, cbSig, &mfdef);
             if (hr != S_OK)
@@ -1076,26 +1076,25 @@ HRESULT RegMeta::_DefineMethodSemantics(    // S_OK or error.
     USHORT      usAttr,                     // [IN] CorMethodSemanticsAttr.
     mdMethodDef md,                         // [IN] Method.
     mdToken     tkAssoc,                    // [IN] Association.
-    BOOL        bClear)                     // [IN] Specifies whether to delete the exisiting entries.
+    BOOL        bClear)                     // [IN] Specifies whether to delete the existing entries.
 {
-    HRESULT      hr = S_OK;
-    MethodSemanticsRec *pRecord = 0;
-    MethodSemanticsRec *pRecord1;           // Use this to recycle a MethodSemantics record.
-    RID         iRecord;
-    HENUMInternal hEnum;
-
-
+    HRESULT             hr          = S_OK;
+    MethodSemanticsRec *pRecord     = NULL;
+    MethodSemanticsRec *pRecord1    = NULL; // Use this to recycle a MethodSemantics record.
+    RID                 iRecord     = 0;
 
     _ASSERTE(TypeFromToken(md) == mdtMethodDef || IsNilToken(md));
     _ASSERTE(RidFromToken(tkAssoc));
+
+    HENUMInternal hEnum;
     HENUMInternal::ZeroEnum(&hEnum);
 
     // Clear all matching records by setting association to a Nil token.
     if (bClear)
     {
-        RID         i;
+        IfFailGo( m_pStgdb->m_MiniMd.FindMethodSemanticsHelper(tkAssoc, &hEnum));
 
-        IfFailGo( m_pStgdb->m_MiniMd.FindMethodSemanticsHelper(tkAssoc, &hEnum) );
+        RID i;
         while (HENUMInternal::EnumNext(&hEnum, (mdToken *)&i))
         {
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodSemanticsRecord(i, &pRecord1));
@@ -1142,7 +1141,7 @@ ErrExit:
 // Turn the specified internal flags on.
 //*******************************************************************************
 HRESULT RegMeta::_TurnInternalFlagsOn(  // S_OK or error.
-    mdToken     tkObj,                  // [IN] Target object whose internal flags are targetted.
+    mdToken     tkObj,                  // [IN] Target object whose internal flags are targeted.
     DWORD       flags)                  // [IN] Specifies flags to be turned on.
 {
     HRESULT     hr;
@@ -1243,7 +1242,7 @@ HRESULT RegMeta::_SetImplements(        // S_OK or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef && rTk);
     _ASSERTE(!m_bSaveOptimized && "Cannot change records after PreSave() and before Save().");
 
-    // Clear all exising InterfaceImpl records by setting the parent to Nil.
+    // Clear all existing InterfaceImpl records by setting the parent to Nil.
     if (bClear)
     {
         IfFailGo(m_pStgdb->m_MiniMd.GetInterfaceImplsForTypeDef(
@@ -1581,10 +1580,10 @@ HRESULT RegMeta::_DefineSetConstant(    // Return hresult.
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
-        ConstantRec *pConstRec = 0;
-        RID         iConstRec;
-        ULONG       cbBlob;
-        ULONG       ulValue = 0;
+        ConstantRec* pConstRec  = 0;
+        RID          iConstRec  = 0;
+        ULONG        ulValue    = 0;
+        ULONG        cbBlob;
 
         if (bSearch)
         {

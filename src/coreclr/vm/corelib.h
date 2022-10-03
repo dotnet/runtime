@@ -74,6 +74,8 @@
 // See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
 // https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
+// The FOR_ILLINK define is set when this file is being processed for the IL linker.
+//
 #ifndef BEGIN_ILLINK_FEATURE_SWITCH
 #define BEGIN_ILLINK_FEATURE_SWITCH(featureName, featureValue, featureDefault)
 #endif
@@ -113,38 +115,11 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
-DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
-DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
-DEFINE_CLASS(IMAGE_FILE_MACHINE,        Reflection,         ImageFileMachine)
-
-DEFINE_CLASS_U(Reflection,             AssemblyName,           AssemblyNameBaseObject)
-DEFINE_FIELD_U(_name,                      AssemblyNameBaseObject, _name)
-DEFINE_FIELD_U(_publicKey,                 AssemblyNameBaseObject, _publicKey)
-DEFINE_FIELD_U(_publicKeyToken,            AssemblyNameBaseObject, _publicKeyToken)
-DEFINE_FIELD_U(_cultureInfo,               AssemblyNameBaseObject, _cultureInfo)
-DEFINE_FIELD_U(_codeBase,                  AssemblyNameBaseObject, _codeBase)
-DEFINE_FIELD_U(_version,                   AssemblyNameBaseObject, _version)
-DEFINE_FIELD_U(_hashAlgorithm,             AssemblyNameBaseObject, _hashAlgorithm)
-DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
-DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV)
-DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_PtrNativeAssemblyNameParts)
+DEFINE_METHOD(ASSEMBLY_NAME,        PARSE_AS_ASSEMBLYSPEC,  ParseAsAssemblySpec,       SM_PtrCharPtrVoid)
 
-DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
-DEFINE_FIELD_U(_Major,                     VersionBaseObject,    m_Major)
-DEFINE_FIELD_U(_Minor,                     VersionBaseObject,    m_Minor)
-DEFINE_FIELD_U(_Build,                     VersionBaseObject,    m_Build)
-DEFINE_FIELD_U(_Revision,                  VersionBaseObject,    m_Revision)
-DEFINE_CLASS(VERSION,               System,                 Version)
-DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
-DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
-DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
-
-DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
-
-DEFINE_CLASS(ASSEMBLY_NAME_FLAGS,   Reflection,             AssemblyNameFlags)
-
+DEFINE_CLASS(NATIVE_ASSEMBLY_NAME_PARTS,   Reflection,             NativeAssemblyNameParts)
 // ASSEMBLYBASE is System.ReflectionAssembly while ASSEMBLY is System.Reflection.RuntimeAssembly
 // Maybe we should reverse these two names
 DEFINE_CLASS(ASSEMBLYBASE,          Reflection,             Assembly)
@@ -280,9 +255,7 @@ DEFINE_FIELD_U(_parent,           CultureInfoBaseObject,  _parent)
 DEFINE_FIELD_U(_isReadOnly,        CultureInfoBaseObject,  _isReadOnly)
 DEFINE_FIELD_U(_isInherited,      CultureInfoBaseObject,  _isInherited)
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
-DEFINE_METHOD(CULTURE_INFO,         STR_CTOR,               .ctor,                      IM_Str_RetVoid)
 DEFINE_FIELD(CULTURE_INFO,          CURRENT_CULTURE,        s_userDefaultCulture)
-DEFINE_PROPERTY(CULTURE_INFO,       NAME,                   Name,                       Str)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
@@ -311,6 +284,9 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
+DEFINE_CLASS(INT128,               System,                 Int128)
+DEFINE_CLASS(UINT128,              System,                 UInt128)
+
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
@@ -329,7 +305,7 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
-DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_RetArrStr)
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
@@ -356,11 +332,12 @@ DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
+DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+// Following Exception members are only used when FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,               IM_RetStr)
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
-DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
-DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefUInt_RetStr)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -512,6 +489,8 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
+DEFINE_CLASS(METHOD_INVOKER,        Reflection,             MethodInvoker)
+DEFINE_CLASS(CONSTRUCTOR_INVOKER,   Reflection,             ConstructorInvoker)
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -598,10 +577,11 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
-DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
+DEFINE_CLASS(BYREFERENCE,           System,                 ByReference)
 DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
-DEFINE_METHOD(BYREFERENCE,          GET_VALUE,              get_Value, NoSig)
+DEFINE_FIELD(BYREFERENCE,           VALUE,                  Value)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
+DEFINE_METHOD(SPAN,                 CTOR_PTR_INT,           .ctor, IM_VoidPtr_Int_RetVoid)
 DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
 DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, IM_Int_RetReadOnlyRefT)
@@ -812,6 +792,7 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
+DEFINE_FIELD_U(_ctorStackTrace,            SafeHandle,            m_ctorStackTrace)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
 DEFINE_FIELD_U(_state,                     SafeHandle,            m_state)
 DEFINE_FIELD_U(_ownsHandle,                SafeHandle,            m_ownsHandle)
@@ -928,9 +909,6 @@ DEFINE_METHOD(TPWAITORTIMER_HELPER,             PERFORM_WAITORTIMER_CALLBACK,   
 DEFINE_CLASS(TP_WAIT_CALLBACK,         Threading,              _ThreadPoolWaitCallback)
 DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               PerformWaitCallback,                   SM_RetBool)
 
-DEFINE_CLASS(TIMER_QUEUE,           Threading,                TimerQueue)
-DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCallback,   SM_Int_RetVoid)
-
 DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
 DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
 DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
@@ -956,7 +934,7 @@ DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, THROW, Throw, IM_RetVoid)
 
 DEFINE_CLASS_U(Loader,             AssemblyLoadContext,           AssemblyLoadContextBaseObject)
 DEFINE_FIELD_U(_unloadLock,                 AssemblyLoadContextBaseObject, _unloadLock)
-DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _resovlingUnmanagedDll)
+DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _resolvingUnmanagedDll)
 DEFINE_FIELD_U(_resolving,                  AssemblyLoadContextBaseObject, _resolving)
 DEFINE_FIELD_U(_unloading,                  AssemblyLoadContextBaseObject, _unloading)
 DEFINE_FIELD_U(_name,                       AssemblyLoadContextBaseObject, _name)
@@ -1062,7 +1040,6 @@ DEFINE_METHOD(CSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,    
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_FIXED_TO_NATIVE,ConvertFixedToNative,       SM_Int_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_FIXED_TO_MANAGED,ConvertFixedToManaged,     SM_IntPtr_Int_RetStr)
-DEFINE_METHOD(CSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 DEFINE_CLASS(FIXEDWSTRMARSHALER,   StubHelpers,            FixedWSTRMarshaler)
 DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_Int_RetVoid)
@@ -1210,10 +1187,20 @@ DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICast
 
 #endif // FEATURE_ICASTABLE
 
-DEFINE_CLASS(CUTF8MARSHALER, StubHelpers, UTF8Marshaler)
-DEFINE_METHOD(CUTF8MARSHALER, CONVERT_TO_NATIVE, ConvertToNative, SM_Int_Str_IntPtr_RetIntPtr)
-DEFINE_METHOD(CUTF8MARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, SM_IntPtr_RetStr)
-DEFINE_METHOD(CUTF8MARSHALER, CLEAR_NATIVE, ClearNative, SM_IntPtr_RetVoid)
+DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
+
+// The generator for the linker XML doesn't understand inner classes so generation
+// needs to skip the following type.
+// See https://github.com/dotnet/runtime/issues/71847
+#ifndef FOR_ILLINK
+DEFINE_CLASS(UTF8STRINGMARSHALLER_IN, Marshalling, Utf8StringMarshaller+ManagedToUnmanagedIn)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfByte_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
@@ -1236,13 +1223,6 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
-DEFINE_CLASS_U(CompilerServices,           GCHeapHash,                      GCHeapHashObject)
-DEFINE_FIELD_U(_data,                      GCHeapHashObject,                _data)
-DEFINE_FIELD_U(_count,                     GCHeapHashObject,                _count)
-DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _deletedCount)
-
-DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
-
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
@@ -1253,23 +1233,8 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
-DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
-DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
-
-DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
-DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)
-DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)
-
-DEFINE_CLASS(LAHASHDEPENDENTHASHTRACKER, CompilerServices, LAHashDependentHashTracker)
-#if FOR_ILLINK
-DEFINE_METHOD(LAHASHDEPENDENTHASHTRACKER,  CTOR,                            .ctor,        IM_RetVoid)
-#endif
-
-DEFINE_CLASS_U(CompilerServices,           LAHashKeyToTrackers,             LAHashKeyToTrackersObject)
-DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _trackerOrTrackerSet)
-DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
-
-DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
+DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_IntPtr_PtrVoid_RetRefObj)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

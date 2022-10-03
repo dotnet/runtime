@@ -6,6 +6,7 @@ using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using System.IO;
 
 namespace XPathTests.FunctionalTests.Expressions
 {
@@ -99,6 +100,18 @@ namespace XPathTests.FunctionalTests.Expressions
 
             Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
                 startingNodePath: startingNodePath);
+        }
+
+        [Fact]
+        public static void XPathDocumentNullStream()
+        {
+            Assert.Throws<ArgumentNullException>(() => new XPathDocument(default(Stream)));
+        }
+
+        [Fact]
+        public static void XPathDocumentNullTextReader()
+        {
+            Assert.Throws<ArgumentNullException>(() => new XPathDocument(default(TextReader)));
         }
     }
 }

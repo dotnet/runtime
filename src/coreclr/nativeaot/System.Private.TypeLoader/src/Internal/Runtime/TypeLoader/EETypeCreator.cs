@@ -40,6 +40,11 @@ namespace Internal.Runtime.TypeLoader
             return rtth.ToEETypePtr()->NumVtableSlots;
         }
 
+        public static unsafe TypeManagerHandle GetTypeManager(this RuntimeTypeHandle rtth)
+        {
+            return rtth.ToEETypePtr()->TypeManager;
+        }
+
         public static unsafe IntPtr GetDictionary(this RuntimeTypeHandle rtth)
         {
             return EETypeCreator.GetDictionary(rtth.ToEETypePtr());
@@ -122,14 +127,14 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public static IntPtr AllocateMemory(int cbBytes)
+        public static unsafe IntPtr AllocateMemory(int cbBytes)
         {
-            return Marshal.AllocHGlobal(new IntPtr(cbBytes));
+            return (IntPtr)NativeMemory.Alloc((nuint)cbBytes);
         }
 
-        public static void FreeMemory(IntPtr memoryPtrToFree)
+        public static unsafe void FreeMemory(IntPtr memoryPtrToFree)
         {
-            Marshal.FreeHGlobal(memoryPtrToFree);
+            NativeMemory.Free((void*)memoryPtrToFree);
         }
     }
 
@@ -148,6 +153,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr nonGcStaticData = IntPtr.Zero;
             IntPtr genericComposition = IntPtr.Zero;
+            IntPtr threadStaticIndex = IntPtr.Zero;
 
             try
             {
@@ -221,6 +227,7 @@ namespace Internal.Runtime.TypeLoader
                     isByRefLike = false;
                     componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
+                    typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                 }
                 else
                 {
@@ -251,6 +258,8 @@ namespace Internal.Runtime.TypeLoader
                         }
                         Debug.Assert(i == state.GenericVarianceFlags.Length);
                     }
+
+                    typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                 }
 
                 flags |= (ushort)EETypeFlags.IsDynamicTypeFlag;
@@ -440,9 +449,9 @@ namespace Internal.Runtime.TypeLoader
 
                         // The TestGCDescsForEquality helper will compare 2 GCDescs for equality, 4 bytes at a time (GCDesc contents treated as integers), and will read the
                         // GCDesc data in *reverse* order for instance GCDescs (subtracts 4 from the pointer values at each iteration).
-                        //    - For the first GCDesc, we use (pEEType - 4) to point to the first 4-byte integer directly preceeding the MethodTable
-                        //    - For the second GCDesc, given that the state.NonUniversalInstanceGCDesc already points to the first byte preceeding the template MethodTable, we
-                        //      subtract 3 to point to the first 4-byte integer directly preceeding the template MethodTable
+                        //    - For the first GCDesc, we use (pEEType - 4) to point to the first 4-byte integer directly preceding the MethodTable
+                        //    - For the second GCDesc, given that the state.NonUniversalInstanceGCDesc already points to the first byte preceding the template MethodTable, we
+                        //      subtract 3 to point to the first 4-byte integer directly preceding the template MethodTable
                         TestGCDescsForEquality(new IntPtr((byte*)pEEType - 4), state.NonUniversalInstanceGCDesc - 3, cbGCDesc, true);
                     }
 #endif
@@ -453,9 +462,6 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
-#if !PROJECTN
-                    pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
-#endif
                     pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type
@@ -585,14 +591,25 @@ namespace Internal.Runtime.TypeLoader
                     DispatchMap* pDynamicDispatchMap = (DispatchMap*)dynamicDispatchMapPtr;
                     pDynamicDispatchMap->NumStandardEntries = pTemplateDispatchMap->NumStandardEntries;
                     pDynamicDispatchMap->NumDefaultEntries = pTemplateDispatchMap->NumDefaultEntries;
+                    pDynamicDispatchMap->NumStandardStaticEntries = pTemplateDispatchMap->NumStandardStaticEntries;
+                    pDynamicDispatchMap->NumDefaultStaticEntries = pTemplateDispatchMap->NumDefaultStaticEntries;
 
-                    for (int i = 0; i < pTemplateDispatchMap->NumStandardEntries + pTemplateDispatchMap->NumDefaultEntries; i++)
+                    uint numInstanceEntries = pTemplateDispatchMap->NumStandardEntries + pTemplateDispatchMap->NumDefaultEntries;
+                    for (uint i = 0; i < numInstanceEntries + pTemplateDispatchMap->NumStandardStaticEntries + pTemplateDispatchMap->NumDefaultStaticEntries; i++)
                     {
-                        DispatchMap.DispatchMapEntry* pTemplateEntry = (*pTemplateDispatchMap)[i];
-                        DispatchMap.DispatchMapEntry* pDynamicEntry = (*pDynamicDispatchMap)[i];
+                        DispatchMap.DispatchMapEntry* pTemplateEntry = i < numInstanceEntries ?
+                            pTemplateDispatchMap->GetEntry((int)i) :
+                            pTemplateDispatchMap->GetStaticEntry((int)(i - numInstanceEntries));
+                        DispatchMap.DispatchMapEntry* pDynamicEntry = i < numInstanceEntries ?
+                            pDynamicDispatchMap->GetEntry((int)i) :
+                            pDynamicDispatchMap->GetStaticEntry((int)(i - numInstanceEntries));
 
                         pDynamicEntry->_usInterfaceIndex = pTemplateEntry->_usInterfaceIndex;
                         pDynamicEntry->_usInterfaceMethodSlot = pTemplateEntry->_usInterfaceMethodSlot;
+                        if (i >= numInstanceEntries)
+                        {
+                            ((DispatchMap.StaticDispatchMapEntry*)pDynamicEntry)->_usContextMapSource = ((DispatchMap.StaticDispatchMapEntry*)pTemplateEntry)->_usContextMapSource;
+                        }
                         if (pTemplateEntry->_usImplMethodSlot < pTemplateEEType->NumVtableSlots)
                         {
                             pDynamicEntry->_usImplMethodSlot = (ushort)state.VTableSlotsMapping.GetVTableSlotInTargetType(pTemplateEntry->_usImplMethodSlot);
@@ -630,22 +647,11 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        if (state.GcStaticEEType != IntPtr.Zero)
-                        {
-                            // CoreRT Abi uses managed heap-allocated GC statics
-                            object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
-
-                            pEEType->DynamicGcStaticsData = gcStaticData;
-                        }
-                        else
-                        {
-                            int cbStaticGCDesc;
-                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                        int cbStaticGCDesc;
+                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
 #if GENERICS_FORCE_USG
-                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+                        TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
-                        }
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -677,8 +683,21 @@ namespace Internal.Runtime.TypeLoader
 
                 if (!isGenericEETypeDef && state.ThreadDataSize != 0)
                 {
-                    // TODO: thread statics
-                    throw new NotSupportedException();
+                    state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue(pEEType->TypeManager);
+
+                    threadStaticIndex = MemoryHelpers.AllocateMemory(IntPtr.Size * 2);
+                    *(IntPtr*)threadStaticIndex = pEEType->PointerToTypeManager;
+                    *(((IntPtr*)threadStaticIndex) + 1) = (IntPtr)state.ThreadStaticOffset;
+                    pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
+                }
+
+                if (!isGenericEETypeDef && state.GcDataSize != 0)
+                {
+                    // Statics are allocated on GC heap
+                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                    pEEType->DynamicGcStaticsData = gcStaticData;
                 }
 
                 if (state.Dictionary != null)
@@ -714,6 +733,8 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(nonGcStaticData);
                     if (writableDataPtr != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(writableDataPtr);
+                    if (threadStaticIndex != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(threadStaticIndex);
                 }
             }
         }
@@ -943,7 +964,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                         else
                         {
-                            seriesSize = seriesSize - size;
+                            seriesSize -= size;
                             *ptr-- = (void*)seriesOffset;
                             *ptr-- = (void*)seriesSize;
                         }

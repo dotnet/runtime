@@ -2,102 +2,118 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static bool WriteCore<TValue>(
-            JsonConverter jsonConverter,
+        /// <summary>
+        /// Sync, strongly typed root value serialization helper.
+        /// </summary>
+        private static void WriteCore<TValue>(
             Utf8JsonWriter writer,
             in TValue value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
+            JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            Debug.Assert(writer != null);
-
-            bool success;
-
-            if (jsonConverter is JsonConverter<TValue> converter)
+            if (jsonTypeInfo.CanUseSerializeHandler)
             {
-                // Call the strongly-typed WriteCore that will not box structs.
-                success = converter.WriteCore(writer, value, options, ref state);
+                // Short-circuit calls into SerializeHandler, if supported.
+                // Even though this is already handled by JsonMetadataServicesConverter,
+                // we avoid instantiating a WriteStack and a couple of additional virtual calls.
+
+                Debug.Assert(jsonTypeInfo.SerializeHandler != null);
+                Debug.Assert(jsonTypeInfo.Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(jsonTypeInfo.Converter is JsonMetadataServicesConverter<TValue>);
+
+                jsonTypeInfo.SerializeHandler(writer, value);
             }
             else
             {
-                // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
-                success = jsonConverter.WriteCoreAsObject(writer, value, options, ref state);
+                WriteStack state = default;
+                JsonTypeInfo polymorphicTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+                state.Initialize(polymorphicTypeInfo);
+
+                bool success =
+                    state.IsPolymorphicRootValue
+                    ? polymorphicTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state)
+                    : jsonTypeInfo.EffectiveConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
+
+                Debug.Assert(success);
             }
 
             writer.Flush();
-            return success;
         }
 
-        private static void WriteUsingGeneratedSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
+        /// <summary>
+        /// Sync, untyped root value serialization helper.
+        /// </summary>
+        private static void WriteCoreAsObject(
+            Utf8JsonWriter writer,
+            object? value,
+            JsonTypeInfo jsonTypeInfo)
         {
-            Debug.Assert(writer != null);
-
-            if (jsonTypeInfo.HasSerialize &&
-                jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
-                typedInfo.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
-            {
-                Debug.Assert(typedInfo.SerializeHandler != null);
-                typedInfo.SerializeHandler(writer, value);
-                writer.Flush();
-            }
-            else
-            {
-                WriteUsingSerializer(writer, value, jsonTypeInfo);
-            }
-        }
-
-        private static void WriteUsingSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
-        {
-            Debug.Assert(writer != null);
-
-            Debug.Assert(!jsonTypeInfo.HasSerialize ||
-                jsonTypeInfo is not JsonTypeInfo<TValue> ||
-                jsonTypeInfo.Options.JsonSerializerContext == null ||
-                !jsonTypeInfo.Options.JsonSerializerContext.CanUseSerializationLogic,
-                "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
-
             WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
+            JsonTypeInfo polymorphicTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+            state.Initialize(polymorphicTypeInfo);
 
-            JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
-            Debug.Assert(converter != null);
-            Debug.Assert(jsonTypeInfo.Options != null);
-
-            // For performance, the code below is a lifted WriteCore() above.
-            if (converter is JsonConverter<TValue> typedConverter)
-            {
-                // Call the strongly-typed WriteCore that will not box structs.
-                typedConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
-            }
-            else
-            {
-                // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
-                converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
-            }
-
+            bool success = polymorphicTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
+            Debug.Assert(success);
             writer.Flush();
         }
 
-        private static Type GetRuntimeType<TValue>(in TValue value)
+        /// <summary>
+        /// Streaming root-level serialization helper.
+        /// </summary>
+        private static bool WriteCore<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo, ref WriteStack state)
         {
-            Type type = typeof(TValue);
-            if (type == JsonTypeInfo.ObjectType && value is not null)
+            Debug.Assert(state.SupportContinuation);
+
+            bool isFinalBlock;
+            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo)
             {
-                type = value.GetType();
+                isFinalBlock = typedInfo.EffectiveConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
+            }
+            else
+            {
+                // The non-generic API was called.
+                isFinalBlock = jsonTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
             }
 
-            return type;
+            writer.Flush();
+            return isFinalBlock;
         }
 
-        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType!!)
+        private static JsonTypeInfo ResolvePolymorphicTypeInfo<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo, out bool isPolymorphicType)
         {
+            if (
+#if NETCOREAPP
+                !typeof(TValue).IsValueType &&
+#endif
+                jsonTypeInfo.Converter.CanBePolymorphic && value is not null)
+            {
+                Debug.Assert(typeof(TValue) == typeof(object));
+
+                Type runtimeType = value.GetType();
+                if (runtimeType != jsonTypeInfo.Type)
+                {
+                    isPolymorphicType = true;
+                    return jsonTypeInfo.Options.GetTypeInfoForRootType(runtimeType);
+                }
+            }
+
+            isPolymorphicType = false;
+            return jsonTypeInfo;
+        }
+
+        private static void ValidateInputType(object? value, Type inputType)
+        {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
             if (value is not null)
             {
                 Type runtimeType = value.GetType();
@@ -105,14 +121,7 @@ namespace System.Text.Json
                 {
                     ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
                 }
-
-                if (inputType == JsonTypeInfo.ObjectType)
-                {
-                    return runtimeType;
-                }
             }
-
-            return inputType;
         }
     }
 }

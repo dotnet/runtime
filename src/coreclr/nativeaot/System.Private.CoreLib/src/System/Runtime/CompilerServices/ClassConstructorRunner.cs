@@ -421,8 +421,7 @@ namespace System.Runtime.CompilerServices
 #endif
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {
-                    if (s_blockingRecords == null)
-                        s_blockingRecords = new BlockingRecord[Grow];
+                    s_blockingRecords ??= new BlockingRecord[Grow];
                     int found;
                     for (found = 0; found < s_nextBlockingRecordIndex; found++)
                     {
@@ -540,7 +539,7 @@ namespace System.Runtime.CompilerServices
             for (; i >= 0; i--)
             {
                 chars[i] = GetHexChar((uint)(u % 16));
-                u = u / 16;
+                u /= 16;
 
                 if ((i == 0) || (!zeroPrepad && (u == 0)))
                     break;

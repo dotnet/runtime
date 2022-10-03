@@ -1249,14 +1249,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        FastInterlockOr((ULONG*)&m_flags, enum_IsAggregated);
+        InterlockedOr((LONG*)&m_flags, enum_IsAggregated);
     }
 
     void UnMarkAggregated()
     {
         WRAPPER_NO_CONTRACT;
 
-        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsAggregated);
+        InterlockedAnd((LONG*)&m_flags, ~enum_IsAggregated);
     }
 
     BOOL IsHandleWeak()
@@ -1270,14 +1270,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        FastInterlockOr((ULONG*)&m_flags, enum_IsHandleWeak);
+        InterlockedOr((LONG*)&m_flags, enum_IsHandleWeak);
     }
 
     VOID ResetHandleStrength()
     {
         WRAPPER_NO_CONTRACT;
 
-        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsHandleWeak);
+        InterlockedAnd((LONG*)&m_flags, ~enum_IsHandleWeak);
     }
 
     // is the object extends from (aggregates) a COM component
@@ -1297,7 +1297,7 @@ public:
     void MarkComActivated()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
+        InterlockedOr((LONG*)&m_flags, enum_IsComActivated);
     }
 
     // Determines if the type associated with the ComCallWrapper supports exceptions.
@@ -1365,7 +1365,7 @@ public:
     // must be called at a point where the CCW is guaranteed to be alive. LogRefCount is static because
     // we generally don't know the new refcount (the one we want to log) until the CCW is at risk of
     // having been destroyed by other threads.
-    void BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount);
+    void BuildRefCountLogMessage(LPCSTR szOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount);
     static void LogRefCount(ComCallWrapper *pWrap, StackSString &ssMessage, ULONG dwRefCountToLog);
 
     NOINLINE HRESULT LogCCWAddRef(ULONG newRefCount)
@@ -1382,7 +1382,7 @@ public:
 
         // we can safely assume that the CCW is still alive since this is an AddRef
         StackSString ssMessage;
-        BuildRefCountLogMessage(W("AddRef"), ssMessage, newRefCount);
+        BuildRefCountLogMessage("AddRef", ssMessage, newRefCount);
         LogRefCount(GetMainWrapper(), ssMessage, newRefCount);
 
         return S_OK;

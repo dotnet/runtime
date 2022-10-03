@@ -16,12 +16,12 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Given a type, EETypeNode writes an MethodTable data structure in the format expected by the runtime.
-    /// 
+    ///
     /// Format of an MethodTable:
-    /// 
+    ///
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
-    /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses 
+    /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses
     ///                 | UTF16 character encoding), for generic type definitions it is the number of generic parameters,
     ///                 | and 0 for all other types.
     ///                 |
@@ -83,14 +83,14 @@ namespace ILCompiler.DependencyAnalysis
 
             static TypeDesc WithoutParameterizeTypes(TypeDesc t) => t is ParameterizedType pt ? WithoutParameterizeTypes(pt.ParameterType) : t;
         }
-        
+
         protected bool MightHaveInterfaceDispatchMap(NodeFactory factory)
         {
             if (!_mightHaveInterfaceDispatchMap.HasValue)
             {
                 _mightHaveInterfaceDispatchMap = EmitVirtualSlotsAndInterfaces && InterfaceDispatchMapNode.MightHaveInterfaceDispatchMap(_type, factory);
             }
-            
+
             return _mightHaveInterfaceDispatchMap.Value;
         }
 
@@ -168,8 +168,8 @@ namespace ILCompiler.DependencyAnalysis
 
                             if (method.HasInstantiation)
                             {
-                                // We found a GVM on one of the implemented interfaces. Find if the type implements this method. 
-                                // (Note, do this comparision against the generic definition of the method, not the specific method instantiation
+                                // We found a GVM on one of the implemented interfaces. Find if the type implements this method.
+                                // (Note, do this comparison against the generic definition of the method, not the specific method instantiation
                                 MethodDesc genericDefinition = method.GetMethodDefinition();
                                 MethodDesc slotDecl = _type.ResolveInterfaceMethodTarget(genericDefinition);
                                 if (slotDecl != null)
@@ -212,9 +212,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _optionalFieldsBuilder.GetBytes();
         }
-        
+
         public override bool StaticDependenciesAreComputed => true;
-        
+
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
             return nameMangler.NodeMangler.MethodTable(type);
@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (maximallyConstructableType != this)
             {
-                // MethodTable upgrading from necessary to constructed if some template instantation exists that matches up
+                // MethodTable upgrading from necessary to constructed if some template instantiation exists that matches up
                 // This ensures we don't end up having two EETypes in the system (one is this necessary type, and another one
                 // that was dynamically created at runtime).
                 if (CanonFormTypeMayExist)
@@ -315,8 +315,16 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
+            // Interfaces don't have vtables and we don't need to track their slot use.
+            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+            // those have slots and we dispatch on them.
+            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
+                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
+            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
+
+            if (needsDependenciesForVirtualMethodImpls)
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {
@@ -336,6 +344,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         factory.MetadataManager.NoteOverridingMethod(decl, impl);
                     }
+
+                    factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
                 }
 
                 Debug.Assert(
@@ -361,14 +371,27 @@ namespace ILCompiler.DependencyAnalysis
                         if (interfaceMethod.HasInstantiation)
                             continue;
 
-                        // Static virtual methods are resolved at compile time
-                        if (interfaceMethod.Signature.IsStatic)
-                            continue;
+                        bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
 
-                        MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                        MethodDesc implMethod = isStaticInterfaceMethod ?
+                            defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
+                            defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                         if (implMethod != null)
                         {
-                            result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            if (isStaticInterfaceMethod)
+                            {
+                                Debug.Assert(!implMethod.IsVirtual);
+
+                                MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                                // If the interface method is used virtually, the implementation body is used
+                                result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            }
+                            else
+                            {
+                                // If the interface method is used virtually, the slot is used virtually
+                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
                             // could result in interface methods of this type being used (e.g. IEnumerable<object>.GetEnumerator()
@@ -376,11 +399,17 @@ namespace ILCompiler.DependencyAnalysis
                             if (isVariantInterfaceImpl)
                             {
                                 MethodDesc typicalInterfaceMethod = interfaceMethod.GetTypicalMethodDefinition();
-                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
+
+                                object implMethodUseNode = isStaticInterfaceMethod ?
+                                    factory.CanonicalEntrypoint(implMethod) : factory.VirtualMethodUse(implMethod);
+
+                                result.Add(new CombinedDependencyListEntry(implMethodUseNode, factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
                             factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                            factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
                         else
                         {
@@ -399,13 +428,16 @@ namespace ILCompiler.DependencyAnalysis
                                 implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
 
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                                if (defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                                if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
+                                    // Canonical instance default methods need to go through a thunk that adds the right generic context
                                     defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, _type.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                             }
                         }
                     }
@@ -437,9 +469,9 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsPInvoke)
                 return false;
 
-            // CoreRT can generate method bodies for these no matter what (worst case
-            // they'll be throwing). We don't want to take the "return false" code path on CoreRT because
-            // delegate methods fall into the runtime implemented category on CoreRT, but we
+            // NativeAOT can generate method bodies for these no matter what (worst case
+            // they'll be throwing). We don't want to take the "return false" code path because
+            // delegate methods fall into the runtime implemented category on NativeAOT, but we
             // just treat them like regular method bodies.
             return true;
         }
@@ -488,11 +520,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_type.IsArray || _type.IsDefType)
                 {
-                    // If the compilation group wants this type to be fully promoted, ensure that all non-generic methods of the 
+                    // If the compilation group wants this type to be fully promoted, ensure that all non-generic methods of the
                     // type are generated.
                     // This may be done for several reasons:
                     //   - The MethodTable may be going to be COMDAT folded with other EETypes generated in a different object file
-                    //     This means their generic dictionaries need to have identical contents. The only way to achieve that is 
+                    //     This means their generic dictionaries need to have identical contents. The only way to achieve that is
                     //     by generating the entries for all methods that contribute to the dictionary, and sorting the dictionaries.
                     //   - The generic type may be imported into another module, in which case the generic dictionary imported
                     //     must represent all of the methods, as the set of used methods cannot be known at compile time
@@ -517,11 +549,8 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _type);
 
                 // If necessary MethodTable is the highest load level, consider this a module use
-                if (_type is MetadataType mdType
-                    && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-                {
-                    dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-                }
+                if(_type is MetadataType mdType)
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
 
             return dependencies;
@@ -602,7 +631,7 @@ namespace ILCompiler.DependencyAnalysis
             // Non-constructed EETypeNodes get no GC Desc
             Debug.Assert(GCDescSize == 0);
         }
-        
+
         private void OutputComponentSize(ref ObjectDataBuilder objData)
         {
             if (_type.IsArray)
@@ -743,14 +772,29 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
+        protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.NecessaryTypeSymbol(((ArrayType)_type).ElementType);
+        }
+
         private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
+            if (_type.IsParameterizedType)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
-                relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                if (_type.IsArray && parameterType.IsValueType && !parameterType.IsNullable)
+                {
+                    // This might be a constructed type symbol. There are APIs on Array that allow allocating element
+                    // types through runtime magic ("((Array)new NeverAllocated[1]).GetValue(0)" or IEnumerable) and we don't have
+                    // visibility into that. Conservatively assume element types of constructed arrays are also constructed.
+                    relatedTypeNode = GetNonNullableValueTypeArrayElementTypeNode(factory);
+                }
+                else
+                {
+                    relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                }
             }
             else
             {
@@ -802,7 +846,7 @@ namespace ILCompiler.DependencyAnalysis
             //    class Derived<T> : Middle<T, MyStruct> { }    // -> Template is Derived<__UniversalCanon> and needs a dictionary slot
             //                                                  // -> Basetype tempalte is Middle<__UniversalCanon, MyStruct>. It's a partial
             //                                                        Universal canonical type, so we need to fully canonicalize it.
-            //                                                  
+            //
             //    class Middle<T, U> : Base<U> { }              // -> Template is Middle<__UniversalCanon, __UniversalCanon> and needs a dictionary slot
             //                                                  // -> Basetype template is Base<__UniversalCanon>
             //
@@ -837,7 +881,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly && !declVTable.HasFixedSlots)
                 return;
 
-            // Inteface types don't place anything else in their physical vtable.
+            // Interface types don't place anything else in their physical vtable.
             // Interfaces have logical slots for their methods but since they're all abstract, they would be zero.
             // We place default implementations of interface methods into the vtable of the interface-implementing
             // type, pretending there was an extra virtual slot.
@@ -877,7 +921,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
-        
+
         protected virtual IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
             return factory.NecessaryTypeSymbol(interfaceType);
@@ -1000,7 +1044,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(Type).IndexFromBeginningOfArray));
             }
-            
+
             ComputeRareFlags(factory, relocsOnly);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
@@ -1078,7 +1122,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void ComputeValueTypeFieldPadding()
         {
-            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding. 
+            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding.
             // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
 
             // Interfaces, sealed types, and non-DefTypes cannot be derived from
@@ -1104,17 +1148,17 @@ namespace ILCompiler.DependencyAnalysis
                     // Value types should have at least 1 byte of size
                     Debug.Assert(numInstanceFieldBytes >= 1);
 
-                    // The size doesn't currently include the MethodTable pointer size.  We need to add this so that 
+                    // The size doesn't currently include the MethodTable pointer size.  We need to add this so that
                     // the number of instance field bytes consistently represents the boxed size.
                     numInstanceFieldBytes += _type.Context.Target.PointerSize;
                 }
 
-                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need 
-                // to record the actual size of the fields of a type without any padding for GC heap allocation (since 
+                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
+                // to record the actual size of the fields of a type without any padding for GC heap allocation (since
                 // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
-                // types is effected by the unaligned base size). We don't want to store this information for all EETypes 
-                // since it's only relevant for value types, and derivable types so it's added as an optional field. It's 
-                // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes 
+                // types is effected by the unaligned base size). We don't want to store this information for all EETypes
+                // since it's only relevant for value types, and derivable types so it's added as an optional field. It's
+                // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes
                 // for 64-bit) which cuts down our storage requirements.
 
                 uint valueTypeFieldPadding = checked((uint)((BaseSize - _type.Context.Target.PointerSize) - numInstanceFieldBytes));
@@ -1130,7 +1174,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override void OnMarked(NodeFactory context)
         {
             if (!context.IsCppCodegenTemporaryWorkaround)
-            { 
+            {
                 Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
             }
         }

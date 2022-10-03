@@ -1,6 +1,6 @@
 project(bootstrapperdll)
 
-add_definitions(-DCORERT_DLL)
+add_definitions(-DNATIVEAOT_DLL)
 
 set(SOURCES
     ../main.cpp

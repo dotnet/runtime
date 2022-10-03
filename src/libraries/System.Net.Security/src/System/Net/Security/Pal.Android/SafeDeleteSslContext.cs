@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -12,8 +12,6 @@ using Microsoft.Win32.SafeHandles;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
-
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
 
 namespace System.Net
 {
@@ -32,8 +30,6 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly Interop.AndroidCrypto.SSLReadCallback _readCallback;
-        private readonly Interop.AndroidCrypto.SSLWriteCallback _writeCallback;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
@@ -47,14 +43,8 @@ namespace System.Net
 
             try
             {
-                unsafe
-                {
-                    _readCallback = ReadFromConnection;
-                    _writeCallback = WriteToConnection;
-                }
-
                 _sslContext = CreateSslContext(credential);
-                InitializeSslContext(_sslContext, _readCallback, _writeCallback, credential, authOptions);
+                InitializeSslContext(_sslContext, credential, authOptions);
             }
             catch (Exception ex)
             {
@@ -82,31 +72,39 @@ namespace System.Net
             base.Dispose(disposing);
         }
 
-        private unsafe void WriteToConnection(byte* data, int dataLength)
+        [UnmanagedCallersOnly]
+        private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
 
-            _outputBuffer.EnsureAvailableSpace(dataLength);
-            inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
-            _outputBuffer.Commit(dataLength);
+            context._outputBuffer.EnsureAvailableSpace(dataLength);
+            inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+            context._outputBuffer.Commit(dataLength);
         }
 
-        private unsafe PAL_SSLStreamStatus ReadFromConnection(byte* data, int* dataLength)
+        [UnmanagedCallersOnly]
+        private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
+
             int toRead = *dataLength;
             if (toRead == 0)
                 return PAL_SSLStreamStatus.OK;
 
-            if (_inputBuffer.ActiveLength == 0)
+            if (context._inputBuffer.ActiveLength == 0)
             {
                 *dataLength = 0;
                 return PAL_SSLStreamStatus.NeedData;
             }
 
-            toRead = Math.Min(toRead, _inputBuffer.ActiveLength);
+            toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
 
-            _inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
-            _inputBuffer.Discard(toRead);
+            context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
+            context._inputBuffer.Discard(toRead);
 
             *dataLength = toRead;
             return PAL_SSLStreamStatus.OK;
@@ -199,10 +197,8 @@ namespace System.Net
             throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
         }
 
-        private static void InitializeSslContext(
+        private unsafe void InitializeSslContext(
             SafeSslHandle handle,
-            Interop.AndroidCrypto.SSLReadCallback readCallback,
-            Interop.AndroidCrypto.SSLWriteCallback writeCallback,
             SafeFreeSslCredentials credential,
             SslAuthenticationOptions authOptions)
         {
@@ -225,7 +221,10 @@ namespace System.Net
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
             }
 
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
+            // Make sure the class instance is associated to the session and is provided
+            // in the Read/Write callback connection parameter
+            IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize);
 
             if (credential.Protocols != SslProtocols.None)
             {

@@ -8,15 +8,7 @@
 
 #ifdef FEATURE_PGO
 
-inline bool AddTypeHandleToUnknownTypeHandleMask(INT_PTR typeHandle, uint32_t *unknownTypeHandleMask)
-{
-    uint32_t bitMask = (uint32_t)(1 << (typeHandle - UNKNOWN_TYPEHANDLE_MIN));
-    bool result = (bitMask & *unknownTypeHandleMask) == 0;
-    *unknownTypeHandleMask |= bitMask;
-    return result;
-}
-
-inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
+inline INT_PTR HashToPgoUnknownHandle(uint32_t hash)
 {
     // Map from a 32bit hash to the 32 different unknown type handle values
     return (hash & 0x1F) + 1;
@@ -53,6 +45,7 @@ inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind ki
         case ICorJitInfo::PgoInstrumentationKind::EightByte:
             return 8;
         case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
             return TARGET_POINTER_SIZE;
         default:
             _ASSERTE(FALSE);
@@ -99,7 +92,7 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
         {
             if (cbDataMax < 2)
                 return false;
-            
+
             int shiftedInt = ((*pByte & 0x3f) << 8) | *(pByte + 1);
             signedInt = shiftedInt >> 1;
             if (shiftedInt & 1)
@@ -213,7 +206,7 @@ bool ReadInstrumentationSchema(const uint8_t *pByte, size_t cbDataMax, SchemaHan
 {
     ProcessSchemaUpdateFunctor schemaHandlerUpdate;
     bool done = false;
-    
+
     ReadCompressedInts(pByte, cbDataMax, [&handler, &schemaHandlerUpdate, &done](int64_t curValue)
     {
         if (schemaHandlerUpdate.ProcessInteger((int32_t)curValue))
@@ -242,8 +235,9 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
     bool done = false;
     int64_t lastDataValue = 0;
     int64_t lastTypeDataValue = 0;
+    int64_t lastMethodDataValue = 0;
     int32_t dataCountToRead = 0;
-    
+
     ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
     {
         if (dataCountToRead > 0)
@@ -267,8 +261,16 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
                     return false;
                 }
                 break;
+            case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                lastMethodDataValue += curValue;
+
+                if (!handler(schemaHandler.GetSchema(), lastMethodDataValue, schemaHandler.GetSchema().Count - dataCountToRead))
+                {
+                    return false;
+                }
+                break;
             default:
-                assert(false);
+                assert(!"Unexpected PGO instrumentation data type");
                 break;
             }
             dataCountToRead--;
@@ -309,11 +311,11 @@ inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax,
 inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t iSchema = 0;
-    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema) 
+    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema)
     {
         if (iSchema >= cSchemas)
             return false;
-        
+
         if (schema.InstrumentationKind != schemaTable[iSchema].InstrumentationKind)
             return false;
 
@@ -516,6 +518,7 @@ class SchemaAndDataWriter
     ICorJitInfo::PgoInstrumentationSchema prevSchema = {};
     int64_t lastIntDataWritten = 0;
     int64_t lastTypeDataWritten = 0;
+    int64_t lastMethodDataWritten = 0;
 
 public:
     SchemaAndDataWriter(const ByteWriter& byteWriter, uint8_t* pInstrumentationData) :
@@ -532,8 +535,8 @@ public:
         return true;
     }
 
-    template<class TypeHandleProcessor>
-    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor)
+    template<class TypeHandleProcessor, class MethodHandleProcessor>
+    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor, MethodHandleProcessor& mhProcessor)
     {
         uint8_t *pData = (pInstrumentationData + prevSchema.Offset);
         for (int32_t iDataElem = 0; iDataElem < prevSchema.Count; iDataElem++)
@@ -568,10 +571,24 @@ public:
                     logicalDataToWrite = *(volatile intptr_t*)pData;
 
                     // As there could be tearing otherwise, inform the caller of exactly what value was written.
-                    thProcessor(logicalDataToWrite);
+                    thProcessor((intptr_t)logicalDataToWrite);
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += sizeof(intptr_t);
+                    break;
+                }
+                case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                {
+                    logicalDataToWrite = *(volatile intptr_t*)pData;
+
+                    // As there could be tearing otherwise, inform the caller of exactly what value was written.
+                    mhProcessor((intptr_t)logicalDataToWrite);
+
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastMethodDataWritten, byteWriter);
+                    lastMethodDataWritten = logicalDataToWrite;
                     if (!returnValue)
                         return false;
                     pData += sizeof(intptr_t);

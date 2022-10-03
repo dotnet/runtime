@@ -32,8 +32,10 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object ManagedObj!!)
+        public IntPtr MarshalManagedToNative(object ManagedObj)
         {
+            ArgumentNullException.ThrowIfNull(ManagedObj);
+
             return Marshal.GetComInterfaceForObject<object, IEnumerable>(ManagedObj);
         }
 

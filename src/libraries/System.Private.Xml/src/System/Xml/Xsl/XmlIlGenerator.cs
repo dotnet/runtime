@@ -352,7 +352,7 @@ namespace System.Xml.Xsl
         public void CreateTypeInitializer(XmlQueryStaticData staticData)
         {
             byte[] data;
-            Type[] ebTypes;
+            Type[]? ebTypes;
             FieldInfo fldInitData, fldData, fldTypes;
             ConstructorInfo cctor;
 

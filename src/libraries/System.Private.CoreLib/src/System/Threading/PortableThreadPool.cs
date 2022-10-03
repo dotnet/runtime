@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -111,6 +112,15 @@ namespace System.Threading
             _legacy_minIOCompletionThreads = 1;
             _legacy_maxIOCompletionThreads = 1000;
 
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+            {
+                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                    (ushort)_minThreads,
+                    (ushort)_maxThreads,
+                    (ushort)_legacy_minIOCompletionThreads,
+                    (ushort)_legacy_maxIOCompletionThreads);
+            }
+
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
@@ -186,6 +196,15 @@ namespace System.Threading
                         addWorker = true;
                     }
                 }
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
+                }
             }
             finally
             {
@@ -255,6 +274,15 @@ namespace System.Threading
                 if (_separated.counts.NumThreadsGoal > newMaxThreads)
                 {
                     _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
+                }
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
                 }
                 return true;
             }
@@ -434,7 +462,7 @@ namespace System.Threading
         private bool OnGen2GCCallback()
         {
             // Gen 2 GCs may be very infrequent in some cases. If it becomes an issue, consider updating the memory usage more
-            // frequently. The memory usage is only used for fallback purposes in blocking adjustment, so an artifically higher
+            // frequently. The memory usage is only used for fallback purposes in blocking adjustment, so an artificially higher
             // memory usage may cause blocking adjustment to fall back to slower adjustments sooner than necessary.
             GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
             _memoryLimitBytes = gcMemoryInfo.HighMemoryLoadThresholdBytes;

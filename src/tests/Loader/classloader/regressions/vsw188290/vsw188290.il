@@ -4,12 +4,6 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.31013.0
-//  Copyright (C) Microsoft Corporation 1998-2003. All rights reserved.
-
-
-
-// Metadata version: v2.0.31013
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -22,9 +16,9 @@
 
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
-  //                                                                                bool) = ( 01 00 00 01 00 00 ) 
+  //                                                                                bool) = ( 01 00 00 01 00 00 )
 
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
@@ -42,7 +36,7 @@
 .class sealed private auto ansi beforefieldinit C<([mscorlib]System.Object) T>
        extends [mscorlib]System.ValueType
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       75 (0x4b)
@@ -92,7 +86,7 @@
     IL_0017:  ret
   } // end of method Test::fail
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -119,7 +113,7 @@
     IL_001d:  callvirt   instance void [mscorlib]System.Array::Initialize()
     IL_0022:  ldsfld     bool Test_vsw188290::run
     IL_0027:  brtrue.s   IL_0033
-    IL_0029:  ldstr      "contructor not run"
+    IL_0029:  ldstr      "constructor not run"
     IL_002e:  call       void Test_vsw188290::fail(string)
 
 
@@ -139,7 +133,7 @@
     IL_0055:  ldsfld     bool Test_vsw188290::run
     IL_005a:  brtrue.s   IL_0066
 
-    IL_005c:  ldstr      "contructor not run"
+    IL_005c:  ldstr      "constructor not run"
     IL_0061:  call       void Test_vsw188290::fail(string)
     IL_0066:   ldstr      "C<string> passed" call void [System.Console]System.Console::WriteLine(string)
 
@@ -156,7 +150,7 @@
     IL_0088:  ldsfld     bool Test_vsw188290::run
     IL_008d:  brtrue.s   IL_0099
 
-    IL_008f:  ldstr      "contructor not run"
+    IL_008f:  ldstr      "constructor not run"
     IL_0094:  call       void Test_vsw188290::fail(string)
     IL_0099:  ldstr      "C<string[]> passed" call void [System.Console]System.Console::WriteLine(string)
 
@@ -173,7 +167,7 @@
     IL_00bb:  ldsfld     bool Test_vsw188290::run
     IL_00c0:  brtrue.s   IL_00cc
 
-    IL_00c2:  ldstr      "contructor not run"
+    IL_00c2:  ldstr      "constructor not run"
     IL_00c7:  call       void Test_vsw188290::fail(string)
     IL_00cc:  ldstr      "C<object> passed" call void [System.Console]System.Console::WriteLine(string)
 
@@ -197,7 +191,7 @@
     IL_00f6:  ret
   } // end of method Test::Main
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       7 (0x7)
@@ -207,7 +201,7 @@
     IL_0006:  ret
   } // end of method Test::.cctor
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

@@ -1,18 +1,18 @@
 {
   "sdk": {
-    "version": "6.0.100",
+    "version": "7.0.100-preview.5.22307.18",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "6.0.100"
+    "dotnet": "7.0.100-preview.5.22307.18"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.22157.6",
-    "Microsoft.DotNet.Helix.Sdk": "7.0.0-beta.22157.6",
-    "Microsoft.DotNet.SharedFramework.Sdk": "7.0.0-beta.22157.6",
-    "Microsoft.Build.NoTargets": "3.3.0",
+    "Microsoft.DotNet.Arcade.Sdk": "7.0.0-beta.22403.1",
+    "Microsoft.DotNet.Helix.Sdk": "7.0.0-beta.22403.1",
+    "Microsoft.DotNet.SharedFramework.Sdk": "7.0.0-beta.22403.1",
+    "Microsoft.Build.NoTargets": "3.5.0",
     "Microsoft.Build.Traversal": "3.1.6",
-    "Microsoft.NET.Sdk.IL": "7.0.0-preview.3.22157.1"
+    "Microsoft.NET.Sdk.IL": "7.0.0-rc.1.22374.4"
   }
 }

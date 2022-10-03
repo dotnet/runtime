@@ -427,6 +427,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_POPCNT_X64:
             genPOPCNTIntrinsic(node);
             break;
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
+            genX86SerializeIntrinsic(node);
+            break;
+
         default:
             unreached();
             break;
@@ -440,7 +445,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    reg  - The register
 //    rmOp - The register/memory operand node
 //
@@ -527,7 +532,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //
 void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
@@ -549,7 +554,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    targetReg - The register allocated to the result
 //    op1Reg    - The register allocated to the first operand
 //    op2       - Another operand that maybe in register or memory
@@ -1098,38 +1103,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        {
-            emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
-            break;
-        }
-
-        case NI_Vector128_get_AllBitsSet:
-            if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // The following corresponds to vcmptrueps pseudo-op and not available without VEX prefix.
-                emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, targetReg, targetReg, 15);
-            }
-            else
-            {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
-            }
-            break;
-
-        case NI_Vector256_get_AllBitsSet:
-            if (varTypeIsIntegral(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
-                // The following corresponds to vcmptrueps pseudo-op.
-                emit->emitIns_SIMD_R_R_R_I(INS_cmpps, attr, targetReg, targetReg, targetReg, 15);
-            }
-            break;
-
         default:
         {
             unreached();
@@ -1452,7 +1425,6 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                assert(op1->TypeGet() == op2->TypeGet());
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
                 genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2);
             }
@@ -1955,6 +1927,35 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
         GetEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     }
     genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, op1);
+}
+
+//------------------------------------------------------------------------
+// genX86SerializeIntrinsic: Generates the code for an X86 serialize hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
+void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    genConsumeMultiOpOperands(node);
+
+    switch (intrinsicId)
+    {
+        case NI_X86Serialize_Serialize:
+        {
+            assert(node->GetSimdBaseType() == TYP_UNKNOWN);
+            GetEmitter()->emitIns(INS_serialize);
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
+
+    genProduceReg(node);
 }
 
 #endif // FEATURE_HW_INTRINSICS

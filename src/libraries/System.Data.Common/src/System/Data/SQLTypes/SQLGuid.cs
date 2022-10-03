@@ -20,10 +20,6 @@ namespace System.Data.SqlTypes
     {
         private const int SizeOfGuid = 16;
 
-        // Comparison orders.
-        private static readonly int[] s_rgiGuidOrder = new int[16]
-        {10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3};
-
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? m_value; // the SqlGuid is null if m_value is null
 
@@ -125,16 +121,22 @@ namespace System.Data.SqlTypes
         // Comparison operators
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
-            //Swap to the correct order to be compared
+            // Comparison orders.
+            ReadOnlySpan<byte> rgiGuidOrder = new byte[16] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
+
+            // Swap to the correct order to be compared
+            ReadOnlySpan<byte> xBytes = x.m_value;
+            ReadOnlySpan<byte> yBytes = y.m_value;
             for (int i = 0; i < SizeOfGuid; i++)
             {
-                byte b1, b2;
-
-                b1 = x.m_value![s_rgiGuidOrder[i]];
-                b2 = y.m_value![s_rgiGuidOrder[i]];
+                byte b1 = xBytes[rgiGuidOrder[i]];
+                byte b2 = yBytes[rgiGuidOrder[i]];
                 if (b1 != b2)
+                {
                     return (b1 < b2) ? EComparison.LT : EComparison.GT;
+                }
             }
+
             return EComparison.EQ;
         }
 
@@ -257,10 +259,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlGuid)
+            if (value is SqlGuid i)
             {
-                SqlGuid i = (SqlGuid)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));

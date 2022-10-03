@@ -4,8 +4,11 @@
 // Non local exit from a catch handler nested inside another catch handler
 
 using System;
+using Xunit;
 
-class test
+namespace Test_nonlocalexitfromnestedcatch_cs
+{
+public class test
 {
     private static TestUtil.TestLog testLog;
 
@@ -26,7 +29,8 @@ class test
         // Create and initialize test log object
         testLog = new TestUtil.TestLog(expectedOut);
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -72,4 +76,5 @@ class test
 
 
     }
+}
 }

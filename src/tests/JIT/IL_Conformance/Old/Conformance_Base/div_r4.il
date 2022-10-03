@@ -47,7 +47,7 @@ try_end:
 	ldc.i4		0x0
 	br			FINISH
 ae:
-	isinst		[mscorlib]System.OverflowException
+	isinst		[mscorlib]System.ArithmeticException
 	stloc	0
 	leave			HEnd
 HEnd:
@@ -77,7 +77,7 @@ FAIL:
 	br			FINISH
 FINISH:
 	ret
-.try try_start to try_end catch [mscorlib]System.OverflowException handler ae to HEnd
+.try try_start to try_end catch [mscorlib]System.ArithmeticException handler ae to HEnd
 }
 
 .method public static	int32 main(class [mscorlib]System.String[]) {

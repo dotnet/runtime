@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         public NonGCStaticsNode(MetadataType type, PreinitializationManager preinitializationManager)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
             _preinitializationManager = preinitializationManager;
         }
@@ -114,10 +115,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
 
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
 

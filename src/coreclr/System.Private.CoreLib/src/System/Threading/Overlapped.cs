@@ -27,7 +27,7 @@ namespace System.Threading
 {
     #region class _IOCompletionCallback
 
-    internal unsafe partial class _IOCompletionCallback
+    internal sealed unsafe partial class _IOCompletionCallback
     {
         // call back helper
         internal static void PerformIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
@@ -221,14 +221,18 @@ namespace System.Threading
         *  Unpins the native Overlapped struct
         ====================================================================*/
         [CLSCompliant(false)]
-        public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr!!)
+        public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
+
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped;
         }
 
         [CLSCompliant(false)]
-        public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr!!)
+        public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
+
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped._overlappedData = null;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);
         }

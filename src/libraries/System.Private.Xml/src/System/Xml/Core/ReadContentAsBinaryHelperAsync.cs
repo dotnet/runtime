@@ -10,20 +10,12 @@ namespace System.Xml
     {
         // Internal methods
 
-        internal async Task<int> ReadContentAsBase64Async(byte[] buffer!!, int index, int count)
+        internal async Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
 
             switch (_state)
@@ -62,20 +54,12 @@ namespace System.Xml
             return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadContentAsBinHexAsync(byte[] buffer!!, int index, int count)
+        internal async Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
 
             switch (_state)
@@ -114,20 +98,12 @@ namespace System.Xml
             return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadElementContentAsBase64Async(byte[] buffer!!, int index, int count)
+        internal async Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
 
             switch (_state)
@@ -166,20 +142,12 @@ namespace System.Xml
             return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer!!, int index, int count)
+        internal async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
 
             switch (_state)

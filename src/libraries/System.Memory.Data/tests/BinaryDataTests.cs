@@ -8,18 +8,19 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
 {
-    public class BinaryDataTests
+    public partial class BinaryDataTests
     {
         [Fact]
         public void CanCreateBinaryDataFromBytes()
         {
-            byte[] payload = Encoding.UTF8.GetBytes("some data");
+            byte[] payload = "some data"u8.ToArray();
             BinaryData data = BinaryData.FromBytes(payload);
             Assert.Equal(payload, data.ToArray());
 
@@ -83,7 +84,7 @@ namespace System.Tests
         [Fact]
         public async Task CannotWriteToReadOnlyMemoryStream()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using MemoryStream payload = new MemoryStream(buffer);
             BinaryData data = BinaryData.FromStream(payload);
             Stream stream = data.ToStream();
@@ -98,7 +99,7 @@ namespace System.Tests
         [Fact]
         public async Task ToStreamIsMutatedWhenCustomerOwnsBuffer()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             BinaryData data = BinaryData.FromBytes(buffer);
             Stream stream = data.ToStream();
             buffer[0] = (byte)'z';
@@ -109,7 +110,7 @@ namespace System.Tests
         [Fact]
         public async Task ToStreamIsNotMutatedWhenBinaryDataOwnsBuffer()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             BinaryData data = BinaryData.FromStream(new MemoryStream(buffer));
             Stream stream = data.ToStream();
             buffer[0] = (byte)'z';
@@ -120,7 +121,7 @@ namespace System.Tests
         [Fact]
         public async Task CanCreateBinaryDataFromStream()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new MemoryStream(buffer, 0, buffer.Length, true, true);
             BinaryData data = BinaryData.FromStream(stream);
             Assert.Equal(buffer, data.ToArray());
@@ -146,7 +147,7 @@ namespace System.Tests
         [Fact]
         public async Task CanCreateBinaryDataFromLongStream()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new OverFlowStream(offset: int.MaxValue - 10000, buffer);
             BinaryData data = BinaryData.FromStream(stream);
             Assert.Equal(buffer, data.ToArray());
@@ -177,7 +178,7 @@ namespace System.Tests
             Assert.Empty(data.ToArray());
 
             // stream at end
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             stream.Write(buffer, 0, buffer.Length);
             data = BinaryData.FromStream(stream);
             Assert.Empty(data.ToArray());
@@ -189,7 +190,7 @@ namespace System.Tests
         [Fact]
         public async Task CanCreateBinaryDataFromStreamUsingBackingBuffer()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new MemoryStream();
             stream.Write(buffer, 0, buffer.Length);
             stream.Position = 0;
@@ -213,7 +214,7 @@ namespace System.Tests
         [Fact]
         public async Task CanCreateBinaryDataFromNonSeekableStream()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using MemoryStream stream = new NonSeekableStream(buffer);
             BinaryData data = BinaryData.FromStream(stream);
             Assert.Equal(buffer, data.ToArray());
@@ -235,7 +236,7 @@ namespace System.Tests
         [Fact]
         public async Task CanCreateBinaryDataFromFileStream()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             using FileStream stream = new FileStream(Path.GetTempFileName(), FileMode.Open);
             stream.Write(buffer, 0, buffer.Length);
             stream.Position = 0;
@@ -264,7 +265,7 @@ namespace System.Tests
         public async Task StartPositionOfStreamRespected(int bufferOffset, long streamStart)
         {
             var input = "some data";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes("some data"), bufferOffset, input.Length - bufferOffset);
+            ArraySegment<byte> buffer = new ArraySegment<byte>("some data"u8.ToArray(), bufferOffset, input.Length - bufferOffset);
             MemoryStream stream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count);
             var payload = new ReadOnlyMemory<byte>(buffer.Array, buffer.Offset, buffer.Count).Slice((int)streamStart);
 
@@ -287,7 +288,7 @@ namespace System.Tests
         public async Task StartPositionOfStreamRespectedBackingBuffer(int bufferOffset, long streamStart)
         {
             var input = "some data";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes("some data"), bufferOffset, input.Length - bufferOffset);
+            ArraySegment<byte> buffer = new ArraySegment<byte>("some data"u8.ToArray(), bufferOffset, input.Length - bufferOffset);
             MemoryStream stream = new MemoryStream();
             stream.Write(buffer.Array, buffer.Offset, buffer.Count);
 
@@ -315,7 +316,7 @@ namespace System.Tests
             var data = BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue - 1000));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanCreateBinaryDataFromCustomType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true, D = null };
@@ -323,11 +324,13 @@ namespace System.Tests
 
             AssertData(BinaryData.FromObjectAsJson(payload));
             AssertData(BinaryData.FromObjectAsJson(payload, options));
+            AssertData(BinaryData.FromObjectAsJson(payload, TestModelJsonContext.Default.TestModel));
             AssertData(new BinaryData(payload, type: typeof(TestModel)));
             AssertData(new BinaryData(payload));
             AssertData(new BinaryData(payload, type: null));
             AssertData(new BinaryData(payload, options: null, typeof(TestModel)));
             AssertData(new BinaryData(payload, options, typeof(TestModel)));
+            AssertData(new BinaryData(payload, context: TestModelJsonContext.Default, type: typeof(TestModel)));
 
             void AssertData(BinaryData data)
             {
@@ -339,7 +342,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanSerializeNullData()
         {
             BinaryData data = new BinaryData(jsonSerializable: null);
@@ -358,6 +361,9 @@ namespace System.Tests
 
             data = BinaryData.FromObjectAsJson<TestModel>(null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
+
+            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel as JsonTypeInfo<TestModel>);
+            Assert.Null(data.ToObjectFromJson<TestModel>(TestModelJsonContext.Default.TestModel));
         }
 
         [Fact]
@@ -393,23 +399,40 @@ namespace System.Tests
             Assert.Contains("data", ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void ToObjectHandlesBOM()
+        {
+            TestModel payload = new TestModel { A = "string", B = 42, C = true };
+            using var buffer = new MemoryStream();
+            using var writer = new StreamWriter(buffer, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            writer.Write(JsonSerializer.Serialize(payload));
+            writer.Flush();
+
+            BinaryData data = new BinaryData(buffer.ToArray());
+            var model = data.ToObjectFromJson<TestModel>();
+            Assert.Equal(payload.A, model.A);
+            Assert.Equal(payload.B, model.B);
+            Assert.Equal(payload.C, model.C);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ToObjectThrowsExceptionOnIncompatibleType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true };
             BinaryData data = BinaryData.FromObjectAsJson(payload);
             Assert.ThrowsAny<Exception>(() => data.ToObjectFromJson<string>());
+            Assert.ThrowsAny<Exception>(() => data.ToObjectFromJson<MismatchedTestModel>(jsonTypeInfo: MismatchedTestModelJsonContext.Default.MismatchedTestModel));
         }
 
         [Fact]
         public void EqualsRespectsReferenceEquality()
         {
-            byte[] payload = Encoding.UTF8.GetBytes("some data");
+            byte[] payload = "some data"u8.ToArray();
             BinaryData a = BinaryData.FromBytes(payload);
             BinaryData b = BinaryData.FromBytes(payload);
             Assert.NotEqual(a, b);
 
-            BinaryData c = BinaryData.FromBytes(Encoding.UTF8.GetBytes("some data"));
+            BinaryData c = BinaryData.FromBytes("some data"u8.ToArray());
             Assert.NotEqual(a, c);
 
             Assert.False(a.Equals("string data"));
@@ -418,7 +441,7 @@ namespace System.Tests
         [Fact]
         public void GetHashCodeWorks()
         {
-            byte[] payload = Encoding.UTF8.GetBytes("some data");
+            byte[] payload = "some data"u8.ToArray();
             BinaryData a = BinaryData.FromBytes(payload);
             BinaryData b = BinaryData.FromBytes(payload);
             HashSet<BinaryData> set = new HashSet<BinaryData>
@@ -428,7 +451,7 @@ namespace System.Tests
             // hashcodes of a and b should not match since instances are different.
             Assert.DoesNotContain(b, set);
 
-            BinaryData c = BinaryData.FromBytes(Encoding.UTF8.GetBytes("some data"));
+            BinaryData c = BinaryData.FromBytes("some data"u8.ToArray());
             // c should have a different hash code
             Assert.DoesNotContain(c, set);
             set.Add(c);
@@ -438,7 +461,7 @@ namespace System.Tests
         [Fact]
         public async Task CanRead()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             var read = new byte[buffer.Length];
@@ -458,7 +481,7 @@ namespace System.Tests
         [Fact]
         public async Task CanReadPartial()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             var length = 4;
             var read = new byte[length];
@@ -479,7 +502,7 @@ namespace System.Tests
         [Fact]
         public void ReadAsyncRespectsCancellation()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             var read = new byte[buffer.Length];
@@ -498,7 +521,7 @@ namespace System.Tests
         [Fact]
         public async Task CanSeek()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             stream.Seek(5, SeekOrigin.Begin);
@@ -519,7 +542,7 @@ namespace System.Tests
         [Fact]
         public void ValidatesSeekArguments()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin));
@@ -532,7 +555,7 @@ namespace System.Tests
         [Fact]
         public async Task ValidatesReadArguments()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             stream.Seek(3, SeekOrigin.Begin);
             var read = new byte[buffer.Length - stream.Position];
@@ -549,7 +572,7 @@ namespace System.Tests
         [Fact]
         public void ValidatesPositionValue()
         {
-            var buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = -1);
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)int.MaxValue + 1);
@@ -558,7 +581,7 @@ namespace System.Tests
         [Fact]
         public void CloseStreamValidation()
         {
-            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            byte[] buffer = "some data"u8.ToArray();
             Stream stream = new BinaryData(buffer).ToStream();
             stream.Dispose();
             Assert.Throws<ObjectDisposedException>(() => stream.Position = -1);
@@ -585,12 +608,33 @@ namespace System.Tests
             Assert.Same(BinaryData.Empty, BinaryData.Empty);
         }
 
-        private class TestModel
+        [Fact]
+        public void ToStringReturnEmptyStringWhenBinaryDataEmpty()
+        {
+            Assert.Equal(string.Empty, BinaryData.Empty.ToString());
+        }
+
+        internal class TestModel
         {
             public string A { get; set; }
             public int B { get; set; }
             public bool C { get; set; }
             public object D { get; set; }
+        }
+
+        internal class MismatchedTestModel 
+        {
+            public int A { get; set; }
+        }
+
+        [JsonSerializable(typeof(TestModel))]
+        internal partial class TestModelJsonContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(MismatchedTestModel))]
+        internal partial class MismatchedTestModelJsonContext: JsonSerializerContext 
+        {
         }
 
         private class OverFlowStream : MemoryStream
