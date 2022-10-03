@@ -383,16 +383,16 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 static MonoInst*
 emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 	int op = -1;
 	switch (id){
 	case SN_Negate:
 	case SN_op_UnaryNegation:
-		op = OP_ARM64_XNEG;
+		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
 	case SN_op_OnesComplement:
-		op = OP_ARM64_MVN;
+		op = OP_ONES_COMPLEMENT;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -590,10 +590,18 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 	case MONO_TYPE_U2:
 		instc0 = INTRINS_SSE_PHADDW;
 		break;
+#if TARGET_SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		instc0 = INTRINS_SSE_PHADDD;
 		break;
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		// Ssse3 doesn't have support for HorizontalAdd on i64
@@ -1274,10 +1282,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
 		break;
 	}
-	case SN_CreateScalar:
+	case SN_CreateScalar: {
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
-	case SN_CreateScalarUnsafe:
+	}
+	case SN_CreateScalarUnsafe: {
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+	}
 	case SN_Dot: {
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
@@ -2628,11 +2644,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyWideningUpper, OP_ARM64_SMULL2, None, OP_ARM64_UMULL2},
 	{SN_MultiplyWideningUpperAndAdd, OP_ARM64_SMLAL2, None, OP_ARM64_UMLAL2},
 	{SN_MultiplyWideningUpperAndSubtract, OP_ARM64_SMLSL2, None, OP_ARM64_UMLSL2},
-	{SN_Negate, OP_ARM64_XNEG},
+	{SN_Negate, OP_NEGATION},
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
-	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
-	{SN_Not, OP_ARM64_MVN},
+	{SN_NegateScalar, OP_NEGATION_SCALAR},
+	{SN_Not, OP_ONES_COMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ORNOT},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
@@ -3671,10 +3687,18 @@ emit_x86_intrinsics (
 			case MONO_TYPE_U2:
 				op = is_imm ? INTRINS_SSE_PSRLI_W : INTRINS_SSE_PSRL_W;
 				break;
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 				op = is_imm ? INTRINS_SSE_PSRLI_D : INTRINS_SSE_PSRL_D;
 				break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				op = is_imm ? INTRINS_SSE_PSRLI_Q : INTRINS_SSE_PSRL_Q;
@@ -3707,10 +3731,18 @@ emit_x86_intrinsics (
 			case MONO_TYPE_U2:
 				op = is_imm ? INTRINS_SSE_PSLLI_W : INTRINS_SSE_PSLL_W;
 				break;
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 				op = is_imm ? INTRINS_SSE_PSLLI_D : INTRINS_SSE_PSLL_D;
 				break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				op = is_imm ? INTRINS_SSE_PSLLI_Q : INTRINS_SSE_PSLL_Q;
@@ -3754,8 +3786,16 @@ emit_x86_intrinsics (
 		case SN_LoadScalarVector128: {
 			int op = 0;
 			switch (arg0_type) {
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4: op = OP_SSE2_MOVD; break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8: op = OP_SSE2_MOVQ; break;
 			case MONO_TYPE_R8: op = OP_SSE2_MOVUPD; break;
@@ -3845,17 +3885,19 @@ emit_x86_intrinsics (
 			int op = 0;
 			switch (arg0_type) {
 			case MONO_TYPE_U1: op = OP_XEXTRACT_I1; break;
-			case MONO_TYPE_U4: case MONO_TYPE_I4: op = OP_XEXTRACT_I4; break;
-			case MONO_TYPE_U8: case MONO_TYPE_I8: op = OP_XEXTRACT_I8; break;
-			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
+#if TARGET_SIZEOF_VOID_P == 4
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-				op = OP_XEXTRACT_I8;
-#else
-				op = OP_XEXTRACT_I4;
 #endif
-				break;
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4: op = OP_XEXTRACT_I4; break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8: op = OP_XEXTRACT_I8; break;
+			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
 			default: g_assert_not_reached(); break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
