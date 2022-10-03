@@ -1093,12 +1093,23 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                // We want to always emit the EA_16BYTE version here.
+                //
+                // For ToVector256Unsafe the upper bits don't matter and for GetLower we
+                // only actually need the lower 16-bytes, so we can just be "more efficient"
+
+                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1);
             }
             else
             {
+                // We want to always emit the EA_32BYTE version here.
+                //
+                // For ToVector256Unsafe the upper bits don't matter and this allows same
+                // register moves to be elided. For GetLower we're getting a Vector128 and
+                // so the upper bits aren't impactful either allowing the same.
+
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+                emit->emitIns_Mov(INS_movaps, EA_32BYTE, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
         }

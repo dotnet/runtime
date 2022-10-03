@@ -2553,13 +2553,13 @@ initialize_object_slots (MonoClass *klass)
 }
 
 int
-mono_class_get_object_finalize_slot ()
+mono_class_get_object_finalize_slot (void)
 {
 	return finalize_slot;
 }
 
 MonoMethod *
-mono_class_get_default_finalize_method ()
+mono_class_get_default_finalize_method (void)
 {
 	int const i = finalize_slot;
 	return (i < 0) ? NULL : mono_defaults.object_class->vtable [i];

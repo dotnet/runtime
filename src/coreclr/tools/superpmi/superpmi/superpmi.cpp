@@ -328,6 +328,11 @@ int __cdecl main(int argc, char* argv[])
             return (int)SpmiResult::GeneralFailure;
         }
 
+        if (o.ignoreStoredConfig)
+        {
+            mc->setIgnoreStoredConfig();
+        }
+
         if (reader->IsMethodExcluded(mc))
         {
             excludedCount++;

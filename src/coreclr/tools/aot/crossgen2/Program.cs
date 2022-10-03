@@ -52,7 +52,7 @@ namespace ILCompiler
             _targetOS = Get(command.TargetOS);
             _targetArchitecture = Get(command.TargetArchitecture);
 
-            if (command.Result.GetValueForOption(command.WaitForDebugger))
+            if (Get(command.WaitForDebugger))
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
