@@ -213,6 +213,9 @@ Crst FCall
     AcquiredBefore LoaderHeap
 End
 
+Crst FrozenObjectHeap
+End
+
 Crst RetThunkCache
     AcquiredBefore LoaderHeap
 End
