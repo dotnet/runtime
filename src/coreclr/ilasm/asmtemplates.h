@@ -157,9 +157,10 @@ private:
 template <class T> struct Indx256
 {
     T* item; // The value corresponding to the sequence ending at this node
-    Indx256* table; // Child nodes: either NULL or points to 256 elements.
-                    // Element 0 is not used because 0 is the terminator.  This makes indexing simpler.
-    Indx256() { item=nullptr; table=nullptr; };
+    Indx256* tableLow;  // Child nodes: either NULL or points to 128 elements for [1,127].
+                        // Element 0 is not used because 0 is the terminator.  This makes indexing simpler.
+    Indx256* tableHigh; // Child nodes: either NULL or points to 128 elements for [128,255].
+    Indx256() { item=nullptr; tableLow=nullptr; tableHigh=nullptr; };
     ~Indx256()
     {
         ClearAll(true);
@@ -174,34 +175,28 @@ template <class T> struct Indx256
             return &item;
         }
 
-        // Ensure that child table exists.
-        if(table == NULL)
+        if (*psz > 127)
         {
-            table = new Indx256[256] {};
-            if (table == NULL)
-            {
-                _ASSERTE(!"Out of memory in Indx256::IndexString!");
-                fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
-                return NULL;
-            }
+            return IndexStringOneTable(tableHigh, *psz - 128, psz + 1, pObj);
         }
-
-        // Continue in child node for the current BYTE at the next BYTE.
-        return table[*psz].IndexString(psz+1,pObj);
+        else
+        {
+            return IndexStringOneTable(tableLow, *psz, psz + 1, pObj);
+        }
     };
 
     T* FindString(BYTE* psz)
     {
         if(*psz > 0)
         {
-            if(table == NULL)
+            if (*psz > 127)
             {
-                // If there are no child nodes, then there is nowhere to
-                // look for this key.
-                return NULL;
+                return FindStringOneTable(tableHigh, *psz - 128, psz + 1);
             }
-            // Continue in child node for the current BYTE at the next BYTE.
-            return table[*psz].FindString(psz+1);
+            else
+            {
+                return FindStringOneTable(tableLow, *psz, psz + 1);
+            }
         }
 
         // Found NULL terminator.  Return value.
@@ -212,16 +207,53 @@ template <class T> struct Indx256
     {
         if(DeleteObj) delete item;
         item = NULL;
+        ClearOneTable(tableLow, DeleteObj);
+        ClearOneTable(tableHigh, DeleteObj);
+    };
+
+private:
+    T** IndexStringOneTable(Indx256*& table, BYTE value, BYTE* next, T* pObj)
+    {
+        // Ensure that child table exists.
+        if(table == NULL)
+        {
+            table = new Indx256[128] {};
+            if(table == NULL)
+            {
+                _ASSERTE(!"Out of memory in Indx256::IndexString!");
+                fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
+                return NULL;
+            }
+        }
+
+        // Find the child node for the current BYTE at continue at the next BYTE.
+        return table[value].IndexString(next,pObj);
+    }
+
+    T* FindStringOneTable(Indx256* table, BYTE value, BYTE* next)
+    {
+        if(table == NULL)
+        {
+            // If there are no child nodes, then there is nowhere to
+            // look for this key.
+            return NULL;
+        }
+
+        return table[value].FindString(next);
+    }
+
+    void ClearOneTable(Indx256*& table, bool DeleteObj)
+    {
         if (table)
         {
-            for(unsigned i = 1; i < 256; i++)
+            for(unsigned i = 0; i < 128; i++)
             {
                 table[i].ClearAll(DeleteObj);
             }
             delete[] table;
             table = NULL;
         }
-    };
+    }
 };
 
 //
