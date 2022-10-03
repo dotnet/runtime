@@ -8757,6 +8757,26 @@ retry:
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_binop_cond_br (td, bb, local_defs, ins);
+			} else if (MINT_IS_LDIND (opcode)) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					int mt = td->locals [local].mt;
+					if (mt != MINT_TYPE_VT) {
+						// We have an 8 byte local, just replace the ldind with a mov
+						local_ref_count [sregs [0]]--;
+						// We make the assumption that the LDIND matches the local type
+						ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+						// dreg remains unchanged
+						interp_ins_set_sreg (ins, local);
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/ldind pair :\n\t");
+							dump_interp_inst (ins);
+						}
+						needs_retry = TRUE;
+					}
+				}
 			} else if (MINT_IS_LDFLD (opcode)) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
@@ -8843,6 +8863,26 @@ retry:
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins);
+					}
+				}
+			} else if (MINT_IS_STIND (opcode)) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					int mt = td->locals [local].mt;
+					if (mt != MINT_TYPE_VT) {
+						// We have an 8 byte local, just replace the stind with a mov
+						local_ref_count [sregs [0]]--;
+						// We make the assumption that the STIND matches the local type
+						ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+						interp_ins_set_dreg (ins, local);
+						interp_ins_set_sreg (ins, sregs [1]);
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/stind pair :\n\t");
+							dump_interp_inst (ins);
+						}
+						needs_retry = TRUE;
 					}
 				}
 			} else if (MINT_IS_STFLD (opcode)) {
