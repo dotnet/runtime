@@ -26406,7 +26406,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             mark_ro_segments();
             // Should fire an ETW event here.
         }
-#endif USE_REGIONS
+#endif //USE_REGIONS
 #endif //FEATURE_BASICFREEZE
 
         dprintf(3,("Marking Roots"));
@@ -34979,7 +34979,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent marking in range ro segments");
         concurrent_print_time_delta ("NRRO");
     }
-#endif USE_REGIONS
+#endif //USE_REGIONS
 #endif //FEATURE_BASICFREEZE
 
     dprintf (2, ("nonconcurrent marking stack roots"));
@@ -45279,12 +45279,9 @@ bool GCHeap::IsPromoted(Object* object)
     if (o)
     {
         ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
-    }
-    
-    if (!is_marked && (object != nullptr) && IsInFrozenSegment (object))
-    {
+
         // Frozen objects aren't expected to be "not promoted" here
-        __UNREACHABLE();
+        assert(is_marked || !IsInFrozenSegment(object));
     }
 #endif //_DEBUG
 
