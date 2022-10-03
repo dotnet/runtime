@@ -3,7 +3,7 @@ This provides a high-level API for inspecting raw assembly contents according to
 
 This library takes a dependency on `System.Reflection.Metadata` for reading the assembly.
 
-## Status: [Inactive](..\system.reflection\overview.md#status)
+## Status: [Inactive](../system.reflection/overview.md#status)
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Source

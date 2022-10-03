@@ -1,7 +1,7 @@
 # System.Reflection.Emit.ILGeneration
-This contains types used with [`System.Reflection.Emit`](..\system.reflection.emit.readme.md).
+Contains types used with [`System.Reflection.Emit`](../system.reflection.emit.readme.md).
 
-## Status: [Legacy](..\system.reflection\overview.md#status)
+## Status: [Inactive](../system.reflection/overview.md#status)
 
 ## Deployment
 Inbox  
