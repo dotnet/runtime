@@ -477,7 +477,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void VerifyMutable()
         {
-            if (_isConfigured)
+            if (IsReadOnly)
             {
                 ThrowHelper.ThrowInvalidOperationException_TypeInfoImmutable();
             }
@@ -488,6 +488,8 @@ namespace System.Text.Json.Serialization.Metadata
         private ExceptionDispatchInfo? _cachedConfigureError;
 
         internal bool IsConfigured => _isConfigured;
+
+        internal bool IsReadOnly { get; set; }
 
         internal void EnsureConfigured()
         {
@@ -511,6 +513,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         Configure();
 
+                        IsReadOnly = true;
                         _isConfigured = true;
                     }
                     catch (Exception e)
@@ -693,6 +696,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A blank <see cref="JsonPropertyInfo"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="propertyType"/> or <paramref name="name"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="propertyType"/> cannot be used for serialization.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="JsonTypeInfo"/> instance has been locked for further modification.</exception>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
@@ -712,6 +716,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
+            VerifyMutable();
             JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
             propertyInfo.Name = name;
 
@@ -747,6 +752,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
             string memberName = jsonPropertyInfo.MemberName;
+
+            jsonPropertyInfo.EnsureChildOf(this);
 
             if (jsonPropertyInfo.IsExtensionData)
             {
