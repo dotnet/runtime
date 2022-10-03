@@ -17,6 +17,7 @@
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
 #include <dlfcn.h>
 #include <pthread.h>
+#include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
 #include <net/if.h>
 #include <netinet/in.h>
@@ -102,19 +103,30 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 }
 
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
-// Try to load the getifaddrs and freeifaddrs functions manually.
-// This workaround is necessary on Android prior to API 24 and it can be removed once
-// we drop support for earlier Android versions.
+// This workaround is necessary as long as we support Android API 21-23 and it can be removed once
+// we drop support for these old Android versions.
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
 static void try_loading_getifaddrs()
 {
-    void *libc = dlopen("libc.so", RTLD_NOW);
-    if (libc)
+    if (android_get_device_api_level() >= 24)
     {
-        getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-        freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+        // Bionic on API 24+ contains the getifaddrs/freeifaddrs functions but the NDK doesn't expose those functions
+        // in ifaddrs.h when the minimum supported SDK is lower than 24 and therefore we need to load them manually
+        void *libc = dlopen("libc.so", RTLD_NOW);
+        if (libc)
+        {
+            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+        }
+    }
+    else
+    {
+        // Bionic on API 21-23 doesn't contain the implementation of getifaddrs/freeifaddrs at all
+        // and we need to reimplement it using netlink (see pal_ifaddrs)
+        getifaddrs = _netlink_getifaddrs;
+        freeifaddrs = _netlink_freeifaddrs;
     }
 }
 
