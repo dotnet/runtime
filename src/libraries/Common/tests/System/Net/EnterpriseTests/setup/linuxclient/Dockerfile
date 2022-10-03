@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-latest
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04
 
 # Prevents dialog prompting when installing packages
 ARG DEBIAN_FRONTEND=noninteractive

@@ -37,7 +37,7 @@ jobs:
       platform: Linux_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-arm-latest
+        image: ubuntu-18.04-cross-arm
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -61,7 +61,7 @@ jobs:
       platform: Linux_armv6
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-20.04-cross-armv6-raspbian-10-latest
+        image: ubuntu-20.04-cross-armv6-raspbian-10
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -87,7 +87,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: ubuntu-18.04-cross-arm64-latest
+          image: ubuntu-18.04-cross-arm64
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr
@@ -115,7 +115,7 @@ jobs:
       platform: Linux_musl_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: alpine-3.13-WithNode-latest
+        image: alpine-3.13-WithNode
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -139,7 +139,7 @@ jobs:
       platform: Linux_musl_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-arm-alpine-latest
+        image: ubuntu-18.04-cross-arm-alpine
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -165,7 +165,7 @@ jobs:
       platform: Linux_musl_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-22.04-cross-arm64-alpine-latest
+        image: ubuntu-22.04-cross-arm64-alpine
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -191,7 +191,7 @@ jobs:
       platform: Linux_bionic_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -218,7 +218,7 @@ jobs:
       platform: Linux_bionic_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -242,7 +242,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: centos-7-latest
+          image: centos-7
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr
@@ -267,7 +267,7 @@ jobs:
       platform: Linux_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-x86-linux-latest
+        image: ubuntu-18.04-cross-x86-linux
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -293,7 +293,7 @@ jobs:
       platform: Linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: centos-7-source-build-latest
+        image: centos-7-source-build
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -317,7 +317,7 @@ jobs:
       platform: Linux_s390x
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-s390x-latest
+        image: ubuntu-18.04-cross-s390x
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -342,7 +342,7 @@ jobs:
       platform: Linux_ppc64le
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-ppc64le-latest
+        image: ubuntu-18.04-cross-ppc64le
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -367,7 +367,7 @@ jobs:
       platform: Browser_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-latest
+        image: ubuntu-18.04-webassembly
         registry: mcr
       jobParameters:
         hostedOs: Linux
@@ -390,7 +390,7 @@ jobs:
       platform: Browser_wasm_firefox
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-webassembly-latest
+        image: ubuntu-18.04-webassembly
         registry: mcr
       jobParameters:
         hostedOs: Linux
@@ -432,7 +432,7 @@ jobs:
       platform: FreeBSD_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-freebsd-12-latest
+        image: ubuntu-18.04-cross-freebsd-12
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -456,7 +456,7 @@ jobs:
       platform: Android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -479,7 +479,7 @@ jobs:
       platform: Android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -502,7 +502,7 @@ jobs:
       platform: Android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -525,7 +525,7 @@ jobs:
       platform: Android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-latest
+        image: ubuntu-18.04-android
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -790,7 +790,7 @@ jobs:
       platform: Tizen_armel
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-armel-tizen-latest
+        image: ubuntu-18.04-cross-armel-tizen
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

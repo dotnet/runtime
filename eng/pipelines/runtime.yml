@@ -55,9 +55,9 @@ resources:
   containers:
   # Define auxilary containers used by the installer jobs
   - container: debpkg
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-latest
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
   - container: rpmpkg
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg-latest
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg
 
 jobs:
 
@@ -107,7 +107,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    container: debian-11-gcc12-amd64-latest
+    container: debian-11-gcc12-amd64
     jobParameters:
       testGroup: innerloop
       compilerName: gcc
