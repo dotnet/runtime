@@ -47,7 +47,7 @@ public:
     static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (_wcsicmp(lhs, rhs) == 0); }
 };
 
-SHash<ICallNameToIdTraits> g_ICallToId;
+SHash<ICallNameToIdTraits>* g_ICallToId = new SHash<ICallNameToIdTraits>();
 std::vector<ECFunc*> g_ICallIdToCode;
 
 INT FindICall(MethodDesc *pMD)
@@ -70,7 +70,7 @@ INT FindICall(MethodDesc *pMD)
     fullMethodName.AppendUTF8("::");
     fullMethodName.AppendUTF8(pMD->GetName());
 
-    auto result = g_ICallToId.LookupPtr(fullMethodName);
+    auto result = g_ICallToId->LookupPtr(fullMethodName);
     if (result)
     {
         return result->Id;
@@ -94,8 +94,8 @@ void ECall::RegisterICall(const char* fullMethodName, PCODE code)
     // CAUTION: THIS METHOD IS NOT THREADSAFE
     // PROTECT IT IN THE CALLER
     SString* fullMethodNameUTF8 = new SString(SString::Utf8Literal, fullMethodName);
-    
-    auto result = g_ICallToId.LookupPtr(*fullMethodNameUTF8);
+
+    auto result = g_ICallToId->LookupPtr(*fullMethodNameUTF8);
     if (result)
     {
         auto indexICall = GetIndexICall(result->Id);
@@ -106,7 +106,7 @@ void ECall::RegisterICall(const char* fullMethodName, PCODE code)
         auto index = g_ICallIdToCode.size();
         auto id = (DWORD)0xFFFF0000 | (DWORD)g_ICallIdToCode.size();
 
-        g_ICallToId.AddOrReplace(ICallNameToId(fullMethodNameUTF8->GetUnicode(), id));
+        g_ICallToId->AddOrReplace(ICallNameToId(fullMethodNameUTF8->GetUnicode(), id));
 
         auto eeFuncs = new ECFunc[2];
 #ifdef HOST_64BIT
@@ -460,7 +460,7 @@ static ECFunc *FindECFuncForID(DWORD id)
 
     if (id == 0)
         return NULL;
-    
+
 #ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
     if (IsICall(id))
     {
