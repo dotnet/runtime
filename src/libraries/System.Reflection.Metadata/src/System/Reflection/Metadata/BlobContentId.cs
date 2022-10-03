@@ -22,17 +22,27 @@ namespace System.Reflection.Metadata
         }
 
         public BlobContentId(ImmutableArray<byte> id)
-            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id)!)
         {
+            if (id.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(id));
+            }
+
+            (Guid, Stamp) = Initialize(id.AsSpan());
         }
 
-        public unsafe BlobContentId(byte[] id)
+        public BlobContentId(byte[] id)
         {
             if (id is null)
             {
                 Throw.ArgumentNull(nameof(id));
             }
 
+            (Guid, Stamp) = Initialize(id);
+        }
+
+        private static unsafe (Guid guid, uint stamp) Initialize(ReadOnlySpan<byte> id)
+        {
             if (id.Length != Size)
             {
                 throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
@@ -41,8 +51,10 @@ namespace System.Reflection.Metadata
             fixed (byte* ptr = &id[0])
             {
                 var reader = new BlobReader(ptr, id.Length);
-                Guid = reader.ReadGuid();
-                Stamp = reader.ReadUInt32();
+                Guid guid = reader.ReadGuid();
+                uint stamp = reader.ReadUInt32();
+
+                return (guid, stamp);
             }
         }
 
@@ -50,7 +62,12 @@ namespace System.Reflection.Metadata
 
         public static BlobContentId FromHash(ImmutableArray<byte> hashCode)
         {
-            return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode)!);
+            if (hashCode.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(hashCode));
+            }
+
+            return FromHash(hashCode.AsSpan());
         }
 
         public static BlobContentId FromHash(byte[] hashCode)
@@ -60,6 +77,11 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(hashCode));
             }
 
+            return FromHash(hashCode.AsSpan());
+        }
+
+        private static BlobContentId FromHash(ReadOnlySpan<byte> hashCode)
+        {
             const int minHashSize = 20;
 
             if (hashCode.Length < minHashSize)
@@ -69,8 +91,8 @@ namespace System.Reflection.Metadata
 
             // extract guid components from input data
             uint a = ((uint)hashCode[3] << 24 | (uint)hashCode[2] << 16 | (uint)hashCode[1] << 8 | hashCode[0]);
-            ushort b = (ushort)((ushort)hashCode[5] << 8 | (ushort)hashCode[4]);
-            ushort c = (ushort)((ushort)hashCode[7] << 8 | (ushort)hashCode[6]);
+            ushort b = (ushort)(hashCode[5] << 8 | hashCode[4]);
+            ushort c = (ushort)(hashCode[7] << 8 | hashCode[6]);
             byte d = hashCode[8];
             byte e = hashCode[9];
             byte f = hashCode[10];
