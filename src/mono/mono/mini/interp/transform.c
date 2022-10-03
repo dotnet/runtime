@@ -1764,6 +1764,24 @@ interp_get_ldind_for_mt (int mt)
 }
 
 static int
+interp_get_mt_for_ldind (int ldind_op)
+{
+	switch (ldind_op) {
+		case MINT_LDIND_I1: return MINT_TYPE_I1;
+		case MINT_LDIND_U1: return MINT_TYPE_U1;
+		case MINT_LDIND_I2: return MINT_TYPE_I2;
+		case MINT_LDIND_U2: return MINT_TYPE_U2;
+		case MINT_LDIND_I4: return MINT_TYPE_I4;
+		case MINT_LDIND_I8: return MINT_TYPE_I8;
+		case MINT_LDIND_R4: return MINT_TYPE_R4;
+		case MINT_LDIND_R8: return MINT_TYPE_R8;
+		default:
+			g_assert_not_reached ();
+	}
+	return -1;
+}
+
+static int
 interp_get_stind_for_mt (int mt)
 {
 	switch (mt) {
@@ -8757,6 +8775,35 @@ retry:
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_binop_cond_br (td, bb, local_defs, ins);
+			} else if (MINT_IS_LDIND (opcode)) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					int mt = td->locals [local].mt;
+					if (mt != MINT_TYPE_VT) {
+						// LDIND cannot simply be replaced with a mov because it might also include a
+						// necessary conversion (especially when we do cprop and do moves between vars of
+						// different types).
+						int ldind_mt = interp_get_mt_for_ldind (opcode);
+						switch (ldind_mt) {
+							case MINT_TYPE_I1: ins->opcode = MINT_CONV_I1_I4; break;
+							case MINT_TYPE_U1: ins->opcode = MINT_CONV_U1_I4; break;
+							case MINT_TYPE_I2: ins->opcode = MINT_CONV_I2_I4; break;
+							case MINT_TYPE_U2: ins->opcode = MINT_CONV_U2_I4; break;
+							default:
+								ins->opcode = GINT_TO_OPCODE (get_mov_for_type (ldind_mt, FALSE));
+								break;
+						}
+						local_ref_count [sregs [0]]--;
+						interp_ins_set_sreg (ins, local);
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/ldind pair :\n\t");
+							dump_interp_inst (ins);
+						}
+						needs_retry = TRUE;
+					}
+				}
 			} else if (MINT_IS_LDFLD (opcode)) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
@@ -8843,6 +8890,26 @@ retry:
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins);
+					}
+				}
+			} else if (MINT_IS_STIND (opcode)) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					int mt = td->locals [local].mt;
+					if (mt != MINT_TYPE_VT) {
+						// We have an 8 byte local, just replace the stind with a mov
+						local_ref_count [sregs [0]]--;
+						// We make the assumption that the STIND matches the local type
+						ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+						interp_ins_set_dreg (ins, local);
+						interp_ins_set_sreg (ins, sregs [1]);
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/stind pair :\n\t");
+							dump_interp_inst (ins);
+						}
+						needs_retry = TRUE;
 					}
 				}
 			} else if (MINT_IS_STFLD (opcode)) {
