@@ -1869,7 +1869,7 @@ void SString::VPrintf(const CHAR *format, va_list args)
     RETURN;
 }
 
-void SString::Printf(const WCHAR *format, ...)
+void SString::_Printf(const WCHAR *format, ...)
 {
     CONTRACT_VOID
     {
