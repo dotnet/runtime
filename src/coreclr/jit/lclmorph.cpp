@@ -1012,14 +1012,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            // Locals are not enregistered when optimizations are disabled; there is no point
-            // in spending time finding LCL_VAR-equivalent trees for them. TODO-ADDR: move
-            // this check earlier.
-            if (m_compiler->opts.OptimizationDisabled())
-            {
-                return IndirTransform::LclFld;
-            }
-
             // Bool and ubyte are the same type.
             if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
                 (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
@@ -1033,6 +1025,11 @@ private:
             {
                 assert(varTypeIsSmall(indir));
                 return IndirTransform::LclVar;
+            }
+
+            if (m_compiler->opts.OptimizationDisabled())
+            {
+                return IndirTransform::LclFld;
             }
 
             // Turn this into a bitcast if we can.
