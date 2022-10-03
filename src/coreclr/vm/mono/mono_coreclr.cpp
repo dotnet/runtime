@@ -2924,7 +2924,7 @@ extern "C" EXPORT_API char EXPORT_CC mono_signature_is_instance(MonoMethodSignat
 {
     MonoMethodSignature_clr* sig_clr = (MonoMethodSignature_clr*)sig;
     MetaSig msig(sig_clr);
-    return msig.HasThis();
+    return (char)msig.HasThis();
 }
 
 typedef gboolean(*MonoStackWalk) (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
