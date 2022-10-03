@@ -1147,10 +1147,7 @@ namespace System.Xml.Schema
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Array type is always present as it is passed in as a parameter.")]
             static Array ToArray(ArrayList values, Type arrayType)
-            {
-                Array array = values.ToArray(arrayType.GetElementType()!);
-                return array;
-            }
+                => values.ToArray(arrayType.GetElementType()!);
         }
     }
 
