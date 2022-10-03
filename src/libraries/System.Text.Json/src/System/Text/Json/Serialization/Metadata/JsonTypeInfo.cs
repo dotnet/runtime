@@ -477,7 +477,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void VerifyMutable()
         {
-            if (_isConfigured)
+            if (_isConfigured || IsReadOnly)
             {
                 ThrowHelper.ThrowInvalidOperationException_TypeInfoImmutable();
             }
@@ -488,6 +488,8 @@ namespace System.Text.Json.Serialization.Metadata
         private ExceptionDispatchInfo? _cachedConfigureError;
 
         internal bool IsConfigured => _isConfigured;
+
+        internal bool IsReadOnly { get; set; }
 
         internal void EnsureConfigured()
         {
@@ -748,6 +750,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
             string memberName = jsonPropertyInfo.MemberName;
+
+            jsonPropertyInfo.EnsureChildOf(this);
 
             if (jsonPropertyInfo.IsExtensionData)
             {

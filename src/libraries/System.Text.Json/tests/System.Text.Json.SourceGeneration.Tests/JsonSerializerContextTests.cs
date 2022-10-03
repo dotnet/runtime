@@ -22,6 +22,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void ContextMetadataIsImmutable()
+        {
+            JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
+
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsExtensionData = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+        }
+
+        [Fact]
         public static void VariousGenericsAreSupported()
         {
             AssertGenericContext(GenericContext<int>.Default);
