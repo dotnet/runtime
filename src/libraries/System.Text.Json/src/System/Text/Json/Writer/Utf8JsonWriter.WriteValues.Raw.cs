@@ -210,7 +210,7 @@ namespace System.Text.Json
                 _tokenType = ValidateJson(in utf8Json);
             }
 
-            GrowIfNeed(len);
+            GrowIfNeeded(len);
 
             Span<byte> output = _memory.Span;
 
@@ -253,7 +253,7 @@ namespace System.Text.Json
                 _tokenType = ValidateJson(in utf8Json);
             }
 
-            GrowIfNeed((int)len);
+            GrowIfNeeded((int)len);
 
             Span<byte> output = _memory.Span;
 
@@ -268,10 +268,8 @@ namespace System.Text.Json
             SetFlagToAddListSeparatorBeforeNextItem();
         }
 
-        private void GrowIfNeed(int len)
+        private void GrowIfNeeded(int len)
         {
-            // TODO (https://github.com/dotnet/runtime/issues/29293):
-            // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
             int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
 
             if (_memory.Length - BytesPending < maxRequired)
