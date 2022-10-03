@@ -702,8 +702,11 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
-            assert(simdBaseJitType ==
-                   getBaseJitTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize));
+
+            CorInfoType op1SimdBaseJitType =
+                getBaseJitTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
+
+            assert(simdBaseJitType == op1SimdBaseJitType);
 
             switch (getSIMDTypeForSize(simdSize))
             {
@@ -1318,11 +1321,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode(0xD8), NI_AVX2_Permute4x64,
                                                            simdOtherJitType, simdSize);
 
-                            simdSize = 16;
                             simdType = TYP_SIMD16;
 
                             op1 = gtNewSimdHWIntrinsicNode(simdType, op1, NI_Vector256_GetLower, simdBaseJitType,
                                                            simdSize);
+
+                            simdSize = 16;
                         }
                         break;
                     }

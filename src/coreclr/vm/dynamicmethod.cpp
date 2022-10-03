@@ -1275,8 +1275,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // lock the global string literal interning map
     CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-    StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash,
-        /* bAddIfNotFound */ TRUE, /* bPreferFrozenObjectHeap */ FALSE));
+    StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
     pStringLiteral->m_pEntry = pEntry.Extract();
