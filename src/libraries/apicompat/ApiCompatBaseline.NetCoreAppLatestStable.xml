@@ -758,18 +758,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Lock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Unlock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net6.0/mscorlib.dll</Left>
     <Right>net7.0/mscorlib.dll</Right>
@@ -845,54 +833,6 @@
     <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net6.0/mscorlib.dll</Left>
     <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Security.Cryptography.DSAParameters):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.RC2.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/mscorlib.dll</Left>
-    <Right>net7.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MaxWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MinWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Lock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Unlock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
@@ -974,102 +914,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Security.Cryptography.DSAParameters):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.RC2.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>P:System.Net.Http.HttpClientHandler.Proxy:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/netstandard.dll</Left>
-    <Right>net7.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MaxWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Diagnostics.Process.dll</Left>
-    <Right>net7.0/System.Diagnostics.Process.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MinWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Diagnostics.Process.dll</Left>
-    <Right>net7.0/System.Diagnostics.Process.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MaxWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.dll</Left>
-    <Right>net7.0/System.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Diagnostics.Process.set_MinWorkingSet(System.IntPtr):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.dll</Left>
-    <Right>net7.0/System.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.dll</Left>
-    <Right>net7.0/System.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Lock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.IO.FileSystem.dll</Left>
-    <Right>net7.0/System.IO.FileSystem.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Unlock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.IO.FileSystem.dll</Left>
-    <Right>net7.0/System.IO.FileSystem.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>P:System.Net.Http.HttpClientHandler.Proxy:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Net.Http.dll</Left>
-    <Right>net7.0/System.Net.Http.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Lock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Runtime.dll</Left>
-    <Right>net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.IO.FileStream.Unlock(System.Int64,System.Int64):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Runtime.dll</Left>
-    <Right>net7.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net6.0/System.Runtime.Serialization.Formatters.dll</Left>
     <Right>net7.0/System.Runtime.Serialization.Formatters.dll</Right>
@@ -1145,35 +989,5 @@
     <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net6.0/System.Runtime.Serialization.Formatters.dll</Left>
     <Right>net7.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Security.Cryptography.Algorithms.dll</Left>
-    <Right>net7.0/System.Security.Cryptography.Algorithms.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Security.Cryptography.Algorithms.dll</Left>
-    <Right>net7.0/System.Security.Cryptography.Algorithms.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.DSA.Create(System.Security.Cryptography.DSAParameters):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Security.Cryptography.Algorithms.dll</Left>
-    <Right>net7.0/System.Security.Cryptography.Algorithms.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.RC2.Create:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Security.Cryptography.Algorithms.dll</Left>
-    <Right>net7.0/System.Security.Cryptography.Algorithms.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>net6.0/System.Security.Cryptography.X509Certificates.dll</Left>
-    <Right>net7.0/System.Security.Cryptography.X509Certificates.dll</Right>
   </Suppression>
 </Suppressions>
