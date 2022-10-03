@@ -44894,11 +44894,18 @@ HRESULT GCHeap::Initialize()
     if (gc_heap::regions_range == 0)
     {
         if (gc_heap::heap_hard_limit)
-        { 
-            // We will initially reserve 5x the configured hard limit and 2x if
-            // large pages are enabled
-            gc_heap::regions_range = (gc_heap::use_large_pages_p) ? 2 * gc_heap::heap_hard_limit  // large pages
-                                                                  : 5 * gc_heap::heap_hard_limit; 
+        {
+            if (gc_heap::heap_hard_limit_oh[soh])
+            {
+                gc_heap::regions_range = gc_heap::heap_hard_limit;
+            }
+            else
+            {
+                // We will initially reserve 5x the configured hard limit and 2x if
+                // large pages are enabled as this is closer to segments
+                gc_heap::regions_range = ((gc_heap::use_large_pages_p) ? (2 * gc_heap::heap_hard_limit)  // large pages
+                                                                       : (5 * gc_heap::heap_hard_limit));
+            }
         }
         else
         {
@@ -45058,16 +45065,23 @@ HRESULT GCHeap::Initialize()
     // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations 
     // below (unless its configured explictly) such that there are at least 2 regions available
     // except for the smallest case. Now the lowest limit possible is 4mb. 
-    if (gc_region_size == 0){
-        if ((gc_heap::regions_range / nhp / 19) / 2 >= (4 * 1024 * 1024)){
+    if (gc_region_size == 0)
+    {
+        if ((gc_heap::regions_range / nhp / min_regions_per_heap) / 2 >= (4 * 1024 * 1024))
+        {
             gc_region_size = 4 * 1024 * 1024;
-        } else if ((gc_heap::regions_range / nhp / 19) / 2 >= (2 * 1024 * 1024)){
+        }
+        else if ((gc_heap::regions_range / nhp / min_regions_per_heap) / 2 >= (2 * 1024 * 1024))
+        {
             gc_region_size = 2 * 1024 * 1024;
-        } else 
-            gc_region_size = 1 * 1024 * 1024;          
+        }
+        else
+        {
+            gc_region_size = 1 * 1024 * 1024;
+        }
     }
 
-    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * min_regions_per_heap) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
     }
