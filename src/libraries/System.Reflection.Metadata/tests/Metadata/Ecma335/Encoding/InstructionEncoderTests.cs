@@ -476,6 +476,28 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
+        public void Switch()
+        {
+            var builder = new BlobBuilder();
+            var il = new InstructionEncoder(builder, new ControlFlowBuilder());
+            var l = il.DefineLabel();
+            var switchEncoder = il.Switch(4);
+            switchEncoder.Branch(l);
+            switchEncoder.Branch(l);
+            switchEncoder.Branch(l);
+            switchEncoder.Branch(l);
+
+            AssertEx.Equal(new byte[]
+            {
+                (byte)ILOpCode.Switch, 0x04, 0x00, 0x00, 0x00,
+                0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff
+            }, builder.ToArray());
+        }
+
+        [Fact]
         public void BranchAndLabel_Errors()
         {
             var builder = new BlobBuilder();
