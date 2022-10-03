@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// An interface for tracking host lifetime.
+    /// </summary>
     public interface IHostLifetime
     {
         /// <summary>
