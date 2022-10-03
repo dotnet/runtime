@@ -9721,6 +9721,11 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, intrins, args, "");
 			break;
 		}
+		case OP_WASM_SIMD_DOT: {
+			LLVMValueRef args [2] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_DOT, args, "i32x4.dot_i16x8_s");
+			break;
+		}
 		case OP_WASM_SIMD_SHUFFLE: {
 			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases */
 			LLVMValueRef args [18] = { lhs, rhs };

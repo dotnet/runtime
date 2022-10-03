@@ -7,9 +7,15 @@ using System.Runtime.Intrinsics;
 namespace System.Runtime.Intrinsics.Wasm
 {
     [Intrinsic]
-    internal abstract class PackedSimd
+    [CLSCompliant(false)]
+    public abstract class PackedSimd
     {
         public static bool IsSupported { [Intrinsic] get { return false; } }
+
+        // Constructing SIMD Values
+
+        // cut (lives somewhere else, use Vector128.Create)
+        // public static Vector128<T> Constant(ImmByte[16] imm);
 
         [Intrinsic]
         public static Vector128<sbyte>  Splat(sbyte  value) => Splat(value);
@@ -35,6 +41,8 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   Splat(nint   value) => Splat(value);
         [Intrinsic]
         public static Vector128<nuint>  Splat(nuint  value) => Splat(value);
+
+        // Accessing lanes
 
         [Intrinsic]
         public static int    ExtractLane(Vector128<sbyte>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx16
@@ -95,6 +103,93 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> vector, Vector128<sbyte> indices) => Swizzle(vector, indices);
         [Intrinsic]
         public static Vector128<byte>  Swizzle(Vector128<byte>  vector, Vector128<byte>  indices) => Swizzle(vector, indices);
+
+        // Integer arithmetic
+
+        [Intrinsic]
+        public static Vector128<sbyte>  Add(Vector128<sbyte>  left, Vector128<sbyte>  right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<byte>   Add(Vector128<byte>   left, Vector128<byte>   right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<short>  Add(Vector128<short>  left, Vector128<short>  right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<ushort> Add(Vector128<ushort> left, Vector128<ushort> right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<int>    Add(Vector128<int>    left, Vector128<int>    right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<uint>   Add(Vector128<uint>   left, Vector128<uint>   right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<long>   Add(Vector128<long>   left, Vector128<long>   right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<ulong>  Add(Vector128<ulong>  left, Vector128<ulong>  right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<nint>   Add(Vector128<nint>   left, Vector128<nint>   right) => Add(left, right);
+        [Intrinsic]
+        public static Vector128<nuint>  Add(Vector128<nuint>  left, Vector128<nuint>  right) => Add(left, right);
+
+        [Intrinsic]
+        public static Vector128<sbyte>  Subtract(Vector128<sbyte>  left, Vector128<sbyte>  right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<byte>   Subtract(Vector128<byte>   left, Vector128<byte>   right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<short>  Subtract(Vector128<short>  left, Vector128<short>  right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<ushort> Subtract(Vector128<ushort> left, Vector128<ushort> right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<int>    Subtract(Vector128<int>    left, Vector128<int>    right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<uint>   Subtract(Vector128<uint>   left, Vector128<uint>   right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<long>   Subtract(Vector128<long>   left, Vector128<long>   right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<ulong>  Subtract(Vector128<ulong>  left, Vector128<ulong>  right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<nint>   Subtract(Vector128<nint>   left, Vector128<nint>   right) => Subtract(left, right);
+        [Intrinsic]
+        public static Vector128<nuint>  Subtract(Vector128<nuint>  left, Vector128<nuint>  right) => Subtract(left, right);
+
+        [Intrinsic]
+        public static Vector128<short>  Multiply(Vector128<short>  left, Vector128<short>  right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<ushort> Multiply(Vector128<ushort> left, Vector128<ushort> right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<int>    Multiply(Vector128<int>    left, Vector128<int>    right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<uint>   Multiply(Vector128<uint>   left, Vector128<uint>   right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<long>   Multiply(Vector128<long>   left, Vector128<long>   right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<ulong>  Multiply(Vector128<ulong>  left, Vector128<ulong>  right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<nint>   Multiply(Vector128<nint>   left, Vector128<nint>   right) => Multiply(left, right);
+        [Intrinsic]
+        public static Vector128<nuint>  Multiply(Vector128<nuint>  left, Vector128<nuint>  right) => Multiply(left, right);
+
+        [Intrinsic]
+        public static Vector128<int> Dot(Vector128<short> left, Vector128<short> right) => Dot(left, right);
+
+        [Intrinsic]
+        public static Vector128<sbyte>  Negate(Vector128<sbyte>  value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<byte>   Negate(Vector128<byte>   value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<short>  Negate(Vector128<short>  value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<ushort> Negate(Vector128<ushort> value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<int>    Negate(Vector128<int>    value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<uint>   Negate(Vector128<uint>   value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<long>   Negate(Vector128<long>   value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<ulong>  Negate(Vector128<ulong>  value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<nint>   Negate(Vector128<nint>   value) => Negate(value);
+        [Intrinsic]
+        public static Vector128<nuint>  Negate(Vector128<nuint>  value) => Negate(value);
+
+        // Bitwise operations
 
         [Intrinsic]
         public static Vector128<sbyte>  And(Vector128<sbyte>  left, Vector128<sbyte>  right) => And(left, right);

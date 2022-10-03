@@ -4160,14 +4160,19 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 #ifdef TARGET_WASM
 
 static SimdIntrinsic packedsimd_methods [] = {
+	{SN_Add},
 	{SN_And},
 	{SN_Bitmask},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
+	{SN_Dot},
 	{SN_ExtractLane},
+	{SN_Multiply},
+	{SN_Negate},
 	{SN_ReplaceLane},
 	{SN_Shuffle},
 	{SN_Splat},
+	{SN_Subtract},
 	{SN_Swizzle},
 	{SN_get_IsSupported},
 };
@@ -4187,6 +4192,12 @@ emit_packedsimd_intrinsics (
 		return NULL;
 
 	switch (id) {
+		case SN_Add:
+		case SN_Subtract:
+		case SN_Multiply:
+			return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+		case SN_Negate:
+			return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 		case SN_And:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND, arg0_type, fsig, args);
 		case SN_Bitmask:
@@ -4211,6 +4222,8 @@ emit_packedsimd_intrinsics (
 			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		}
+		case SN_Dot:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_DOT, -1, -1, fsig, args);
 		case SN_Shuffle:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
 		case SN_Swizzle:
