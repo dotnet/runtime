@@ -14,7 +14,7 @@
 // acquired and which other types may be subsequently acquired. You can then add a Crst definition to this
 // file and annotate it with those dependencies. Running CrstTypeTool will check to see if this introduces a
 // potential deadlock problem and if everything checks out will generate a new version of
-// file:CrstTypes.h (be sure to check this file out from TFS/SD before running CrstTypeTool).
+// file:crsttypes_generated.h.
 //
 // The format of this file is a very simple language. Comments are introduced with '//' and continue to the
 // end of the line. Keywords are case insensitive (Crst type names, however, are case sensitive since they'll
