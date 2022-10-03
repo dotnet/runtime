@@ -4,7 +4,7 @@ name: Test Windows x64
 
 agent:
   type: Unity::VM
-  image: platform-foundation/windows-vs2019-il2cpp-bokken:v1.1.7-1038262
+  image: burst/burst-base:1.0.8-1195360
   flavor: b1.xlarge
 
 dependencies:
@@ -13,7 +13,7 @@ dependencies:
 commands:
 # build/run tests
   - .yamato/scripts/test_windows_x64.cmd
-  
+
 triggers:
   pull_requests:
     - targets:
