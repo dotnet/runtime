@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
@@ -253,6 +254,20 @@ public class Simple
         }
     }
 
+    [MethodImpl (MethodImplOptions.NoInlining)]
+    private static void TestLoadingValueTypesWithMethod() 
+    {
+        Console.WriteLine($"{nameof(TestLoadingValueTypesWithMethod)}");
+        Console.WriteLine($"-- {typeof(ValueTypeWithStaticMethod).Name}");
+        Assert.Throws<TypeLoadException>(() => LoadInvalidType());
+    }
+
+    [MethodImpl (MethodImplOptions.NoInlining)]
+    private static void LoadInvalidType()
+    {
+        Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
+    }
+
     public static int Main(string[] noArgs)
     {
         if (!OperatingSystem.IsWindows())
@@ -270,6 +285,7 @@ public class Simple
             TestGenericClassNonEquivalence();
             TestGenericInterfaceEquivalence();
             TestTypeEquivalenceWithTypePunning();
+            TestLoadingValueTypesWithMethod();
         }
         catch (Exception e)
         {

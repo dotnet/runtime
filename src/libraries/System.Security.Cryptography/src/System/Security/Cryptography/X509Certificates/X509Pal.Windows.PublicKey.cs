@@ -56,9 +56,9 @@ namespace System.Security.Cryptography.X509Certificates
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
-                        byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.CNG_RSA_PUBLIC_KEY_BLOB, encodedKeyValue);
-                        CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
-                        return new RSACng(cngKey, transferOwnership: true);
+                        RSA rsa = new RSABCrypt();
+                        rsa.ImportRSAPublicKey(encodedKeyValue, out _);
+                        return rsa;
                     }
                 case AlgId.CALG_DSS_SIGN:
                     {
@@ -84,7 +84,6 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
-                byte[] keyBlob;
                 string? curveName = GetCurveName(bCryptKeyHandle);
 
                 if (curveName == null)
@@ -98,15 +97,24 @@ namespace System.Security.Cryptography.X509Certificates
                         blobFormat = CngKeyBlobFormat.EccPublicBlob;
                     }
 
-                    keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
-                    key = factory(CngKey.Import(keyBlob, blobFormat));
+                    ArraySegment<byte> keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
+
+                    try
+                    {
+                        key = factory(CngKey.Import(keyBlob, blobFormat));
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(keyBlob);
+                    }
                 }
                 else
                 {
                     blobFormat = CngKeyBlobFormat.EccPublicBlob;
-                    keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
+                    ArraySegment<byte> keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
+                    CryptoPool.Return(keyBlob);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
                     key = new TAlgorithm();
                     key.ImportParameters(ecparams);
@@ -146,25 +154,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
+        private static ArraySegment<byte> ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
             string blobFormatString = blobFormat.Format;
 
-            int numBytesNeeded;
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
-
-            byte[] keyBlob = new byte[numBytesNeeded];
-            ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, keyBlob, keyBlob.Length, out numBytesNeeded, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
-
-            Array.Resize(ref keyBlob, numBytesNeeded);
-            return keyBlob;
+            return Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, blobFormatString);
         }
 
-        private static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
+        private static void ExportNamedCurveParameters(ref ECParameters ecParams, ReadOnlySpan<byte> ecBlob, bool includePrivateParameters)
         {
             // We now have a buffer laid out as follows:
             //     BCRYPT_ECCKEY_BLOB   header

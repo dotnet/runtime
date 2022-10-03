@@ -6995,8 +6995,8 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenObjects();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            setMethodHasFrozenString();
+            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
@@ -11075,11 +11075,18 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
-            }
-            else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
-            {
-                eePrintFrozenObjectDescription(" ", tree->AsIntCon()->gtIconVal);
+                const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
+                // If *str points to a '\0' then don't print the string's values
+                if ((str != nullptr) && (*str != '\0'))
+                {
+                    printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
+                }
+                else // We can't print the value of the string
+                {
+                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
+                    // and instead always returns nullptr
+                    printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
+                }
             }
             else
             {
@@ -11094,7 +11101,7 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        assert(doesMethodHaveFrozenObjects());
+                        assert(doesMethodHaveFrozenString());
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
@@ -11146,9 +11153,8 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
                             break;
-                        case GTF_ICON_OBJ_HDL:
                         case GTF_ICON_STR_HDL:
-                            unreached(); // These cases are handled above
+                            unreached(); // This case is handled above
                             break;
                         case GTF_ICON_CONST_PTR:
                             printf(" const ptr");
@@ -17054,12 +17060,13 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (node->GetHWIntrinsicId())
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             // These intrinsics are meant to set the same value to every element.
@@ -18637,9 +18644,24 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX_LoadVector256:
+        {
+            // These loads are contained as part of a HWIntrinsic operation
+            return true;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_Extract:
+        case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         case NI_AVX_ExtractVector128:
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         {
+            // These HWIntrinsic operations are contained as part of a store
             return true;
         }
 

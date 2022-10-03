@@ -161,6 +161,11 @@ namespace SuperPMICollection
 
         private static int RunProgram(string program, string arguments)
         {
+            if (!File.Exists(program))
+            {
+                throw new SpmiException("program " + program + " not found");
+            }
+
             // If the program is a script, move the program name into the arguments, and run it
             // under the appropriate shell.
             if (Global.IsWindows)
@@ -238,7 +243,11 @@ namespace SuperPMICollection
 
             try
             {
-                RunProgram(testName, "");
+                int retval = RunProgram(testName, "");
+                if (retval != 0)
+                {
+                    throw new SpmiException("Test " + testName + " failed");
+                }
             }
             finally
             {
@@ -269,22 +278,9 @@ namespace SuperPMICollection
         // Run all the programs from the CoreCLR test binary drop we wish to run while collecting MC files.
         private static void RunTestProgramsWhileCollecting()
         {
-
-            // Run the tests
             foreach (string spmiTestPath in GetSpmiTestFullPaths())
             {
-                try
-                {
-                    RunTest(spmiTestPath);
-                }
-                catch (SpmiException ex)
-                {
-                    // Ignore failures running the test. We don't really care if they pass or not
-                    // as long as they generate some .MC files. Plus, I'm not sure how confident
-                    // we can be in getting a correct error code.
-
-                    Console.Error.WriteLine("WARNING: test failed (ignoring): " + ex.Message);
-                }
+                RunTest(spmiTestPath);
             }
         }
 
@@ -603,7 +599,7 @@ namespace SuperPMICollection
             Console.WriteLine("If -mch is not given, all generated files are deleted, and the result is simply the exit code");
             Console.WriteLine("indicating whether the collection succeeded. This is useful as a test.");
             Console.WriteLine("");
-            Console.WriteLine("If the COMPlus_JitName variable is already set, it is assumed SuperPMI collection is already happening,");
+            Console.WriteLine("If the COMPlus_JitName or COMPlus_JitPath variable is already set, it is assumed SuperPMI collection is already happening,");
             Console.WriteLine("and the program exits with success.");
             Console.WriteLine("");
             Console.WriteLine("On success, the return code is 100.");
@@ -700,15 +696,19 @@ namespace SuperPMICollection
 
             // Done with argument parsing.
 
-            string jitnamevar = System.Environment.GetEnvironmentVariable("COMPlus_JitName");
-            if (!String.IsNullOrEmpty(jitnamevar))
-            {
-                // Someone already has the COMPlus_JitName variable set. We don't want to override
-                // that. Perhaps someone is already doing a SuperPMI collection and invokes this
-                // program as part of a full test path in which this program exists.
+            // If someone already has one of the COMPlus_JitName/DOTNET_JitName/COMPlus_JitPath/DOTNET_JitPath variables set,
+            // We don't want to override that. Perhaps someone is already doing a SuperPMI collection and invokes this
+            // program as part of a full test path in which this program exists.
 
-                Console.WriteLine("COMPlus_JitName already exists: skipping SuperPMI collection and returning success");
-                return 100;
+            string[] checkVars = { "COMPlus_JitName", "DOTNET_JitName", "COMPlus_JitPath", "DOTNET_JitPath" };
+            foreach (string varName in checkVars)
+            {
+                string envVar = System.Environment.GetEnvironmentVariable(varName);
+                if (!String.IsNullOrEmpty(envVar))
+                {
+                    Console.WriteLine($"{varName} already exists (set to {envVar}): skipping SuperPMI collection and returning success");
+                    return 100;
+                }
             }
 
             int result;

@@ -48,7 +48,6 @@ struct JitInterfaceCallbacks
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
-    int (* objectToString)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, int bufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -78,7 +77,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTypeForBox)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getUnBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    void* (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
     const char* (* getHelperName)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc helpFunc);
@@ -565,17 +563,6 @@ public:
     return temp;
 }
 
-    virtual int objectToString(
-          void* handle,
-          char* buffer,
-          int bufferSize)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->objectToString(_thisHandle, &pException, handle, buffer, bufferSize);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -850,15 +837,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CorInfoHelpFunc temp = _callbacks->getUnBoxHelper(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual void* getRuntimeTypePointer(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->getRuntimeTypePointer(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

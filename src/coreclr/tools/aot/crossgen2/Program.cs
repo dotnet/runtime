@@ -52,7 +52,7 @@ namespace ILCompiler
             _targetOS = Get(command.TargetOS);
             _targetArchitecture = Get(command.TargetArchitecture);
 
-            if (command.Result.GetValueForOption(command.WaitForDebugger))
+            if (Get(command.WaitForDebugger))
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
@@ -974,6 +974,7 @@ namespace ILCompiler
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new Crossgen2RootCommand(args))
+                .UseTokenReplacer(Helpers.TryReadResponseFile)
                 .UseVersionOption("-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(Crossgen2RootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
