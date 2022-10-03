@@ -98,10 +98,6 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>2fbe602d12256bf82de53791ddcbb964c1541b4e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.9.0-preview-20201201-01">
-      <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>140434f7109d357d0158ade9e5164a4861513965</Sha>
-    </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="6.0.0-beta.21518.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>6c6b7f90677142ad7bd829eb28d3bcf8ad775dd7</Sha>

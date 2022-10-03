@@ -62,7 +62,7 @@
     <MicrosoftNETCoreAppRuntimewinx64Version>6.0.0-alpha.1.20612.4</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftNETCoreDotNetHostVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreDotNetHostVersion>
     <MicrosoftNETCoreDotNetHostPolicyVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreDotNetHostPolicyVersion>
-    <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
+    <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
@@ -139,7 +139,7 @@
     <NugetPackagingVersion>6.2.1</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
-    <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.21404.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21404.1</MicrosoftDotNetXHarnessCLIVersion>
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21413.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
