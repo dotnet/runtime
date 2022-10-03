@@ -120,7 +120,7 @@ namespace System.DirectoryServices.Protocols
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
-        internal static int BindToDirectory(ConnectionHandle ld, string who, string passwd)
+        internal static unsafe int BindToDirectory(ConnectionHandle ld, string who, string passwd)
         {
             IntPtr passwordPtr = IntPtr.Zero;
             try
@@ -128,7 +128,7 @@ namespace System.DirectoryServices.Protocols
                 passwordPtr = LdapPal.StringToPtr(passwd);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = passwd?.Length ?? 0,
+                    bv_len = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)passwordPtr).Length,
                     bv_val = passwordPtr,
                 };
 

@@ -252,7 +252,7 @@ int32_t CryptoNative_X509StoreSetRevocationFlag(X509_STORE* ctx, X509RevocationF
     return X509_STORE_set_flags(ctx, verifyFlags);
 }
 
-X509_STORE_CTX* CryptoNative_X509StoreCtxCreate()
+X509_STORE_CTX* CryptoNative_X509StoreCtxCreate(void)
 {
     ERR_clear_error();
     return X509_STORE_CTX_new();
@@ -452,6 +452,13 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
     // Leave one byte for '\0' and one for '/'
     size_t allocSize = storePathLen + sizeof(ent->d_name) + 2;
     char* tmp = (char*)calloc(allocSize, sizeof(char));
+    if (!tmp)
+    {
+        *pathTmp = NULL;
+        *nextFileWrite = NULL;
+        return NULL;
+    }
+
     memcpy_s(tmp, allocSize, storePath, storePathLen);
     tmp[storePathLen] = '/';
     *pathTmp = tmp;
@@ -604,6 +611,8 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
 
         if (tmpStack == NULL)
         {
+            free(pathTmp);
+            closedir(storeDir);
             return 0;
         }
 
@@ -880,7 +889,7 @@ static OCSP_CERTID* MakeCertId(X509* subject, X509* issuer)
     return OCSP_cert_to_id(EVP_sha1(), subject, issuer);
 }
 
-static time_t GetIssuanceWindowStart()
+static time_t GetIssuanceWindowStart(void)
 {
     // time_t granularity is seconds, so subtract 4 days worth of seconds.
     // The 4 day policy is based on the CA/Browser Forum Baseline Requirements

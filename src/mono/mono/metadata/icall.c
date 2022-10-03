@@ -6390,12 +6390,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);
-	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
-		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
-		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
-		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
-		type = mono_reflection_type_handle_mono_type (t, error);
-		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);

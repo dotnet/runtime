@@ -977,7 +977,7 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 }
 
 void
-mono_security_enable_core_clr ()
+mono_security_enable_core_clr (void)
 {
 	// no-op
 }

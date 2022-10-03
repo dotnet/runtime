@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
         /// Also see <see cref="Utf8JsonWriterTests.WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(Utf8JsonWriterTests.IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void SerializeLargeListOfObjects()
         {

@@ -14,6 +14,7 @@
 // stream. (We only bother implementing that much now since every use of transform chains in XmlDsig ultimately yields something to hash).
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
@@ -21,28 +22,28 @@ namespace System.Security.Cryptography.Xml
 {
     public abstract class Transform
     {
-        private string _algorithm;
-        private string _baseUri;
-        internal XmlResolver _xmlResolver;
+        private string? _algorithm;
+        private string? _baseUri;
+        internal XmlResolver? _xmlResolver;
         private bool _bResolverSet;
-        private SignedXml _signedXml;
-        private Reference _reference;
-        private Hashtable _propagatedNamespaces;
-        private XmlElement _context;
+        private SignedXml? _signedXml;
+        private Reference? _reference;
+        private Hashtable? _propagatedNamespaces;
+        private XmlElement? _context;
 
-        internal string BaseURI
+        internal string? BaseURI
         {
             get { return _baseUri; }
             set { _baseUri = value; }
         }
 
-        internal SignedXml SignedXml
+        internal SignedXml? SignedXml
         {
             get { return _signedXml; }
             set { _signedXml = value; }
         }
 
-        internal Reference Reference
+        internal Reference? Reference
         {
             get { return _reference; }
             set { _reference = value; }
@@ -58,13 +59,13 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Algorithm
+        public string? Algorithm
         {
             get { return _algorithm; }
             set { _algorithm = value; }
         }
 
-        public XmlResolver Resolver
+        public XmlResolver? Resolver
         {
             internal get
             {
@@ -79,6 +80,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_xmlResolver))]
         internal bool ResolverSet
         {
             get { return _bResolverSet; }
@@ -128,7 +130,7 @@ namespace System.Security.Cryptography.Xml
             XmlElement transformElement = document.CreateElement(name, SignedXml.XmlDsigNamespaceUrl);
             if (!string.IsNullOrEmpty(Algorithm))
                 transformElement.SetAttribute("Algorithm", Algorithm);
-            XmlNodeList children = GetInnerXml();
+            XmlNodeList? children = GetInnerXml();
             if (children != null)
             {
                 foreach (XmlNode node in children)
@@ -141,7 +143,7 @@ namespace System.Security.Cryptography.Xml
 
         public abstract void LoadInnerXml(XmlNodeList nodeList);
 
-        protected abstract XmlNodeList GetInnerXml();
+        protected abstract XmlNodeList? GetInnerXml();
 
         public abstract void LoadInput(object obj);
 
@@ -154,15 +156,15 @@ namespace System.Security.Cryptography.Xml
             return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
         }
 
-        public XmlElement Context
+        public XmlElement? Context
         {
             get
             {
                 if (_context != null)
                     return _context;
 
-                Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                Reference? reference = Reference;
+                SignedXml? signedXml = (reference == null ? SignedXml : reference.SignedXml);
                 if (signedXml == null)
                     return null;
 
@@ -181,8 +183,8 @@ namespace System.Security.Cryptography.Xml
                 if (_propagatedNamespaces != null)
                     return _propagatedNamespaces;
 
-                Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                Reference? reference = Reference;
+                SignedXml? signedXml = (reference == null ? SignedXml : reference.SignedXml);
 
                 // If the reference is not a Uri reference with a DataObject target, return an empty hashtable.
                 if (reference != null &&
@@ -193,7 +195,7 @@ namespace System.Security.Cryptography.Xml
                     return _propagatedNamespaces;
                 }
 
-                CanonicalXmlNodeList namespaces = null;
+                CanonicalXmlNodeList? namespaces = null;
                 if (reference != null)
                     namespaces = reference._namespaces;
                 else if (signedXml?._context != null)

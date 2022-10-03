@@ -713,6 +713,18 @@ namespace ILCompiler.DependencyAnalysis
                     // Internal compiler error
                     Debug.Assert(false);
                 }
+
+                if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+                {
+                    // Emit a symbol for beginning of the frame. This is workaround for ld64
+                    // linker bug which would produce DWARF with incorrect pcStart offsets for
+                    // exception handling blocks if there is no symbol present for them.
+                    //
+                    // To make things simple we just reuse blobSymbolName and change `_lsda`
+                    // prefix to `_fram`.
+                    "_fram"u8.CopyTo(blobSymbolName);
+                    EmitSymbolDef(blobSymbolName);
+                }
             }
 
             // Emit individual cfi blob for the given offset
@@ -1272,7 +1284,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case TargetOS.OSX:
                     vendor = "apple";
-                    sys = "darwin";
+                    sys = "darwin16";
                     abi = "macho";
                     break;
                 case TargetOS.WebAssembly:
