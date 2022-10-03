@@ -8,7 +8,7 @@ function add(a, b) {
 }
 
 try {
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig } = await dotnet
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
@@ -49,6 +49,9 @@ try {
     const config = getConfig();
     const exports = await getAssemblyExports(config.mainAssemblyName);
     const meaning = exports.Sample.Test.TestMeaning();
+    if (typeof Module.GL !== "object") {
+        exit(-10, "Can't find GL");
+    }
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
