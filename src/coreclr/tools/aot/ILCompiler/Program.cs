@@ -32,7 +32,7 @@ namespace ILCompiler
         {
             _command = command;
 
-            if (command.Result.GetValueForOption(command.WaitForDebugger))
+            if (Get(command.WaitForDebugger))
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
