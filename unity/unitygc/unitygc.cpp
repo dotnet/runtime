@@ -715,6 +715,16 @@ public:
         return 0;
     }
 
+    virtual int64_t GetTotalPauseDuration()
+    {
+        assert(0);
+        return 0;
+    };
+
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+    {
+    };
+
     GCHeap(IGCToCLR* pGCToCLR) :
         m_pGCToCLR(pGCToCLR),
         m_bGCInProgress(false)
