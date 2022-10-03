@@ -224,7 +224,7 @@ void TypeDesc::ConstructName(CorElementType kind,
     {
         if (kind == ELEMENT_TYPE_VAR)
         {
-            ssBuff.Append(W("!"));
+            ssBuff.Append(W('!'));
         }
         else
         {

@@ -671,16 +671,14 @@ namespace
             SString currLibNameVariation;
 
             NameVariations const variations = prefixSuffixCombinations[i];
-            currLibNameVariation.Append(((variations | NameVariations_Prefix)
-                ? PLATFORM_SHARED_LIB_PREFIX_W
-                : W(".")));
+            if (variations | NameVariations_Prefix)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_PREFIX_W);
 
             _ASSERTE(variations | NameVariations_Name);
             currLibNameVariation.Append(wszLibName);
 
-            currLibNameVariation.Append(((variations | NameVariations_Suffix)
-                ? PLATFORM_SHARED_LIB_SUFFIX_W
-                : W(".")));
+            if (variations | NameVariations_Suffix)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_SUFFIX_W);
 
             // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
             hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
