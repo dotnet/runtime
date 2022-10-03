@@ -708,7 +708,7 @@ static int parse_netlink_reply(struct netlink_session *session, struct ifaddrs *
     return ret;
 }
 
-int getifaddrs(struct ifaddrs **ifap)
+int _netlink_getifaddrs(struct ifaddrs **ifap)
 {
     int ret = -1;
 
@@ -728,7 +728,7 @@ int getifaddrs(struct ifaddrs **ifap)
             (parse_netlink_reply(&session, &ifaddrs_head, &last_ifaddr) < 0) ||
             (send_netlink_dump_request(&session, RTM_GETADDR) < 0) ||
             (parse_netlink_reply(&session, &ifaddrs_head, &last_ifaddr) < 0)) {
-        freeifaddrs (ifaddrs_head);
+        _netlink_freeifaddrs (ifaddrs_head);
         goto cleanup;
     }
 
@@ -744,7 +744,7 @@ cleanup:
     return ret;
 }
 
-void freeifaddrs(struct ifaddrs *ifa)
+void _netlink_freeifaddrs(struct ifaddrs *ifa)
 {
     struct ifaddrs *cur, *next;
 
