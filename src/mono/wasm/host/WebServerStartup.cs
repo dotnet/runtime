@@ -38,7 +38,11 @@ internal sealed class WebServerStartup
         //on managed code will freeze because it will not be able to continue executing the BrowserDebugProxy to get the locals value
         var executablePath = Path.Combine(System.AppContext.BaseDirectory, "BrowserDebugHost.dll");
         var ownerPid = Environment.ProcessId;
-        var generateRandomPort = GetNextRandomExcept(5000..5300, 5060, 5061);
+        // generate a random port in a given range, skipping the ports blocked by browsers: https://chromestatus.com/feature/5064283639513088
+        var generateRandomPort = GetNextRandomExcept(5000..5300, 
+            5060, // SIP
+            5061, // SIPS
+        );
         var processStartInfo = new ProcessStartInfo
         {
             FileName = "dotnet" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : ""),
