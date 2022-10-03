@@ -10,6 +10,10 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public AddInstanceField () {
             _doubleField2 = -5.5e12;
             _stringField2 = "New Initial Value";
+            NewStructField = new NewStruct {
+                D = -1984.0,
+                O = new int[2] { 15, 17 },
+            };
         }
 
         public string GetStringField => _stringField2;
@@ -27,5 +31,12 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             _doubleField2 = 0.707106;
         }
 
+        public struct NewStruct
+        {
+            public double D;
+            public object O;
+        }
+
+        public NewStruct NewStructField;
     }
 }

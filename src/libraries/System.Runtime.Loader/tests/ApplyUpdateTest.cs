@@ -335,6 +335,28 @@ namespace System.Reflection.Metadata
                 Assert.Equal ("New Initial Value", x2.GetStringField);
                 Assert.Equal (-5.5e12, x2.GetDoubleField);
                 
+                // now check that reflection can get/set the new fields
+                var fi = x2.GetType().GetField("NewStructField");
+
+                Assert.NotNull(fi);
+
+                var s = fi.GetValue (x2);
+
+                Assert.NotNull(x2);
+
+                var fid = fi.GetType().GetField("D");
+
+                Assert.NotNull(fid);
+
+
+                Assert.Equal(-1984.0, fid.GetValue(s));
+
+                var tr = TypedReference.MakeTypedReference (x2, new FieldInfo[] {fi});
+
+                fid.SetValueDirect(tr, (object)34567.0);
+
+                Assert.Equal (34567.0, fid.GetValueDirect (tr));
+
             });
         }
 
