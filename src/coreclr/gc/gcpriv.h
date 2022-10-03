@@ -648,8 +648,6 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() = default;
-
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
         index = _index;
@@ -2065,7 +2063,7 @@ protected:
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
-    bool decommit_step ();
+    bool decommit_step (uint64_t step_milliseconds);
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
@@ -3919,7 +3917,7 @@ public:
 #else //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t allocation_running_time;
+    uint64_t allocation_running_time;
 
     PER_HEAP
     size_t allocation_running_amount;

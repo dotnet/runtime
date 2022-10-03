@@ -432,7 +432,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
                 if (initVal->IsIntegralConst(0))
                 {
-                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType);
 
                     assignment->gtOp2 = zeroCon;
                     value             = zeroCon;

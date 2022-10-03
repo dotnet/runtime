@@ -2252,7 +2252,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                    = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2423,17 +2423,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
-    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
+    opts.compJitAlignLoopForJcc             = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize        = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp          = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer  = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
+    opts.compJitUnrollLoopMaxIterationCount = (unsigned short)JitConfig.JitUnrollLoopMaxIterationCount();
 #else
-    opts.compJitAlignLoopAdaptive          = true;
-    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp         = true;
-    opts.compJitOptimizeStructHiddenBuffer = true;
+    opts.compJitAlignLoopAdaptive           = true;
+    opts.compJitAlignLoopBoundary           = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight     = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize        = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp          = true;
+    opts.compJitOptimizeStructHiddenBuffer  = true;
+    opts.compJitUnrollLoopMaxIterationCount = DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT;
 #endif
 
 #ifdef TARGET_XARCH
@@ -3883,15 +3885,6 @@ _SetMinOpts:
         }
     }
 
-#if TARGET_ARM
-    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
-    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
-    //
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
-#else
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
-#endif
-
     fgCanRelocateEHRegions = true;
 }
 
@@ -4701,10 +4694,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // amenable to optimization
         //
         DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-
-        // Optimize boolean conditions
-        //
-        DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
     }
 
     // Figure out the order in which operators are to be evaluated
@@ -4847,10 +4836,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
-    // Optimize block order
-    //
     if (opts.OptimizationEnabled())
     {
+        // Optimize boolean conditions
+        //
+        DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
+
+        // Optimize block order
+        //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
     }
 
@@ -7804,34 +7797,34 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 
 #if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
 const char* PhaseNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) string_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"
 };
 
 const char* PhaseEnums[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) #enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) #enum_nm,
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseShortNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) W(short_nm),
+const LPCWSTR PhaseEnumsW[] = {
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
 #include "compphases.h"
 };
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
 bool PhaseHasChildren[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) hasChildren,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) hasChildren,
 #include "compphases.h"
 };
 
 int PhaseParent[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) parent,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) parent,
 #include "compphases.h"
 };
 
 bool PhaseReportsIRSize[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) measureIR,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) measureIR,
 #include "compphases.h"
 };
 
@@ -9226,10 +9219,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     chars += printf("[VAR_USEASG]");
-                }
-                if (tree->gtFlags & GTF_VAR_CAST)
-                {
-                    chars += printf("[VAR_CAST]");
                 }
                 if (tree->gtFlags & GTF_VAR_ITERATOR)
                 {

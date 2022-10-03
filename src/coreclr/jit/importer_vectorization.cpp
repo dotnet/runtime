@@ -236,7 +236,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-    GenTree* zero = gtNewZeroConNode(simdType, baseType);
+    GenTree* zero = gtNewZeroConNode(simdType);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
     GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);

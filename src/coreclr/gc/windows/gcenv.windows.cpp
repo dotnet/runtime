@@ -1093,9 +1093,9 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 // Get a time stamp with a low precision
 // Return:
 //  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    return ::GetTickCount();
+    return ::GetTickCount64();
 }
 
 // Gets the total number of processors on the machine, not taking
