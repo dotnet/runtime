@@ -333,8 +333,20 @@
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
             <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_ARM/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_ARM/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_ARM/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
