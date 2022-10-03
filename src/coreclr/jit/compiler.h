@@ -8473,18 +8473,6 @@ private:
         return (intrinsicId == SIMDIntrinsicEqual);
     }
 
-    // Returns base JIT type of a TYP_SIMD local.
-    // Returns CORINFO_TYPE_UNDEF if the local is not TYP_SIMD.
-    CorInfoType getBaseJitTypeOfSIMDLocal(GenTree* tree)
-    {
-        if (isSIMDTypeLocal(tree))
-        {
-            return lvaGetDesc(tree->AsLclVarCommon())->GetSimdBaseJitType();
-        }
-
-        return CORINFO_TYPE_UNDEF;
-    }
-
     bool isNumericsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Numerics") == 0;
