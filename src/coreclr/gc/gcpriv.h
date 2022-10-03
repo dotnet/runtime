@@ -2868,9 +2868,9 @@ protected:
     PER_HEAP
     void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP
-    void mark_ro_segments (heap_segment* start_seg);
+    void mark_ro_segments();
     PER_HEAP
-    void sweep_ro_segments (heap_segment* start_seg);
+    void sweep_ro_segments();
 #endif // FEATURE_BASICFREEZE
 
     PER_HEAP
