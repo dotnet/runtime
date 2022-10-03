@@ -3172,7 +3172,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
 #ifndef MULTIPLE_HEAPS
                 if (gen_number == max_generation)
                 {
-                    float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
+                    size_t maxgen_size = generation_size (max_generation);
+                    float frag_ratio = (maxgen_size ? ((float)dd_fragmentation (dynamic_data_of (max_generation)) / (float)maxgen_size) : 0.0f);
                     if (frag_ratio > 0.65)
                     {
                         dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
@@ -3184,7 +3185,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
                 {
-                    fragmentation_burden = (float)fr / generation_size (gen_number);
+                    size_t gen_size = generation_size (gen_number);
+                    fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
                     ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
                 }
                 dprintf (GTC_LOG, ("h%d: gen%d, frag is %Id, alloc effi: %d%%, unusable frag is %Id, ratio is %d",
@@ -6757,7 +6759,7 @@ void gc_heap::gc_thread_function ()
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
                 continue;
             }
 
@@ -6850,7 +6852,7 @@ void gc_heap::gc_thread_function ()
             // check if we should do some decommitting
             if (gradual_decommit_in_progress_p)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
         }
         else
@@ -12606,7 +12608,7 @@ void gc_heap::distribute_free_regions()
                 global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
             }
         }
-        while (decommit_step())
+        while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
 #ifdef MULTIPLE_HEAPS
@@ -12650,6 +12652,7 @@ void gc_heap::distribute_free_regions()
     size_t num_decommit_regions_by_time = 0;
     size_t size_decommit_regions_by_time = 0;
     size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
+    size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS];
     size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
     region_free_list surplus_regions[kind_count];
     for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12667,6 +12670,7 @@ void gc_heap::distribute_free_regions()
         gc_heap* hp = pGenGCHeap;
         // just to reduce the number of #ifdefs in the code below
         const int i = 0;
+        const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
         for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12677,7 +12681,8 @@ void gc_heap::distribute_free_regions()
             for (heap_segment* region = region_list.get_first_free_region(); region != nullptr; region = next_region)
             {
                 next_region = heap_segment_next (region);
-                if (heap_segment_age_in_free (region) >= AGE_IN_FREE_TO_DECOMMIT)
+                int age_in_free_to_decommit = min (max (AGE_IN_FREE_TO_DECOMMIT, n_heaps), MAX_AGE_IN_FREE);
+                if (heap_segment_age_in_free (region) >= age_in_free_to_decommit)
                 {
                     num_decommit_regions_by_time++;
                     size_decommit_regions_by_time += get_region_committed_size (region);
@@ -12694,13 +12699,43 @@ void gc_heap::distribute_free_regions()
         global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
+        min_heap_budget_in_region_units[i] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
-        for (int gen = soh_gen0; gen < total_generation_count; gen++)
+    }
+
+    for (int gen = soh_gen0; gen < total_generation_count; gen++)
+    {
+        if ((gen <= soh_gen2) &&
+            total_budget_in_region_units[basic_free_region] >= (total_num_free_regions[basic_free_region] +
+                                                                surplus_regions[basic_free_region].get_num_free_regions()))
         {
+            // don't accumulate budget from higher soh generations if we cannot cover lower ones
+            dprintf (REGIONS_LOG, ("out of free regions - skipping gen %d budget = %Id >= avail %Id",
+                gen,
+                total_budget_in_region_units[basic_free_region],
+                total_num_free_regions[basic_free_region] + surplus_regions[basic_free_region].get_num_free_regions()));
+            continue;
+        }
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+            // just to reduce the number of #ifdefs in the code below
+            const int i = 0;
+            const int n_heaps = 1;
+#endif //MULTIPLE_HEAPS
             ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
             int kind = gen >= loh_generation;
             size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
             dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %Id bytes (%Id regions)", i, gen, budget_gen, budget_gen_in_region_units));
+            if (gen <= soh_gen2)
+            {
+                // preserve the budget for the previous generation - we should not go below that
+                min_heap_budget_in_region_units[i] = heap_budget_in_region_units[i][kind];
+            }
             heap_budget_in_region_units[i][kind] += budget_gen_in_region_units;
             total_budget_in_region_units[kind] += budget_gen_in_region_units;
         }
@@ -12750,15 +12785,54 @@ void gc_heap::distribute_free_regions()
         {
             dprintf (REGIONS_LOG, ("distributing the %Id %s regions deficit", -balance, kind_name[kind]));
 
+#ifdef MULTIPLE_HEAPS
             // we may have a deficit or  - if background GC is going on - a surplus.
             // adjust the budget per heap accordingly
-            ptrdiff_t adjustment_per_heap = (balance + (n_heaps - 1)) / n_heaps;
-
-#ifdef MULTIPLE_HEAPS
-            for (int i = 0; i < n_heaps; i++)
+            if (balance != 0)
             {
-                ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
-                heap_budget_in_region_units[i][kind] = max (0, new_budget);
+                ptrdiff_t curr_balance = 0;
+                ptrdiff_t rem_balance = 0;
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    curr_balance += balance;
+                    ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
+                    curr_balance -= adjustment_per_heap * n_heaps;
+                    ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
+                    ptrdiff_t min_budget = (kind == basic_free_region) ? (ptrdiff_t)min_heap_budget_in_region_units[i] : 0;
+                    dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
+                        i,
+                        heap_budget_in_region_units[i][kind],
+                        kind_name[kind],
+                        adjustment_per_heap,
+                        max (min_budget, new_budget)));
+                    heap_budget_in_region_units[i][kind] = max (min_budget, new_budget);
+                    rem_balance += new_budget - heap_budget_in_region_units[i][kind];
+                }
+                assert (rem_balance <= 0);
+                dprintf (REGIONS_LOG, ("remaining balance: %Id %s regions", rem_balance, kind_name[kind]));
+
+                // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
+                while (rem_balance < 0)
+                {
+                    for (int i = 0; i < n_heaps; i++)
+                    {
+                        size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
+                        if (heap_budget_in_region_units[i][kind] > min_budget)
+                        {
+                            dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
+                                i,
+                                heap_budget_in_region_units[i][kind],
+                                kind_name[kind],
+                                -1,
+                                heap_budget_in_region_units[i][kind] - 1));
+
+                            heap_budget_in_region_units[i][kind] -= 1;
+                            rem_balance += 1;
+                            if (rem_balance == 0)
+                                break;
+                        }
+                    }
+                }
             }
 #endif //MULTIPLE_HEAPS
         }
@@ -12810,11 +12884,12 @@ void gc_heap::distribute_free_regions()
 
             if (hp->free_regions[kind].get_num_free_regions() > heap_budget_in_region_units[i][kind])
             {
-                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions",
+                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions, budget is %Id",
                     hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind],
                     kind_name[kind],
                     i,
-                    hp->free_regions[kind].get_num_free_regions()));
+                    hp->free_regions[kind].get_num_free_regions(),
+                    heap_budget_in_region_units[i][kind]));
 
                 remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
             }
@@ -12829,14 +12904,16 @@ void gc_heap::distribute_free_regions()
             const int i = 0;
 #endif //MULTIPLE_HEAPS
 
+            // second pass: fill all the regions having less than budget
             if (hp->free_regions[kind].get_num_free_regions() < heap_budget_in_region_units[i][kind])
             {
                 int64_t num_added_regions = add_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
-                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id",
+                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id, budget is %Id",
                     num_added_regions,
                     kind_name[kind],
                     i,
-                    hp->free_regions[kind].get_num_free_regions()));
+                    hp->free_regions[kind].get_num_free_regions(),
+                    heap_budget_in_region_units[i][kind]));
             }
             hp->free_regions[kind].sort_by_committed_and_age();
         }
@@ -12858,8 +12935,29 @@ void gc_heap::distribute_free_regions()
         }
     }
 #else //MULTIPLE_HEAPS
-    while (decommit_step())
+    // we want to limit the amount of decommit we do per time to indirectly
+    // limit the amount of time spent in recommit and page faults
+    // we use the elapsed time since the last GC to arrive at the desired
+    // decommit size
+    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+    // if less than DECOMMIT_TIME_STEP_MILLISECONDS elapsed, we don't decommit -
+    // we don't want to decommit fractions of regions here
+    dynamic_data* dd0 = dynamic_data_of (0);
+    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
+    if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
     {
+        gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
+
+        decommit_step (decommit_step_milliseconds);
+    }
+    // transfer any remaining regions on the decommit list back to the free list
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
+        {
+            free_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+        }
     }
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
@@ -21377,7 +21475,14 @@ void gc_heap::gc1()
                     dynamic_data* dd = hp->dynamic_data_of (gen);
                     dd_desired_allocation (dd) = desired_per_heap;
                     dd_gc_new_allocation (dd) = desired_per_heap;
+#ifdef USE_REGIONS
+                    // we may have had some incoming objects during this GC -
+                    // adjust the consumed budget for these
                     dd_new_allocation (dd) = desired_per_heap - already_consumed_per_heap;
+#else //USE_REGIONS
+                    // for segments, we want to keep the .NET 6.0 behavior where we did not adjust
+                    dd_new_allocation (dd) = desired_per_heap;
+#endif //USE_REGIONS
 
                     if (gen == 0)
                     {
@@ -40488,9 +40593,14 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         }
         dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
 
+#ifdef USE_REGIONS
         // we may have had some incoming objects during this GC -
         // adjust the consumed budget for these
         dd_new_allocation (dd) = dd_gc_new_allocation (dd) - in;
+#else //USE_REGIONS
+        // for segments, we want to keep the .NET 6.0 behavior where we did not adjust
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd);
+#endif //USE_REGIONS
     }
 
     gen_data->pinned_surv = dd_pinned_survived_size (dd);
@@ -40641,9 +40751,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
         {
             gradual_decommit_in_progress_p = TRUE;
 
-            dprintf (1, ("h%2d gen %d reduce_commit by %IdkB",
+            dprintf (1, ("h%2d gen %d region %Ix allocated %IdkB committed %IdkB reduce_commit by %IdkB",
                 heap_number,
                 gen_number,
+                get_region_start (tail_region),
+                (heap_segment_allocated (tail_region) - get_region_start (tail_region))/1024,
+                (heap_segment_committed (tail_region) - get_region_start (tail_region))/1024,
                 (heap_segment_committed (tail_region) - decommit_target)/1024));
         }
         dprintf(3, ("h%2d gen %d allocated: %IdkB committed: %IdkB target: %IdkB",
@@ -40653,7 +40766,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
             (heap_segment_committed (tail_region) - heap_segment_mem (tail_region))/1024,
             (decommit_target                      - heap_segment_mem (tail_region))/1024));
     }
-#else //MULTIPLE_HEAPS && USE_REGIONS
+#elif !defined(USE_REGIONS)
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
@@ -40720,12 +40833,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
 }
 
 // return true if we actually decommitted anything
-bool gc_heap::decommit_step ()
+bool gc_heap::decommit_step (uint64_t step_milliseconds)
 {
     size_t decommit_size = 0;
 
 #ifdef USE_REGIONS
-    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS;
+    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * step_milliseconds;
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
         dprintf (REGIONS_LOG, ("decommit_step %d, regions_to_decommit = %Id",
@@ -45143,7 +45256,7 @@ HRESULT GCHeap::Initialize()
     gc_heap* hp = gc_heap::g_heaps[0];
 
     dynamic_data* gen0_dd = hp->dynamic_data_of (0);
-    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 3);
+    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 6);
 
     bool can_use_cpu_groups = GCToOSInterface::CanEnableGCCPUGroups();
     GCConfig::SetGCCpuGroup(can_use_cpu_groups);

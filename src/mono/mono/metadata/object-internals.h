@@ -651,6 +651,11 @@ typedef struct {
 	guint32 intType;
 } MonoClassInterfaceAttribute;
 
+typedef struct {
+	MonoObject object;
+	gsize handleAndKind;
+} MonoWeakReference;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 

@@ -35,7 +35,7 @@ extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int si
 extern void mono_wasm_marshal_promise(void *data);
 
 
-void core_initialize_internals ()
+void core_initialize_internals (void)
 {
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
 	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);

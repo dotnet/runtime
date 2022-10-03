@@ -2680,7 +2680,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 }
 
 MonoAssembly*
-mono_assembly_load_corlib ()
+mono_assembly_load_corlib (void)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;

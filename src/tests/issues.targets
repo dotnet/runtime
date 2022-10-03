@@ -922,13 +922,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- All OSX targets on NativeAOT -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/DynamicGenerics/DynamicGenerics/*">
-            <Issue>https://github.com/dotnet/runtime/issues/73299</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
@@ -3123,6 +3116,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
+            <Issue>Fuzzlyn</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341</Issue>
         </ExcludeList>
@@ -3490,6 +3486,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_40444/Runtime_40444/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
+            <Issue>Fuzzlyn</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
@@ -4136,6 +4135,72 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
             <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/bigevent/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
+           <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processenvironment/processenvironment/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/processinfo2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/diagnosticport/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverseouter/reverseouter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo/processinfo/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_d1/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_do/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_others/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_ro/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_d2/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_r1/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_r2/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 

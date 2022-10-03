@@ -34,7 +34,7 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
-static void EnsureLibSsl10Initialized()
+static void EnsureLibSsl10Initialized(void)
 {
     SSL_library_init();
     SSL_load_error_strings();
@@ -91,7 +91,7 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 
-static void DetectCiphersuiteConfiguration()
+static void DetectCiphersuiteConfiguration(void)
 {
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 
@@ -173,7 +173,7 @@ static void DetectCiphersuiteConfiguration()
 #endif
 }
 
-void CryptoNative_EnsureLibSslInitialized()
+void CryptoNative_EnsureLibSslInitialized(void)
 {
     CryptoNative_EnsureOpenSslInitialized();
 
@@ -192,7 +192,7 @@ void CryptoNative_EnsureLibSslInitialized()
     DetectCiphersuiteConfiguration();
 }
 
-const SSL_METHOD* CryptoNative_SslV2_3Method()
+const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
@@ -909,7 +909,7 @@ const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite
 #endif
 }
 
-int32_t CryptoNative_Tls13Supported()
+int32_t CryptoNative_Tls13Supported(void)
 {
     // No error queue impact.
 

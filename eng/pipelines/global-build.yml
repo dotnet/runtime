@@ -51,7 +51,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -71,7 +71,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: MSBuild_CMake
       buildArgs: -c Release -msbuild
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -91,7 +91,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Release
       buildArgs: -c debug -runtimeConfiguration release
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -112,7 +112,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
@@ -132,7 +132,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
@@ -151,7 +151,7 @@ jobs:
     jobParameters:
       nameSuffix: Libraries_AllConfigurations
       buildArgs: -subset libs -allconfigurations
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -168,7 +168,7 @@ jobs:
     - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),

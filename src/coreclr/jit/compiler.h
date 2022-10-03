@@ -1268,6 +1268,7 @@ public:
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
+    static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
     static void Print(IntegralRange range);
@@ -1390,14 +1391,14 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp);
 // partition a compilation.
 enum Phases
 {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) enum_nm,
 #include "compphases.h"
     PHASE_NUMBER_OF
 };
 
 extern const char*   PhaseNames[];
 extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseShortNames[];
+extern const LPCWSTR PhaseEnumsW[];
 
 // Specify which checks should be run after each phase
 //
@@ -6966,7 +6967,8 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
@@ -9303,6 +9305,9 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+
 #ifdef DEBUG
         // Loop alignment variables
 
@@ -9330,6 +9335,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopMaxIterationCount;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

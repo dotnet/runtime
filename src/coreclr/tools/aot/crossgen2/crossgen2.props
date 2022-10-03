@@ -21,11 +21,6 @@
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
-
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
