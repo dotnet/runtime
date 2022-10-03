@@ -39,7 +39,7 @@ internal sealed class WebServerStartup
         var executablePath = Path.Combine(System.AppContext.BaseDirectory, "BrowserDebugHost.dll");
         var ownerPid = Environment.ProcessId;
         // generate a random port in a given range, skipping the ports blocked by browsers: https://chromestatus.com/feature/5064283639513088
-        var generateRandomPort = GetNextRandomExcept(5000..5300, 
+        var generateRandomPort = GetNextRandomExcept(5000..5300,
             5060, // SIP
             5061 // SIPS
         );
