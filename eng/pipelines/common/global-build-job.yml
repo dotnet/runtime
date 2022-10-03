@@ -142,7 +142,7 @@ jobs:
         parameters:
           platform:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: true
+            nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             # Use a custom RID that isn't in the RID graph here to validate we don't break the usage of custom rids that aren't in the graph.
             targetRID: banana.24-x64
             runtimeOS: linux
