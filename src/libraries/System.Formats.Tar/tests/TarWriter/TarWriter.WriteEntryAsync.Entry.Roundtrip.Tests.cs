@@ -96,5 +96,103 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(userGroupName, posixEntry.UserName);
             Assert.Equal(userGroupName, posixEntry.GroupName);
         }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.Directory)]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenTheyFitOnLegacyFieldsAsync(TarEntryType entryType)
+        {
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes[PaxEaName] = "ea_name";
+            extendedAttributes[PaxEaGName] = "ea_gname";
+            extendedAttributes[PaxEaUName] = "ea_uname";
+            extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                extendedAttributes[PaxEaLinkName] = "ea_linkname";
+            }
+
+            PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
+            writeEntry.Name = new string('a', 100);
+            // GName and UName must be longer than 32 to be written as extended attribute.
+            writeEntry.GroupName = new string('b', 32);
+            writeEntry.UserName = new string('c', 32);
+            // There's no limit on MTime, we just ensure it roundtrips.
+            writeEntry.ModificationTime = TestModificationTime.AddDays(1);
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                writeEntry.LinkName = new string('d', 100);
+            }
+
+            MemoryStream ms = new();
+            await using (TarWriter w = new(ms, leaveOpen: true))
+            {
+                await w.WriteEntryAsync(writeEntry);
+            }
+            ms.Position = 0;
+
+            await using TarReader r = new(ms);
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await r.GetNextEntryAsync());
+            Assert.Null(await r.GetNextEntryAsync());
+
+            Assert.Equal(writeEntry.Name, readEntry.Name);
+            Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+            Assert.Equal(writeEntry.UserName, readEntry.UserName);
+            Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+            Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.Directory)]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task PaxExtendedAttributes_DoNotOverwritePublicProperties_WhenLargerThanLegacyFieldsAsync(TarEntryType entryType)
+        {
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes[PaxEaName] = "ea_name";
+            extendedAttributes[PaxEaGName] = "ea_gname";
+            extendedAttributes[PaxEaUName] = "ea_uname";
+            extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                extendedAttributes[PaxEaLinkName] = "ea_linkname";
+            }
+
+            PaxTarEntry writeEntry = new PaxTarEntry(entryType, "name", extendedAttributes);
+            writeEntry.Name = new string('a', MaxPathComponent);
+            // GName and UName must be longer than 32 to be written as extended attribute.
+            writeEntry.GroupName = new string('b', 32 + 1);
+            writeEntry.UserName = new string('c', 32 + 1);
+            // There's no limit on MTime, we just ensure it roundtrips.
+            writeEntry.ModificationTime = TestModificationTime.AddDays(1);
+
+            if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+            {
+                writeEntry.LinkName = new string('d', 100 + 1);
+            }
+
+            MemoryStream ms = new();
+            await using (TarWriter w = new(ms, leaveOpen: true))
+            {
+                await w.WriteEntryAsync(writeEntry);
+            }
+            ms.Position = 0;
+
+            await using TarReader r = new(ms);
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await r.GetNextEntryAsync());
+            Assert.Null(await r.GetNextEntryAsync());
+
+            Assert.Equal(writeEntry.Name, readEntry.Name);
+            Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
+            Assert.Equal(writeEntry.UserName, readEntry.UserName);
+            Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
+            Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+        }
     }
 }
