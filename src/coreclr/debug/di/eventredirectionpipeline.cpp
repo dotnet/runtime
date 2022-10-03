@@ -92,7 +92,7 @@ BOOL EventRedirectionPipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
 //---------------------------------------------------------------------------------------
 HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWORD pidTarget)
 {
-    SString s;
+    WCHAR buffer[4096];
 
     BOOL fRemap = false;
 
@@ -108,9 +108,10 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
         // Initialize
         m_pBlock->m_versionCookie = EVENT_REDIRECTION_CURRENT_VERSION;
 
-        s.Printf(m_CommonParams, GetCurrentProcessId(), m_pBlock, szOptions, pidTarget);
-        lpCommandLine = s.GetUnicode();
+        int res = swprintf_s(buffer, m_CommonParams, GetCurrentProcessId(), m_pBlock, szOptions, pidTarget);
+        _ASSERTE(res > 0);
 
+        lpCommandLine = buffer;
 
         lpApplicationName = m_DebuggerCmd; // eg, something like L"c:\\debuggers_amd64\\windbg.exe";
 

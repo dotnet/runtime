@@ -6792,7 +6792,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
     // format because changing HKLM keys requires admin priviledge.  Padding with zeros is not a security mitigation,
     // but rather a forward looking compatibility measure.  If future versions of Windows introduces more parameters for
     // JIT debugger launch, it is preferrable to pass zeros than other random values for those unsupported parameters.
-    pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    pStrArgsBuf->Printf(ssDebuggerString.GetUTF8(), pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     return true;
 #else // !TARGET_UNIX

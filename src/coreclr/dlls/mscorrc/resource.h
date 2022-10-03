@@ -475,8 +475,8 @@
 #define IDS_ER_STACK_OVERFLOW                   0x208a
 #define IDS_ER_STACK                            0x208b
 #define IDS_ER_WORDAT                           0x208c
-#define IDS_ER_UNMANAGEDFAILFASTMSG             0x208d
-#define IDS_ER_UNHANDLEDEXCEPTIONINFO           0x208e
+
+
 #define IDS_ER_MESSAGE_TRUNCATE                 0x208f
 
 #define IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  0x2090
