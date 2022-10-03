@@ -1126,7 +1126,6 @@ namespace System.Xml.Schema
                     values.Add(typedValue);
                 }
                 array = ToArray(values, _itemType.ListValueType);
-                Debug.Assert(array.GetType() == _itemType.ValueType.MakeArrayType());
             }
             if (values.Count < _minListSize)
             {
@@ -1145,9 +1144,11 @@ namespace System.Xml.Schema
 
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Array type is alwasys present as it is passed in as a parameter.")]
-            static Array ToArray(ArrayList values, Type arrayType)
+            Array ToArray(ArrayList values, Type arrayType)
             {
-                return values.ToArray(arrayType.GetElementType()!);
+                Array array = values.ToArray(arrayType.GetElementType()!);
+                Debug.Assert(array.GetType() == _itemType.ValueType.MakeArrayType());
+                return array;
             }
         }
     }
