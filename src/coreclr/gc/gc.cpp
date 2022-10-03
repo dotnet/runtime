@@ -11009,7 +11009,7 @@ void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
     if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
     {
         size_t beg_word = mark_word_of (align_on_mark_word (range_beg));
-        size_t end_word = mark_word_of (align_on_mark_word (range_beg));
+        size_t end_word = mark_word_of (align_on_mark_word (range_end));
 
         uint8_t* op = range_beg;
         while (op < mark_word_address (beg_word))
