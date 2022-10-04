@@ -31,6 +31,7 @@ extends:
   template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
     jobs:
+
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
       
       # build mono
@@ -71,7 +72,7 @@ extends:
             projectFile: microbenchmarks.proj
             runKind: micro_mono
             runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-            logicalmachine: 'perfa64'
+            logicalmachine: 'perfampere'
             timeoutInMinutes: 500 
 
       # build mono on wasm
@@ -172,25 +173,7 @@ extends:
             projectFile: microbenchmarks.proj
             runKind: micro_mono
             runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-            logicalmachine: 'perftiger'
-            timeoutInMinutes: 500 
-
-    # run coreclr Linux arm64 microbenchmarks perf job
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-          buildConfig: release
-          runtimeFlavor: coreclr
-          platforms:
-          - Linux_arm64
-          container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
-          jobParameters:
-            testGroup: perf
-            liveLibrariesBuildConfig: Release
-            projectFile: microbenchmarks.proj
-            runKind: micro
-            runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-            logicalmachine: 'perfa64'
+            logicalmachine: 'perfampere'
             timeoutInMinutes: 500 
 
     # run coreclr Linux arm64 ampere microbenchmarks perf job
