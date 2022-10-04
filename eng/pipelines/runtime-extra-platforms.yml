@@ -7,8 +7,24 @@
 # if there is a push while a build in progress, it will wait,
 # until the running build finishes, and produce a build with all the changes
 # that happened during the last build.
-
-trigger: none
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 schedules:
   - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
@@ -16,12 +32,6 @@ schedules:
     branches:
       include:
       - main
-    always: false # run only if there were changes since the last successful scheduled run.
-  - cron: "0 6,18 * * *" # run at 6:00 and 18:00 (UTC) which is 22:00 and 10:00 (PST).
-    displayName: Runtime extra release schedule
-    branches:
-      include:
-      - release/*
     always: false # run only if there were changes since the last successful scheduled run.
 
 variables:
