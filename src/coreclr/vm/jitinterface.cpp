@@ -3305,8 +3305,8 @@ static void AppendTypeNameEscaped(const char* str, TAppend append)
 {
     CONTRACTL {
         MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     bool hasReservedChar = false;
@@ -3380,7 +3380,7 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBu
             }
         }
 
-        nLen += strLen;
+        nLen = nLen + static_cast<int>(strLen);
     };
 
     // Subset of TypeString that does just what we need while staying in UTF8.
