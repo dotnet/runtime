@@ -171,6 +171,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
+        [InlineData("net6.0", true, true)]
+        [InlineData("net6.0", null, true)]
+        [InlineData("net6.0", false, false)]
         // MLL is disabled for 7.0+
         [InlineData("net7.0", true, false)]
         [InlineData("net7.0", null, false)]
