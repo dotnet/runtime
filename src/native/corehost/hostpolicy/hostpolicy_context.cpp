@@ -94,7 +94,7 @@ namespace
         }
 
 #if defined(TARGET_OSX)
-        if (strcmp(library_name, "libSystem.Security.Cryptography.Native.Apple") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.Apple")) == 0)
         {
             return CryptoAppleResolveDllImport(entry_point_name);
         }
