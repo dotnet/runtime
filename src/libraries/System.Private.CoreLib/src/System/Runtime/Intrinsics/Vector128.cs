@@ -1718,7 +1718,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector64.GreaterThanAny(left._lower, right._lower)
-                && Vector64.GreaterThanAny(left._upper, right._upper);
+                || Vector64.GreaterThanAny(left._upper, right._upper);
         }
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -1765,7 +1765,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector64.GreaterThanOrEqualAny(left._lower, right._lower)
-                && Vector64.GreaterThanOrEqualAny(left._upper, right._upper);
+                || Vector64.GreaterThanOrEqualAny(left._upper, right._upper);
         }
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -1812,7 +1812,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector64.LessThanAny(left._lower, right._lower)
-                && Vector64.LessThanAny(left._upper, right._upper);
+                || Vector64.LessThanAny(left._upper, right._upper);
         }
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1859,7 +1859,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector64.LessThanOrEqualAny(left._lower, right._lower)
-                && Vector64.LessThanOrEqualAny(left._upper, right._upper);
+                || Vector64.LessThanOrEqualAny(left._upper, right._upper);
         }
 
         /// <summary>Loads a vector from the given source.</summary>
