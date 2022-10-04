@@ -233,7 +233,7 @@ ep_session_remove_dangling_session_states (EventPipeSession *session)
 	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
 		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
 		if (thread) {
-			EP_SPIN_LOCK_ENTER (&thread->rt_lock, section1);
+			EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
 				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
 				if (session_state) {
 					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
