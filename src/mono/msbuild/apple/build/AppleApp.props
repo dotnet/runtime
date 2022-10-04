@@ -1,4 +1,10 @@
 <Project>
+  <!-- iOSSimulator Arm64 does not support JIT, so force AOT+interpreter -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOSSimulator' And '$(TargetArchitecture)' == 'arm64'">
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
+  </PropertyGroup>
+
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
