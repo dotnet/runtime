@@ -251,6 +251,10 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            {
+                yield return statement;
+            }
             // <marshallerType>.Free(<nativeIdentifier>);
             yield return ExpressionStatement(
                 InvocationExpression(
@@ -512,7 +516,15 @@ namespace Microsoft.Interop
 
         public TypeSyntax AsNativeType(TypePositionInfo info) => _nativeTypeSyntax;
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            StatementSyntax elementCleanup = GenerateElementCleanupStatement(info, context);
+
+            if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
+            {
+                yield return elementCleanup;
+            }
+        }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
