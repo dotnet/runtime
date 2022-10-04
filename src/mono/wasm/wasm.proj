@@ -110,26 +110,6 @@
 
     <!-- keep in sync with src\mono\wasm\build\WasmApp.Native.targets -->
     <ItemGroup>
-      <EmccExportedFunction Include="_malloc" />
-      <EmccExportedFunction Include="_memalign" />
-      <EmccExportedFunction Include="_htons" />
-      <EmccExportedFunction Include="_ntohs" />
-
-      <!-- after 3.0 -->
-      <EmccExportedFunction Include="_memset" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))"/>
-
-      <!-- before 3.1.7 see https://github.com/dotnet/runtime/issues/64724 -->
-      <EmccExportedFunction Include="__get_daylight" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))"/>
-      <EmccExportedFunction Include="__get_timezone" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))"/>
-      <EmccExportedFunction Include="__get_tzname" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))"/>
-      <EmccExportedFunction Include="g_free" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))" />
-
-      <!-- after 3.1.7 -->
-      <EmccExportedFunction Include="stackSave" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))" />
-      <EmccExportedFunction Include="stackRestore" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))" />
-      <EmccExportedFunction Include="stackAlloc" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))" />
-      <EmccExportedFunction Include="_free" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"/>
-
       <EmccExportedRuntimeMethod Include="FS" />
       <EmccExportedRuntimeMethod Include="print" />
       <EmccExportedRuntimeMethod Include="ccall" />
@@ -143,11 +123,34 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="FS_readFile" />
+
+      <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_ntohs" />
+    </ItemGroup>
+    <!-- after 3.0 -->
+    <ItemGroup Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))">
+      <EmccExportedFunction Include="_memset" />
+    </ItemGroup>
+    <!-- before 3.1.7 see https://github.com/dotnet/runtime/issues/64724 -->
+    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))">
+      <EmccExportedFunction Include="__get_daylight" />
+      <EmccExportedFunction Include="__get_timezone" />
+      <EmccExportedFunction Include="__get_tzname" />
+      <EmccExportedFunction Include="g_free" />
+    </ItemGroup>
+    <!-- after 3.1.7 -->
+    <ItemGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))">
+      <EmccExportedFunction Include="stackSave"  />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="_free" />
     </ItemGroup>
     <PropertyGroup>
-      <EmccExportedRuntimeMethodsEsc>@(EmccExportedRuntimeMethod -> '%(Identity)', '%27,%27')</EmccExportedRuntimeMethodsEsc>
-      <EmccExportedRuntimeMethods>&quot;['$([MSBuild]::Unescape($(EmccExportedRuntimeMethodsEsc)))']&quot;</EmccExportedRuntimeMethods>
-      <EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</EmccExportedFunctions>
+      <_EmccExportedRuntimeMethodsEsc>@(EmccExportedRuntimeMethod -> '%(Identity)', '%27,%27')</_EmccExportedRuntimeMethodsEsc>
+      <_EmccExportedRuntimeMethods>&quot;['$([MSBuild]::Unescape($(EmccExportedRuntimeMethodsEsc)))']&quot;</_EmccExportedRuntimeMethods>
+      <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
     <ItemGroup>
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
@@ -158,8 +161,8 @@
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(EmccExportedRuntimeMethods)" />
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(EmccExportedFunctions)" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
