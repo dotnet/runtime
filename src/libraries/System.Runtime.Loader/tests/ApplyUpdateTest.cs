@@ -344,18 +344,19 @@ namespace System.Reflection.Metadata
 
                 Assert.NotNull(x2);
 
-                var fid = fi.GetType().GetField("D");
-
+                var fid = fi.FieldType.GetField("D");
                 Assert.NotNull(fid);
-
-
                 Assert.Equal(-1984.0, fid.GetValue(s));
-
                 var tr = TypedReference.MakeTypedReference (x2, new FieldInfo[] {fi});
-
                 fid.SetValueDirect(tr, (object)34567.0);
-
                 Assert.Equal (34567.0, fid.GetValueDirect (tr));
+
+                fi = x2.GetType().GetField("_doubleField2", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                Assert.NotNull(fi);
+
+                fi.SetValue(x2, 65535.01);
+                Assert.Equal(65535.01, x2.GetDoubleField);
 
             });
         }
