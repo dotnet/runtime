@@ -2932,10 +2932,14 @@ mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *val
 
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
-	/* TODO: metadata-update: implement me */
-	g_assert (!m_field_is_from_update (field));
-
-	src = (char*)obj + m_field_get_offset (field);
+	if (G_UNLIKELY (m_field_is_from_update (field))) {
+                ERROR_DECL (error);
+                uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+                src = mono_metadata_update_added_field_ldflda (obj, field->type, token, error);
+                mono_error_assert_ok (error);
+        } else {
+                src = (char*)obj + m_field_get_offset (field);
+        }
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
