@@ -242,6 +242,7 @@ namespace System.Diagnostics.Tests
                 Process p = CreateProcess(() =>
                 {
                     Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    Console.Out.Flush();
                     return RemoteExecutor.SuccessExitCode;
                 });
                 p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
@@ -278,7 +279,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -292,6 +292,7 @@ namespace System.Diagnostics.Tests
                 () =>
                 {
                     Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    Console.Out.Flush();
                     return RemoteExecutor.SuccessExitCode;
                 });
 
@@ -302,7 +303,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -316,6 +316,7 @@ namespace System.Diagnostics.Tests
                 () =>
                 {
                     Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().Environment.Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    Console.Out.Flush();
                     return RemoteExecutor.SuccessExitCode;
                 });
 
@@ -327,7 +328,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentVariablesDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -341,6 +341,7 @@ namespace System.Diagnostics.Tests
                 () =>
                 {
                     Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().EnvironmentVariables.Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    Console.Out.Flush();
                     return RemoteExecutor.SuccessExitCode;
                 });
 
@@ -373,7 +374,15 @@ namespace System.Diagnostics.Tests
             string output = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
 
-            return output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))).ToArray();
+            try
+            {
+                return output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))).ToArray();
+            }
+            catch
+            {
+                Console.WriteLine($"Failed to parse output: {output}");
+                throw;
+            }
         }
 
         [Fact]
