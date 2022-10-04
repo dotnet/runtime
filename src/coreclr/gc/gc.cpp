@@ -45068,11 +45068,12 @@ HRESULT GCHeap::Initialize()
     {
         // We have a minimum amount of basic regions we have to fit per heap, and we'd like to have the initial
         // regions only take up half of the space.
-        if ((gc_heap::regions_range / nhp / min_regions_per_heap) / 2 >= (4 * 1024 * 1024))
+        size_t max_region_size = gc_heap::regions_range / 2 / nhp / min_regions_per_heap;
+        if (max_region_size >= (4 * 1024 * 1024))
         {
             gc_region_size = 4 * 1024 * 1024;
         }
-        else if ((gc_heap::regions_range / nhp / min_regions_per_heap) / 2 >= (2 * 1024 * 1024))
+        else if (max_region_size >= (2 * 1024 * 1024))
         {
             gc_region_size = 2 * 1024 * 1024;
         }
