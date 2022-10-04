@@ -44422,7 +44422,27 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
             uint8_t*        curr_object = heap_segment_mem (seg);
             uint8_t*        prev_object = 0;
 
+            bool verify_bricks_p = true;
 #ifdef USE_REGIONS
+            assert (!heap_segment_read_only_p (seg));
+#else //USE_REGIONS
+            if (heap_segment_read_only_p (seg))
+            {
+                size_t current_brick = brick_of (max (heap_segment_mem (seg), lowest_address));
+                size_t end_brick = brick_of (min (heap_segment_reserved (seg), highest_address) - 1);
+                while (current_brick <= end_brick)
+                {
+                    if (brick_table [current_brick] != 0)
+                    {
+                        dprintf(1, ("Verifying Heap: %Ix brick of a frozen segment is not zeroed", current_brick));
+                        FATAL_GC_ERROR ();
+                    }
+                    current_brick++;
+                }
+                verify_bricks_p = false;
+            }
+#endif //USE_REGIONS
+
             if (heap_segment_gen_num (seg) != heap_segment_plan_gen_num (seg))
             {
                 dprintf (1, ("Seg %Ix, gen num is %d, plan gen num is %d",
@@ -44470,11 +44490,11 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
 #endif //!USE_REGIONS
 
 #ifdef USE_REGIONS
-                if (curr_gen_num != 0)
+                if (verify_bricks_p && curr_gen_num != 0)
 #else
                 // If object is not in the youngest generation, then lets
                 // verify that the brick table is correct....
-                if (((seg != ephemeral_heap_segment) ||
+                if (verify_bricks_p && ((seg != ephemeral_heap_segment) ||
                      (brick_of(curr_object) < brick_of(begin_youngest))))
 #endif //USE_REGIONS
                 {
