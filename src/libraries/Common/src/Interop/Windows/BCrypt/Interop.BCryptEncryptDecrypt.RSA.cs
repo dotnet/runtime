@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -120,6 +121,7 @@ internal static partial class Interop
             // Windows 10.1903 can return success when it meant NTE_BUFFER_TOO_SMALL.
             if (status == NTSTATUS.STATUS_SUCCESS && written > destination.Length)
             {
+                CryptographicOperations.ZeroMemory(destination);
                 bytesWritten = 0;
                 return false;
             }
