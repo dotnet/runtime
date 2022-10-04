@@ -1958,7 +1958,6 @@ OBJECTREF EECOMException::CreateThrowable()
 
             // Add the help context
             WCHAR cxt[ARRAY_SIZE("#") + MaxSigned32BitDecString] = W("#");
-            DWORD pid = GetCurrentProcessId();
             FormatInteger(cxt + 1, ARRAY_SIZE(cxt) - 1, "%d", m_ED.dwHelpContext);
             strMessage.Append(cxt);
             helpStr = StringObject::NewString(strMessage);

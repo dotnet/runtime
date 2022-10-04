@@ -327,10 +327,7 @@ namespace BinderTracing
                     else
                     {
                         result = Result::Failure;
-
-                        SString errorMsgUtf8;
-                        errorMsgUtf8.Printf("Resolution failed with HRESULT (%08x)", m_hr);
-                        errorMsg.Set(errorMsgUtf8.GetUnicode());
+                        errorMsg.Printf("Resolution failed with HRESULT (%08x)", m_hr);
                     }
             }
         }
