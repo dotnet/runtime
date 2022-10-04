@@ -136,18 +136,27 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 {
     _ASSERT(m_pStart != nullptr && FOH_SEGMENT_SIZE > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
+    _ASSERT(objectSize <= FOH_COMMIT_SIZE);
+    _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
-    const size_t nextObject = reinterpret_cast<size_t>(m_pCurrent + objectSize);
-    if (reinterpret_cast<size_t>(m_pStart + FOH_SEGMENT_SIZE) < nextObject)
+    const size_t spaceUsed = (size_t)(m_pCurrent - m_pStart);
+    const size_t spaceLeft = FOH_SEGMENT_SIZE - spaceUsed;
+
+    _ASSERT(spaceUsed >= sizeof(ObjHeader));
+    _ASSERT(spaceLeft >= sizeof(ObjHeader));
+
+    // Test if we have a room for the given object (including extra sizeof(ObjHeader) for next object)
+    if (spaceLeft - sizeof(ObjHeader) < objectSize)
     {
-        // Segment is full
         return nullptr;
     }
 
     // Check if we need to commit a new chunk
-    if (reinterpret_cast<size_t>(m_pStart + m_SizeCommitted) < nextObject)
+    if (spaceUsed + objectSize + sizeof(ObjHeader) > m_SizeCommitted)
     {
+        // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= FOH_SEGMENT_SIZE);
+
         if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
             ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
