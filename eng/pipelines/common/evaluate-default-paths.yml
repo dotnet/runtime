@@ -182,6 +182,7 @@ jobs:
       - src/mono/wasm/templates/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/tasks/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: wasmdebuggertests
       include:
@@ -191,6 +192,7 @@ jobs:
       - src/mono/mono/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: any_other_than_wasm_wbt_dbg
       exclude:
@@ -207,6 +209,7 @@ jobs:
     - subset: wasm
       include:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
       # other paths that should also trigger wasm jobs
       - src/mono/*
 
