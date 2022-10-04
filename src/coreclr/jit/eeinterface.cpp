@@ -119,7 +119,7 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
     {
         printer->Printf("<unnamed>");
     }
-    else if (actualLen < sizeof(buffer))
+    else if (static_cast<unsigned>(actualLen) < sizeof(buffer))
     {
         printer->Printf("%s", buffer);
     }
