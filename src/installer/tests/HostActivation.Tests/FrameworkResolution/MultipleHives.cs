@@ -25,8 +25,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Theory]
         // MLL (where global hive has better match) with various TFMs
         [InlineData("5.0.0", "netcoreapp3.1", true, "5.1.2")]
-        [InlineData("5.0.0", "netcoreapp3.1", null, "5.1.2")]
-        [InlineData("5.0.0", "netcoreapp3.1", false, "5.2.0")]
+        [InlineData("5.0.0", "netcoreapp3.1", null, "5.1.2")] // MLL is on by default before 7.0, so same as true
+        [InlineData("5.0.0", "netcoreapp3.1", false, "5.2.0")] // No global hive allowed
         [InlineData("5.0.0", "net6.0", true, "5.1.2")]
         [InlineData("5.0.0", "net6.0", null, "5.1.2")]
         [InlineData("5.0.0", "net6.0", false, "5.2.0")]
