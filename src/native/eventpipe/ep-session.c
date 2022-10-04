@@ -242,7 +242,7 @@ ep_session_remove_dangling_session_states (EventPipeSession *session)
 					// we haven't leaked any thread session states.
 					ep_thread_delete_session_state(thread, session);
 				}
-			EP_SPIN_LOCK_EXIT (&thread->rt_lock, section1);
+			EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
 
 			// ep_thread_get_threads calls ep_thread_addref for every entry, need to release it here
 			ep_thread_release (thread);
