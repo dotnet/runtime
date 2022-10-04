@@ -369,52 +369,13 @@
   </Target>
 
   <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion">
-    <!-- keep in sync with src\mono\wasm\wasm.proj -->
-    <ItemGroup>
-      <EmccExportedRuntimeMethod Include="FS" />
-      <EmccExportedRuntimeMethod Include="print" />
-      <EmccExportedRuntimeMethod Include="ccall" />
-      <EmccExportedRuntimeMethod Include="cwrap" />
-      <EmccExportedRuntimeMethod Include="setValue" />
-      <EmccExportedRuntimeMethod Include="getValue" />
-      <EmccExportedRuntimeMethod Include="UTF8ToString" />
-      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
-      <EmccExportedRuntimeMethod Include="FS_createPath" />
-      <EmccExportedRuntimeMethod Include="FS_createDataFile" />
-      <EmccExportedRuntimeMethod Include="removeRunDependency" />
-      <EmccExportedRuntimeMethod Include="addRunDependency" />
-      <EmccExportedRuntimeMethod Include="FS_readFile" />
-
-      <EmccExportedFunction Include="_malloc" />
-      <EmccExportedFunction Include="_memalign" />
-      <EmccExportedFunction Include="_htons" />
-      <EmccExportedFunction Include="_ntohs" />
-    </ItemGroup>
-    <!-- after 3.0 -->
-    <ItemGroup Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))">
-      <EmccExportedFunction Include="_memset" />
-    </ItemGroup>
-    <!-- before 3.1.7 see https://github.com/dotnet/runtime/issues/64724 -->
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.1.7'))">
-      <EmccExportedFunction Include="__get_daylight" />
-      <EmccExportedFunction Include="__get_timezone" />
-      <EmccExportedFunction Include="__get_tzname" />
-      <EmccExportedFunction Include="g_free" />
-    </ItemGroup>
-    <!-- after 3.1.7 -->
-    <ItemGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))">
-      <EmccExportedFunction Include="stackSave"  />
-      <EmccExportedFunction Include="stackRestore" />
-      <EmccExportedFunction Include="stackAlloc" />
-      <EmccExportedFunction Include="_free" />
-    </ItemGroup>
     <PropertyGroup>
-        <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
-        <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
-        <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
-        <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
-        <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
-        <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
+      <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
+      <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
+      <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+      <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
+      <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
@@ -501,6 +462,8 @@
     <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName= "_WasmOptConfigurationFlagsItems" />
+      <Output TaskParameter="EmccExportedFunctions" ItemName= "EmccExportedFunction" />
+      <Output TaskParameter="EmccExportedRuntimeMethods" ItemName= "EmccExportedRuntimeMethod" />
     </ReadEmccProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)">
@@ -687,6 +650,8 @@
     <ParameterGroup>
       <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
 </Project>

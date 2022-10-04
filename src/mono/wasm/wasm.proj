@@ -148,8 +148,7 @@
       <EmccExportedFunction Include="_free" />
     </ItemGroup>
     <PropertyGroup>
-      <_EmccExportedRuntimeMethodsEsc>@(EmccExportedRuntimeMethod -> '%(Identity)', '%27,%27')</_EmccExportedRuntimeMethodsEsc>
-      <_EmccExportedRuntimeMethods>&quot;['$([MSBuild]::Unescape($(EmccExportedRuntimeMethodsEsc)))']&quot;</_EmccExportedRuntimeMethods>
+      <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
     <ItemGroup>
@@ -200,7 +199,9 @@
     ],
     "WasmOptConfigurationFlags": [
       { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
-    ]
+    ],
+    "EmccExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
+    "EmccExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
   }
 }
 ]]>
