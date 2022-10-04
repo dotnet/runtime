@@ -6301,8 +6301,8 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 	(void)mono_handle_class (target);
 
-        /* if relative, offset is from the start of target. Otherwise offset is actually an address */
-        gboolean relative = TRUE;
+	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
+	gboolean relative = TRUE;
 	intptr_t offset = 0;
 	for (guint i = 0; i < mono_array_handle_length (fields); ++i) {
 		MonoClassField *f;
@@ -6311,33 +6311,33 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 		g_assert (f);
 
 		if (i == 0) {
-                        if (G_LIKELY (!m_field_is_from_update (f)))
-                                offset = m_field_get_offset (f);
-                        else {
-                                /* The first field was added by a metadata-update to an exsiting type.
-                                 * Since it's store outside the object, offset is an absolute address
-                                 */
-                                relative = FALSE;
-                                ERROR_DECL (error);
-                                uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
-                                offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
-                                mono_error_assert_ok (error);
-                        }
+			if (G_LIKELY (!m_field_is_from_update (f)))
+				offset = m_field_get_offset (f);
+			else {
+				/* The first field was added by a metadata-update to an exsiting type.
+				 * Since it's store outside the object, offset is an absolute address
+				 */
+				relative = FALSE;
+				ERROR_DECL (error);
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
+				offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
+				mono_error_assert_ok (error);
+			}
 		} else {
-                        /* metadata-update: the first field might be added, the rest are inside structs */
-                        g_assert (!m_field_is_from_update (f));
+			/* metadata-update: the first field might be added, the rest are inside structs */
+			g_assert (!m_field_is_from_update (f));
 			offset += m_field_get_offset (f) - sizeof (MonoObject);
-                }
+		}
 		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
 
 	res->type = ftype;
 	res->klass = mono_class_from_mono_type_internal (ftype);
-        if (G_LIKELY (relative))
-                res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
-        else
-                res->value = (guint8*)offset;
+	if (G_LIKELY (relative))
+		res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
+	else
+		res->value = (guint8*)offset;
 }
 
 void

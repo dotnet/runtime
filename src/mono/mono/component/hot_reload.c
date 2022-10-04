@@ -187,7 +187,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_num_methods_added,
 	&hot_reload_get_capabilities,
 	&hot_reload_get_method_params,
-        &hot_reload_added_field_ldflda,
+	&hot_reload_added_field_ldflda,
 };
 
 MonoComponentHotReload *
@@ -3257,21 +3257,21 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
 	}
 	g_assert (get_instance_store);
 
-        gpointer args[3];
+	gpointer args[3];
 
-        args[0] = instance;
-        args[1] = &field_type;
-        args[2] = &fielddef_token;
+	args[0] = instance;
+	args[1] = &field_type;
+	args[2] = &fielddef_token;
 
-        MonoHotReloadFieldStoreObject *field_store;
-        field_store = (MonoHotReloadFieldStoreObject*) mono_runtime_invoke_checked (get_instance_store, NULL, args, error);
-        gpointer result = NULL;
-        /* If it's a value type, return a ptr to the beginning of the
-         * boxed data in FieldStore:_loc. If it's a reference type,
-         * return the address of FieldStore:_loc itself. */
-        if (!mono_type_is_reference (field_type))
-                result = mono_object_unbox_internal (field_store->_loc);
-        else
-                result = (gpointer)&field_store->_loc;
-        return result;
+	MonoHotReloadFieldStoreObject *field_store;
+	field_store = (MonoHotReloadFieldStoreObject*) mono_runtime_invoke_checked (get_instance_store, NULL, args, error);
+	gpointer result = NULL;
+	/* If it's a value type, return a ptr to the beginning of the
+	 * boxed data in FieldStore:_loc. If it's a reference type,
+	 * return the address of FieldStore:_loc itself. */
+	if (!mono_type_is_reference (field_type))
+		result = mono_object_unbox_internal (field_store->_loc);
+	else
+		result = (gpointer)&field_store->_loc;
+	return result;
 }

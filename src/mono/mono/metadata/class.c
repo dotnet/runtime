@@ -6605,13 +6605,13 @@ static guint32
 mono_field_resolve_flags (MonoClassField *field)
 {
 	if (G_UNLIKELY (m_field_is_from_update (field))) {
-                /* metadata-update: Just resolve the whole field, for simplicity. */
-                ERROR_DECL (error);
-                mono_field_resolve_type (field, error);
-                mono_error_assert_ok (error);
-                g_assert (field->type);
-                return field->type->attrs;
-        }
+		/* metadata-update: Just resolve the whole field, for simplicity. */
+		ERROR_DECL (error);
+		mono_field_resolve_type (field, error);
+		mono_error_assert_ok (error);
+		g_assert (field->type);
+		return field->type->attrs;
+	}
 
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
