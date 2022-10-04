@@ -397,7 +397,6 @@ namespace ILVerify
 
         private bool ShouldVerifyMemberName(string memberName)
         {
-
             if (_includePatterns.Length > 0 && !Array.Exists(_includePatterns, p => p.IsMatch(memberName)))
             {
                 return false;

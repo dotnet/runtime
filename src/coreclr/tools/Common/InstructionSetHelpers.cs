@@ -11,7 +11,8 @@ namespace System.CommandLine
 {
     internal static partial class Helpers
     {
-        public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, TargetArchitecture targetArchitecture, TargetOS targetOS, string mustNotBeMessage, string invalidImplicationMessage)
+        public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, bool skipRcpc, TargetArchitecture targetArchitecture, TargetOS targetOS,
+            string mustNotBeMessage, string invalidImplicationMessage)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -110,7 +111,10 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                if (!skipRcpc)
+                {
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                }
             }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
@@ -124,6 +128,5 @@ namespace System.CommandLine
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
                 targetArchitecture);
         }
-
     }
 }
