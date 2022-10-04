@@ -343,35 +343,39 @@ namespace System.Text.Json.Tests
         [InlineData(10_000)]
         public static void GetValueLargeTest(int stringLength)
         {
+            var message = new string('a', stringLength);
+            var expectedMessage = new string('a', stringLength);
+
+            JsonEncodedText text = JsonEncodedText.Encode(message);
+            JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
+            JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
+
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
+        }
+
+        [Theory]
+        [InlineData(100)]
+        [InlineData(1_000)]
+        [InlineData(10_000)]
+        public static void GetValueLargeEscapedTest(int stringLength)
+        {
+            var message = new string('>', stringLength);
+            var builder = new StringBuilder();
+            for (int i = 0; i < stringLength; i++)
             {
-                var message = new string('a', stringLength);
-                var expectedMessage = new string('a', stringLength);
-
-                JsonEncodedText text = JsonEncodedText.Encode(message);
-                JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
-                JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
-
-                Assert.Equal(expectedMessage, text.Value);
-                Assert.Equal(expectedMessage, textSpan.Value);
-                Assert.Equal(expectedMessage, textUtf8Span.Value);
+                builder.Append("\\u003E");
             }
-            {
-                var message = new string('>', stringLength);
-                var builder = new StringBuilder();
-                for (int i = 0; i < stringLength; i++)
-                {
-                    builder.Append("\\u003E");
-                }
-                string expectedMessage = builder.ToString();
+            string expectedMessage = builder.ToString();
 
-                JsonEncodedText text = JsonEncodedText.Encode(message);
-                JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
-                JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
+            JsonEncodedText text = JsonEncodedText.Encode(message);
+            JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
+            JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
 
-                Assert.Equal(expectedMessage, text.Value);
-                Assert.Equal(expectedMessage, textSpan.Value);
-                Assert.Equal(expectedMessage, textUtf8Span.Value);
-            }
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
         }
 
         [Fact]
