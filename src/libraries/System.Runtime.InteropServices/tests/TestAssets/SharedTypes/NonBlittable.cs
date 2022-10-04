@@ -196,6 +196,31 @@ namespace SharedTypes
         }
     }
 
+    [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(IntWrapperMarshallerWithFreeCounts))]
+    public static unsafe class IntWrapperMarshallerWithFreeCounts
+    {
+        [ThreadStatic]
+        public static int NumCallsToFree = 0;
+
+        public static int* ConvertToUnmanaged(IntWrapper managed)
+        {
+            int* ret = (int*)Marshal.AllocCoTaskMem(sizeof(int));
+            *ret = managed.i;
+            return ret;
+        }
+
+        public static IntWrapper ConvertToManaged(int* unmanaged)
+        {
+            return new IntWrapper { i = *unmanaged };
+        }
+
+        public static void Free(int* unmanaged)
+        {
+            NumCallsToFree++;
+            Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+        }
+    }
+
     [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(Marshaller))]
     public static unsafe class IntWrapperMarshallerStateful
     {
