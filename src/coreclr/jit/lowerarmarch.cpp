@@ -2255,15 +2255,14 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (child->OperIs(GT_AND) || child->OperIsCmpCompare())
     {
-        // Already have a chain.
-        assert(child->OperIs(GT_AND) || child->OperIsCmpCompare());
-        return true;
-    }
-    else
-    {
-        if (child->OperIs(GT_AND))
+        if (child->isContainedCompareChainSegment())
+        {
+            // Already have a chain.
+            return true;
+        }
+        else if (child->OperIs(GT_AND))
         {
             // Count both sides.
             return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
@@ -2299,7 +2298,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
     *startOfChain = nullptr; // Nothing found yet.
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (child->isContainedCompareChainSegment())
     {
         // Already have a chain.
         return true;
@@ -2310,7 +2309,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         if (child->OperIs(GT_AND))
         {
             // If Op2 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp2()->isContainedAndNotIntOrIImmed())
+            if (!child->AsOp()->gtGetOp2()->isContainedCompareChainSegment())
             {
                 if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
                 {
@@ -2320,7 +2319,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             }
 
             // If Op1 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp1()->isContainedAndNotIntOrIImmed())
+            if (!child->AsOp()->gtGetOp1()->isContainedCompareChainSegment())
             {
                 if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
                 {

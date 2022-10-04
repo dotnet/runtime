@@ -911,7 +911,7 @@ public:
     }
 
     // Node is contained, but it isn't contained due to being a containable int.
-    bool isContainedAndNotIntOrIImmed() const
+    bool isContainedCompareChainSegment() const
     {
         return isContained() && !isContainedIntOrIImmed();
     }
