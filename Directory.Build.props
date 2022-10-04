@@ -247,6 +247,7 @@
     <!-- Disable source link when building locally. -->
     <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
                                   '$(ContinuousIntegrationBuild)' != 'true' and
+                                  '$(DotNetBuildFromSource)' != 'true' and
                                   '$(OfficialBuildId)' == ''">true</DisableSourceLink>
   </PropertyGroup>
 
