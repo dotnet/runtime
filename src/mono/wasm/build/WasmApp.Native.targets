@@ -368,8 +368,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmWriteRspFilesForLinking"
-      DependsOnTargets="_CheckEmccIsExpectedVersion">
+  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion">
     <!-- keep in sync with src\mono\wasm\wasm.proj -->
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="FS" />
