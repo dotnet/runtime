@@ -9645,7 +9645,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                         interval = currentRefPosition->getInterval();
                     }
 
-                    bool continueLoop       = true;
+                    bool continueLoop = true;
                     switch (currentRefPosition->refType)
                     {
                         case RefTypeUse:
