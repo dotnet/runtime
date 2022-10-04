@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace SampleSynthesisTests
 {
@@ -26,8 +27,34 @@ namespace SampleSynthesisTests
                                                       PlatformDetection.IsNotWindowsNanoNorServerCore &&
                                                       SpeechRecognitionEngine.InstalledRecognizers().Count > 0;
 
+        private ITestOutputHelper _output;
+
+        public SynthesizeRecognizeTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [ConditionalFact(nameof(HasInstalledRecognizers))]
-        public void SpeechSynthesizerToSpeechRecognitionEngine()
+        public void SpeechSynthesizerToSpeechRecognitionEngine1()
+        {
+            // word chosen to be recognized with high confidence
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("recognize", "recognize");
+        }
+
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        public void SpeechSynthesizerToSpeechRecognitionEngine2()
+        {
+            // word chosen to be recognized with high confidence
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("apple", "apple");
+        }
+
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        public void SpeechSynthesizerToSpeechRecognitionEngine_SilenceFails()
+        {
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("    ", null);
+        }
+
+        private void SpeechSynthesizerToSpeechRecognitionEngine_Core(string input, string output)
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
                 return;
@@ -37,7 +64,7 @@ namespace SampleSynthesisTests
             using (var synth = new SpeechSynthesizer())
             {
                 synth.SetOutputToWaveStream(ms);
-                var prompt = new Prompt("synthesizer");
+                var prompt = new Prompt(input);
                 synth.Speak(prompt);
             }
 
@@ -45,13 +72,71 @@ namespace SampleSynthesisTests
 
             using (var rec = new SpeechRecognitionEngine())
             {
+                Stopwatch sw = new();
                 rec.LoadGrammar(new DictationGrammar());
                 rec.SetInputToWaveStream(ms);
-                RecognitionResult result = rec.Recognize();
+                rec.InitialSilenceTimeout = TimeSpan.FromSeconds(60); // for slow machines
+                rec.BabbleTimeout = TimeSpan.FromSeconds(60); // for slow machines/robustness
 
-                Assert.True(result.Confidence > 0.1);
-                // handles "synthesizer", "synthesizes", etc.
-                Assert.StartsWith("synthe", result.Text, StringComparison.OrdinalIgnoreCase);
+                StringBuilder diagnostics = new();
+                diagnostics.AppendLine($"Passing synthesized input '{input}'");
+                try
+                {
+                    rec.SpeechDetected += (o, args) =>
+                    {
+                        diagnostics.AppendLine($"Speech detected at position {args.AudioPosition}");
+                    };
+
+                    rec.SpeechRecognitionRejected += (o, args) =>
+                    {
+                        if (output != null)
+                        {
+                            foreach (RecognizedPhrase phrase in args.Result.Alternates)
+                            {
+                                diagnostics.AppendLine($"Alternatives included '{phrase.Text}'' with confidence {phrase.Confidence}");
+                            }
+                            diagnostics.Append($"Elapsed {sw.Elapsed}");
+                            Assert.Fail($"Recognition of '{input}' was expected to produce a string starting with '{output}', but failed");
+                        }
+                    };
+
+                    RecognitionResult argsResult = null;
+                    rec.SpeechRecognized += (o, args) =>
+                    {
+                        argsResult = args.Result;
+                        diagnostics.AppendLine($"Received speech recognized event with result '{args.Result.Text}'");
+                    };
+
+                    sw.Start();
+                    RecognitionResult result = rec.Recognize();
+                    sw.Stop();
+
+                    Assert.Equal(argsResult, result);
+
+                    if (output == null)
+                    {
+                        Assert.Null(result);
+                    }
+                    else
+                    {
+                        Assert.NotNull(result);
+                        diagnostics.AppendLine($"Recognized '{result.Text}' with confidence {result.Confidence}");
+                        diagnostics.AppendLine($"Elapsed {sw.Elapsed}");
+
+                        foreach (RecognizedPhrase phrase in result.Alternates)
+                        {
+                            diagnostics.AppendLine($"Alternatives included '{phrase.Text}'' with confidence {phrase.Confidence}");
+                        }
+
+                        Assert.True(result.Confidence > 0.1); // strings we use should be > 0.7
+                        Assert.StartsWith(output, result.Text, StringComparison.OrdinalIgnoreCase); // StartsWith in case of alternate suffixes
+                    }
+                }
+                catch
+                {
+                    _output.WriteLine(diagnostics.ToString());
+                    throw;
+                }
             }
         }
 
