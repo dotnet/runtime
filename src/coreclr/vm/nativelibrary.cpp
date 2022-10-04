@@ -671,13 +671,13 @@ namespace
             SString currLibNameVariation;
 
             NameVariations const variations = prefixSuffixCombinations[i];
-            if (variations | NameVariations_Prefix)
+            if ((variations & NameVariations_Prefix) != 0)
                 currLibNameVariation.Append(PLATFORM_SHARED_LIB_PREFIX_W);
 
-            _ASSERTE(variations | NameVariations_Name);
+            _ASSERTE((variations & NameVariations_Name) != 0);
             currLibNameVariation.Append(wszLibName);
 
-            if (variations | NameVariations_Suffix)
+            if ((variations & NameVariations_Suffix) != 0)
                 currLibNameVariation.Append(PLATFORM_SHARED_LIB_SUFFIX_W);
 
             // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
