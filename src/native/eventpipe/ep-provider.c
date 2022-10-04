@@ -245,6 +245,11 @@ ep_provider_add_event (
 
 	ep_requires_lock_not_held ();
 
+	// Keyword bits 44-47 are reserved for use by EventSources, and every EventSource sets them all.
+	// We filter out those bits here so later comparisons don't have to take them in to account. Without
+	// filtering, EventSources wouldn't show up with Keywords=0.
+	keywords &= ~0xF00000000000;
+
 	EventPipeEvent *instance = ep_event_alloc (
 		provider,
 		keywords,
