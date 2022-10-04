@@ -55,6 +55,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, resolvedVersion);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
+        public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
+        {
+            RunTest(new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithTfm(Constants.Tfm.Net6)
+                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
+                    .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath),
+                multiLevelLookup: true)
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
+        }
+
         [Theory]
         [InlineData("6.1.2", "net6.0", true, "6.1.2", false)] // No roll forward if --fx-version is used
         [InlineData("6.1.2", "net6.0", null, "6.1.2", false)]
