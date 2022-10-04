@@ -22,7 +22,7 @@
 #endif
 
 
-// Some contants are different in _DEBUG builds.  This macro factors out
+// Some constants are different in _DEBUG builds.  This macro factors out
 // ifdefs from below.
 #ifdef _DEBUG
 #define DBG_FRE(dbg,fre) dbg

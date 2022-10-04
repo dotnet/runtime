@@ -199,7 +199,7 @@ namespace AppHost.Bundle.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
-        // NOTE: when enabling this test take a look at commented code maked by "ACTIVE ISSUE:" in SharedTestState
+        // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
         public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
         {
             var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();

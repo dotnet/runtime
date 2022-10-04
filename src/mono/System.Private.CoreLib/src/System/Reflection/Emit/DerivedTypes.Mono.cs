@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
             this.m_baseType = elementType;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal abstract string? FormatName(string? elementName);
 
         protected override bool IsArrayImpl()
@@ -230,8 +230,6 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -412,7 +410,7 @@ namespace System.Reflection.Emit
             return (rank == 0) ? 1 : rank;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
@@ -445,7 +443,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)
@@ -491,7 +489,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        [return: NotNullIfNotNull("elementName")]
+        [return: NotNullIfNotNull(nameof(elementName))]
         internal override string? FormatName(string? elementName)
         {
             if (elementName == null)

@@ -173,7 +173,7 @@ namespace System.Formats.Asn1
             return new AsnValueReader(content, _ruleSet);
         }
 
-        internal AsnValueReader ReadSetOf(Asn1Tag? expectedTag = default)
+        internal AsnValueReader ReadSetOf(Asn1Tag? expectedTag = default, bool skipSortOrderValidation = false)
         {
             AsnDecoder.ReadSetOf(
                 _span,
@@ -181,6 +181,7 @@ namespace System.Formats.Asn1
                 out int contentOffset,
                 out int contentLength,
                 out int bytesConsumed,
+                skipSortOrderValidation: skipSortOrderValidation,
                 expectedTag: expectedTag);
 
             ReadOnlySpan<byte> content = _span.Slice(contentOffset, contentLength);

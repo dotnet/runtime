@@ -6,7 +6,7 @@
 
 //
 // This file exists just to pull in platform specific source files. More precisely we're switching on the
-// platform being targetted for debugging (not the platform we're currently building debugger executables
+// platform being targeted for debugging (not the platform we're currently building debugger executables
 // for). We do this instead of using build rules to overcome limitations with build when it comes including
 // different source files based on build macros.
 //

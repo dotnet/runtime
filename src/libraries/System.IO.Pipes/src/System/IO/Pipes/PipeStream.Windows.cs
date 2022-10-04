@@ -66,27 +66,19 @@ namespace System.IO.Pipes
 
             CheckReadOperations();
 
-            if (!_isAsync)
-            {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
-
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
                 return Task.FromResult(0);
             }
 
-            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return _isAsync ?
+                ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask() :
+                AsyncOverSyncRead(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!_isAsync)
-            {
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -105,8 +97,14 @@ namespace System.IO.Pipes
                 return new ValueTask<int>(0);
             }
 
-            return ReadAsyncCore(buffer, cancellationToken);
+            return _isAsync ?
+                ReadAsyncCore(buffer, cancellationToken) :
+                AsyncOverSyncRead(buffer, cancellationToken);
         }
+
+        /// <summary>Initiates an async-over-sync read for a pipe opened for non-overlapped I/O.</summary>
+        private ValueTask<int> AsyncOverSyncRead(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.Stream.ReadCore(s.Buffer.Span), (Stream: this, Buffer: buffer), cancellationToken);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -174,26 +172,14 @@ namespace System.IO.Pipes
 
             CheckWriteOperations();
 
-            if (!_isAsync)
-            {
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-
-            if (count == 0)
-            {
-                return Task.CompletedTask;
-            }
-
-            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return
+                count == 0 ? Task.CompletedTask :
+                _isAsync ? WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask() :
+                AsyncOverSyncWrite(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!_isAsync)
-            {
-                return base.WriteAsync(buffer, cancellationToken);
-            }
-
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -206,13 +192,15 @@ namespace System.IO.Pipes
 
             CheckWriteOperations();
 
-            if (buffer.Length == 0)
-            {
-                return default;
-            }
-
-            return WriteAsyncCore(buffer, cancellationToken);
+            return
+                buffer.Length == 0 ? default :
+                _isAsync ? WriteAsyncCore(buffer, cancellationToken) :
+                AsyncOverSyncWrite(buffer, cancellationToken);
         }
+
+        /// <summary>Initiates an async-over-sync write for a pipe opened for non-overlapped I/O.</summary>
+        private ValueTask AsyncOverSyncWrite(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.Stream.WriteCore(s.Buffer.Span), (Stream: this, Buffer: buffer), cancellationToken);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {

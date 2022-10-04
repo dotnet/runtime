@@ -9,16 +9,16 @@ parameters:
   platform: ''
   targetRid: ''
   jobParameters: {}
-  shouldContinueOnError: false
+  shouldContinueOnError: false # set `shouldContinueOnError: forceFalse` to not use the defaults, and set specifically to `false`
   variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
+    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
@@ -108,6 +108,14 @@ jobs:
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
 
+      - name: wasmDarcDependenciesChanged
+        ${{ if eq(parameters.archType, 'wasm') }}:
+          value: $[ or(
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Manifest-7_0_100'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -127,7 +135,7 @@ jobs:
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.jobParameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCore1ESPool-Public
+          name:  NetCore-Public
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
@@ -137,17 +145,17 @@ jobs:
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
-          vmImage: 'macOS-11'
+          vmImage: 'macos-11'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
-          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre
+          demands: ImageOverride -equals windows.vs2022.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Public
-          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre.Open
+          name: NetCore-Public
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

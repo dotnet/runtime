@@ -29,7 +29,7 @@ namespace System
             // for System.UIntPtr without inspecting the type desc any further. Otherwise, the type handle
             // is just wrapping a method table pointer, so return that directly with a reinterpret cast.
             MethodTable* pMethodTable = typeHandle.IsTypeDesc
-                ? (MethodTable*)RuntimeTypeHandle.GetValueInternal(typeof(UIntPtr).TypeHandle)
+                ? TypeHandle.TypeHandleOf<UIntPtr>().AsMethodTable()
                 : typeHandle.AsMethodTable();
 
             Debug.Assert(pMethodTable is not null);

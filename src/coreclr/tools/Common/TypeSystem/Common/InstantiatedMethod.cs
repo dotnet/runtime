@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.Text;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
@@ -56,7 +54,7 @@ namespace Internal.TypeSystem
 
         private TypeDesc Instantiate(TypeDesc type)
         {
-            return type.InstantiateSignature(new Instantiation(), _instantiation);
+            return type.InstantiateSignature(default(Instantiation), _instantiation);
         }
 
         public override MethodSignature Signature

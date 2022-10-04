@@ -1,5 +1,5 @@
 <!--
-Description:  id whith an explicitly specified default port produces a warning
+Description:  id with an explicitly specified default port produces a warning
 Expect:       NonCanonicalURI{element:id,parent:feed}
 -->
 

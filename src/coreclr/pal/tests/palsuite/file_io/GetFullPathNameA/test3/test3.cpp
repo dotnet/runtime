@@ -112,6 +112,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
      * in the middle of the path.
      */
     strcat(szFullFileName, szCreatedDir);
+    strcat(szFullFileName, szSeparator);
     strcat(szFullFileName, szDotDot);
     strcat(szFullFileName, szFileName);
 

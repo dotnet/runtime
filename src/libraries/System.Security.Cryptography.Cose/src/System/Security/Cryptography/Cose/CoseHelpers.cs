@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+                    return null;
                 }
 
                 return (int)alg;
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+                    return null;
                 }
 
                 return alg;

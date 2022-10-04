@@ -33,9 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 FILE* jitstdout = nullptr;
 
-ICorJitHost*   g_jitHost        = nullptr;
-static CILJit* ILJitter         = nullptr; // The one and only JITTER I return
-bool           g_jitInitialized = false;
+ICorJitHost* g_jitHost        = nullptr;
+bool         g_jitInitialized = false;
 
 /*****************************************************************************/
 
@@ -73,21 +72,19 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#ifdef DEBUG
     const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
         assert(jitstdout != nullptr);
     }
-#endif // DEBUG
 
 #if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
     {
         int stdoutFd = _fileno(procstdout());
         // Check fileno error output(s) -1 may overlap with errno result
-        // but is included for completness.
+        // but is included for completeness.
         // We want to detect the case where the initial handle is null
         // or bogus and avoid making further calls.
         if ((stdoutFd != -1) && (stdoutFd != -2) && (errno != EINVAL))
@@ -152,17 +149,7 @@ void jitShutdown(bool processIsTerminating)
 
 /*****************************************************************************/
 
-struct CILJitSingletonAllocator
-{
-    int x;
-};
-const CILJitSingletonAllocator CILJitSingleton = {0};
-
-void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
-{
-    static char CILJitBuff[sizeof(CILJit)];
-    return CILJitBuff;
-}
+static CILJit g_CILJit;
 
 DLLEXPORT ICorJitCompiler* getJit()
 {
@@ -171,11 +158,7 @@ DLLEXPORT ICorJitCompiler* getJit()
         return nullptr;
     }
 
-    if (ILJitter == nullptr)
-    {
-        ILJitter = new (CILJitSingleton) CILJit();
-    }
-    return (ILJitter);
+    return &g_CILJit;
 }
 
 /*****************************************************************************/
@@ -1521,25 +1504,24 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     return param.fieldOrMethodOrClassNamePtr;
 }
 
+//------------------------------------------------------------------------
+// eeGetClassName:
+//   Get the name (including namespace and instantiation) of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Return value:
+//   The name string.
+//
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
-        param.fieldOrMethodOrClassNamePtr = "hackishClassName";
+        printer.Truncate(0);
+        printer.Printf("hackishClassName");
     }
-    return param.fieldOrMethodOrClassNamePtr;
+
+    return printer.GetBuffer();
 }
 
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
@@ -1646,7 +1628,19 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return (nullptr);
     }
 
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
+    CORINFO_String* asString = nullptr;
+    if (impGetStringClass() == *((CORINFO_CLASS_HANDLE*)strHandle))
+    {
+        // strHandle is a frozen string
+        // We assume strHandle is never an "interior" pointer in a frozen string
+        // (jit is not expected to perform such foldings)
+        asString = (CORINFO_String*)strHandle;
+    }
+    else
+    {
+        // strHandle is a pinned handle to a string object
+        asString = *((CORINFO_String**)strHandle);
+    }
 
     if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
     {
@@ -1661,5 +1655,12 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
-
-#endif // DEBUG
+#else  // DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif // !DEBUG

@@ -307,6 +307,20 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
+#ifdef TARGET_WASM
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "BitOperations")) {
+		if (!strcmp (cmethod->name, "PopCount") && fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_U4 || fsig->params [0]->type == MONO_TYPE_U8)) {
+			gboolean is_64bit = fsig->params [0]->type == MONO_TYPE_U8;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+#endif
+
 	return ins;
 }
 
@@ -1008,7 +1022,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
 			int dreg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
+			MONO_EMIT_NEW_CHECK_THIS(cfg, args[0]->dreg);
+			//MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}

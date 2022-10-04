@@ -311,7 +311,7 @@ namespace System.Data.OleDb
         // or it will be known that IDBCreateCommand is not supported
         internal unsafe void QueryInterfaceIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             // caching the fact if we have queried for IDBCreateCommand or not
@@ -369,7 +369,7 @@ namespace System.Data.OleDb
 
         internal void VerifyIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             Debug.Assert(constr.HaveQueriedForCreateCommand, "expected HaveQueriedForCreateCommand");

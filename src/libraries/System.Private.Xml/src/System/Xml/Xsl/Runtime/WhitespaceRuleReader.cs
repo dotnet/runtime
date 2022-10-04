@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Diagnostics;
 
 namespace System.Xml.Xsl.Runtime
@@ -13,15 +12,15 @@ namespace System.Xml.Xsl.Runtime
         private readonly WhitespaceRuleLookup _wsRules;
         private readonly BitStack _stkStrip;
         private bool _shouldStrip, _preserveAdjacent;
-        private string _val;
+        private string? _val;
 
-        public static XmlReader CreateReader(XmlReader baseReader, WhitespaceRuleLookup wsRules)
+        public static XmlReader CreateReader(XmlReader baseReader, WhitespaceRuleLookup? wsRules)
         {
             if (wsRules == null)
             {
                 return baseReader;    // There is no rules to process
             }
-            XmlReaderSettings readerSettings = baseReader.Settings;
+            XmlReaderSettings? readerSettings = baseReader.Settings;
             if (readerSettings != null)
             {
                 if (readerSettings.IgnoreWhitespace)
@@ -31,12 +30,12 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                XmlTextReader txtReader = baseReader as XmlTextReader;
+                XmlTextReader? txtReader = baseReader as XmlTextReader;
                 if (txtReader != null && txtReader.WhitespaceHandling == WhitespaceHandling.None)
                 {
                     return baseReader;        // V1 XmlTextReader that strips all WS
                 }
-                XmlTextReaderImpl txtReaderImpl = baseReader as XmlTextReaderImpl;
+                XmlTextReaderImpl? txtReaderImpl = baseReader as XmlTextReaderImpl;
                 if (txtReaderImpl != null && txtReaderImpl.WhitespaceHandling == WhitespaceHandling.None)
                 {
                     return baseReader;        // XmlTextReaderImpl that strips all WS
@@ -72,7 +71,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override bool Read()
         {
-            string ws = null;
+            string? ws = null;
 
             // Clear text value
             _val = null;

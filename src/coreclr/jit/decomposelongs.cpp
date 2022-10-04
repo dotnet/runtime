@@ -1794,7 +1794,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 //------------------------------------------------------------------------
 // OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
 // the high part of the source and, if the cast is to INT, the cast node itself.
-// Accounts for side effects and marks nodes unused as neccessary.
+// Accounts for side effects and marks nodes unused as necessary.
 //
 // Only accepts casts to integer types that are not long.
 // Does not optimize checked casts.
@@ -2131,6 +2131,7 @@ void DecomposeLongs::PromoteLongVars()
                 m_compiler->lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
                                                                // they are long lifetime temps.
 
+            varDsc                       = m_compiler->lvaGetDesc(lclNum);
             LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(varNum);
             fieldVarDsc->lvType          = TYP_INT;
             fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
@@ -2138,11 +2139,20 @@ void DecomposeLongs::PromoteLongVars()
             fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
             fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
             fieldVarDsc->lvParentLcl     = lclNum;
+
             // Currently we do not support enregistering incoming promoted aggregates with more than one field.
             if (isParam)
             {
                 fieldVarDsc->lvIsParam = true;
                 m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LongParamField));
+
+#if FEATURE_MULTIREG_ARGS
+                if (varDsc->lvIsRegArg)
+                {
+                    fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
+                    fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
+                }
+#endif // FEATURE_MULTIREG_ARGS
             }
         }
     }

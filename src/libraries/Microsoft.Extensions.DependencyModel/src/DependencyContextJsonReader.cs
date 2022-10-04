@@ -841,7 +841,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         private string? Pool(string? s)
         {
             if (s == null)

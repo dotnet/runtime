@@ -1,4 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 function wasm_exit(exit_code) {
     var tests_done_elem = document.createElement("label");
@@ -10,13 +10,13 @@ function wasm_exit(exit_code) {
 }
 
 try {
-    const { BINDING } = await createDotnetRuntime(({ MONO }) => ({
-        configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
-            MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-        },
-    }));
-    const testMeaning = BINDING.bind_static_method("[WebAssembly.Browser.HotReload.Test] Sample.Test:TestMeaning");
+    const { getAssemblyExports } = await dotnet
+        .withElementOnExit()
+        .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
+        .create();
+
+    const exports = await getAssemblyExports("WebAssembly.Browser.HotReload.Test.dll");
+    const testMeaning = exports.Sample.Test.TestMeaning
     const ret = testMeaning();
     document.getElementById("out").innerHTML = `${ret}`;
     console.debug(`ret: ${ret}`);

@@ -101,7 +101,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void SortKeys_GetNull_ReturnsEmptyArray()
         {
             var control = new SortRequestControl();
-            FieldInfo field = control.GetType().GetField("_keys", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo field = typeof(SortRequestControl).GetField("_keys", BindingFlags.NonPublic | BindingFlags.Instance);
             field.SetValue(control, null);
             Assert.Empty(control.SortKeys);
         }

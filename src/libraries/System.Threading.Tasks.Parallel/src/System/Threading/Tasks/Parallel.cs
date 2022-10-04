@@ -3061,10 +3061,7 @@ namespace System.Threading.Tasks
                     d = partitionerSource as IDisposable;
                 }
 
-                if (d != null)
-                {
-                    d.Dispose();
-                }
+                d?.Dispose();
 
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())

@@ -115,8 +115,7 @@ namespace System.Xml
                 _now = 0;
                 _listCount = 0;
                 Array.Clear(_list);
-                if (_dictionary != null)
-                    _dictionary.Clear();
+                _dictionary?.Clear();
             }
 
             public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)

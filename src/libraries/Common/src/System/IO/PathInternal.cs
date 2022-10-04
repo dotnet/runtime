@@ -215,7 +215,7 @@ namespace System.IO
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         internal static string? TrimEndingDirectorySeparator(string? path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path.AsSpan()) ?
                 path!.Substring(0, path.Length - 1) :

@@ -4,9 +4,11 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
+    <Compile Include="ConsoleStreamTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="ConsoleKeyInfoTests.cs" />
@@ -14,14 +16,12 @@
     <Compile Include="SetIn.cs" />
     <Compile Include="Color.cs" />
     <Compile Include="SetOut.cs" />
-    <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
@@ -33,11 +33,19 @@
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="WindowAndCursorProps.cs" />
+    <Compile Include="..\src\System\TermInfo.WellKnownStrings.cs" Link="src\System\TermInfo.WellKnownStrings.cs" />
+    <Compile Include="..\src\System\TermInfo.WellKnownNumbers.cs" Link="src\System\TermInfo.WellKnownNumbers.cs" />
+    <Compile Include="..\src\System\TermInfo.Database.cs" Link="src\System\TermInfo.Database.cs" />
+    <Compile Include="..\src\System\TerminalFormatStrings.cs" Link="src\System\TerminalFormatStrings.cs" />
+    <Compile Include="..\src\System\IO\KeyParser.cs" Link="src\System\IO\KeyParser.cs" />
+    <Compile Include="..\src\System\IO\Net6KeyParser.cs" Link="src\System\IO\Net6KeyParser.cs" />
+    <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs" Link="src\System\Text\ConsoleEncoding.cs" />
+    <Compile Include="KeyParserTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"
-          Link="%(RecursiveDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
+             Link="%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
@@ -45,9 +53,32 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
+    <Compile Include="TermInfo.Unix.cs" />
+    <Compile Include="..\src\System\TermInfo.cs" Link="src\System\TermInfo.cs" />
+    <Compile Include="..\src\System\TermInfo.DatabaseFactory.cs" Link="src\System\TermInfo.DatabaseFactory.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
+             Link="Common\Interop\Unix\Interop.Open.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
+             Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SNPrintF.cs"
+             Link="Common\Interop\Unix\Interop.SNPrintF.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
   </ItemGroup>
 </Project>

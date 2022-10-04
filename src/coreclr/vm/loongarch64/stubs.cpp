@@ -1791,22 +1791,26 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     {
         int codeSize = 0;
         int indirectionsDataSize = 0;
-        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
-            codeSize += (pLookup->sizeOffset > 2047 ? 8 : 4);
-            indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
-            codeSize += 12;
+            codeSize += 4;
         }
 
         for (WORD i = 0; i < pLookup->indirections; i++) {
             _ASSERTE(pLookup->offsets[i] >= 0);
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                codeSize += (pLookup->sizeOffset > 2047 ? 24 : 16);
+                indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
+            }
+
             codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
         codeSize += indirectionsDataSize ? 4 : 0; // pcaddi
 
-        if(pLookup->testForNull)
+        if (pLookup->testForNull)
         {
             codeSize += 12; // ori-beq-jr
 
@@ -1821,7 +1825,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             codeSize += 4; /* jilr */
         }
 
-        // the offset value of date_lable.
+        // the offset value of data_label.
         uint dataOffset = codeSize;
 
         codeSize += indirectionsDataSize;
@@ -1877,9 +1881,9 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 *(DWORD*)p = 0x03800210 | (((UINT32)slotOffset & 0xfff) << 10); p += 4;
                 dataOffset -= 8;
 
-                // bge $t4,$t3, // CALL HELPER:
+                // bge $t4,$t5, // CALL HELPER:
                 pBLECall = p;       // Offset filled later
-                *(DWORD*)p = 0x6400020f; p += 4;
+                *(DWORD*)p = 0x64000211; p += 4;
                 dataOffset -= 4;
             }
 
@@ -1889,10 +1893,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // ld.wu  $t4,$r21,0
                 *(DWORD*)p = 0x2a8002b0 | (dataOffset<<10);
                 p += 4;
-                dataOffset += 4;
                 // ldx.d  $a0,$a0,$t4
                 *(DWORD*)p = 0x380c4084;
                 p += 4;
+
+                // move to next indirection offset data
+                dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
             }
             else
             {
@@ -1902,6 +1908,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // ld.d  $a0,$a0,pLookup->offsets[i]
                 *(DWORD*)p = 0x28c00084 | ((pLookup->offsets[i] & 0xfff)<<10);
                 p += 4;
+                dataOffset -= 4; // subtract 4 as we have moved PC by 4
             }
         }
 
@@ -1925,7 +1932,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
             // CALL HELPER:
             if(pBLECall != NULL)
-                *(DWORD*)pBLECall |= ((UINT32)(p - pBLECall) << 10);
+                *(DWORD*)pBLECall |= ((UINT32)(p - pBLECall) << 8);
 
             // ori  $a0,$t3,0
             *(DWORD*)p = 0x038001e4;
@@ -1943,7 +1950,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
         }
 
-        // datalabel:
+        // data_label:
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK && pLookup->sizeOffset > 2047)

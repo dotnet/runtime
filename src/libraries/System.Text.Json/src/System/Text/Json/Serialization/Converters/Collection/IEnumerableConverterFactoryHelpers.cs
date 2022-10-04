@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization
 
         public static bool IsNonGenericStackOrQueue(this Type type)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             // Optimize for linking scenarios where mscorlib is trimmed out.
             const string stackTypeName = "System.Collections.Stack, System.Collections.NonGeneric";
             const string queueTypeName = "System.Collections.Queue, System.Collections.NonGeneric";

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -115,10 +114,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
 
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
 
@@ -129,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
-            // If the type has a class constructor, its non-GC statics section is prefixed  
+            // If the type has a class constructor, its non-GC statics section is prefixed
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
             if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
@@ -167,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     TypePreinit.ISerializableValue val = preinitInfo.GetFieldValue(field);
                     int currentOffset = builder.CountBytes;
-                    val.WriteFieldData(ref builder, field, factory);
+                    val.WriteFieldData(ref builder, factory);
                     Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);
                 }
 

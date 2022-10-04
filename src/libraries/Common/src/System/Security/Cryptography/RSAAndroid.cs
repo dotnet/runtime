@@ -355,6 +355,7 @@ namespace System.Security.Cryptography
 
                 if (key is null || key.IsInvalid)
                 {
+                    key?.Dispose();
                     throw new CryptographicException();
                 }
 
@@ -434,6 +435,7 @@ namespace System.Security.Cryptography
                         SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaSubjectPublicKeyInfo(writer.Encode());
                         if (key is null || key.IsInvalid)
                         {
+                            key?.Dispose();
                             throw new CryptographicException();
                         }
 
@@ -567,6 +569,7 @@ namespace System.Security.Cryptography
 
                 if (key is null || key.IsInvalid)
                 {
+                    key?.Dispose();
                     throw new CryptographicException();
                 }
 

@@ -5,7 +5,7 @@
 .assembly 'DevDiv_495792' {}
 .assembly extern xunit.core {}
 
-// This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
+// This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an assignment flag, when
 // its children was optimized in the assertion propagation.
 
 .class ILGEN_CLASS

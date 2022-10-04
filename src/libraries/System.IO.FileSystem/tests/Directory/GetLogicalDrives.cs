@@ -11,7 +11,6 @@ namespace System.IO.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Valid drive strings on Unix
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void GetsValidDriveStrings_Unix()
         {
             string[] drives = Directory.GetLogicalDrives();

@@ -368,7 +368,7 @@ void fx_resolver_t::update_newest_references(
 // - host_info
 //     Information about the host - mainly used to determine where to search for frameworks.
 // - override_settings
-//     Framework resolution settings which will win over anything found (settings comming from command line).
+//     Framework resolution settings which will win over anything found (settings coming from command line).
 //     Passed as fx_reference_t for simplicity, the version part of that structure is ignored.
 // - config
 //     Parsed runtime configuration to process.

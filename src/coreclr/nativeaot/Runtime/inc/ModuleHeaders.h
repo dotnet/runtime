@@ -10,7 +10,7 @@ struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 7;
+    static const uint32_t CurrentMajorVersion = 8;
     static const uint32_t CurrentMinorVersion = 0;
 };
 
@@ -35,7 +35,7 @@ struct ReadyToRunHeader
 // of the enum and deprecated sections should not be removed to preserve ID stability.
 //
 // Eventually this will be reconciled with ReadyToRunSectionType from
-// https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+// https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
 //
 enum class ReadyToRunSectionType
 {

@@ -65,7 +65,7 @@ function print_usage {
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
-    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
+    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specified path (default: <test root>/coreclrtests.xml)'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -727,20 +727,22 @@ function run_test {
     return $testScriptExitCode
 }
 
-# Variables for running tests in the background
-if [ `uname` = "NetBSD" ]; then
-    NumProc=$(getconf NPROCESSORS_ONLN)
-elif [ `uname` = "Darwin" ]; then
-    NumProc=$(getconf _NPROCESSORS_ONLN)
+# Get the number of processors available to the scheduler
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "Darwin" ]]; then
+  NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-    if [ -x "$(command -v nproc)" ]; then
-        NumProc=$(nproc --all)
-    elif [ -x "$(command -v getconf)" ]; then
-        NumProc=$(getconf _NPROCESSORS_ONLN)
-    else
-        NumProc=1
-    fi
+  NumProc=1
 fi
+
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
 ((processCount = 0))
@@ -985,8 +987,14 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"
@@ -1105,7 +1113,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            export RunCrossGen=1
+            export RunCrossGen2=1
             ;;
         --sequential)
             ((maxProcesses = 1))

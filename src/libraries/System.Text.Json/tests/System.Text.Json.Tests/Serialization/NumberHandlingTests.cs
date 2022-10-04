@@ -89,15 +89,6 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
-            // Added float case for x86 android due to nan conversion in below switch
-            // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
-#if NETCOREAPP
-            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && Type.GetTypeCode(typeof(T)) == TypeCode.Single)
-            {
-                return Convert.ToSingle(number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
-            }
-#endif
-
             return number switch
             {
                 double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),

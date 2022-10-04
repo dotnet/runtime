@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Dataflow
@@ -39,11 +38,6 @@ namespace Mono.Linker.Dataflow
 				branchTargets.Add (einfo.HandlerStart.Offset);
 			}
 			return branchTargets;
-		}
-
-		public static bool IsByRefOrPointer (this TypeReference typeRef)
-		{
-			return typeRef.IsByReference || typeRef.IsPointer;
 		}
 	}
 

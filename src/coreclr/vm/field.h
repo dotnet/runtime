@@ -189,7 +189,7 @@ public:
         return m_prot;
     }
 
-        // Please only use this in a path that you have already guarenteed
+        // Please only use this in a path that you have already guaranteed
         // the assert is true
     DWORD GetOffsetUnsafe()
     {

@@ -199,7 +199,7 @@ namespace System.Globalization
         ///
         /// We don't build the stringbuilder unless we find something to change
         /// </summary>
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static string? ReescapeWin32String(string? str)
         {
             // If we don't have data, then don't try anything
@@ -265,7 +265,7 @@ namespace System.Globalization
             return result.ToString();
         }
 
-        [return: NotNullIfNotNull("array")]
+        [return: NotNullIfNotNull(nameof(array))]
         internal static string[]? ReescapeWin32Strings(string[]? array)
         {
             if (array != null)
@@ -420,7 +420,7 @@ namespace System.Globalization
                 if (!useUserOverride && data.strings.Count > 1)
                 {
                     // Since there is no "NoUserOverride" aware EnumTimeFormatsEx, we always get an override
-                    // The override is the first entry if it is overriden.
+                    // The override is the first entry if it is overridden.
                     // We can check if we have overrides by checking the GetLocaleInfo with no override
                     // If we do have an override, we don't know if it is a user defined override or if the
                     // user has just selected one of the predefined formats so we can't just remove it

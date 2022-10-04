@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class InstantiatedMethod
+    public partial class InstantiatedMethod
     {
         protected internal override int ClassCode => -873941872;
 
@@ -16,9 +16,9 @@ namespace Internal.TypeSystem
             // to each other. This is a better heuristic than sorting by method definition
             // then by instantiation.
             //
-            // The goal is to sort methods like SomeClass.SomeMethod<UserStruct>, 
+            // The goal is to sort methods like SomeClass.SomeMethod<UserStruct>,
             // near SomeOtherClass.SomeOtherMethod<UserStruct, int>
-            int result = 0;
+            int result;
             // Sort instantiations of the same type together
             for (int i = 0; i < _instantiation.Length; i++)
             {

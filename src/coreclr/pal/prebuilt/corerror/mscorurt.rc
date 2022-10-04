@@ -260,7 +260,7 @@ BEGIN
 	MSG_FOR_URT_HR(CORDBG_E_ILLEGAL_IN_OPTIMIZED_CODE) "The operation failed because the thread is in optimized code."
 	MSG_FOR_URT_HR(CORDBG_E_APPDOMAIN_MISMATCH) "A supplied object or type belongs to the wrong AppDomain."
 	MSG_FOR_URT_HR(CORDBG_E_CONTEXT_UNVAILABLE) "The thread's context is not available."
-	MSG_FOR_URT_HR(CORDBG_E_UNCOMPATIBLE_PLATFORMS) "The operation failed because debuggee and debugger are on incompatible platforms."
+	MSG_FOR_URT_HR(CORDBG_E_INCOMPATIBLE_PLATFORMS) "The operation failed because debuggee and debugger are on incompatible platforms."
 	MSG_FOR_URT_HR(CORDBG_E_DEBUGGING_DISABLED) "The operation failed because the debugging has been disabled"
 	MSG_FOR_URT_HR(CORDBG_E_DETACH_FAILED_ON_ENC) "Detach is illegal after an Edit and Continue on a module."
 	MSG_FOR_URT_HR(CORDBG_E_CURRENT_EXCEPTION_IS_OUTSIDE_CURRENT_EXECUTION_SCOPE) "Cannot intercept the current exception at the specified frame."

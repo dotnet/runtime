@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(GetPropertySigHelper_TestData))]
-        public void GetProperySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(Type[] types, int expectedLength)
+        public void GetPropertySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(Type[] types, int expectedLength)
         {
             ModuleBuilder module = Helpers.DynamicModule();
 

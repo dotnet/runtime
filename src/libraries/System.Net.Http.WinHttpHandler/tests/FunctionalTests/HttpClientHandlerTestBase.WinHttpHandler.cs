@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
 
             WinHttpClientHandler handler = new WinHttpClientHandler(useVersion);
 
-            if (useVersion >= HttpVersion20.Value && allowAllCertificates)
+            if (allowAllCertificates)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }

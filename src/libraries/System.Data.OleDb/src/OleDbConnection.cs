@@ -600,9 +600,9 @@ namespace System.Data.OleDb
 
                         ResetState(connection);
                     }
-                    else if (null != connection)
+                    else
                     {
-                        connection.OnInfoMessage(errorInfo, hresult);
+                        connection?.OnInfoMessage(errorInfo, hresult);
                     }
                 }
                 finally
@@ -637,10 +637,7 @@ namespace System.Data.OleDb
 
         private static void ResetState(OleDbConnection? connection)
         {
-            if (null != connection)
-            {
-                connection.ResetState();
-            }
+            connection?.ResetState();
         }
     }
 }

@@ -204,7 +204,7 @@ namespace System.Reflection.Runtime.TypeParsing
 
         //
         // The desktop typename parser has a strange attitude towards whitespace. It throws away whitespace between punctuation tokens and whitespace
-        // preceeding identifiers or assembly names (and this cannot be escaped away). But whitespace between the end of an identifier
+        // preceding identifiers or assembly names (and this cannot be escaped away). But whitespace between the end of an identifier
         // and the punctuation that ends it is *not* ignored.
         //
         // In other words, GetType("   Foo") searches for "Foo" but GetType("Foo   ") searches for "Foo   ".

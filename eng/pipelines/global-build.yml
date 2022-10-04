@@ -16,6 +16,7 @@ pr:
     - eng/pipelines/global-build.yml
     exclude:
     - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*
@@ -24,7 +25,17 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
+
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
 #
 # Build with Release config and Debug runtimeConfiguration
 #
@@ -40,7 +51,12 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # Build with Release config and runtimeConfiguration with MSBuild generator
@@ -55,7 +71,12 @@ jobs:
       testGroup: innerloop
       nameSuffix: MSBuild_CMake
       buildArgs: -c Release -msbuild
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # Build with Debug config and Release runtimeConfiguration
@@ -70,10 +91,15 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Release
       buildArgs: -c debug -runtimeConfiguration release
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
-# Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
+# Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
 # specified. Catches cases where we depend on Configuration also being specified
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -86,10 +112,14 @@ jobs:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
-# Build Mono + Libraries. This excercises the code path where we build libraries without
+# Build Mono + Libraries. This exercises the code path where we build libraries without
 # first building CoreCLR
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -102,7 +132,11 @@ jobs:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
@@ -117,7 +151,11 @@ jobs:
     jobParameters:
       nameSuffix: Libraries_AllConfigurations
       buildArgs: -subset libs -allconfigurations
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
 
 #
 # SourceBuild Build
@@ -130,4 +168,8 @@ jobs:
     - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
-      timeoutInMinutes: 90
+      timeoutInMinutes: 120
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))

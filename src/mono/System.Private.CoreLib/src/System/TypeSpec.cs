@@ -309,7 +309,11 @@ namespace System
             }
         }
 
-        private void AddModifier(IModifierSpec md) => modifier_spec ??= new List<IModifierSpec>();
+        private void AddModifier(IModifierSpec md)
+        {
+            modifier_spec ??= new List<IModifierSpec>();
+            modifier_spec.Add(md);
+        }
 
         private static void SkipSpace(string name, ref int pos)
         {

@@ -24,13 +24,25 @@ namespace System.Text.Json.Serialization
         /// </remarks>
         public JsonSerializerOptions Options
         {
-            get => _options ??= new JsonSerializerOptions { TypeInfoResolver = this, IsLockedInstance = true };
+            get
+            {
+                JsonSerializerOptions? options = _options;
+
+                if (options is null)
+                {
+                    options = new JsonSerializerOptions { TypeInfoResolver = this };
+                    options.MakeReadOnly();
+                    _options = options;
+                }
+
+                return options;
+            }
 
             internal set
             {
-                Debug.Assert(!value.IsLockedInstance);
+                Debug.Assert(!value.IsReadOnly);
                 value.TypeInfoResolver = this;
-                value.IsLockedInstance = true;
+                value.MakeReadOnly();
                 _options = value;
             }
         }

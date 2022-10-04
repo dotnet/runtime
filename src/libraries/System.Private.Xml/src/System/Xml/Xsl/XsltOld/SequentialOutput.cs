@@ -657,7 +657,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
                 }
-                Debug.Assert(0 <= i, "find char wasn't realy find");
+                Debug.Assert(0 <= i, "find char wasn't really find");
                 pos++;
             }
 

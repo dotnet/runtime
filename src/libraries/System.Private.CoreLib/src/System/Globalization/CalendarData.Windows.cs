@@ -168,13 +168,13 @@ namespace System.Globalization
                     calendarId = CalendarId.JAPAN;
                     break;
                 case CalendarId.JULIAN:               // Data looks like gregorian US
-                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevent
-                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
-                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
+                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevant
+                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
+                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
                     calendarId = CalendarId.GREGORIAN_US;
                     break;
             }
@@ -210,7 +210,7 @@ namespace System.Globalization
                     // See if this works
                     if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
-                        // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
+                        // Failed, set it to a locale (fa-IR) that always has Gregorian US available in the OS
                         localeName = "fa-IR";
 
                         // See if that works

@@ -505,7 +505,7 @@ namespace System.Reflection.PortableExecutable.Tests
                     mappedFieldData: mappedRVADataBuilder,
                     machine: machine);
 
-                // Validate FieldRVA is aligned as ManagedPEBuilder.MappedFieldDataAlignemnt
+                // Validate FieldRVA is aligned as ManagedPEBuilder.MappedFieldDataAlignment
                 peStream.Position = 0;
                 using (var peReader = new PEReader(peStream, PEStreamOptions.LeaveOpen))
                 {
@@ -756,7 +756,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.False(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Deterministic)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void ChecksumFXAssemblies()
         {

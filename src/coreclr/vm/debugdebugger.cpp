@@ -522,7 +522,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // Since the MethodDesc is always the most recent, v1 instances of EnC methods on the stack
             // will appeared to be Enc. This means we err on the side of not showing line numbers for EnC methods.
             // If any method in the file was changed, then our line numbers could be wrong. Since we don't
-            // have udpated PDBs from EnC, we can at best look at the module's version number as a rough guess
+            // have updated PDBs from EnC, we can at best look at the module's version number as a rough guess
             // to if this file has been updated.
             bool fIsEnc = false;
 #ifdef EnC_SUPPORTED

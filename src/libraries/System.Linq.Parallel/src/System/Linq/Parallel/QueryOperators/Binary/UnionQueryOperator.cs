@@ -284,14 +284,8 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                if (_leftSource != null)
-                {
-                    _leftSource.Dispose();
-                }
-                if (_rightSource != null)
-                {
-                    _rightSource.Dispose();
-                }
+                _leftSource?.Dispose();
+                _rightSource?.Dispose();
             }
         }
 

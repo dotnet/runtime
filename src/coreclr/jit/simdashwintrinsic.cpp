@@ -51,7 +51,8 @@ const SimdAsHWIntrinsicInfo& SimdAsHWIntrinsicInfo::lookup(NamedIntrinsic id)
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and classId
-NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
+NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
+                                               CORINFO_SIG_INFO* sig,
                                                const char*       className,
                                                const char*       methodName,
                                                const char*       enclosingClassName,
@@ -71,6 +72,11 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
     {
         numArgs++;
         isInstanceMethod = true;
+    }
+
+    if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+    {
+        return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
     }
 
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
@@ -175,6 +181,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         // The user disabled support for the baseline ISA so
         // don't emit any SIMD intrinsics as they all require
         // this at a minimum
+        return nullptr;
+    }
+
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
         return nullptr;
     }
 
@@ -547,7 +559,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_AllBitsSet:
                 case NI_VectorT256_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
+                    return gtNewAllBitsSetConNode(retType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -564,7 +576,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_One:
                 case NI_VectorT256_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -642,12 +654,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_Zero:
                 case NI_VectorT256_get_Zero:
                 {
-                    return gtNewZeroConNode(retType, simdBaseJitType);
+                    return gtNewZeroConNode(retType);
                 }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
+                    return gtNewAllBitsSetConNode(retType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -662,7 +674,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_One:
                 case NI_VectorT128_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -739,7 +751,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_Zero:
                 case NI_VectorT128_get_Zero:
                 {
-                    return gtNewZeroConNode(retType, simdBaseJitType);
+                    return gtNewZeroConNode(retType);
                 }
 #else
 #error Unsupported platform
@@ -959,7 +971,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector3_op_Division:
                 {
                     // Vector2/3 div: since the top-most elements will be zero, we end up
-                    // perfoming 0/0 which is a NAN. Therefore, post division we need to set the
+                    // performing 0/0 which is a NAN. Therefore, post division we need to set the
                     // top-most elements to zero. This is achieved by left logical shift followed
                     // by right logical shift of the result.
 

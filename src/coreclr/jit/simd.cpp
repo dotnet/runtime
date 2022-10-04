@@ -910,6 +910,30 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         setUsesSIMDTypes(true);
+
+        CORINFO_CLASS_HANDLE* pCanonicalHnd = nullptr;
+        switch (size)
+        {
+            case 8:
+                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd8Handle;
+                break;
+            case 12:
+                // There is no need for a canonical SIMD12 handle because it is always Vector3.
+                break;
+            case 16:
+                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd16Handle;
+                break;
+            case 32:
+                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd32Handle;
+                break;
+            default:
+                unreached();
+        }
+
+        if ((pCanonicalHnd != nullptr) && (*pCanonicalHnd == NO_CLASS_HANDLE))
+        {
+            *pCanonicalHnd = typeHnd;
+        }
     }
 
     return simdBaseJitType;
@@ -1255,7 +1279,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
             structHandle = ti.GetClassHandleForValueClass();
         }
 
-        tree = impNormStructVal(tree, structHandle, (unsigned)CHECK_SPILL_ALL);
+        tree = impNormStructVal(tree, structHandle, CHECK_SPILL_ALL);
     }
 
     // Now set the type of the tree to the specialized SIMD struct type, if applicable.
@@ -1680,7 +1704,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 }
 
 //--------------------------------------------------------------------------------------------------------
-// createAddressNodeForSIMDInit: Generate the address node if we want to intialize vector2, vector3 or vector4
+// createAddressNodeForSIMDInit: Generate the address node if we want to initialize vector2, vector3 or vector4
 // from first argument's address.
 //
 // Arguments:
@@ -1992,7 +2016,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 if (areArgsContiguous && simdBaseType == TYP_FLOAT)
                 {
                     // Since Vector2, Vector3 and Vector4's arguments type are only float,
-                    // we intialize the vector from first argument address, only when
+                    // we initialize the vector from first argument address, only when
                     // the simdBaseType is TYP_FLOAT and the arguments are located contiguously in memory
                     initFromFirstArgIndir = true;
                     GenTree*  op2Address  = createAddressNodeForSIMDInit(nodeBuilder.GetOperand(0), size);

@@ -71,6 +71,16 @@ namespace System.Net.Http.Tests
             Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
         }
 
+        [Fact]
+        public void TryAddWithoutValidation_AddInvalidViaHeaderValue_ValuePassed()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("Via", "1.1 foo.bar, foo");
+
+            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal("1.1 foo.bar, foo", headers.First().Value.ElementAt(0));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -226,7 +236,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.First().Value.Count());
 
             Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
-            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));            
+            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
             string expected = headers.Descriptor.Name + ": " + invalidHeaderValue + ", " + parsedPrefix + Environment.NewLine;
@@ -2492,7 +2502,7 @@ namespace System.Net.Http.Tests
 
             Assert.True(headers.TryGetValues(Name, out IEnumerable<string> values));
 
-            // The entry shoud still exist as the parsing during the validating access should not remove the invalid value.
+            // The entry should still exist as the parsing during the validating access should not remove the invalid value.
             Assert.Equal(1, headers.NonValidated.Count);
             Assert.Equal(1, values.Count());
             Assert.Equal(value, values.Single());

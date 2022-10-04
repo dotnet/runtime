@@ -37,6 +37,7 @@ namespace ILCompiler
                                   CompilerTypeSystemContext context,
                                   ReadyToRunCompilationModuleGroupBase compilationGroup,
                                   bool embedPgoDataInR2RImage,
+                                  bool parseIbcData,
                                   Func<MethodDesc, bool> canBeIncludedInCurrentCompilation)
         {
             EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
@@ -74,13 +75,19 @@ namespace ILCompiler
                 }
             }
 
+            if (parseIbcData)
             {
                 // Parse Ibc data
                 foreach (var module in inputModules)
                 {
                     _inputData.Add(_ibcParser.ParseIBCDataFromModule((EcmaModule)module));
-                    _placedProfileMethods.Add(module, new HashSet<MethodDesc>());
                 }
+            }
+
+            // Ensure each module has a hashset of methods available
+            foreach (var module in inputModules)
+            {
+                _placedProfileMethods.Add(module, new HashSet<MethodDesc>());
             }
 
             // Merge all data together

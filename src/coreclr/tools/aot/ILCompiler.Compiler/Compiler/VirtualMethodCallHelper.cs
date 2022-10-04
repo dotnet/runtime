@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem;
@@ -146,7 +145,7 @@ namespace ILCompiler
                 //    class Derived<T> : Middle<T, MyStruct> { }    // -> Template is Derived<__UniversalCanon> and needs a dictionary slot
                 //                                                  // -> Basetype tempalte is Middle<__UniversalCanon, MyStruct>. It's a partial
                 //                                                        Universal canonical type, so we need to fully canonicalize it.
-                //                                                  
+                //
                 //    class Middle<T, U> : Base<U> { }              // -> Template is Middle<__UniversalCanon, __UniversalCanon> and needs a dictionary slot
                 //                                                  // -> Basetype template is Base<__UniversalCanon>
                 //
@@ -193,7 +192,7 @@ namespace ILCompiler
         public static bool HasGenericDictionarySlot(this TypeDesc type)
         {
             // Dictionary slots on generic interfaces are necessary to support static methods on interfaces
-            // The reason behind making this unconditional is simplicity, and keeping method slot indices for methods on IFoo<int> 
+            // The reason behind making this unconditional is simplicity, and keeping method slot indices for methods on IFoo<int>
             // and IFoo<string> identical. That won't change.
             if (type.IsInterface)
                 return type.HasInstantiation;

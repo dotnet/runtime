@@ -40,6 +40,7 @@ class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
+class FrozenObjectHeapManager;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
@@ -469,7 +470,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -536,43 +537,25 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
+    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
+
     // The buckets of object handles.
+    // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
+    // synchronized by m_Crst
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
+    // these fields are synchronized by m_Crst
     PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
-#ifdef _DEBUG
-
-    // these functions are present to enforce that there is a locking mechanism in place
-    // for each PinnedHeapHandleTable even though the code itself does not do the locking
-    // you must tell the table which lock you intend to use and it will verify that it has
-    // in fact been taken before performing any operations
-
-public:
-    void RegisterCrstDebug(CrstBase *pCrst)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // this function must be called exactly once
-        _ASSERTE(pCrst != NULL);
-        _ASSERTE(m_pCrstDebug == NULL);
-        m_pCrstDebug = pCrst;
-    }
-
-private:
-    // we will assert that this Crst is held before using the object
-    CrstBase *m_pCrstDebug;
-
-#endif
-
+    CrstExplicitInit m_Crst;
 };
 
 class PinnedHeapHandleBlockHolder;
@@ -588,7 +571,14 @@ class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoN
 public:
     FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
-        WRAPPER_NO_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
         m_Data = pOwner->AllocateHandles(nCount);
         m_Count=nCount;
         m_pTable=pOwner;
@@ -1104,6 +1094,11 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
 protected:
 
     //****************************************************************************************
@@ -1133,9 +1128,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-    // The pinned heap handle table critical section.
-    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
@@ -1234,7 +1226,7 @@ public:
 #endif // DACCESS_COMPILE
 
 private:
-    // I have yet to figure out an efficent way to get the number of handles
+    // I have yet to figure out an efficient way to get the number of handles
     // of a particular type that's currently used by the process without
     // spending more time looking at the handle table code. We know that
     // our only customer (asp.net) in Dev10 is not going to create many of
@@ -1269,8 +1261,7 @@ public:
 
 #ifdef DACCESS_COMPILE
 public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                   bool enumThis);
+    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
 #endif
 
 };  // class BaseDomain
@@ -1965,12 +1956,6 @@ public:
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMWRAPPERS
 
-    TPIndex GetTPIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_tpIndex;
-    }
-
     DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
@@ -2202,7 +2187,7 @@ private:
     // General purpose flags.
     DWORD           m_dwFlags;
 
-    // When an application domain is created the ref count is artifically incremented
+    // When an application domain is created the ref count is artificially incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 
@@ -2218,9 +2203,6 @@ private:
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
 #endif // FEATURE_COMWRAPPERS
-
-    // The thread-pool index of this app domain among existing app domains (starting from 1)
-    TPIndex m_tpIndex;
 
     Volatile<Stage> m_Stage;
 
@@ -2407,6 +2389,7 @@ public:
     void Init();
     void Stop();
     static void LazyInitGlobalStringLiteralMap();
+    static void LazyInitFrozenObjectsHeap();
 
     //****************************************************************************************
     //
@@ -2478,6 +2461,15 @@ public:
 
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (m_FrozenObjectHeapManager == NULL)
+        {
+            LazyInitFrozenObjectsHeap();
+        }
+        return m_FrozenObjectHeapManager;
     }
 #endif // DACCESS_COMPILE
 
@@ -2648,6 +2640,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
+    static FrozenObjectHeapManager *m_FrozenObjectHeapManager;
 #endif // DACCESS_COMPILE
 
 public:

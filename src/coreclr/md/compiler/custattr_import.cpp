@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -71,7 +70,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     int         iLen;                   // A length.
     CMiniMdRW   *pMiniMd = NULL;
 
-    START_MD_PERF();
     LOCKREAD();
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
@@ -83,7 +81,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
 
 ErrExit:
 
-    STOP_MD_PERF(GetCustomAttributeByName);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -114,14 +111,13 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
 
     LOG((LOGMD, "RegMeta::EnumCustomAttributes(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes));
-    START_MD_PERF();
     LOCKREAD();
 
     if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
-        CLookUpHash     *pHashTable = pMiniMd->m_pLookUpHashs[TBL_CustomAttribute];
+        CLookUpHash     *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
 
         // Does caller want all custom Values?
         if (IsNilToken(tk))
@@ -230,7 +226,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumCustomAttributes);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -253,7 +248,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
 
     CMiniMdRW   *pMiniMd;
 
-    START_MD_PERF();
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(cv) == mdtCustomAttribute);
@@ -276,7 +270,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
 
 ErrExit:
 
-    STOP_MD_PERF(GetCustomAttributeProps);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;

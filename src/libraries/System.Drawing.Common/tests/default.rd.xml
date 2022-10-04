@@ -1,0 +1,14 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <!-- called by xUnit's Assert.Equal -->
+      <Type Name="System.IEquatable`1[[System.Drawing.Color,System.Drawing.Primitives]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Drawing.RectangleF,System.Drawing.Primitives]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Drawing.PointF,System.Drawing.Primitives]]" Dynamic="Required All" />
+    </Assembly>
+    <Assembly Name="System.Drawing.Common.Tests">
+      <Type Name="System.Drawing.Tests.FontTests+LOGFONT" MarshalStructure="Required All" />
+      <Type Name="System.Drawing.Tests.FontTests+UnblittableLOGFONT" MarshalStructure="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

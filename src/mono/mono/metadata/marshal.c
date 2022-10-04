@@ -1467,7 +1467,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 }
 
 /*
- * Return the hash table pointed to by VAR, lazily creating it if neccesary.
+ * Return the hash table pointed to by VAR, lazily creating it if necessary.
  */
 static GHashTable*
 get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
@@ -3155,13 +3155,13 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
 
-	
+
 
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	return mono_emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
-} 
+}
 
 static void
 mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
@@ -3283,7 +3283,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		mono_custom_attrs_free(cinfo);
 }
 
-static void 
+static void
 mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
 {
 	g_assert (cmod_type->type == MONO_TYPE_CLASS);
@@ -3619,7 +3619,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
-	
+
 	return res;
 }
 
@@ -6037,7 +6037,7 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
  * Windows kernel32 APIs, which are DllImport-able under MS.NET,
  * although not exported by kernel32.
  *
- * We map the appropiate kernel32 entries to these functions using
+ * We map the appropriate kernel32 entries to these functions using
  * dllmaps declared in the global etc/mono/config.
  */
 
@@ -6260,7 +6260,7 @@ get_marshal_cb (void)
 		mono_marshal_noilgen_init_lightweight ();
 #endif
 	}
-	
+
 	return &marshal_lightweight_cb;
 }
 

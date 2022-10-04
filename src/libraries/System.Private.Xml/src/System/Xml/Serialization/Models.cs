@@ -206,10 +206,7 @@ namespace System.Xml.Serialization
                 return;
             if (typeDesc.IsUnsupported)
             {
-                if (typeDesc.Exception == null)
-                {
-                    typeDesc.Exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
-                }
+                typeDesc.Exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
                 throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, $"{member.DeclaringType!.FullName}.{member.Name}", type.FullName), typeDesc.Exception);
             }
             CheckSupportedMember(typeDesc.BaseTypeDesc, member, type);

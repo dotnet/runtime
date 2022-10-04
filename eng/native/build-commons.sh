@@ -197,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, -ppc64le, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -212,6 +212,7 @@ usage()
     echo "-gccx.y: optional argument to build using gcc version x.y."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
+    echo "-outputrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
@@ -232,25 +233,22 @@ __TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
+__OutputRid=''
 
 # Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(($(sysctl -n hw.ncpu)+1))
+  __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+  __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
 elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  __NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-  if command -v nproc > /dev/null 2>&1; then
-    __NumProc=$(nproc --all)
-  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
-    __NumProc=$(getconf _NPROCESSORS_ONLN)
-  else
-    __NumProc=1
-  fi
+  __NumProc=1
 fi
 
 while :; do
@@ -384,12 +382,26 @@ while :; do
             __TargetArch=loongarch64
             ;;
 
+        riscv64|-riscv64)
+            __TargetArch=riscv64
+            ;;
+
         s390x|-s390x)
             __TargetArch=s390x
             ;;
 
         wasm|-wasm)
             __TargetArch=wasm
+            ;;
+
+        outputrid|-outputrid)
+            if [[ -n "$2" ]]; then
+                __OutputRid="$2"
+                shift
+            else
+                echo "ERROR: 'outputrid' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         ppc64le|-ppc64le)
@@ -474,3 +486,7 @@ fi
 
 # init the target distro name
 initTargetDistroRid
+
+if [ -z "$__OutputRid" ]; then
+    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+fi

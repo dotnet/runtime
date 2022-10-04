@@ -1404,7 +1404,7 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
             DestroyThread(pThread);
         }
 
-        // The background thread is reponsible for deleting the MulticoreJitProfilePlayer object once it's started
+        // The background thread is responsible for deleting the MulticoreJitProfilePlayer object once it's started
         // Actually after Thread::StartThread succeeds
         delete pPlayer;
     }

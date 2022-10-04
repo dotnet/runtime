@@ -192,7 +192,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
         }
 
         MethodDesc *pMethodDef = NULL;
-        
+
         if (pModule->IsFullModule())
         {
             Module* pNormalModule = static_cast<Module*>(pModule);
@@ -595,12 +595,12 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         // For internal purposes we wish to resolve MethodDef from generic classes or for generic methods to
         // the corresponding fully uninstantiated descriptor.  For example, for
         //     class C<T> { void m(); }
-        // then then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
+        // then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
         // descriptor that gets stored in the RID map.
         //
         // Normal IL code that uses generic code cannot use MethodDefs in this way: all calls
         // to generic code must be emitted as MethodRefs and MethodSpecs.  However, at other
-        // points in tthe codebase we need to resolve MethodDefs to generic uninstantiated
+        // points in the codebase we need to resolve MethodDefs to generic uninstantiated
         // method descriptors, and this is the best place to implement that.
         //
         mdTypeDef typeDef;
@@ -1093,7 +1093,7 @@ MemberLoader::FindMethod(
         MODE_ANY;
     } CONTRACT_END;
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
 
     SString targetName(SString::Utf8Literal, pszName);
@@ -1132,7 +1132,7 @@ MemberLoader::FindMethod(
             ||
             (pCurDeclMD->MightHaveName(targetNameHash)
             // This is done last since it is the most expensive of the IF statement.
-            && StrCompFunc(pszName, pCurDeclMD->GetName()) == 0)
+            && StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
            )
         {
             if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
@@ -1327,7 +1327,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
         // There is no need to check virtuals for parent types, since by definition they have the same name.
         //
-        // Warning: This is not entirely true as virtuals can be overriden explicitly regardless of their name.
+        // Warning: This is not entirely true as virtuals can be overridden explicitly regardless of their name.
         // We should be fine though as long as we do not use this code to find arbitrary user-defined methods.
         flags = (FM_Flags)(flags | FM_ExcludeVirtual);
     }
@@ -1487,7 +1487,7 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
 
     CONSISTENCY_CHECK(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp : stricmpUTF8;
 
     // Array classes don't have fields, and don't have metadata

@@ -63,10 +63,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_innerHandler != null)
-                {
-                    _innerHandler.Dispose();
-                }
+                _innerHandler?.Dispose();
             }
 
             base.Dispose(disposing);

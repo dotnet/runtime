@@ -19,6 +19,7 @@ namespace System.IO.Compression
         public override Stream BaseStream(Stream stream) => ((ZLibStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZLibTestData", Path.GetFileName(uncompressedPath) + ".z");
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Fact]
         public void StreamCorruption_IsDetected()
         {

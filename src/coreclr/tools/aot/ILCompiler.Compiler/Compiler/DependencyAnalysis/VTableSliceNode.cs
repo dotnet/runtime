@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents the VTable for a type's slice. For example, System.String's VTableSliceNode includes virtual 
+    /// Represents the VTable for a type's slice. For example, System.String's VTableSliceNode includes virtual
     /// slots added by System.String itself, System.Object's VTableSliceNode contains the virtuals it defines.
     /// </summary>
     public abstract class VTableSliceNode : DependencyNodeCore<NodeFactory>
@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        protected override string GetName(NodeFactory factory) => $"__vtable_{factory.NameMangler.GetMangledTypeName(_type).ToString()}";
+        protected override string GetName(NodeFactory factory) => $"__vtable_{factory.NameMangler.GetMangledTypeName(_type)}";
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static IReadOnlyList<MethodDesc> ComputeSlots(TypeDesc type)
         {
-            var slots = new ArrayBuilder<MethodDesc>();
+            var slots = default(ArrayBuilder<MethodDesc>);
 
             bool isObjectType = type.IsObject;
             DefType defType = type.GetClosestDefType();
@@ -157,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis
                     // in GetAllMethods()).
                     // This ensures that Foo<string> and Foo<object> will end up with the same vtable
                     // no matter the order in which VirtualMethodUse nodes populated it.
-                    ArrayBuilder<MethodDesc> slotsBuilder = new ArrayBuilder<MethodDesc>();
+                    ArrayBuilder<MethodDesc> slotsBuilder = default(ArrayBuilder<MethodDesc>);
                     DefType defType = _type.GetClosestDefType();
                     foreach (var method in defType.GetAllMethods())
                     {

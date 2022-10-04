@@ -394,7 +394,7 @@ namespace System.Data
         public static Exception CannotRemoveConstraint(string constraint, string table) => _Argument(SR.Format(SR.DataColumns_RemoveConstraint, constraint, table));
         public static Exception CannotRemoveExpression(string column, string expression) => _Argument(SR.Format(SR.DataColumns_RemoveExpression, column, expression));
         public static Exception ColumnNotInTheUnderlyingTable(string column, string table) => _Argument(SR.Format(SR.DataColumn_NotInTheUnderlyingTable, column, table));
-        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximun, (ordinal).ToString(CultureInfo.InvariantCulture)));
+        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximum, (ordinal).ToString(CultureInfo.InvariantCulture)));
 
         //
         // _Constraint and ConstrainsCollection

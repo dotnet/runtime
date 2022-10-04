@@ -56,7 +56,7 @@ public class Test_NestedStructsWithExplicitLayout_Case01 {
 
             if (result == 100)
             {
-                Console.WriteLine("PASS: union of Explict + Explicit works correctly");
+                Console.WriteLine("PASS: union of Explicit + Explicit works correctly");
             }
 
             return result;

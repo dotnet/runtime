@@ -74,7 +74,7 @@ namespace System
                     regionPtr = new IntPtr(regionInAscii);
                 }
 
-                // In case getting unexpected region names, we just fallback using the default region (pasing null region name to the ICU API).
+                // In case getting unexpected region names, we just fallback using the default region (passing null region name to the ICU API).
             }
 
             char* buffer = stackalloc char[100];

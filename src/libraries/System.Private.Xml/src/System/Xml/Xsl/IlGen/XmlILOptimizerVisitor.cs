@@ -165,7 +165,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         protected override QilNode? NoReplace(QilNode? node)
         {
             // Calculate MaybeSideEffects pattern.  This is done here rather than using P because every node needs

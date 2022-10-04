@@ -81,7 +81,7 @@ namespace System.Reflection
 
                 // Note this is the first time the property was encountered walking from the most derived class
                 // towards the base class. It would seem to follow that any associated methods would not
-                // be overriden -- but this is not necessarily true. A more derived class may have overriden a
+                // be overridden -- but this is not necessarily true. A more derived class may have overridden a
                 // virtual method associated with a property in a base class without associating the override with
                 // the same or any property in the derived class.
                 if ((methAttr & MethodAttributes.Virtual) != 0)

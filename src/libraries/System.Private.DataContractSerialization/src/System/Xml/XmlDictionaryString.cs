@@ -33,7 +33,7 @@ namespace System.Xml
             _key = key;
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         internal static string? GetString(XmlDictionaryString? s)
         {
             if (s == null)

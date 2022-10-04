@@ -4,7 +4,7 @@
 // this is regression test for VSW 395780
 // explicit overriding with a generic type was working.
 
-// as opposed to testExcplicitOverride2.il, in this case the overriden method is also generic.
+// as opposed to testExcplicitOverride2.il, in this case the overridden method is also generic.
 
 using System;
 
@@ -30,7 +30,7 @@ public class Test_testExplicitOverride
 		try
 		{
 			I<String> cGen = new C();
-			
+
 			int ret = cGen.M<String>("Hello");
 
 			if (ret == 3)
@@ -49,6 +49,6 @@ public class Test_testExplicitOverride
 			Console.WriteLine("FAIL: Caugh unexpected exception: " + e);
 			return 101;
 		}
-		
+
 	}
 }

@@ -3,13 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Xml;
+
 using Internal.IL;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -101,7 +99,7 @@ namespace ILCompiler
 
         // Flags that we track for each byte of the IL instruction stream.
         [Flags]
-        enum OpcodeFlags : byte
+        private enum OpcodeFlags : byte
         {
             // This offset is an instruction boundary.
             InstructionStart = 0x1,
@@ -397,17 +395,17 @@ namespace ILCompiler
             }
 
             // Now sweep unreachable basic blocks by replacing them with nops
-            bool hasUnmarkedIntructions = false;
+            bool hasUnmarkedInstruction = false;
             foreach (var flag in flags)
             {
                 if ((flag & OpcodeFlags.InstructionStart) != 0 &&
                     (flag & OpcodeFlags.Mark) == 0)
                 {
-                    hasUnmarkedIntructions = true;
+                    hasUnmarkedInstruction = true;
                 }
             }
 
-            if (!hasUnmarkedIntructions)
+            if (!hasUnmarkedInstruction)
                 return method;
 
             byte[] newBody = (byte[])methodBytes.Clone();
@@ -446,7 +444,7 @@ namespace ILCompiler
 
             // EH regions with unmarked handlers belong to unmarked basic blocks
             // Need to eliminate them because they're not usable.
-            ArrayBuilder<ILExceptionRegion> newEHRegions = new ArrayBuilder<ILExceptionRegion>();
+            ArrayBuilder<ILExceptionRegion> newEHRegions = default(ArrayBuilder<ILExceptionRegion>);
             foreach (ILExceptionRegion ehRegion in ehRegions)
             {
                 if ((flags[ehRegion.HandlerOffset] & OpcodeFlags.Mark) != 0)
@@ -462,7 +460,7 @@ namespace ILCompiler
             IEnumerable<ILSequencePoint> oldSequencePoints = debugInfo?.GetSequencePoints();
             if (oldSequencePoints != null)
             {
-                ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
+                ArrayBuilder<ILSequencePoint> sequencePoints = default(ArrayBuilder<ILSequencePoint>);
                 foreach (var sequencePoint in oldSequencePoints)
                 {
                     if (sequencePoint.Offset < flags.Length && (flags[sequencePoint.Offset] & OpcodeFlags.Mark) != 0)
@@ -643,7 +641,7 @@ namespace ILCompiler
             return false;
         }
 
-        private class SubstitutedMethodIL : MethodIL
+        private sealed class SubstitutedMethodIL : MethodIL
         {
             private readonly byte[] _body;
             private readonly ILExceptionRegion[] _ehRegions;
@@ -668,7 +666,7 @@ namespace ILCompiler
             public override MethodDebugInformation GetDebugInfo() => _debugInfo;
         }
 
-        private class SubstitutedDebugInformation : MethodDebugInformation
+        private sealed class SubstitutedDebugInformation : MethodDebugInformation
         {
             private readonly MethodDebugInformation _originalDebugInformation;
             private readonly ILSequencePoint[] _sequencePoints;
@@ -684,7 +682,7 @@ namespace ILCompiler
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
         }
 
-        private class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
 
@@ -704,7 +702,7 @@ namespace ILCompiler
             }
         }
 
-        private class AssemblyFeatureInfo
+        private sealed class AssemblyFeatureInfo
         {
             public EcmaModule Module { get; }
 

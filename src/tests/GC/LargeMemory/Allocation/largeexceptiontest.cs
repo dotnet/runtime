@@ -28,7 +28,7 @@ public sealed class LargeExceptionTest {
             throw new LargeException(size);
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (LargeException) {
             return true;
         } catch (Exception e) {

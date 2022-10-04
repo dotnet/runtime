@@ -405,7 +405,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, nameof(uriKind))] string uriString, UriKind uriKind)
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
@@ -1034,12 +1034,12 @@ namespace System
                 // We don't know whether all slashes were the back ones
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
-                for (ushort i = 0; i < (ushort)count; ++i)
+                Span<char> slashSpan = result.AsSpan(0, count);
+                int slashPos;
+                while ((slashPos = slashSpan.IndexOf('/')) >= 0)
                 {
-                    if (result[i] == '/')
-                    {
-                        result[i] = '\\';
-                    }
+                    slashSpan[slashPos] = '\\';
+                    slashSpan = slashSpan.Slice(slashPos + 1);
                 }
 
                 return new string(result, 0, count);
@@ -1806,16 +1806,12 @@ namespace System
         //
         // Returns true if a colon is found in the first path segment, false otherwise
         //
-
-        // Check for anything that may terminate the first regular path segment
-        // or an illegal colon
-        private static readonly char[] s_pathDelims = { ':', '\\', '/', '?', '#' };
-
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {
-            int index = uriString.IndexOfAny(s_pathDelims);
-
-            return (index >= 0 && uriString[index] == ':');
+            // Check for anything that may terminate the first regular path segment
+            // or an illegal colon
+            int index = uriString.AsSpan().IndexOfAny(@":\/?#");
+            return (uint)index < (uint)uriString.Length && uriString[index] == ':';
         }
 
         internal static string InternalEscapeString(string rawString) =>
@@ -5217,7 +5213,7 @@ namespace System
         //
         // IsExcludedCharacter
         //
-        //  Determine if a character should be exluded from a URI and therefore be
+        //  Determine if a character should be excluded from a URI and therefore be
         //  escaped
         //
         // Returns:

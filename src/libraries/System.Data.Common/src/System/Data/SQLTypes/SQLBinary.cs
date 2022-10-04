@@ -464,6 +464,11 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("base64Binary", XmlSchema.Namespace);
         }
 
+        public static SqlBinary WrapBytes(byte[] bytes)
+        {
+            return new SqlBinary(bytes, ignored: true);
+        }
+
         /// <summary>
         /// Represents a null value that can be assigned to the <see cref='Value'/> property of an
         /// instance of the <see cref='SqlBinary'/> class.

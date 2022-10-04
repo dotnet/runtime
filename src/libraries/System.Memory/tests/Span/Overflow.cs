@@ -25,7 +25,7 @@ namespace System.SpanTests
             {
                 //
                 // Although Span constrains indexes to 0..2Gb, it does not similarly constrain index * sizeof(T).
-                // Make sure that internal offset calculcations handle the >2Gb case properly.
+                // Make sure that internal offset calculations handle the >2Gb case properly.
                 //
                 unsafe
                 {

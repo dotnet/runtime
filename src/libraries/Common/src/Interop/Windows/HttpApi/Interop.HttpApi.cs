@@ -459,7 +459,7 @@ internal static partial class Interop
         internal static partial uint HttpInitialize(HTTPAPI_VERSION version, uint flags, IntPtr pReserved);
 
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]
-        internal static partial uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
+        internal static unsafe partial uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, void* pPropertyInfo, uint propertyInfoLength);
 
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]
         internal static unsafe partial uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);

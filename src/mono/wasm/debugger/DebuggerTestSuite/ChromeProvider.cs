@@ -15,6 +15,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
 using Wasm.Tests.Internal;
+using System.Linq;
 
 #nullable enable
 
@@ -30,6 +31,11 @@ internal class ChromeProvider : WasmHostProvider
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", "..");
         return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
     });
+    private static readonly string[] s_messagesToFilterOut = new[]
+    {
+        "Received unexpected number of handles",
+        "Failed to connect to the bus:",
+    };
 
     public ChromeProvider(string id, ILogger logger) : base(id, logger)
     {
@@ -104,6 +110,14 @@ internal class ChromeProvider : WasmHostProvider
         _isDisposing = false;
     }
 
+    protected override bool ShouldMessageBeLogged(string prefix, string? msg)
+    {
+        if (msg is null || !prefix.Contains("browser-stderr"))
+            return true;
+
+        return !s_messagesToFilterOut.Any(f => msg.Contains(f));
+    }
+
     private async Task<string> ExtractConnUrl (string str, ILogger logger)
     {
         var client = new HttpClient();
@@ -119,7 +133,7 @@ internal class ChromeProvider : WasmHostProvider
             await Task.Delay(100);
 
             var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-            logger.LogInformation("res is {0}", res);
+            logger.LogTrace("res is {0}", res);
 
             if (!string.IsNullOrEmpty(res))
             {
@@ -157,6 +171,4 @@ internal class ChromeProvider : WasmHostProvider
         }
         return str;
     }
-
-
 }

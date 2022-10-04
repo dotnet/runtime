@@ -498,7 +498,7 @@ typedef struct tagCOR_ILMETHOD_TINY : IMAGE_COR_ILMETHOD_TINY
 
 
 /************************************/
-// This strucuture is the 'fat' layout, where no compression is attempted.
+// This structure is the 'fat' layout, where no compression is attempted.
 // Note that this structure can be added on at the end, thus making it extensible
 typedef struct tagCOR_ILMETHOD_FAT : IMAGE_COR_ILMETHOD_FAT
 {
@@ -616,7 +616,7 @@ struct COR_ILMETHOD
 extern "C" {
 /***************************************************************************/
 /* COR_ILMETHOD_DECODER is the only way functions internal to the EE should
-   fetch data from a COR_ILMETHOD.  This way any dependancy on the file format
+   fetch data from a COR_ILMETHOD.  This way any dependency on the file format
    (and the multiple ways of encoding the header) is centralized to the
    COR_ILMETHOD_DECODER constructor) */
     void __stdcall DecoderInit(void * pThis, COR_ILMETHOD* header);

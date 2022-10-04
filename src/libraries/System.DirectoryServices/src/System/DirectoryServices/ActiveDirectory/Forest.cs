@@ -833,10 +833,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the domain controller passing on  the
@@ -867,7 +864,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsListSites = (delegate* unmanaged<IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
                 if (dsListSites == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
 
                 result = dsListSites(dsHandle, &sitesPtr);
@@ -903,7 +900,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                             if (dsFreeNameResultW == null)
                             {
-                                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                             }
                             dsFreeNameResultW(sitesPtr);
                         }
@@ -994,10 +991,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return appNCs;
@@ -1051,10 +1045,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return domains;

@@ -24,8 +24,7 @@ namespace System.Formats.Tar.Tests
         public async Task FileName_NullOrEmpty_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream))
             {
                 await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEntryAsync(null, "entryName"));
                 await Assert.ThrowsAsync<ArgumentException>(() => writer.WriteEntryAsync(string.Empty, "entryName"));

@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2057", nameof (GetType))]
 		static void TestUnknownType ()
 		{
-			Type type = Type.GetType (GetStringUnkownType ());
+			Type type = Type.GetType (GetStringUnknownType ());
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
@@ -155,7 +155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeName = "Mono.Linker.Tests.Cases.DataFlow.GetTypeDataFlow";
 				break;
 			case 3:
-				typeName = GetStringUnkownType ();
+				typeName = GetStringUnknownType ();
 				break;
 			}
 
@@ -171,8 +171,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void Method2 () { }
 
 			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--Method2--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2026", "--Method2--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			public static void Test ()
 			{
 				Type.GetType ("Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (TypeWithWarnings)).RequiresPublicMethods ();
@@ -187,7 +187,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void Method1 () { }
 
 			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			public static void Test ()
 			{
 				Type.GetType (s_ConstTypeName).RequiresPublicMethods ();
@@ -212,7 +212,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return null;
 		}
 
-		private static string GetStringUnkownType ()
+		private static string GetStringUnknownType ()
 		{
 			return null;
 		}

@@ -923,7 +923,7 @@ namespace System.Configuration
                 //
                 if (RemovedSectionGroups.Contains(descendent.ConfigKey)) continue;
 
-                // If the section group has been evaluated, detatch it.
+                // If the section group has been evaluated, detach it.
                 ConfigurationSectionGroup sectionGroup = LookupSectionGroup(descendent.ConfigKey);
                 sectionGroup?.DetachFromConfigurationRecord();
 

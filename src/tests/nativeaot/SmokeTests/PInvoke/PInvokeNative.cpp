@@ -112,6 +112,13 @@ DLL_EXPORT int __stdcall VerifyByRefFoo(Foo *val)
     return 0;
 }
 
+static Foo s_foo = { 42, 43.0 };
+
+DLL_EXPORT Foo* __stdcall VerifyByRefFooReturn()
+{
+    return &s_foo;
+}
+
 DLL_EXPORT bool __stdcall GetNextChar(short *value)
 {
     if (value == NULL)
@@ -464,6 +471,7 @@ struct NativeSequentialStruct
     int a;
     float b;
     char *str;
+    char *u8str;
 };
 
 struct NativeSequentialStruct2
@@ -485,6 +493,9 @@ DLL_EXPORT bool __stdcall StructTest(NativeSequentialStruct nss)
 
 
     if (!CompareAnsiString(nss.str, "Hello"))
+        return false;
+
+    if (!CompareAnsiString(nss.u8str, "Hola"))
         return false;
 
     return true;
@@ -512,6 +523,13 @@ DLL_EXPORT void __stdcall StructTest_ByRef(NativeSequentialStruct *nss)
         *p = *p + 1;
         p++;
     }
+
+    p = nss->u8str;
+    while (*p != '\0')
+    {
+        *p = *p + 1;
+        p++;
+    }
 }
 
 DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
@@ -522,7 +540,7 @@ DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
 
     int arrSize = 7;
     char *p;
-    p = (char *)MemAlloc(sizeof(char) * arrSize);
+    p = (char *)MemAlloc(sizeof(char) * arrSize + 1);
 
     for (int i = 0; i < arrSize; i++)
     {
@@ -530,6 +548,10 @@ DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
     }
     *(p + arrSize) = '\0';
     nss->str = p;
+
+    p = (char *)MemAlloc(sizeof(char) * 4);
+    strcpy(p, "789");
+    nss->u8str = p;
 }
 
 DLL_EXPORT bool __stdcall StructTest_Array(NativeSequentialStruct *nss, int length)
@@ -550,6 +572,11 @@ DLL_EXPORT bool __stdcall StructTest_Array(NativeSequentialStruct *nss, int leng
         sprintf(expected, "%d", i);
 
         if (CompareAnsiString(expected, nss[i].str) == 0)
+            return false;
+
+        sprintf(expected, "u8%d", i);
+
+        if (CompareAnsiString(expected, nss[i].u8str) == 0)
             return false;
     }
     return true;

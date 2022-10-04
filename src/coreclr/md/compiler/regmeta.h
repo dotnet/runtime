@@ -17,10 +17,7 @@
 #include <metamodelrw.h>
 #include "../inc/mdlog.h"
 #include "utsem.h"
-
 #include "rwutil.h"
-#include "mdperf.h"
-
 #include "sigparser.h"
 
 class FilterManager;
@@ -789,7 +786,7 @@ public:
         mdTypeRef   *ptr);                  // [OUT] Put TypeRef token here.
 
     STDMETHODIMP DefineImportType(          // S_OK or error.
-        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the TypeDef.
+        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
         const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
         ULONG       cbHashValue,            // [IN] Count of bytes.
         IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
@@ -805,7 +802,7 @@ public:
         mdMemberRef *pmr);                  // [OUT] memberref token
 
     STDMETHODIMP DefineImportMember(        // S_OK or error.
-        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the Member.
+        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
         const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
         ULONG       cbHashValue,            // [IN] Count of bytes.
         IMetaDataImport *pImport,           // [IN] Import scope, with member.
@@ -2036,10 +2033,6 @@ private:
 
     LONG        m_cRef;                     // Ref count.
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
-
-#ifdef FEATURE_METADATA_PERF_STATS
-    MDCompilerPerf m_MDCompilerPerf;        // Compiler perf object to store all stats.
-#endif
 
     // If true, cached in list of global scopes. This is very dangerous because it may allow
     // unpredictable state sharing between seemingly unrelated dispensers.

@@ -286,7 +286,7 @@ static char* str_heap_compact_reasons[] =
     "low on ephemeral space",
     "high fragmentation",
     "couldn't allocate gaps",
-    "user specfied compact LOH",
+    "user specified compact LOH",
     "last GC before OOM",
     "induced compacting GC",
     "fragmented gen0 (ephemeral GC)",

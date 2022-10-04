@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             OutputScope? elementScope = (OutputScope?)_elementScopesStack.Pop();
 
-            Debug.Assert(elementScope != null); // We're adding rootElementScope to gurantee this
+            Debug.Assert(elementScope != null); // We're adding rootElementScope to guarantee this
 
             for (NamespaceDecl? scope = elementScope.Scopes; scope != null; scope = scope.Next)
             {

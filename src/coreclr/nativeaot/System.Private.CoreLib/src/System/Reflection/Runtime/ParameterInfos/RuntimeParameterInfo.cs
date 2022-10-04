@@ -72,12 +72,8 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public sealed override string ToString()
         {
-            return this.ParameterTypeString + " " + this.Name;
+            return this.ParameterType.FormatTypeNameForReflection() + " " + this.Name;
         }
-
-        // Gets the ToString() output of ParameterType in a pay-to-play-safe way: Other Reflection ToString() methods should always use this rather than
-        // "ParameterType.ToString()".
-        internal abstract string ParameterTypeString { get; }
 
         private readonly MemberInfo _member;
         private readonly int _position;

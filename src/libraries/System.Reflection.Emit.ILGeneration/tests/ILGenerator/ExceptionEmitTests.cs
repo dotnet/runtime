@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ldloc_S, tmp1);
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("DoThrow");
 
             Assert.Equal(-1, createdMethod.Invoke(null, new object[] { true })); // Throws

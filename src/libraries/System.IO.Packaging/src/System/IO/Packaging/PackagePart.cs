@@ -578,8 +578,7 @@ namespace System.IO.Packaging
         //Delete all the relationships for this part
         internal void ClearRelationships()
         {
-            if (_relationships != null)
-                _relationships.Clear();
+            _relationships?.Clear();
         }
 
         //Flush all the streams that are currently opened for this part and the relationships for this part

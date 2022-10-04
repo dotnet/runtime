@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        [return: NotNullIfNotNull("rawData")]
+        [return: NotNullIfNotNull(nameof(rawData))]
         private static byte[]? Decode(byte[]? rawData)
         {
             if (rawData == null)

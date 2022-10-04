@@ -570,9 +570,10 @@ namespace System
                     return (uint)offset <= (uint)this.Length && this.AsSpan(offset).SequenceEqual(value);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return this.Length < value.Length ?
-                            false :
-                            (Ordinal.CompareStringIgnoreCase(ref Unsafe.Add(ref this.GetRawStringData(), this.Length - value.Length), value.Length, ref value.GetRawStringData(), value.Length) == 0);
+                    return Length >= value.Length &&
+                        Ordinal.EqualsIgnoreCase(ref Unsafe.Add(ref GetRawStringData(), Length - value.Length),
+                                                 ref value.GetRawStringData(),
+                                                 value.Length);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));

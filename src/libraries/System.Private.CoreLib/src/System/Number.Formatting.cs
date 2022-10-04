@@ -349,7 +349,7 @@ namespace System
             return sb.TryCopyTo(destination, out charsWritten);
         }
 
-        internal static unsafe void DecimalToNumber(ref decimal d, ref NumberBuffer number)
+        internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;
@@ -1593,14 +1593,13 @@ namespace System
 
         internal static unsafe string UInt32ToDecStr(uint value)
         {
-            // Intrinsified in mono interpreter
-            int bufferLength = FormattingHelpers.CountDigits(value);
-
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (bufferLength == 1)
+            if (value < 10)
             {
                 return s_singleDigitStringCache[value];
             }
+
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
@@ -1935,14 +1934,13 @@ namespace System
 
         internal static unsafe string UInt64ToDecStr(ulong value)
         {
-            // Intrinsified in mono interpreter
-            int bufferLength = FormattingHelpers.CountDigits(value);
-
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (bufferLength == 1)
+            if (value < 10)
             {
                 return s_singleDigitStringCache[value];
             }
+
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
@@ -2318,19 +2316,19 @@ namespace System
                         }
                     }
 
-                    // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 99,
-                    // but it can begin with any number of 0s, and thus we may need to check more than two
+                    // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 999_999_999,
+                    // but it can begin with any number of 0s, and thus we may need to check more than 9
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
                     while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                     {
-                        int temp = ((n * 10) + format[i++] - '0');
-                        if (temp < n)
+                        // Check if we are about to overflow past our limit of 9 digits
+                        if (n >= 100_000_000)
                         {
                             throw new FormatException(SR.Argument_BadFormatSpecifier);
                         }
-                        n = temp;
+                        n = ((n * 10) + format[i++] - '0');
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something

@@ -18,7 +18,7 @@ public:
         NO_MAPPING  = -1,
         PROLOG      = -2,
         EPILOG      = -3,
-        MAX_MAPPING_VALUE = -3 // Sentinal value. This should be set to the largest magnitude value in the enum
+        MAX_MAPPING_VALUE = -3 // Sentinel value. This should be set to the largest magnitude value in the enum
                                // so that the compression routines know the enum's range.
     };
 
@@ -297,7 +297,7 @@ public:
     };
 
     // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+    // eg. ST(3). Actually it is ST("FPstkHeight - vpFpStk")
 
     struct vlFPstk
     {
@@ -351,7 +351,7 @@ public:
 
         UNKNOWN_ILNUM       = -4, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in th enum
+        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in th enum
                                   // so that the compression routines know the enum's range.
     };
 

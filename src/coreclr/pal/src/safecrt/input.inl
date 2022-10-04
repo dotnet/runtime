@@ -773,7 +773,7 @@ scanit:
                             }
                             else
                             {
-                                // supress set, do nothing
+                                // suppress set, do nothing
                             }
                         }
                         else

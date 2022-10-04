@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+    <Optimize>True</Optimize>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <GCStressIncompatible>True</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Runtime_72845.fs" />
+  </ItemGroup>
+</Project>

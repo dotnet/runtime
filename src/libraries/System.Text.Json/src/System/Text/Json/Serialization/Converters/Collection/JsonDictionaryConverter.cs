@@ -12,6 +12,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonDictionaryConverter<TDictionary> : JsonResumableConverter<TDictionary>
     {
+        internal override bool SupportsCreateObjectDelegate => true;
         internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.Dictionary;
 
         protected internal abstract bool OnWriteResume(Utf8JsonWriter writer, TDictionary dictionary, JsonSerializerOptions options, ref WriteStack state);
@@ -37,7 +38,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, create the collection. It may be a temporary collection or the final collection.
         /// </summary>
-        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
@@ -70,17 +71,14 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<T> GetConverter<T>(JsonTypeInfo typeInfo)
         {
-            JsonConverter<T> converter = (JsonConverter<T>)typeInfo.Converter;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            return ((JsonTypeInfo<T>)typeInfo).EffectiveConverter;
         }
 
         internal sealed override bool OnTryRead(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             [MaybeNullWhen(false)] out TDictionary value)
         {
             JsonTypeInfo keyTypeInfo = state.Current.JsonTypeInfo.KeyTypeInfo!;
@@ -303,7 +301,7 @@ namespace System.Text.Json.Serialization
             value = (TDictionary)state.Current.ReturnValue!;
             return true;
 
-            static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
             {
                 TKey key;
                 string unescapedPropertyNameAsString = reader.GetString()!;

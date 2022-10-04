@@ -23,7 +23,7 @@ enum
 
 	// profile information
 ULONG	SpinLockProfiler::s_ulBackOffs = 0;
-ULONG	SpinLockProfiler::s_ulCollisons [LOCK_TYPE_DEFAULT + 1] = { 0 };
+ULONG	SpinLockProfiler::s_ulCollisions [LOCK_TYPE_DEFAULT + 1] = { 0 };
 ULONG	SpinLockProfiler::s_ulSpins [LOCK_TYPE_DEFAULT + 1] = { 0 };
 
 #endif
@@ -340,7 +340,7 @@ void SpinLockProfiler::InitStatics ()
     CONTRACTL_END;
 
     s_ulBackOffs = 0;
-    memset (s_ulCollisons, 0, sizeof (s_ulCollisons));
+    memset (s_ulCollisions, 0, sizeof (s_ulCollisions));
     memset (s_ulSpins, 0, sizeof (s_ulSpins));
 }
 
@@ -368,7 +368,7 @@ void SpinLockProfiler::IncrementCollisions (LOCK_TYPE type)
     }
     CONTRACTL_END;
 
-    ++s_ulCollisons [type];
+    ++s_ulCollisions [type];
 }
 
 void SpinLockProfiler::IncrementBackoffs (ULONG value)

@@ -653,7 +653,7 @@ int LinearScan::BuildNode(GenTree* tree)
             //   - if the index is `native int` then we need to load the array
             //     length into a register to widen it to `native int`
             //   - if the index is `int` (or smaller) then we need to widen
-            //     it to `long` to peform the address calculation
+            //     it to `long` to perform the address calculation
             internalDef = buildInternalIntRegisterDefForNode(tree);
 #else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
@@ -1512,17 +1512,18 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
                 // We can treat as a slot any field that is stored at a slot boundary, where the previous
                 // field is not in the same slot. (Note that we store the fields in reverse order.)
-                const bool fieldIsSlot      = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
-                const bool canStoreWithPush = fieldIsSlot;
-                const bool canLoadWithPush  = varTypeIsI(fieldNode);
+                const bool canStoreFullSlot = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
+                const bool canLoadFullSlot =
+                    (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) ||
+                    (fieldNode->OperIsLocalRead() && (genTypeSize(fieldNode) >= genTypeSize(fieldType)));
 
-                if ((!canStoreWithPush || !canLoadWithPush) && (intTemp == nullptr))
+                if ((!canStoreFullSlot || !canLoadFullSlot) && (intTemp == nullptr))
                 {
                     intTemp = buildInternalIntRegisterDefForNode(putArgStk);
                 }
 
                 // We can only store bytes using byteable registers.
-                if (!canStoreWithPush && varTypeIsByte(fieldType))
+                if (!canStoreFullSlot && varTypeIsByte(fieldType))
                 {
                     intTemp->registerAssignment &= allByteRegs();
                 }
@@ -2501,9 +2502,10 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     }
 #endif
 
-    int srcCount = BuildOperandUses(src, candidates);
+    int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();
     BuildDef(cast, candidates);
+
     return srcCount;
 }
 

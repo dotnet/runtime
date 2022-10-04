@@ -479,10 +479,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         finally
                         {
-                            if (catalogs != null)
-                            {
-                                catalogs.Dispose();
-                            }
+                            catalogs?.Dispose();
 
                             if (disposeLock)
                             {

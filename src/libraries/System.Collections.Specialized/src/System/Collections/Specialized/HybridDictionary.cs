@@ -302,10 +302,8 @@ namespace System.Collections.Specialized
             {
                 return hashtable.GetEnumerator();
             }
-            if (list == null)
-            {
-                list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
-            }
+
+            list ??= new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
             return list.GetEnumerator();
         }
 

@@ -158,7 +158,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        [return: NotNullIfNotNull("inputServiceName")]
+        [return: NotNullIfNotNull(nameof(inputServiceName))]
         private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))

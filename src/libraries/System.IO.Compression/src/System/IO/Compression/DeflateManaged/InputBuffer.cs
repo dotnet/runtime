@@ -9,7 +9,7 @@ namespace System.IO.Compression
     // Normally we get bits from 'bitBuffer' field and bitsInBuffer stores
     // the number of bits available in 'BitBuffer'.
     // When we used up the bits in bitBuffer, we will try to get byte from
-    // the byte array and copy the byte to appropiate position in bitBuffer.
+    // the byte array and copy the byte to appropriate position in bitBuffer.
     //
     // The byte array is not reused. We will go from 'start' to 'end'.
     // When we reach the end, most read operations will return -1,

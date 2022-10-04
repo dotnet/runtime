@@ -172,7 +172,7 @@ namespace System.Data
                 return;
             }
             // SDUB: perf: Why not have this as a table?
-            // there are several xdo properties that equal to some xml attributes, we should not explicitly ouput them.
+            // there are several xdo properties that equal to some xml attributes, we should not explicitly output them.
             if (
                 string.Equals(pd.Name, "Namespace", StringComparison.Ordinal) ||
                 string.Equals(pd.Name, "PrimaryKey", StringComparison.Ordinal) ||
@@ -758,7 +758,7 @@ namespace System.Data
             _dsElement.RemoveChild(_constraintSeparator);
             rootSchema.AppendChild(_dsElement);
 
-            // Output all non-heirarchical relations without constraints
+            // Output all non-hierarchical relations without constraints
 
             DataRelation[] rels = Array.Empty<DataRelation>();
             if (ds != null && _tables.Count > 0)

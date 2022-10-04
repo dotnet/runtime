@@ -119,10 +119,7 @@ namespace System.Xml.Xsl.XsltOld
             // As we mentioned we need to invert all lists.
             foreach (AttributeSetAction attSet in _attributeSetTable.Values)
             {
-                if (attSet.containedActions != null)
-                {
-                    attSet.containedActions.Reverse();
-                }
+                attSet.containedActions?.Reverse();
             }
 
             //  ensures there are no cycles in the attribute-sets use dfs marking method
@@ -150,7 +147,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
 
                     ArrayList? dstAttList = dstAttSet.containedActions;
-                    // We adding attributes in reverse order for purpuse. In the mirged list most importent attset shoud go last one
+                    // We adding attributes in reverse order for purpuse. In the mirged list most important attset should go last one
                     // so we'll need to invert dstAttList finaly.
                     if (srcAttList != null)
                     {

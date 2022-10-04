@@ -452,7 +452,7 @@ namespace System.Xml.Schema
             return newParticles;
         }
 
-        [return: NotNullIfNotNull("particle")]
+        [return: NotNullIfNotNull(nameof(particle))]
         internal static XmlSchemaParticle? CloneParticle(XmlSchemaParticle? particle, XmlSchema? parentSchema)
         {
             XmlSchemaGroupBase? groupBase = particle as XmlSchemaGroupBase;

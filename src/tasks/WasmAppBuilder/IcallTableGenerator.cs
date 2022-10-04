@@ -32,7 +32,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
+    public IEnumerable<string> Generate(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
         _icalls.Clear();
         _signatures.Clear();
@@ -146,7 +146,15 @@ internal sealed class IcallTableGenerator
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
                 continue;
 
-            AddSignature(type, method);
+            try
+            {
+                AddSignature(type, method);
+            }
+            catch (Exception ex) when (ex is not LogAsErrorException)
+            {
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Could not get icall, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
+                continue;
+            }
 
             var className = method.DeclaringType!.FullName!;
             if (!_runtimeIcalls.ContainsKey(className))
@@ -214,7 +222,7 @@ internal sealed class IcallTableGenerator
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
             }
 
-            Log.LogMessage(MessageImportance.Normal, $"[icall] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+            Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
             _signatures.Add(signature);
         }
     }
@@ -236,6 +244,10 @@ internal sealed class IcallTableGenerator
         {
             AppendType(sb, t.GetElementType()!);
             sb.Append('*');
+        }
+        else if (t.IsEnum)
+        {
+            AppendType(sb, Enum.GetUnderlyingType(t));
         }
         else
         {

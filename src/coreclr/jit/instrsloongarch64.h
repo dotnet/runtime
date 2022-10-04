@@ -63,17 +63,17 @@ INST(bl,            "bl",             0,    0x54000000)
 //  mov     rd,rj
 //  In fact, mov is an alias instruction, "ori rd,rj,0"
 INST(mov,           "mov",            0,    0x03800000)
-                    //dneg is a alias instruction.
-                    //sub_d rd, zero, rk
+                    // dneg is an alias instruction.
+                    // sub_d rd, zero, rk
 INST(dneg,          "dneg",           0,    0x00118000)
-                    //neg is a alias instruction.
-                    //sub_w rd, zero, rk
+                    // neg is an alias instruction.
+                    // sub_w rd, zero, rk
 INST(neg,           "neg",            0,    0x00110000)
-                    //not is a alias instruction.
-                    //nor rd, rj, zero
+                    // not is an alias instruction.
+                    // nor rd, rj, zero
 INST(not,           "not",            0,    0x00140000)
 
-//   enum:id        name             FP   LD/ST   Formate   ENCODE
+//   enum:id        name             FP   LD/ST   Format   ENCODE
 ////R_R_R.
 INST(add_w,         "add.w",          0,    0x00100000)
 INST(add_d,         "add.d",          0,    0x00108000)
@@ -209,6 +209,11 @@ INST(rdtimel_w,     "rdtimel.w",      0,    0x00006000)
 INST(rdtimeh_w,     "rdtimeh.w",      0,    0x00006400)
 INST(rdtime_d,      "rdtime.d",       0,    0x00006800)
 INST(cpucfg,        "cpucfg",         0,    0x00006c00)
+
+////R_R, fr---->gr
+INST(movfr2gr_s,    "movfr2gr.s",     0,    0x0114b400)
+INST(movfr2gr_d,    "movfr2gr.d",     0,    0x0114b800)
+INST(movfrh2gr_s,   "movfrh2gr.s",    0,    0x0114bc00)
 
 ////R_R_I_I.
 INST(bstrins_w,     "bstrins.w",      0,    0x00600000)
@@ -415,9 +420,6 @@ INST(fmov_d,        "fmov.d",         0,    0x01149800)
 INST(movgr2fr_w,    "movgr2fr.w",     0,    0x0114a400)
 INST(movgr2fr_d,    "movgr2fr.d",     0,    0x0114a800)
 INST(movgr2frh_w,   "movgr2frh.w",    0,    0x0114ac00)
-INST(movfr2gr_s,    "movfr2gr.s",     0,    0x0114b400)
-INST(movfr2gr_d,    "movfr2gr.d",     0,    0x0114b800)
-INST(movfrh2gr_s,   "movfrh2gr.s",    0,    0x0114bc00)
 
 ////
 INST(movgr2fcsr,    "movgr2fcsr",     0,    0x0114c000)

@@ -181,44 +181,391 @@ namespace System.IO
         public static void SetCreationTime(string path, DateTime creationTime)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);
 
+        /// <summary>
+        /// Sets the date and time the file or directory was created.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the creation date and time information.
+        /// </param>
+        /// <param name="creationTime">
+        /// A <see cref="DateTime"/> containing the value to set for the creation date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in local time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="creationTime"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTime creationTime)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetCreationTime(fileHandle, creationTime);
+        }
+
         public static void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
+
+
+        /// <summary>
+        /// Sets the date and time, in coordinated universal time (UTC), that the file or directory was created.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the creation date and time information.
+        /// </param>
+        /// <param name="creationTimeUtc">
+        /// A <see cref="DateTime"/> containing the value to set for the creation date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in UTC time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="creationTimeUtc"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetCreationTimeUtc(SafeFileHandle fileHandle, DateTime creationTimeUtc)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetCreationTime(fileHandle, GetUtcDateTimeOffset(creationTimeUtc));
+        }
 
         public static DateTime GetCreationTime(string path)
             => FileSystem.GetCreationTime(Path.GetFullPath(path)).LocalDateTime;
 
+        /// <summary>
+        /// Returns the creation date and time of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain creation date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the creation date and time for the specified file or
+        /// directory. This value is expressed in local time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetCreationTime(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetCreationTime(fileHandle).LocalDateTime;
+        }
+
         public static DateTime GetCreationTimeUtc(string path)
             => FileSystem.GetCreationTime(Path.GetFullPath(path)).UtcDateTime;
 
+        /// <summary>
+        /// Returns the creation date and time, in coordinated universal time (UTC), of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain creation date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the creation date and time for the specified file or
+        /// directory. This value is expressed in UTC time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetCreationTimeUtc(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetCreationTime(fileHandle).UtcDateTime;
+        }
+
         public static void SetLastAccessTime(string path, DateTime lastAccessTime)
-            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), lastAccessTime, asDirectory: false);
+            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), lastAccessTime, false);
+
+        /// <summary>
+        /// Sets the date and time the specified file or directory was last accessed.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the last access date and time information.
+        /// </param>
+        /// <param name="lastAccessTime">
+        /// A <see cref="DateTime"/> containing the value to set for the last access date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in local time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="lastAccessTime"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTime lastAccessTime)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastAccessTime(fileHandle, lastAccessTime);
+        }
 
         public static void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
-            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
+            => FileSystem.SetLastAccessTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastAccessTimeUtc), false);
+
+        /// <summary>
+        /// Sets the date and time, in coordinated universal time (UTC), that the specified file or directory was last accessed.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the last access date and time information.
+        /// </param>
+        /// <param name="lastAccessTimeUtc">
+        /// A <see cref="DateTime"/> containing the value to set for the last access date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in UTC time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="lastAccessTimeUtc"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetLastAccessTimeUtc(SafeFileHandle fileHandle, DateTime lastAccessTimeUtc)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastAccessTime(fileHandle, GetUtcDateTimeOffset(lastAccessTimeUtc));
+        }
 
         public static DateTime GetLastAccessTime(string path)
             => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).LocalDateTime;
 
+        /// <summary>
+        /// Returns the last access date and time of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain last access date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the last access date and time for the specified file or
+        /// directory. This value is expressed in local time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetLastAccessTime(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastAccessTime(fileHandle).LocalDateTime;
+        }
+
         public static DateTime GetLastAccessTimeUtc(string path)
             => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).UtcDateTime;
 
+        /// <summary>
+        /// Returns the last access date and time, in coordinated universal time (UTC), of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain last access date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the last access date and time for the specified file or
+        /// directory. This value is expressed in UTC time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetLastAccessTimeUtc(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastAccessTime(fileHandle).UtcDateTime;
+        }
+
         public static void SetLastWriteTime(string path, DateTime lastWriteTime)
-            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), lastWriteTime, asDirectory: false);
+            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), lastWriteTime, false);
+
+        /// <summary>
+        /// Sets the date and time that the specified file or directory was last written to.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the last write date and time information.
+        /// </param>
+        /// <param name="lastWriteTime">
+        /// A <see cref="DateTime"/> containing the value to set for the last write date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in local time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="lastWriteTime"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTime lastWriteTime)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastWriteTime(fileHandle, lastWriteTime);
+        }
 
         public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
-            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
+            => FileSystem.SetLastWriteTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastWriteTimeUtc), false);
+
+        /// <summary>
+        /// Sets the date and time, in coordinated universal time (UTC), that the specified file or directory was last written to.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the last write date and time information.
+        /// </param>
+        /// <param name="lastWriteTimeUtc">
+        /// A <see cref="DateTime"/> containing the value to set for the last write date and time of <paramref name="fileHandle"/>.
+        /// This value is expressed in UTC time.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="lastWriteTimeUtc"/> specifies a value outside the range of dates, times, or both permitted for this operation.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <exception cref="IOException">
+        /// An I/O error occurred while performing the operation.
+        /// </exception>
+        public static void SetLastWriteTimeUtc(SafeFileHandle fileHandle, DateTime lastWriteTimeUtc)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastWriteTime(fileHandle, GetUtcDateTimeOffset(lastWriteTimeUtc));
+        }
 
         public static DateTime GetLastWriteTime(string path)
             => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).LocalDateTime;
 
+        /// <summary>
+        /// Returns the last write date and time of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain last write date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the last write date and time for the specified file or
+        /// directory. This value is expressed in local time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetLastWriteTime(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastWriteTime(fileHandle).LocalDateTime;
+        }
+
         public static DateTime GetLastWriteTimeUtc(string path)
             => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).UtcDateTime;
+
+        /// <summary>
+        /// Returns the last write date and time, in coordinated universal time (UTC), of the specified file or directory.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which to obtain last write date and time information.
+        /// </param>
+        /// <returns>
+        /// A <see cref="DateTime" /> structure set to the last write date and time for the specified file or
+        /// directory. This value is expressed in UTC time.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static DateTime GetLastWriteTimeUtc(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastWriteTime(fileHandle).UtcDateTime;
+        }
 
         public static FileAttributes GetAttributes(string path)
             => FileSystem.GetAttributes(Path.GetFullPath(path));
 
+        /// <summary>
+        /// Gets the specified <see cref="FileAttributes"/> of the file or directory associated to <paramref name="fileHandle"/>
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which the attributes are to be retrieved.
+        /// </param>
+        /// <returns>
+        /// The <see cref="FileAttributes"/> of the file or directory.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetAttributes(fileHandle);
+        }
+
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
+
+        /// <summary>
+        /// Sets the specified <see cref="FileAttributes"/> of the file or directory associated to <paramref name="fileHandle"/>.
+        /// </summary>
+        /// <param name="fileHandle">
+        /// A <see cref="SafeFileHandle" /> to the file or directory for which <paramref name="fileAttributes"/> should be set.
+        /// </param>
+        /// <param name="fileAttributes">
+        /// A bitwise combination of the enumeration values.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="fileHandle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// The caller does not have the required permission.
+        /// </exception>
+        /// <remarks>
+        /// It is not possible to change the compression status of a <see cref="File"/> object
+        /// using the <see cref="SetAttributes(SafeFileHandle, FileAttributes)"/> method.
+        /// </remarks>
+        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes fileAttributes)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetAttributes(fileHandle, fileAttributes);
+        }
 
         /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</summary>
         /// <param name="path">The path to the file.</param>

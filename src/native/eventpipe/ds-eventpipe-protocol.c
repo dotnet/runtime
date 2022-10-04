@@ -205,7 +205,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 		EventPipeProviderConfiguration provider_config;
 		if (ep_provider_config_init (&provider_config, provider_name_utf8, keywords, (EventPipeEventLevel)log_level, filter_data_utf8)) {
 			if (ep_rt_provider_config_array_append (result, provider_config)) {
-				// Ownership transfered.
+				// Ownership transferred.
 				provider_name_utf8 = NULL;
 				filter_data_utf8 = NULL;
 			}

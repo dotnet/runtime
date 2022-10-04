@@ -17,7 +17,7 @@
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
-  //                                                                                bool) = ( 01 00 00 01 00 00 ) 
+  //                                                                                bool) = ( 01 00 00 01 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
@@ -69,7 +69,7 @@
          extends [mscorlib]System.Object
   {
     .field public native unsigned int clm_data
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       18 (0x12)
@@ -94,7 +94,7 @@
          extends [mscorlib]System.Object
   {
     .field private static native unsigned int s_data
-    .method public hidebysig static native unsigned int 
+    .method public hidebysig static native unsigned int
             f1(native unsigned int arg_data) cil managed
     {
       // Code size       12 (0xc)
@@ -113,7 +113,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f1
 
-    .method public hidebysig static native unsigned int 
+    .method public hidebysig static native unsigned int
             f2(native unsigned int arg_data) cil managed
     {
       // Code size       12 (0xc)
@@ -132,7 +132,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f2
 
-    .method public hidebysig static int32 
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -174,7 +174,7 @@
       IL_004e:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0053:  call       void [System.Console]System.Console::WriteLine()
-      IL_0058:  ldstr      "The actual result for funciton argument is: {0}"
+      IL_0058:  ldstr      "The actual result for function argument is: {0}"
       IL_005d:  ldc.i4     0xff
       IL_0062:  call       native unsigned int ShiftTest.byte32Test::f1(native unsigned int)
       IL_0067:  box        [mscorlib]System.Byte
@@ -330,7 +330,7 @@
       IL_01e0:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_01e5:  call       void [System.Console]System.Console::WriteLine()
-      IL_01ea:  ldstr      "The actual result for funciton argument is: {0}"
+      IL_01ea:  ldstr      "The actual result for function argument is: {0}"
       IL_01ef:  ldc.i4.1
       IL_01f0:  call       native unsigned int ShiftTest.byte32Test::f2(native unsigned int)
       IL_01f5:  box        [mscorlib]System.Byte
@@ -476,7 +476,7 @@
       IL_0346:  ret
     } // end of method byte32Test::Main
 
-    .method private hidebysig specialname rtspecialname static 
+    .method private hidebysig specialname rtspecialname static
             void  .cctor() cil managed
     {
       // Code size       11 (0xb)
@@ -486,7 +486,7 @@
       IL_000a:  ret
     } // end of method byte32Test::.cctor
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       7 (0x7)

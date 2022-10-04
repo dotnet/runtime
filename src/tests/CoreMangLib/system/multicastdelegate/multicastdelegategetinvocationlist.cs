@@ -110,7 +110,7 @@ public class MulticastDelegateGetInvocationList
     {
         bool retVal = true;
 
-        TestLibrary.TestFramework.BeginScenario("NagTest1: Insert multiple functions with null embeded in the function list");
+        TestLibrary.TestFramework.BeginScenario("NagTest1: Insert multiple functions with null embedded in the function list");
 
         try
         {

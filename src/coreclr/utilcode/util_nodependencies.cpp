@@ -14,6 +14,10 @@
 #include "utilcode.h"
 #include "ex.h"
 
+#ifdef HOST_WINDOWS
+#include <versionhelpers.h>
+#endif
+
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
@@ -25,65 +29,26 @@ RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 //*****************************************************************************
 void InitRunningOnVersionStatus ()
 {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    BOOL fSupportedPlatform = FALSE;
-    OSVERSIONINFOEX sVer;
-    DWORDLONG dwlConditionMask;
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 2;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    if(IsWindows8OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 1;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    else if(IsWindows7OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN7;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-CHECK_SUPPORTED:
-
-    if (!fSupportedPlatform)
+    else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
-        fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
+        fprintf(stderr, "Platform not supported: Windows 7 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-#endif // TARGET_UNIX
+#endif // HOST_WINDOWS
 } // InitRunningOnVersionStatus
 
 #ifndef HOST_64BIT
@@ -758,7 +723,7 @@ void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
 #endif // !TARGET_UNIX
 }
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
     // of the stack. We do here the check NT does when it creates the user stack to decide
@@ -769,7 +734,7 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // If we are not it will bomb out. We will also bomb out if we touch the hard guard
     // page.
     //
-    // For situation B, teb->StackLimit is at the beggining of the user stack (ie
+    // For situation B, teb->StackLimit is at the beginning of the user stack (ie
     // before updating StackLimit it checks if it was able to create a new guard page,
     // in this case, it can't), which makes the check fail in RtlUnwind.
     //
@@ -790,12 +755,12 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
 
     // OS rounds up sizes the following way to decide if it marks a guard page
     sizeReservedStack = ALIGN(sizeReservedStack, ((size_t)sysInfo.dwAllocationGranularity));   // Allocation granularity
-    sizeCommitedStack = ALIGN(sizeCommitedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
+    sizeCommittedStack = ALIGN(sizeCommittedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
 
     // OS wont create guard page, we can't execute managed code safely.
     // We also have to make sure we have a 'hard' guard, thus we add another
     // page to the memory we would need comitted.
     // That is, the following code will check if sizeReservedStack is at least 2 pages
-    // more than sizeCommitedStack.
-    return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
+    // more than sizeCommittedStack.
+    return (sizeReservedStack > sizeCommittedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage

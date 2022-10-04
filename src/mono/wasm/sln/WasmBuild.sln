@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmAppBuilder", "..\..\..\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoAOTCompiler", "..\..\..\tasks\AotCompilerTask\MonoAOTCompiler.csproj", "{A9C02284-0387-42E7-BF78-47DF13656D5E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Build.Tests", "..\..\..\tests\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj", "{94E18644-B0E5-4DBB-9CE4-EA1515ACE4C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Build.Tests", "..\Wasm.Build.Tests\Wasm.Build.Tests.csproj", "{94E18644-B0E5-4DBB-9CE4-EA1515ACE4C2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebuggerTestSuite", "..\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj", "{4C0EE027-FC30-4167-B2CF-A6D18F00E08F}"
 EndProject

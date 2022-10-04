@@ -8,7 +8,7 @@ namespace System
     /// <summary>Defines a mechanism for parsing a string to a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IParsable<TSelf>
-        where TSelf : IParsable<TSelf>
+        where TSelf : IParsable<TSelf>?
     {
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
@@ -22,7 +22,7 @@ namespace System
         /// <summary>Tries to parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
-        /// <param name="result">On return, contains the result of succesfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         static abstract bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result);
     }

@@ -136,12 +136,7 @@ namespace System.Drawing.Internal
                 for (int i = 0; i < count; i++)
                 {
                     Debug.Assert(list[i] != null, "null value in active part of list");
-                    ISystemColorTracker? tracker = (ISystemColorTracker?)list[i].Target;
-                    if (tracker != null)
-                    {
-                        // If object still around
-                        tracker.OnSystemColorChanged();
-                    }
+                    ((ISystemColorTracker?)list[i].Target)?.OnSystemColorChanged();
                 }
             }
         }

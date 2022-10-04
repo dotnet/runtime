@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -25,4 +25,18 @@
   <ItemGroup>
     <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Reference the actual NetAnalyzers project to ensure we're testing our diagnostic suppressors against the actual analyzers they'll run with, not fake shims we have to maintain -->
+  <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
+    <PackageReference Update="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RunAnalyzers)' == 'false'">
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" ExcludeAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <Target Name="AddNetAnalyzersAssemblyAsReference" BeforeTargets="ResolveAssemblyReferences" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll" />
+    </ItemGroup>
+  </Target>
 </Project>

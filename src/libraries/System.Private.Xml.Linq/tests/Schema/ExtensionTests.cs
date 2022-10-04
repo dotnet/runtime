@@ -91,7 +91,7 @@ namespace CoreXml.Test.XLinq
             validationSucceeded = false;
         }
 
-        // test succesful validation
+        // test successful validation
         [Fact]
         public void XDocumentSuccessValidate()
         {

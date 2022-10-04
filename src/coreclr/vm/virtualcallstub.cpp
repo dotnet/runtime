@@ -532,7 +532,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // Setup an expected number of items to commit and reserve
     //
     // The commit number is not that important as we always commit at least one page worth of items
-    // The reserve number shoudl be high enough to cover a typical lare application,
+    // The reserve number should be high enough to cover a typical lare application,
     // in order to minimize the fragmentation of our rangelists
     //
 
@@ -1893,7 +1893,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             if (insertKind != DispatchCache::IK_NONE)
             {
                 // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possiblity of caching a
+                // unshared interfaces because there is the possibility of caching a
                 // <token, TPMT, target> entry where target is in AD1, and then matching against
                 // this entry from AD2 which happens to be using the same token, perhaps for a
                 // completely different interface.
@@ -2154,8 +2154,8 @@ VirtualCallStubManager::Resolver(
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }

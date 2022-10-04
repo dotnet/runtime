@@ -87,14 +87,6 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        internal sealed override string ParameterTypeString
-        {
-            get
-            {
-                return _backingParameter.ParameterTypeString;
-            }
-        }
-
         public sealed override int MetadataToken
         {
             get

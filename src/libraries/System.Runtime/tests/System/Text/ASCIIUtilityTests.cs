@@ -162,7 +162,7 @@ namespace System.Text.Tests
             //
             // The 5 * Vector test should make sure that we're exercising all possible
             // code paths across both implementations. The sizeof(char) is because we're
-            // specifying element count, but underlying implementation reintepret casts to bytes.
+            // specifying element count, but underlying implementation reinterpret casts to bytes.
             //
             // Use U+0123 instead of U+0080 for this test because if our implementation
             // uses pminuw / pmovmskb incorrectly, U+0123 will incorrectly show up as ASCII,

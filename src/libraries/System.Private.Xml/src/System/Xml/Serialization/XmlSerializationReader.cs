@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security;
 using System.Xml;
 using System.Xml.Schema;
+using static System.Xml.Serialization.ReflectionXmlSerializationReader;
 
 namespace System.Xml.Serialization
 {
@@ -878,7 +879,7 @@ namespace System.Xml.Serialization
             return doc;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? CollapseWhitespace(string? value)
         {
             if (value == null)
@@ -909,7 +910,7 @@ namespace System.Xml.Serialization
             return node;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayBase64(string? value)
         {
             return XmlCustomFormatter.ToByteArrayBase64(value);
@@ -924,7 +925,7 @@ namespace System.Xml.Serialization
             return ReadByteArray(true); //means use Base64
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayHex(string? value)
         {
             return XmlCustomFormatter.ToByteArrayHex(value);
@@ -1106,25 +1107,25 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToEnum(value, h, typeName, true);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlName(string? value)
         {
             return XmlCustomFormatter.ToXmlName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNCName(string? value)
         {
             return XmlCustomFormatter.ToXmlNCName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmToken(string? value)
         {
             return XmlCustomFormatter.ToXmlNmToken(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmTokens(string? value)
         {
             return XmlCustomFormatter.ToXmlNmTokens(value);
@@ -1362,13 +1363,13 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value)
         {
             return ReadString(value, false);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value, bool trim)
         {
             string str = _r.ReadString();
@@ -1896,7 +1897,7 @@ namespace System.Xml.Serialization
                 }
                 XmlAttribute xmlAttribute = (XmlAttribute)Document.ReadNode(_r)!;
                 xmlNodeList.Add(xmlAttribute);
-                if (unknownElement != null) unknownElement.SetAttributeNode(xmlAttribute);
+                unknownElement?.SetAttributeNode(xmlAttribute);
             }
 
             // If the node is referenced (or in case of paramStyle = bare) and if xsi:type is not
@@ -1932,7 +1933,7 @@ namespace System.Xml.Serialization
                 {
                     XmlNode xmlNode = Document.ReadNode(_r)!;
                     xmlNodeList.Add(xmlNode);
-                    if (unknownElement != null) unknownElement.AppendChild(xmlNode);
+                    unknownElement?.AppendChild(xmlNode);
                     Reader.MoveToContent();
                 }
                 ReadEndElement();
@@ -3648,12 +3649,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             string? idName = (string?)_idNames[name];
             if (idName == null)
             {
@@ -4826,7 +4822,14 @@ namespace System.Xml.Serialization
                         Writer.Write("ReadSerializable(( ");
                         Writer.Write(typeof(IXmlSerializable).FullName);
                         Writer.Write(")");
-                        Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        if (sm.TypeDesc!.CSharpName == "global::System.Xml.Linq.XElement")
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, false, false, false, "\"default\""));
+                        }
+                        else
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        }
                         bool isWrappedAny = !element.Any && IsWildcard(sm);
                         if (isWrappedAny)
                         {

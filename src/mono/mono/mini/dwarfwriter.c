@@ -26,8 +26,8 @@
 #include <mono/metadata/abi-details.h>
 
 #ifndef HOST_WIN32
-#include <mono/utils/freebsd-elf32.h>
-#include <mono/utils/freebsd-elf64.h>
+#include <external/libunwind/include/remote/freebsd-elf32.h>
+#include <external/libunwind/include/remote/freebsd-elf64.h>
 #endif
 
 #include <mono/utils/freebsd-dwarf.h>

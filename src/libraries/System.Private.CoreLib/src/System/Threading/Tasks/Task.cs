@@ -4428,7 +4428,7 @@ namespace System.Threading.Tasks
             if (!continuationTask.IsCompleted)
             {
                 // We need additional correlation produced here to ensure that at least the continuation
-                // code will be correlatable to the currrent activity that initiated "this" task:
+                // code will be correlatable to the current activity that initiated "this" task:
                 //  . when the antecendent ("this") is a promise we have very little control over where
                 //    the code for the promise will run (e.g. it can be a task from a user provided
                 //    TaskCompletionSource or from a classic Begin/End async operation); this user or
@@ -5249,21 +5249,18 @@ namespace System.Threading.Tasks
                         return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
                     }
                 }
-                // For other known value types, we only special-case 0 / default(TResult).  We don't include
-                // floating point types as == may return true for different bit representations of the same value.
-                else if (
-                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
-                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
-                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
-                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
-                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
-                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
-                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
-                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
+                // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
+                else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
                 {
-                    return Task<TResult>.s_defaultResultTask;
+                    // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
+                    // so we only need to confirm that this TResult has the same bits as default(TResult).
+                    if ((Unsafe.SizeOf<TResult>() == sizeof(byte) && Unsafe.As<TResult, byte>(ref result) == default(byte)) ||
+                        (Unsafe.SizeOf<TResult>() == sizeof(ushort) && Unsafe.As<TResult, ushort>(ref result) == default(ushort)) ||
+                        (Unsafe.SizeOf<TResult>() == sizeof(uint) && Unsafe.As<TResult, uint>(ref result) == default) ||
+                        (Unsafe.SizeOf<TResult>() == sizeof(ulong) && Unsafe.As<TResult, ulong>(ref result) == default))
+                    {
+                        return Task<TResult>.s_defaultResultTask;
+                    }
                 }
             }
 
@@ -6921,7 +6918,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to this.</param>
+        /// <param name="task">The source task whose results should be transferred to this.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)

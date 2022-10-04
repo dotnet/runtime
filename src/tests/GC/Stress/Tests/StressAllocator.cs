@@ -8,13 +8,13 @@ using System.Runtime.InteropServices;
 
 // Purpose of program: exercise the GC, with various object sizes and lifetimes.
 // Allocate objects that have an expiration time specified. When the object's lifetime expires, it is made garbage and then other new objects are created.
-// 
+//
 // Each object has a lifetime attached to it (in ObjectWrapper). New objects are added to a collection. When the lifetime is expired, the object is removed from the collection and subject to GC.
 // There are several threads which access  the collection in random positions and if there is no object in that position they will create a new one.
 //One thread is responsible to updating the objects'age and removing expired objects.
 //The lifetime and the objects'size can be set by command line arguments.
 //The objects'size is organized in buckets (size ranges), the user can specify the percentage for each bucket.
-//Collection type can be array or binary tree. 
+//Collection type can be array or binary tree.
 
 
 
@@ -51,7 +51,7 @@ namespace StressAllocator
         private const int BUCKETS_MAX = 80000;
         //////
         //// DEFAULT PARAMETERS
-        //These parameters may be overriden by command line parameters
+        //These parameters may be overridden by command line parameters
         public const int DEFAULT_MINLIFE = 3; //milliseconds
         public const int DEFAULT_MAXLIFE = 30; //milliseconds
         public const int DEFAULT_OBJCOUNT = 2000; //object count
@@ -65,7 +65,7 @@ namespace StressAllocator
         //remaining will be allocated on Large Object Heap
         public const int DEFAULT_THREADS = 4;  //number of allocating threads
         public const int THREAD_IDLE_TIME = 0; //milliseconds
-        public const int MAX_REFS = 4; //max number of refernces to another object
+        public const int MAX_REFS = 4; //max number of references to another object
         ///////////// end default parameters
 
 
@@ -112,7 +112,7 @@ namespace StressAllocator
         //for status output:
         //keep track of the collection count for generations 0, 1, 2
         public static int[] currentCollections = new int[3];
-        public static int outputFrequency = 0; //after how many iterations the data is printed 
+        public static int outputFrequency = 0; //after how many iterations the data is printed
         public static System.TimeSpan totalTime;
         //weak ref array that keeps track of all objects
         public static WeakReferenceCollection WR_All = new WeakReferenceCollection();
@@ -122,7 +122,7 @@ namespace StressAllocator
         public static Random Rand;
 
 
-        //This is because Random is not thread safe and it stops returning a random number after a while 
+        //This is because Random is not thread safe and it stops returning a random number after a while
         //public static int GetRandomNumber(int min, int max)
         //{
         //    lock(objLock)
@@ -160,7 +160,7 @@ namespace StressAllocator
             }
             int references = Rand.Next(1, maxRef);
 
-            //decide if to make this object pinned 
+            //decide if to make this object pinned
             bool pin = false;
 
             if ((LOHpin && isLOHObject) || !LOHpin)
@@ -851,7 +851,7 @@ namespace StressAllocator
                 }
             }
 
-            //One pass through the collection, updates objects'age 
+            //One pass through the collection, updates objects'age
             public void UpdateObjectsAge(long elapsedMsec)
             {
                 for (int i = 0; i < _size; i++)

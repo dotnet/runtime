@@ -1,24 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
     <WasmBuildNative>true</WasmBuildNative>
-    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
-    <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+  </PropertyGroup>
+
+  <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
+    <Warning Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' != 'true'" Text="This sample requires perftracing or threading" />
+  </Target>
+
+  <PropertyGroup>
+    <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraConfig Condition="false" Include="environment_variables" Value='
+    <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
+    <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
+    <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' != 'true'" Include="environmentVariables" Value='
 {
-  "MONO_LOG_LEVEL": "debug",
-  "MONO_LOG_MASK": "diagnostics"
+  "MONO_LOG_LEVEL": "warning",
+  "MONO_LOG_MASK": "all",
+  "DOTNET_DiagnosticPorts": "ws://localhost:8088/diagnostics,suspend",
+  "CI_TEST": "$(ArchiveTests)"
+}' />
+    <!-- this option requires compiling the runtime with /p:MonoDiagnosticsMock=true and also building this project with the same property-->
+    <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' == 'true'" Include="environmentVariables" Value='
+{
+  "MONO_LOG_LEVEL": "warning",
+  "MONO_LOG_MASK": "all",
+  "DOTNET_DiagnosticPorts": "mock:./mock.js,suspend",
+  "CI_TEST": "$(ArchiveTests)"
 }' />
   </ItemGroup>
 

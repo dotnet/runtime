@@ -264,7 +264,7 @@ private:
 
     // data to track free list and pointers into this heap
     // - on an used block this struct has got a pointer back to the CodeHeap, size and start of aligned allocation
-    // - on an unused block (free block) this tracks the size of the block and the pointer to the next non contiguos free block
+    // - on an unused block (free block) this tracks the size of the block and the pointer to the next non contiguous free block
     struct TrackAllocation {
         union {
             HostCodeHeap *pHeap;

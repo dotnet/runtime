@@ -858,7 +858,7 @@ void SyncBlockCache::Grow()
 
 
         // We chain old table because we can't delete
-        // them before all the threads are stoppped
+        // them before all the threads are stopped
         // (next GC)
         SyncTableEntry::GetSyncTableEntry() [0].m_Object = (Object *)m_OldSyncTables;
         m_OldSyncTables = SyncTableEntry::GetSyncTableEntry();
@@ -1095,7 +1095,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
         //table logic above works correctly so that every ephemeral entry is promoted.
         //For verification, we make a copy of the sync table in relocation phase and promote it use the
         //slow approach and compare the result with the original one
-        DWORD freeSyncTalbeIndexCopy = m_FreeSyncTableIndex;
+        DWORD freeSyncTableIndexCopy = m_FreeSyncTableIndex;
         SyncTableEntry * syncTableShadow = NULL;
         if ((g_pConfig->GetHeapVerifyLevel()& EEConfig::HEAPVERIFY_SYNCBLK) && !((ScanContext*)lp1)->promotion)
         {
@@ -1178,7 +1178,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                 delete []syncTableShadow;
                 syncTableShadow = NULL;
             }
-            if (freeSyncTalbeIndexCopy != m_FreeSyncTableIndex)
+            if (freeSyncTableIndexCopy != m_FreeSyncTableIndex)
                 DebugBreak ();
         }
 #endif //VERIFY_HEAP
@@ -2950,8 +2950,7 @@ void ObjHeader::IllegalAlignPad()
     WRAPPER_NO_CONTRACT;
 #ifdef LOGGING
     void** object = ((void**) this) + 1;
-    LogSpewAlways("\n\n******** Illegal ObjHeader m_alignpad not 0, object" FMT_ADDR "\n\n",
-                  DBG_ADDR(object));
+    STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "\n\n******** Illegal ObjHeader m_alignpad not 0, m_alignpad value: %d\n", m_alignpad);
 #endif
     _ASSERTE(m_alignpad == 0);
 }

@@ -803,7 +803,7 @@ bool IsExtendedReg(regNumber reg, emitAttr attr)
     }
 
     // Opcode field only has 3 bits for the register, these high registers
-    // need a 4th bit, that comes from the REX prefix (eiter REX.X, REX.R, or REX.B)
+    // need a 4th bit, that comes from the REX prefix (either REX.X, REX.R, or REX.B)
     if (IsExtendedReg(reg))
     {
         return true;
@@ -1452,7 +1452,7 @@ unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
 
 /*****************************************************************************
  *
- *  Combine the given base format with the update mode of the instuction.
+ *  Combine the given base format with the update mode of the instruction.
  */
 
 inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base)
@@ -3399,7 +3399,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     if (data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained())
     {
         assert(ins == INS_movbe);
-
         data = data->gtGetOp1();
     }
 
@@ -3409,6 +3408,27 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         {
             emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (data->OperIsHWIntrinsic() && data->isContained())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
+
+            if (numArgs == 1)
+            {
+                emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, op1->GetRegNum(), 0);
+            }
+            else
+            {
+                assert(numArgs == 2);
+
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3421,10 +3441,32 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
+
         if (data->isContainedIntOrIImmed())
         {
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (data->OperIsHWIntrinsic() && data->isContained())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
+
+            if (numArgs == 1)
+            {
+                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset);
+            }
+            else
+            {
+                assert(numArgs == 2);
+
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3449,6 +3491,37 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         sz = emitInsSizeAM(id, insCodeMI(ins), icon);
         id->idCodeSize(sz);
     }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (data->OperIsHWIntrinsic() && data->isContained())
+    {
+        GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+        size_t              numArgs     = hwintrinsic->GetOperandCount();
+        GenTree*            op1         = hwintrinsic->Op(1);
+
+        if (numArgs == 1)
+        {
+            id = emitNewInstrAmd(attr, offset);
+            id->idIns(ins);
+            emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+            id->idReg1(op1->GetRegNum());
+            sz = emitInsSizeAM(id, insCodeMR(ins));
+            id->idCodeSize(sz);
+        }
+        else
+        {
+            assert(numArgs == 2);
+            int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+
+            id = emitNewInstrAmdCns(attr, offset, icon);
+            id->idIns(ins);
+            id->idReg1(op1->GetRegNum());
+            emitHandleMemOp(mem, id, IF_AWR_RRD_CNS, ins);
+            sz = emitInsSizeAM(id, insCodeMR(ins), icon);
+            id->idCodeSize(sz);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
     else
     {
         assert(!data->isContained());
@@ -3874,7 +3947,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             assert(src->IsCnsFltOrDbl());
             GenTreeDblCon* dblCns = src->AsDblCon();
 
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->DconValue(), emitTypeSize(dblCns));
             emitIns_R_C(ins, attr, dst->GetRegNum(), hnd, 0);
         }
     }
@@ -4368,9 +4441,10 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
 
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = base;
-#endif
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idMemCookie = base;
+    }
 
     id->idCodeSize(sz);
 
@@ -4743,7 +4817,7 @@ bool emitter::IsRedundantMov(
 //    src  - The source register for the original mov
 //
 // Return Value:
-//    "true" if the optimization succeded, in which case the instruction can be
+//    "true" if the optimization succeeded, in which case the instruction can be
 //    counted as emitted, "false" otherwise.
 //
 bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
@@ -6134,6 +6208,44 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNum
 }
 
 //------------------------------------------------------------------------
+// emitIns_C_R_I: emits the code for an instruction that takes a static member,
+//                a register operand, and an immediate.
+//
+// Arguments:
+//    ins       - The instruction being emitted
+//    attr      - The emit attribute
+//    fldHnd    - The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      - The offset for the stack operand
+//    reg       - The register operand
+//    ival      - The immediate value
+//
+void emitter::emitIns_C_R_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(reg != REG_NA);
+
+    // Static always need relocs
+    if (!jitStaticFldIsGlobAddr(fldHnd))
+    {
+        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+    }
+
+    instrDesc* id = emitNewInstrCnsDsp(attr, ival, offs);
+
+    id->idIns(ins);
+    id->idInsFmt(IF_MWR_RRD_CNS);
+    id->idReg1(reg);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+
+    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeMR(ins), ival);
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//------------------------------------------------------------------------
 // emitIns_S_R_I: emits the code for an instruction that takes a stack operand,
 //                a register operand, and an immediate.
 //
@@ -6147,9 +6259,9 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNum
 //
 void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival)
 {
-    // This is only used for INS_vextracti128 and INS_vextractf128, and for these 'ival' must be 0 or 1.
-    assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-    assert((ival == 0) || (ival == 1));
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(reg != REG_NA);
+
     instrDesc* id = emitNewInstrAmdCns(attr, 0, ival);
 
     id->idIns(ins);
@@ -6167,10 +6279,20 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     emitCurIGsize += sz;
 }
 
+//------------------------------------------------------------------------
+// emitIns_A_R_I: emits the code for an instruction that takes an address,
+//                a register operand, and an immediate.
+//
+// Arguments:
+//    ins       - The instruction being emitted
+//    attr      - The emit attribute
+//    indir     - The GenTreeIndir used for the memory address
+//    reg       - The register operand
+//    ival      - The immediate value
+//
 void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm)
 {
-    assert((ins == INS_vextracti128) || (ins == INS_vextractf128));
-    assert(attr == EA_32BYTE);
+    assert(IsSSEOrAVXInstruction(ins));
     assert(reg != REG_NA);
 
     instrDesc* id = emitNewInstrAmdCns(attr, indir->Offset(), imm);
@@ -6802,7 +6924,7 @@ void emitter::emitIns_SIMD_R_R_R_I(
 
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_S_I: emits the code for a SIMD instruction that takes a register operand, a variable index + offset,
-//                       an imediate operand, and that returns a value in register
+//                       an immediate operand, and that returns a value in register
 //
 // Arguments:
 //    ins       -- The instruction being emitted
@@ -7990,19 +8112,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
     }
 
-#ifdef DEBUG
-    if (emitComp->verbose && 0)
+    if (m_debugInfoSize > 0)
     {
-        if (id->idIsLargeCall())
-        {
-            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-        }
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
     }
-
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif // DEBUG
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -8173,8 +8287,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     return sizeof(instrDesc);
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
 /*****************************************************************************
  *
  *  Return a string that represents the given register.
@@ -8412,13 +8524,13 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
     if (fldHnd == FLD_GLOBAL_FS)
     {
-        printf("FS:[0x%04X]", offs);
+        printf("FS:[0x%04X]", (unsigned)offs);
         return;
     }
 
     if (fldHnd == FLD_GLOBAL_DS)
     {
-        printf("[0x%04X]", offs);
+        printf("[0x%04X]", (unsigned)offs);
         return;
     }
 
@@ -8449,7 +8561,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     }
     else
     {
-        printf("classVar[%#x]", emitComp->dspPtr(fldHnd));
+        printf("classVar[%#p]", (void*)emitComp->dspPtr(fldHnd));
 
         if (offs)
         {
@@ -8459,6 +8571,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
     printf("]");
 
+#ifdef DEBUG
     if (emitComp->opts.varNames && offs < 0)
     {
         printf("'%s", emitComp->eeGetFieldName(fldHnd));
@@ -8468,6 +8581,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         }
         printf("'");
     }
+#endif
 }
 
 /*****************************************************************************
@@ -8550,7 +8664,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
     }
 
     printf("]");
-
+#ifdef DEBUG
     if (varx >= 0 && emitComp->opts.varNames)
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
@@ -8571,6 +8685,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
             printf("'");
         }
     }
+#endif
 }
 
 /*****************************************************************************
@@ -8644,7 +8759,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, (unsigned)id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -8678,7 +8793,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         }
         if (scale > 1)
         {
-            printf("%u*", scale);
+            printf("%u*", (unsigned)scale);
         }
         printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amIndxReg));
         nsep = true;
@@ -8712,34 +8827,34 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             if (frameRef)
             {
-                printf("%02XH", disp);
+                printf("%02XH", (unsigned)disp);
             }
             else if (disp < 1000)
             {
-                printf("%d", disp);
+                printf("%02XH", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
-                printf("%04XH", disp);
+                printf("%04XH", (unsigned)disp);
             }
             else
             {
-                printf("%08XH", disp);
+                printf("%08XH", (unsigned)disp);
             }
         }
         else if (disp < 0)
         {
             if (frameRef)
             {
-                printf("-%02XH", -disp);
+                printf("-%02XH", (unsigned)-disp);
             }
             else if (disp > -1000)
             {
-                printf("-%d", -disp);
+                printf("-%02XH", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {
-                printf("-%04XH", -disp);
+                printf("-%04XH", (unsigned)-disp);
             }
             else if (disp < -0xFFFFFF)
             {
@@ -8747,22 +8862,23 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
                 {
                     printf("+");
                 }
-                printf("%08XH", disp);
+                printf("%08XH", (unsigned)disp);
             }
             else
             {
-                printf("-%08XH", -disp);
+                printf("-%08XH", (unsigned)-disp);
             }
         }
         else if (!nsep)
         {
-            printf("%04XH", disp);
+            printf("%04XH", (unsigned)disp);
         }
     }
 
     printf("]");
 
-    // pretty print string if it looks like one
+// pretty print string if it looks like one
+#ifdef DEBUG
     if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
         const WCHAR* str = emitComp->eeGetCPString(disp);
@@ -8771,6 +8887,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             printf("      '%S'", str);
         }
     }
+#endif
 
     if (jdsc && !noDetail)
     {
@@ -8868,7 +8985,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 
         if (sz < digits)
         {
-            printf("%.*s", 2 * (digits - sz), "                         ");
+            printf("%.*s", (int)(2 * (digits - sz)), "                         ");
         }
     }
 }
@@ -8897,11 +9014,13 @@ void emitter::emitDispIns(
 
     instruction ins = id->idIns();
 
+#ifdef DEBUG
     if (emitComp->verbose)
     {
         unsigned idNum = id->idDebugOnlyInfo()->idNum;
         printf("IN%04x: ", idNum);
     }
+#endif
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
 
@@ -9128,15 +9247,15 @@ void emitter::emitDispIns(
                 }
                 if ((val > -1000) && (val < 1000))
                 {
-                    printf("%d", val);
+                    printf("%d", (int)val);
                 }
                 else if ((val > 0) || (val < -0xFFFFFF))
                 {
-                    printf("0x%IX", val);
+                    printf("0x%IX", (ssize_t)val);
                 }
                 else
                 { // (val < 0)
-                    printf("-0x%IX", -val);
+                    printf("-0x%IX", (ssize_t)-val);
                 }
                 emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }
@@ -9238,9 +9357,12 @@ void emitter::emitDispIns(
 
         case IF_AWR_RRD_CNS:
         {
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
-            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            if ((ins == INS_vextracti128) || (ins == INS_vextractf128))
+            {
+                // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+                sstr = codeGen->genSizeStr(EA_ATTR(16));
+            }
+
             printf(sstr);
             emitDispAddrMode(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -9429,8 +9551,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
 
             printf("%s", sstr);
@@ -9792,9 +9913,12 @@ void emitter::emitDispIns(
 
         case IF_MWR_RRD_CNS:
         {
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
-            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            if ((ins == INS_vextracti128) || (ins == INS_vextractf128))
+            {
+                // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+                sstr = codeGen->genSizeStr(EA_ATTR(16));
+            }
+
             printf(sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -10016,17 +10140,16 @@ void emitter::emitDispIns(
             break;
     }
 
+#ifdef DEBUG
     if (sz != 0 && sz != id->idCodeSize() && (!asmfm || emitComp->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
         printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
     }
+#endif
 
     printf("\n");
 }
-
-/*****************************************************************************/
-#endif
 
 /*****************************************************************************
  *
@@ -10194,7 +10317,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     instrDescAlign* alignInstr = (instrDescAlign*)id;
 
 #ifdef DEBUG
-    // For cases where 'align' was placed behing a 'jmp' in an IG that does not
+    // For cases where 'align' was placed behind a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
     bool validatePadding = !alignInstr->isPlacedAfterJmp;
@@ -11399,7 +11522,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     dspInByte = ((signed char)dsp == (int)dsp);
     dspIsZero = (dsp == 0);
 
-    // for stack varaibles the dsp should never be a reloc
+    // for stack variables the dsp should never be a reloc
     assert(id->idIsDspReloc() == 0);
 
     if (EBPbased)
@@ -12561,7 +12684,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     else
                     {
                         /* If emitFullGCinfo==false, the we don't use any
-                           regPtrDsc's and so explictly note the location
+                           regPtrDsc's and so explicitly note the location
                            of "this" in GCEncode.cpp
                          */
                     }
@@ -13504,11 +13627,14 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // Make an instrDesc that looks like IF_RWR_ARD so that emitOutputAM emits the r/m32 for us.
             // We basically are doing what emitIns_R_AI does.
             // TODO-XArch-Cleanup: revisit this.
-            instrDescAmd  idAmdStackLocal;
-            instrDescAmd* idAmd = &idAmdStackLocal;
-            *(instrDesc*)idAmd  = *(instrDesc*)id; // copy all the "core" fields
-            memset((BYTE*)idAmd + sizeof(instrDesc), 0,
-                   sizeof(instrDescAmd) - sizeof(instrDesc)); // zero out the tail that wasn't copied
+            inlineInstrDesc<instrDescAmd> idAmdStackLocal;
+            instrDescAmd*                 idAmd = idAmdStackLocal.id();
+            *(instrDesc*)idAmd                  = *(instrDesc*)id; // copy all the "core" fields
+
+            if (m_debugInfoSize > 0)
+            {
+                idAmd->idDebugOnlyInfo(id->idDebugOnlyInfo());
+            }
 
             idAmd->idInsFmt(IF_RWR_ARD);
             idAmd->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
@@ -14197,8 +14323,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_AWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputAM(dst, id, code, &cnsVal);
@@ -14336,8 +14461,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
@@ -14755,6 +14879,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+    }
+#else
+    if (emitComp->opts.disAsm && !emitJmpInstHasNoCode(id))
+    {
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
 #endif
 
@@ -15733,12 +15862,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movntpd:
             assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
             break;
 
         case INS_maskmovdqu:
             result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
             break;
 
         case INS_movntdqa:

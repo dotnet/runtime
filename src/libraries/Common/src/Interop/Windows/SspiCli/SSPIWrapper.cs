@@ -192,6 +192,7 @@ namespace System.Net
             int errorCode = secModule.QueryContextChannelBinding(securityContext, contextAttribute, out result);
             if (errorCode != 0)
             {
+                result.Dispose();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
                 return null;
             }

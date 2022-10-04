@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public void TypeWithGenericParamters()
+        public void TypeWithGenericParameters()
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));

@@ -38,7 +38,7 @@ namespace System.IO
         // returns null. If path does not contain a file extension,
         // the new file extension is appended to the path. If extension
         // is null, any existing extension is removed from path.
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         public static string? ChangeExtension(string? path, string? extension)
         {
             if (path == null)
@@ -177,7 +177,7 @@ namespace System.IO
         /// The returned value is null if the given path is null or empty if the given path does not include an
         /// extension.
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         public static string? GetExtension(string? path)
         {
             if (path == null)
@@ -217,7 +217,7 @@ namespace System.IO
         /// the characters of path that follow the last separator in path. The resulting string is
         /// null if path is null.
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         public static string? GetFileName(string? path)
         {
             if (path == null)
@@ -240,16 +240,14 @@ namespace System.IO
             // We don't want to cut off "C:\file.txt:stream" (i.e. should be "file.txt:stream")
             // but we *do* want "C:Foo" => "Foo". This necessitates checking for the root.
 
-            for (int i = path.Length; --i >= 0;)
-            {
-                if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1);
-            }
+            int i = PathInternal.DirectorySeparatorChar == PathInternal.AltDirectorySeparatorChar ?
+                path.LastIndexOf(PathInternal.DirectorySeparatorChar) :
+                path.LastIndexOfAny(PathInternal.DirectorySeparatorChar, PathInternal.AltDirectorySeparatorChar);
 
-            return path;
+            return path.Slice(i < root ? root : i + 1);
         }
 
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         public static string? GetFileNameWithoutExtension(string? path)
         {
             if (path == null)
@@ -818,7 +816,7 @@ namespace System.IO
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
-        private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
+        internal static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
             // This method requires bytes of length 8 and chars of length 12.
             Debug.Assert(bytes != null);

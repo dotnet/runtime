@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -441,7 +440,7 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if (Sse2.IsSupported && (nuint)Vector128<int>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<int>.Count * 2 <= length)
             {
                 nuint numElements = (nuint)Vector128<int>.Count;
                 nuint numIters = (length / numElements) / 2;
@@ -462,8 +461,8 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b00_01_10_11);
-                    tempLast = Sse2.Shuffle(tempLast, 0b00_01_10_11);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
 
                     // Store the values into final location
                     tempLast.StoreUnsafe(ref buf, firstOffset);
@@ -508,19 +507,17 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if (Sse2.IsSupported && (nuint)Vector128<long>.Count * 2 <= length)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<long>.Count * 2 <= length)
             {
-                ref int bufInt = ref Unsafe.As<long, int>(ref buf);
-                nuint intLength = length * (sizeof(long) / sizeof(int));
-                nuint numElements = (nuint)Vector128<int>.Count;
-                nuint numIters = (intLength / numElements) / 2;
+                nuint numElements = (nuint)Vector128<long>.Count;
+                nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
                 {
                     nuint firstOffset = i * numElements;
-                    nuint lastOffset = intLength - ((1 + i) * numElements);
+                    nuint lastOffset = length - ((1 + i) * numElements);
                     // Load the values into vectors
-                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref bufInt, firstOffset);
-                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref bufInt, lastOffset);
+                    Vector128<long> tempFirst = Vector128.LoadUnsafe(ref buf, firstOffset);
+                    Vector128<long> tempLast = Vector128.LoadUnsafe(ref buf, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +-------+
@@ -530,15 +527,14 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b0100_1110);
-                    tempLast = Sse2.Shuffle(tempLast, 0b0100_1110);
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(1, 0));
 
                     // Store the values into final location
-                    tempLast.StoreUnsafe(ref bufInt, firstOffset);
-                    tempFirst.StoreUnsafe(ref bufInt, lastOffset);
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
                 }
-                bufInt = ref Unsafe.Add(ref bufInt, numIters * numElements);
-                buf = ref Unsafe.As<int, long>(ref bufInt);
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * (nuint)Vector128<long>.Count * 2;
             }
 

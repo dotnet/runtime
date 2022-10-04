@@ -250,7 +250,7 @@ namespace System.Diagnostics
             // need to be aligned.  First, we need to align each struct on a 4 byte boundary so we can use interlocked
             // operations on the int Spinlock field.  Second, we need to align the CounterEntry on an 8 byte boundary so that
             // on 64 bit platforms we can use interlocked operations on the Value field.  alignmentAdjustment guarantees 8 byte
-            // alignemnt, so we use that for both.  If we're creating the very first category, however, we can't move that
+            // alignment, so we use that for both.  If we're creating the very first category, however, we can't move that
             // CategoryEntry.  In this case we put the alignmentAdjustment before the InstanceEntry.
             if (freeMemoryOffset == _initialOffset)
             {
@@ -711,8 +711,7 @@ namespace System.Diagnostics
                         }
                         finally
                         {
-                            if (categoryKey != null)
-                                categoryKey.Close();
+                            categoryKey?.Close();
                         }
                     }
                 }
@@ -1761,8 +1760,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (securityDescriptorPointer != null)
-                        securityDescriptorPointer.Close();
+                    securityDescriptorPointer?.Close();
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);

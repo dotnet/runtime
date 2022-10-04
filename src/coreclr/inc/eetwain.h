@@ -61,7 +61,7 @@ typedef struct _DAC_SLOT_LOCATION
 
 typedef void (*GCEnumCallback)(
     LPVOID          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
     DAC_ARG(DacSlotLocation loc)    // where the reference came from
 );
@@ -701,13 +701,12 @@ struct hdrInfo
     bool                doubleAlign;    // is the stack double-aligned? locals addressed relative to ESP, and arguments relative to EBP
     bool                interruptible;  // intr. at all times (excluding prolog/epilog), not just call sites
 
-    bool                securityCheck;  // has a slot for security object
     bool                handlers;       // has callable handlers
     bool                localloc;       // uses localloc
     bool                editNcontinue;  // has been compiled in EnC mode
     bool                varargs;        // is this a varargs routine
     bool                profCallbacks;  // does the method have Enter-Leave callbacks
-    bool                genericsContext;// has a reported generic context paramter
+    bool                genericsContext;// has a reported generic context parameter
     bool                genericsContextIsMethodDesc;// reported generic context parameter is methoddesc
     bool                isSpeculativeStackWalk; // is the stackwalk seeded by an untrusted source (e.g., sampling profiler)?
 

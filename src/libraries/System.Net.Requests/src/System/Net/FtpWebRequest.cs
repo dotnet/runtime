@@ -566,8 +566,7 @@ namespace System.Net
                         }
 
                         // GetRequeststream or BeginGetRequestStream has not finished yet
-                        if (_readAsyncResult != null)
-                            _readAsyncResult.InternalWaitForCompletion();
+                        _readAsyncResult?.InternalWaitForCompletion();
 
                         CheckError();
                     }
@@ -1386,8 +1385,9 @@ namespace System.Net
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connection: {connection}");
                         connection.CloseSocket();
                         if (_async)
-                            if (_requestCompleteAsyncResult != null)
-                                _requestCompleteAsyncResult.InvokeCallback();
+                        {
+                            _requestCompleteAsyncResult?.InvokeCallback();
+                        }
                     }
                 }
                 return prev;
@@ -1406,8 +1406,7 @@ namespace System.Net
                         // request/pipeline can continue
                         if (_methodInfo.IsUpload && !_getRequestStreamStarted)
                         {
-                            if (_stream != null)
-                                _stream.Close();
+                            _stream?.Close();
                         }
                         else if (writeResult != null && !writeResult.InternalPeekCompleted)
                             writeResult.InvokeCallback();
@@ -1688,8 +1687,7 @@ namespace System.Net
             {
                 if (!_async)
                 {
-                    if (_connection != null)
-                        _connection.CheckContinuePipeline();
+                    _connection?.CheckContinuePipeline();
                 }
                 else
                 {
@@ -1699,9 +1697,7 @@ namespace System.Net
             }
             else
             {
-                FtpControlStream? connection = _connection;
-                if (connection != null)
-                    connection.Abort(ExceptionHelper.RequestAbortedException);
+                _connection?.Abort(ExceptionHelper.RequestAbortedException);
             }
         }
     }  // class FtpWebRequest

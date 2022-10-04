@@ -4697,14 +4697,22 @@ namespace System.Tests
         [InlineData("Aaaaaaaa", 'A', 'a', "aaaaaaaa")] // Single iteration of vectorised path; no remainders through non-vectorised path
         // Three leading 'a's before a match (copyLength > 0), Single iteration of vectorised path; no remainders through non-vectorised path
         [InlineData("aaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaa")]
-        // Single iteration of vectorised path; 3 remainders through non-vectorised path
+        // Single iteration of vectorised path; 3 remainders handled by vectorized path
         [InlineData("AaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaa")]
+        // Single iteration of vectorized path; 0 remainders handled by vectorized path
+        [InlineData("aaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaa")]
+        // Eight chars before a match (copyLength > 0), single iteration of vectorized path for the remainder
+        [InlineData("12345678AAAAAAA", 'A', 'a', "12345678aaaaaaa")]
         // ------------------------- For Vector<ushort>.Count == 16 (AVX2) -------------------------
         [InlineData("AaaaaaaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaaaaaaa")] // Single iteration of vectorised path; no remainders through non-vectorised path
         // Three leading 'a's before a match (copyLength > 0), Single iteration of vectorised path; no remainders through non-vectorised path
         [InlineData("aaaAaaaaaaaAaaaaaaa", 'A', 'a', "aaaaaaaaaaaaaaaaaaa")]
-        // Single iteration of vectorised path; 3 remainders through non-vectorised path
+        // Single iteration of vectorised path; 3 remainders handled by vectorized path
         [InlineData("AaaaaaaaAaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaaaaaaaaaa")]
+        // Single iteration of vectorized path; 0 remainders handled by vectorized path
+        [InlineData("aaaaaaaaaaaaaaaaaAa", 'A', 'a', "aaaaaaaaaaaaaaaaaaa")]
+        // Sixteen chars before a match (copyLength > 0), single iteration of vectorized path for the remainder
+        [InlineData("1234567890123456AAAAAAAAAAAAAAA", 'A', 'a', "1234567890123456aaaaaaaaaaaaaaa")]
         // ----------------------------------- General test data -----------------------------------
         [InlineData("Hello", 'l', '!', "He!!o")] // 2 match, non-vectorised path
         [InlineData("Hello", 'e', 'e', "Hello")] // oldChar and newChar are same; nothing to replace

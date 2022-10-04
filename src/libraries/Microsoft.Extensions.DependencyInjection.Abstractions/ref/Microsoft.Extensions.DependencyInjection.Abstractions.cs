@@ -142,6 +142,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope(this System.IServiceProvider provider) { throw null; }
         public static object GetRequiredService(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for an IEnumerable<serviceType> might not be available at runtime.")]
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
         public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }

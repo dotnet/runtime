@@ -1421,7 +1421,7 @@ fail:
 
 /*
  * free_decoded_custom_attr:
- * 
+ *
  * Handles freeing of MonoCustomAttrValue type properly.
  * Strings and MonoType* are not freed since they come from the metadata.
  */
@@ -1445,7 +1445,7 @@ free_decoded_custom_attr(MonoCustomAttrValue* cattr_val)
 
 /*
  * mono_reflection_free_custom_attr_data_args_noalloc:
- * 
+ *
  * Frees up MonoDecodeCustomAttr type.
  * Must be called after mono_reflection_create_custom_attr_data_args_noalloc to properly free up allocated struct.
  */
@@ -2791,7 +2791,7 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 /**
  * mono_class_metadata_foreach_custom_attr:
  * \param klass - the class to iterate over
- * \param func the funciton to call for each custom attribute
+ * \param func the function to call for each custom attribute
  * \param user_data passed to \p func
  *
  * Calls \p func for each custom attribute type on the given class until \p func returns TRUE.
@@ -2823,7 +2823,7 @@ mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataC
 /**
  * mono_method_metadata_foreach_custom_attr:
  * \param method - the method to iterate over
- * \param func the funciton to call for each custom attribute
+ * \param func the function to call for each custom attribute
  * \param user_data passed to \p func
  *
  * Calls \p func for each custom attribute type on the given class until \p func returns TRUE.

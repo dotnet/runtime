@@ -83,7 +83,7 @@ namespace System.Text.Tests
             //
             // The 5 * Vector test should make sure that we're exercising all possible
             // code paths across both implementations. The sizeof(char) is because we're
-            // specifying element count, but underlying implementation reintepret casts to bytes.
+            // specifying element count, but underlying implementation reinterpret casts to bytes.
             //
             // Use U+FF80 for this test because if our implementation incorrectly uses paddw or
             // paddsw instead of paddusw, U+FF80 will incorrectly show up as Latin-1,

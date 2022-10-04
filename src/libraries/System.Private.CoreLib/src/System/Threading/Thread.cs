@@ -154,12 +154,15 @@ namespace System.Threading
         }
 
 #if !TARGET_BROWSER || FEATURE_WASM_THREADS
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
 #elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif
@@ -178,6 +181,9 @@ namespace System.Threading
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
         /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start(object? parameter) => Start(parameter, captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -189,6 +195,9 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
         private void Start(object? parameter, bool captureContext, bool internalThread = false)
@@ -217,6 +226,9 @@ namespace System.Threading
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start() => Start(captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
@@ -226,6 +238,9 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart() => Start(captureContext: false);
 
         internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
@@ -540,8 +555,8 @@ namespace System.Threading
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
-        [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
+        [return: NotNullIfNotNull(nameof(address))]
+        public static object? VolatileRead([NotNullIfNotNull(nameof(address))] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);
@@ -559,7 +574,7 @@ namespace System.Threading
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
-        public static void VolatileWrite([NotNullIfNotNull("value")] ref object? address, object? value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref float address, float value) => Volatile.Write(ref address, value);

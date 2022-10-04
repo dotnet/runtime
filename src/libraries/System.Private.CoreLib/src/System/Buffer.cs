@@ -74,7 +74,7 @@ namespace System
             //
             // If somebody called Get/SetByte on 2GB+ arrays, there is a decent chance that
             // the computation of the index has overflowed. Thus we intentionally always
-            // throw on 2GB+ arrays in Get/SetByte argument checks (even for indicies <2GB)
+            // throw on 2GB+ arrays in Get/SetByte argument checks (even for indices <2GB)
             // to prevent people from running into a trap silently.
 
             return checked((int)byteLength);

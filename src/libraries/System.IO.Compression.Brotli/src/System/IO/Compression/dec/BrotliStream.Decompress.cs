@@ -15,7 +15,6 @@ namespace System.IO.Compression
         private BrotliDecoder _decoder;
         private int _bufferOffset;
         private int _bufferCount;
-        private bool _nonEmptyInput;
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
@@ -66,12 +65,9 @@ namespace System.IO.Compression
                 int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
                 {
-                    if (_nonEmptyInput && !buffer.IsEmpty)
-                        ThrowTruncatedInvalidData();
                     break;
                 }
 
-                _nonEmptyInput = true;
                 _bufferCount += bytesRead;
 
                 if (_bufferCount > _buffer.Length)
@@ -154,12 +150,9 @@ namespace System.IO.Compression
                         int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
                         if (bytesRead <= 0)
                         {
-                            if (_nonEmptyInput && !buffer.IsEmpty)
-                                ThrowTruncatedInvalidData();
                             break;
                         }
 
-                        _nonEmptyInput = true;
                         _bufferCount += bytesRead;
 
                         if (_bufferCount > _buffer.Length)
@@ -238,8 +231,5 @@ namespace System.IO.Compression
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes larger than the buffer supplied to it.
             throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
-
-        private static void ThrowTruncatedInvalidData() =>
-            throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
     }
 }

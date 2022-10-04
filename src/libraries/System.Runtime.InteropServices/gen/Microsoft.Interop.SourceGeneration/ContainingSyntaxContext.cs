@@ -102,5 +102,31 @@ namespace Microsoft.Interop
             }
             return wrappedMember;
         }
+
+        public MemberDeclarationSyntax WrapMembersInContainingSyntaxWithUnsafeModifier(params MemberDeclarationSyntax[] members)
+        {
+            bool addedUnsafe = false;
+            MemberDeclarationSyntax? wrappedMember = null;
+            foreach (var containingType in ContainingSyntax)
+            {
+                TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
+                    .WithModifiers(containingType.Modifiers)
+                    .AddMembers(wrappedMember is not null ? new[] { wrappedMember } : members);
+                if (!addedUnsafe)
+                {
+                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
+                }
+                if (containingType.TypeParameters is not null)
+                {
+                    type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());
+                }
+                wrappedMember = type;
+            }
+            if (ContainingNamespace is not null)
+            {
+                wrappedMember = NamespaceDeclaration(ParseName(ContainingNamespace)).AddMembers(wrappedMember);
+            }
+            return wrappedMember;
+        }
     }
 }

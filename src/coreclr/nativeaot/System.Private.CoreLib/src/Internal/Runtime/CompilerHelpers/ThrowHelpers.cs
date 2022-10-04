@@ -127,10 +127,5 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new ArgumentOutOfRangeException();
         }
-
-        public static void ThrowInvokeNullRefReturned()
-        {
-            throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
-        }
     }
 }

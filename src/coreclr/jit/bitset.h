@@ -102,7 +102,7 @@ FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 // initialization.  We often want to reason about BitSets as immutable values, and just copying
 // the representation would introduce sharing in the indirect case, which is usually not what's
 // desired.  On the other hand, there are many cases in which the RHS value has just been
-// created functionally, and the intialization/assignment is obviously its last use.  In these
+// created functionally, and the initialization/assignment is obviously its last use.  In these
 // cases, allocating a new indirect representation for the lhs (if it does not already have one)
 // would be unnecessary and wasteful.  Thus, for assignment, we have a "normal" assignment
 // function, which makes a copy of the referent data structure in the indirect case, and an

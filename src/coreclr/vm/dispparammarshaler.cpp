@@ -580,7 +580,7 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     pUnk = (IUnknown*)m_pCMHelper->InvokeMarshalManagedToNativeMeth(*pSrcObj);
     if (!pUnk)
     {
-        // Put a null IDispath pointer in the VARIANT.
+        // Put a null IDispatch pointer in the VARIANT.
         V_VT(pDestVar) = VT_DISPATCH;
         V_DISPATCH(pDestVar) = NULL;
     }

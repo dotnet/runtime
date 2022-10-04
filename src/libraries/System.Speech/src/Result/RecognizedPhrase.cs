@@ -644,10 +644,7 @@ namespace System.Speech.Recognition
                         }
                         while (semanticValue._dictionary.ContainsKey(key));
                         semanticValue._dictionary.Add(key, thisSemanticValue);
-                        if (dupItems == null)
-                        {
-                            dupItems = new Collection<SemanticValue>();
-                        }
+                        dupItems ??= new Collection<SemanticValue>();
                         SemanticValue s = semanticValue._dictionary[key];
                         dupItems.Add(s);
                     }

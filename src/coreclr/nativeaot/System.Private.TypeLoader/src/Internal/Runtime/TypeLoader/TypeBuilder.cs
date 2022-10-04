@@ -162,7 +162,7 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Register the type for preparation. The preparation will be done once the current type is prepared.
-        /// This is the prefered way to get a dependent type prepared because of it avoids issues with cycles and recursion.
+        /// This is the preferred way to get a dependent type prepared because of it avoids issues with cycles and recursion.
         /// </summary>
         public void RegisterForPreparation(TypeDesc type)
         {
@@ -183,8 +183,7 @@ namespace Internal.Runtime.TypeLoader
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
 
-            if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -247,8 +246,7 @@ namespace Internal.Runtime.TypeLoader
             if (hasTypeHandle)
                 return;
 
-            if (state == null)
-                state = type.GetOrCreateTypeBuilderState();
+            state ??= type.GetOrCreateTypeBuilderState();
 
             // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
             if (state.HasBeenPrepared)
@@ -1548,8 +1546,7 @@ namespace Internal.Runtime.TypeLoader
                     newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
-                    if (mdArrayNewTypesCount == null)
-                        mdArrayNewTypesCount = new int[MDArray.MaxRank + 1];
+                    mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
                     mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
                 }
             }
@@ -1973,7 +1970,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = typeBeingLoaded.RuntimeTypeHandle;
                 Debug.Assert(!runtimeTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -1999,7 +1996,7 @@ namespace Internal.Runtime.TypeLoader
                 arrayTypeHandle = arrayType.RuntimeTypeHandle;
                 Debug.Assert(!arrayTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -2024,7 +2021,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2044,7 +2041,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2060,7 +2057,7 @@ namespace Internal.Runtime.TypeLoader
 
             bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
 
-            // Recycle the context only if we succesfully built the method. The state may be partially initialized otherwise.
+            // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
             if (success)
                 TypeSystemContextFactory.Recycle(context);
 

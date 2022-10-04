@@ -1,21 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     /***********************************************************/
     /*               XsltArgumentList.GetParam                 */
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetParam", Desc = "Get Param Test Cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CArgIntegrity : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2597,7 +2599,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Unitialized and NULL return values from the methods in the extension object")]
+        //[Variation("Uninitialized and NULL return values from the methods in the extension object")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]

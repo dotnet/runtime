@@ -275,7 +275,7 @@ public static class VectorMgdMgd
             hva128_04.v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
             hva128_04.v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
- 
+
             i = 0;
             hva128_05.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
@@ -355,7 +355,7 @@ public static class VectorMgdMgd
 
         //==========    Vector64<T> tests
 
-        //====================   Tests for passing 1 argumnet of HVA64_01
+        //====================   Tests for passing 1 argument of HVA64_01
 
         // Test the case where we've passed in a single argument HVA of 1 vector.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -372,7 +372,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva64_01 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA64_02
+        //====================   Tests for passing 1 argument of HVA64_02
 
         // Test the case where we've passed in a single argument HVA of 2 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -390,7 +390,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva64_02 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA64_03
+        //====================   Tests for passing 1 argument of HVA64_03
 
         // Test the case where we've passed in a single argument HVA of 3 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -409,7 +409,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva64_03 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA64_04
+        //====================   Tests for passing 1 argument of HVA64_04
 
         // Test the case where we've passed in a single argument HVA of 4 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -429,7 +429,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva64_04 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA64_05
+        //====================   Tests for passing 1 argument of HVA64_05
 
         // Test the case where we've passed in a single argument HVA of 5 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -654,7 +654,7 @@ public static class VectorMgdMgd
 
         //==========    Vector128<T> tests
 
-        //====================   Tests for passing 1 argumnet of HVA128_01
+        //====================   Tests for passing 1 argument of HVA128_01
 
         // Test the case where we've passed in a single argument HVA of 1 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -671,7 +671,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva128_01 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA128_02
+        //====================   Tests for passing 1 argument of HVA128_02
 
         // Test the case where we've passed in a single argument HVA of 2 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -689,7 +689,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva128_02 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA128_03
+        //====================   Tests for passing 1 argument of HVA128_03
 
         // Test the case where we've passed in a single argument HVA of 2 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -708,7 +708,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva128_03 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA128_04
+        //====================   Tests for passing 1 argument of HVA128_04
 
         // Test the case where we've passed in a single argument HVA of 2 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -728,7 +728,7 @@ public static class VectorMgdMgd
             reflectionInvokeArgs = new object[] { hva128_04 };
         }
 
-        //====================   Tests for passing 1 argumnet of HVA128_05
+        //====================   Tests for passing 1 argument of HVA128_05
 
         // Test the case where we've passed in a single argument HVA of 2 vectors.
         [MethodImpl(MethodImplOptions.NoInlining)]

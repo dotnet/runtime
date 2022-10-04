@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the multiplicative identify of <typeparamref name="TSelf" />.</typeparam>
     public interface IMultiplicativeIdentity<TSelf, TResult>
-        where TSelf : IMultiplicativeIdentity<TSelf, TResult>
+        where TSelf : IMultiplicativeIdentity<TSelf, TResult>?
     {
         /// <summary>Gets the multiplicative identity of the current type.</summary>
         static abstract TResult MultiplicativeIdentity { get; }

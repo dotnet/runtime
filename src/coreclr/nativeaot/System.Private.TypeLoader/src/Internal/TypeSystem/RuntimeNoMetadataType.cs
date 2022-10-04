@@ -40,8 +40,7 @@ namespace Internal.TypeSystem.NoMetadata
             _context = context;
             _genericTypeDefinition = genericTypeDefinition;
             _genericTypeDefinitionAsDefType = genericTypeDefinitionAsDefType;
-            if (_genericTypeDefinitionAsDefType == null)
-                _genericTypeDefinitionAsDefType = this;
+            _genericTypeDefinitionAsDefType ??= this;
             _instantiation = instantiation;
 
             // Instantiation must either be:

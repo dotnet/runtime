@@ -120,29 +120,59 @@ These can be set in one of three ways:
 
 ## Specifying method names
 
-The complete syntax for specifying a single method name (for a flag that takes a method name, such as `COMPlus_JitDump`) is:
+Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
+* A method set string is a space-separated list of patterns. Patterns can arbitrarily contain both '*' (match any characters) and '?' (match any 1 character).
+* The string matched against depends on characters in the pattern:
+  + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
+  + If the pattern contains a '(' character, the string matched against is suffixed by the signature
+  + If the class name (part before colon) contains a '[', the class contains its generic instantiation
+  + If the method name (part between colon and '(') contains a '[', the method contains its generic instantiation
 
+In particular, the matching is done against strings of the following format which coincides with how the JIT displays method signatures (so these can be copy pasted into the environment variable).
 ```
-[[<Namespace>.]<ClassName>::]<MethodName>[([<types>)]
-```
-
-For example
-
-```
-System.Object::ToString(System.Object)
-```
-
-The namespace, class name, and argument types are optional, and if they are not present, default to a wildcard. Thus stating:
-
-```
-Main
+[ClassName[Instantiation]:]MethodName[Instantiation][(<types>)]
 ```
 
-will match all methods named Main from any class and any number of arguments.
+For example, consider the following:
+```csharp
+namespace MyNamespace
+{
+    public class C<T1, T2>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void M<T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        {
+        }
+    }
+}
 
-`<types>` is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, `Main(Foo, Bar)` and `Main(int, int)` will both match any main method with two arguments.
+new C<sbyte, string>().M<int, object>(default, default, default, default); // compilation 1
+new C<int, int>().M<int, int>(default, default, default, default); // compilation 2
+```
 
-The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In particular `*` by itself indicates every method.
+The full names of these instantiations are the following, as printed by `COMPlus_JitDisasmSummary`:
+
+```
+MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,int,System.__Canon)
+MyNamespace.C`2[int,int]:M[int,int](int,int,int,int)
+```
+Note that ``C`2`` here is the name put into metadata by Roslyn; the suffix is not added by RyuJIT.
+For Powershell users keep in mind that backtick is the escape character and itself has to be escaped via double backtick.
+
+The following strings will match both compilations:
+```
+M
+*C`2:M
+*C`2[*]:M[*](*)
+MyNamespace.C`2:M
+```
+
+The following match only the first compilation:
+```
+M[int,*Canon]
+MyNamespace.C`2[byte,*]:M
+M(*Canon)
+```
 
 ## Useful COMPlus variables
 

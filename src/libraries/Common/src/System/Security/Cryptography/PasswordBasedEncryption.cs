@@ -393,12 +393,6 @@ namespace System.Security.Cryptography
                         Debug.Assert(pwdTmpBytes!.Length == 0);
                     }
 
-                    if (!Helpers.HasHMAC)
-                    {
-                        throw new CryptographicException(
-                            SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
-                    }
-
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
                     {
                         derivedKey = pbkdf2.GetBytes(keySizeBytes);
@@ -539,8 +533,6 @@ namespace System.Security.Cryptography
 
             Rfc2898DeriveBytes pbkdf2 =
                 OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out int? requestedKeyLength);
-
-            Debug.Assert(Helpers.HasHMAC);
 
             using (pbkdf2)
             {
@@ -775,12 +767,6 @@ namespace System.Security.Cryptography
             if (!pbkdf2Params.Prf.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            if (!Helpers.HasHMAC)
-            {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
             }
 
             int iterationCount = NormalizeIterationCount(pbkdf2Params.IterationCount);

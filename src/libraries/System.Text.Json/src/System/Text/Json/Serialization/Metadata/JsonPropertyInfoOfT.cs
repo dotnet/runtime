@@ -10,8 +10,6 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
-    /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
-    /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
         private Func<object, T>? _typedGet;
@@ -37,8 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected override void SetGetter(Delegate? getter)
         {
             Debug.Assert(getter is null or Func<object, object?> or Func<object, T>);
-
-            VerifyMutable();
+            Debug.Assert(!IsConfigured);
 
             if (getter is null)
             {
@@ -61,8 +58,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected override void SetSetter(Delegate? setter)
         {
             Debug.Assert(setter is null or Action<object, object?> or Action<object, T>);
-
-            VerifyMutable();
+            Debug.Assert(!IsConfigured);
 
             if (setter is null)
             {
@@ -82,10 +78,50 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        internal new Func<object, T?, bool>? ShouldSerialize
+        {
+            get => _shouldSerializeTyped;
+            set => SetShouldSerialize(value);
+        }
+
+        private Func<object, T?, bool>? _shouldSerializeTyped;
+
+        private protected override void SetShouldSerialize(Delegate? predicate)
+        {
+            Debug.Assert(predicate is null or Func<object, object?, bool> or Func<object, T?, bool>);
+            Debug.Assert(!IsConfigured);
+
+            if (predicate is null)
+            {
+                _shouldSerializeTyped = null;
+                _shouldSerialize = null;
+            }
+            else if (predicate is Func<object, T?, bool> typedPredicate)
+            {
+                _shouldSerializeTyped = typedPredicate;
+                _shouldSerialize = typedPredicate is Func<object, object?, bool> untypedPredicate ? untypedPredicate : (obj, value) => typedPredicate(obj, (T?)value);
+            }
+            else
+            {
+                Func<object, object?, bool> untypedPredicate = (Func<object, object?, bool>)predicate;
+                _shouldSerializeTyped = (obj, value) => untypedPredicate(obj, value);
+                _shouldSerialize = untypedPredicate;
+            }
+        }
+
         internal override object? DefaultValue => default(T);
         internal override bool PropertyTypeCanBeNull => default(T) is null;
 
-        internal JsonConverter<T> TypedEffectiveConverter { get; private set; } = null!;
+        internal new JsonConverter<T> EffectiveConverter
+        {
+            get
+            {
+                Debug.Assert(_typedEffectiveConverter != null);
+                return _typedEffectiveConverter;
+            }
+        }
+
+        private JsonConverter<T>? _typedEffectiveConverter;
 
         private protected override void DetermineMemberAccessors(MemberInfo memberInfo)
         {
@@ -94,43 +130,37 @@ namespace System.Text.Json.Serialization.Metadata
             switch (memberInfo)
             {
                 case PropertyInfo propertyInfo:
+                    bool useNonPublicAccessors = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+
+                    MethodInfo? getMethod = propertyInfo.GetMethod;
+                    if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                     {
-                        bool useNonPublicAccessors = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
-
-                        MethodInfo? getMethod = propertyInfo.GetMethod;
-                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                        {
-                            Get = Options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                        }
-
-                        MethodInfo? setMethod = propertyInfo.SetMethod;
-                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                        {
-                            Set = Options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                        }
-
-                        break;
+                        Get = JsonSerializerOptions.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
                     }
+
+                    MethodInfo? setMethod = propertyInfo.SetMethod;
+                    if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                    {
+                        Set = JsonSerializerOptions.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                    }
+
+                    break;
 
                 case FieldInfo fieldInfo:
+                    Debug.Assert(fieldInfo.IsPublic);
+
+                    Get = JsonSerializerOptions.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                    if (!fieldInfo.IsInitOnly)
                     {
-                        Debug.Assert(fieldInfo.IsPublic);
-
-                        Get = Options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
-
-                        if (!fieldInfo.IsInitOnly)
-                        {
-                            Set = Options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
-                        }
-
-                        break;
+                        Set = JsonSerializerOptions.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
                     }
+
+                    break;
 
                 default:
-                    {
-                        Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
-                        break;
-                    }
+                    Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
+                    break;
             }
         }
 
@@ -165,34 +195,31 @@ namespace System.Text.Json.Serialization.Metadata
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             IsExtensionData = propertyInfo.IsExtensionData;
-            DefaultConverterForType = propertyInfo.PropertyTypeInfo?.Converter as JsonConverter<T>;
             CustomConverter = propertyInfo.Converter;
 
-            IgnoreCondition = propertyInfo.IgnoreCondition;
-            if (IgnoreCondition != JsonIgnoreCondition.Always)
+            if (propertyInfo.IgnoreCondition != JsonIgnoreCondition.Always)
             {
                 Get = propertyInfo.Getter!;
                 Set = propertyInfo.Setter;
             }
 
+            IgnoreCondition = propertyInfo.IgnoreCondition;
             JsonTypeInfo = propertyInfo.PropertyTypeInfo;
             NumberHandling = propertyInfo.NumberHandling;
         }
 
-        private protected override void DetermineEffectiveConverter()
+        private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
         {
-            JsonConverter? customConverter = CustomConverter;
-            if (customConverter != null)
-            {
-                customConverter = Options.ExpandConverterFactory(customConverter, PropertyType);
-            }
+            Debug.Assert(jsonTypeInfo is JsonTypeInfo<T>);
 
-            JsonConverter converter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
-            TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
-            ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
+            JsonConverter<T> converter =
+                Options.ExpandConverterFactory(CustomConverter, PropertyType) // Expand any property-level custom converters.
+                ?.CreateCastingConverter<T>()                                 // Cast to JsonConverter<T>, potentially with wrapping.
+                ?? ((JsonTypeInfo<T>)jsonTypeInfo).EffectiveConverter;        // Fall back to the effective converter for the type.
+
+            _effectiveConverter = converter;
+            _typedEffectiveConverter = converter;
         }
-
-        internal override JsonConverter EffectiveConverter => TypedEffectiveConverter;
 
         internal override object? GetValueAsObject(object obj)
         {
@@ -213,13 +240,13 @@ namespace System.Text.Json.Serialization.Metadata
 #if NETCOREAPP
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
-                !TypedEffectiveConverter.IsValueType &&
+                !EffectiveConverter.IsValueType &&
 #endif
                 Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                 value is not null &&
                 !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
-                ConverterStrategy != ConverterStrategy.Value &&
+                EffectiveConverter.ConverterStrategy != ConverterStrategy.Value &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.
@@ -229,23 +256,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IgnoreDefaultValuesOnWrite)
             {
-                if (default(T) is null)
+                // Fast path `ShouldSerialize` check when using JsonIgnoreCondition.WhenWritingNull/Default configuration
+                if (IsDefaultValue(value))
                 {
-                    if (value is null)
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    if (EqualityComparer<T>.Default.Equals(default, value))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
-
-            if (ShouldSerialize?.Invoke(obj, value) == false)
+            else if (ShouldSerialize?.Invoke(obj, value) == false)
             {
                 // We return true here.
                 // False means that there is not enough data.
@@ -256,7 +273,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(PropertyTypeCanBeNull);
 
-                if (TypedEffectiveConverter.HandleNullOnWrite)
+                if (EffectiveConverter.HandleNullOnWrite)
                 {
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
@@ -265,10 +282,10 @@ namespace System.Text.Json.Serialization.Metadata
                     }
 
                     int originalDepth = writer.CurrentDepth;
-                    TypedEffectiveConverter.Write(writer, value, Options);
+                    EffectiveConverter.Write(writer, value, Options);
                     if (originalDepth != writer.CurrentDepth)
                     {
-                        ThrowHelper.ThrowJsonException_SerializationConverterWrite(TypedEffectiveConverter);
+                        ThrowHelper.ThrowJsonException_SerializationConverterWrite(EffectiveConverter);
                     }
                 }
                 else
@@ -286,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
                     writer.WritePropertyNameSection(EscapedNameSection);
                 }
 
-                return TypedEffectiveConverter.TryWrite(writer, value, Options, ref state);
+                return EffectiveConverter.TryWrite(writer, value, Options, ref state);
             }
         }
 
@@ -308,55 +325,58 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                success = TypedEffectiveConverter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
+                success = EffectiveConverter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 
             return success;
         }
 
-        internal override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal override bool ReadJsonAndSetMember(object obj, scoped ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
 
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !TypedEffectiveConverter.HandleNullOnRead && !state.IsContinuation)
+            if (isNullToken && !EffectiveConverter.HandleNullOnRead && !state.IsContinuation)
             {
                 if (default(T) is not null)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypedEffectiveConverter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.TypeToConvert);
                 }
 
-                if (!IgnoreDefaultValuesOnRead)
+                if (!IgnoreNullTokensOnRead)
                 {
                     T? value = default;
                     Set!(obj, value!);
                 }
 
                 success = true;
+                state.Current.MarkRequiredPropertyAsRead(this);
             }
-            else if (TypedEffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            else if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
 
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || default(T) is not null)
+                if (!isNullToken || !IgnoreNullTokensOnRead || default(T) is not null)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T? fastValue = TypedEffectiveConverter.Read(ref reader, PropertyType, Options);
+                    T? fastValue = EffectiveConverter.Read(ref reader, PropertyType, Options);
                     Set!(obj, fastValue!);
                 }
 
                 success = true;
+                state.Current.MarkRequiredPropertyAsRead(this);
             }
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || default(T) is not null || state.IsContinuation)
+                if (!isNullToken || !IgnoreNullTokensOnRead || default(T) is not null || state.IsContinuation)
                 {
-                    success = TypedEffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? value);
+                    success = EffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? value);
                     if (success)
                     {
                         Set!(obj, value!);
+                        state.Current.MarkRequiredPropertyAsRead(this);
                     }
                 }
             }
@@ -364,15 +384,15 @@ namespace System.Text.Json.Serialization.Metadata
             return success;
         }
 
-        internal override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal override bool ReadJsonAsObject(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !TypedEffectiveConverter.HandleNullOnRead && !state.IsContinuation)
+            if (isNullToken && !EffectiveConverter.HandleNullOnRead && !state.IsContinuation)
             {
                 if (default(T) is not null)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypedEffectiveConverter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.TypeToConvert);
                 }
 
                 value = default(T);
@@ -381,17 +401,17 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (TypedEffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // CanUseDirectReadOrWrite == false when using streams
                     Debug.Assert(!state.IsContinuation);
 
-                    value = TypedEffectiveConverter.Read(ref reader, PropertyType, Options);
+                    value = EffectiveConverter.Read(ref reader, PropertyType, Options);
                     success = true;
                 }
                 else
                 {
-                    success = TypedEffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? typedValue);
+                    success = EffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? typedValue);
                     value = typedValue;
                 }
             }
@@ -399,47 +419,54 @@ namespace System.Text.Json.Serialization.Metadata
             return success;
         }
 
-        internal override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
-        {
-            Debug.Assert(HasSetter);
-            T typedValue = (T)extensionDict!;
-            Set!(obj, typedValue);
-        }
-
-        private protected override Func<object, object?, bool> GetShouldSerializeForIgnoreCondition(JsonIgnoreCondition ignoreCondition)
+        private protected override void ConfigureIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
         {
             switch (ignoreCondition)
             {
-                case JsonIgnoreCondition.Always: return ShouldSerializeIgnoreConditionAlways;
-                case JsonIgnoreCondition.Never: return ShouldSerializeIgnoreConditionNever;
-                case JsonIgnoreCondition.WhenWritingNull:
-                    if (!PropertyTypeCanBeNull)
-                    {
-                        return ShouldSerializeIgnoreConditionNever;
-                    }
+                case null:
+                    break;
 
-                    goto case JsonIgnoreCondition.WhenWritingDefault;
-                case JsonIgnoreCondition.WhenWritingDefault:
+                case JsonIgnoreCondition.Never:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionNever;
+                    break;
+
+                case JsonIgnoreCondition.Always:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionAlways;
+                    break;
+
+                case JsonIgnoreCondition.WhenWritingNull:
+                    if (PropertyTypeCanBeNull)
                     {
-                        return ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert;
+                        ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
+                        IgnoreDefaultValuesOnWrite = true;
                     }
+                    else
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(MemberName!, DeclaringType);
+                    }
+                    break;
+
+                case JsonIgnoreCondition.WhenWritingDefault:
+                    ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
+                    IgnoreDefaultValuesOnWrite = true;
+                    break;
+
                 default:
                     Debug.Fail($"Unknown value of JsonIgnoreCondition '{ignoreCondition}'");
-                    return null!;
+                    break;
+            }
+
+            static bool ShouldSerializeIgnoreConditionNever(object _, T? value) => true;
+            static bool ShouldSerializeIgnoreConditionAlways(object _, T? value) => false;
+            static bool ShouldSerializeIgnoreWhenWritingDefault(object _, T? value)
+            {
+                return default(T) is null ? value is not null : !EqualityComparer<T>.Default.Equals(default, value);
             }
         }
 
-        private static bool ShouldSerializeIgnoreConditionAlways(object obj, object? value) => false;
-        private static bool ShouldSerializeIgnoreConditionNever(object obj, object? value) => true;
-        private static bool ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert(object obj, object? value)
+        private static bool IsDefaultValue(T? value)
         {
-            if (value == null)
-            {
-                return false;
-            }
-
-            T typedValue = (T)value;
-            return !EqualityComparer<T>.Default.Equals(default, typedValue);
+            return default(T) is null ? value is null : EqualityComparer<T>.Default.Equals(default, value);
         }
     }
 }

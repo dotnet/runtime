@@ -15,7 +15,9 @@
 #include "pal_icushim_internal_android.h"
 #else
 
+#if !defined(LOCAL_BUILD)
 #define U_DISABLE_RENAMING 1
+#endif
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.

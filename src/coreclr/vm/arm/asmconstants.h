@@ -22,7 +22,7 @@
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond)
 #endif
 
-// Some contants are different in _DEBUG builds.  This macro factors out ifdefs from below.
+// Some constants are different in _DEBUG builds.  This macro factors out ifdefs from below.
 #ifdef _DEBUG
 #define DBG_FRE(dbg,fre) dbg
 #else
@@ -122,9 +122,6 @@ ASMCONSTANTS_C_ASSERT(MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags))
 ASMCONSTANTS_C_ASSERT(MethodDesc__mdcClassification == mdcClassification)
 
 #ifdef FEATURE_COMINTEROP
-
-#define MethodDesc__mcComInterop 0x6
-ASMCONSTANTS_C_ASSERT(MethodDesc__mcComInterop == mcComInterop)
 
 #define Stub__m_pCode DBG_FRE(0x10, 0x0c)
 ASMCONSTANTS_C_ASSERT(Stub__m_pCode == sizeof(Stub))

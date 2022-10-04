@@ -39,7 +39,7 @@ namespace System
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
                 if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitve, field.Name));
+                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitive, field.Name));
 
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr);

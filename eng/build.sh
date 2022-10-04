@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, ppc64le or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -26,11 +26,14 @@ usage()
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
   echo "  --help (-h)                     Print help and exit."
+  echo "  --hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
+  echo "                                  [Default: Debug]"
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
   echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -56,14 +59,14 @@ usage()
   echo "  --restore (-r)             Restore dependencies."
   echo "  --sign                     Sign build outputs."
   echo "  --test (-t)                Incrementally builds and runs tests."
-  echo "                             Use in conjuction with --testnobuild to only run tests."
+  echo "                             Use in conjunction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net7.0 or net48."
-  echo "                             [Default: net7.0]"
+  echo "  --framework (-f)           Build framework: net8.0 or net48."
+  echo "                             [Default: net8.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -206,12 +209,12 @@ while [[ $# > 0 ]]; do
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armv6|armel|arm64|loongarch64|s390x|ppc64le|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|riscv64|s390x|ppc64le|wasm)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, ppc64le and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le and wasm."
           exit 1
           ;;
       esac
@@ -375,9 +378,35 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -hostconfiguration|-hc)
+      if [ -z ${2+x} ]; then
+        echo "No host configuration supplied. See help (--help) for supported host configurations." 1>&2
+        exit 1
+      fi
+      passedHostConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      case "$passedHostConf" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedHostConf:0:1})${passedHostConf:1}"
+          ;;
+        *)
+          echo "Unsupported host configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:HostConfiguration=$val"
+      shift 2
+      ;;
+
      -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
+      shift 1
+      ;;
+
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
       shift 1
       ;;
 
@@ -400,6 +429,15 @@ while [[ $# > 0 ]]; do
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
       arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
+      ;;
+
+     -outputrid)
+      if [ -z ${2+x} ]; then
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      shift 2
       ;;
 
      -portablebuild)

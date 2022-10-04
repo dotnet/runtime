@@ -70,12 +70,29 @@ namespace System.Net.Test.Common
             {
                 store.Open(OpenFlags.ReadOnly);
 
-                X509Certificate2Collection certs =
-                    store.Certificates.Find(X509FindType.FindByThumbprint, CARootThumbprint, false);
-
-                if (certs.Count == 1)
+                X509Certificate2Collection? certs = null;
+                X509Certificate2Collection? found = null;
+                try
                 {
-                    return true;
+                    certs = store.Certificates;
+                    found = certs.Find(X509FindType.FindByThumbprint, CARootThumbprint, false);
+
+                    if (found.Count == 1)
+                    {
+                        return true;
+                    }
+                }
+                finally
+                {
+                    if (found != null)
+                    {
+                        foreach (X509Certificate2 c in found) c.Dispose();
+                    }
+
+                    if (certs != null)
+                    {
+                        foreach (X509Certificate2 c in certs) c.Dispose();
+                    }
                 }
             }
 

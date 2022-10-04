@@ -8,7 +8,7 @@
 ** Purpose: Positive test the InterlockedExchangePointer API.
 **          Call InterlockedExchangePointer to exchange a pair of
 **          value
-**          
+**
 **
 **
 **============================================================*/
@@ -22,7 +22,7 @@ PALTEST(miscellaneous_InterlockedExchangePointer_test1_paltest_interlockedexchan
     int *pOldValue = &i1;
     int *pNewValue = &i2;
     PVOID pReturnValue;
-   
+
     /*Initialize the PAL environment*/
     err = PAL_Initialize(argc, argv);
     if(0 != err)
@@ -36,14 +36,14 @@ PALTEST(miscellaneous_InterlockedExchangePointer_test1_paltest_interlockedexchan
       Testing
       =======
     */
-        
+
     pReturnValue = InterlockedExchangePointer((PVOID)&pOldValue,
                                      (PVOID)pNewValue);
     /*check the returned value*/
     if(*(int *)pReturnValue != i1)
     {
         Fail("\nFailed to call InterlockedExchangePointer API, "
-                "return pointer does not point to the origional value\n");
+                "return pointer does not point to the original value\n");
     }
 
     /*check the exchanged value*/

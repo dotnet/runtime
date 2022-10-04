@@ -224,7 +224,7 @@ FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 {
     FCALL_CONTRACT;
 
-    // Delegate error handling to managed side (it will throw NullRefenceException)
+    // Delegate error handling to managed side (it will throw NullReferenceException)
     if (pObjUNSAFE == NULL)
         return NULL;
 

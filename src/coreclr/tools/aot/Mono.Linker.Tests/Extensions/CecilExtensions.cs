@@ -118,7 +118,9 @@ namespace Mono.Linker.Tests.Extensions
 		public static PropertyDefinition GetPropertyDefinition (this MethodDefinition method)
 		{
 			if (!method.IsSetter && !method.IsGetter)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentException ();
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 
 			var propertyName = method.Name.Substring (4);
 			return method.DeclaringType.Properties.First (p => p.Name == propertyName);
@@ -132,7 +134,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append ($"<#{method.GenericParameters.Count}>");
 			}
 
-			builder.Append ("(");
+			builder.Append ('(');
 
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++) {
@@ -144,7 +146,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
 			}
 
-			builder.Append (")");
+			builder.Append (')');
 
 			return builder.ToString ();
 		}
@@ -163,206 +165,198 @@ namespace Mono.Linker.Tests.Extensions
 			return null;
 		}
 
-        public static bool IsEventMethod(this MethodDefinition md)
-        {
-            return (md.SemanticsAttributes & MethodSemanticsAttributes.AddOn) != 0 ||
-                (md.SemanticsAttributes & MethodSemanticsAttributes.Fire) != 0 ||
-                (md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
-        }
+		public static bool IsEventMethod (this MethodDefinition md)
+		{
+			return (md.SemanticsAttributes & MethodSemanticsAttributes.AddOn) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.Fire) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
+		}
 
-        public static string GetDisplayName(this MethodReference method)
-        {
-            var sb = new System.Text.StringBuilder();
+		public static string GetDisplayName (this MethodReference method)
+		{
+			var sb = new System.Text.StringBuilder ();
 
-            // Match C# syntaxis name if setter or getter
-            var methodDefinition = method.Resolve();
-            if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter))
-            {
-                // Append property name
-                string name = methodDefinition.IsSetter ? string.Concat(methodDefinition.Name.AsSpan(4), ".set") : string.Concat(methodDefinition.Name.AsSpan(4), ".get");
-                sb.Append(name);
-                // Insert declaring type name and namespace
-                sb.Insert(0, '.').Insert(0, method.DeclaringType?.GetDisplayName());
-                return sb.ToString();
-            }
+			// Match C# syntaxis name if setter or getter
+			var methodDefinition = method.Resolve ();
+			if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter)) {
+				// Append property name
+				string name = GetPropertyNameFromAccessorName (methodDefinition.Name, methodDefinition.IsSetter);
+				sb.Append (name);
+				// Insert declaring type name and namespace
+				sb.Insert (0, '.').Insert (0, method.DeclaringType?.GetDisplayName ());
+				return sb.ToString ();
+			}
 
-            if (methodDefinition != null && methodDefinition.IsEventMethod())
-            {
-                // Append event name
-                string name = methodDefinition.SemanticsAttributes switch
-                {
-                    MethodSemanticsAttributes.AddOn => string.Concat(methodDefinition.Name.AsSpan(4), ".add"),
-                    MethodSemanticsAttributes.RemoveOn => string.Concat(methodDefinition.Name.AsSpan(7), ".remove"),
-                    MethodSemanticsAttributes.Fire => string.Concat(methodDefinition.Name.AsSpan(6), ".raise"),
-                    _ => throw new NotSupportedException(),
-                };
-                sb.Append(name);
-                // Insert declaring type name and namespace
-                sb.Insert(0, '.').Insert(0, method.DeclaringType.GetDisplayName());
-                return sb.ToString();
-            }
+			if (methodDefinition != null && methodDefinition.IsEventMethod ()) {
+				// Append event name
+				string name = methodDefinition.SemanticsAttributes switch {
+					MethodSemanticsAttributes.AddOn => string.Concat (methodDefinition.Name.AsSpan (4), ".add"),
+					MethodSemanticsAttributes.RemoveOn => string.Concat (methodDefinition.Name.AsSpan (7), ".remove"),
+					MethodSemanticsAttributes.Fire => string.Concat (methodDefinition.Name.AsSpan (6), ".raise"),
+					_ => throw new NotSupportedException (),
+				};
+				sb.Append (name);
+				// Insert declaring type name and namespace
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+				return sb.ToString ();
+			}
 
-            // Append parameters
-            sb.Append("(");
-            if (method.HasParameters)
-            {
-                for (int i = 0; i < method.Parameters.Count - 1; i++)
-                    sb.Append(method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace()).Append(", ");
+			// Append parameters
+			sb.Append ('(');
+			if (method.HasParameters) {
+				for (int i = 0; i < method.Parameters.Count - 1; i++)
+					sb.Append (method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace ()).Append (", ");
 
-                sb.Append(method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayNameWithoutNamespace());
-            }
+				sb.Append (method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayNameWithoutNamespace ());
+			}
 
-            sb.Append(")");
+			sb.Append (')');
 
-            // Insert generic parameters
-            if (method.HasGenericParameters)
-            {
-                PrependGenericParameters(method.GenericParameters, sb);
-            }
+			// Insert generic parameters
+			if (method.HasGenericParameters) {
+				PrependGenericParameters (method.GenericParameters, sb);
+			}
 
-            // Insert method name
-            if (method.Name == ".ctor")
-                sb.Insert(0, method.DeclaringType.Name);
-            else
-                sb.Insert(0, method.Name);
+			// Insert method name
+			if (method.Name == ".ctor")
+				sb.Insert (0, method.DeclaringType.Name);
+			else
+				sb.Insert (0, method.Name);
 
-            // Insert declaring type name and namespace
-            if (method.DeclaringType != null)
-                sb.Insert(0, '.').Insert(0, method.DeclaringType.GetDisplayName());
+			// Insert declaring type name and namespace
+			if (method.DeclaringType != null)
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
 
-            return sb.ToString();
-        }
+			return sb.ToString ();
+		}
 
-        public static string GetDisplayName(this TypeReference type)
-        {
-            var builder = GetDisplayNameWithoutNamespace(type);
-            var namespaceDisplayName = type.GetNamespaceDisplayName();
-            if (!string.IsNullOrEmpty(namespaceDisplayName))
-            {
-                builder.Insert(0, ".");
-                builder.Insert(0, namespaceDisplayName);
-            }
+		private static string GetPropertyNameFromAccessorName (string methodName, bool isSetter) =>
+			isSetter ?
+			string.Concat (methodName.StartsWith ("set_") ? methodName.AsSpan (4) : methodName.Replace (".set_", "."), ".set") :
+			string.Concat (methodName.StartsWith ("get_") ? methodName.AsSpan (4) : methodName.Replace (".get_", "."), ".get");
 
-            return builder.ToString();
-        }
+		public static string GetDisplayName (this TypeReference type)
+		{
+			var builder = GetDisplayNameWithoutNamespace (type);
+			var namespaceDisplayName = type.GetNamespaceDisplayName ();
+			if (!string.IsNullOrEmpty (namespaceDisplayName)) {
+				builder.Insert (0, ".");
+				builder.Insert (0, namespaceDisplayName);
+			}
 
-        public static string GetDisplayName(this FieldReference field)
-        {
-            var builder = new StringBuilder();
-            if (field.DeclaringType != null)
-            {
-                builder.Append(field.DeclaringType.GetDisplayName());
-                builder.Append(".");
-            }
+			return builder.ToString ();
+		}
 
-            builder.Append(field.Name);
+		public static string GetDisplayName (this FieldReference field)
+		{
+			var builder = new StringBuilder ();
+			if (field.DeclaringType != null) {
+				builder.Append (field.DeclaringType.GetDisplayName ());
+				builder.Append ('.');
+			}
 
-            return builder.ToString();
-        }
+			builder.Append (field.Name);
 
-        public static string GetNamespaceDisplayName(this MemberReference member)
-        {
-            var type = member is TypeReference typeReference ? typeReference : member.DeclaringType;
-            while (type.DeclaringType != null)
-                type = type.DeclaringType;
+			return builder.ToString ();
+		}
 
-            return type.Namespace;
-        }
+		public static string GetNamespaceDisplayName (this MemberReference member)
+		{
+			var type = member is TypeReference typeReference ? typeReference : member.DeclaringType;
+			while (type.DeclaringType != null)
+				type = type.DeclaringType;
 
-        public static StringBuilder GetDisplayNameWithoutNamespace(this TypeReference type)
-        {
-            var sb = new StringBuilder();
-            if (type == null)
-                return sb;
+			return type.Namespace;
+		}
 
-            Stack<TypeReference>? genericArguments = null;
-            while (true)
-            {
-                switch (type)
-                {
-                    case ArrayType arrayType:
-                        AppendArrayType(arrayType, sb);
-                        break;
-                    case GenericInstanceType genericInstanceType:
-                        genericArguments = new Stack<TypeReference>(genericInstanceType.GenericArguments);
-                        type = genericInstanceType.ElementType;
-                        continue;
-                    default:
-                        if (type.HasGenericParameters)
-                        {
-                            int genericParametersCount = type.GenericParameters.Count;
-                            int declaringTypeGenericParametersCount = type.DeclaringType?.GenericParameters?.Count ?? 0;
+		public static StringBuilder GetDisplayNameWithoutNamespace (this TypeReference type)
+		{
+			var sb = new StringBuilder ();
+			if (type == null)
+				return sb;
 
-                            string simpleName;
-                            if (genericParametersCount > declaringTypeGenericParametersCount)
-                            {
-                                if (genericArguments?.Count > 0)
-                                    PrependGenericArguments(genericArguments, genericParametersCount - declaringTypeGenericParametersCount, sb);
-                                else
-                                    PrependGenericParameters(type.GenericParameters.Skip(declaringTypeGenericParametersCount).ToList(), sb);
+			Stack<TypeReference>? genericArguments = null;
+			while (true) {
+				switch (type) {
+				case ArrayType arrayType:
+					AppendArrayType (arrayType, sb);
+					break;
+				case GenericInstanceType genericInstanceType:
+					genericArguments = new Stack<TypeReference> (genericInstanceType.GenericArguments);
+					type = genericInstanceType.ElementType;
+					continue;
+				default:
+					if (type.HasGenericParameters) {
+						int genericParametersCount = type.GenericParameters.Count;
+						int declaringTypeGenericParametersCount = type.DeclaringType?.GenericParameters?.Count ?? 0;
 
-                                int explicitArityIndex = type.Name.IndexOf('`');
-                                simpleName = explicitArityIndex != -1 ? type.Name.Substring(0, explicitArityIndex) : type.Name;
-                            }
-                            else
-                                simpleName = type.Name;
+						string simpleName;
+						if (genericParametersCount > declaringTypeGenericParametersCount) {
+							if (genericArguments?.Count > 0)
+								PrependGenericArguments (genericArguments, genericParametersCount - declaringTypeGenericParametersCount, sb);
+							else
+								PrependGenericParameters (type.GenericParameters.Skip (declaringTypeGenericParametersCount).ToList (), sb);
 
-                            sb.Insert(0, simpleName);
-                            break;
-                        }
+							int explicitArityIndex = type.Name.IndexOf ('`');
+							simpleName = explicitArityIndex != -1 ? type.Name.Substring (0, explicitArityIndex) : type.Name;
+						} else
+							simpleName = type.Name;
 
-                        sb.Insert(0, type.Name);
-                        break;
-                }
+						sb.Insert (0, simpleName);
+						break;
+					}
 
-                if (type.DeclaringType is not TypeReference declaringType)
-                    break;
+					sb.Insert (0, type.Name);
+					break;
+				}
 
-                type = declaringType;
+				if (type.DeclaringType is not TypeReference declaringType)
+					break;
 
-                sb.Insert(0, '.');
-            }
+				type = declaringType;
 
-            return sb;
-        }
+				sb.Insert (0, '.');
+			}
 
-        public static void PrependGenericParameters(IList<GenericParameter> genericParameters, StringBuilder sb)
-        {
-            sb.Insert(0, '>').Insert(0, genericParameters[genericParameters.Count - 1]);
-            for (int i = genericParameters.Count - 2; i >= 0; i--)
-                sb.Insert(0, ',').Insert(0, genericParameters[i]);
+			return sb;
+		}
 
-            sb.Insert(0, '<');
-        }
+		public static void PrependGenericParameters (IList<GenericParameter> genericParameters, StringBuilder sb)
+		{
+			sb.Insert (0, '>').Insert (0, genericParameters[genericParameters.Count - 1]);
+			for (int i = genericParameters.Count - 2; i >= 0; i--)
+				sb.Insert (0, ',').Insert (0, genericParameters[i]);
 
-        static void PrependGenericArguments(Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
-        {
-            sb.Insert(0, '>').Insert(0, genericArguments.Pop().GetDisplayNameWithoutNamespace().ToString());
-            while (--argumentsToTake > 0)
-                sb.Insert(0, ',').Insert(0, genericArguments.Pop().GetDisplayNameWithoutNamespace().ToString());
+			sb.Insert (0, '<');
+		}
 
-            sb.Insert(0, '<');
-        }
+		private static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
+		{
+			sb.Insert (0, '>').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
+			while (--argumentsToTake > 0)
+				sb.Insert (0, ',').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
 
-        static void AppendArrayType(ArrayType arrayType, StringBuilder sb)
-        {
-            void parseArrayDimensions(ArrayType at)
-            {
-                sb.Append('[');
-                for (int i = 0; i < at.Dimensions.Count - 1; i++)
-                    sb.Append(',');
+			sb.Insert (0, '<');
+		}
 
-                sb.Append(']');
-            }
+		private static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
+		{
+			void parseArrayDimensions (ArrayType at)
+			{
+				sb.Append ('[');
+				for (int i = 0; i < at.Dimensions.Count - 1; i++)
+					sb.Append (',');
 
-            sb.Append(arrayType.Name.AsSpan(0, arrayType.Name.IndexOf('[')));
-            parseArrayDimensions(arrayType);
-            var element = arrayType.ElementType as ArrayType;
-            while (element != null)
-            {
-                parseArrayDimensions(element);
-                element = element.ElementType as ArrayType;
-            }
-        }
-    }
+				sb.Append (']');
+			}
+
+			sb.Append (arrayType.Name.AsSpan (0, arrayType.Name.IndexOf ('[')));
+			parseArrayDimensions (arrayType);
+			var element = arrayType.ElementType as ArrayType;
+			while (element != null) {
+				parseArrayDimensions (element);
+				element = element.ElementType as ArrayType;
+			}
+		}
+	}
 }

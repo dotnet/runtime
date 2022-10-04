@@ -98,10 +98,7 @@ namespace System.Drawing.Imaging
         {
             foreach (EncoderParameter p in _param)
             {
-                if (p != null)
-                {
-                    p.Dispose();
-                }
+                p?.Dispose();
             }
             _param = null!;
         }

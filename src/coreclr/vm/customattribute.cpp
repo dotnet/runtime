@@ -136,7 +136,8 @@ CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
     WRAPPER_NO_CONTRACT;
 
     CustomAttributeManagedValues gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.string = NULL;
+    gc.array = NULL;
     GCPROTECT_BEGIN(gc)
     {
         CorSerializationType type = pCaVal->type.tag;
@@ -971,7 +972,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
                 _ASSERTE(!bObjectCreated);
 
-                *value = pMTValue->Box((void*)ArgSlotEndianessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
+                *value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
         }
 
         *ppBlobStart = pBlob;

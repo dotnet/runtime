@@ -225,8 +225,7 @@ namespace System.Net.Http.Functional.Tests
         {
             const string Host = "localhost:1234";
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
@@ -798,6 +797,48 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task ConnectTimeout_NotWrappedInMultipleTimeoutExceptions()
+        {
+            using var handler = CreateHttpClientHandler();
+
+            SocketsHttpHandler socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            socketsHttpHandler.ConnectTimeout = TimeSpan.FromMilliseconds(1);
+            socketsHttpHandler.ConnectCallback = async (context, cancellation) =>
+            {
+                await Task.Delay(-1, cancellation);
+                throw new UnreachableException();
+            };
+
+            using var client = CreateHttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            TaskCanceledException e = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            TimeoutException connectTimeoutException = Assert.IsType<TimeoutException>(e.InnerException);
+            Assert.Contains("ConnectTimeout", connectTimeoutException.Message);
+
+            Assert.Null(connectTimeoutException.InnerException);
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
+        }
+
+        [Fact]
+        public async Task UnknownOperationCanceledException_NotWrappedInATimeoutException()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((request, cancellation) =>
+            {
+                throw new OperationCanceledException("Foo");
+            }));
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            OperationCanceledException e = await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            Assert.Null(e.InnerException);
+            Assert.Equal("Foo", e.Message);
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
+        }
+
         [Fact]
         public void DefaultProxy_SetNull_Throws()
         {
@@ -1188,7 +1229,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1200,11 +1240,7 @@ namespace System.Net.Http.Functional.Tests
                         VersionPolicy = versionPolicy
                     };
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    if (useSsl)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                    }
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
                     using HttpClient client = CreateHttpClient(handler);
                     client.Timeout = TimeSpan.FromSeconds(30);
 

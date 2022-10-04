@@ -46,3 +46,6 @@ run-console:
 
 run-console-node:
 	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)
+
+debug-console-node:
+	cd bin/$(CONFIG)/AppBundle && node --inspect=9222 --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)

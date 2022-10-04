@@ -297,6 +297,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         Result resp = await SendCommand(id, method, args, token);
 
+                        if (!resp.IsOk)
+                        {
+                            SendResponse(id, resp, token);
+                            return true;
+                        }
+
                         context.DebugId = resp.Value["DebugId"]?.ToString();
 
                         if (await IsRuntimeAlreadyReadyAlready(id, token))
@@ -355,37 +361,44 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, resp, token);
                             return true;
                         }
-
-                        string bpid = resp.Value["breakpointId"]?.ToString();
-                        IEnumerable<object> locations = resp.Value["locations"]?.Values<object>();
-                        var request = BreakpointRequest.Parse(bpid, args);
-
-                        // is the store done loading?
-                        bool loaded = context.Source.Task.IsCompleted;
-                        if (!loaded)
+                        try
                         {
-                            // Send and empty response immediately if not
-                            // and register the breakpoint for resolution
-                            context.BreakpointRequests[bpid] = request;
-                            SendResponse(id, resp, token);
+                            string bpid = resp.Value["breakpointId"]?.ToString();
+                            IEnumerable<object> locations = resp.Value["locations"]?.Values<object>();
+                            var request = BreakpointRequest.Parse(bpid, args);
+
+                            // is the store done loading?
+                            bool loaded = context.Source.Task.IsCompleted;
+                            if (!loaded)
+                            {
+                                // Send and empty response immediately if not
+                                // and register the breakpoint for resolution
+                                context.BreakpointRequests[bpid] = request;
+                                SendResponse(id, resp, token);
+                            }
+
+                            if (await IsRuntimeAlreadyReadyAlready(id, token))
+                            {
+                                DebugStore store = await RuntimeReady(id, token);
+
+                                Log("verbose", $"BP req {args}");
+                                await SetBreakpoint(id, store, request, !loaded, false, token);
+                            }
+
+                            if (loaded)
+                            {
+                                // we were already loaded so we should send a response
+                                // with the locations included and register the request
+                                context.BreakpointRequests[bpid] = request;
+                                var result = Result.OkFromObject(request.AsSetBreakpointByUrlResponse(locations));
+                                SendResponse(id, result, token);
+
+                            }
                         }
-
-                        if (await IsRuntimeAlreadyReadyAlready(id, token))
+                        catch (Exception e)
                         {
-                            DebugStore store = await RuntimeReady(id, token);
-
-                            Log("verbose", $"BP req {args}");
-                            await SetBreakpoint(id, store, request, !loaded, false, token);
-                        }
-
-                        if (loaded)
-                        {
-                            // we were already loaded so we should send a response
-                            // with the locations included and register the request
-                            context.BreakpointRequests[bpid] = request;
-                            var result = Result.OkFromObject(request.AsSetBreakpointByUrlResponse(locations));
-                            SendResponse(id, result, token);
-
+                            logger.LogDebug($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}");
+                            SendResponse(id, Result.Err($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}"), token);
                         }
                         return true;
                     }
@@ -504,6 +517,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setDebuggerProperty":
+                    {
+                        foreach (KeyValuePair<string, JToken> property in args)
+                        {
+                            switch (property.Key)
+                            {
+                                case "JustMyCodeStepping":
+                                    SetJustMyCode(id, (bool) property.Value, token);
+                                break;
+                                default:
+                                    logger.LogDebug($"DotnetDebugger.setDebuggerProperty failed for {property.Key} with value {property.Value}");
+                                break;
+                            }
+                        }
+                        return true;
+                    }
                 case "DotnetDebugger.setNextIP":
                     {
                         var loc = SourceLocation.Parse(args?["location"] as JObject);
@@ -550,22 +579,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
-                case "DotnetDebugger.justMyCode":
-                    {
-                        try
-                        {
-                            SetJustMyCode(id, args, token);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogDebug($"DotnetDebugger.justMyCode failed for {id} with args {args}: {ex}");
-                            SendResponse(id,
-                                Result.Exception(new ArgumentException(
-                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
-                                token);
-                        }
-                        return true;
-                    }
             }
 
             return false;
@@ -583,12 +596,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return applyUpdates;
         }
 
-        private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
+        private void SetJustMyCode(MessageId id, bool isEnabled, CancellationToken token)
         {
-            var isEnabled = args["enabled"]?.Value<bool>();
-            if (isEnabled == null)
-                throw new ArgumentException();
-            JustMyCode = isEnabled.Value;
+            JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
         internal async Task<Result> GetMethodLocation(MessageId id, JObject args, CancellationToken token)
@@ -604,10 +614,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             // GetAssemblyByName seems to work on file names
             AssemblyInfo assembly = store.GetAssemblyByName(aname);
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".exe");
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".dll");
+            assembly ??= store.GetAssemblyByName(aname + ".exe");
+            assembly ??= store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
                 return Result.Err($"Assembly '{aname}' not found," +
@@ -742,6 +750,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (JustMyCode)
+                getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try
             {
                 switch (objectId.Scheme)
@@ -754,7 +764,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
-                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -808,8 +818,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             try {
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
-                if (retValue == null)
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -866,7 +875,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var methodId = retDebuggerCmdReader.ReadInt32();
             var method = await context.SdbAgent.GetMethodInfo(methodId, token);
-            if (method == null)
+            if (method == null || method.Info.Source is null)
             {
                 return true;
             }
@@ -1235,7 +1244,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             }
 
-            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs.ToString().TruncateLogMessage()}");
 
             switch (eventName)
             {
@@ -1366,10 +1375,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, msg_id, scopeId, logger);
 
                 JObject retValue = await resolver.Resolve(expression, token);
-                if (retValue == null)
-                {
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
-                }
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
 
                 if (retValue != null)
                 {
@@ -1444,7 +1450,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var assembly_id = await context.SdbAgent.GetAssemblyId(asm_name, token);
             var methodId = await context.SdbAgent.GetMethodIdByToken(assembly_id, method_token, token);
-            var breakpoint_id = await context.SdbAgent.SetBreakpoint(methodId, il_offset, token);
+            //the breakpoint can be invalid because a race condition between the changes already applied on runtime and not applied yet on debugger side
+            var breakpoint_id = await context.SdbAgent.SetBreakpointNoThrow(methodId, il_offset, token);
 
             if (breakpoint_id > 0)
             {
@@ -1534,8 +1541,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
-
-            await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token);
+            var res = await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token, false);
+            if (res.HasError) //it's not a wasm page then the command returns an error
+                return null;
 
             if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
                 await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
@@ -1553,18 +1561,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req)
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req, bool ifNoneFoundThenFindNext = false)
         {
             var comparer = new SourceLocation.LocationComparer();
             // if column is specified the frontend wants the exact matches
             // and will clear the bp if it isn't close enoug
-            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
-                .Distinct(comparer)
-                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
+            var bpLocations = store.FindBreakpointLocations(req, ifNoneFoundThenFindNext);
+            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = bpLocations.Distinct(comparer)
                 .OrderBy(l => l.Column)
                 .GroupBy(l => l.Id);
+            if (ifNoneFoundThenFindNext && !locations.Any())
+            {
+                locations = bpLocations.GroupBy(l => l.Id);
+            }
             return locations;
         }
+
         private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
@@ -1622,12 +1634,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return;
             }
 
-            var locations = GetBPReqLocations(store, req);
+            var locations = GetBPReqLocations(store, req, true);
 
             logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
-
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();
@@ -1717,7 +1728,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!ret)
                 return false;
 
-            var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            var breakpointId = await context.SdbAgent.SetBreakpointNoThrow(scope.Method.DebugId, ilOffset.Offset, token);
+            if (breakpointId == -1)
+                return false;
+
             context.TempBreakpointForSetNextIP = breakpointId;
             await SendResume(sessionId, token);
             return true;

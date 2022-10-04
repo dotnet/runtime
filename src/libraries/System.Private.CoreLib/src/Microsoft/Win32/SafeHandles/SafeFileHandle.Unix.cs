@@ -105,41 +105,15 @@ namespace Microsoft.Win32.SafeHandles
                     throw ex;
                 }
 
-                // If we fail to open the file due to a path not existing, we need to know whether to blame
-                // the file itself or its directory.  If we're creating the file, then we blame the directory,
-                // otherwise we blame the file.
-                //
-                // When opening, we need to align with Windows, which considers a missing path to be
-                // FileNotFound only if the containing directory exists.
-
-                bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                    ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
-
                 if (error.Error == Interop.Error.EISDIR)
                 {
                     error = Interop.Error.EACCES.Info();
                 }
 
-                Interop.CheckIo(
-                    error.Error,
-                    path,
-                    isDirectory);
+                Interop.CheckIo(error.Error, path);
             }
 
             return handle;
-        }
-
-        private static bool DirectoryExists(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
         // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
@@ -336,7 +310,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path);
                 }
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
@@ -367,7 +341,7 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path);
                 }
             }
 
@@ -405,7 +379,7 @@ namespace Microsoft.Win32.SafeHandles
                     return false;
                 }
             }
-            // Enable DeleteOnClose when we've succesfully locked the file.
+            // Enable DeleteOnClose when we've successfully locked the file.
             // On Windows, the locking happens atomically as part of opening the file.
             _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 
@@ -434,7 +408,7 @@ namespace Microsoft.Win32.SafeHandles
                         // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
                         // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
                         // truncated.  Ignore the error in such cases; in all others, throw.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, path);
                     }
                 }
             }

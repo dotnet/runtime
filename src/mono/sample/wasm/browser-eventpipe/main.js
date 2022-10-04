@@ -1,24 +1,7 @@
-import createDotnetRuntime from "./dotnet.js";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-function downloadData(dataURL, filename) {
-    // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
-    const elt = document.createElement('a');
-    elt.download = filename;
-    elt.href = dataURL;
-
-    document.body.appendChild(elt);
-
-    elt.click();
-
-    document.body.removeChild(elt);
-}
-
-function makeTimestamp() {
-    // ISO date string, but with : and . replaced by -
-    const t = new Date();
-    const s = t.toISOString();
-    return s.replace(/[:.]/g, '-');
-}
+import { dotnet, exit } from "./dotnet.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -56,47 +39,37 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        const options = MONO.diagnostics.SessionOptionsBuilder
-            .Empty
-            .setRundownEnabled(false)
-            .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
-            .build();
-        console.log('starting providers', options.providers);
-
-        const eventSession = MONO.diagnostics.createEventPipeSession(options);
-
-        eventSession.start();
-        const ret = await doWork(startWork, stopWork, getIterationsDone);
-        eventSession.stop();
-
-        const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-
-        const blob = eventSession.getTraceBlob();
-        const uri = URL.createObjectURL(blob);
-        downloadData(uri, filename);
+        await doWork(startWork, stopWork, getIterationsDone);
     }
 }
 
+const isTest = (config) => config.environmentVariables["CI_TEST"] === "true";
+async function runTest({ StartAsyncWork, StopWork, GetIterationsDone }) {
+    const result = await doWork(StartAsyncWork, StopWork, GetIterationsDone);
+    const expectedResult = 55; // the default value of `inputN` is 10 (see index.html)
+    return result === expectedResult;
+}
+
 async function main() {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-        return {
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-        }
-    });
+    const { MONO, Module, getAssemblyExports, getConfig } = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
+
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
-    const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
-    const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
-    const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-
+    const exports = await getAssemblyExports("Wasm.Browser.EventPipe.Sample.dll");
 
     const btn = document.getElementById("startWork");
-
     btn.style.backgroundColor = "rgb(192,255,192)";
-    btn.onclick = getOnClickHandler(startWork, stopWork, getIterationsDone);
+    btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 
+    const config = getConfig();
+    if (isTest(config)) {
+        const succeeded = await runTest(exports.Sample.Test);
+        exit(succeeded ? 0 : 1);
+    }
 }
 
 main();

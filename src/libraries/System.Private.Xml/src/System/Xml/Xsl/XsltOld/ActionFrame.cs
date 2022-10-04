@@ -24,13 +24,13 @@ namespace System.Xml.Xsl.XsltOld
         private XPathNodeIterator? _newNodeSet;    // Node set for processing children or other templates
 
         // Variables to store action data between states:
-        private PrefixQName? _calulatedName; // Used in ElementAction and AttributeAction
+        private PrefixQName? _calculatedName; // Used in ElementAction and AttributeAction
         private string? _storedOutput;  // Used in NumberAction, CopyOfAction, ValueOfAction and ProcessingInstructionAction
 
-        internal PrefixQName? CalulatedName
+        internal PrefixQName? CalculatedName
         {
-            get { return _calulatedName; }
-            set { _calulatedName = value; }
+            get { return _calculatedName; }
+            set { _calculatedName = value; }
         }
 
         internal string? StoredOutput

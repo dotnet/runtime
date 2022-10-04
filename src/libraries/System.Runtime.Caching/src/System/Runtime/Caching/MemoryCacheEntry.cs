@@ -261,10 +261,7 @@ namespace System.Runtime.Caching
             {
                 foreach (MemoryCacheEntryChangeMonitor dependent in deps)
                 {
-                    if (dependent != null)
-                    {
-                        dependent.OnCacheEntryReleased();
-                    }
+                    dependent?.OnCacheEntryReleased();
                 }
             }
 

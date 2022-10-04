@@ -145,8 +145,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    if (data._pinnedData == null)
-                        data._pinnedData = new GCHandle[1];
+                    data._pinnedData ??= new GCHandle[1];
 
                     if (!data._pinnedData[0].IsAllocated)
                         data._pinnedData[0] = GCHandle.Alloc(pinData, GCHandleType.Pinned);
@@ -203,8 +202,7 @@ namespace System.Threading
 
             // Get an args object from the per-thread cache.
             ExecutionContextCallbackArgs args = t_executionContextCallbackArgs;
-            if (args == null)
-                args = new ExecutionContextCallbackArgs();
+            args ??= new ExecutionContextCallbackArgs();
 
             t_executionContextCallbackArgs = null;
 

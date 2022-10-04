@@ -1,17 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 using Internal.IL;
-using Internal.Text;
 using Internal.TypeSystem;
-using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.DependencyAnalysis;
 
-using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using CombinedDependencyList=System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,14 +16,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, method, methodIL);
 
-            factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
+            factory.InteropStubManager.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, method);
 
-            if (method.OwningType is MetadataType mdOwningType
-                && mdOwningType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Method in a module with initializer");
-            }
+            if (method.OwningType is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
 
             if (method.IsIntrinsic)
             {
@@ -60,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
 
                                 if (templateDependencies != null)
                                 {
-                                    dependencies = dependencies ?? new DependencyList();
+                                    dependencies ??= new DependencyList();
                                     foreach (TypeDesc templateType in templateDependencies)
                                     {
                                         dependencies.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Generic comparer");

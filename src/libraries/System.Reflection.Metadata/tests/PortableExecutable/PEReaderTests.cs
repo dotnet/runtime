@@ -719,7 +719,7 @@ namespace System.Reflection.PortableExecutable.Tests
                     reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), _ => { throw new BadImageFormatException("Bang!"); }, out pdbProvider, out pdbPath),
                     e => Assert.Equal("Bang!", e.Message));
 
-                // file doesn't exist, fall back to embedded without reporting FileNotFoundExeception
+                // file doesn't exist, fall back to embedded without reporting FileNotFoundException
                 Assert.Throws<BadImageFormatException>(() =>
                     reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), _ => { throw new FileNotFoundException(); }, out pdbProvider, out pdbPath));
 

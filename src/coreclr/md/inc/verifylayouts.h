@@ -5,7 +5,7 @@
 //
 
 //
-// Make sure that layouts of MD data strucutres doesn't change accidentally
+// Make sure that layouts of MD data structures doesn't change accidentally
 //
 //*****************************************************************************
 

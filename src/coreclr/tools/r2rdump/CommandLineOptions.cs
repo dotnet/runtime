@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using System.IO;
 
 namespace R2RDump
@@ -117,7 +115,7 @@ namespace R2RDump
             AddOption(SignatureBinary);
             AddOption(InlineSignatureBinary);
 
-            this.SetHandler<InvocationContext>((InvocationContext context) =>
+            this.SetHandler(context =>
                 context.ExitCode = new R2RDump(new DumpOptions(this, context.ParseResult)).Run());
         }
     }

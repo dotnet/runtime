@@ -899,10 +899,7 @@ namespace System.Xml
                 CheckNCName(name);
 
                 // check text
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
                 if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
@@ -1022,10 +1019,7 @@ namespace System.Xml
         {
             try
             {
-                if (ws == null)
-                {
-                    ws = string.Empty;
-                }
+                ws ??= string.Empty;
                 if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
@@ -1584,10 +1578,7 @@ namespace System.Xml
             else
                 Debug.Fail("State.Attribute == currentState || State.RootLevelAttr == currentState");
 
-            if (_attrValueCache == null)
-            {
-                _attrValueCache = new AttributeValueCache();
-            }
+            _attrValueCache ??= new AttributeValueCache();
         }
 
         private void WriteStartDocumentImpl(XmlStandalone standalone)
@@ -1964,26 +1955,17 @@ namespace System.Xml
                         break;
 
                     case State.PostB64Cont:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.Content;
                         goto Advance;
 
                     case State.PostB64Attr:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.Attribute;
                         goto Advance;
 
                     case State.PostB64RootAttr:
-                        if (_rawWriter != null)
-                        {
-                            _rawWriter.WriteEndBase64();
-                        }
+                        _rawWriter?.WriteEndBase64();
                         _currentState = State.RootLevelAttr;
                         goto Advance;
 
@@ -2028,10 +2010,7 @@ namespace System.Xml
                 }
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
         }
 
         private static string GetStateName(State state)
@@ -2182,10 +2161,7 @@ namespace System.Xml
                 // reached the threshold -> add all attributes to hash table
                 if (_attrCount == MaxAttrDuplWalkCount)
                 {
-                    if (_attrHashTable == null)
-                    {
-                        _attrHashTable = new Dictionary<string, int>();
-                    }
+                    _attrHashTable ??= new Dictionary<string, int>();
                     Debug.Assert(_attrHashTable.Count == 0);
                     for (int i = 0; i < top; i++)
                     {

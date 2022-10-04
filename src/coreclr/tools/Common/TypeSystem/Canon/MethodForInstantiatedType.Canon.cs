@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Implements canonicalization for methods on instantiated types
-    partial class MethodForInstantiatedType
+    public partial class MethodForInstantiatedType
     {
         public override bool IsCanonicalMethod(CanonicalFormKind policy)
         {

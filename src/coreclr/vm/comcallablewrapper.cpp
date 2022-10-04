@@ -43,14 +43,6 @@
 #include "appdomain.inl"
 #include "typestring.h"
 
-// The enum that describes the value of the IDispatchImplAttribute custom attribute.
-enum IDispatchImplType
-{
-    SystemDefinedImpl   = 0,
-    InternalImpl        = 1,
-    CompatibleImpl      = 2
-};
-
 // The enum that describe the value of System.Runtime.InteropServices.CustomQueryInterfaceResult
 // It is the return value of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 enum CustomQueryInterfaceResult
@@ -319,68 +311,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 }
 
 //--------------------------------------------------------------------------
-// Determines if the Compatible IDispatch implementation is required for
-// the specified class.
-//--------------------------------------------------------------------------
-bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    HRESULT             hr;
-    const BYTE *        pVal;
-    ULONG               cbVal;
-    Assembly *          pAssembly = pClass->GetAssembly();
-    IDispatchImplType   DispImplType = SystemDefinedImpl;
-
-    // First check for the IDispatchImplType custom attribute first.
-    hr = pClass->GetCustomAttribute(WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Check to see if the assembly has the IDispatchImplType attribute set.
-    hr = pAssembly->GetCustomAttribute(pAssembly->GetManifestToken(), WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Removed registry key check per reg cleanup bug 45978
-    // Effect: Will return false so code cleanup
-    return false;
-}
-
-//--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
 //
@@ -566,6 +496,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 #else
             *ppofsWriterHolder.GetRW() = ((UINT_PTR)pStub);
 #endif
+            ClrFlushInstructionCache(ppofs, sizeof(UINT_PTR), /* hasCodeExecutedBefore */ true);
 
             // Return the address of the prepad. The prepad will regenerate the hidden parameter and due
             // to the update above will execute the new stub code the second time around.
@@ -672,7 +603,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
         OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
-        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // Force retrieving the handle without using OBJECTREF and under cooperative mode
         // We only need the value in ETW events and it doesn't matter if it is super accurate
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));
@@ -1110,7 +1041,7 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
 
     // Finally, we set the connection point list in the simple wrapper. If
     // no other thread already set it, we set pCPList to NULL to indicate
-    // that ownership has been transfered to the simple wrapper.
+    // that ownership has been transferred to the simple wrapper.
     if (InterlockedCompareExchangeT(&m_pCPList, pCPList.GetValue(), NULL) == NULL)
         pCPList.SuppressRelease();
 }
@@ -3626,7 +3557,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         else
         {
             // We need to set the entry points to the Dispatch versions which determine
-            // which implmentation to use at runtime based on the class that implements
+            // which implementation to use at runtime based on the class that implements
             // the interface.
             pDispVtable->m_GetIDsOfNames    = (SLOT)Dispatch_GetIDsOfNames_Wrapper;
             pDispVtable->m_Invoke           = (SLOT)Dispatch_Invoke_Wrapper;
@@ -3804,7 +3735,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
-// the DispatchInfo has not been initialized yet then it is initilized.
+// the DispatchInfo has not been initialized yet then it is initialized.
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {
@@ -3850,7 +3781,8 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     }
     CONTRACTL_END;
 
-    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+    if (InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pITypeInfo, pNew, NULL) == NULL)
     {
         SafeAddRef(pNew);
     }
@@ -4729,12 +4661,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         {
             // we will allow building IClassX for the class
             pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
-        if (IsOleAutDispImplRequiredForClass(pMT))
-        {
-            // Determine what IDispatch implementation this class should use
-            pTemplate->m_flags |= enum_UseOleAutDispatchImpl;
         }
 
         // Eagerly create the interface CMTs.

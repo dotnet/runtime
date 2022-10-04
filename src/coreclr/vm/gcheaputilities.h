@@ -29,6 +29,10 @@ GVAL_DECL(gc_alloc_context, g_global_alloc_context);
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
+extern "C" uint8_t* g_region_to_generation_table;
+extern "C" uint8_t  g_region_shr;
+extern "C" bool     g_region_use_bitwise_write_barrier;
+
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -184,7 +188,7 @@ public:
         uint8_t* end_pointer = reinterpret_cast<uint8_t*>(address) + length - 1;
         size_t end_index = reinterpret_cast<size_t>(end_pointer) >> SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift;
 
-        // We'll mark the entire region of memory as dirty by memseting all entries in
+        // We'll mark the entire region of memory as dirty by memsetting all entries in
         // the SWW table between the start and end indexes.
         memset(&g_sw_ww_table[base_index], ~0, end_index - base_index + 1);
     }

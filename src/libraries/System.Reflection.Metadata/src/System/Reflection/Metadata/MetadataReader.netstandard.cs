@@ -45,7 +45,16 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile)
+        /// <summary>
+        /// Gets the <see cref="AssemblyName"/> for a given file.
+        /// </summary>
+        /// <param name="assemblyFile">The path for the assembly which <see cref="AssemblyName"/> is to be returned.</param>
+        /// <returns>An <see cref="AssemblyName"/> that represents the given <paramref name="assemblyFile"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="assemblyFile"/> is null.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="assemblyFile"/> is invalid.</exception>
+        /// <exception cref="FileNotFoundException">If <paramref name="assemblyFile"/> is not found.</exception>
+        /// <exception cref="BadImageFormatException">If <paramref name="assemblyFile"/> is not a valid assembly.</exception>
+        public static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
             if (assemblyFile is null)
             {

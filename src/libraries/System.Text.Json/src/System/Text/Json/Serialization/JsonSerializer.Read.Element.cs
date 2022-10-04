@@ -85,6 +85,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
         }
 

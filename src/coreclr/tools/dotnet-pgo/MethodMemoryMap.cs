@@ -67,7 +67,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 MethodDesc method = null;
                 try
                 {
-                    method = idParser.ResolveMethodID(e.MethodID);
+                    method = idParser.ResolveMethodID(e.MethodID, out _);
                 }
                 catch
                 {
@@ -98,7 +98,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 MethodDesc method = null;
                 try
                 {
-                    method = idParser.ResolveMethodID(e.MethodID, throwIfNotFound: false);
+                    method = idParser.ResolveMethodID(e.MethodID, out _, throwIfNotFound: false);
                 }
                 catch
                 {
@@ -271,7 +271,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             void AddSubTree(InlineContext ctx)
             {
-                MethodDesc md = idParser.ResolveMethodID((long)ctx.MethodID, false);
+                MethodDesc md = idParser.ResolveMethodID((long)ctx.MethodID, out _, false);
                 byOrdinal.Add(ctx.Ordinal, (ctx, md));
 
                 foreach (var child in ctx.Inlinees)

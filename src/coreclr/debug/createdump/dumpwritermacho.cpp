@@ -92,26 +92,23 @@ DumpWriter::BuildSegmentLoadCommands()
 {
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            uint64_t size = memoryRegion.Size();
-            uint32_t prot = ConvertFlags(memoryRegion.Permissions());
+        uint64_t size = memoryRegion.Size();
+        uint32_t prot = ConvertFlags(memoryRegion.Permissions());
 
-            segment_command_64 segment = {
-                LC_SEGMENT_64,                  // uint32_t cmd;
-                sizeof(segment_command_64),     // uint32_t cmdsize;
-                {0},                            // char segname[16];
-                memoryRegion.StartAddress(),    // uint64_t vmaddr;   
-                size,                           // uint64_t vmsize;
-                0,                              // uint64_t fileoff;
-                size,                           // uint64_t filesize;
-                prot,                           // uint32_t maxprot;
-                prot,                           // uint32_t initprot;
-                0,                              // uint32_t nsects;
-                0                               // uint32_t flags;
-            };
-            m_segmentLoadCommands.push_back(segment);
-        }
+        segment_command_64 segment = {
+            LC_SEGMENT_64,                  // uint32_t cmd;
+            sizeof(segment_command_64),     // uint32_t cmdsize;
+            {0},                            // char segname[16];
+            memoryRegion.StartAddress(),    // uint64_t vmaddr;   
+            size,                           // uint64_t vmsize;
+            0,                              // uint64_t fileoff;
+            size,                           // uint64_t filesize;
+            prot,                           // uint32_t maxprot;
+            prot,                           // uint32_t initprot;
+            0,                              // uint32_t nsects;
+            0                               // uint32_t flags;
+        };
+        m_segmentLoadCommands.push_back(segment);
     }
 
     // Add special memory region containing the process and thread info

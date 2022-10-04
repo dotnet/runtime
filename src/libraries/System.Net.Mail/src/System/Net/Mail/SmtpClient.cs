@@ -542,10 +542,7 @@ namespace System.Net.Mail
             finally
             {
                 InCall = false;
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
+                _timer?.Dispose();
             }
         }
 
@@ -633,8 +630,7 @@ namespace System.Net.Mail
                             ValidateUnicodeRequirement(message, _recipients, allowUnicode);
                             message.Send(_writer, true, allowUnicode);
 
-                            if (_writer != null)
-                                _writer.Close();
+                            _writer?.Close();
 
                             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                             InCall = false;
@@ -982,9 +978,9 @@ namespace System.Net.Mail
                 new AsyncCallback(SendMailCallback), state);
         }
 
-        // After we've estabilished a connection and initilized ServerSupportsEai,
+        // After we've estabilished a connection and initialized ServerSupportsEai,
         // check all the addresses for one that contains unicode in the username/localpart.
-        // The localpart is the only thing we cannot succesfully downgrade.
+        // The localpart is the only thing we cannot successfully downgrade.
         private static void ValidateUnicodeRequirement(MailMessage message, MailAddressCollection recipients, bool allowUnicode)
         {
             // Check all recipients, to, from, sender, bcc, cc, etc...

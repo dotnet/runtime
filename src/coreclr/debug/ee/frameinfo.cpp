@@ -1545,7 +1545,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     d->info.currentAppDomain = AppDomain::GetCurrentDomain();
 
     //  Grab all the info from CrawlFrame that we need to
-    //  check for "Am I in an exeption code blob?" now.
+    //  check for "Am I in an exception code blob?" now.
 
 #ifdef FEATURE_EH_FUNCLETS
     // We are still searching for the parent of the last funclet we encounter.
@@ -2015,7 +2015,7 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
         }
 
         // @todo - this context is less important because the RS will overwrite it with the live context.
-        // We don't need to even bother getting it. We can just intialize the regdisplay w/ a sentinal.
+        // We don't need to even bother getting it. We can just initialize the regdisplay w/ a sentinel.
         fOk = g_pEEInterface->InitRegDisplay(thread, pRDSrc, pCtxTemp, false);
         thread->ResumeThread();
 

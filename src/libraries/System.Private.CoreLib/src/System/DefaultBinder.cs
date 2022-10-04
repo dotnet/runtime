@@ -17,10 +17,10 @@ namespace System
         // fit.  The methods all have the same number of arguments and the object
         // array args.  On exit, this method will choice the best fit method
         // and coerce the args to match that method.  By match, we mean all primitive
-        // arguments are exact matchs and all object arguments are exact or subclasses
+        // arguments are exact matches and all object arguments are exact or subclasses
         // of the target.  If the target OR is an interface, the object must implement
         // that interface.  There are a couple of exceptions
-        // thrown when a method cannot be returned.  If no method matchs the args and
+        // thrown when a method cannot be returned.  If no method matches the args and
         // ArgumentException is thrown.  If multiple methods match the args then
         // an AmbiguousMatchException is thrown.
         //
@@ -66,7 +66,7 @@ namespace System
                 else
                 {
                     // Named parameters, reorder the mapping.  If CreateParamOrder fails, it means that the method
-                    // doesn't have a name that matchs one of the named parameters so we don't consider it any further.
+                    // doesn't have a name that matches one of the named parameters so we don't consider it any further.
                     if (!CreateParamOrder(paramOrder[i], par, names))
                         candidates[i] = null;
                 }
@@ -1015,7 +1015,7 @@ namespace System
             int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
                                        m2.GetParametersNoCopy(), paramOrder2, paramArrayType2, types, args);
 
-            // If the match was not ambigous then return the result.
+            // If the match was not ambiguous then return the result.
             if (res != 0)
                 return res;
 
@@ -1041,7 +1041,7 @@ namespace System
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -1064,7 +1064,7 @@ namespace System
                     return 1;
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -1086,7 +1086,7 @@ namespace System
                     return 1;
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 

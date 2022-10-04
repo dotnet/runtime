@@ -563,10 +563,7 @@ namespace System.Data.OleDb
             Debug.Assert(null != _connection, "no connection, CloseInternalParameters");
             Bindings? bindings = _dbBindings;
             _dbBindings = null;
-            if (null != bindings)
-            {
-                bindings.Dispose();
-            }
+            bindings?.Dispose();
         }
 
         public new OleDbParameter CreateParameter()
@@ -1125,11 +1122,7 @@ namespace System.Data.OleDb
 
         private void ParameterCleanup()
         {
-            Bindings? bindings = ParameterBindings;
-            if (null != bindings)
-            {
-                bindings.CleanupBindings();
-            }
+            ParameterBindings?.CleanupBindings();
         }
 
         private bool InitializeCommand(CommandBehavior behavior, bool throwifnotsupported)

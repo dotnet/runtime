@@ -54,20 +54,20 @@ public class BaseObj : Object {
 
         // If possible, do not have a Finalize method for your class. Finalize
         // methods usually run when the heap is low on available storage
-        // and needs to be garbage collected. This can hurt application 
+        // and needs to be garbage collected. This can hurt application
         // performance significantly.
 
         // If you must implement a Finalize method, make it run fast, avoid
-        // synchronizing on other threads, do not block, and 
-        // avoid raising any exceptions (although the Finalizer thread 
+        // synchronizing on other threads, do not block, and
+        // avoid raising any exceptions (although the Finalizer thread
         // automatically recovers from any unhandled exceptions).
 
-        // NOTE: In the future, exceptions may be caught using an 
+        // NOTE: In the future, exceptions may be caught using an
         // AppDomain-registered unhandled Finalize Exception Handler
 
         // While discouraged, you may call methods on object's referred
         // to by this object. However, you must be aware that the other
-        // objects may have already had their Finalize method called 
+        // objects may have already had their Finalize method called
         // causing these objects to be in an unpredictable state.
         // This is because the system does not guarantees that
         // Finalizers will be called in any particular order.
@@ -79,8 +79,8 @@ public class BaseObj : Object {
 
 
 // This class shows how to derive a class from another class and how base class
-// Finalize methods are NOT automatically called. By contrast, base class 
-// destructors (in unmanaged code) are automatically called. 
+// Finalize methods are NOT automatically called. By contrast, base class
+// destructors (in unmanaged code) are automatically called.
 // This is one example of how destructors and Finalize methods differ.
 public class DerivedObj : BaseObj {
     public DerivedObj(String s) : base(s) {
@@ -88,13 +88,13 @@ public class DerivedObj : BaseObj {
     }
 
     //protected override void Finalize() {
-      ~DerivedObj() {    
+      ~DerivedObj() {
         Display("DerivedObj Finalize");
 
-        // The GC has a special thread dedicated to executing Finalize 
-        // methods. You can tell that this thread is different from the 
+        // The GC has a special thread dedicated to executing Finalize
+        // methods. You can tell that this thread is different from the
         // application's main thread by comparing the thread's hash codes.
-        Display("Finalize thread's hash code: " 
+        Display("Finalize thread's hash code: "
             + Thread.CurrentThread.GetHashCode());
 
         // BaseObj's Finalize is NOT called unless you execute the line below
@@ -129,10 +129,10 @@ public class ResurrectObj : BaseObj {
             Application.ResObjHolder = this;
 
             // When the GC calls an object's Finalize method, it assumes that
-            // there is no need to ever call it again. However, we've now 
+            // there is no need to ever call it again. However, we've now
             // resurrected this object and the line below forces the GC to call
             // this object's Finalize again when the object is destroyed again.
-            // BEWARE: If ReRegisterForFinalize is called multiple times, the 
+            // BEWARE: If ReRegisterForFinalize is called multiple times, the
             // object's Finalize method will be called multiple times.
             GC.ReRegisterForFinalize(this);
 
@@ -142,7 +142,7 @@ public class ResurrectObj : BaseObj {
             // the referenced object to be resurrected as well. This object
             // can continue to use the referenced object even though it was
             // finalized.
-            
+
         } else {
             Display("This object is NOT being resurrected");
         }
@@ -174,7 +174,7 @@ public class DisposeObj : BaseObj {
         Display("DisposeObj Constructor");
     }
 
-    // When an object of this type wants to be explicitly cleaned-up, the user 
+    // When an object of this type wants to be explicitly cleaned-up, the user
     // of this object should call Dispose at the desired code location.
     public void Dispose() {
         Display("DisposeObj Dispose");
@@ -205,7 +205,7 @@ public class DisposeObj : BaseObj {
 class Application {
     static private int indent = 0;
 
-    static public void Display(String s) { 
+    static public void Display(String s) {
         for (int x = 0; x < indent * 3; x++)
             Console.Write(" ");
         Console.WriteLine(s);
@@ -246,10 +246,10 @@ class Application {
         // The object is unreachable so forcing a GC causes it to be finalized.
         Collect();
 
-        // Wait for the GC's Finalize thread to finish 
+        // Wait for the GC's Finalize thread to finish
         // executing all queued Finalize methods.
         WaitForFinalizers();
-        // NOTE: The GC calls the most-derived (farthest away from 
+        // NOTE: The GC calls the most-derived (farthest away from
         // the Object base class) Finalize only.
         // Base class Finalize functions are called only if the most-derived
         // Finalize method explicitly calls its base class's Finalize method.
@@ -258,9 +258,9 @@ class Application {
         obj = new DerivedObj("Introduction");
         // obj = null; // Variation: this line is commented out
         Collect();
-        WaitForFinalizers();    
-        // Notice that we get identical results as above: the Finalize method 
-        // runs because the jitter's optimizer knows that obj is not 
+        WaitForFinalizers();
+        // Notice that we get identical results as above: the Finalize method
+        // runs because the jitter's optimizer knows that obj is not
         // referenced later in this function.
 
         Display(-1, "Demo stop: Introduction to Garbage Collection.", 0);
@@ -292,15 +292,15 @@ class Application {
         Collect();
         WaitForFinalizers(); // You should see the Finalize method called.
 
-        // However, the ResurrectionObj's Finalize method 
-        // resurrects the object keeping it alive. It does this by placing a 
+        // However, the ResurrectionObj's Finalize method
+        // resurrects the object keeping it alive. It does this by placing a
         // reference to the dying-object in Application.ResObjHolder
 
         // You can see that ResurrectionObj still exists because
         // the following line doesn't raise an exception.
         ResObjHolder.Display("Still alive after Finalize called");
 
-        // Prevent the ResurrectionObj object from resurrecting itself again, 
+        // Prevent the ResurrectionObj object from resurrecting itself again,
         ResObjHolder.SetResurrection(false);
 
         // Now, let's destroy this last reference to the ResurrectionObj
@@ -334,13 +334,13 @@ class Application {
 
     // This method demonstrates the unbalanced nature of ReRegisterForFinalize
     // and SuppressFinalize. The main point is if your code makes multiple
-    // calls to ReRegisterForFinalize (without intervening calls to 
+    // calls to ReRegisterForFinalize (without intervening calls to
     // SuppressFinalize) the Finalize method may get called multiple times.
     private static void FinalizationQDemo() {
         Display(0, "\n\nDemo start: Suppressing and ReRegistering for Finalize.", +1);
-        // Since this object has a Finalize method, a reference to the object 
+        // Since this object has a Finalize method, a reference to the object
         // will be added to the finalization queue.
-        BaseObj obj = new BaseObj("Finalization Queue"); 
+        BaseObj obj = new BaseObj("Finalization Queue");
 
         // Add another 2 references onto the finalization queue
         // NOTE: Don't do this in a normal app. This is only for demo purposes.
@@ -353,7 +353,7 @@ class Application {
         GC.SuppressFinalize(obj);
 
         // There are now 3 references to this object on the finalization queue.
-        // If the object were unreachable, the 1st call to this object's Finalize 
+        // If the object were unreachable, the 1st call to this object's Finalize
         // method will be discarded but the 2nd & 3rd calls to Finalize will execute.
 
         // Sets the same bit effectively doing nothing!
@@ -364,7 +364,7 @@ class Application {
         // Force a GC so that the object gets finalized
         Collect();
         // NOTE: Finalize is called twice because only the 1st call is suppressed!
-        WaitForFinalizers(); 
+        WaitForFinalizers();
         Display(-1, "Demo stop: Suppressing and ReRegistering for Finalize.", 0);
     }
 
@@ -412,7 +412,7 @@ class Application {
     // This method demonstrates how weak references (WR) work. A WR allows
     // the GC to collect objects if the managed heap is low on memory.
     // WRs are useful to apps that have large amounts of easily-reconstructed
-    // data that they want to keep around to improve performance. But, if the 
+    // data that they want to keep around to improve performance. But, if the
     // system is low on memory, the objects can be destroyed and replaced when
     // the app knows that it needs it again.
     private static void WeakRefDemo(Boolean trackResurrection) {
@@ -449,7 +449,7 @@ class Application {
         // If wr is tracking resurrection, wr thinks the object is still alive
 
         // NOTE: If the object referred to by wr doesn't have a Finalize method,
-        // then wr would think that the object is dead regardless of whether 
+        // then wr would think that the object is dead regardless of whether
         // wr is tracking resurrection or not. For example:
         //    Object obj = new Object();   // Object doesn't have a Finalize method
         //    WeakReference wr = new WeakReference(obj, true);
@@ -463,7 +463,7 @@ class Application {
         Display("Strong reference to object obtained: " + (obj != null));
 
         if (obj != null) {
-            // The strong reference was obtained so this wr must be 
+            // The strong reference was obtained so this wr must be
             // tracking resurrection. At this point we have a strong
             // reference to an object that has been finalized but its memory
             // has not yet been reclaimed by the collector.
@@ -471,9 +471,9 @@ class Application {
 
             obj = null; // Destroy the strong reference to the object
 
-            // Collect reclaims the object's memory since this object 
+            // Collect reclaims the object's memory since this object
             // has no Finalize method registered for it anymore.
-            Collect();  
+            Collect();
             WaitForFinalizers();    // We should see nothing here
 
             obj = (BaseObj) wr.Target;  // This now returns null
@@ -482,21 +482,21 @@ class Application {
 
         // Cleanup everything about this demo so there is no affect on the next demo
         obj = null;           // Destroy strong reference (if it exists)
-        wr = null;            // Destroy the WeakReference object (optional) 
+        wr = null;            // Destroy the WeakReference object (optional)
         Collect();
         WaitForFinalizers();
 
         // NOTE: You are dicouraged from using the WeakReference.IsAlive property
         // because the object may be killed immediately after IsAlive returns
-        // making the return value incorrect. If the Target property returns 
+        // making the return value incorrect. If the Target property returns
         // a non-null value, then the object is alive and will stay alive
         // since you have a reference to it. If Target returns null, then the
         // object is dead.
-        Display(-1, String.Format("Demo stop: WeakReferences that {0}track resurrections.", 
+        Display(-1, String.Format("Demo stop: WeakReferences that {0}track resurrections.",
             trackResurrection ? "" : "do not "), 0);
     }
 
-    
+
     public static int Main(String[] args) {
     // Environment.ExitCode = 1;
         Display("To fully understand this sample, you should step through the");
@@ -511,10 +511,10 @@ class Application {
         DisposeDemo();       // Demos the use of Dispose & Finalize
         FinalizationQDemo(); // Demos the use of SuppressFinalize & ReRegisterForFinalize
         GenerationDemo();    // Demos GC generations
-        WeakRefDemo(false);  // Demos WeakReferences without resurrection tracking 
-        WeakRefDemo(true);   // Demos WeakReferences with resurrection tracking 
-        
-        // Demos Finalize on Shutdown symantics (this demo is inline) 
+        WeakRefDemo(false);  // Demos WeakReferences without resurrection tracking
+        WeakRefDemo(true);   // Demos WeakReferences with resurrection tracking
+
+        // Demos Finalize on Shutdown semantics (this demo is inline)
         Display(0, "\n\nDemo start: Finalize on shutdown.", +1);
 
         // When Main returns, obj will have its Finalize method called.
@@ -522,7 +522,7 @@ class Application {
 
         // This is the last line of code executed before the application terminates.
         Display(-1, "Demo stop: Finalize on shutdown (application is now terminating)", 0);
-   
+
     return 100;
     }
 }

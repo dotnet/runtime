@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -41,11 +43,19 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 6 (ICMPv6) error messages received.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long ErrorsReceived { get; }
 
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 6 (ICMPv6) error messages sent.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long ErrorsSent { get; }
 
         /// <summary>
@@ -81,11 +91,19 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 6 (ICMPv6) messages received.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long MessagesReceived { get; }
 
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 6 (ICMPv6) messages sent.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long MessagesSent { get; }
 
         /// <summary>

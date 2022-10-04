@@ -29,24 +29,21 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _allFlagsThatMustMatch = new BindingFlags[Grow];
         }
 
-        private QueriedMemberList(int totalCount, int declaredOnlyCount, M[] members, BindingFlags[] allFlagsThatMustMatch, RuntimeTypeInfo typeThatBlockedBrowsing)
+        private QueriedMemberList(int totalCount, int declaredOnlyCount, M[] members, BindingFlags[] allFlagsThatMustMatch)
         {
             _totalCount = totalCount;
             _declaredOnlyCount = declaredOnlyCount;
             _members = members;
             _allFlagsThatMustMatch = allFlagsThatMustMatch;
-            _typeThatBlockedBrowsing = typeThatBlockedBrowsing;
         }
 
         /// <summary>
-        /// Returns the # of candidates for a non-DeclaredOnly search. Caution: Can throw MissingMetadataException. Use DeclaredOnlyCount if you don't want to search base classes.
+        /// Returns the # of candidates for a non-DeclaredOnly search. Use DeclaredOnlyCount if you don't want to search base classes.
         /// </summary>
         public int TotalCount
         {
             get
             {
-                if (_typeThatBlockedBrowsing != null)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(_typeThatBlockedBrowsing);
                 return _totalCount;
             }
         }
@@ -93,7 +90,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 }
             }
 
-            return new QueriedMemberList<M>(newTotalCount, newDeclaredOnlyCount, newMembers, newAllFlagsThatMustMatch, _typeThatBlockedBrowsing);
+            return new QueriedMemberList<M>(newTotalCount, newDeclaredOnlyCount, newMembers, newAllFlagsThatMustMatch);
         }
 
         //
@@ -151,16 +148,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 }
 
                 type = type.BaseType.CastToRuntimeTypeInfo();
-
-                if (type != null && !type.CanBrowseWithoutMissingMetadataExceptions)
-                {
-                    // If we got here, one of the base classes is missing metadata. We don't want to throw a MissingMetadataException now because we may be
-                    // building a cached result for a caller who passed BindingFlags.DeclaredOnly. So we'll mark the results in a way that
-                    // it will throw a MissingMetadataException if a caller attempts to iterate past the declared-only subset.
-                    queriedMembers._typeThatBlockedBrowsing = type;
-                    queriedMembers._totalCount = queriedMembers._declaredOnlyCount;
-                    break;
-                }
             }
 
             return queriedMembers;
@@ -196,7 +183,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         private int _declaredOnlyCount; // # of entries for members only in the most derived class.
         private M[] _members;  // Length is equal to or greater than _totalCount. Entries beyond _totalCount contain null or garbage and should be read.
         private BindingFlags[] _allFlagsThatMustMatch; // Length will be equal to _members.Length
-        private RuntimeTypeInfo _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
 
         private const int Grow = 64;
     }

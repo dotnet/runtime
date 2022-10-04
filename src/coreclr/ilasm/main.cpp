@@ -12,7 +12,7 @@
 #include "shimload.h"
 
 #include "strsafe.h"
-#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
+#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
@@ -147,7 +147,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #pragma warning(pop)
 #endif
     {
-        printf("\nMicrosoft (R) .NET IL Assembler version " CLR_PRODUCT_VERSION);
+        printf("\n.NET IL Assembler version " CLR_PRODUCT_VERSION);
         printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
         goto PrintUsageAndExit;
 
@@ -630,7 +630,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 //======================================================================
                 if(bLogo)
                 {
-                    printf("\nMicrosoft (R) .NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
+                    printf("\n.NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
                     printf("\n%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
                 }
 

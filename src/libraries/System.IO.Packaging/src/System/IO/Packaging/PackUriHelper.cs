@@ -765,7 +765,7 @@ namespace System.IO.Packaging
                     _isRelationshipPartUri = isRelationshipPartUri;
             }
 
-            #endregion PrivateConstuctor
+            #endregion PrivateConstructor
 
             //------------------------------------------------------
             //

@@ -8,7 +8,7 @@ namespace System
     /// <summary>Defines a mechanism for parsing a span of characters to a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface ISpanParsable<TSelf> : IParsable<TSelf>
-        where TSelf : ISpanParsable<TSelf>
+        where TSelf : ISpanParsable<TSelf>?
     {
         /// <summary>Parses a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
@@ -21,7 +21,7 @@ namespace System
         /// <summary>Tries to parses a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
-        /// <param name="result">On return, contains the result of succesfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         static abstract bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result);
     }

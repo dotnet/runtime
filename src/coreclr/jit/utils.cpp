@@ -115,7 +115,6 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -145,7 +144,6 @@ const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp 
 {
     return getRegName((regNumber)reg);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
@@ -2448,7 +2446,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::minimum(float val1, float val2)
 {
     if (val1 != val2 && !isNaN(val1))
@@ -2456,6 +2453,42 @@ float FloatingPointUtils::minimum(float val1, float val2)
         return val1 < val2 ? val1 : val2;
     }
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// normalize: Normalize a floating point value.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    Normalized value.
+//
+// Remarks:
+//   This is a no-op on all host platforms but x86. On x86 floats are returned on
+//   the x87 stack. Since `fld` will automatically quiet signalling NaNs this
+//   means that it is very easy for a float to nondeterministically change bit
+//   representation if it is a snan, depending on whether a function that
+//   returns the value is inlined or not by the C++ compiler. To get around the
+//   nondeterminism we quiet the NaNs ahead of time as a best-effort fix.
+//
+double FloatingPointUtils::normalize(double value)
+{
+#ifdef HOST_X86
+    if (!isNaN(value))
+    {
+        return value;
+    }
+
+    uint64_t bits;
+    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    memcpy(&bits, &value, sizeof(value));
+    bits |= 1ull << 51;
+    memcpy(&value, &bits, sizeof(bits));
+    return value;
+#else
+    return value;
+#endif
 }
 
 namespace MagicDivide

@@ -31,7 +31,7 @@ typedef enum
 
 Any callers of this API must set `COR_PRF_REJIT_BLOCK_INLINING`. Although it is possible that in the future this restriction will be lifted, the current implementation blocks ReJITted methods from being inlined (ever).
 
-The other value `COR_PRF_REJIT_INLINING_CALLBACKS` controls whether you get a `ICorProfilerCallback4::GetReJITParameters` callback for any methods that are ReJITted as inliners of the requested method. The default is to not receive callbacks for these methods. You will always receive a `GetReJITParameters` callback for any methods that are explictly requested.
+The other value `COR_PRF_REJIT_INLINING_CALLBACKS` controls whether you get a `ICorProfilerCallback4::GetReJITParameters` callback for any methods that are ReJITted as inliners of the requested method. The default is to not receive callbacks for these methods. You will always receive a `GetReJITParameters` callback for any methods that are explicitly requested.
 
 
 ## Inner workings/Limitations

@@ -23,9 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        // -rwxr-xr-x (755 octal)
         const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
                                                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+                                                   UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         private class FinalizingProcess : Process
         {
@@ -1151,13 +1152,13 @@ namespace System.Diagnostics.Tests
 
             // Get all the processes running on the machine, and check if the current process is one of them.
             var foundCurrentProcess = (from p in Process.GetProcesses()
-                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                        select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses001 failed");
 
             foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
-                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                    select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses002 failed");
@@ -1342,13 +1343,13 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
         public void TestProcessOnRemoteMachineWindows()
         {
-            Process currentProccess = Process.GetCurrentProcess();
+            Process currentProcess = Process.GetCurrentProcess();
 
-            void TestRemoteProccess(Process remoteProcess)
+            void TestRemoteProcess(Process remoteProcess)
             {
-                Assert.Equal(currentProccess.Id, remoteProcess.Id);
-                Assert.Equal(currentProccess.BasePriority, remoteProcess.BasePriority);
-                Assert.Equal(currentProccess.EnableRaisingEvents, remoteProcess.EnableRaisingEvents);
+                Assert.Equal(currentProcess.Id, remoteProcess.Id);
+                Assert.Equal(currentProcess.BasePriority, remoteProcess.BasePriority);
+                Assert.Equal(currentProcess.EnableRaisingEvents, remoteProcess.EnableRaisingEvents);
                 Assert.Equal("127.0.0.1", remoteProcess.MachineName);
                 // This property throws exception only on remote processes.
                 Assert.Throws<NotSupportedException>(() => remoteProcess.MainModule);
@@ -1356,8 +1357,8 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                TestRemoteProccess(Process.GetProcessById(currentProccess.Id, "127.0.0.1"));
-                TestRemoteProccess(Process.GetProcessesByName(currentProccess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProccess.Id).Single());
+                TestRemoteProcess(Process.GetProcessById(currentProcess.Id, "127.0.0.1"));
+                TestRemoteProcess(Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProcess.Id).Single());
             }
             catch (InvalidOperationException)
             {
@@ -1827,7 +1828,7 @@ namespace System.Diagnostics.Tests
                 SetPrivateFieldValue(process, "_haveExitTime", true);
                 SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
 
-                SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
+                SetPrivateFieldValue(process, "_processInfo", Type.GetType("System.Diagnostics.ProcessInfo, System.Diagnostics.Process").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
                 SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
                 SetPrivateFieldValue(process, "_modules",  new ProcessModuleCollection(Array.Empty<ProcessModule>()));
 
@@ -2437,7 +2438,7 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcess();
             process.Start();
 
-            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Proccess {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
+            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Process {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
 
             process.Kill(killTree);
         }
@@ -2543,6 +2544,37 @@ namespace System.Diagnostics.Tests
                 Assert.True(Directory.Exists(fullPath));
                 Directory.Delete(fullPath);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndNotElevated))]
+        public void NonElevatedUser_QueryProcessNameOfSystemProcess()
+        {
+            const string Services = "services";
+
+            string currentProcessUser = Helpers.GetProcessUserName(Process.GetCurrentProcess());
+            Assert.NotNull(currentProcessUser);
+
+            Process? systemOwnedServices = null;
+
+            foreach (var p in Process.GetProcessesByName(Services))
+            {
+                // returns the username of the owner of the process or null if the username can't be queried.
+                // for services.exe, this will be null.
+                string? servicesUser = Helpers.GetProcessUserName(p); 
+
+                // this isn't really verifying that services.exe is owned by SYSTEM, but we are sure it is not owned by the current user.
+                if (servicesUser != currentProcessUser)
+                {
+                    systemOwnedServices = p;
+                    break;
+                }
+            }
+
+            Assert.NotNull(systemOwnedServices);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
+
+            systemOwnedServices = Process.GetProcessById(systemOwnedServices.Id);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
         }
 
         private IReadOnlyList<Process> CreateProcessTree()

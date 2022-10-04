@@ -63,10 +63,7 @@ namespace System.Xml.Schema
 
         protected override void OnInsert(int index, object? item)
         {
-            if (_parent != null)
-            {
-                _parent.OnAdd(this, item);
-            }
+            _parent?.OnAdd(this, item);
         }
 
         protected override void OnSet(int index, object? oldValue, object? newValue)
@@ -80,18 +77,12 @@ namespace System.Xml.Schema
 
         protected override void OnClear()
         {
-            if (_parent != null)
-            {
-                _parent.OnClear(this);
-            }
+            _parent?.OnClear(this);
         }
 
         protected override void OnRemove(int index, object? item)
         {
-            if (_parent != null)
-            {
-                _parent.OnRemove(this, item);
-            }
+            _parent?.OnRemove(this, item);
         }
 
         internal XmlSchemaObjectCollection Clone()

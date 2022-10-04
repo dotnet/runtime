@@ -360,7 +360,7 @@ namespace System.Data.OleDb
         {
             ADP.CheckArgumentNull(unquotedIdentifier, "unquotedIdentifier");
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
@@ -407,7 +407,7 @@ namespace System.Data.OleDb
         {
             ADP.CheckArgumentNull(quotedIdentifier, "quotedIdentifier");
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;

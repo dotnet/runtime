@@ -279,10 +279,7 @@ namespace System.ComponentModel
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.
-                if (editor == null)
-                {
-                    editor = TypeDescriptor.GetEditor(PropertyType, editorBaseType);
-                }
+                editor ??= TypeDescriptor.GetEditor(PropertyType, editorBaseType);
 
                 // Now, another slot in our editor cache for next time
                 if (_editorTypes == null)

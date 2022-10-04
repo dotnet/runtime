@@ -160,7 +160,7 @@ namespace System.IO
                 _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
                 if (_fullDirectory is null)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, isDirError: true);
                 }
 
                 // Also ensure it has a trailing slash.
@@ -324,7 +324,9 @@ namespace System.IO
                         EventStreamFlags);
                     if (eventStream.IsInvalid)
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        Exception e = Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        eventStream.Dispose();
+                        throw e;
                     }
 
                     cleanupGCHandle = false;

@@ -445,7 +445,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    reg  - The register
 //    rmOp - The register/memory operand node
 //
@@ -532,7 +532,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //
 void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
@@ -554,7 +554,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
-//    attr - The emit attribute for the instruciton being generated
+//    attr - The emit attribute for the instruction being generated
 //    targetReg - The register allocated to the result
 //    op1Reg    - The register allocated to the first operand
 //    op2       - Another operand that maybe in register or memory
@@ -1093,12 +1093,23 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                // We want to always emit the EA_16BYTE version here.
+                //
+                // For ToVector256Unsafe the upper bits don't matter and for GetLower we
+                // only actually need the lower 16-bytes, so we can just be "more efficient"
+
+                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1);
             }
             else
             {
+                // We want to always emit the EA_32BYTE version here.
+                //
+                // For ToVector256Unsafe the upper bits don't matter and this allows same
+                // register moves to be elided. For GetLower we're getting a Vector128 and
+                // so the upper bits aren't impactful either allowing the same.
+
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+                emit->emitIns_Mov(INS_movaps, EA_32BYTE, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
         }
@@ -1425,7 +1436,6 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                assert(op1->TypeGet() == op2->TypeGet());
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
                 genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2);
             }

@@ -20,8 +20,17 @@ namespace System.Runtime.InteropServices
 #endif
     enum StringMarshalling
     {
+        /// <summary>
+        /// Indicates the user is suppling a specific marshaller in <see cref="LibraryImportAttribute.StringMarshallingCustomType"/>.
+        /// </summary>
         Custom = 0,
-        Utf8,   // UTF-8
-        Utf16,  // UTF-16, machine-endian
+        /// <summary>
+        /// Use the platform-provided UTF-8 marshaller.
+        /// </summary>
+        Utf8,
+        /// <summary>
+        /// Use the platform-provided UTF-16 marshaller.
+        /// </summary>
+        Utf16,
     }
 }

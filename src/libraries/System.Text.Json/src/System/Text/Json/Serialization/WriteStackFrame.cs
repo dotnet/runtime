@@ -126,7 +126,7 @@ namespace System.Text.Json
             // if the current element is the same type as the previous element.
             if (PolymorphicJsonTypeInfo?.PropertyType != runtimeType)
             {
-                JsonTypeInfo typeInfo = options.GetTypeInfoCached(runtimeType);
+                JsonTypeInfo typeInfo = options.GetTypeInfoInternal(runtimeType);
                 PolymorphicJsonTypeInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 
@@ -166,6 +166,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.Converter.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }

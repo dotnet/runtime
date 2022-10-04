@@ -23,7 +23,7 @@ internal class FirefoxProvider : WasmHostProvider
     private FirefoxDebuggerProxy? _firefoxDebuggerProxy;
     private static readonly Lazy<string> s_browserPath = new(() =>
     {
-        string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..");
+        string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", "..");
         return BrowserLocator.FindFirefox(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
     });
 

@@ -37,7 +37,7 @@
 #define _Out_writes_opt_z_(size)
 
 /*
- * The original SafeCRT implemention allows runtime control over buffer checking.
+ * The original SafeCRT implementation allows runtime control over buffer checking.
  * For now we'll key this off the debug flag.
  */
 #ifdef _DEBUG

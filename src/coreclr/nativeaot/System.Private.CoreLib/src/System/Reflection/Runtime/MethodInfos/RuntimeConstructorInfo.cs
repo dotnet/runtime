@@ -71,8 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            if (parameters == null)
-                parameters = Array.Empty<object>();
+            parameters ??= Array.Empty<object>();
             MethodInvoker methodInvoker;
             try
             {
@@ -167,11 +166,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (_lazyMethodInvoker == null)
-                {
-                    _lazyMethodInvoker = UncachedMethodInvoker;
-                }
-                return _lazyMethodInvoker;
+                return _lazyMethodInvoker ??= UncachedMethodInvoker;
             }
         }
 

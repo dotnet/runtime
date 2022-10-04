@@ -274,7 +274,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_GetKeyAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_GetKeyAtIndex_OutOfRangeIndices(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(-1));
@@ -301,7 +301,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_GetValueAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_GetValueAtIndex_OutOfRangeIndices(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(-1));
@@ -483,7 +483,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_SetValueAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_SetValueAtIndex_OutOfRangeIndices(int count)
         {
             if (!IsReadOnly)
             {

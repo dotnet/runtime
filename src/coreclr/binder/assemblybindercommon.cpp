@@ -1089,7 +1089,7 @@ namespace BINDER_SPACE
                 // Lock the application context
                 CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-                // Only perform costly validation if other binds succeded before us
+                // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
                     IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,

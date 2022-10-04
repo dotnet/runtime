@@ -225,7 +225,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                      flags |= TypeFlags.Class;
                 }
 
-                // All other cases are handled during TypeSystemContext intitialization
+                // All other cases are handled during TypeSystemContext initialization
             }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)

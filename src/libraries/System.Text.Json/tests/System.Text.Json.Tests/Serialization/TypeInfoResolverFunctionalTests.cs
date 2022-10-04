@@ -615,7 +615,7 @@ namespace System.Text.Json.Serialization.Tests
                 return ti;
             });
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
+            JsonSerializerOptions options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             options.IncludeFields = true;
             options.TypeInfoResolver = JsonTypeInfoResolver.Combine(resolver, options.TypeInfoResolver);
 

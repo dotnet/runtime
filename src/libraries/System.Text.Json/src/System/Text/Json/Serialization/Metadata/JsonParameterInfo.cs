@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected set; }
 
-        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreNullTokensOnRead { get; private set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
         public JsonSerializerOptions? Options { get; set; } // initialized in Init method
@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetTypeInfoCached(PropertyType);
+                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
             }
             set
             {
@@ -53,8 +53,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         public bool ShouldDeserialize { get; private set; }
 
+        public JsonPropertyInfo MatchingProperty { get; private set; } = null!;
+
         public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
+            MatchingProperty = matchingProperty;
             ClrInfo = parameterInfo;
             Options = options;
             ShouldDeserialize = true;
@@ -62,7 +65,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyType = matchingProperty.PropertyType;
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
             ConverterBase = matchingProperty.EffectiveConverter;
-            IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
+            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
             NumberHandling = matchingProperty.EffectiveNumberHandling;
             MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
         }

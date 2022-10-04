@@ -273,7 +273,7 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint ??= ConstraintServices.CreateConstraint(ContractName, RequiredTypeIdentity, RequiredMetadata, RequiredCreationPolicy);
 
         /// <summary>
-        ///     Executes an optimized version of the contraint given by the <see cref="Constraint"/> property
+        ///     Executes an optimized version of the constraint given by the <see cref="Constraint"/> property
         /// </summary>
         /// <param name="exportDefinition">
         ///     A definition for a <see cref="Export"/> used to determine if it satisfies the

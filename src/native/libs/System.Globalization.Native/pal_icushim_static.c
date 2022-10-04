@@ -217,12 +217,17 @@ const char* GlobalizationNative_GetICUDTName(const char* culture)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
+#if !defined(LOCAL_BUILD)
+// Static NativeAOT compilation does not have
+// GlobalizationNative_LoadICUData() as entrypoint
     if (!isDataSet)
     {
         // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
         // and fallback to invariant mode
         return 0;
     }
+#endif
+
     UErrorCode status = 0;
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out

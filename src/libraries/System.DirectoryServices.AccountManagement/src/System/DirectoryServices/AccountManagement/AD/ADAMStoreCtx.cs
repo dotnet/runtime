@@ -250,7 +250,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         //------------------------------------------------------------------------------------
-        // Taking a server target and Auxillary class name return
+        // Taking a server target and Auxiliary class name return
         // a list of all possible objectClasses that include that auxClass.  A search for object that have a specific
         // aux class cannot be done directly on the objects because static auxClasses to not appear in the
         // actual object.  This is done by

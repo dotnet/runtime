@@ -61,7 +61,7 @@ struct EventSerializationTraits
      * the buffer double-pointer to point to the next byte to be written.
      *
      * It is the responsibility of the caller to ensure that the buffer is
-     * large enough to accomodate the serialized form of T.
+     * large enough to accommodate the serialized form of T.
      */
     static void Serialize(const T& value, uint8_t** buffer) = delete;
 

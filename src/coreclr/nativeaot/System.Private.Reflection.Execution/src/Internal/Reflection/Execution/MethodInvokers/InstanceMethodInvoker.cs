@@ -27,19 +27,19 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected sealed override object Invoke(object thisObject, object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateThis(thisObject, _declaringTypeHandle);
-            object result = RuntimeAugments.CallDynamicInvokeMethod(
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+            }
+
+            object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: true);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -48,7 +48,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (isOpen)
             {
-                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.MethodInfo;
+                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.Method;
 
                 short resolveType = OpenMethodResolver.OpenNonVirtualResolve;
 

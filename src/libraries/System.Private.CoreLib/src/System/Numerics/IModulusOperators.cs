@@ -9,7 +9,7 @@ namespace System.Numerics
     /// <typeparam name="TResult">The type that contains the modulus or remainder of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     /// <remarks>This type represents the <c>%</c> in C# which is often used to compute the remainder and may differ from an actual modulo operation depending on the type that implements the interface.</remarks>
     public interface IModulusOperators<TSelf, TOther, TResult>
-        where TSelf : IModulusOperators<TSelf, TOther, TResult>
+        where TSelf : IModulusOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Divides two values together to compute their modulus or remainder.</summary>
         /// <param name="left">The value which <paramref name="right" /> divides.</param>

@@ -13,38 +13,7 @@ namespace Microsoft.Interop
     {
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
-            return context.CompilationProvider
-                .Select(static (compilation, ct) =>
-                {
-                    TargetFramework targetFramework = DetermineTargetFramework(compilation, out Version targetFrameworkVersion);
-                    return (compilation, targetFramework, targetFrameworkVersion);
-                })
-                .Select(
-                    static (data, ct) =>
-                        new StubEnvironment(
-                            data.compilation,
-                            data.targetFramework,
-                            data.targetFrameworkVersion,
-                            data.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
-                );
-
-            static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
-            {
-                IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-                version = systemAssembly.Identity.Version;
-
-                return systemAssembly.Identity.Name switch
-                {
-                    // .NET Framework
-                    "mscorlib" => TargetFramework.Framework,
-                    // .NET Standard
-                    "netstandard" => TargetFramework.Standard,
-                    // .NET Core (when version < 5.0) or .NET
-                    "System.Runtime" or "System.Private.CoreLib" =>
-                        (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
-                    _ => TargetFramework.Unknown,
-                };
-            }
+            return context.CompilationProvider.Select(static (comp, ct) => comp.CreateStubEnvironment());
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)

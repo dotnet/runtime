@@ -113,7 +113,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
-        // we have done so because of reentrancy contraints.)
+        // we have done so because of reentrancy constraints.)
 
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
@@ -1067,14 +1067,17 @@ void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pPEAssembly->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE
-    && m_pDomain.IsValid())
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        m_pDomain->EnumMemoryRegions(flags, true);
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
+        if (m_pDomain.IsValid())
+        {
+            m_pDomain->EnumMemoryRegions(flags, true);
+        }
+
         if (m_pAssembly.IsValid())
         {
             m_pAssembly->EnumMemoryRegions(flags);

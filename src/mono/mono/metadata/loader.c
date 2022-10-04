@@ -79,7 +79,7 @@ static gint32 methods_size;
 static gint32 signatures_size;
 
 void
-mono_loader_init ()
+mono_loader_init (void)
 {
 	static gboolean inited;
 
@@ -1329,7 +1329,7 @@ mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, M
 /**
  * mono_get_method_constrained:
  * This is used when JITing the <code>constrained.</code> opcode.
- * \returns The contrained method, which has been inflated
+ * \returns The constrained method, which has been inflated
  * as the function return value; and the original CIL-stream method as
  * declared in \p cil_method. The latter is used for verification.
  */

@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
 
             if (!string.IsNullOrEmpty(requiredTypeIdentity))
             {
-                Expression typeIdentityConstraintBody = ConstraintServices.CreateTypeIdentityContraint(requiredTypeIdentity, parameter);
+                Expression typeIdentityConstraintBody = ConstraintServices.CreateTypeIdentityConstraint(requiredTypeIdentity, parameter);
 
                 constraintBody = Expression.AndAlso(constraintBody, typeIdentityConstraintBody);
             }
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition
 
             if (requiredCreationPolicy != CreationPolicy.Any)
             {
-                Expression policyConstraintBody = ConstraintServices.CreateCreationPolicyContraint(requiredCreationPolicy, parameter);
+                Expression policyConstraintBody = ConstraintServices.CreateCreationPolicyConstraint(requiredCreationPolicy, parameter);
 
                 constraintBody = Expression.AndAlso(constraintBody, policyConstraintBody);
             }
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition
             return body;
         }
 
-        private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter)
+        private static Expression CreateCreationPolicyConstraint(CreationPolicy policy, ParameterExpression parameter)
         {
             ArgumentNullException.ThrowIfNull(parameter);
 
@@ -101,7 +101,7 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, policy, CompositionConstants.PartCreationPolicyMetadataName));
         }
 
-        private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
+        private static Expression CreateTypeIdentityConstraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
             ArgumentNullException.ThrowIfNull(requiredTypeIdentity);
             ArgumentNullException.ThrowIfNull(parameter);
@@ -202,14 +202,14 @@ namespace System.ComponentModel.Composition
                     ConstraintServices._metadataItemMethod,
                     Expression.Constant(CompositionConstants.ProductDefinitionMetadataName));
 
-            // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+            // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
             Expression productMatchExpression =
                 Expression.Invoke(productImportDefinition.Constraint,
                     Expression.Convert(productExportDefinitionExpression, typeof(ExportDefinition)));
 
-            // baseContraint(exportDefinition) &&
+            // baseConstraint(exportDefinition) &&
             // exportDefinition.Metadata.ContainsKey("ProductDefinition") &&
-            // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+            // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
             Expression<Func<ExportDefinition, bool>> constraint =
                  Expression.Lambda<Func<ExportDefinition, bool>>(
                     Expression.AndAlso(

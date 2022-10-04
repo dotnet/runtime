@@ -338,7 +338,7 @@ namespace System.Data
                         StorageType.Int32 => ((int)argumentValues[0] != 0),
                         StorageType.Double => ((double)argumentValues[0] != 0.0),
                         StorageType.String => bool.Parse((string)argumentValues[0]),
-                        _ => throw ExprException.DatatypeConvertion(argumentValues[0].GetType(), typeof(bool)),
+                        _ => throw ExprException.DatatypeConversion(argumentValues[0].GetType(), typeof(bool)),
                     };
                 case FunctionId.cInt:
                     Debug.Assert(_argumentCount == 1, $"Invalid argument argumentCount for {s_funcs[_info]._name} : {_argumentCount.ToString(FormatProvider)}");

@@ -13,19 +13,26 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
+    <WasmExtraFilesToDeploy Include="non-wasm-page-forcing-runtime-ready.html" />
     <WasmExtraFilesToDeploy Include="wasm-page-without-assets.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
     <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssembly2\ApplyUpdateReferencedAssembly2.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\debugger-test-chinese-char-in-path-ㄨ\debugger-test-chinese-char-in-path-ㄨ.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
+    <ProjectReference Include="..\debugger-test-without-debug-symbols-to-load\debugger-test-without-debug-symbols-to-load.csproj" Private="true" />
+    <ProjectReference Include="..\debugger-test-with-non-user-code-class\debugger-test-with-non-user-code-class.csproj" Private="true" />
     <!-- loaded by *tests*, and not the test app -->
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" ReferenceOutputAssembly="false" Private="true" />
 
     <!-- These are only loaded dynamically -->
     <_AssemblyForDynamicLoading Include="lazy-debugger-test" />
+    <_AssemblyForDynamicLoading Include="lazy-debugger-test-chinese-char-in-path-ㄨ" />
     <_AssemblyForDynamicLoading Include="debugger-test-with-full-debug-type" />
     <_AssemblyForDynamicLoading Include="debugger-test-with-pdb-deleted" />
     <_AssemblyForDynamicLoading Include="debugger-test-without-debug-symbols" />
@@ -42,16 +49,18 @@
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
-      <!-- like is used on blazor -->
+      <!-- -1 enabled debugging and disables debug logging. -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
-
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-chinese-char-in-path-ㄨ.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols-to-load.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
       <!-- Assemblies only dynamically loaded -->
@@ -63,6 +72,7 @@
 
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
+      <WasmAssemblySearchPaths Include="$(OutDir)"/>
     </ItemGroup>
   </Target>
   <Target Name="PreserveEnCAssembliesFromLinking"
@@ -72,6 +82,9 @@
       <!-- Don't modify EnC test assemblies -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssembly.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.dll'))"
           Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>
@@ -89,6 +102,12 @@
                                       Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
+  
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
+  </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
 </Project>

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
@@ -15,6 +16,8 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
+        internal const string RequiresDynamicCodeMessage = "Using Microsoft.Extensions.DependencyInjection requires generating code dynamically at runtime. For example, when using enumerable and generic ValueType services.";
+
         private readonly CallSiteValidator? _callSiteValidator;
 
         private readonly Func<Type, Func<ServiceProviderEngineScope, object?>> _createServiceAccessor;
@@ -33,6 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
 
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
@@ -84,6 +88,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <returns>The service that was produced.</returns>
         public object? GetService(Type serviceType) => GetService(serviceType, Root);
+
+        internal bool IsDisposed() => _disposed;
 
         /// <inheritdoc />
         public void Dispose()
@@ -151,6 +157,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         private Func<ServiceProviderEngineScope, object?> CreateServiceAccessor(Type serviceType)
         {
             ServiceCallSite? callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
@@ -187,6 +194,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return new ServiceProviderEngineScope(this, isRootScope: false);
         }
 
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         private ServiceProviderEngine GetEngine()
         {
             ServiceProviderEngine engine;

@@ -98,6 +98,7 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
         public abstract EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle);
+        public abstract IntPtr GetDynamicInvokeThunk(MethodInvoker invoker);
 
         //==============================================================================================
         // Non-public methods

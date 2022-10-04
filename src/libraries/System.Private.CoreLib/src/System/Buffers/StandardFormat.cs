@@ -164,8 +164,7 @@ namespace System.Buffers
             int count = 0;
             char symbol = Symbol;
 
-            if (symbol != default &&
-                (uint)destination.Length == FormatStringLength) // to eliminate bounds checks
+            if (symbol != default && destination.Length == FormatStringLength)
             {
                 destination[0] = symbol;
                 count = 1;

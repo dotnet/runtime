@@ -180,7 +180,9 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#ifndef HOST_WASI
 	int tmp;
+#endif	
 #ifdef __EMSCRIPTEN_PTHREADS__
 	pthread_attr_t attr;
 	gint res;
@@ -402,13 +404,6 @@ mono_threads_wasm_browser_thread_tid (void)
 #else
 	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
 #endif
-}
-
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	/* Suspend the browser thread after all the other threads are suspended already. */
-	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
 }
 
 #ifndef DISABLE_THREADS

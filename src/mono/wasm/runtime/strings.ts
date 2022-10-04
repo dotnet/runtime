@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { MonoString, MonoStringNull, is_nullish } from "./types";
+import { mono_wasm_new_root_buffer } from "./roots";
+import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root, WasmRoot } from "./roots";
+import { mono_wasm_new_root } from "./roots";
 import { getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 

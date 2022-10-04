@@ -52,6 +52,8 @@ public class Utils
             process.BeginErrorReadLine();
 
         await process.WaitForExitAsync();
+        // Ensure all async handlers have been called
+        process.WaitForExit();
         return process.ExitCode;
     }
 }

@@ -489,7 +489,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	 * The second Bar will be encoded a generic instance of Bar with <A> as parameter.
 	 * On all other places, Bar<A> will be encoded as the GTD itself. This is an implementation
 	 * artifact of how generics are encoded and should be transparent to managed code so we
-	 * need to weed out this diference when retrieving managed System.Type objects.
+	 * need to weed out this difference when retrieving managed System.Type objects.
 	 */
 	norm_type = mono_type_normalize (type);
 	if (norm_type != type) {
@@ -511,7 +511,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		/* This can happen if a TypeBuilder for a generic class K<T,U>
 		 * had reflection_create_generic_class) called on it, but not
 		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
-		 * if the K`2 is refernced from a generic instantiation
+		 * if the K`2 is referenced from a generic instantiation
 		 * (e.g. K<int,string>) that appears as type argument
 		 * (e.g. Dict<string,K<int,string>>), field (e.g. K<int,string>
 		 * Foo) or method signature, parent class or any of the above
@@ -2371,7 +2371,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
  * \param name type name.
  * \param alc the AssemblyLoadContext to check/load into
  * \param image a metadata context (can be NULL).
- * \param error set on errror.
+ * \param error set on error.
  * Retrieves a MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.  On failure returns NULL and sets \p error.

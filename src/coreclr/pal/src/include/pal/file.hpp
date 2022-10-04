@@ -174,7 +174,7 @@ extern "C"
 
 //
 // These routines should all be separated out into something along the lines
-// of fileutils.* (instead of being commingled with the core file object
+// of fileutils.* (instead of being comingled with the core file object
 // code).
 //
 

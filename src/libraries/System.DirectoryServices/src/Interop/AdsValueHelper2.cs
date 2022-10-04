@@ -79,7 +79,7 @@ namespace System.DirectoryServices.Interop
 
         private AdsType GetAdsTypeForManagedType(Type type)
         {
-            // Consider this code is only excercised by DirectorySearcher
+            // Consider this code is only exercised by DirectorySearcher
             // it just translates the types needed by such a component, if more managed
             // types are to be used in the future, this function needs to be expanded.
             if (type == typeof(int))

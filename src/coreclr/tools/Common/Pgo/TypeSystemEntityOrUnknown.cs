@@ -23,7 +23,7 @@ namespace Internal.Pgo
             _data = method;
         }
 
-        readonly object _data;
+        private readonly object _data;
         public TypeDesc AsType => _data as TypeDesc;
         public MethodDesc AsMethod => _data as MethodDesc;
         public FieldDesc AsField => _data as FieldDesc;
@@ -39,7 +39,7 @@ namespace Internal.Pgo
             }
             else
             {
-                return object.ReferenceEquals(_data, other._data);
+                return ReferenceEquals(_data, other._data);
             }
         }
 

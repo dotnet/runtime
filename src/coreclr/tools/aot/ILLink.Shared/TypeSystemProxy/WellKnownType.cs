@@ -1,13 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using StaticCs;
 
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
 
 namespace ILLink.Shared.TypeSystemProxy
 {
+	[Closed]
 	public enum WellKnownType
 	{
 		System_String,
@@ -37,7 +38,6 @@ namespace ILLink.Shared.TypeSystemProxy
 				WellKnownType.System_NotSupportedException => ("System", "NotSupportedException"),
 				WellKnownType.System_Runtime_CompilerServices_DisablePrivateReflectionAttribute => ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute"),
 				WellKnownType.System_Void => ("System", "Void"),
-				_ => throw new ArgumentException ($"{nameof (type)} is not a well-known type."),
 			};
 		}
 		public static string GetNamespace (this WellKnownType type) => GetNamespaceAndName (type).Namespace;

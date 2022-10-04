@@ -519,7 +519,7 @@ public:
             {
                 alloc_count++;
                 pRet = &bucket[i];
-                memset(pRet, 0, sizeof(RBNODE<T>));
+                *pRet = {};
                 pRet->dwInUse = 1;
                 return pRet;
             }
@@ -551,10 +551,7 @@ private:
     RBNODEBUCKET<T> base;
 
 public:
-    RBNODEPOOL()
-    {
-        memset(&base,0,sizeof(RBNODEBUCKET<T>));
-    };
+    RBNODEPOOL() = default;
 
     RBNODE<T>* AllocNode()
     {
@@ -681,7 +678,7 @@ private:
     };
 
 public:
-    RBTREE()
+    RBTREE() : NodePool{}
     {
         pRoot = NodePool.AllocNode();
         InitSpecNode(pRoot);

@@ -7,8 +7,8 @@
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
-  <!-- Project references shouldn't be copied to the output for reference or source projects. -->
-  <ItemDefinitionGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true'">
+  <!-- Project references shouldn't be copied to the output for reference, source, or generator projects. -->
+  <ItemDefinitionGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsGeneratorProject)' == 'true'">
     <ProjectReference>
       <Private>false</Private>
     </ProjectReference>
@@ -28,15 +28,6 @@
                       PrivateAssets="all"
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
-
-  <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
-  <Target Name="DisableProjectReferenceArchitectureMismatchWarningForCoreLib"
-          Condition="'@(_coreLibProjectReference)' != ''"
-          BeforeTargets="ResolveAssemblyReferences">
-    <PropertyGroup>
-      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    </PropertyGroup>
-  </Target>
 
   <!-- Filter out transitive P2Ps which should be excluded. -->
   <Target Name="FilterTransitiveProjectReferences"
@@ -91,6 +82,16 @@
     <ItemGroup>
       <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
                                       Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
+          AfterTargets="FindReferenceAssembliesForReferences"
+          Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">
+    <ItemGroup>
+      <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
+      <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
     </ItemGroup>
   </Target>
 

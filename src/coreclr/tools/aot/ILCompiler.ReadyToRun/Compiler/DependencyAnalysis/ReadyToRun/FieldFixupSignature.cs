@@ -17,15 +17,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public const int MaxCheckableOffset = 0x1FFFFFFF;
         private readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly FieldDesc _fieldDesc;
+        private readonly FieldWithToken _fieldWithToken;
 
-        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, NodeFactory factory)
+        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldWithToken fieldWithToken, NodeFactory factory)
         {
             _fixupKind = fixupKind;
-            _fieldDesc = fieldDesc;
+            _fieldWithToken = fieldWithToken;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            ((CompilerTypeSystemContext)fieldDesc.Context).EnsureLoadableType(fieldDesc.OwningType);
+            ((CompilerTypeSystemContext)fieldWithToken.Field.Context).EnsureLoadableType(fieldWithToken.Field.OwningType);
         }
 
         public override int ClassCode => 271828182;
@@ -38,19 +38,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_fieldDesc);
+                IEcmaModule targetModule = _fieldWithToken.Token.Module;
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 uint baseOffset = 0;
-                uint fieldOffset = (uint)_fieldDesc.Offset.AsInt;
+                uint fieldOffset = (uint)_fieldWithToken.Field.Offset.AsInt;
 
                 if (_fixupKind == ReadyToRunFixupKind.Verify_FieldOffset)
                 {
-                    TypeDesc baseType = _fieldDesc.OwningType.BaseType;
-                    if ((_fieldDesc.OwningType.BaseType != null)
-                        && !_fieldDesc.IsStatic
-                        && !_fieldDesc.OwningType.IsValueType)
+                    TypeDesc baseType = _fieldWithToken.Field.OwningType.BaseType;
+                    if ((_fieldWithToken.Field.OwningType.BaseType != null)
+                        && !_fieldWithToken.Field.IsStatic
+                        && !_fieldWithToken.Field.OwningType.IsValueType)
                     {
-                        MetadataType owningType = (MetadataType)_fieldDesc.OwningType;
+                        MetadataType owningType = (MetadataType)_fieldWithToken.Field.OwningType;
                         baseOffset = (uint)owningType.FieldBaseOffset().AsInt;
                         if (factory.CompilationModuleGroup.NeedsAlignmentBetweenBaseTypeAndDerived((MetadataType)baseType, owningType))
                         {
@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dataBuilder.EmitUInt(fieldOffset);
                 }
 
-                dataBuilder.EmitFieldSignature(_fieldDesc, innerContext);
+                dataBuilder.EmitFieldSignature(_fieldWithToken, innerContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"FieldFixupSignature({_fixupKind.ToString()}): ");
-            sb.Append(nameMangler.GetMangledFieldName(_fieldDesc));
+            _fieldWithToken.AppendMangledName(nameMangler, sb);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return comparer.Compare(_fieldDesc, otherNode._fieldDesc);
+            return _fieldWithToken.CompareTo(otherNode._fieldWithToken, comparer);
         }
     }
 }

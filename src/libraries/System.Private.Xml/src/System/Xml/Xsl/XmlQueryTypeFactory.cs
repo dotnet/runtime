@@ -1365,7 +1365,7 @@ namespace System.Xml.Xsl
                             XmlQueryType atomicSeq = Type((XmlSchemaSimpleType)schemaType, false);
 
                             // Add prime to a choice
-                            // It doen't have to be a single item!
+                            // It doesn't have to be a single item!
                             PrimeChoice(list, atomicSeq.Prime);
 
                             // Add cardinality to a choice

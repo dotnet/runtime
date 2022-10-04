@@ -86,7 +86,6 @@ static gboolean v7_supported = FALSE;
 static gboolean v7s_supported = FALSE;
 static gboolean v7k_supported = FALSE;
 static gboolean thumb_supported = FALSE;
-static gboolean thumb2_supported = FALSE;
 /*
  * Whenever to use the ARM EABI
  */
@@ -880,7 +879,6 @@ mono_arch_init (void)
 	thumb_supported = TRUE;
 #else
 	thumb_supported = mono_hwcap_arm_has_thumb;
-	thumb2_supported = mono_hwcap_arm_has_thumb2;
 #endif
 
 	/* Format: armv(5|6|7[s])[-thumb[2]] */
@@ -897,7 +895,6 @@ mono_arch_init (void)
 		}
 
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
-		thumb2_supported = strstr (cpu_arch, "thumb2") != NULL;
 		g_free (cpu_arch);
 	}
 }
@@ -7443,7 +7440,6 @@ mono_arch_set_target (char *mtriple)
 		v7_supported = TRUE;
 		v7s_supported = TRUE;
 		thumb_supported = TRUE;
-		thumb2_supported = TRUE;
 	}
 	if (strstr (mtriple, "darwin") || strstr (mtriple, "ios")) {
 		v5_supported = TRUE;
