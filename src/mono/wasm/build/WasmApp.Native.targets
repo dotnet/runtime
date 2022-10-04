@@ -502,8 +502,6 @@
     </ItemGroup>
     <PropertyGroup>
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
-      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
-      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(ActualEmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
       <_VersionMismatchMessage>Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures.</_VersionMismatchMessage>
     </PropertyGroup>
 
