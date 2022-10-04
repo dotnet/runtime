@@ -9747,13 +9747,16 @@ MONO_RESTORE_WARNING
 			// MinAcross
 			LLVMTypeRef arg_t = LLVMTypeOf (cmp);
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
+			LLVMValueRef args [] = { cmp, cmp };
 			if (ins->inst_c0)
-				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SMINV, ovr_tag, &cmp, "");
+				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SMINP, ovr_tag, args, "");
 			else
-				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UMINV, ovr_tag, &cmp, "");
-			if (elemt == i1_t || elemt == i2_t)
-				// @llvm.aarch64.neon.sminv.i32.v8i16(<8 x i16>) ought to return an i16, but doesn't in LLVM 9.
-				first_elem = LLVMBuildTrunc (builder, first_elem, elemt, "");
+				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UMINP, ovr_tag, args, "");
+			// Extract [0]
+			first_elem = LLVMBuildExtractElement (builder, first_elem, const_int32 (0), "");
+			// if (elemt == i1_t || elemt == i2_t)
+			// 	// @llvm.aarch64.neon.sminv.i32.v8i16(<8 x i16>) ought to return an i16, but doesn't in LLVM 9.
+			// 	first_elem = LLVMBuildTrunc (builder, first_elem, elemt, "");
 #else
 			LLVMValueRef mask [MAX_VECTOR_ELEMS], shuffle;
 			int half = nelems / 2;
