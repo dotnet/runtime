@@ -3381,7 +3381,9 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBu
         nLen = nLen + static_cast<int>(strLen);
     };
 
-    // Subset of TypeString that does just what we need while staying in UTF8.
+    // Subset of TypeString that does just what we need while staying in UTF8
+    // and avoiding expensive copies. This function is called a lot in checked
+    // builds.
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
