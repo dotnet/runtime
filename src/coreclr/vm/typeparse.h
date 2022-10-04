@@ -37,6 +37,25 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
     }
 }
 
+bool inline IsTypeNameReservedChar(char ch)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    switch (ch)
+    {
+    case ',':
+    case '[':
+    case ']':
+    case '&':
+    case '*':
+    case '+':
+    case '\\':
+        return true;
+
+    default:
+        return false;
+    }
+}
 
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,

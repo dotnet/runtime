@@ -20,55 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 //------------------------------------------------------------------------
-// StringPrinter::Grow:
-//   Grow the internal buffer to a new specified size.
-//
-// Arguments:
-//    newSize - the new size.
-//
-void StringPrinter::Grow(size_t newSize)
-{
-    assert(newSize > m_bufferMax);
-    char* newBuffer = m_alloc.allocate<char>(newSize);
-    memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
-
-    m_buffer    = newBuffer;
-    m_bufferMax = newSize;
-}
-
-//------------------------------------------------------------------------
-// StringPrinter::AllocToPrint:
-//   Allocate a chunk of characters to be filled in by the caller.
-//
-// Arguments:
-//    size - the number of characters.
-//
-// Returns:
-//   Pointer to the location to start filling in the characters.
-//
-// Remarks:
-//   This function will ensure that returned[size] == '\0'. It is expected that
-//   the caller fills in the characters returned[0..size - 1].
-//
-char* StringPrinter::AllocToPrint(size_t size)
-{
-    size_t newMax = m_bufferMax;
-    while (newMax - m_bufferIndex <= size) // <= to fit null terminator
-    {
-        newMax *= 2;
-    }
-
-    if (newMax != m_bufferMax)
-    {
-        Grow(newMax);
-    }
-
-    m_bufferIndex += size;
-    m_buffer[m_bufferIndex] = '\0';
-    return m_buffer + (m_bufferIndex - size);
-}
-
-//------------------------------------------------------------------------
 // StringPrinter::Printf:
 //   Print a formatted string.
 //
@@ -93,7 +44,12 @@ void StringPrinter::Printf(const char* format, ...)
         if (printed < 0)
         {
             // buffer too small
-            Grow(m_bufferMax * 2);
+            size_t newSize   = m_bufferMax * 2;
+            char*  newBuffer = m_alloc.allocate<char>(newSize);
+            memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
+
+            m_buffer    = newBuffer;
+            m_bufferMax = newSize;
         }
         else
         {
@@ -155,17 +111,26 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
         return;
     }
 
-    int size      = 0;
-    int actualLen = info.compCompHnd->appendClassName(nullptr, &size, clsHnd);
+    char  buffer[256];
+    char* pBufferMut = buffer;
+    int   size       = sizeof(buffer);
+    int   actualLen  = info.compCompHnd->appendClassName(&pBufferMut, &size, clsHnd);
     if (actualLen <= 0)
     {
         printer->Printf("<unnamed>");
     }
+    else if (actualLen < sizeof(buffer))
+    {
+        printer->Printf("%s", buffer);
+    }
     else
     {
-        char* name = printer->AllocToPrint(static_cast<size_t>(actualLen));
-        actualLen++; // null-terminator
-        info.compCompHnd->appendClassName(&name, &actualLen, clsHnd);
+        char* pBuffer = new (this, CMK_DebugOnly) char[actualLen + 1];
+        pBufferMut    = pBuffer;
+        size          = actualLen + 1;
+        info.compCompHnd->appendClassName(&pBufferMut, &size, clsHnd);
+
+        printer->Printf("%s", pBuffer);
     }
 
     if (!includeInstantiation)

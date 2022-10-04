@@ -11318,12 +11318,6 @@ public:
         m_buffer[m_bufferIndex] = '\0';
     }
 
-    // Allocate a chunk of 'size' bytes at the current location to be printed.
-    // Will increment the index by the size specified. Assumes the user will
-    // copy 'size' characters directly into the buffer returned.
-    // returned[size] will be null terminated.
-    char* AllocToPrint(size_t size);
-
     void Printf(const char* format, ...);
 };
 

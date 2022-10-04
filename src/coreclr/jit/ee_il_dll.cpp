@@ -1560,51 +1560,24 @@ unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 
 //------------------------------------------------------------------------
 // eeGetShortClassName: wraps appendClassName to provide functionality
-// similar to eeGetClassName(), but returns a class name that is shortened,
-// not using full assembly info.
+// similar to eeGetClassName(), but returns a class name without any instantiation.
 //
 // Arguments:
 //   clsHnd - the class handle to get the type name of
 //
 // Return value:
-//   string class name. Note: unlike eeGetClassName/getClassName, this string is
-//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
+//   String without instantiation.
 //
 const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            int len = 0;
-            // We need to pass size zero, get back the actual buffer size required, allocate that space,
-            // and call the API again to get the full string.
-            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz);
-
-            size_t cchBufLen  = (size_t)cchStrLen + /* null terminator */ 1;
-            pParam->className = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char>(cchBufLen);
-            char* pbuf        = pParam->className;
-            len               = (int)cchBufLen;
-
-            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz);
-            noway_assert(cchStrLen == cchResultStrLen);
-            noway_assert(pParam->className[cchResultStrLen] == 0);
-        },
-        &param);
-
-    if (!success)
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, false); }))
     {
-        const char substituteClassName[] = "hackishClassName";
-        size_t     cchLen                = ArrLen(substituteClassName);
-        param.className                  = getAllocator(CMK_DebugOnly).allocate<char>(cchLen);
-        memcpy(param.className, substituteClassName, cchLen * sizeof(char));
+        printer.Truncate(0);
+        printer.Printf("hackishClassName");
     }
 
-    return param.className;
+    return printer.GetBuffer();
 }
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)

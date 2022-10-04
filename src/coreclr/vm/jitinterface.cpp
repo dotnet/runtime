@@ -3300,6 +3300,46 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
     return result;
 }
 
+template<typename TAppend>
+static void AppendTypeNameEscaped(const char* str, TAppend append)
+{
+    CONTRACTL {
+        MODE_PREEMPTIVE;
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    bool hasReservedChar = false;
+    for (const char* curChar = str; *curChar; curChar++)
+    {
+        if (IsTypeNameReservedChar(*curChar))
+        {
+            hasReservedChar = true;
+            break;
+        }
+    }
+
+    if (!hasReservedChar)
+    {
+        append(str);
+        return;
+    }
+
+    while (*str)
+    {
+        if (IsTypeNameReservedChar(*str))
+        {
+            append("\\");
+        }
+        else
+        {
+            char singleChar[2] = { *str, 0 };
+            append(singleChar);
+        }
+
+        str++;
+    }
+}
 
 /*********************************************************************/
 int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBuf,
@@ -3316,25 +3356,77 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBu
     JIT_TO_EE_TRANSITION();
 
     TypeHandle th(clsHnd);
-    StackSString ss;
-    TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatNoInst);
-    const char* szString = ss.GetUTF8();
-    nLen = (int)strlen(szString);
+    IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
+
+    auto append = [ppBuf, pnBufLen, &nLen](const char* str)
+    {
+        size_t strLen = strlen(str);
+
+        if ((ppBuf != nullptr) && (pnBufLen != nullptr))
+        {
+            if (strLen >= static_cast<size_t>(*pnBufLen))
+            {
+                if (*pnBufLen > 1)
+                {
+                    memcpy(*ppBuf, str, *pnBufLen - 1);
+                    *ppBuf += *pnBufLen - 1;
+                    *pnBufLen = 1;
+                }
+            }
+            else
+            {
+                memcpy(*ppBuf, str, strLen);
+                *ppBuf += strLen;
+            }
+        }
+
+        nLen += strLen;
+    };
+
+    // Subset of TypeString that does just what we need while staying in UTF8.
+    mdTypeDef td = th.GetCl();
+    if (IsNilToken(td))
+    {
+        append("(dynamicClass)");
+    }
+    else
+    {
+        DWORD attr;
+        IfFailThrow(pImport->GetTypeDefProps(td, &attr, NULL));
+
+        StackSArray<mdTypeDef> nestedHierarchy;
+        nestedHierarchy.Append(td);
+
+        if (IsTdNested(attr))
+        {
+            while (SUCCEEDED(pImport->GetNestedClassProps(td, &td)))
+                nestedHierarchy.Append(td);
+        }
+
+        for (SCOUNT_T i = nestedHierarchy.GetCount() - 1; i >= 0; i--)
+        {
+            LPCUTF8 name;
+            LPCUTF8 nameSpace;
+            IfFailThrow(pImport->GetNameOfTypeDef(nestedHierarchy[i], &name, &nameSpace));
+
+            if ((nameSpace != NULL) && *nameSpace != '\0')
+            {
+                AppendTypeNameEscaped(nameSpace, append);
+                append(".");
+            }
+
+            AppendTypeNameEscaped(name, append);
+
+            if (i != 0)
+            {
+                append("+");
+            }
+        }
+    }
+
     if (*pnBufLen > 0)
     {
-        // Copy as much as will fit.
-        char* pBuf = *ppBuf;
-        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
-        for (int i = 0; i < nLenToCopy - 1; i++)
-        {
-            pBuf[i] = szString[i];
-        }
-        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
-
-        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
-        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
-        (*ppBuf) += nLenToCopy - 1;
-        (*pnBufLen) -= nLenToCopy - 1;
+        **ppBuf = '\0';
     }
 
     EE_TO_JIT_TRANSITION();
