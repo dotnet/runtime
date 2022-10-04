@@ -318,10 +318,10 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 //
 const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier)
 {
-    const char* className;
-    const char* methodName = eeGetMethodName(hnd, &className);
     if ((eeGetHelperNum(hnd) != CORINFO_HELP_UNDEF) || eeIsNativeMethod(hnd))
     {
+        const char* className;
+        const char* methodName = eeGetMethodName(hnd, &className);
         return methodName;
     }
 
