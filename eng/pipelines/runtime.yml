@@ -1334,17 +1334,3 @@ jobs:
         name: SourceBuildPackages
       timeoutInMinutes: 95
       condition: eq(variables['isRollingBuild'], true)
-
-- ${{ if eq(variables['isRollingBuild'], false) }}:
-  - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: Release
-        helixQueueGroup: pr
-        platforms:
-        - SourceBuild_Linux_x64
-        jobParameters:
-          nameSuffix: PortableSourceBuild
-          extraStepsParameters:
-            name: SourceBuildPackages
-          timeoutInMinutes: 95

@@ -163,13 +163,12 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
+    buildConfig: Release
+    helixQueueGroup: pr
     platforms:
     - SourceBuild_Linux_x64
     jobParameters:
-      nameSuffix: SourceBuild
-      timeoutInMinutes: 120
-      condition:
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      nameSuffix: PortableSourceBuild
+      extraStepsParameters:
+        name: SourceBuildPackages
+      timeoutInMinutes: 95
