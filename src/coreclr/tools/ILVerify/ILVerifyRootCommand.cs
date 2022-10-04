@@ -69,8 +69,8 @@ namespace ILVerify
                     Console.ResetColor();
                     Console.ForegroundColor = ConsoleColor.Red;
 
-                    // Omit the stacktrace from the error (different from the default System.CommandLine exception handler)
                     Console.Error.WriteLine("Error: " + e.Message);
+                    Console.Error.WriteLine(e.ToString());
 
                     Console.ResetColor();
 

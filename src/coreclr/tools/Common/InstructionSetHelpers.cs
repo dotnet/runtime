@@ -38,7 +38,7 @@ namespace System.CommandLine
                 List<string> instructionSetParams = new List<string>();
 
                 // Normalize instruction set format to include implied +.
-                string[] instructionSetParamsInput = instructionSet.Split(",");
+                string[] instructionSetParamsInput = instructionSet.Split(',');
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
                     instructionSet = instructionSetParamsInput[i];

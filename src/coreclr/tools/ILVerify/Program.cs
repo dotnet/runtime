@@ -107,7 +107,7 @@ namespace ILVerify
             }
         }
 
-        internal int Run()
+        public int Run()
         {
             _verifier = new Verifier(this, new VerifierOptions
             {
@@ -397,7 +397,7 @@ namespace ILVerify
 
         private bool ShouldVerifyMemberName(string memberName)
         {
-            
+
             if (_includePatterns.Length > 0 && !Array.Exists(_includePatterns, p => p.IsMatch(memberName)))
             {
                 return false;
