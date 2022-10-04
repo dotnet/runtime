@@ -14,7 +14,6 @@
     <Platforms>x86;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Features>noRefSafetyRulesAttribute=true</Features>
   </PropertyGroup>
 
   <ItemGroup>    
