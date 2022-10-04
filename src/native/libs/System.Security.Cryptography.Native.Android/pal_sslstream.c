@@ -3,6 +3,7 @@
 
 #include "pal_sslstream.h"
 #include "pal_ssl.h"
+#include "pal_trust_manager.h"
 
 // javax/net/ssl/SSLEngineResult$HandshakeStatus
 enum
@@ -283,14 +284,49 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(void)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t csharpObjectHandle)
 {
     JNIEnv* env = GetJNIEnv();
 
-    // SSLContext sslContext = SSLContext.getDefault();
-    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
-    if (CheckJNIExceptions(env))
-        return NULL;
+    // Get SSLContext instance
+    jstring tls13 = make_java_string(env, "TLSv1.3");
+    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls13);
+    if (TryClearJNIExceptions(env))
+    {
+        // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
+        // sslContext = SSLContext.getInstance("TLSv1.2");
+        jstring tls12 = make_java_string(env, "TLSv1.2");
+        sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
+        ReleaseLRef(env, tls12);
+        // ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+    ReleaseLRef(env, tls13);
+
+    // Init key store
+    jstring ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    jobject keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
+    (*env)->CallVoidMethod(env, keyStore, g_KeyStoreLoad, NULL, NULL);
+
+    // init key managers
+    // jstring kmfType = make_java_string(env, "PKIX");
+    // jobject kmf = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, kmfType);
+    // (*env)->CallVoidMethod(env, kmf, g_KeyManagerFactoryInit, keyStore, NULL);
+    // jobject keyManagers = (*env)->CallObjectMethod(env, kmf, g_KeyManagerFactoryGetKeyManagers);
+
+    // Init trust managers
+    jobjectArray trustManagers =
+        csharpObjectHandle != 0
+            ? init_trust_managers_with_custom_validator(env, csharpObjectHandle)
+            : NULL;
+
+    // Init the SSLContext
+    // (*env)->CallVoidMethod(env, sslContext, g_SSLContextInitMethod, keyManagers, trustManagers, NULL);
+    (*env)->CallVoidMethod(env, sslContext, g_SSLContextInitMethod, NULL, trustManagers, NULL);
+
+    // // SSLContext sslContext = SSLContext.getDefault();
+    // jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
+    // if (CheckJNIExceptions(env))
+    //     return NULL;
 
     SSLStream* sslStream = xcalloc(1, sizeof(SSLStream));
     sslStream->sslContext = ToGRef(env, sslContext);
@@ -360,7 +396,8 @@ cleanup:
     return ret;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey,
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t csharpObjectHandle,
+                                                               uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
                                                                jobject* /*X509Certificate[]*/ certs,
@@ -369,7 +406,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
-    INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers);
+    INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers, trustManagers);
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
     loc[tls13] = make_java_string(env, "TLSv1.3");
@@ -409,10 +446,11 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // KeyManager[] keyManagers = kmf.getKeyManagers();
-    // sslContext.init(keyManagers, null, null);
+    // sslContext.init(keyManagers, trustManagers, null);
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
+    loc[trustManagers] = csharpObjectHandle != 0 ? init_trust_managers_with_custom_validator(env, csharpObjectHandle) : NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], NULL, NULL);
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     sslStream = xcalloc(1, sizeof(SSLStream));

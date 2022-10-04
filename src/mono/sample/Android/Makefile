@@ -1,5 +1,5 @@
 MONO_CONFIG=Release
-MONO_ARCH?=x64
+MONO_ARCH?=arm64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false

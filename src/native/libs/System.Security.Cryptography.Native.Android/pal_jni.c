@@ -469,6 +469,24 @@ jmethodID g_KeyAgreementInit;
 jmethodID g_KeyAgreementDoPhase;
 jmethodID g_KeyAgreementGenerateSecret;
 
+// javax/net/ssl/TrustManagerFactory
+jclass    g_TrustManagerFactory;
+jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+jmethodID g_TrustManagerFactoryGetInstance;
+jmethodID g_TrustManagerFactoryInit;
+jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+jclass g_X509TrustManager;
+
+// java/security/cert/Certificate
+jclass    g_Certificate;
+jmethodID g_CertificateGetEncoded;
+
+// net/dot/android/crypto/TrustManagerProxy
+jclass    g_TrustManagerProxy;
+jmethodID g_TrustManagerProxyCtor;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -1045,6 +1063,20 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyAgreementInit           = GetMethod(env, false, g_KeyAgreementClass, "init", "(Ljava/security/Key;)V");
     g_KeyAgreementDoPhase        = GetMethod(env, false, g_KeyAgreementClass, "doPhase", "(Ljava/security/Key;Z)Ljava/security/Key;");
     g_KeyAgreementGenerateSecret = GetMethod(env, false, g_KeyAgreementClass, "generateSecret", "()[B");
+
+    g_TrustManagerFactory     = GetClassGRef(env, "javax/net/ssl/TrustManagerFactory");
+    g_TrustManagerFactoryGetDefaultAlgorithm = GetMethod(env, true, g_TrustManagerFactory, "getDefaultAlgorithm", "()Ljava/lang/String;");
+    g_TrustManagerFactoryGetInstance = GetMethod(env, true, g_TrustManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/TrustManagerFactory;");
+    g_TrustManagerFactoryInit = GetMethod(env, false, g_TrustManagerFactory, "init", "(Ljava/security/KeyStore;)V");
+    g_TrustManagerFactoryGetTrustManagers = GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
+
+    g_X509TrustManager     = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
+
+    g_Certificate     = GetClassGRef(env, "java/security/cert/Certificate");
+    g_CertificateGetEncoded     = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
+
+    g_TrustManagerProxy     = GetClassGRef(env, "net/dot/android/crypto/TrustManagerProxy");
+    g_TrustManagerProxyCtor = GetMethod(env, false, g_TrustManagerProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
 
     return JNI_VERSION_1_6;
 }

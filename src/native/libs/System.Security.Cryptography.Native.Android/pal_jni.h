@@ -484,6 +484,24 @@ extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
 
+// javax/net/ssl/TrustManagerFactory
+extern jclass    g_TrustManagerFactory;
+extern jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+extern jmethodID g_TrustManagerFactoryGetInstance;
+extern jmethodID g_TrustManagerFactoryInit;
+extern jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+extern jclass g_X509TrustManager;
+
+// java/security/cert/Certificate
+extern jclass    g_Certificate;
+extern jmethodID g_CertificateGetEncoded;
+
+// net/dot/android/crypto/TrustManagerProxy
+extern jclass    g_TrustManagerProxy;
+extern jmethodID g_TrustManagerProxyCtor;
+
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)
