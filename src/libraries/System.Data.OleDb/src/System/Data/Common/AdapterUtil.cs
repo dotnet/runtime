@@ -1259,17 +1259,7 @@ namespace System.Data.Common
 
         internal static int IntPtrToInt32(nint value)
         {
-            if (4 == IntPtr.Size)
-            {
-                return (int)value;
-            }
-            else
-            {
-                long lval = (long)value;
-                lval = Math.Min((long)int.MaxValue, lval);
-                lval = Math.Max((long)int.MinValue, lval);
-                return (int)lval;
-            }
+            return (int)value;
         }
 
         // TODO: are those names appropriate for common code?

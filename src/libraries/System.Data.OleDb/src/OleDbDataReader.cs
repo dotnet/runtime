@@ -2324,22 +2324,15 @@ namespace System.Data.OleDb
 
                     if (4 == IntPtr.Size)
                     {
-                        info.ordinal = (IntPtr)columnordinal.columnBinding.Value_UI4();
-                    }
-                    else
-                    {
-                        info.ordinal = (IntPtr)columnordinal.columnBinding.Value_UI8();
-                    }
-                    short wType = unchecked((short)dbtype.columnBinding.Value_UI2());
-
-                    if (4 == IntPtr.Size)
-                    {
+                        info.ordinal = (nint)columnordinal.columnBinding.Value_UI4();
                         info.size = unchecked((int)columnsize.columnBinding.Value_UI4());
                     }
                     else
                     {
+                        info.ordinal = (nint)columnordinal.columnBinding.Value_UI8();
                         info.size = ADP.IntPtrToInt32((nint)columnsize.columnBinding.Value_UI8());
                     }
+                    short wType = unchecked((short)dbtype.columnBinding.Value_UI2());
 
                     binding = numericprecision.columnBinding;
                     if (!binding.IsValueNull())
