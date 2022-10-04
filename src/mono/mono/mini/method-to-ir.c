@@ -5688,7 +5688,6 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 		if (method->is_inflated) {
 			if (((MonoMethodInflated*)method)->declaring->slot == -1)
 				return FALSE;
-
 		} else {
 			return FALSE;
 		}
@@ -5742,7 +5741,7 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 		iface_method_sig->generic_param_count == 0))
 		return NULL;
 
-	if (!check_get_virtual_method_assumptions(klass, iface_method))
+	if (!check_get_virtual_method_assumptions (klass, iface_method))
 		return NULL;
 
 	ERROR_DECL (struct_method_error);
@@ -7120,7 +7119,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_ARGLOAD (cfg, ins, n);
 			}
 			*sp++ = ins;
-			if (!m_method_is_icall (method)) {
+			/*if (!m_method_is_icall (method)) */{
 				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]->data.klass);
 				if (callvirt_target)
 					cmethod_override = callvirt_target;
@@ -7580,8 +7579,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			// The method to be called may have already been resolved when handling a previous opcode. In that
 			// case, we ignore the operand and act as CALL, instead of CALLVIRT.
-      // E.g. https://github.com/dotnet/runtime/issues/32166 (box+callvirt optimization)
-
+      		// E.g. https://github.com/dotnet/runtime/issues/32166 (box+callvirt optimization)
 			if (cmethod_override) {
 				cmethod = cmethod_override;
 				cmethod_override = NULL;
@@ -7595,9 +7593,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cfg->verbose_level > 3)
 				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
-
-			//if(0 == strcmp("int HelloWorld.Program:Test (HelloWorld.B)", mono_method_get_full_name(method)))
-			//	printf("=== HERE ===\n");
 
 			MonoMethod *cil_method; cil_method = cmethod;
 			if (constrained_class) {
