@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Tests
             
             static string Convert(string name)
             {
-                JsonNamingPolicy policy = JsonNamingPolicy.SnakeLowerCase;
+                JsonNamingPolicy policy = JsonNamingPolicy.SnakeCaseLower;
                 string value = policy.ConvertName(name);
                 return value;
             }
@@ -116,7 +116,7 @@ namespace System.Text.Json.Serialization.Tests
             
             static string Convert(string name)
             {
-                JsonNamingPolicy policy = JsonNamingPolicy.SnakeUpperCase;
+                JsonNamingPolicy policy = JsonNamingPolicy.SnakeCaseUpper;
                 string value = policy.ConvertName(name);
                 return value;
             }
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Tests
             
             static string Convert(string name)
             {
-                JsonNamingPolicy policy = JsonNamingPolicy.KebabLowerCase;
+                JsonNamingPolicy policy = JsonNamingPolicy.KebabCaseLower;
                 string value = policy.ConvertName(name);
                 return value;
             }
@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Tests
             
             static string Convert(string name)
             {
-                JsonNamingPolicy policy = JsonNamingPolicy.KebabUpperCase;
+                JsonNamingPolicy policy = JsonNamingPolicy.KebabCaseUpper;
                 string value = policy.ConvertName(name);
                 return value;
             }

@@ -157,10 +157,10 @@ namespace System.Text.Json
     {
         protected JsonNamingPolicy() { }
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
-        public static System.Text.Json.JsonNamingPolicy SnakeLowerCase { get { throw null; } }
-        public static System.Text.Json.JsonNamingPolicy SnakeUpperCase { get { throw null; } }
-        public static System.Text.Json.JsonNamingPolicy KebabLowerCase { get { throw null; } }
-        public static System.Text.Json.JsonNamingPolicy KebabUpperCase { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
     }
     public readonly partial struct JsonProperty
@@ -918,10 +918,10 @@ namespace System.Text.Json.Serialization
     {
         Unspecified = 0,
         CamelCase = 1,
-        SnakeLowerCase = 2,
-        SnakeUpperCase = 3,
-        KebabLowerCase = 4,
-        KebabUpperCase = 5,
+        SnakeCaseLower = 2,
+        SnakeCaseUpper = 3,
+        KebabCaseLower = 4,
+        KebabCaseUpper = 5,
     }
     [System.FlagsAttribute]
     public enum JsonNumberHandling

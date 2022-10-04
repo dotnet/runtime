@@ -24,23 +24,23 @@ namespace System.Text.Json.Serialization
         CamelCase = 1,
 
         /// <summary>
-        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeLowerCase"/> be used to convert JSON property names.
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeCaseLower"/> be used to convert JSON property names.
         /// </summary>
-        SnakeLowerCase = 2,
+        SnakeCaseLower = 2,
 
         /// <summary>
-        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeUpperCase"/> be used to convert JSON property names.
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeCaseUpper"/> be used to convert JSON property names.
         /// </summary>
-        SnakeUpperCase = 3,
+        SnakeCaseUpper = 3,
 
         /// <summary>
-        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.KebabLowerCase"/> be used to convert JSON property names.
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.KebabCaseLower"/> be used to convert JSON property names.
         /// </summary>
-        KebabLowerCase = 4,
+        KebabCaseLower = 4,
 
         /// <summary>
-        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.KebabUpperCase"/> be used to convert JSON property names.
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.KebabCaseUpper"/> be used to convert JSON property names.
         /// </summary>
-        KebabUpperCase = 5
+        KebabCaseUpper = 5
     }
 }

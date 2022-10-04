@@ -1519,10 +1519,10 @@ namespace System.Text.Json.SourceGeneration
                     JsonNamingPolicy? instance = namingPolicy switch
                     {
                         JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
-                        JsonKnownNamingPolicy.SnakeLowerCase => JsonNamingPolicy.SnakeLowerCase,
-                        JsonKnownNamingPolicy.SnakeUpperCase => JsonNamingPolicy.SnakeUpperCase,
-                        JsonKnownNamingPolicy.KebabLowerCase => JsonNamingPolicy.KebabLowerCase,
-                        JsonKnownNamingPolicy.KebabUpperCase => JsonNamingPolicy.KebabUpperCase,
+                        JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                        JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                        JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                        JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
                         _ => null,
                     };
 
