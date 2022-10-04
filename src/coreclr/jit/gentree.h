@@ -910,10 +910,10 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
-    // Node is contained, but it isn't contained due to being a containable int.
-    bool isContainedCompareChainSegment() const
+    // Node and its child in isolation form a contained compare chain.
+    bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return isContained() && !isContainedIntOrIImmed();
+        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
     }
 
     bool isContainedFltOrDblImmed() const
