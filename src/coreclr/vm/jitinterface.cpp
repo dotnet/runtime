@@ -3409,7 +3409,7 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBu
             LPCUTF8 nameSpace;
             IfFailThrow(pImport->GetNameOfTypeDef(nestedHierarchy[i], &name, &nameSpace));
 
-            if ((nameSpace != NULL) && *nameSpace != '\0')
+            if ((nameSpace != NULL) && (*nameSpace != '\0'))
             {
                 AppendTypeNameEscaped(nameSpace, append);
                 append(".");
