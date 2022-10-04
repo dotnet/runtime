@@ -687,6 +687,19 @@ namespace System
             }
         }
 
+        // Throws if 'T' is disallowed in Vector512<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
+            where T : struct
+        {
+            if (!Vector512<T>.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
 #if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
