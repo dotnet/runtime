@@ -2773,10 +2773,14 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return;
 
-	/* TODO: metadata-update: implement support for added fields */
-	g_assert (!m_field_is_from_update (field));
+        if (G_UNLIKELY (m_field_is_from_update (field))) {
+                ERROR_DECL (error);
+                uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+                dest = mono_metadata_update_added_field_ldflda (obj, field->type, token, error);
+                mono_error_assert_ok (error);
+        } else
+                dest = (char*)obj + m_field_get_offset (field);
 
-	dest = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
