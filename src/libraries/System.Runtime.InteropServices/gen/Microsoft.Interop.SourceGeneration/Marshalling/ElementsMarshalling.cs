@@ -324,22 +324,22 @@ namespace Microsoft.Interop
                         IdentifierName("Length")),
                         StubCodeContext.Stage.Cleanup);
 
-            if (!contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
+            if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
-                return Block(
-                    LocalDeclarationStatement(VariableDeclaration(
-                    GenericName(
-                        Identifier(TypeNames.System_Span),
-                        TypeArgumentList(SingletonSeparatedList(_unmanagedElementType))),
-                    SingletonSeparatedList(
-                        VariableDeclarator(
-                            Identifier(nativeSpanIdentifier))
-                        .WithInitializer(EqualsValueClause(
-                            GetUnmanagedValuesDestination(info, context)))))),
-                    contentsCleanupStatements);
+                return EmptyStatement();
             }
 
-            return EmptyStatement();
+            return Block(
+                LocalDeclarationStatement(VariableDeclaration(
+                GenericName(
+                    Identifier(TypeNames.System_Span),
+                    TypeArgumentList(SingletonSeparatedList(_unmanagedElementType))),
+                SingletonSeparatedList(
+                    VariableDeclarator(
+                        Identifier(nativeSpanIdentifier))
+                    .WithInitializer(EqualsValueClause(
+                        GetUnmanagedValuesDestination(info, context)))))),
+                contentsCleanupStatements);
         }
 
         protected StatementSyntax GenerateContentsMarshallingStatement(

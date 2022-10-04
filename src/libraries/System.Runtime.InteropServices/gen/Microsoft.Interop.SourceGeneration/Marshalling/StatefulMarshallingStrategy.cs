@@ -471,7 +471,6 @@ namespace Microsoft.Interop
             if (!_shape.HasFlag(MarshallerShape.Free))
                 yield break;
 
-
             string marshaller = StatefulValueMarshalling.GetMarshallerIdentifier(info, context);
             // <marshaller>.Free();
             yield return ExpressionStatement(
