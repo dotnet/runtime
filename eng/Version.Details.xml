@@ -206,21 +206,21 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>ce7e603e0d3ef63bcb2f99139b1dd3dc9b837a2d</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22476.3">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22503.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e31e776d3f6bb06b4fc85ed0433eae515da07e5a</Sha>
+      <Sha>127f85df6a4b2b0574aaf1270f1899857e7be210</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="14.0.0-alpha.1.22476.3">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="14.0.0-alpha.1.22503.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e31e776d3f6bb06b4fc85ed0433eae515da07e5a</Sha>
+      <Sha>127f85df6a4b2b0574aaf1270f1899857e7be210</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22476.3">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22503.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e31e776d3f6bb06b4fc85ed0433eae515da07e5a</Sha>
+      <Sha>127f85df6a4b2b0574aaf1270f1899857e7be210</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="14.0.0-alpha.1.22476.3">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="14.0.0-alpha.1.22503.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e31e776d3f6bb06b4fc85ed0433eae515da07e5a</Sha>
+      <Sha>127f85df6a4b2b0574aaf1270f1899857e7be210</Sha>
     </Dependency>
     <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22476.3">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
