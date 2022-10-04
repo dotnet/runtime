@@ -229,12 +229,14 @@ namespace System.Text.Json
                 out bool foundDanglingEntries,
                 [NotNullWhen(true)] out CachingContext? result)
             {
+                // When called outside of the lock this method can be subject to races.
+                // We're fine with this since worst-case scenario the lookup will report
+                // a false negative and trigger a further lookup after the lock has been acquired.
 
                 WeakReference<CachingContext>?[] trackedContexts = s_trackedContexts;
                 int size = s_size;
 
                 foundDanglingEntries = false;
-
                 for (int i = 0; i < size; i++)
                 {
                     if (trackedContexts[i] is WeakReference<CachingContext> weakRef &&
@@ -273,10 +275,7 @@ namespace System.Text.Json
                     }
                 }
 
-                for (int i = nextAvailable; i < size; i++)
-                {
-                    trackedOptions[i] = null;
-                }
+                Array.Clear(trackedOptions, nextAvailable, size - nextAvailable);
 
                 Volatile.Write(ref s_size, nextAvailable);
                 Volatile.Write(ref s_lookupsWithDanglingEntries, 0);
