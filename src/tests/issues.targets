@@ -228,7 +228,16 @@
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
         </ExcludeList>
         <!-- Arm64 does not support Vector256 -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
         <!-- Arm64 does not support X86 hardware intrinsics -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
           <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
         </ExcludeList>
@@ -246,8 +255,20 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_34094/Test34094/*">
+            <Issue>https://github.com/dotnet/runtime/issues/57458</Issue>
+        </ExcludeList>
         <!-- X64 does not support Vector64 -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
         <!-- X64 does not support Arm hardware intrinsics -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->
