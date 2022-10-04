@@ -3003,6 +3003,8 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+
             if (AdvSimd.IsSupported)
             {
                 return AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
@@ -3025,6 +3027,8 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+
             if (AdvSimd.IsSupported)
             {
                 return AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
