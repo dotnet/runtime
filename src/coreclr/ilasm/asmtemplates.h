@@ -135,11 +135,22 @@ private:
 
 // Indx256 implements a trie (or prefix tree) on null-terminated sequences of BYTEs.
 //
-// It is very memory intensive because it allocates a full 256 entry array for every
-// node once the node has any child nodes.  The Indx256 type serves as the overall
-// trie as well as the nodes.  I.e., the root node is the overall trie.
+// It is very memory intensive because it allocates dense arrays for every node
+// once the node has any child nodes, though it does allocate tables separately for
+// BYTEs in [1,127] and [128,255].  The functions are implemented by choosing the
+// table, adjusting the index (making the [128,255] indices zero-based for the
+// "high" table) and calling a helper that operates on one table.  The Indx256 type
+// serves as the overall trie as well as the nodes.  I.e., the root node is the
+// overall trie.
 //
-// Example (with the input strings reduced to 0..3 rather than 0..255);
+// Much more space could be saved here.  Perhap even a hashtable or search tree
+// would be sufficient; it's unclear if there was a historical performance-critical
+// aspect to this choice.  Note also that since this is used for labels and a
+// stress test of this is the output of ildasm since it labels every instruction,
+// the pattern "IL_<hex>" could be special-cased.
+//
+// Example (with the input strings reduced to 0..3 rather than 0..255
+//          and only one table per node):
 //
 // Contents: { 1 -> "A", 11 -> "B", 22 -> "C" }
 //
@@ -154,6 +165,10 @@ private:
 //                   \--> "A", [ NULL, ptr_1, NULL, NULL ]             // 1 is "A", keys start with 11
 //                                       |
 //                                       \--> "B", NULL                // 11 is "B", no keys extend 11
+
+// There are two tables per node, so the value here is 256 / 2.
+#define INDX256_TABLE_SIZE 128
+
 template <class T> struct Indx256
 {
     T* item; // The value corresponding to the sequence ending at this node
@@ -175,9 +190,9 @@ template <class T> struct Indx256
             return &item;
         }
 
-        if (*psz > 127)
+        if(*psz >= INDX256_TABLE_SIZE)
         {
-            return IndexStringOneTable(tableHigh, *psz - 128, psz + 1, pObj);
+            return IndexStringOneTable(tableHigh, *psz - INDX256_TABLE_SIZE, psz + 1, pObj);
         }
         else
         {
@@ -187,20 +202,20 @@ template <class T> struct Indx256
 
     T* FindString(BYTE* psz)
     {
-        if(*psz > 0)
+        if(*psz == 0)
         {
-            if (*psz > 127)
-            {
-                return FindStringOneTable(tableHigh, *psz - 128, psz + 1);
-            }
-            else
-            {
-                return FindStringOneTable(tableLow, *psz, psz + 1);
-            }
+            // Found NULL terminator.  Return value.
+            return item;
         }
 
-        // Found NULL terminator.  Return value.
-        return item; // if i==0
+        if(*psz >= INDX256_TABLE_SIZE)
+        {
+            return FindStringOneTable(tableHigh, *psz - INDX256_TABLE_SIZE, psz + 1);
+        }
+        else
+        {
+            return FindStringOneTable(tableLow, *psz, psz + 1);
+        }
     };
 
     void ClearAll(bool DeleteObj)
@@ -217,7 +232,7 @@ private:
         // Ensure that child table exists.
         if(table == NULL)
         {
-            table = new Indx256[128] {};
+            table = new Indx256[INDX256_TABLE_SIZE] {};
             if(table == NULL)
             {
                 _ASSERTE(!"Out of memory in Indx256::IndexString!");
@@ -244,9 +259,9 @@ private:
 
     void ClearOneTable(Indx256*& table, bool DeleteObj)
     {
-        if (table)
+        if(table)
         {
-            for(unsigned i = 0; i < 128; i++)
+            for(unsigned i = 0; i < INDX256_TABLE_SIZE; i++)
             {
                 table[i].ClearAll(DeleteObj);
             }
