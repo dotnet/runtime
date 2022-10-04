@@ -53,17 +53,21 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
+            if (options.TokenLimit <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokenLimit)), nameof(options));
+            }
+            if (options.TokensPerPeriod <= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokensPerPeriod)), nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanOrEqual0, nameof(options.QueueLimit)), nameof(options));
             }
-            if (options.ReplenishmentPeriod < TimeSpan.Zero)
+            if (options.ReplenishmentPeriod <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanTimeSpan0, nameof(options.ReplenishmentPeriod)), nameof(options));
             }
 
             _options = new TokenBucketRateLimiterOptions

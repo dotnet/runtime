@@ -4916,6 +4916,9 @@ HCIMPLEND
 
 void JIT_Patchpoint(int* counter, int ilOffset)
 {
+    // BEGIN_PRESERVE_LAST_ERROR;
+    DWORD dwLastError = ::GetLastError();
+
     // This method may not return normally
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4929,6 +4932,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+    PCODE osrMethodCode = NULL;
+    bool isNewMethod = false;
 
     // In the current prototype, counter is shared by all patchpoints
     // in a method, so no matter what happens below, we don't want to
@@ -4955,12 +4960,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     {
         LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                 ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-        return;
+
+        goto DONE;
     }
 
     // See if we have an OSR method for this patchpoint.
-    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    bool isNewMethod = false;
+    osrMethodCode = ppInfo->m_osrMethodCode;
 
     if (osrMethodCode == NULL)
     {
@@ -4983,7 +4988,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                     ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-            return;
+            goto DONE;
         }
 #endif
 
@@ -5024,7 +5029,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // Defer, if we haven't yet reached the limit
         if (hitCount < hitLimit)
         {
-            return;
+            goto DONE;
         }
 
         // Third, make sure no other thread is trying to create the OSR method.
@@ -5032,7 +5037,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-            return;
+            goto DONE;
         }
 
         LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
@@ -5041,7 +5046,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if (!triggerTransition)
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-            return;
+            goto DONE;
         }
 
         // Time to create the OSR method.
@@ -5071,7 +5076,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
                 " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
 
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
-            return;
+            goto DONE;
         }
 
         // We've successfully created the osr method; make it available.
@@ -5083,115 +5088,126 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // If we get here, we have code to transition to...
     _ASSERTE(osrMethodCode != NULL);
 
-    Thread *pThread = GetThread();
+    {
+        Thread *pThread = GetThread();
 
 #ifdef FEATURE_HIJACK
-    // We can't crawl the stack of a thread that currently has a hijack pending
-    // (since the hijack routine won't be recognized by any code manager). So we
-    // Undo any hijack, the EE will re-attempt it later.
-    pThread->UnhijackThread();
+        // We can't crawl the stack of a thread that currently has a hijack pending
+        // (since the hijack routine won't be recognized by any code manager). So we
+        // Undo any hijack, the EE will re-attempt it later.
+        pThread->UnhijackThread();
 #endif
 
-    // Find context for the original method
-    CONTEXT *pFrameContext = NULL;
+        // Find context for the original method
+        CONTEXT *pFrameContext = NULL;
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = 0;
-    DWORD contextFlags = CONTEXT_FULL;
-    if (Thread::AreCetShadowStacksEnabled())
-    {
-        xStateCompactionMask = XSTATE_MASK_CET_U;
-        contextFlags |= CONTEXT_XSTATE;
-    }
+        DWORD contextSize = 0;
+        ULONG64 xStateCompactionMask = 0;
+        DWORD contextFlags = CONTEXT_FULL;
+        if (Thread::AreCetShadowStacksEnabled())
+        {
+            xStateCompactionMask = XSTATE_MASK_CET_U;
+            contextFlags |= CONTEXT_XSTATE;
+        }
 
-    // The initialize call should fail but return contextSize
-    BOOL success = g_pfnInitializeContext2 ?
-        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
-        InitializeContext(NULL, contextFlags, NULL, &contextSize);
+        // The initialize call should fail but return contextSize
+        BOOL success = g_pfnInitializeContext2 ?
+            g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+            InitializeContext(NULL, contextFlags, NULL, &contextSize);
 
-    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+        _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
 
-    PVOID pBuffer = _alloca(contextSize);
-    success = g_pfnInitializeContext2 ?
-        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
-        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
-    _ASSERTE(success);
+        PVOID pBuffer = _alloca(contextSize);
+        success = g_pfnInitializeContext2 ?
+            g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
+            InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+        _ASSERTE(success);
 #else // TARGET_WINDOWS && TARGET_AMD64
-    CONTEXT frameContext;
-    frameContext.ContextFlags = CONTEXT_FULL;
-    pFrameContext = &frameContext;
+        CONTEXT frameContext;
+        frameContext.ContextFlags = CONTEXT_FULL;
+        pFrameContext = &frameContext;
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
-    // Find context for the original method
-    RtlCaptureContext(pFrameContext);
+        // Find context for the original method
+        RtlCaptureContext(pFrameContext);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    if (Thread::AreCetShadowStacksEnabled())
-    {
-        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
-        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
-        SetSSP(pFrameContext, _rdsspq());
-    }
+        if (Thread::AreCetShadowStacksEnabled())
+        {
+            pFrameContext->ContextFlags |= CONTEXT_XSTATE;
+            SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+            SetSSP(pFrameContext, _rdsspq());
+        }
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
-    // Walk back to the original method frame
-    pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
+        // Walk back to the original method frame
+        pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
-    // Remember original method FP and SP because new method will inherit them.
-    UINT_PTR currentSP = GetSP(pFrameContext);
-    UINT_PTR currentFP = GetFP(pFrameContext);
+        // Remember original method FP and SP because new method will inherit them.
+        UINT_PTR currentSP = GetSP(pFrameContext);
+        UINT_PTR currentFP = GetFP(pFrameContext);
 
-    // We expect to be back at the right IP
-    if ((UINT_PTR)ip != GetIP(pFrameContext))
-    {
-        // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
+        // We expect to be back at the right IP
+        if ((UINT_PTR)ip != GetIP(pFrameContext))
+        {
+            // Should be fatal
+            STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+                " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
 
-    // Now unwind back to the original method caller frame.
-    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
-    ULONG_PTR establisherFrame = 0;
-    PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
-        pFrameContext, &handlerData, &establisherFrame, NULL);
+        // Now unwind back to the original method caller frame.
+        EECodeInfo callerCodeInfo(GetIP(pFrameContext));
+        ULONG_PTR establisherFrame = 0;
+        PVOID handlerData = NULL;
+        RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
+            pFrameContext, &handlerData, &establisherFrame, NULL);
 
-    // Now, set FP and SP back to the values they had just before this helper was called,
-    // since the new method must have access to the original method frame.
-    //
-    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
-    // use that to adjust the stack, likely saving some stack space.
+        // Now, set FP and SP back to the values they had just before this helper was called,
+        // since the new method must have access to the original method frame.
+        //
+        // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+        // use that to adjust the stack, likely saving some stack space.
 
 #if defined(TARGET_AMD64)
-    // If calls push the return address, we need to simulate that here, so the OSR
-    // method sees the "expected" SP misalgnment on entry.
-    _ASSERTE(currentSP % 16 == 0);
-    currentSP -= 8;
+        // If calls push the return address, we need to simulate that here, so the OSR
+        // method sees the "expected" SP misalgnment on entry.
+        _ASSERTE(currentSP % 16 == 0);
+        currentSP -= 8;
 
 #if defined(TARGET_WINDOWS)
-    DWORD64 ssp = GetSSP(pFrameContext);
-    if (ssp != 0)
-    {
-        SetSSP(pFrameContext, ssp - 8);
-    }
+        DWORD64 ssp = GetSSP(pFrameContext);
+        if (ssp != 0)
+        {
+            SetSSP(pFrameContext, ssp - 8);
+        }
 #endif // TARGET_WINDOWS
 
-    pFrameContext->Rbp = currentFP;
+        pFrameContext->Rbp = currentFP;
 #endif // TARGET_AMD64
 
-    SetSP(pFrameContext, currentSP);
+        SetSP(pFrameContext, currentSP);
 
-    // Note we can get here w/o triggering, if there is an existing OSR method and
-    // we hit the patchpoint.
-    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
-    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+        // Note we can get here w/o triggering, if there is an existing OSR method and
+        // we hit the patchpoint.
+        const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
+        LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
 
-    // Install new entry point as IP
-    SetIP(pFrameContext, osrMethodCode);
+        // Install new entry point as IP
+        SetIP(pFrameContext, osrMethodCode);
 
-    // Transition!
-    ClrRestoreNonvolatileContext(pFrameContext);
+        // Restore last error (since call below does not return)
+        // END_PRESERVE_LAST_ERROR;
+        ::SetLastError(dwLastError);
+
+        // Transition!
+        ClrRestoreNonvolatileContext(pFrameContext);
+    }
+
+ DONE:
+
+    // END_PRESERVE_LAST_ERROR;
+    ::SetLastError(dwLastError);
 }
 
 // Jit helper invoked at a partial compilation patchpoint.
@@ -5205,6 +5221,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 //
 void JIT_PartialCompilationPatchpoint(int ilOffset)
 {
+    // BEGIN_PRESERVE_LAST_ERROR;
+    DWORD dwLastError = ::GetLastError();
+
     // This method will not return normally
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -5355,6 +5374,10 @@ void JIT_PartialCompilationPatchpoint(int ilOffset)
 
     // Install new entry point as IP
     SetIP(&frameContext, osrMethodCode);
+
+    // Restore last error (since call below does not return)
+    // END_PRESERVE_LAST_ERROR;
+    ::SetLastError(dwLastError);
 
     // Transition!
     RtlRestoreContext(&frameContext, NULL);

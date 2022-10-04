@@ -21,7 +21,7 @@ namespace System.Runtime.Intrinsics
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]
-            get => false;
+            get => IsHardwareAccelerated;
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -34,6 +34,10 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             if (typeof(T) == typeof(byte))
+            {
+                return vector;
+            }
+            else if (typeof(T) == typeof(nuint))
             {
                 return vector;
             }
@@ -509,6 +513,14 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(long))
             {
                 return Create((long)(object)value).As<long, T>();
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return Create((nint)(object)value).As<nint, T>();
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return Create((nuint)(object)value).As<nuint, T>();
             }
             else if (typeof(T) == typeof(sbyte))
             {

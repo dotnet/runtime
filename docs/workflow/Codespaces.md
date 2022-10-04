@@ -12,9 +12,20 @@ The _dotnet/runtime_ repo runs a nightly GitHub Action to build the latest code 
 
 1. From this [repository's root](https://github.com/dotnet/runtime), drop-down the _Code_ button and select the _Codespaces_ tab.
 
-![New codespace button](https://docs.github.com/assets/images/help/codespaces/new-codespace-button.png)
+![New codespace button](https://docs.github.com/assets/cb-138303/images/help/codespaces/new-codespace-button.png)
 
-2. Select the Machine type. For _dotnet/runtime_, it is recommended to select at least a _4-Core_ machine. You can also verify that a "Prebuild" is ready.
+2. Click the drop-down at the side of the `Create codespace on main` button and select `Configure and create codespace`
+
+![Configure and create codespace](https://docs.github.com/assets/cb-49317/images/help/codespaces/default-machine-type.png)
+
+3. Select which Dev container configuration you want to use.
+
+![Dev container configuration](./codespace-dev-container-configuration.png)
+
+* For `libraries` work, pick `.devcontainer/libraries/devcontainer.json`.
+* For `WASM` work, pick `.devcontainer/wasm/devcontainer.json`.
+
+4. Select the Machine type. For `dotnet/runtime`, it is recommended to select at least a `4-core` machine. You can also verify that a `Prebuild` is ready.
 
 ![Codespace machine size](codespace-machine-size.png)
 
@@ -24,23 +35,17 @@ _If these instructions are out of date, see <https://docs.github.com/codespaces/
 
 The Codespaces configuration is spread across the following places:
 
-1. The [.devcontainer](/.devcontainer) folder contains:
-    * The `devcontainer.json` file, which configures the Codespace and mostly has the required VS Code settings.
-    * The _Dockerfile_ used to create the image.
-    * The _scripts_ folder, which contains any scripts that are executed during the creation of the Codespace. This has the build command that builds the entire repo for the Prebuilds.
-2. The GitHub Action can be configured by following the instructions [here](https://docs.github.com/codespaces/prebuilding-your-codespaces/configuring-prebuilds).
+1. The [.devcontainer](/.devcontainer) folder contains subfolders for each development scenario:
+    * _Libraries_: Used by developers working in `src/libraries`.
+    * _Wasm_: Used by developers working on the _browser-wasm_ workload.
+    * _Scripts_: Contains any scripts that are executed during the creation of the codespace. This has the build command that builds the entire repo for prebuilds.
+2. Each development scenario folder contains the following files:
+    * The `devcontainer.json` file that configures the codespace and has VS Code / Environment settings.
+    * The _Dockerfile_ used to create the Docker image
+3. The GitHub Action can be configured by following the instructions at <https://docs.github.com/codespaces/prebuilding-your-codespaces/configuring-prebuilds>.
 
 To test out changes to the `.devcontainer` files, you can follow the process in the [Applying Changes to your Configuration](https://docs.github.com/codespaces/customizing-your-codespace/configuring-codespaces-for-your-project#applying-changes-to-your-configuration) docs. This allows you to rebuild the Codespace privately before creating a PR.
 
 ## Testing out your Changes
 
-To test out your `.yml` changes, here is the process:
-
-**NOTE**: Executing these steps will overwrite the current prebuilt container for the entire repo. Afterwards, anyone creating a new Codespace will get a prebuilt machine with your test changes until the Action in `main` is executed again.
-
-1. Edit and commit the files to a branch.
-2. Push that to a branch on _dotnet/runtime_. Be careful that you aren't pushing to `main` or some other important branch. Prefix your branch name with your GitHub account name, so others know it is a dev branch. ex. `username/FixCodespaces`.
-3. In the _Actions_ tab at the top of _dotnet/runtime_:
-    * Select "Create Codespaces Prebuild" action on the left.
-    * On the right click "Run workflow" and pick your branch.
-    * After it runs, try to create a Codespace.
+To test out your changes you can run the [Codespaces Prebuilds Action](https://github.com/dotnet/runtime/actions/workflows/codespaces/create_codespaces_prebuilds) in your fork against a branch with your changes.

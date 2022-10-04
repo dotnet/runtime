@@ -1628,7 +1628,19 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return (nullptr);
     }
 
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
+    CORINFO_String* asString = nullptr;
+    if (impGetStringClass() == *((CORINFO_CLASS_HANDLE*)strHandle))
+    {
+        // strHandle is a frozen string
+        // We assume strHandle is never an "interior" pointer in a frozen string
+        // (jit is not expected to perform such foldings)
+        asString = (CORINFO_String*)strHandle;
+    }
+    else
+    {
+        // strHandle is a pinned handle to a string object
+        asString = *((CORINFO_String**)strHandle);
+    }
 
     if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
     {

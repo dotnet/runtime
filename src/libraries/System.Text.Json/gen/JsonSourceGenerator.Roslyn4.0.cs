@@ -13,7 +13,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+#if !ROSLYN4_4_OR_GREATER
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+#endif
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -27,7 +29,9 @@ namespace System.Text.Json.SourceGeneration
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
+#if !ROSLYN4_4_OR_GREATER
                     context,
+#endif
                     Parser.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, _) => (ClassDeclarationSyntax)context.TargetNode);
