@@ -655,7 +655,7 @@
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
-    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name &quot;*testResults.xml&quot; -exec cp {} $HELIX_DUMP_FOLDER\; " />
+    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
