@@ -476,8 +476,10 @@ bool NearDiffer::compareOffsets(
                 (shift2_1 == shift2_2) &&
                 (shift2_1 == 16))
             {
-                // We currently assume the address requires at least 2 'movk' instructions, thus, is >4GB.
-                // The 3rd 'movk' is optional.
+                DWORDLONG addr1 = (DWORDLONG)con1_1 + ((DWORDLONG)con2_1 << 16);
+                DWORDLONG addr2 = (DWORDLONG)con1_2 + ((DWORDLONG)con2_2 << 16);
+
+                // We currently assume the address requires at least 1 'movk' instruction.
                 if ((iaddr1 + 2 < iaddr1end) &&
                     (iaddr2 + 2 < iaddr2end) &&
                     GetArm64MovkConstant(iaddr1 + 2, &reg3_1, &con3_1, &shift3_1) &&
@@ -487,9 +489,9 @@ bool NearDiffer::compareOffsets(
                     (shift3_1 == 32))
                 {
                     movk2 = true;
-                    // Note: this only works if size_t is 64-bit.
-                    size_t addr1 = (size_t)con1_1 + ((size_t)con2_1 << 16) + ((size_t)con3_1 << 32);
-                    size_t addr2 = (size_t)con1_2 + ((size_t)con2_2 << 16) + ((size_t)con3_2 << 32);
+                    addr1 += (DWORDLONG)con3_1 << 32;
+                    addr2 += (DWORDLONG)con3_2 << 32;
+
                     if ((iaddr1 + 3 < iaddr1end) &&
                         (iaddr2 + 3 < iaddr2end) &&
                         GetArm64MovkConstant(iaddr1 + 3, &reg4_1, &con4_1, &shift4_1) &&
@@ -499,33 +501,35 @@ bool NearDiffer::compareOffsets(
                         (shift4_1 == 48))
                     {
                         movk3 = true;
-                        addr1 += (size_t)con4_1 << 48;
-                        addr2 += (size_t)con4_2 << 48;
+                        addr1 += (DWORDLONG)con4_1 << 48;
+                        addr2 += (DWORDLONG)con4_2 << 48;
                     }
+                }
 
-                    // Check the constants! We don't need to check 'addr1 == addr2' because if that were
-                    // true we wouldn't have gotten here.
+                // Check the constants! We don't need to check 'addr1 == addr2' because if that were
+                // true we wouldn't have gotten here.
+                //
+                // Note: when replaying on a 32-bit platform, we must have movk2==false and movk3==false.
 
-                    size_t mapped1 = (size_t)data->cr1->searchAddressMap((void*)addr1);
-                    size_t mapped2 = (size_t)data->cr2->searchAddressMap((void*)addr2);
-                    if ((mapped1 == mapped2) && (mapped1 != (size_t)-1))
+                DWORDLONG mapped1 = (DWORDLONG)data->cr1->searchAddressMap((void*)addr1);
+                DWORDLONG mapped2 = (DWORDLONG)data->cr2->searchAddressMap((void*)addr2);
+                if ((mapped1 == mapped2) && (mapped1 != (DWORDLONG)-1))
+                {
+                    // Now, zero out the constants in the `movk` instructions so when the disassembler
+                    // gets to them, they compare equal.
+                    PutArm64MovkConstant(iaddr1 + 1, 0);
+                    PutArm64MovkConstant(iaddr2 + 1, 0);
+                    if (movk2)
                     {
-                        // Now, zero out the constants in the `movk` instructions so when the disassembler
-                        // gets to them, they compare equal.
-                        PutArm64MovkConstant(iaddr1 + 1, 0);
-                        PutArm64MovkConstant(iaddr2 + 1, 0);
-                        if (movk2)
-                        {
-                            PutArm64MovkConstant(iaddr1 + 2, 0);
-                            PutArm64MovkConstant(iaddr2 + 2, 0);
-                        }
-                        if (movk3)
-                        {
-                            PutArm64MovkConstant(iaddr1 + 3, 0);
-                            PutArm64MovkConstant(iaddr2 + 3, 0);
-                        }
-                        return true;
+                        PutArm64MovkConstant(iaddr1 + 2, 0);
+                        PutArm64MovkConstant(iaddr2 + 2, 0);
                     }
+                    if (movk3)
+                    {
+                        PutArm64MovkConstant(iaddr1 + 3, 0);
+                        PutArm64MovkConstant(iaddr2 + 3, 0);
+                    }
+                    return true;
                 }
             }
         }
