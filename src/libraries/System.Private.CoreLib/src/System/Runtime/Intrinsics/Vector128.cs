@@ -2881,7 +2881,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
             Vector256<T> result = default;
-            result.SetUpperUnsafe(vector);
+            result.SetLowerUnsafe(vector);
             return result;
         }
 
@@ -2901,7 +2901,7 @@ namespace System.Runtime.Intrinsics
             // declaration to let the upper bits be uninitialized.
 
             Unsafe.SkipInit(out Vector256<T> result);
-            result.SetUpperUnsafe(vector);
+            result.SetLowerUnsafe(vector);
             return result;
         }
 
