@@ -1378,6 +1378,28 @@ public class ReadOnlySpanTest
         }
     }
 
+    ref struct R1Sample2 {
+        public ref double d1;
+        public R1Sample2(ref double d1) {
+            this.d1 = ref d1;
+        }
+    }
+
+    ref struct R2Sample2 {
+        R1Sample2 r1;
+        public R2Sample2 (ref double d1) {
+            r1 = new R1Sample2 (ref d1);
+        }
+
+        public void Modify(double newDouble) {
+            r1.d1 = newDouble;
+        }
+        
+        public double Run() {
+            return r1.d1;
+        }
+    }
+
     public static void Run()
     {
         Invoke(new string[] {"TEST"});
@@ -1400,6 +1422,9 @@ public class ReadOnlySpanTest
         myR1.s2 = new S1();
         myR1.s2.d1 = 30;
         myR1.s2.d2 = 40;
+        double xyz = 123.0;        
+        R2Sample2 r2 = new R2Sample2(ref xyz);
+        xyz = 456.0;
         System.Diagnostics.Debugger.Break();
     }
 }

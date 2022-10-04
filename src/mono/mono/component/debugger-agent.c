@@ -442,7 +442,7 @@ static gboolean buffer_replies;
 		extra_space_size = decode_value_compute_size (m_class_get_byval_arg (klass), 0, domain, p_int, &p_int, end, FALSE); \
 	} \
 	if (extra_space_size > 0) \
-		extra_space = g_alloca (extra_space_size); 
+		extra_space = g_alloca (extra_space_size);
 
 
 static void (*start_debugger_thread_func) (MonoError *error);
@@ -5366,7 +5366,9 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 			continue;
 		if (mono_field_is_deleted (f))
 			continue;
-		err = decode_value (f->type, domain, mono_vtype_get_field_addr (addr, f), buf, &buf, limit, check_field_datatype, extra_space, m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type)));
+		gboolean cur_field_in_extra_space = from_by_ref_value_type;
+  		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
+		err = decode_value (f->type, domain, mono_vtype_get_field_addr (addr, f), buf, &buf, limit, check_field_datatype, extra_space, members_in_extra_space);
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
@@ -5463,10 +5465,12 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 			continue;
 		if (mono_field_is_deleted (f))
 			continue;
-		if (!m_type_is_byref (f->type) && !m_class_is_byreflike (mono_class_from_mono_type_internal (f->type)) && !from_by_ref_value_type)
-			decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, FALSE);
-		else
-			ret += decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type)));
+		
+		gboolean cur_field_in_extra_space = from_by_ref_value_type;
+  		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
+		gsize field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
+		if (members_in_extra_space)
+			ret += field_size;
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
@@ -5486,7 +5490,6 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		type = decode_byte (buf, &buf, limit);
 	int ret = 0;
 	ErrorCode err;
-
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
@@ -5504,7 +5507,6 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		//decode_fixed_size_array_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
 		goto end;
 	}
-
 	switch (t->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
@@ -5604,10 +5606,10 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 	if (m_type_is_byref (t)) {
 		g_assert (extra_space != NULL && *extra_space != NULL);
-		*(guint8**)addr = *extra_space;
+		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
 		guint8 *buf_int = buf;
-		addr = *(guint8**)addr;
-		*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, from_by_ref_value_type);
+		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
+		*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
 	}
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
@@ -6245,7 +6247,10 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 	sig = mono_method_signature_internal (m);
 
 	if (m_class_is_valuetype (m->klass))
-		this_buf = (guint8 *)g_alloca (mono_class_instance_size (m->klass));
+	{
+		int classSize = mono_class_instance_size (m->klass);
+		this_buf = (guint8 *)g_alloca (classSize);
+	}
 	else
 		this_buf = (guint8 *)g_alloca (sizeof (MonoObject*));
 
