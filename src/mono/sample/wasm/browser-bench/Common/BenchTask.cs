@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+namespace Wasm.Bench;
+
 public abstract class BenchTask
 {
     public abstract string Name { get; }

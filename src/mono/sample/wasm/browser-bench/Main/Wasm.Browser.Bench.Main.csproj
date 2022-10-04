@@ -7,18 +7,21 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Wasm.Bench.Common.csproj" />
+    <ProjectReference Include="..\Frame\Wasm.Browser.Bench.Frame.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="appstart-frame.html" />
-    <WasmExtraFilesToDeploy Include="frame-main.js" />
+    <WasmExtraFilesToDeploy Include="..\Frame\appstart-frame.html" />
+    <WasmExtraFilesToDeploy Include="..\Frame\frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
-    <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
+    <_SampleProject>Wasm.Browser.Bench.Main.csproj</_SampleProject>
+    <_SampleAssembly> Wasm.Browser.Bench.Main.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />

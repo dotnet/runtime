@@ -6,6 +6,6 @@ ifneq ($(AOT),)
 override MSBUILD_ARGS+=/p:RunAOTCompilation=true
 endif
 
-PROJECT_NAME=Wasm.Browser.Bench.Sample.csproj
+PROJECT_NAME=Wasm.Browser.Bench.Main.csproj
 
 run: run-browser

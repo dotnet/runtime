@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31625.145
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.Sample", "Wasm.Browser.Bench.Sample.csproj", "{3C87C8E2-2D72-495A-8BB5-B9A503603121}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.Main", "Main\Wasm.Browser.Bench.Main.csproj", "{3C87C8E2-2D72-495A-8BB5-B9A503603121}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Console.Bench.Main", "Console\Wasm.Console.Bench.Main.csproj", "{47BAB73F-DB58-41C9-930C-358C22243DA2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Bench.Common", "Common\Wasm.Bench.Common.csproj", "{009A2677-0A68-4994-A7F1-D8753F49AF20}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.Frame", "Frame\Wasm.Browser.Bench.Frame.csproj", "{B4D16D87-DDD4-4068-A734-0774052FB8AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47BAB73F-DB58-41C9-930C-358C22243DA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47BAB73F-DB58-41C9-930C-358C22243DA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47BAB73F-DB58-41C9-930C-358C22243DA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47BAB73F-DB58-41C9-930C-358C22243DA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{009A2677-0A68-4994-A7F1-D8753F49AF20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{009A2677-0A68-4994-A7F1-D8753F49AF20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{009A2677-0A68-4994-A7F1-D8753F49AF20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{009A2677-0A68-4994-A7F1-D8753F49AF20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4D16D87-DDD4-4068-A734-0774052FB8AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4D16D87-DDD4-4068-A734-0774052FB8AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4D16D87-DDD4-4068-A734-0774052FB8AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4D16D87-DDD4-4068-A734-0774052FB8AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

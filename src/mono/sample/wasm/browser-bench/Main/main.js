@@ -60,15 +60,16 @@ function importTargetThrows(value) {
 
 class MainApp {
     async init({ getAssemblyExports, setModuleImports, BINDING }) {
-        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
-        runBenchmark = exports.Sample.Test.RunBenchmark;
-        setTasks = exports.Sample.Test.SetTasks;
-        getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
+        const mainExports = await getAssemblyExports("Wasm.Browser.Bench.Main.dll");
+        runBenchmark = mainExports.Wasm.Bench.Program.RunBenchmark;
+        setTasks = mainExports.Wasm.Bench.Program.SetTasks;
+        getFullJsonResults = mainExports.Wasm.Bench.Program.GetFullJsonResults;
 
-        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
-        jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
-        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
-        jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
+        const commonExports = await getAssemblyExports("Wasm.Bench.Common.dll");
+        jsExportTargetInt = commonExports.Wasm.Bench.ImportsExportsHelper.JSExportTargetInt;
+        jsExportTargetString = commonExports.Wasm.Bench.ImportsExportsHelper.JSExportTargetString;
+        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Bench.Common]Wasm.Bench.ImportsExportsHelper:LegacyExportTargetInt");
+        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Bench.Common]Wasm.Bench.ImportsExportsHelper:LegacyExportTargetString");
 
         setModuleImports("main.js", {
             Sample: {
@@ -86,7 +87,6 @@ class MainApp {
             }
         });
 
-
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
         if (tasks != '') {
@@ -95,7 +95,6 @@ class MainApp {
 
         this.yieldBench();
     }
-
 
     yieldBench() {
         let promise = runBenchmark();

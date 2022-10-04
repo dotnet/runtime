@@ -6,11 +6,6 @@
 import { dotnet, exit } from './dotnet.js'
 
 class FrameApp {
-    async init({ getAssemblyExports }) {
-        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
-        exports.Sample.AppStartTask.FrameApp.ReachedManaged();
-    }
-
     reachedCallback() {
         if (window.parent != window) {
             window.parent.resolveAppStartEvent("reached");
@@ -35,6 +30,10 @@ try {
             printErr: () => undefined,
             print: () => undefined,
             onConfigLoaded: (config) => {
+                // we are sharing the same mono-config.json with Main application
+                // we don't want to load all of it, including it's [JSExport]s
+                config.assets = config.assets.filter(a => a.name !== "Wasm.Browser.Bench.Main.dll" && "Wasm.Browser.Bench.Common.dll")
+
                 if (window.parent != window) {
                     window.parent.resolveAppStartEvent("onConfigLoaded");
                 }
@@ -46,7 +45,8 @@ try {
     if (window.parent != window) {
         window.parent.resolveAppStartEvent("onDotnetReady");
     }
-    await frameApp.init(runtime);
+
+    await runtime.runMain("Wasm.Browser.Bench.Frame.dll", []);
 }
 catch (err) {
     if (!mute) {

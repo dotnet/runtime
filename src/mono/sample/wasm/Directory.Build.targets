@@ -50,8 +50,8 @@
     <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .wasm=application/wasm --mime .mjs=text/javascript --mime .js=text/javascript --mime .cjs=text/javascript --mime .json=application/json -h Cross-Origin-Opener-Policy:same-origin -h &quot;Cross-Origin-Embedder-Policy:require-corp&quot; -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; " IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
-    <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="..\..\..\..\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
+    <Exec Command="$(_Dotnet) build -c $(Configuration) $(MonoProjectRoot)\sample\wasm\simple-server\HttpServer.csproj" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="$(MonoProjectRoot)\sample\wasm\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
   </Target>
 
   <Target Name="TriggerGenerateRunScript"
