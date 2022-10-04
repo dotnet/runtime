@@ -502,7 +502,7 @@ namespace SharedTypes
 
                 _list = managed;
                 // Always allocate at least one byte when the list is zero-length.
-                int spaceToAllocate = Math.Max(managed.Count * sizeof(TUnmanagedElement), 1);
+                int spaceToAllocate = Math.Max(managed.Count, 1);
                 if (spaceToAllocate <= buffer.Length)
                 {
                     _span = buffer[0..spaceToAllocate];
