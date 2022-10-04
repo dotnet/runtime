@@ -3331,11 +3331,9 @@ static void AppendTypeNameEscaped(const char* str, TAppend append)
         {
             append("\\");
         }
-        else
-        {
-            char singleChar[2] = { *str, 0 };
-            append(singleChar);
-        }
+
+        char singleChar[2] = { *str, 0 };
+        append(singleChar);
 
         str++;
     }
