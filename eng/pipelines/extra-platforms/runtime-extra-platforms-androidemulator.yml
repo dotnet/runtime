@@ -1,0 +1,81 @@
+# This contains only Android emulator-specific jobs
+# These are run as part of runtime-extra-platforms by default.
+# But can also be triggered manually via `runtime-androidemulator` name
+#   /azp run runtime-androidemulator
+
+parameters:
+  isExtraPlatformsBuild: false
+  isAndroidEmulatorOnlyBuild: false
+  isRollingBuild: false
+
+jobs:
+
+# Build the whole product using Mono for Android and run runtime tests with Android emulator
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
+    platforms:
+    - Android_x64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Build the whole product using Mono for Android and run runtime tests with interpreter
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
+    platforms:
+      - Android_x64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests_Interp
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      runtimeVariant: monointerpreter
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)

@@ -1439,7 +1439,7 @@ namespace System.Xml.Schema
             int symbolsCount = _symbols!.Count;
 
             // transition table (Dtran in the book)
-            ArrayList transitionTable = new ArrayList();
+            List<int[]> transitionTable = new();
 
             // state lookup table (Dstate in the book)
             Dictionary<BitSet, int> stateTable = new();
@@ -1461,7 +1461,7 @@ namespace System.Xml.Schema
             {
                 BitSet statePosSet = unmarked.Dequeue(); // all positions that constitute DFA state
                 Debug.Assert(state == stateTable[statePosSet]); // just make sure that statePosSet is for correct state
-                int[] transition = (int[])transitionTable[state]!;
+                int[] transition = transitionTable[state]!;
                 if (statePosSet[endMarkerPos])
                 {
                     transition[symbolsCount] = 1;   // accepting
@@ -1506,7 +1506,7 @@ namespace System.Xml.Schema
                 state++;
             }
             // now convert transition table to array
-            return (int[][])transitionTable.ToArray(typeof(int[]));
+            return transitionTable.ToArray();
         }
 
 #if DEBUG

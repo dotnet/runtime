@@ -1,8 +1,9 @@
-<Project>
+<Project TreatAsLocalProperty="ArchiveTests">
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
+    <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
 
