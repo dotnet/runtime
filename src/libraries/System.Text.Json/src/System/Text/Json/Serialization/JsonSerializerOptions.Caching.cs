@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -163,146 +162,124 @@ namespace System.Text.Json
 
         /// <summary>
         /// Defines a cache of CachingContexts; instead of using a ConditionalWeakTable which can be slow to traverse
-        /// this approach uses a concurrent dictionary pointing to weak references of <see cref="CachingContext"/>.
-        /// Relevant caching contexts are looked up using the equality comparison defined by <see cref="EqualityComparer"/>.
+        /// this approach uses a fixed-size array of weak references of <see cref="CachingContext"/> that can be looked up lock-free.
+        /// Relevant caching contexts are looked up by linear traversal using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
         internal static class TrackedCachingContexts
         {
             private const int MaxTrackedContexts = 64;
-            private static readonly ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> s_cache =
-                new(concurrencyLevel: 1, capacity: MaxTrackedContexts, new EqualityComparer());
+            private static readonly WeakReference<CachingContext>?[] s_trackedContexts = new WeakReference<CachingContext>[MaxTrackedContexts];
+            private static int s_size;
 
-            private const int EvictionCountHistory = 16;
-            private static readonly Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
-            private static int s_evictionRunsToSkip;
+            private const int DanglingEntryEvictInterval = 8;
+            private static int s_lookupsWithDanglingEntries;
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
-                ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
-
-                if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
+                if (TryGetSharedContext(options, out bool foundDanglingEntries, out CachingContext? result))
                 {
-                    return ctx;
+                    // Periodically evict dangling entries in the case of successful lookups
+                    if (foundDanglingEntries && Interlocked.Increment(ref s_lookupsWithDanglingEntries) == DanglingEntryEvictInterval)
+                    {
+                        lock (s_trackedContexts)
+                        {
+                            EvictDanglingEntries();
+                        }
+                    }
+
+                    return result;
                 }
 
-                lock (cache)
+                if (s_size == MaxTrackedContexts && !foundDanglingEntries)
                 {
-                    if (cache.TryGetValue(options, out wr))
-                    {
-                        if (!wr.TryGetTarget(out ctx))
-                        {
-                            // Found a dangling weak reference; replenish with a fresh instance.
-                            ctx = new CachingContext(options);
-                            wr.SetTarget(ctx);
-                        }
+                    // Cache is full; return a fresh instance.
+                    return new CachingContext(options);
+                }
 
-                        return ctx;
+                lock (s_trackedContexts)
+                {
+                    if (TryGetSharedContext(options, out foundDanglingEntries, out result))
+                    {
+                        return result;
                     }
 
-                    if (cache.Count == MaxTrackedContexts)
+                    if (foundDanglingEntries)
                     {
-                        if (!TryEvictDanglingEntries())
-                        {
-                            // Cache is full; return a fresh instance.
-                            return new CachingContext(options);
-                        }
+                        // Always run eviction if writing to the cache.
+                        EvictDanglingEntries();
                     }
 
-                    Debug.Assert(cache.Count < MaxTrackedContexts);
+                    if (s_size == MaxTrackedContexts)
+                    {
+                        // Cache is full; return a fresh instance.
+                        return new CachingContext(options);
+                    }
 
-                    // Use a defensive copy of the options instance as key to
-                    // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options);
-                    Debug.Assert(key._cachingContext == null);
-
-                    ctx = new CachingContext(options);
-                    bool success = cache.TryAdd(key, new WeakReference<CachingContext>(ctx));
-                    Debug.Assert(success);
-
+                    var ctx = new CachingContext(options);
+                    s_trackedContexts[s_size++] = new WeakReference<CachingContext>(ctx);
                     return ctx;
                 }
             }
 
-            public static void Clear()
+            private static bool TryGetSharedContext(
+                JsonSerializerOptions options,
+                out bool foundDanglingEntries,
+                [NotNullWhen(true)] out CachingContext? result)
             {
-                lock (s_cache)
+
+                WeakReference<CachingContext>?[] trackedContexts = s_trackedContexts;
+                int size = s_size;
+
+                foundDanglingEntries = false;
+
+                for (int i = 0; i < size; i++)
                 {
-                    s_cache.Clear();
-                    s_recentEvictionCounts.Clear();
-                    s_evictionRunsToSkip = 0;
+                    if (trackedContexts[i] is WeakReference<CachingContext> weakRef &&
+                        weakRef.TryGetTarget(out CachingContext? ctx))
+                    {
+                        if (EqualityComparer.Equals(options, ctx.Options))
+                        {
+                            result = ctx;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        foundDanglingEntries = true;
+                    }
                 }
+
+                result = null;
+                return false;
             }
 
-            private static bool TryEvictDanglingEntries()
+            private static void EvictDanglingEntries()
             {
-                // Worst case scenario, the cache has been filled with permanent entries.
-                // Evictions are synchronized and each run is in the order of microseconds,
-                // so we want to avoid triggering runs every time an instance is initialized,
-                // For this reason we use a backoff strategy to average out the cost of eviction
-                // across multiple initializations. The backoff count is determined by the eviction
-                // rates of the most recent runs.
+                Monitor.IsEntered(s_trackedContexts);
 
-                Debug.Assert(Monitor.IsEntered(s_cache));
+                WeakReference<CachingContext>?[] trackedOptions = s_trackedContexts;
+                int size = s_size;
 
-                if (s_evictionRunsToSkip > 0)
+                int nextAvailable = 0;
+                for (int i = 0; i < size; i++)
                 {
-                    --s_evictionRunsToSkip;
-                    return false;
-                }
-
-                int currentEvictions = 0;
-                foreach (KeyValuePair<JsonSerializerOptions, WeakReference<CachingContext>> kvp in s_cache)
-                {
-                    if (!kvp.Value.TryGetTarget(out _))
+                    if (trackedOptions[i] is WeakReference<CachingContext> weakRef &&
+                        weakRef.TryGetTarget(out _))
                     {
-                        bool result = s_cache.TryRemove(kvp.Key, out _);
-                        Debug.Assert(result);
-                        currentEvictions++;
+                        trackedOptions[nextAvailable++] = weakRef;
                     }
                 }
 
-                s_evictionRunsToSkip = EstimateEvictionRunsToSkip(currentEvictions);
-                return currentEvictions > 0;
-
-                // Estimate the number of eviction runs to skip based on recent eviction rates.
-                static int EstimateEvictionRunsToSkip(int latestEvictionCount)
+                for (int i = nextAvailable; i < size; i++)
                 {
-                    Queue<int> recentEvictionCounts = s_recentEvictionCounts;
-
-                    if (recentEvictionCounts.Count < EvictionCountHistory - 1)
-                    {
-                        // Insufficient data points to determine a skip count.
-                        recentEvictionCounts.Enqueue(latestEvictionCount);
-                        return 0;
-                    }
-                    else if (recentEvictionCounts.Count == EvictionCountHistory)
-                    {
-                        recentEvictionCounts.Dequeue();
-                    }
-
-                    recentEvictionCounts.Enqueue(latestEvictionCount);
-
-                    // Calculate the total number of eviction in the latest runs
-                    // - If we have at least one eviction per run, on average,
-                    //   do not skip any future eviction runs.
-                    // - Otherwise, skip ~the number of runs needed per one eviction.
-
-                    int totalEvictions = 0;
-                    foreach (int evictionCount in recentEvictionCounts)
-                    {
-                        totalEvictions += evictionCount;
-                    }
-
-                    int evictionRunsToSkip =
-                        totalEvictions >= EvictionCountHistory ? 0 :
-                        (int)Math.Round((double)EvictionCountHistory / Math.Max(totalEvictions, 1));
-
-                    Debug.Assert(0 <= evictionRunsToSkip && evictionRunsToSkip <= EvictionCountHistory);
-                    return evictionRunsToSkip;
+                    trackedOptions[i] = null;
                 }
+
+                Volatile.Write(ref s_size, nextAvailable);
+                Volatile.Write(ref s_lookupsWithDanglingEntries, 0);
             }
         }
 
@@ -311,9 +288,9 @@ namespace System.Text.Json
         /// If two instances are equivalent, they should generate identical metadata caches;
         /// the converse however does not necessarily hold.
         /// </summary>
-        private sealed class EqualityComparer : IEqualityComparer<JsonSerializerOptions>
+        private static class EqualityComparer
         {
-            public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
+            public static bool Equals(JsonSerializerOptions left, JsonSerializerOptions right)
             {
                 Debug.Assert(left != null && right != null);
 
@@ -357,53 +334,6 @@ namespace System.Text.Json
                     return true;
                 }
             }
-
-            public int GetHashCode(JsonSerializerOptions options)
-            {
-                HashCode hc = default;
-
-                hc.Add(options._dictionaryKeyPolicy);
-                hc.Add(options._jsonPropertyNamingPolicy);
-                hc.Add(options._readCommentHandling);
-                hc.Add(options._referenceHandler);
-                hc.Add(options._encoder);
-                hc.Add(options._defaultIgnoreCondition);
-                hc.Add(options._numberHandling);
-                hc.Add(options._unknownTypeHandling);
-                hc.Add(options._defaultBufferSize);
-                hc.Add(options._maxDepth);
-                hc.Add(options._allowTrailingCommas);
-                hc.Add(options._ignoreNullValues);
-                hc.Add(options._ignoreReadOnlyProperties);
-                hc.Add(options._ignoreReadonlyFields);
-                hc.Add(options._includeFields);
-                hc.Add(options._propertyNameCaseInsensitive);
-                hc.Add(options._writeIndented);
-                hc.Add(options._typeInfoResolver);
-                GetHashCode(ref hc, options._converters);
-
-                static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
-                {
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        hc.Add(list[i]);
-                    }
-                }
-
-                return hc.ToHashCode();
-            }
-
-#if !NETCOREAPP
-            /// <summary>
-            /// Polyfill for System.HashCode.
-            /// </summary>
-            private struct HashCode
-            {
-                private int _hashCode;
-                public void Add<T>(T? value) => _hashCode = (_hashCode, value).GetHashCode();
-                public int ToHashCode() => _hashCode;
-            }
-#endif
         }
     }
 }
