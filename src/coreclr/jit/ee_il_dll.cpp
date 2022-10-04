@@ -1518,7 +1518,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
         printer.Truncate(0);
-        printer.Printf("hackishClassName");
+        printer.Append("hackishClassName");
     }
 
     return printer.GetBuffer();
