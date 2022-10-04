@@ -69,7 +69,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfa64'
+        logicalmachine: 'perfampere'
         timeoutInMinutes: 500 
 
   # build mono on wasm
