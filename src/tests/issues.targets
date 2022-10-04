@@ -11,6 +11,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
             <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
+            <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -50,9 +53,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/BasicTests/R2RDumpTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/10888 https://github.com/dotnet/runtime/issues/11823 </Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
-            <Issue>https://github.com/dotnet/runtime/issues/44341</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/rvastatics/RVAOrderingTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/55966</Issue>
@@ -525,12 +525,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74631</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetGCMemoryInfo/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74902</Issue>
-        </ExcludeList>    
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -877,13 +871,6 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
             <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- All OSX targets on NativeAOT -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/DynamicGenerics/DynamicGenerics/*">
-            <Issue>https://github.com/dotnet/runtime/issues/73299</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2680,6 +2667,90 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi1.X64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2.X64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/IsSupported_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/IsSupported_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Sse_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Sse_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1.X64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2/Sse2_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2/Sse2_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/Sse2.X64_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/Sse2.X64_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/Sse3_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/Sse3_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41.X64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41_Overloaded/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
@@ -2977,6 +3048,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
+            <Issue>Fuzzlyn</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
@@ -3196,6 +3270,9 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
@@ -3332,6 +3409,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_40444/Runtime_40444/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
+            <Issue>Fuzzlyn</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
@@ -3354,7 +3434,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/56804</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41520</Issue>
+            <Issue>tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
@@ -3639,7 +3719,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>needs triage</Issue>
+            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/73539</Issue>
@@ -3932,7 +4012,7 @@
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
-            <Issue>CORE_ROOT must be set</Issue>
+            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
@@ -3977,6 +4057,72 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
             <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/bigevent/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
+           <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processenvironment/processenvironment/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/processinfo2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/diagnosticport/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverseouter/reverseouter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo/processinfo/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_d1/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_do/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_others/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_ro/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_d2/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_r1/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)//JIT/Methodical/Methodical_r2/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 

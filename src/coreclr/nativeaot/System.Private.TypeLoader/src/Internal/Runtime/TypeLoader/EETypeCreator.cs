@@ -98,6 +98,9 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe void SetComponentSize(this RuntimeTypeHandle rtth, ushort componentSize)
         {
+            Debug.Assert(componentSize > 0);
+            Debug.Assert(rtth.ToEETypePtr()->IsArray || rtth.ToEETypePtr()->IsString);
+            rtth.ToEETypePtr()->HasComponentSize = true;
             rtth.ToEETypePtr()->ComponentSize = componentSize;
         }
     }
@@ -181,8 +184,7 @@ namespace Internal.Runtime.TypeLoader
                 bool isNullable;
                 bool isArray;
                 bool isGeneric;
-                ushort componentSize = 0;
-                ushort flags;
+                uint flags;
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
                 bool isAbstractClass;
@@ -204,7 +206,6 @@ namespace Internal.Runtime.TypeLoader
                     isValueType = pTemplateEEType->IsValueType;
                     hasFinalizer = pTemplateEEType->IsFinalizable;
                     isNullable = pTemplateEEType->IsNullable;
-                    componentSize = pTemplateEEType->ComponentSize;
                     flags = pTemplateEEType->Flags;
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
@@ -215,9 +216,11 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else if (state.TypeBeingBuilt.IsGenericDefinition)
                 {
-                    flags = (ushort)EETypeKind.GenericTypeDefEEType;
-                    isValueType = state.TypeBeingBuilt.IsValueType;
                     flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
+                    Debug.Assert((flags & (uint)EETypeFlags.HasComponentSizeFlag) != 0);
+                    flags |= checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
+
+                    isValueType = state.TypeBeingBuilt.IsValueType;
                     hasFinalizer = false;
                     isArray = false;
                     isNullable = false;
@@ -225,16 +228,19 @@ namespace Internal.Runtime.TypeLoader
                     isGenericEETypeDef = true;
                     isAbstractClass = false;
                     isByRefLike = false;
-                    componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
                     typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                 }
                 else
                 {
+#if FEATURE_UNIVERSAL_GENERICS
+                    flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
+                    Debug.Assert((flags & (uint)EETypeFlags.HasComponentSizeFlag) == 0);
+                    flags |= EETypeBuilderHelpers.ComputeFlagsEx(state.TypeBeingBuilt);
+
                     isValueType = state.TypeBeingBuilt.IsValueType;
                     hasFinalizer = state.TypeBeingBuilt.HasFinalizer;
                     isNullable = state.TypeBeingBuilt.GetTypeDefinition().IsNullable;
-                    flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
                     isArray = false;
                     isGeneric = state.TypeBeingBuilt.HasInstantiation;
 
@@ -260,9 +266,13 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
+#else
+                    Debug.Fail("This code path should be unreachable (universal generics).");
+                    throw new UnreachableException();
+#endif
                 }
 
-                flags |= (ushort)EETypeFlags.IsDynamicTypeFlag;
+                flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
 
                 // TODO! Change to if template is Universal or non-Existent
                 if (state.TypeSize.HasValue)
@@ -427,7 +437,6 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedRuntimeTypeHandle = pEEType->ToRuntimeTypeHandle();
 
                     // Set basic MethodTable fields
-                    pEEType->ComponentSize = componentSize;
                     pEEType->Flags = flags;
                     pEEType->BaseSize = (uint)baseSize;
                     pEEType->NumVtableSlots = numVtableSlots;

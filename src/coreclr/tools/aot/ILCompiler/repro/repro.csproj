@@ -29,9 +29,11 @@
       <ReproResponseLines Include="--initassembly:System.Private.Reflection.Execution" />
       <ReproResponseLines Include="--directpinvokelist:$(RuntimeBinDir)build\WindowsAPIs.txt" />
       <ReproResponseLines Include="--directpinvoke:System.Globalization.Native" />
+      <ReproResponseLines Include="--directpinvoke:System.IO.Compression.Native" />
       <ReproResponseLines Include="--stacktracedata" />
       <ReproResponseLines Include="--scanreflection" />
       <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />
+      <ReproResponseLines Include="--feature:System.Diagnostics.Tracing.EventSource.IsSupported=false" />
       <ReproResponseLines Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
