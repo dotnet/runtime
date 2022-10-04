@@ -11287,6 +11287,7 @@ class StringPrinter
     size_t        m_bufferIndex = 0;
 
     void Grow(size_t newSize);
+
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
         : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)

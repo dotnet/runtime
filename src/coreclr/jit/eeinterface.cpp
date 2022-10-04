@@ -78,7 +78,7 @@ void StringPrinter::Append(char chr)
         Grow(m_bufferMax * 2);
     }
 
-    m_buffer[m_bufferIndex] = chr;
+    m_buffer[m_bufferIndex]     = chr;
     m_buffer[m_bufferIndex + 1] = '\0';
     m_bufferIndex++;
 }
