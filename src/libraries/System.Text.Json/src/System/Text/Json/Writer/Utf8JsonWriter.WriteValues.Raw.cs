@@ -118,7 +118,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or equal to <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than or equal to <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
@@ -141,12 +141,52 @@ namespace System.Text.Json
                 ValidateWritingValue();
             }
 
-            if (utf8Json.Length == int.MaxValue)
+            long len = utf8Json.Length;
+
+            if (len == 0)
             {
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(int.MaxValue);
+                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
+            }
+            if (len >= int.MaxValue)
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(len);
             }
 
-            WriteRawValueCore(utf8Json, skipInputValidation);
+            if (skipInputValidation)
+            {
+                // Treat all unvalidated raw JSON value writes as string. If the payload is valid, this approach does
+                // not affect structural validation since a string token is equivalent to a complete object, array,
+                // or other complete JSON tokens when considering structural validation on subsequent writer calls.
+                // If the payload is not valid, then we make no guarantees about the structural validation of the final payload.
+                _tokenType = JsonTokenType.String;
+            }
+            else
+            {
+                // Utilize reader validation.
+                Utf8JsonReader reader = new(utf8Json);
+                while (reader.Read()) ;
+                _tokenType = reader.TokenType;
+            }
+
+            Debug.Assert(len < int.MaxValue);
+            int maxRequired = (int)len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            utf8Json.CopyTo(output.Slice(BytesPending));
+            BytesPending += (int)len;
+
+            SetFlagToAddListSeparatorBeforeNextItem();
         }
 
         private void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
@@ -207,10 +247,18 @@ namespace System.Text.Json
             }
             else
             {
-                _tokenType = ValidateJson(in utf8Json);
+                // Utilize reader validation.
+                Utf8JsonReader reader = new(utf8Json);
+                while (reader.Read()) ;
+                _tokenType = reader.TokenType;
             }
 
-            GrowIfNeeded(len);
+            int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
 
             Span<byte> output = _memory.Span;
 
@@ -223,75 +271,6 @@ namespace System.Text.Json
             BytesPending += len;
 
             SetFlagToAddListSeparatorBeforeNextItem();
-        }
-
-        private void WriteRawValueCore(ReadOnlySequence<byte> utf8Json, bool skipInputValidation)
-        {
-            long len = utf8Json.Length;
-
-            if (len == 0)
-            {
-                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
-            }
-
-            // In the UTF-16-based entry point methods above, we validate that the payload length <= int.MaxValue /3.
-            // The result of this division will be rounded down, so even if every input character needs to be transcoded
-            // (with expansion factor of 3), the resulting payload would be less than int.MaxValue,
-            // as (int.MaxValue/3) * 3 is less than int.MaxValue.
-            Debug.Assert(len < int.MaxValue);
-
-            if (skipInputValidation)
-            {
-                // Treat all unvalidated raw JSON value writes as string. If the payload is valid, this approach does
-                // not affect structural validation since a string token is equivalent to a complete object, array,
-                // or other complete JSON tokens when considering structural validation on subsequent writer calls.
-                // If the payload is not valid, then we make no guarantees about the structural validation of the final payload.
-                _tokenType = JsonTokenType.String;
-            }
-            else
-            {
-                _tokenType = ValidateJson(in utf8Json);
-            }
-
-            GrowIfNeeded((int)len);
-
-            Span<byte> output = _memory.Span;
-
-            if (_currentDepth < 0)
-            {
-                output[BytesPending++] = JsonConstants.ListSeparator;
-            }
-
-            utf8Json.CopyTo(output.Slice(BytesPending));
-            BytesPending += (int)len;
-
-            SetFlagToAddListSeparatorBeforeNextItem();
-        }
-
-        private void GrowIfNeeded(int len)
-        {
-            int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
-
-            if (_memory.Length - BytesPending < maxRequired)
-            {
-                Grow(maxRequired);
-            }
-        }
-
-        private static JsonTokenType ValidateJson(in ReadOnlySpan<byte> utf8Json)
-        {
-            // Utilize reader validation.
-            Utf8JsonReader reader = new(utf8Json);
-            while (reader.Read()) ;
-            return reader.TokenType;
-        }
-
-        private static JsonTokenType ValidateJson(in ReadOnlySequence<byte> utf8Json)
-        {
-            // Utilize reader validation.
-            Utf8JsonReader reader = new(utf8Json);
-            while (reader.Read()) ;
-            return reader.TokenType;
         }
     }
 }

@@ -514,10 +514,54 @@ namespace System.Text.Json.Tests
 
             // UTF-8 overload is okay.
             WriteRawValueWithSetting(writer, payload, OverloadParamType.ByteArray);
+            writer.Flush();
+            Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
+
+            writer.Reset();
+            ms.SetLength(0);
             WriteRawValueWithSetting(writer, payload, OverloadParamType.ROSeqByte);
             writer.Flush();
-
             Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [InlineData(int.MaxValue)]
+        [InlineData((long)int.MaxValue + 1)]
+        [OuterLoop]
+        public void WriteRawUtf8LengthGreaterThanOrEqualToIntMax(long len)
+        {
+            using MemoryStream ms = new();
+            using Utf8JsonWriter writer = new(ms);
+
+            const int ArrayMaxLength = 0X7FFFFFC7; // Array.MaxLength
+            try
+            {
+                var bytes1 = new byte[ArrayMaxLength];
+                var bytes2 = new byte[len - bytes1.Length];
+
+                bytes1[0] = (byte)'"';
+                FillArray(bytes1, (byte)'a', 1, bytes1.Length);
+                FillArray(bytes2, (byte)'a', 0, bytes2.Length - 1);
+                bytes2[bytes2.Length - 1] = (byte)'"';
+
+                TestSequenceSegment startSegment = new(bytes1);
+                TestSequenceSegment endSegment = startSegment.Append(bytes2);
+
+                var readonlySeq = new ReadOnlySequence<byte>(startSegment, 0, endSegment, bytes2.Length);
+
+                Assert.True(readonlySeq.Length >= int.MaxValue);
+                Assert.Throws<ArgumentException>(() => writer.WriteRawValue(readonlySeq));
+            }
+            catch (OutOfMemoryException) { } // Perhaps failed to allocate large arrays
+
+            static void FillArray(byte[] bytes, byte value, int start, int end)
+            {
+                for (int i = start; i < end; i++)
+                {
+                    bytes[i] = value;
+                }
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
@@ -560,6 +604,26 @@ namespace System.Text.Json.Tests
                     Assert.Equal(expectedLength, writer.BytesCommitted);
                 }
                 catch (OutOfMemoryException) { } // OutOfMemoryException is okay since the transcoding output is probably too large.
+            }
+        }
+
+        private class TestSequenceSegment : ReadOnlySequenceSegment<byte>
+        {
+            public TestSequenceSegment(ReadOnlyMemory<byte> memory)
+            {
+                Memory = memory;
+            }
+
+            public TestSequenceSegment Append(ReadOnlyMemory<byte> memory)
+            {
+                var newSegment = new TestSequenceSegment(memory)
+                {
+                    RunningIndex = RunningIndex + Memory.Length
+                };
+
+                Next = newSegment;
+
+                return newSegment;
             }
         }
     }
