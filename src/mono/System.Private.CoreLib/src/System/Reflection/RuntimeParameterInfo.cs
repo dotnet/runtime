@@ -131,38 +131,112 @@ namespace System.Reflection
             AttrsImpl = ParameterAttributes.None;
         }
 
-        public override
-        object? DefaultValue
+        private object? GetDefaultValueFromCustomAttributeData()
         {
-            get
+            foreach (CustomAttributeData attributeData in RuntimeCustomAttributeData.GetCustomAttributes(this))
             {
-                if (ClassImpl == typeof(decimal) || ClassImpl == typeof(decimal?))
+                Type attributeType = attributeData.AttributeType;
+                if (attributeType == typeof(DecimalConstantAttribute))
                 {
-                    /* default values for decimals are encoded using a custom attribute */
-                    DecimalConstantAttribute[] attrs = (DecimalConstantAttribute[])GetCustomAttributes(typeof(DecimalConstantAttribute), false);
-                    if (attrs.Length > 0)
-                        return attrs[0].Value;
+                    return GetRawDecimalConstant(attributeData);
                 }
-                else if (ClassImpl == typeof(DateTime) || ClassImpl == typeof(DateTime?))
+                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
                 {
-                    /* default values for DateTime are encoded using a custom attribute */
-                    DateTimeConstantAttribute[] attrs = (DateTimeConstantAttribute[])GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
-                    if (attrs.Length > 0)
-                        return attrs[0].Value;
+                    if (attributeType == typeof(DateTimeConstantAttribute))
+                    {
+                        return GetRawDateTimeConstant(attributeData);
+                    }
+                    return GetRawConstant(attributeData);
                 }
-                return DefaultValueImpl;
+            }
+            return DBNull.Value;
+        }
+
+        private static decimal GetRawDecimalConstant(CustomAttributeData attr)
+        {
+            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
+
+            return new decimal(
+                lo: GetConstructorArgument(args, 4),
+                mid: GetConstructorArgument(args, 3),
+                hi: GetConstructorArgument(args, 2),
+                isNegative: ((byte)args[1].Value!) != 0,
+                scale: (byte)args[0].Value!);
+
+            static int GetConstructorArgument(IList<CustomAttributeTypedArgument> args, int index)
+            {
+                // The constructor is overloaded to accept both signed and unsigned arguments
+                object obj = args[index].Value!;
+                return (obj is int value) ? value : (int)(uint)obj;
             }
         }
+
+        private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
+        {
+            return new DateTime((long)attr.ConstructorArguments[0].Value!);
+        }
+
+        // We are relying only on named arguments for historical reasons
+        private static object? GetRawConstant(CustomAttributeData attr)
+        {
+            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
+            {
+                if (namedArgument.MemberInfo.Name.Equals("Value"))
+                    return namedArgument.TypedValue.Value;
+            }
+            return DBNull.Value;
+        }
+
+        private object? GetDefaultValueFromCustomAttributes()
+        {
+            object[] customAttributes = GetCustomAttributes(typeof(CustomConstantAttribute), false);
+            if (customAttributes.Length != 0)
+                return ((CustomConstantAttribute)customAttributes[0]).Value;
+
+            customAttributes = GetCustomAttributes(typeof(DecimalConstantAttribute), false);
+            if (customAttributes.Length != 0)
+                return ((DecimalConstantAttribute)customAttributes[0]).Value;
+
+            return DBNull.Value;
+        }
+
+        private object? GetDefaultValue(bool raw)
+        {
+            // Prioritize metadata constant over custom attribute constant
+            object? defaultValue = DefaultValueImpl;
+            if (defaultValue != null && (defaultValue.GetType() == typeof(DBNull) || defaultValue.GetType() == typeof(Missing)))
+            {
+                // If default value is not specified in metadata, look for it in custom attributes
+                // The resolution of default value is done by following these rules:
+                // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
+                //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
+                // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
+                //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
+                // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
+                //  RawDefaultValue and DefaultValue.
+                defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
+            }
+
+            if (defaultValue == DBNull.Value && IsOptional)
+            {
+                // If the argument is marked as optional then the default value is Missing.Value.
+                defaultValue = Type.Missing;
+            }
+
+            return defaultValue;
+        }
+
+        public override object? DefaultValue { get => GetDefaultValue(false); }
 
         public override
         object? RawDefaultValue
         {
             get
             {
-                if (DefaultValue != null && DefaultValue.GetType().IsEnum)
-                    return ((Enum)DefaultValue).GetValue();
-                /*FIXME right now DefaultValue doesn't throw for reflection-only assemblies. Change this once the former is fixed.*/
-                return DefaultValue;
+                object? defaultValue = GetDefaultValue(true);
+                if (defaultValue is Enum en)
+                    return en.GetValue();
+                return defaultValue;
             }
         }
 

@@ -30,6 +30,8 @@ internal sealed class DtcProxyShimFactory
     private readonly ConcurrentQueue<ITransactionTransmitter> _cachedTransmitters = new();
     private readonly ConcurrentQueue<ITransactionReceiver> _cachedReceivers = new();
 
+    private static readonly int s_maxCachedInterfaces = Environment.ProcessorCount * 2;
+
     private readonly EventWaitHandle _eventHandle;
 
     private ITransactionDispenser _transactionDispenser = null!; // Late-initialized in ConnectToProxy
@@ -350,7 +352,13 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedTransmitter(ITransactionTransmitter transmitter)
-        => _cachedTransmitters.Enqueue(transmitter);
+    {
+        if (_cachedTransmitters.Count < s_maxCachedInterfaces)
+        {
+            transmitter.Reset();
+            _cachedTransmitters.Enqueue(transmitter);
+        }
+    }
 
     internal ITransactionReceiver GetCachedReceiver()
     {
@@ -366,5 +374,11 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedReceiver(ITransactionReceiver receiver)
-        => _cachedReceivers.Enqueue(receiver);
+    {
+        if (_cachedReceivers.Count < s_maxCachedInterfaces)
+        {
+            receiver.Reset();
+            _cachedReceivers.Enqueue(receiver);
+        }
+    }
 }

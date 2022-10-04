@@ -1268,6 +1268,7 @@ public:
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
+    static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
     static void Print(IntegralRange range);
@@ -1390,14 +1391,14 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp);
 // partition a compilation.
 enum Phases
 {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) enum_nm,
 #include "compphases.h"
     PHASE_NUMBER_OF
 };
 
 extern const char*   PhaseNames[];
 extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseShortNames[];
+extern const LPCWSTR PhaseEnumsW[];
 
 // Specify which checks should be run after each phase
 //
@@ -6803,7 +6804,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
+#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -6828,14 +6829,14 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveFrozenObjects() const
+    bool doesMethodHaveFrozenString() const
     {
-        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
+        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
     }
 
-    void setMethodHasFrozenObjects()
+    void setMethodHasFrozenString()
     {
-        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
+        optMethodFlags |= OMF_HAS_FROZEN_STRING;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -6966,7 +6967,9 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
     BitVecTraits* optReachableBitVecTraits;
@@ -7798,7 +7801,7 @@ public:
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
 
 #if defined(DEBUG)
-    void eePrintFrozenObjectDescription(const char* prefix, size_t handle);
+    const WCHAR* eeGetCPString(size_t stringHandle);
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
     const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
@@ -9302,6 +9305,9 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+
 #ifdef DEBUG
         // Loop alignment variables
 
@@ -9329,6 +9335,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopMaxIterationCount;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

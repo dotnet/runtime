@@ -2063,7 +2063,7 @@ protected:
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
-    bool decommit_step ();
+    bool decommit_step (uint64_t step_milliseconds);
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
@@ -5806,6 +5806,8 @@ public:
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
+
+const int min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * LARGE_REGION_FACTOR));
 
 enum allocate_direction
 {

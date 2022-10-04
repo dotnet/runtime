@@ -154,10 +154,19 @@ namespace System.Reflection.Tests
             Assert.NotNull(Assembly.GetEntryAssembly());
             string assembly = Assembly.GetEntryAssembly().ToString();
 
-            // The single file test runner is not xunit.console
-            string expectedAssembly = PlatformDetection.IsNativeAot ? "System.Reflection.Tests" : "xunit.console";
+            bool correct;
+            if (PlatformDetection.IsNativeAot)
+            {
+                // The single file test runner is not 'xunit.console'.
+                correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else
+            {
+                // Under Visual Studio, the runner is 'testhost', otherwise it is 'xunit.console'.
+                correct = assembly.IndexOf("xunit.console", StringComparison.OrdinalIgnoreCase) != -1 ||
+                          assembly.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) != -1;
+            }
 
-            bool correct = assembly.IndexOf(expectedAssembly, StringComparison.OrdinalIgnoreCase) != -1;
             Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 

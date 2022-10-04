@@ -3,8 +3,12 @@
   "author": "Microsoft",
   "classifications": [ "Web", "WebAssembly", "Browser" ],
   "generatorVersions": "[1.0.0.0-*)",
-  "identity": "WebAssembly.Browser",
+  "groupIdentity": "WebAssembly.Browser",
+  "precedence": 8000,
+  "identity": "WebAssembly.Browser.8.0",
+  "description": "WebAssembly Browser App",
   "name": "WebAssembly Browser App",
+  "description": "A project template for creating a .NET app that runs on WebAssembly in a browser",
   "shortName": "wasmbrowser",
   "sourceName": "browser.0",
   "preferNameDirectory": true,
@@ -20,7 +24,7 @@
         "low": 5000,
         "high": 5300
       },
-	    "replaces": "5000"
+      "replaces": "5000"
     },
     "kestrelHttpsPortGenerated": {
       "type": "generated",
@@ -29,7 +33,21 @@
         "low": 7000,
         "high": 7300
       },
-	    "replaces": "5001"
+      "replaces": "5001"
+    },
+    "framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net8.0",
+          "description": "Target net8.0",
+          "displayName": ".NET 8.0"
+        }
+      ],
+      "defaultValue": "net8.0",
+      "displayName": "framework"
     }
   }
 }
