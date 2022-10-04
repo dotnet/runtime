@@ -1,8 +1,7 @@
 Cross Compilation for ARM on Linux
 ==================================
 
-It is possible to build CoreFx on Linux for arm, armel, or arm64 by cross compiling.
-It is very similar to the cross compilation procedure of CoreCLR.
+It is possible to build libraries on Linux for arm, armel, or arm64 by cross compiling. It is very similar to the cross compilation procedure of CoreCLR.
 
 Requirements
 ------------
@@ -11,7 +10,7 @@ You need a Debian based host, and the following packages need to be installed:
 
     $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
 
-In addition, to cross compile CoreFX, the binutils for the target are required. So for arm you need:
+In addition, to cross compile libraries, the binutils for the target are required. So for arm you need:
 
     $ sudo apt-get install binutils-arm-linux-gnueabihf
 
@@ -24,108 +23,106 @@ and for arm64 you need:
     $ sudo apt-get install binutils-aarch64-linux-gnu
 
 
-Generating the rootfs
+Generate the rootfs
 ---------------------
-The `eng/common/cross/build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an Ubuntu 16.04 rootfs as this is what CoreFX targets.
+The `eng/common/cross/build-rootfs.sh` script can be used to download the files needed for cross compilation. It can generate rootfs for different operating systems.
 
-    Usage: ./eng/common/cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount] --rootfsdir <directory>]
-    BuildArch can be: arm, armel, arm64, x86
-    LinuxCodeName - optional, Code name for Linux, can be: trusty, xenial(default), zesty, bionic, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen.
-    lldbx.y - optional, LLDB version, can be: lldb3.9(default), lldb4.0, lldb5.0, lldb6.0 no-lldb. Ignored for alpine
+    Usage: ./eng/common/cross/build-rootfs.sh [BuildArch] [CodeName] [lldbx.y] [llvmx[.y]] [--skipunmount] --rootfsdir <directory>]
+    BuildArch can be: arm(default), arm64, armel, armv6, ppc64le, riscv64, s390x, x64, x86
+    CodeName - optional, Code name for Linux, can be: xenial(default), zesty, bionic, alpine, alpine3.13 or alpine3.14. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen.
+                                   for FreeBSD can be: freebsd12, freebsd13
+                                   for illumos can be: illumos
+                                   for Haiku can be: haiku
 
-The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. It will, by default, generate the rootfs in `cross/rootfs/<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable or by using --rootfsdir.
+The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. By default it generates the rootfs in `.tools/rootfs/<BuildArch>`, however this can be changed by setting the `ROOTFS_DIR` environment variable or by using `--rootfsdir`.
 
-For example, to generate an arm rootfs:
+For example, to generate an arm Ubuntu 18.04 rootfs:
 
-    $ sudo ./eng/common/cross/build-rootfs.sh arm
+    $ sudo ./eng/common/cross/build-rootfs.sh arm bionic
 
-and if you wanted to generate the rootfs elsewhere:
+And to generate the rootfs elsewhere:
 
-    $ sudo ./build-rootfs.sh arm --rootfsdir  /mnt/corefx-cross/arm
+    $ sudo ./build-rootfs.sh arm bionic --rootfsdir /mnt/rootfs/arm
 
 
-Cross compiling for native CoreFX
+Compile native part of libraries
 ---------------------------------
-Once the rootfs has been generated, it will be possible to cross compile CoreFX. If `ROOTFS_DIR` was set when generating the rootfs, then it must also be set when running `build.sh`.
 
-So, without `ROOTFS_DIR`:
+To build native part of libraries for arm using subset:
 
-    $ ./src/Native/build-native.sh debug arm verbose cross
+    $ ROOTFS_DIR=`pwd`/.tools/rootfs/arm ./build.sh --cross --arch arm --librariesConfiguration Release --subset libs.native
 
-And with:
+To build native part of libraries for arm with dedicated script (without msbuild):
 
-    $ ROOTFS_DIR=/mnt/corefx-cross/arm ./src/Native/build-native.sh debug arm verbose cross
+    $ ROOTFS_DIR=`pwd`/.tools/rootfs/arm ./src/native/libs/build-native.sh -release -arm -cross -outconfig net7.0-Linux-Release-arm
 
-As usual the generated binaries will be found in `artifacts/bin/TargetOS.BuildArch.BuildType/native` as following:
+Build artifacts can be found in `artifacts/bin/native/net7.0-<TargetOS>-<BuildArch>-<BuildType>/`:
 
-    $ ls -al ./artifacts/bin/Linux.arm.Debug/native
-    total 988
-    drwxrwxr-x 2 lgs lgs   4096  3  6 18:33 .
-    drwxrwxr-x 3 lgs lgs   4096  3  6 18:33 ..
-    -rw-r--r-- 1 lgs lgs  19797  3  6 18:33 System.IO.Compression.Native.so
-    -rw-r--r-- 1 lgs lgs 428232  3  6 18:33 System.Native.a
-    -rw-r--r-- 1 lgs lgs 228279  3  6 18:33 System.Native.so
-    -rw-r--r-- 1 lgs lgs  53089  3  6 18:33 System.Net.Http.Native.so
-    -rw-r--r-- 1 lgs lgs 266720  3  6 18:33 System.Security.Cryptography.Native.so
-    $ file ./artifacts/bin/Linux.arm.Debug/native/System.Native.so
-    ./bin/Linux.arm.Debug/native/System.Native.so:
-    ELF 32-bit LSB  shared object, ARM, EABI5 version 1 (SYSV),
-    dynamically linked, BuildID[sha1]=fac50f1bd657c1759f0ad6cf5951511ddf252e67, not stripped
+    $ ls artifacts/bin/native/net7.0-Linux-Release-arm/*
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Globalization.Native.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Globalization.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Globalization.Native.so.dbg
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Compression.Native.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Compression.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Compression.Native.so.dbg
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Ports.Native.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Ports.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.IO.Ports.Native.so.dbg
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Native.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Native.so.dbg
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Net.Security.Native.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Net.Security.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Net.Security.Native.so.dbg
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.a
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so.dbg
+
+    $ file artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Native.so
+    artifacts/bin/native/net7.0-Linux-Release-arm/libSystem.Native.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, BuildID[sha1]=5f6f6f9c4012dffed133624867adf32ac2af130d, stripped
 
 
-Compiling for managed CoreFX
+Compile managed part of libraries
 ============================
-The managed components of CoreFX are architecture-independent and thus do not require a special build for arm, armel or arm64.
+The managed components of libraries are architecture-independent and, thus, do not require a special build for arm, armel or arm64 (this is true if ILLinker trimming is disabled with `/p:ILLinkTrimAssembly=false`).
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
-    $ ROOTFS_DIR=/mnt/corefx-cross/arm ./build.sh --arch arm
+Build of managed part of libraries requires presence of built native part of libraries.
 
-You can also build just managed code with:
+To build managed part of libraries for arm using subset (architecture-dependent, can't be used on other architectures):
 
-    $ ./build.sh --arch arm /p:BuildNative=false
+    $ ./build.sh --arch arm --librariesConfiguration Release --subset libs.sfx
 
-The output is at `artifacts/bin/[BuildSettings]` where `BuildSettings` looks something like `net5.0-<TargetOS>-Debug-<Architecture>`. Ex: `artifacts/bin/net5.0-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md)
+Note that by default ILLinker trimming is enabled and libraries built above for arm can't be used on other arches. To build architecture-independent managed part of libraries for arm using subset:
 
-Building corefx for Linux ARM Emulator
-=======================================
+    $ ./build.sh --arch arm --librariesConfiguration Release --subset libs.sfx /p:ILLinkTrimAssembly=false
 
-It is possible to build corefx binaries (native and managed) for the Linux ARM Emulator (latest version provided here: [#5394](https://github.com/dotnet/runtime/issues/5394)).
-The `scripts/arm32_ci_script.sh` script does this.
+Build artifacts can be found in `artifacts/bin/microsoft.netcore.app.runtime.<TargetOS>-<BuildArch>/<BuildType>/runtimes/<TargetOS>-<BuildArch>/lib/net7.0/`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md).
 
-The following instructions assume that:
-* You have set up the extracted emulator at `/opt/linux-arm-emulator` (such that `/opt/linux-arm-emulator/platform/rootfs-t30.ext4` exists)
-* The mount path for the emulator rootfs is `/opt/linux-arm-emulator-root` (change this path if you have a working directory at this path).
+Note that next form is also allowed:
 
-All the following instructions are for the Release mode. Change the commands and files accordingly for the Debug mode.
+    $ ./build.sh libs.sfx --arch arm --librariesConfiguration Release
 
-To just build the native and managed corefx binaries for the Linux ARM Emulator, run the following command:
-```
-prajwal@ubuntu ~/corefx $ ./scripts/arm32_ci_script.sh \
-    --emulatorPath=/opt/linux-arm-emulator \
-    --mountPath=/opt/linux-arm-emulator-root \
-    --buildConfig=Release
-```
+Both native and managed parts can be built at the same time with:
 
-The Linux ARM Emulator is based on the soft floating point and thus the native binaries are generated for the armel architecture. The corefx binaries generated by the above command can be found at `~/corefx/artifacts/bin/Linux.armel.Release`, `~/corefx/artifacts/bin/Linux.AnyCPU.Release`, `~/corefx/artifacts/bin/Unix.AnyCPU.Release`, and `~/corefx/artifacts/bin/AnyOS.AnyCPU.Release`.
+    $ ROOTFS_DIR=`pwd`/.tools/rootfs/arm ./build.sh --cross --arch arm --librariesConfiguration Release --subset libs.native+libs.sfx
 
-
-Build corefx for a new architecture
+Build libraries for a new architecture
 ===================================
 
-When building for a new architecture you will need to build the native pieces separate from the managed pieces in order to correctly boot strap the native runtime. Instead of calling build.sh directly you should instead split the calls like such:
+When building for a new architecture you will need to build the native pieces separately from the managed pieces in order to correctly boot strap the native runtime.
 
-Example building for armel
-```
-src/Native/build-native.sh armel
---> Output goes to artifacts/bin/runtime/net5.0-Linux-Debug-armel
+Native part build for target architecture:
 
-build /p:TargetArchitecture=x64 /p:BuildNative=false
---> Output goes to artifacts/bin/runtime/net5.0-Linux-Debug-x64
-```
+    $ ROOTFS_DIR=`pwd`/.tools/rootfs/<BuildArch> ./src/native/libs/build-native.sh -release -<BuildArch> -cross -outconfig net7.0-Linux-Release-<BuildArch>
+
+Architecture-independent managed part build for x64:
+
+    $ ./build.sh --arch x64 --librariesConfiguration Release --subset libs.sfx /p:ILLinkTrimAssembly=false
 
 The reason you need to build the managed portion for x64 is because it depends on runtime packages for the new architecture which don't exist yet so we use another existing architecture such as x64 as a proxy for building the managed binaries.
 
-Similar if you want to try and run tests you will have to copy the managed assemblies from the proxy directory (i.e. `net5.0-Linux-Debug-x64`) to the new architecture directory (i.e `net5.0-Linux-Debug-armel`) and run code via another host such as corerun because dotnet is at a higher level and most likely doesn't exist for the new architecture yet.
+Similar if you want to try and run tests you will have to copy the managed assemblies from the proxy directory (i.e. `net7.0-Linux-Release-x64`) to the new architecture directory (i.e `net7.0-Linux-Release-<BuildArch>`) and run code via another host such as corerun because dotnet is at a higher level and most likely doesn't exist for the new architecture yet.
 
 Once all the necessary builds are setup and packages are published the splitting of the build and manual creation of the runtime should no longer be necessary.
