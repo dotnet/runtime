@@ -481,7 +481,7 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
-        protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
+        protected static TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
             => targetFormat switch
             {
                 TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
@@ -795,6 +795,19 @@ namespace System.Formats.Tar.Tests
             Name,
             NameAndPrefix,
             Unlimited
+        }
+
+        internal static void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)
+        {
+            using TarWriter writer = new(s, leaveOpen: true);
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            if (entryType == TarEntryType.SymbolicLink)
+            {
+                entry.LinkName = "bar";
+            }
+
+            writer.WriteEntry(entry);
         }
     }
 }

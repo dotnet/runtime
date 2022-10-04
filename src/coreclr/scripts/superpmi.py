@@ -2234,12 +2234,21 @@ class SuperPMIReplayThroughputDiff:
                 # impacted collections and a detailed one that includes raw
                 # instruction count and all collections.
                 def is_significant_pct(base, diff):
+                    if base == 0:
+                        return diff != 0
+
                     return round((diff - base) / base * 100, 2) != 0
+
                 def is_significant(row, base, diff):
                     return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
-                    text = "{}{:.2f}%".format(plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
+                    if base_instructions > 0:
+                        pct = (diff_instructions - base_instructions) / base_instructions * 100
+                    else:
+                        pct = 0.0
+
+                    text = "{}{:.2f}%".format(plus_if_positive, pct)
                     if diff_instructions != base_instructions:
                         color = "red" if diff_instructions > base_instructions else "green"
                         return html_color(color, text)

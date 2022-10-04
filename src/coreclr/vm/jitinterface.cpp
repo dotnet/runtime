@@ -11683,7 +11683,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     }
     else
     {
-        *ppValue = pinnedStr;
+        *ppValue = pinnedStrHandlePtr;
     }
 
     EE_TO_JIT_TRANSITION();
