@@ -190,6 +190,9 @@
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
         <!-- Arm32 does not support hardware intrinsics -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -301,7 +304,16 @@
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
         <!-- X86 does not support Vector64 -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
         <!-- X86 does not support Arm hardware intrinsics -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm32 specific excludes -->
@@ -459,7 +471,16 @@
             <Issue>Needs Triage</Issue>
         </ExcludeList>
         <!-- X64 does not support Vector64 -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
         <!-- X64 does not support Arm hardware intrinsics -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm64 specific -->
