@@ -117,6 +117,13 @@ internal static partial class Interop
                     dwFlags);
             }
 
+            // Windows 10.1903 can return success when it meant NTE_BUFFER_TOO_SMALL.
+            if (status == NTSTATUS.STATUS_SUCCESS && written > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
             if (status == NTSTATUS.STATUS_SUCCESS)
             {
                 bytesWritten = written;
