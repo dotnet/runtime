@@ -57,38 +57,30 @@ namespace
     {
         // This function is only called with the library name specified for a p/invoke, not any variations.
         // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
-#if defined(_WIN32)
-        const char* hostpolicy_lib_name = "hostpolicy";
-
-        if (strcmp(library_name, "System.IO.Compression.Native") == 0)
-        {
-            return CompressionResolveDllImport(entry_point_name);
-        }
-#else
-        const char* hostpolicy_lib_name = "libhostpolicy";
-
-        if (strcmp(library_name, "libSystem.IO.Compression.Native") == 0)
-        {
-            return CompressionResolveDllImport(entry_point_name);
-        }
-
-        if (strcmp(library_name, "libSystem.Net.Security.Native") == 0)
+#if !defined(_WIN32)
+        if (strcmp(library_name, LIB_NAME("System.Net.Security.Native")) == 0)
         {
             return SecurityResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(library_name, "libSystem.Native") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Native")) == 0)
         {
             return SystemResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(library_name, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
 #endif
+
+        if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
+        {
+            return CompressionResolveDllImport(entry_point_name);
+        }
+
         // there are two PInvokes in the hostpolicy itself, redirect them here.
-        if (strcmp(library_name, hostpolicy_lib_name) == 0)
+        if (strcmp(library_name, LIB_NAME("hostpolicy")) == 0)
         {
             if (strcmp(entry_point_name, "corehost_resolve_component_dependencies") == 0)
             {
