@@ -376,11 +376,19 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
+                        VariableDeclarator(numElementsIdentifier))));
+            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+            // The value will never be used unless it has been initialized, so this is safe.
+            yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                {
+                    InstanceIdentifier = numElementsIdentifier
+                }, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
@@ -600,11 +608,19 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
+                        VariableDeclarator(numElementsIdentifier))));
+            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+            // The value will never be used unless it has been initialized, so this is safe.
+            yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                {
+                    InstanceIdentifier = numElementsIdentifier
+                }, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
