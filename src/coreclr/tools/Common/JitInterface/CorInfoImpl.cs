@@ -1849,8 +1849,7 @@ namespace Internal.JitInterface
             {
                 bufferSpan[written] = 0;
             }
-
-            return (nuint)objStr.Length;
+            return (nuint)Encoding.UTF8.GetByteCount(objStr);
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
