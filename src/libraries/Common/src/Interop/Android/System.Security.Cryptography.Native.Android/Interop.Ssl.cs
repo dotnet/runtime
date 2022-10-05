@@ -62,7 +62,7 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterTrustManagerValidationCallback")]
         internal static unsafe partial void RegisterTrustManagerValidationCallbackImpl(
-            delegate* unmanaged<IntPtr, int, int*, byte**, bool, bool> validateCertificates);
+            delegate* unmanaged<IntPtr, int, int*, byte**, int, bool> validateCertificates);
 
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]

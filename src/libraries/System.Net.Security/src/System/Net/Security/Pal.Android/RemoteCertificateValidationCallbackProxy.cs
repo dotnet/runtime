@@ -53,22 +53,16 @@ namespace System.Net
             int certificatesCount,
             int* certificateLengths,
             byte** rawCertificates,
-            bool approvedByDefaultTrustManager)
+            int errors)
         {
             RemoteCertificateValidationCallbackProxy validator = FromHandle(validatorHandle);
             X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
-            return validator.Validate(certificates, approvedByDefaultTrustManager);
+            return validator.Validate(certificates, (SslPolicyErrors)errors);
         }
 
-        private bool Validate(X509Certificate2[] certificates, bool approvedByDefaultTrustManager)
+        private bool Validate(X509Certificate2[] certificates, SslPolicyErrors errors)
         {
-            var errors = approvedByDefaultTrustManager
-                ? SslPolicyErrors.None
-                : certificates.Length == 0
-                    ? SslPolicyErrors.RemoteCertificateNotAvailable
-                    : SslPolicyErrors.RemoteCertificateChainErrors;
-
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
             X509Chain chain = CreateChain(certificates);
             return _callback.Invoke(_sender, certificate, chain, errors);
