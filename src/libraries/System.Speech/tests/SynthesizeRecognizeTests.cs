@@ -101,7 +101,7 @@ namespace SampleSynthesisTests
                                     diagnostics.AppendLine($"Alternatives included '{phrase.Text}'' with confidence {phrase.Confidence}");
                                 }
                                 diagnostics.Append($"Elapsed {sw.Elapsed}");
-                                Assert.Fail($"Recognition of '{input}' was expected to produce a string starting with '{output}', but failed");
+                                Assert.Fail($"Recognition of '{input}' was expected to produce a string containing '{output}', but failed");
                             }
                         };
 
