@@ -44,7 +44,7 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager {
 
         try {
             internalTrustManager.checkClientTrusted(chain, authType);
-        } catch (Exception ex) {
+        } catch (CertificateException ex) {
             errors |= SslPolicyErrors.RemoteCertificateChainErrors;
         }
 

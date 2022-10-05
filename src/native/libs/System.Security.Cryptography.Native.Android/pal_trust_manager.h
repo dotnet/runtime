@@ -1,6 +1,6 @@
 #include "pal_jni.h"
 
-typedef bool (*ValidationCallback)(intptr_t, int32_t, int32_t*, uint8_t**, bool);
+typedef bool (*ValidationCallback)(intptr_t, int32_t, int32_t*, uint8_t**, int32_t);
 
 PALEXPORT void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallback callback);
 
