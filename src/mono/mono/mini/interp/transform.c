@@ -6076,7 +6076,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
 						/* metadata-update: can't add byref fields */
 						g_assert (!m_type_is_byref (ftype));
-						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
 						td->ip += 5;
