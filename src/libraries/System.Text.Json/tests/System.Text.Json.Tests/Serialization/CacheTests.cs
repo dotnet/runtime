@@ -410,11 +410,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public static Func<JsonSerializerOptions, JsonSerializerOptions, bool> CreateEqualityComparerAccessor()
         {
-            Type equalityComparerType = typeof(JsonSerializerOptions).GetNestedType("EqualityComparer", BindingFlags.NonPublic);
-            Assert.NotNull(equalityComparerType);
-            MethodInfo equalityComparerMethod = equalityComparerType.GetMethod("Equals", new[] { typeof(JsonSerializerOptions), typeof(JsonSerializerOptions) });
-            Assert.NotNull(equalityComparerMethod);
-
+            MethodInfo equalityComparerMethod = typeof(JsonSerializerOptions).GetMethod("AreEquivalentOptions", BindingFlags.NonPublic | BindingFlags.Static);
             return (Func<JsonSerializerOptions, JsonSerializerOptions, bool>)Delegate.CreateDelegate(typeof(Func<JsonSerializerOptions, JsonSerializerOptions, bool>), equalityComparerMethod);
         }
 
