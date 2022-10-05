@@ -25,7 +25,7 @@ namespace DebuggerTests
             { "MONO_TYPE_STRING",      TString(default),                                        TString("hello"),                                       "DebuggerTests.StepInTest<string>.TestedMethod"},
 
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/64188")]
-             { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
+            { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
 
             { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", "byte[2]"),                            "DebuggerTests.StepInTest<byte[]>.TestedMethod"},
             { "MONO_TYPE_VALUETYPE",   TValueType("DebuggerTests.Point"),                       TValueType("DebuggerTests.Point"),                      "DebuggerTests.StepInTest<DebuggerTests.Point>.TestedMethod"},
