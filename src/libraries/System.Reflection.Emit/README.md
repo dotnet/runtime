@@ -9,14 +9,14 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.refl
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
-Inbox</br>
+Inbox<br/>
 [System.Reflection.Emit NuGet Package](https://www.nuget.org/packages/System.Reflection.Emit)
 
 ## Source
 Runtime code for CoreClr:
-https://github.com/dotnet/runtime/tree/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit</br>
-for Mono:</br>
-https://github.com/dotnet/runtime/tree/main/src/mono/System.Private.CoreLib/src/System/Reflection/Emit</br>
+https://github.com/dotnet/runtime/tree/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit<br/>
+for Mono:<br/>
+https://github.com/dotnet/runtime/tree/main/src/mono/System.Private.CoreLib/src/System/Reflection/Emit<br/>
 Shared code between CoreClr and Mono:
 https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit
 

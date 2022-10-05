@@ -6,5 +6,5 @@ The primary class is [`ILGenerator`](https://learn.microsoft.com/dotnet/api/syst
 ## Status: [Inactive](../../libraries/README.md)
 
 ## Deployment
-Inbox</br>
+Inbox<br/>
 [System.Reflection.Emit.ILGeneration NuGet Package](https://www.nuget.org/packages/System.Reflection.Emit.ILGeneration)

@@ -7,5 +7,5 @@ The primary classes are [MetadataReader](https://learn.microsoft.com/dotnet/api/
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
-Inbox</br>
+Inbox<br/>
 [System.Reflection.Metadata NuGet Package](https://www.nuget.org/packages/System.Reflection.Metadata)

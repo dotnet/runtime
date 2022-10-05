@@ -4,7 +4,7 @@ The primary class is [`DynamicMethod`](https://learn.microsoft.com/dotnet/api/sy
 ## Status: [Inactive](../../libraries/README.md)
 
 ## Deployment
-Inbox</br>
+Inbox<br/>
 [System.Reflection.Emit.Lightweight NuGet Package](https://www.nuget.org/packages/System.Reflection.Emit.Lightweight)
 
 ## See also
