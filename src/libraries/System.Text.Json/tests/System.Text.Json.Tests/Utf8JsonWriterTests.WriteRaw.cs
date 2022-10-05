@@ -531,37 +531,14 @@ namespace System.Text.Json.Tests
         [OuterLoop]
         public void WriteRawUtf8LengthGreaterThanOrEqualToIntMax(long len)
         {
-            using MemoryStream ms = new();
-            using Utf8JsonWriter writer = new(ms);
-
-            const int ArrayMaxLength = 0X7FFFFFC7; // Array.MaxLength
             try
             {
-                var bytes1 = new byte[ArrayMaxLength];
-                var bytes2 = new byte[len - bytes1.Length];
-
-                bytes1[0] = (byte)'"';
-                FillArray(bytes1, (byte)'a', 1, bytes1.Length);
-                FillArray(bytes2, (byte)'a', 0, bytes2.Length - 1);
-                bytes2[bytes2.Length - 1] = (byte)'"';
-
-                TestSequenceSegment startSegment = new(bytes1);
-                TestSequenceSegment endSegment = startSegment.Append(bytes2);
-
-                var readonlySeq = new ReadOnlySequence<byte>(startSegment, 0, endSegment, bytes2.Length);
-
-                Assert.True(readonlySeq.Length >= int.MaxValue);
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+                ReadOnlySequence<byte> readonlySeq = CreateLargeReadOnlySequence(len);
                 Assert.Throws<ArgumentException>(() => writer.WriteRawValue(readonlySeq));
             }
             catch (OutOfMemoryException) { } // Perhaps failed to allocate large arrays
-
-            static void FillArray(byte[] bytes, byte value, int start, int end)
-            {
-                for (int i = start; i < end; i++)
-                {
-                    bytes[i] = value;
-                }
-            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
@@ -604,6 +581,62 @@ namespace System.Text.Json.Tests
                     Assert.Equal(expectedLength, writer.BytesCommitted);
                 }
                 catch (OutOfMemoryException) { } // OutOfMemoryException is okay since the transcoding output is probably too large.
+            }
+        }
+
+        private static ReadOnlySequence<byte> CreateLargeReadOnlySequence(long len)
+        {
+            Assert.InRange(len, int.MaxValue, long.MaxValue);
+
+            const int ArrayMaxLength = 0X7FFFFFC7; // Array.MaxLength
+
+            long totalLen = len;
+            TestSequenceSegment? startSegment = null;
+            TestSequenceSegment? endSegment = null;
+
+            // Construct ReadOnlySequence<byte> with length as 'len' which is greater than or equal to int.MaxValue
+            do
+            {
+                if (startSegment is null) // First segment
+                {
+                    var bytes = new byte[ArrayMaxLength];
+                    bytes[0] = (byte)'"';
+                    FillArray(bytes, (byte)'a', 1, bytes.Length);
+                    endSegment = startSegment = new(bytes);
+                }
+                else
+                {
+                    byte[] bytes;
+                    if (totalLen <= ArrayMaxLength) // The last segment
+                    {
+                        bytes = new byte[totalLen];
+                        bytes[totalLen - 1] = (byte)'"';
+                    }
+                    else
+                    {
+                        bytes = new byte[ArrayMaxLength];
+                        bytes[ArrayMaxLength - 1] = (byte)'a';
+                    }
+
+                    FillArray(bytes, (byte)'a', 0, bytes.Length - 1);
+                    endSegment = endSegment!.Append(bytes);
+                }
+
+                totalLen -= endSegment.Memory.Length;
+            } while (totalLen > 0);
+
+            var readonlySeq = new ReadOnlySequence<byte>(startSegment, 0, endSegment, endSegment.Memory.Length);
+
+            Assert.Equal(len, readonlySeq.Length); // Make sure constructed ReadOnlySequence's length is as expected
+
+            return readonlySeq;
+
+            static void FillArray(byte[] bytes, byte value, int start, int end)
+            {
+                for (int i = start; i < end; i++)
+                {
+                    bytes[i] = value;
+                }
             }
         }
 
