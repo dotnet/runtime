@@ -18,6 +18,10 @@
   <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
 
   <ItemGroup>
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>

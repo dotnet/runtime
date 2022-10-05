@@ -21,15 +21,13 @@
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
     <RollForward>Major</RollForward>
-    <!-- TODO Remove the language version limitation when the reference assemblies
-        are updated with the new scoped keyword. -->
-    <LangVersion>10</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="MIbcProfileParser.cs" />
     <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
     <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\Common\TypeSystem\IL\FlowGraph.cs" Link="SPGO\FlowGraph.cs" />
     <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
@@ -37,32 +35,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
-    <Compile Include="..\Common\CommandLine\Argument.cs" Link="CommandLine\Argument.cs" />
-    <Compile Include="..\Common\CommandLine\Argument_1.cs" Link="CommandLine\Argument_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentCommand.cs" Link="CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentCommand_1.cs" Link="CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentLexer.cs" Link="CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentList_1.cs" Link="CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentParser.cs" Link="CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntax.cs" Link="CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntax_Definers.cs" Link="CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntaxException.cs" Link="CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentToken.cs" Link="CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\Common\CommandLine\CommandLineException.cs" Link="CommandLine\CommandLineException.cs" />
-    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" Link="CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\Common\CommandLine\Enumerable.cs" Link="CommandLine\Enumerable.cs" />
-    <Compile Include="..\Common\CommandLine\HelpTextGenerator.cs" Link="CommandLine\HelpTextGenerator.cs" />
+    <ProjectReference Include="..\aot\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj" />
-    <ProjectReference Include="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
-    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
-    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 </Project>

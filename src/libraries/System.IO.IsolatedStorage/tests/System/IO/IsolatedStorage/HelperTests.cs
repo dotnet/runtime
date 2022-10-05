@@ -45,7 +45,7 @@ namespace System.IO.IsolatedStorage.Tests
                 return;
 
             string path = Helper.GetDataDirectory(scope);
-            Assert.Equal("IsolatedStorage", Path.GetFileName(path));
+            Assert.Equal(Helper.IsolatedStorageDirectoryName, Path.GetFileName(path));
         }
     }
 }

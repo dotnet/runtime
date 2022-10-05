@@ -1191,7 +1191,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
                            GT_COMMA, GT_CNS_VEC) ||
-               ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
+               ((src->TypeGet() != TYP_STRUCT) && (src->OperIsSIMD() || src->OperIs(GT_BITCAST))));
     }
 #endif // DEBUG
 
@@ -4526,7 +4526,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 impPopStack();
                 impPopStack();
 
-                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16, callJitType);
+                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
@@ -22160,9 +22160,9 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
             return true;
         }
         // Non-0 const refs can only occur with frozen objects
-        assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
-        assert(doesMethodHaveFrozenObjects() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
+        assert(value->IsIconHandle(GTF_ICON_STR_HDL));
+        assert(doesMethodHaveFrozenString() ||
+               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString()));
     }
 
     // Try and get a class handle for the array

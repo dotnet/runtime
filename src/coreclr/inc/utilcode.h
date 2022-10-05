@@ -3467,6 +3467,14 @@ private:
 };
 
 //*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int GuidToLPSTR(                  // Return status.
+    GUID        Guid,                  // [IN] The GUID to convert.
+    _Out_writes_ (cchGuid) LPSTR szGuid, // [OUT] String into which the GUID is stored
+    DWORD       cchGuid);              // [IN] Size in chars of szGuid
+
+//*****************************************************************************
 // Convert a pointer to a string into a GUID.
 //*****************************************************************************
 HRESULT LPCSTRToGuid(                   // Return status.

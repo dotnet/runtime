@@ -221,14 +221,20 @@ void TypeDesc::ConstructName(CorElementType kind,
 
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
+    {
         if (kind == ELEMENT_TYPE_VAR)
         {
-            ssBuff.Printf(W("!%d"), rank);
+            ssBuff.Append(W('!'));
         }
         else
         {
-            ssBuff.Printf(W("!!%d"), rank);
+            ssBuff.Append(W("!!"));
         }
+
+        WCHAR buffer[MaxSigned32BitDecString + 1];
+        FormatInteger(buffer, ARRAY_SIZE(buffer), "%d", rank);
+        ssBuff.Append(buffer);
+    }
         break;
 
     case ELEMENT_TYPE_FNPTR:
@@ -492,9 +498,26 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+    if (m_hExposedClassObject == NULL) {
+        REFLECTCLASSBASEREF  refClass = NULL;
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+
+        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
+        TypeHandle th = TypeHandle(this);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_hExposedClassObject from NULL.
+        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
+
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        {
+            pLoaderAllocator->FreeHandle(hExposedClassObject);
+        }
+
+        GCPROTECT_END();
     }
     return GetManagedClassObjectIfExists();
 }
@@ -1579,6 +1602,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     return TRUE;
 }
 
+
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1592,9 +1616,26 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+    if (m_hExposedClassObject == NULL) {
+        REFLECTCLASSBASEREF  refClass = NULL;
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+
+        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
+        TypeHandle th = TypeHandle(this);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_hExposedClassObject from NULL.
+        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
+
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        {
+            pLoaderAllocator->FreeHandle(hExposedClassObject);
+        }
+
+        GCPROTECT_END();
     }
     return GetManagedClassObjectIfExists();
 }
