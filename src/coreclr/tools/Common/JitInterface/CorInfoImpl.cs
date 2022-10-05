@@ -1840,7 +1840,7 @@ namespace Internal.JitInterface
             // NOTE: this function is used for pinned/frozen handles
             // it doesn't need to null-terminate the string
 
-            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
+            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
             var bufferSpan = new Span<byte>(buffer, bufferSize);
             Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
             return written;
