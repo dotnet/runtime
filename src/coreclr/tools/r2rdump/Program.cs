@@ -3,207 +3,38 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-
 using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
-
 using Internal.Runtime;
 using Internal.TypeSystem;
-
 using OperatingSystem = ILCompiler.Reflection.ReadyToRun.OperatingSystem;
 
 namespace R2RDump
 {
-    public partial class DumpOptions : IAssemblyResolver
+    internal sealed class Program
     {
-        private SignatureFormattingOptions signatureFormattingOptions;
-
-        /// <summary>
-        /// Probing extensions to use when looking up assemblies under reference paths.
-        /// </summary>
-        private readonly static string[] ProbeExtensions = new string[] { ".ni.exe", ".ni.dll", ".exe", ".dll" };
-
-        /// <summary>
-        /// Try to locate a (reference) assembly based on an AssemblyRef handle using the list of explicit reference assemblies
-        /// and the list of reference paths passed to R2RDump.
-        /// </summary>
-        /// <param name="metadataReader">Containing metadata reader for the assembly reference handle</param>
-        /// <param name="assemblyReferenceHandle">Handle representing the assembly reference</param>
-        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
-        /// <returns></returns>
-
-        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
-        {
-            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
-            return FindAssembly(simpleName, parentFile);
-        }
-
-        /// <summary>
-        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
-        /// and the list of reference paths passed to R2RDump.
-        /// </summary>
-        /// <param name="simpleName">Simple name of the assembly to look up</param>
-        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
-        /// <returns></returns>
-        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile)
-        {
-            foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
-            {
-                if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Open(refAsm.FullName);
-                }
-            }
-
-            IEnumerable<string> allRefPaths = new string[] { Path.GetDirectoryName(parentFile) }
-                .Concat((ReferencePath ?? Enumerable.Empty<DirectoryInfo>()).Select(path => path.FullName));
-
-            foreach (string refPath in allRefPaths)
-            {
-                foreach (string extension in ProbeExtensions)
-                {
-                    try
-                    {
-                        string probeFile = Path.Combine(refPath, simpleName + extension);
-                        if (File.Exists(probeFile))
-                        {
-                            return Open(probeFile);
-                        }
-                    }
-                    catch (BadImageFormatException)
-                    {
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static unsafe IAssemblyMetadata Open(string filename)
-        {
-            byte[] image = File.ReadAllBytes(filename);
-
-            PEReader peReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
-
-            if (!peReader.HasMetadata)
-            {
-                throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
-            }
-
-            return new StandaloneAssemblyMetadata(peReader);
-        }
-
-        public SignatureFormattingOptions GetSignatureFormattingOptions()
-        {
-            if (signatureFormattingOptions == null)
-            {
-                signatureFormattingOptions = new SignatureFormattingOptions
-                {
-                    Naked = this.Naked,
-                    SignatureBinary = this.SignatureBinary,
-                    InlineSignatureBinary = this.InlineSignatureBinary,
-                };
-            }
-            return signatureFormattingOptions;
-        }
-    }
-
-    public abstract class Dumper
-    {
-        protected readonly ReadyToRunReader _r2r;
-        protected TextWriter _writer;
-        protected readonly Disassembler _disassembler;
-        protected readonly DumpOptions _options;
-
-        public Dumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
-        {
-            _r2r = r2r;
-            _writer = writer;
-            _disassembler = disassembler;
-            _options = options;
-        }
-
-        public IEnumerable<ReadyToRunSection> NormalizedSections(ReadyToRunCoreHeader header)
-        {
-            IEnumerable<ReadyToRunSection> sections = header.Sections.Values;
-            if (_options.Normalize)
-            {
-                sections = sections.OrderBy((s) => s.Type);
-            }
-            return sections;
-        }
-
-        public IEnumerable<ReadyToRunMethod> NormalizedMethods()
-        {
-            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
-            if (_options.Normalize)
-            {
-                methods = methods.OrderBy((m) => m.SignatureString);
-            }
-            return methods;
-        }
-
-        /// <summary>
-        /// Run right before printing output
-        /// </summary>
-        abstract internal void Begin();
-
-        /// <summary>
-        /// Run right after printing output
-        /// </summary>
-        abstract internal void End();
-        abstract internal void WriteDivider(string title);
-        abstract internal void WriteSubDivider();
-        abstract internal void SkipLine();
-        abstract internal void DumpHeader(bool dumpSections);
-        abstract internal void DumpSection(ReadyToRunSection section);
-        abstract internal void DumpEntryPoints();
-        abstract internal void DumpAllMethods();
-        abstract internal void DumpMethod(ReadyToRunMethod method);
-        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf);
-        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset);
-        abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
-        abstract internal void DumpSectionContents(ReadyToRunSection section);
-        abstract internal void DumpQueryCount(string q, string title, int count);
-        abstract internal void DumpFixupStats();
-
-        public TextWriter Writer => _writer;
-
-        public DumpOptions Options => _options;
-
-        public ReadyToRunReader Reader => _r2r;
-
-        public Disassembler Disassembler => _disassembler;
-    }
-
-    public class R2RDump
-    {
-        private readonly DumpOptions _options;
-        private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
+        private readonly R2RDumpRootCommand _command;
+        private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new();
         private readonly Encoding _encoding;
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
-        public R2RDump(DumpOptions options)
+        public Program(R2RDumpRootCommand command)
         {
-            _options = options;
+            _command = command;
             _encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-            if (_options.Out != null)
+            FileInfo output = Get(command.Out);
+            if (output != null)
             {
-                _writer = new StreamWriter(_options.Out.FullName, append: false, _encoding);
+                _writer = new StreamWriter(output.FullName, append: false, _encoding);
             }
             else
             {
@@ -324,43 +155,50 @@ namespace R2RDump
         public void Dump(ReadyToRunReader r2r)
         {
             _dumper.Begin();
-            bool standardDump = !(_options.EntryPoints || _options.CreatePDB || _options.CreatePerfmap);
+            bool entryPoints = Get(_command.EntryPoints);
+            bool createPDB = Get(_command.CreatePDB);
+            bool createPerfmap = Get(_command.CreatePerfmap);
+            bool standardDump = !(entryPoints || createPDB || createPerfmap);
 
-            if (_options.Header && standardDump)
+            if (Get(_command.Header) && standardDump)
             {
                 _dumper.WriteDivider("R2R Header");
                 _dumper.DumpHeader(true);
             }
 
             bool haveQuery = false;
-            if (_options.Section.Length > 0)
+            string[] section = Get(_command.Section);
+            if (section.Length > 0)
             {
                 haveQuery = true;
-                QuerySection(r2r, _options.Section);
+                QuerySection(r2r, section);
             }
 
-            if (_options.RuntimeFunction.Length > 0)
+            string[] runtimeFunction = Get(_command.RuntimeFunction);
+            if (runtimeFunction.Length > 0)
             {
                 haveQuery = true;
-                QueryRuntimeFunction(r2r, _options.RuntimeFunction);
+                QueryRuntimeFunction(r2r, runtimeFunction);
             }
 
-            if (_options.Query.Length > 0)
+            string[] query = Get(_command.Query);
+            if (query.Length > 0)
             {
                 haveQuery = true;
-                QueryMethod(r2r, "R2R Methods by Query", _options.Query, true);
+                QueryMethod(r2r, "R2R Methods by Query", query, true);
             }
 
-            if (_options.Keyword.Length > 0)
+            string[] keyword = Get(_command.Keyword);
+            if (keyword.Length > 0)
             {
                 haveQuery = true;
-                QueryMethod(r2r, "R2R Methods by Keyword", _options.Keyword, false);
+                QueryMethod(r2r, "R2R Methods by Keyword", keyword, false);
             }
 
             if (!haveQuery)
             {
                 // Dump all sections and methods if no queries specified
-                if (_options.EntryPoints)
+                if (entryPoints)
                 {
                     _dumper.DumpEntryPoints();
                 }
@@ -382,11 +220,11 @@ namespace R2RDump
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
-                TargetDetails details = new TargetDetails(architecture, os, TargetAbi.NativeAot);
+                TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
 
-                if (_options.CreatePDB)
+                if (createPDB)
                 {
-                    string pdbPath = _options.PdbPath;
+                    string pdbPath = Get(_command.PdbPath);
                     if (String.IsNullOrEmpty(pdbPath))
                     {
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
@@ -395,14 +233,14 @@ namespace R2RDump
                     pdbWriter.WritePDBData(r2r.Filename, ProduceDebugInfoMethods(r2r));
                 }
 
-                if (_options.CreatePerfmap)
+                if (createPerfmap)
                 {
-                    string perfmapPath = _options.PerfmapPath;
+                    string perfmapPath = Get(_command.PerfmapPath);
                     if (string.IsNullOrEmpty(perfmapPath))
                     {
                         perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
-                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), details);
+                    PerfMapWriter.Write(perfmapPath, Get(_command.PerfmapFormatVersion), ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), details);
                 }
 
                 if (standardDump)
@@ -419,16 +257,16 @@ namespace R2RDump
         {
             foreach (var method in _dumper.NormalizedMethods())
             {
-                MethodInfo mi = new MethodInfo();
-                mi.Name = method.SignatureString;
-                mi.HotRVA = (uint)method.RuntimeFunctions[0].StartAddress;
-                mi.HotLength = (uint)method.RuntimeFunctions[0].Size;
-                mi.MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle);
-                mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
-                mi.ColdRVA = 0;
-                mi.ColdLength = 0;
-
-                yield return mi;
+                yield return new MethodInfo()
+                {
+                    Name = method.SignatureString,
+                    HotRVA = (uint)method.RuntimeFunctions[0].StartAddress,
+                    HotLength = (uint)method.RuntimeFunctions[0].Size,
+                    MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle),
+                    AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name),
+                    ColdRVA = 0,
+                    ColdLength = 0
+                };
             }
         }
 
@@ -502,7 +340,7 @@ namespace R2RDump
         /// <remarks>Case-insensitive and ignores whitespace</remarks>
         public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
-            List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
+            List<ReadyToRunMethod> res = new();
             foreach (ReadyToRunMethod method in r2r.Methods)
             {
                 if (Match(method, query, exact))
@@ -522,7 +360,7 @@ namespace R2RDump
         /// <remarks>Case-insensitive</remarks>
         public IList<ReadyToRunSection> FindSection(ReadyToRunReader r2r, string query)
         {
-            List<ReadyToRunSection> res = new List<ReadyToRunSection>();
+            List<ReadyToRunSection> res = new();
             foreach (ReadyToRunSection section in r2r.ReadyToRunHeader.Sections.Values)
             {
                 if (Match(section, query))
@@ -556,42 +394,73 @@ namespace R2RDump
         public int Run()
         {
             Disassembler disassembler = null;
+            List<string> inputs = Get(_command.In);
+            bool inlineSignatureBinary = Get(_command.InlineSignatureBinary);
+            bool naked = Get(_command.Naked);
+            bool signatureBinary = Get(_command.SignatureBinary);
+            bool raw = Get(_command.Raw);
+            bool disasm = Get(_command.Disasm);
+            DumpModel model = new()
+            {
+                DiffHideSameDisasm = Get(_command.DiffHideSameDisasm),
+                Disasm = Get(_command.Disasm),
+                GC = Get(_command.GC),
+                HideOffsets = Get(_command.HideOffsets),
+                HideTransitions = Get(_command.HideTransitions),
+                InlineSignatureBinary = inlineSignatureBinary,
+                Pgo = Get(_command.Pgo),
+                Raw = raw,
+                Naked = naked,
+                Normalize = Get(_command.Normalize),
+                Reference = Get(_command.Reference),
+                ReferencePath = Get(_command.ReferencePath),
+                SignatureBinary = signatureBinary,
+                SectionContents = Get(_command.SectionContents),
+                SignatureFormattingOptions = new()
+                {
+                    InlineSignatureBinary = inlineSignatureBinary,
+                    Naked = naked,
+                    SignatureBinary = signatureBinary
+                },
+                Unwind = Get(_command.Unwind)
+            };
 
             try
             {
-                if (_options.In.Length == 0)
+                bool diff = Get(_command.Diff);
+                if (inputs.Count == 0)
                     throw new ArgumentException("Input filename must be specified (--in <file>)");
 
-                if (_options.Diff && _options.In.Length < 2)
+                if (diff && inputs.Count < 2)
                     throw new ArgumentException("Need at least 2 input files in diff mode");
 
-                if (_options.Naked && _options.Raw)
+                if (naked && raw)
                 {
                     throw new ArgumentException("The option '--naked' is incompatible with '--raw'");
                 }
 
                 Dumper previousDumper = null;
 
-                foreach (FileInfo filename in _options.In)
+                foreach (string filename in inputs)
                 {
                     // parse the ReadyToRun image
-                    ReadyToRunReader r2r = new ReadyToRunReader(_options, filename.FullName);
+                    ReadyToRunReader r2r = new(model, filename);
 
-                    if (_options.Disasm)
+                    if (disasm)
                     {
-                        disassembler = new Disassembler(r2r, _options);
+                        disassembler = new Disassembler(r2r, model);
                     }
 
-                    if (!_options.Diff)
+                    if (!diff)
                     {
                         // output the ReadyToRun info
-                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
+                        _dumper = new TextDumper(r2r, _writer, disassembler, model);
                         Dump(r2r);
                     }
                     else
                     {
-                        string perFileOutput = filename.FullName + ".common-methods.r2r";
-                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding), disassembler, _options);
+                        string perFileOutput = filename + ".common-methods.r2r";
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding), disassembler, model);
                         if (previousDumper != null)
                         {
                             new R2RDiff(previousDumper, _dumper, _writer).Run();
@@ -625,15 +494,14 @@ namespace R2RDump
             return 0;
         }
 
-        //
-        // Command line parsing
-        //
+        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
 
         public static int Main(string[] args) =>
             new CommandLineBuilder(new R2RDumpRootCommand())
-                    .UseHelp()
-                    .UseParseErrorReporting()
-                    .Build()
-                    .Invoke(args);
+                .UseTokenReplacer(Helpers.TryReadResponseFile)
+                .UseHelp()
+                .UseParseErrorReporting()
+                .Build()
+                .Invoke(args);
     }
 }
