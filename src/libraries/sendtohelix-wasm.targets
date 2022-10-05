@@ -260,7 +260,42 @@
 
     <!-- for testing with workloads, we use separate items -->
     <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'0-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'1-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'2-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'3-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'4-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'5-$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
