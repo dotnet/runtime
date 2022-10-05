@@ -2265,6 +2265,13 @@ public:
             int                         bufferSize  /* IN  */
             ) = 0;
 
+    // Calls ToString() for given pinned/frozen object handle
+    virtual int objectToString (
+            void*                       handle,     /* IN  */
+            char*                       buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
+            ) = 0;
+
     /**********************************************************************************/
     //
     // ICorClassInfo
@@ -2472,6 +2479,10 @@ public:
     // helper has been created.
 
     virtual CorInfoHelpFunc getUnBoxHelper(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    virtual void* getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
