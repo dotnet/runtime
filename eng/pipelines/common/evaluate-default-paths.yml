@@ -98,12 +98,6 @@ jobs:
       include:
       - src/tests/*
 
-    - subset: non_runtimetests
-      exclude:
-      - src/tests/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      - ${{ parameters._const_paths._always_exclude }}
-
     - subset: installer
       include:
       - docs/manpages/*
