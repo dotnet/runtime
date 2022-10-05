@@ -2277,7 +2277,8 @@ public:
     //    bufferSize - Pointer to buffer length. Must not be nullptr
     //
     // Return Value:
-    //    Full length of the source UTF8 representation so can be bigger than bufferSize
+    //    Full length of the source UTF8 representation so can be bigger than bufferSize.
+    //    Includes null-terminator.
     //
     virtual size_t printObjectDescription (
             void*                       handle,     /* IN  */

@@ -1835,21 +1835,20 @@ namespace Internal.JitInterface
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
-            int bufferSize32 = checked((int)bufferSize);
-
-            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+            byte[] utf8 = Encoding.UTF8.GetBytes(HandleToObject(handle).ToString());
             var bufferSpan = new Span<byte>(buffer, bufferSize32);
-            Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
-            if (written >= bufferSize32)
+            utf8.AsSpan(0, Math.Min(utf8.Length, bufferSize32)).CopyTo(bufferSpan);
+
+            if (utf8.Length >= bufferSize32)
             {
                 // Trim data and null-terminate it
                 bufferSpan[bufferSize32 - 1] = 0;
             }
             else
             {
-                bufferSpan[written] = 0;
+                bufferSpan[utf8.Length] = 0;
             }
-            return (nuint)Encoding.UTF8.GetByteCount(objStr);
+            return (nuint)utf8.Length + 1; // Include null-terminator
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

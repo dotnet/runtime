@@ -771,7 +771,7 @@ size_t CEEInfo::printObjectDescription (
 
     EE_TO_JIT_TRANSITION();
 
-    return charsCount;
+    return charsCount + 1; // Include null-terminator
 }
 
 /* static */
