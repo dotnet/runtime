@@ -1835,6 +1835,7 @@ namespace Internal.JitInterface
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
+            int bufferSize32 = checked((int)bufferSize);
             byte[] utf8 = Encoding.UTF8.GetBytes(HandleToObject(handle).ToString());
             var bufferSpan = new Span<byte>(buffer, bufferSize32);
             utf8.AsSpan(0, Math.Min(utf8.Length, bufferSize32)).CopyTo(bufferSpan);
