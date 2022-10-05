@@ -32,10 +32,16 @@ else()
         ${NATIVECRYPTO_SOURCES}
         pal_swiftbindings.o
         pal_keychain_macos.c
-        pal_keyderivation_macos.c
         pal_seckey_macos.c
         pal_trust_macos.c
         pal_x509_macos.c
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_OSX)
+    set(NATIVECRYPTO_SOURCES
+        ${NATIVECRYPTO_SOURCES}
+        pal_keyderivation.c
     )
 endif()
 
