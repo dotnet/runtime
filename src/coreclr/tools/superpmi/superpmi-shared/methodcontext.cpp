@@ -4898,10 +4898,10 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recPrintObject(void* handle, char* buffer, size_t bufferSize, size_t length)
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t length)
 {
-    if (PrintObject == nullptr)
-        PrintObject = new LightWeightMap<DLDL, DLD>();
+    if (PrintObjectDescription == nullptr)
+        PrintObjectDescription = new LightWeightMap<DLDL, DLD>();
 
     DLDL key;
     key.A = CastHandle(handle);
@@ -4911,24 +4911,24 @@ void MethodContext::recPrintObject(void* handle, char* buffer, size_t bufferSize
     if (buffer != nullptr && length != -1)
     {
         size_t bufferRealSize = min(length, bufferSize);
-        strBuf = (DWORD)PrintObject->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
+        strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
     }
 
     DLD value;
     value.A = (DWORDLONG)length;
     value.B = (DWORD)strBuf;
 
-    PrintObject->Add(key, value);
-    DEBUG_REC(dmpPrintObject(key, value));
+    PrintObjectDescription->Add(key, value);
+    DEBUG_REC(dmpPrintObjectDescription(key, value));
 }
-void MethodContext::dmpPrintObject(DLDL key, DLD value)
+void MethodContext::dmpPrintObjectDescription(DLDL key, DLD value)
 {
-    printf("PrintObject key hnd-%016llX bufSize-%u, len-%u", key.A, (unsigned)key.B, (unsigned)value.A);
-    PrintObject->Unlock();
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, len-%u", key.A, (unsigned)key.B, (unsigned)value.A);
+    PrintObjectDescription->Unlock();
 }
-size_t MethodContext::repPrintObject(void* handle, char* buffer, size_t bufferSize)
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize)
 {
-    if (PrintObject == nullptr)
+    if (PrintObjectDescription == nullptr)
     {
         return -1;
     }
@@ -4937,19 +4937,19 @@ size_t MethodContext::repPrintObject(void* handle, char* buffer, size_t bufferSi
     key.A = CastHandle(handle);
     key.B = (DWORDLONG)bufferSize;
 
-    int itemIndex = PrintObject->GetIndex(key);
+    int itemIndex = PrintObjectDescription->GetIndex(key);
     if (itemIndex < 0)
     {
         return -1;
     }
     else
     {
-        DLD value = PrintObject->Get(key);
-        DEBUG_REP(dmpPrintObject(key, value));
+        DLD value = PrintObjectDescription->Get(key);
+        DEBUG_REP(dmpPrintObjectDescription(key, value));
         size_t srcBufferLength = (size_t)value.A;
         if (buffer != nullptr && srcBufferLength > 0)
         {
-            char* srcBuffer = (char*)PrintObject->GetBuffer(value.B);
+            char* srcBuffer = (char*)PrintObjectDescription->GetBuffer(value.B);
             Assert(srcBuffer != nullptr);
             memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
         }

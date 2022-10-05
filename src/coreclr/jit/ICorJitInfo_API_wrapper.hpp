@@ -374,14 +374,14 @@ int WrapICorJitInfo::getStringLiteral(
     return temp;
 }
 
-size_t WrapICorJitInfo::printObject(
+size_t WrapICorJitInfo::printObjectDescription(
           void* handle,
           char* buffer,
           size_t bufferSize)
 {
-    API_ENTER(printObject);
-    size_t temp = wrapHnd->printObject(handle, buffer, bufferSize);
-    API_LEAVE(printObject);
+    API_ENTER(printObjectDescription);
+    size_t temp = wrapHnd->printObjectDescription(handle, buffer, bufferSize);
+    API_LEAVE(printObjectDescription);
     return temp;
 }
 

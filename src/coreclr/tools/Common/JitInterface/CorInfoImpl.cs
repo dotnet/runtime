@@ -1831,7 +1831,7 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
-        private nuint printObject(void* handle, byte* buffer, nuint bufferSize)
+        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 

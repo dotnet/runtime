@@ -2267,7 +2267,7 @@ public:
 
 
     //------------------------------------------------------------------------------
-    // printObject: Prints a (possibly truncated) textual UTF8 representation of the given
+    // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
     //    object to a preallocated buffer. It's intended to use only for debug/diagnostic 
     //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
     //
@@ -2279,7 +2279,7 @@ public:
     // Return Value:
     //    Full length of the source UTF8 representation so can be bigger than bufferSize
     //
-    virtual size_t printObject (
+    virtual size_t printObjectDescription (
             void*                       handle,     /* IN  */
             char*                       buffer,     /* OUT */
             size_t                      bufferSize  /* IN  */

@@ -1615,11 +1615,11 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintObjectDescription(const char* prefix, size_t handle)
+void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t handle)
 {
     const size_t maxStrSize = 64;
     char         str[maxStrSize];
-    size_t       actualLen = this->info.compCompHnd->printObject((void*)handle, str, maxStrSize);
+    size_t       actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize);
 
     for (int i = 0; i < min(maxStrSize, actualLen); i++)
     {

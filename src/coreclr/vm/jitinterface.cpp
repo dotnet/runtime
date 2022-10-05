@@ -715,7 +715,7 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
-size_t CEEInfo::printObject (
+size_t CEEInfo::printObjectDescription (
         void*  handle,
         char*  buffer,
         size_t bufferSize)

@@ -175,7 +175,7 @@ int getStringLiteral(
           char16_t* buffer,
           int bufferSize) override;
 
-size_t printObject(
+size_t printObjectDescription(
           void* handle,
           char* buffer,
           size_t bufferSize) override;
