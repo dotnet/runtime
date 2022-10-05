@@ -2986,7 +2986,7 @@ void LinearScan::PreferenceDyingLocal(Interval* interval)
     // Find registers that are occupied with other values.
     regMaskTP unpref   = placedArgRegs;
     unsigned  varIndex = interval->getVarIndex(compiler);
-    for (int i = 0; i < numPlacedArgLocals; i++)
+    for (size_t i = 0; i < numPlacedArgLocals; i++)
     {
         if (placedArgLocals[i].VarIndex == varIndex)
         {
