@@ -431,11 +431,15 @@ namespace System.Xml
             }
             else
             {
-                int* pi = (int*)&value;
-                pi[0] = GetInt32(offset + 12); // flags
-                pi[1] = GetInt32(offset + 8); // hi32
-                pi[2] = GetInt32(offset); // bottom-of-low64;
-                pi[3] = GetInt32(offset + 4); // top-of-low64;
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
+                };
+                value = new decimal(span);
             }
             Advance(ValueHandleLength.Decimal);
             return value;
@@ -1058,11 +1062,15 @@ namespace System.Xml
             }
             else
             {
-                int* pi = (int*)&value;
-                pi[0] = GetInt32(offset + 12); // flags
-                pi[1] = GetInt32(offset + 8); // hi32
-                pi[2] = GetInt32(offset); // bottom-of-low64;
-                pi[3] = GetInt32(offset + 4); // top-of-low64;
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
+                };
+                value = new decimal(span);
             }
 
             return value;
