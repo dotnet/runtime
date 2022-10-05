@@ -1831,16 +1831,14 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private int objectToString(void* handle, byte* buffer, int bufferSize)
-#pragma warning restore CA1822 // Mark members as static
+        private int appendFrozenObjectTextualRepresentation(void* handle, byte* buffer, int bufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
             // NOTE: this function is used for pinned/frozen handles
             // it doesn't need to null-terminate the string
 
-            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
             var bufferSpan = new Span<byte>(buffer, bufferSize);
             Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
             return written;

@@ -175,7 +175,7 @@ int getStringLiteral(
           char16_t* buffer,
           int bufferSize) override;
 
-int objectToString(
+int appendFrozenObjectTextualRepresentation(
           void* handle,
           char* buffer,
           int bufferSize) override;

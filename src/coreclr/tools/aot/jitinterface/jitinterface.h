@@ -48,7 +48,7 @@ struct JitInterfaceCallbacks
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
-    int (* objectToString)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, int bufferSize);
+    int (* appendFrozenObjectTextualRepresentation)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, int bufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -565,13 +565,13 @@ public:
     return temp;
 }
 
-    virtual int objectToString(
+    virtual int appendFrozenObjectTextualRepresentation(
           void* handle,
           char* buffer,
           int bufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->objectToString(_thisHandle, &pException, handle, buffer, bufferSize);
+    int temp = _callbacks->appendFrozenObjectTextualRepresentation(_thisHandle, &pException, handle, buffer, bufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }

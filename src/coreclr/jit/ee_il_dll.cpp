@@ -1619,13 +1619,13 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
     const int maxStrSize = 64;
     char      str[maxStrSize];
-    int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
-    if (realLength == -1)
+    int bytesWritten = this->info.compCompHnd->appendFrozenObjectTextualRepresentation((void*)handle, str, maxStrSize);
+    if (bytesWritten == -1)
     {
         printf("%s 'unknown frozen object'", prefix);
         return;
     }
-    else if (realLength >= maxStrSize)
+    else if (bytesWritten >= maxStrSize)
     {
         // string is too long, trim it and null-terminate
         str[maxStrSize - 4] = '.';
@@ -1635,11 +1635,11 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
     }
     else
     {
-        // objectToString doesn't null-terminate buffer
-        str[realLength] = 0;
+        // appendFrozenObjectTextualRepresentation doesn't null-terminate buffer
+        str[bytesWritten] = 0;
     }
 
-    for (int i = 0; i < min(maxStrSize, realLength); i++)
+    for (int i = 0; i < min(maxStrSize, bytesWritten); i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')

@@ -453,14 +453,14 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
-int interceptor_ICJI::objectToString(void* handle,    /* IN  */
+int interceptor_ICJI::appendFrozenObjectTextualRepresentation(void* handle,    /* IN  */
                                      char* buffer,    /* OUT */
                                      int   bufferSize /* IN  */
                                      )
 {
-    mc->cr->AddCall("objectToString");
-    int temp = original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
-    mc->recObjectToString(handle, buffer, bufferSize, temp);
+    mc->cr->AddCall("appendFrozenObjectTextualRepresentation");
+    int temp = original_ICorJitInfo->appendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
+    mc->recAppendFrozenObjectTextualRepresentation(handle, buffer, bufferSize, temp);
     return temp;
 }
 

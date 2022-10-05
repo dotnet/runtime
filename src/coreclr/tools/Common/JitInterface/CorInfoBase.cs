@@ -554,12 +554,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static int _objectToString(IntPtr thisHandle, IntPtr* ppException, void* handle, byte* buffer, int bufferSize)
+        private static int _appendFrozenObjectTextualRepresentation(IntPtr thisHandle, IntPtr* ppException, void* handle, byte* buffer, int bufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.objectToString(handle, buffer, bufferSize);
+                return _this.appendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
             }
             catch (Exception ex)
             {
@@ -2664,7 +2664,7 @@ namespace Internal.JitInterface
             callbacks[34] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, byte>)&_isValidToken;
             callbacks[35] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, byte>)&_isValidStringRef;
             callbacks[36] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, char*, int, int>)&_getStringLiteral;
-            callbacks[37] = (delegate* unmanaged<IntPtr, IntPtr*, void*, byte*, int, int>)&_objectToString;
+            callbacks[37] = (delegate* unmanaged<IntPtr, IntPtr*, void*, byte*, int, int>)&_appendFrozenObjectTextualRepresentation;
             callbacks[38] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_asCorInfoType;
             callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*>)&_getClassName;
             callbacks[40] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;

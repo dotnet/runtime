@@ -715,7 +715,7 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
-int CEEInfo::objectToString (
+int CEEInfo::appendFrozenObjectTextualRepresentation (
         void* handle,
         char* buffer,
         int   bufferSize)

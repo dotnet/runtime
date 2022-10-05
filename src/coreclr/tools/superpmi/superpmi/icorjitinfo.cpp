@@ -388,13 +388,13 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-int MyICJI::objectToString(void*     handle,    /* IN  */
+int MyICJI::appendFrozenObjectTextualRepresentation(void*     handle,    /* IN  */
                            char*     buffer,    /* OUT */
                            int       bufferSize /* IN  */
                            )
 {
-    jitInstance->mc->cr->AddCall("objectToString");
-    return jitInstance->mc->repObjectToString(handle, buffer, bufferSize);
+    jitInstance->mc->cr->AddCall("appendFrozenObjectTextualRepresentation");
+    return jitInstance->mc->repAppendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
 }
 
 /**********************************************************************************/

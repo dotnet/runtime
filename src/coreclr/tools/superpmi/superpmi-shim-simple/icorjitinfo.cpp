@@ -277,12 +277,12 @@ int interceptor_ICJI::getStringLiteral(
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-int interceptor_ICJI::objectToString(
+int interceptor_ICJI::appendFrozenObjectTextualRepresentation(
           void* handle,
           char* buffer,
           int bufferSize)
 {
-    return original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
+    return original_ICorJitInfo->appendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(

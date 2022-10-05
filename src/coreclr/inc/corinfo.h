@@ -2265,8 +2265,20 @@ public:
             int                         bufferSize  /* IN  */
             ) = 0;
 
-    // Calls ToString() for given pinned/frozen object handle
-    virtual int objectToString (
+
+    //------------------------------------------------------------------------------
+    // appendFrozenObjectTextualRepresentation: Append a (possibly truncated) textual UTF8 representation of the given frozen/pinned 
+    //    object to a preallocated buffer. It's intended to use only for debug/diagnostic purposes such as JitDisasm
+    //
+    // Arguments:
+    //    handle     - Direct handle for a pinned/frozen object
+    //    buffer     - Pointer to buffer
+    //    bufferSize - Pointer to buffer length. Must not be nullptr
+    //
+    // Return Value:
+    //    bytes written to the buffer, the data is not null-terminated so caller is responsible for that.
+    //
+    virtual int appendFrozenObjectTextualRepresentation (
             void*                       handle,     /* IN  */
             char*                       buffer,     /* OUT */
             int                         bufferSize  /* IN  */

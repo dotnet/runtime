@@ -4898,10 +4898,10 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recObjectToString(void* handle, char* buffer, int bufferSize, int length)
+void MethodContext::recAppendFrozenObjectTextualRepresentation(void* handle, char* buffer, int bufferSize, int length)
 {
-    if (ObjectToString == nullptr)
-        ObjectToString = new LightWeightMap<DLD, DD>();
+    if (AppendFrozenObjectTextualRepresentation == nullptr)
+        AppendFrozenObjectTextualRepresentation = new LightWeightMap<DLD, DD>();
 
     DLD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
@@ -4912,24 +4912,24 @@ void MethodContext::recObjectToString(void* handle, char* buffer, int bufferSize
     if (buffer != nullptr && length != -1)
     {
         int bufferRealSize = min(length, bufferSize);
-        strBuf = (DWORD)ObjectToString->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+        strBuf = (DWORD)AppendFrozenObjectTextualRepresentation->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
     }
 
     DD value;
     value.A = (DWORD)length;
     value.B = (DWORD)strBuf;
 
-    ObjectToString->Add(key, value);
-    DEBUG_REC(dmpObjectToString(key, value));
+    AppendFrozenObjectTextualRepresentation->Add(key, value);
+    DEBUG_REC(dmpAppendFrozenObjectTextualRepresentation(key, value));
 }
-void MethodContext::dmpObjectToString(DLD key, DD value)
+void MethodContext::dmpAppendFrozenObjectTextualRepresentation(DLD key, DD value)
 {
-    printf("ObjectToString key hnd-%016llX bufSize-%u, len-%u", key.A, key.B, value.A);
-    ObjectToString->Unlock();
+    printf("AppendFrozenObjectTextualRepresentation key hnd-%016llX bufSize-%u, len-%u", key.A, key.B, value.A);
+    AppendFrozenObjectTextualRepresentation->Unlock();
 }
-int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
+int MethodContext::repAppendFrozenObjectTextualRepresentation(void* handle, char* buffer, int bufferSize)
 {
-    if (ObjectToString == nullptr)
+    if (AppendFrozenObjectTextualRepresentation == nullptr)
     {
         return -1;
     }
@@ -4939,19 +4939,19 @@ int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
     key.A = CastHandle(handle);
     key.B = (DWORD)bufferSize;
 
-    int itemIndex = ObjectToString->GetIndex(key);
+    int itemIndex = AppendFrozenObjectTextualRepresentation->GetIndex(key);
     if (itemIndex < 0)
     {
         return -1;
     }
     else
     {
-        DD value = ObjectToString->Get(key);
-        DEBUG_REP(dmpObjectToString(key, value));
+        DD value = AppendFrozenObjectTextualRepresentation->Get(key);
+        DEBUG_REP(dmpAppendFrozenObjectTextualRepresentation(key, value));
         int srcBufferLength = (int)value.A;
         if (buffer != nullptr && srcBufferLength > 0)
         {
-            char* srcBuffer = (char*)ObjectToString->GetBuffer(value.B);
+            char* srcBuffer = (char*)AppendFrozenObjectTextualRepresentation->GetBuffer(value.B);
             Assert(srcBuffer != nullptr);
             memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
         }
