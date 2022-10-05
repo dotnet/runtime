@@ -30,7 +30,7 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly CertificateValidationDelegateWrapper? _certificateValidatorWrapper;
+        private readonly RemoteCertificateValidationCallbackProxy? _remoteCertificateValidationCallbackProxy;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
@@ -43,13 +43,13 @@ namespace System.Net
             IntPtr validatorPtr = IntPtr.Zero;
             if (authOptions.CertValidationDelegate is not null)
             {
-                _certificateValidatorWrapper = new CertificateValidationDelegateWrapper(authOptions.CertValidationDelegate);
+                _remoteCertificateValidationCallbackProxy = new RemoteCertificateValidationCallbackProxy(authOptions.CertValidationDelegate);
             }
 
             try
             {
                 _sslContext = CreateSslContext(
-                    _certificateValidatorWrapper?.Pointer ?? IntPtr.Zero,
+                    _remoteCertificateValidationCallbackProxy?.Handle ?? IntPtr.Zero,
                     authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
@@ -75,7 +75,7 @@ namespace System.Net
                     sslContext.Dispose();
                 }
 
-                _certificateValidatorWrapper?.Dispose();
+                _remoteCertificateValidationCallbackProxy?.Dispose();
             }
 
             base.Dispose(disposing);

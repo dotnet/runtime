@@ -284,13 +284,13 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidator)
+static jobject GetSSLContextInstance(JNIEnv* env)
 {
-    JNIEnv* env = GetJNIEnv();
+    jobject sslContext = NULL;
 
-    // Get SSLContext instance
+    // sslContext = SSLContext.getInstance("TLSv1.3");
     jstring tls13 = make_java_string(env, "TLSv1.3");
-    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls13);
+    sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls13);
     if (TryClearJNIExceptions(env))
     {
         // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
@@ -298,38 +298,64 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateV
         jstring tls12 = make_java_string(env, "TLSv1.2");
         sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
         ReleaseLRef(env, tls12);
-        // ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
+
+cleanup:
     ReleaseLRef(env, tls13);
+    return sslContext;
+}
 
-    // Init key store
-    jstring ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
-    jobject keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
+static jobject GetKeyStoreInstance(JNIEnv* env)
+{
+    jobject keyStore = NULL;
+    jstring ksType = NULL;
+
+    // String ksType = KeyStore.getDefaultType();
+    // KeyStore keyStore = KeyStore.getInstance(ksType);
+    // keyStore.load(null, null);
+    ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, keyStore, g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // init key managers
-    // jstring kmfType = make_java_string(env, "PKIX");
-    // jobject kmf = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, kmfType);
-    // (*env)->CallVoidMethod(env, kmf, g_KeyManagerFactoryInit, keyStore, NULL);
-    // jobject keyManagers = (*env)->CallObjectMethod(env, kmf, g_KeyManagerFactoryGetKeyManagers);
+cleanup:
+    ReleaseLRef(env, ksType);
+    return keyStore;
+}
+
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle)
+{
+    SSLStream* sslStream = NULL;
+    JNIEnv* env = GetJNIEnv();
+
+    INIT_LOCALS(loc, sslContext, keyStore, trustManagers);
+
+    loc[sslContext] = GetSSLContextInstance(env);
+    if (loc[sslContext] == NULL)
+        goto cleanup;
+
+    // We only need to init the key store, we don't use it
+    IGNORE_RETURN(GetKeyStoreInstance(env));
 
     // Init trust managers
-    jobjectArray trustManagers =
-        dotnetRemoteCertificateValidator != 0
-            ? initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidator)
-            : NULL;
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
 
     // Init the SSLContext
-    // (*env)->CallVoidMethod(env, sslContext, g_SSLContextInitMethod, keyManagers, trustManagers, NULL);
-    (*env)->CallVoidMethod(env, sslContext, g_SSLContextInitMethod, NULL, trustManagers, NULL);
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, NULL, loc[trustManagers], NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // // SSLContext sslContext = SSLContext.getDefault();
-    // jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
-    // if (CheckJNIExceptions(env))
-    //     return NULL;
+    sslStream = xcalloc(1, sizeof(SSLStream));
+    sslStream->sslContext = ToGRef(env, loc[sslContext]);
 
-    SSLStream* sslStream = xcalloc(1, sizeof(SSLStream));
-    sslStream->sslContext = ToGRef(env, sslContext);
+cleanup:
+    RELEASE_LOCALS(loc, env);
     return sslStream;
 }
 
@@ -396,7 +422,7 @@ cleanup:
     return ret;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidator,
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidatorHandle,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -409,26 +435,13 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers, trustManagers);
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-    loc[tls13] = make_java_string(env, "TLSv1.3");
-    loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, loc[tls13]);
-    if (TryClearJNIExceptions(env))
-    {
-        // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
-        // sslContext = SSLContext.getInstance("TLSv1.2");
-        jobject tls12 = make_java_string(env, "TLSv1.2");
-        loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
-        ReleaseLRef(env, tls12);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    }
+    loc[sslContext] = GetSSLContextInstance(env);
+    if (loc[sslContext] == NULL)
+        goto cleanup;
 
-    // String ksType = KeyStore.getDefaultType();
-    // KeyStore keyStore = KeyStore.getInstance(ksType);
-    // keyStore.load(null, null);
-    loc[ksType] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
-    loc[keyStore] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[ksType]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[keyStore], g_KeyStoreLoad, NULL, NULL);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[keyStore] = GetKeyStoreInstance(env);
+    if (loc[keyStore] == NULL)
+        goto cleanup;
 
     int32_t status =
         AddCertChainToStore(env, loc[keyStore], pkcs8PrivateKey, pkcs8PrivateKeyLen, algorithm, certs, certsLen);
@@ -446,10 +459,19 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // KeyManager[] keyManagers = kmf.getKeyManagers();
+    // TrustManager[] trustMangers =
+    //     dotnetRemoteCertificateValidatorHandle != 0
+    //         ? initTrustManagersWithCustomValidatorProxy(dotnetRemoteCertificateValidatorHandle)
+    //         : NULL;
     // sslContext.init(keyManagers, trustManagers, null);
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
-    loc[trustManagers] = dotnetRemoteCertificateValidator != 0 ? initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidator) : NULL;
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
+
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 

@@ -2,19 +2,19 @@ package net.dot.android.crypto;
 
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
+// import javax.net.ssl.HostnameVerifier;
+// import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.X509TrustManager;
-import android.util.Log;
+// import android.util.Log;
 
 class RemoteCertificateValidationCallbackProxy implements X509TrustManager
 {
-    private int dotnetRemoteCertificateValidator;
+    private int dotnetRemoteCertificateValidatorHandle;
     private X509TrustManager internalTrustManager;
 
-    public RemoteCertificateValidationCallbackProxy(int dotnetRemoteCertificateValidator, X509TrustManager internalTrustManager)
+    public RemoteCertificateValidationCallbackProxy(int dotnetRemoteCertificateValidatorHandle, X509TrustManager internalTrustManager)
     {
-        this.dotnetRemoteCertificateValidator = dotnetRemoteCertificateValidator;
+        this.dotnetRemoteCertificateValidatorHandle = dotnetRemoteCertificateValidatorHandle;
         this.internalTrustManager = internalTrustManager;
     }
 
@@ -38,16 +38,17 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager
             errors |= 4; // RemoteCertificateChainErrors
         }
 
-        // TODO use the default hostname verifier to check the hostname
-        // TODO how do I get the request URL?! - in Xamarin the trust manager is created once we have the HTTP request
-        // but this verifier might have to deal with raw TCP streams where there is no hostname
-        HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-        if (!hostnameVerifier.verify("", null))
-        {
+        // // TODO use the default hostname verifier to check the hostname
+        // // TODO how do I get the request URL?! - in Xamarin the trust manager is created once we have the HTTP request
+        // // but this verifier might have to deal with raw TCP streams where there is no hostname
+        // HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
+        // if (!hostnameVerifier.verify("", null))
+        // {
 
-        }
+        // }
 
-        boolean accepted = validateRemoteCertificate(dotnetRemoteCertificateValidator, chain, errors);
+        // boolean accepted = validateRemoteCertificate(dotnetRemoteCertificateValidatorHandle, chain, errors);
+        boolean accepted = true;
         if (!accepted)
         {
             throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
@@ -59,5 +60,5 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager
         return internalTrustManager.getAcceptedIssuers();
     }
 
-    static native boolean validateRemoteCertificate(int dotnetRemoteCertificateValidator, X509Certificate[] chain, int errors);
+    static native boolean validateRemoteCertificate(int dotnetRemoteCertificateValidatorHandle, X509Certificate[] chain, int errors);
 }

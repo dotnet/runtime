@@ -1058,22 +1058,22 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineResultGetStatus =            GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
     g_SSLEngineResultGetHandshakeStatus =   GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
 
-    g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
-    g_KeyAgreementGetInstance    = GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");
-    g_KeyAgreementInit           = GetMethod(env, false, g_KeyAgreementClass, "init", "(Ljava/security/Key;)V");
-    g_KeyAgreementDoPhase        = GetMethod(env, false, g_KeyAgreementClass, "doPhase", "(Ljava/security/Key;Z)Ljava/security/Key;");
+    g_KeyAgreementClass =          GetClassGRef(env, "javax/crypto/KeyAgreement");
+    g_KeyAgreementGetInstance =    GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");
+    g_KeyAgreementInit =           GetMethod(env, false, g_KeyAgreementClass, "init", "(Ljava/security/Key;)V");
+    g_KeyAgreementDoPhase =        GetMethod(env, false, g_KeyAgreementClass, "doPhase", "(Ljava/security/Key;Z)Ljava/security/Key;");
     g_KeyAgreementGenerateSecret = GetMethod(env, false, g_KeyAgreementClass, "generateSecret", "()[B");
 
-    g_TrustManagerFactory     = GetClassGRef(env, "javax/net/ssl/TrustManagerFactory");
+    g_TrustManagerFactory =                    GetClassGRef(env, "javax/net/ssl/TrustManagerFactory");
     g_TrustManagerFactoryGetDefaultAlgorithm = GetMethod(env, true, g_TrustManagerFactory, "getDefaultAlgorithm", "()Ljava/lang/String;");
-    g_TrustManagerFactoryGetInstance = GetMethod(env, true, g_TrustManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/TrustManagerFactory;");
-    g_TrustManagerFactoryInit = GetMethod(env, false, g_TrustManagerFactory, "init", "(Ljava/security/KeyStore;)V");
-    g_TrustManagerFactoryGetTrustManagers = GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
+    g_TrustManagerFactoryGetInstance =         GetMethod(env, true, g_TrustManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/TrustManagerFactory;");
+    g_TrustManagerFactoryInit =                GetMethod(env, false, g_TrustManagerFactory, "init", "(Ljava/security/KeyStore;)V");
+    g_TrustManagerFactoryGetTrustManagers =    GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
 
-    g_X509TrustManager     = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
+    g_X509TrustManager = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
 
-    g_Certificate     = GetClassGRef(env, "java/security/cert/Certificate");
-    g_CertificateGetEncoded     = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
+    g_Certificate =           GetClassGRef(env, "java/security/cert/Certificate");
+    g_CertificateGetEncoded = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
 
     g_RemoteCertificateValidationCallbackProxy     = GetClassGRef(env, "net/dot/android/crypto/RemoteCertificateValidationCallbackProxy");
     g_RemoteCertificateValidationCallbackProxyCtor = GetMethod(env, false, g_RemoteCertificateValidationCallbackProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
