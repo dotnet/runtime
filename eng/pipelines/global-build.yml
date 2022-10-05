@@ -164,7 +164,6 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: Release
-    helixQueueGroup: pr
     platforms:
     - SourceBuild_Linux_x64
     jobParameters:
