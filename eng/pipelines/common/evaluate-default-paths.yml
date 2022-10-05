@@ -188,6 +188,7 @@ jobs:
       exclude:
       # FIXME: test
       - src/mono/nuget/*
+      - ${{ parameters._const_paths._always_exclude }}
 
     # wasm/runtimetests need to be run
     - subset: wasm_runtimetests
@@ -223,6 +224,7 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+      - ${{ parameters._const_paths._always_exclude }}
 
     # libraries with some wasm specific code
     - subset: wasm_libraries
