@@ -200,8 +200,8 @@
     "WasmOptConfigurationFlags": [
       { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
     ],
-    "EmccExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
-    "EmccExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
+    "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
+    "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
   }
 }
 ]]>

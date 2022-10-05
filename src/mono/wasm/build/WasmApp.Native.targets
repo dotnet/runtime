@@ -462,8 +462,8 @@
     <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName= "_WasmOptConfigurationFlagsItems" />
-      <Output TaskParameter="EmccExportedFunctions" ItemName= "EmccExportedFunction" />
-      <Output TaskParameter="EmccExportedRuntimeMethods" ItemName= "EmccExportedRuntimeMethod" />
+      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName= "EmccExportedFunction" />
+      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName= "EmccExportedRuntimeMethod" />
     </ReadEmccProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)">
@@ -648,8 +648,8 @@
     <ParameterGroup>
       <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <EmccExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
 </Project>
