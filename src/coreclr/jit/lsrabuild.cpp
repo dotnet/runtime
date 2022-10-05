@@ -3917,6 +3917,52 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
             def->getInterval()->assignRelatedInterval(use->getInterval());
         }
     }
+
+    if (enregisterLocalVars)
+    {
+        // Preference locals that are still live out of this register.
+        // If they are used before the call and we allocate it to this register it would force a spill.
+        // If they are used after the call, then the preference set is anyway
+        // going to become the callee-saved registers when we see the call which
+        // in the common case does not conflict with the argument registers.
+
+        // Note that if 'op1' is a local we should not unpreference it from the
+        // register since PUTARG_REG is pass through. We know how to use the
+        // value out of this register between the PUTARG_REG and the call when
+        // "special putarg" is supported.
+        unsigned skipVarIndex = UINT_MAX;
+        if (op1->IsLocal())
+        {
+            LclVarDsc* op1Lcl = compiler->lvaGetDesc(op1->AsLclVarCommon());
+            if (op1Lcl->lvTracked)
+            {
+                skipVarIndex = op1Lcl->lvVarIndex;
+            }
+        }
+
+        VarSetOps::Iter iter(compiler, currentLiveVars);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
+        {
+            if (varIndex == skipVarIndex)
+            {
+                continue;
+            }
+
+            Interval* interval = getIntervalForLocalVar(varIndex);
+            // Spilling a write-thru register is free so avoid preferencing it
+            // away from these registers.
+            if (interval->isWriteThru)
+            {
+                continue;
+            }
+
+            regMaskTP newPreferences = allRegs(interval->registerType) & ~argMask;
+            assert(newPreferences != RBM_NONE);
+            interval->updateRegisterPreferences(newPreferences);
+        }
+    }
+
     return srcCount;
 }
 
