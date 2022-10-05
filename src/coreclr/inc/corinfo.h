@@ -2268,13 +2268,13 @@ public:
 
     //------------------------------------------------------------------------------
     // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
-    //    object to a preallocated buffer. It's intended to be use only for debug/diagnostic 
+    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic 
     //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
     //
     // Arguments:
     //    handle     - Direct object handle
     //    buffer     - Pointer to buffer
-    //    bufferSize - Pointer to buffer length. Must not be nullptr
+    //    bufferSize - Buffer size
     //
     // Return Value:
     //    Bytes written to the given buffer, the range is [0..bufferSize]
