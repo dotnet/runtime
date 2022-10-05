@@ -5807,6 +5807,8 @@ public:
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
 
+const int min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * LARGE_REGION_FACTOR));
+
 enum allocate_direction
 {
     allocate_forward = 1,
