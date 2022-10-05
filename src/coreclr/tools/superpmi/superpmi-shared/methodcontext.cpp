@@ -4908,7 +4908,7 @@ void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t
     key.B = (DWORDLONG)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr && length != -1)
+    if (buffer != nullptr && length > 0)
     {
         size_t bufferRealSize = min(length, bufferSize);
         strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
@@ -4930,7 +4930,7 @@ size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size
 {
     if (PrintObjectDescription == nullptr)
     {
-        return -1;
+        return 0;
     }
 
     DLDL key;
@@ -4940,7 +4940,7 @@ size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size
     int itemIndex = PrintObjectDescription->GetIndex(key);
     if (itemIndex < 0)
     {
-        return -1;
+        return 0;
     }
     else
     {
