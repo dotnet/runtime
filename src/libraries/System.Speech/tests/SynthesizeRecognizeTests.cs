@@ -98,7 +98,7 @@ namespace SampleSynthesisTests
                             {
                                 foreach (RecognizedPhrase phrase in args.Result.Alternates)
                                 {
-                                    diagnostics.AppendLine($"Alternatives included '{phrase.Text}'' with confidence {phrase.Confidence}");
+                                    diagnostics.AppendLine($"Alternatives included '{phrase.Text}' with confidence {phrase.Confidence}");
                                 }
                                 diagnostics.Append($"Elapsed {sw.Elapsed}");
                                 Assert.Fail($"Recognition of '{input}' was expected to produce a string containing '{output}', but failed");
@@ -130,7 +130,7 @@ namespace SampleSynthesisTests
 
                             foreach (RecognizedPhrase phrase in result.Alternates)
                             {
-                                diagnostics.AppendLine($"Alternatives included '{phrase.Text}'' with confidence {phrase.Confidence}");
+                                diagnostics.AppendLine($"Alternatives included '{phrase.Text}' with confidence {phrase.Confidence}");
                             }
 
                             Assert.True(result.Confidence > 0.1); // strings we use are normally > 0.8
