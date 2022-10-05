@@ -726,7 +726,7 @@ size_t CEEInfo::printObjectDescription (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t charsCount = 0;
+    size_t bytesWritten = 0;
 
     // NOTE: this function is used for pinned/frozen handles
     // it doesn't need to null-terminate the string
@@ -756,22 +756,23 @@ size_t CEEInfo::printObjectDescription (
     }
 
     const UTF8* utf8data = stackStr.GetUTF8();
-    charsCount = stackStr.GetCount();
-    memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
+    bytesWritten = min(bufferSize, stackStr.GetCount());
+    memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
 
-    if (charsCount >= bufferSize)
+    if (bytesWritten == bufferSize)
     {
         // Trim data and null-terminate it
-        buffer[bufferSize - 1] = 0;
+        buffer[bytesWritten - 1] = 0;
     }
     else
     {
-        buffer[charsCount] = 0;
+        buffer[bytesWritten] = 0;
+        bytesWritten++;
     }
 
     EE_TO_JIT_TRANSITION();
 
-    return charsCount + 1; // Include null-terminator
+    return bytesWritten;
 }
 
 /* static */

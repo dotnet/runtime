@@ -1621,7 +1621,7 @@ void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t ha
     char         str[maxStrSize];
     size_t       actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize);
 
-    for (size_t i = 0; i < min(maxStrSize, actualLen); i++)
+    for (size_t i = 0; i < actualLen; i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')
