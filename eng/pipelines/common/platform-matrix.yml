@@ -191,7 +191,7 @@ jobs:
       platform: Linux_bionic_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -218,7 +218,7 @@ jobs:
       platform: Linux_bionic_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -456,7 +456,7 @@ jobs:
       platform: Android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -479,7 +479,7 @@ jobs:
       platform: Android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -502,7 +502,7 @@ jobs:
       platform: Android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -525,7 +525,7 @@ jobs:
       platform: Android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-android-20220808192756-8fcaabc
+        image: ubuntu-18.04-android-20221004183302-e6b0c19
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
