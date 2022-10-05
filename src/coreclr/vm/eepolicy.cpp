@@ -467,7 +467,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             }
             else
             {
-                WCHAR addressString[MaxIntegerDecHexString];
+                WCHAR addressString[MaxIntegerDecHexString + 1];
                 FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", pExceptionInfo ? (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress : (SIZE_T)address);
 
                 // We should always have the reference to the runtime's instance
@@ -476,10 +476,10 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
-                WCHAR runtimeBaseAddressString[MaxIntegerDecHexString];
+                WCHAR runtimeBaseAddressString[MaxIntegerDecHexString + 1];
                 FormatInteger(runtimeBaseAddressString, ARRAY_SIZE(runtimeBaseAddressString), "%p", (SIZE_T)GetClrModuleBase());
 
-                WCHAR exitCodeString[MaxIntegerDecHexString];
+                WCHAR exitCodeString[MaxIntegerDecHexString + 1];
                 FormatInteger(exitCodeString, ARRAY_SIZE(exitCodeString), "%x", exitCode);
 
                 // Format the string

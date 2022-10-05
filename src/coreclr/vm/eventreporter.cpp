@@ -672,10 +672,10 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         EventReporter reporter(EventReporter::ERT_UnhandledException);
         EX_TRY
         {
-            WCHAR exceptionCodeString[MaxIntegerDecHexString];
+            WCHAR exceptionCodeString[MaxIntegerDecHexString + 1];
             FormatInteger(exceptionCodeString, ARRAY_SIZE(exceptionCodeString), "%x", pExceptionInfo->ExceptionRecord->ExceptionCode);
 
-            WCHAR addressString[MaxIntegerDecHexString];
+            WCHAR addressString[MaxIntegerDecHexString + 1];
             FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
 
             StackSString s;
