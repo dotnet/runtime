@@ -100,10 +100,6 @@ Note that by default ILLinker trimming is enabled and libraries built above for 
 
 Build artifacts can be found in `artifacts/bin/microsoft.netcore.app.runtime.<TargetOS>-<BuildArch>/<BuildType>/runtimes/<TargetOS>-<BuildArch>/lib/net7.0/`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md).
 
-Note that next form is also allowed:
-
-    $ ./build.sh libs.sfx --arch arm --librariesConfiguration Release
-
 Both native and managed parts can be built at the same time with:
 
     $ ROOTFS_DIR=`pwd`/.tools/rootfs/arm ./build.sh --cross --arch arm --librariesConfiguration Release --subset libs.native+libs.sfx
