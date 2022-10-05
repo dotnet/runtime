@@ -229,6 +229,9 @@
   <data name="Arg_CannotHaveNegativeValue" xml:space="preserve">
     <value>String cannot contain a minus sign if the base is not 10.</value>
   </data>
+  <data name="Arg_CannotMarshal" xml:space="preserve">
+    <value>Type '{0}' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed.</value>
+  </data>
   <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
     <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
   </data>

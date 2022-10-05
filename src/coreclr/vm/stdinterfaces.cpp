@@ -1172,12 +1172,6 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
-    if (pTemplate->IsUseOleAutDispatchImpl())
-    {
-        return OleAutDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
-    }
-
     return InternalDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
@@ -1212,122 +1206,7 @@ Dispatch_Invoke
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
-    if (pTemplate->IsUseOleAutDispatchImpl())
-    {
-        return OleAutDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
-    }
-
     return InternalDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
-}
-
-
-//------------------------------------------------------------------------------------------
-//  IDispatch methods for COM+ objects implemented internally using reflection.
-
-
-HRESULT __stdcall
-OleAutDispatchImpl_GetIDsOfNames
-(
-    IDispatch* pDisp,
-    REFIID riid,
-    _In_reads_(cNames) OLECHAR **rgszNames,
-    unsigned int cNames,
-    LCID lcid,
-    DISPID *rgdispid
-)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
-        PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));
-        PRECONDITION(CheckPointer(rgszNames));
-    }
-    CONTRACTL_END;
-
-    // Make sure that riid is IID_NULL.
-    if (riid != IID_NULL)
-        return DISP_E_UNKNOWNINTERFACE;
-
-    // Retrieve the COM method table from the IP.
-    ComMethodTable *pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
-    if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-        if (pCMT->HasInvisibleParent())
-            return E_NOTIMPL;
-
-    ITypeInfo *pTI;
-    HRESULT hr = GetITypeInfoForMT(pCMT, &pTI);
-    if (FAILED(hr))
-        return (hr);
-
-    hr = pTI->GetIDsOfNames(rgszNames, cNames, rgdispid);
-    return hr;
-}
-
-HRESULT __stdcall
-OleAutDispatchImpl_Invoke
-    (
-    IDispatch* pDisp,
-    DISPID dispidMember,
-    REFIID riid,
-    LCID lcid,
-    unsigned short wFlags,
-    DISPPARAMS *pdispparams,
-    VARIANT *pvarResult,
-    EXCEPINFO *pexcepinfo,
-    unsigned int *puArgErr
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pDisp));
-        PRECONDITION(IsInProcCCWTearOff(pDisp));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    // Make sure that riid is IID_NULL.
-    if (riid != IID_NULL)
-        return DISP_E_UNKNOWNINTERFACE;
-
-    // Retrieve the COM method table from the IP.
-    ComMethodTable *pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
-    if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-        if (pCMT->HasInvisibleParent())
-            return E_NOTIMPL;
-
-    ITypeInfo *pTI;
-    hr = GetITypeInfoForMT(pCMT, &pTI);
-    if (FAILED(hr))
-        return hr;
-
-    EX_TRY
-    {
-        // If we have a basic or IClassX interface then we're going to invoke through
-        //  the class interface.
-        if (pCMT->IsIClassXOrBasicItf())
-        {
-            CCWHolder pCCW = ComCallWrapper::GetWrapperFromIP(pDisp);
-            pDisp = (IDispatch*)pCCW->GetIClassXIP();
-        }
-
-        hr = pTI->Invoke(pDisp, dispidMember, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
-    }
-    EX_CATCH
-    {
-        hr = GET_EXCEPTION()->GetHR();
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return hr;
 }
 
 HRESULT __stdcall

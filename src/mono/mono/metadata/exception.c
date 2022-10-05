@@ -464,7 +464,7 @@ mono_get_exception_serialization (const char *msg)
  * \returns a new instance of the \c System.InvalidCastException
  */
 MonoException *
-mono_get_exception_invalid_cast ()
+mono_get_exception_invalid_cast (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System", "InvalidCastException");
 }
@@ -493,7 +493,7 @@ mono_exception_new_invalid_operation (const char *msg, MonoError *error)
  * \returns a new instance of the \c System.IndexOutOfRangeException
  */
 MonoException *
-mono_get_exception_index_out_of_range ()
+mono_get_exception_index_out_of_range (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "IndexOutOfRangeException");

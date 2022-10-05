@@ -13,6 +13,7 @@ parameters:
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+        src/mono/sample/wasm/*
         src/mono/wasi/*
         src/mono/wasm/*
         src/tasks/WasmAppBuilder/*
@@ -21,7 +22,7 @@ parameters:
         src/tests/Common/wasm-test-runner/*
     ]
     _wasm_pipelines: [
-        eng/pipelines/**/*wasm*yml
+        eng/pipelines/**/*wasm*
     ]
 
     # src/workloads is only used in runtime-official builds
@@ -35,11 +36,6 @@ parameters:
         eng/Version.Details.xml
         eng/pipelines/*
         eng/pipelines/common/evaluate-default-paths.yml
-        eng/pipelines/coreclr/*
-        eng/pipelines/installer/*
-        eng/pipelines/libraries/*
-        eng/pipelines/mono/*
-        eng/pipelines/runtime*
         src/workloads/*
     ]
 
@@ -59,6 +55,9 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
@@ -78,6 +77,9 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/libraries/*
 
     - subset: libraries
       exclude:
@@ -86,6 +88,9 @@ jobs:
       - src/coreclr/*
       - src/tests/*
       - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/installer/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
@@ -108,6 +113,9 @@ jobs:
       - src/libraries/*
       - src/tests/*
       - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
@@ -159,6 +167,7 @@ jobs:
       - src/mono/wasm/templates/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/tasks/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: wasmdebuggertests
       include:
@@ -168,6 +177,7 @@ jobs:
       - src/mono/mono/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: any_other_than_wasm_wbt_dbg
       exclude:
@@ -184,6 +194,7 @@ jobs:
     - subset: wasm
       include:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
       # other paths that should also trigger wasm jobs
       - src/mono/*
 
@@ -218,6 +229,7 @@ jobs:
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
+      - eng/pipelines/mono/*
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}

@@ -18,7 +18,7 @@
 #include "threadsuspend.h"
 
 #define __IN_CRST_CPP
-#include <crsttypes.h>
+#include <crsttypes_generated.h>
 #undef __IN_CRST_CPP
 
 #if defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)

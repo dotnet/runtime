@@ -1362,7 +1362,7 @@ ep_rt_thread_create (
 static
 inline
 void
-ep_rt_set_server_name()
+ep_rt_set_server_name(void)
 {
 	mono_native_thread_set_name(mono_native_thread_id_get(), ".NET EventPipe");
 }
@@ -1963,7 +1963,7 @@ ep_rt_runtime_version_get_utf8 (void)
 static
 inline
 void
-ep_rt_thread_setup ()
+ep_rt_thread_setup (void)
 {
 	ep_rt_mono_thread_setup (false);
 }
