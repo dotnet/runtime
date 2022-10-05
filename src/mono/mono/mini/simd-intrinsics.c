@@ -4223,7 +4223,7 @@ emit_packedsimd_intrinsics (
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		}
 		case SN_Dot:
-			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_DOT, -1, -1, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_WASM_DOT, -1, fsig, args);
 		case SN_Shuffle:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
 		case SN_Swizzle:

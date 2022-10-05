@@ -8506,6 +8506,21 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_XOP_X_I:
+		case OP_XOP_X_X:
+		case OP_XOP_I4_X:
+		case OP_XOP_I8_X:
+		case OP_XOP_X_X_X:
+		case OP_XOP_X_X_I4:
+		case OP_XOP_X_X_I8: {
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_SSE_MOVMSK: {
 			LLVMValueRef args [1];
@@ -8959,18 +8974,6 @@ MONO_RESTORE_WARNING
 		case OP_XOP: {
 			IntrinsicId id = (IntrinsicId)ins->inst_c0;
 			call_intrins (ctx, id, NULL, "");
-			break;
-		}
-		case OP_XOP_X_I:
-		case OP_XOP_X_X:
-		case OP_XOP_I4_X:
-		case OP_XOP_I8_X:
-		case OP_XOP_X_X_X:
-		case OP_XOP_X_X_I4:
-		case OP_XOP_X_X_I8: {
-			IntrinsicId id = (IntrinsicId)ins->inst_c0;
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 
@@ -9719,11 +9722,6 @@ MONO_RESTORE_WARNING
 				g_assert_not_reached ();
 			}
 			values [ins->dreg] = call_intrins (ctx, intrins, args, "");
-			break;
-		}
-		case OP_WASM_SIMD_DOT: {
-			LLVMValueRef args [2] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_DOT, args, "i32x4.dot_i16x8_s");
 			break;
 		}
 		case OP_WASM_SIMD_SHUFFLE: {
