@@ -314,13 +314,13 @@ int interceptor_ICJI::getStringLiteral(
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-int interceptor_ICJI::appendFrozenObjectTextualRepresentation(
+size_t interceptor_ICJI::printObject(
           void* handle,
           char* buffer,
-          int bufferSize)
+          size_t bufferSize)
 {
-    mcs->AddCall("appendFrozenObjectTextualRepresentation");
-    return original_ICorJitInfo->appendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
+    mcs->AddCall("printObject");
+    return original_ICorJitInfo->printObject(handle, buffer, bufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(

@@ -715,10 +715,10 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
-int CEEInfo::appendFrozenObjectTextualRepresentation (
-        void* handle,
-        char* buffer,
-        int   bufferSize)
+size_t CEEInfo::printObject (
+        void*  handle,
+        char*  buffer,
+        size_t bufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -726,7 +726,7 @@ int CEEInfo::appendFrozenObjectTextualRepresentation (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    int charsCount = 0;
+    size_t charsCount = 0;
 
     // NOTE: this function is used for pinned/frozen handles
     // it doesn't need to null-terminate the string
@@ -754,6 +754,16 @@ int CEEInfo::appendFrozenObjectTextualRepresentation (
     const UTF8* utf8data = stackStr.GetUTF8();
     charsCount = stackStr.GetCount();
     memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
+
+    if (charsCount >= bufferSize)
+    {
+        // Trim data and null-terminate it
+        buffer[bufferSize - 1] = 0;
+    }
+    else
+    {
+        buffer[charsCount] = 0;
+    }
 
     EE_TO_JIT_TRANSITION();
 

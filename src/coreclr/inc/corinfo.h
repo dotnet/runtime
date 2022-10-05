@@ -2267,21 +2267,22 @@ public:
 
 
     //------------------------------------------------------------------------------
-    // appendFrozenObjectTextualRepresentation: Append a (possibly truncated) textual UTF8 representation of the given frozen/pinned 
-    //    object to a preallocated buffer. It's intended to use only for debug/diagnostic purposes such as JitDisasm
+    // printObject: Prints a (possibly truncated) textual UTF8 representation of the given
+    //    object to a preallocated buffer. It's intended to use only for debug/diagnostic 
+    //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
     //
     // Arguments:
-    //    handle     - Direct handle for a pinned/frozen object
+    //    handle     - Direct object handle
     //    buffer     - Pointer to buffer
     //    bufferSize - Pointer to buffer length. Must not be nullptr
     //
     // Return Value:
-    //    bytes written to the buffer, the data is not null-terminated so caller is responsible for that.
+    //    Full length of the source UTF8 representation so can be bigger than bufferSize
     //
-    virtual int appendFrozenObjectTextualRepresentation (
+    virtual size_t printObject (
             void*                       handle,     /* IN  */
             char*                       buffer,     /* OUT */
-            int                         bufferSize  /* IN  */
+            size_t                      bufferSize  /* IN  */
             ) = 0;
 
     /**********************************************************************************/

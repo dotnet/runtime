@@ -374,14 +374,14 @@ int WrapICorJitInfo::getStringLiteral(
     return temp;
 }
 
-int WrapICorJitInfo::appendFrozenObjectTextualRepresentation(
+size_t WrapICorJitInfo::printObject(
           void* handle,
           char* buffer,
-          int bufferSize)
+          size_t bufferSize)
 {
-    API_ENTER(appendFrozenObjectTextualRepresentation);
-    int temp = wrapHnd->appendFrozenObjectTextualRepresentation(handle, buffer, bufferSize);
-    API_LEAVE(appendFrozenObjectTextualRepresentation);
+    API_ENTER(printObject);
+    size_t temp = wrapHnd->printObject(handle, buffer, bufferSize);
+    API_LEAVE(printObject);
     return temp;
 }
 

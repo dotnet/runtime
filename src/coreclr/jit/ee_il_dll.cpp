@@ -1615,31 +1615,18 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
+void Compiler::eePrintObjectDescription(const char* prefix, size_t handle)
 {
-    const int maxStrSize = 64;
-    char      str[maxStrSize];
-    int bytesWritten = this->info.compCompHnd->appendFrozenObjectTextualRepresentation((void*)handle, str, maxStrSize);
-    if (bytesWritten == -1)
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = this->info.compCompHnd->printObject((void*)handle, str, maxStrSize);
+    if (actualLen == -1)
     {
         printf("%s 'unknown frozen object'", prefix);
         return;
     }
-    else if (bytesWritten >= maxStrSize)
-    {
-        // string is too long, trim it and null-terminate
-        str[maxStrSize - 4] = '.';
-        str[maxStrSize - 3] = '.';
-        str[maxStrSize - 2] = '.';
-        str[maxStrSize - 1] = 0;
-    }
-    else
-    {
-        // appendFrozenObjectTextualRepresentation doesn't null-terminate buffer
-        str[bytesWritten] = 0;
-    }
 
-    for (int i = 0; i < min(maxStrSize, bytesWritten); i++)
+    for (int i = 0; i < min(maxStrSize, actualLen); i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')

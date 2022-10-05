@@ -11079,7 +11079,7 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                eePrintFrozenObjectDescription(" ", tree->AsIntCon()->gtIconVal);
+                eePrintObjectDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {

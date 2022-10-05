@@ -1831,17 +1831,26 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
-        private int appendFrozenObjectTextualRepresentation(void* handle, byte* buffer, int bufferSize)
+        private nuint printObject(void* handle, byte* buffer, nuint bufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
-            // NOTE: this function is used for pinned/frozen handles
-            // it doesn't need to null-terminate the string
+            int bufferSize32 = checked((int)bufferSize);
 
-            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
-            var bufferSpan = new Span<byte>(buffer, bufferSize);
+            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+            var bufferSpan = new Span<byte>(buffer, bufferSize32);
             Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
-            return written;
+            if (written >= bufferSize32)
+            {
+                // Trim data and null-terminate it
+                bufferSpan[bufferSize32 - 1] = 0;
+            }
+            else
+            {
+                bufferSpan[written] = 0;
+            }
+
+            return (nuint)objStr.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

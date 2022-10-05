@@ -175,10 +175,10 @@ int getStringLiteral(
           char16_t* buffer,
           int bufferSize) override;
 
-int appendFrozenObjectTextualRepresentation(
+size_t printObject(
           void* handle,
           char* buffer,
-          int bufferSize) override;
+          size_t bufferSize) override;
 
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
