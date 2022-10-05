@@ -121,8 +121,8 @@ namespace Wasm.Build.Tests
 
             if (OperatingSystem.IsWindows())
             {
-                EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                                        ".emscripten-cache");
+                //EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                                                        //".emscripten-cache");
             }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");

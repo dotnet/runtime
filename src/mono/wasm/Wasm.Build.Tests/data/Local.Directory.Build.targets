@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+    <!--<EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />-->
   </ItemGroup>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
