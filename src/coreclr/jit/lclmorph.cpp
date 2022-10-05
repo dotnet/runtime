@@ -983,7 +983,7 @@ private:
             return IndirTransform::None;
         }
 
-        if (!indir->TypeIs(TYP_STRUCT))
+        if (!varTypeIsStruct(indir))
         {
             if (varDsc->lvPromoted)
             {
@@ -996,6 +996,13 @@ private:
             // possible transformation for non-STRUCT indirect uses is LCL_FLD.
             assert(varDsc->TypeGet() == TYP_STRUCT);
             return IndirTransform::LclFld;
+        }
+
+        if (varTypeIsSIMD(indir))
+        {
+            // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
+            // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
+            return IndirTransform::None;
         }
 
         ClassLayout* indirLayout = nullptr;

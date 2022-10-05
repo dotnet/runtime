@@ -4808,7 +4808,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     }
 
     GenTree* argNode;
-    if (lclNode->TypeIs(TYP_STRUCT))
+    if (varTypeIsStruct(lclNode))
     {
         argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
     }
@@ -4888,7 +4888,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     unsigned     offset        = lclNode->GetLclOffs() + fieldOffset;
     var_types    argNodeType   = lclNode->TypeGet();
     ClassLayout* argNodeLayout = nullptr;
-    if (argNodeType == TYP_STRUCT)
+    if (varTypeIsStruct(argNodeType))
     {
         argNodeLayout = lclNode->GetLayout(this);
     }
@@ -4910,7 +4910,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     GenTree* newArgNode;
     if (!isAddress)
     {
-        if (argNodeType == TYP_STRUCT)
+        if (varTypeIsStruct(argNodeType))
         {
             newArgNode = gtNewObjNode(argNodeLayout, addrNode);
         }
@@ -9139,7 +9139,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = gtNewZeroConNode(asgType);
+                src = gtNewZeroConNode(asgType, CORINFO_TYPE_FLOAT);
             }
             else
 #endif
@@ -12342,7 +12342,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
     {
-        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
+        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet(), node->GetSimdBaseJitType());
 
         for (GenTree* arg : node->Operands())
         {
