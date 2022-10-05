@@ -436,9 +436,14 @@ namespace System
                     return Round(x);
 
                 // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+                    // manually fold BitDecrement(0.5f)
+                    return Truncate(x + CopySign(0.49999997f, x));
+                }
             }
 
             return Round(x, 0, mode);
@@ -475,13 +480,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        float fraction = ModF(x, &x);
-
-                        if (Abs(fraction) >= 0.5f)
-                        {
-                            x += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5f)
+                        x = Truncate(x + CopySign(0.49999997f, x));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero

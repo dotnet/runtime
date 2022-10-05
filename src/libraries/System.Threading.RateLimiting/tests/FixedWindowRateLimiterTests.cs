@@ -35,7 +35,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = -1,
@@ -44,7 +44,7 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.FromMinutes(2),
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -53,7 +53,7 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.FromMinutes(2),
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -62,13 +62,22 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.MinValue,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
                     QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                     QueueLimit = 1,
                     Window = TimeSpan.FromMinutes(-2),
+                    AutoReplenishment = false,
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
                     AutoReplenishment = false,
                 }));
         }

@@ -4,6 +4,6 @@
   </ItemGroup>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
-    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
+    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
   </Target>
 </Project>

@@ -2789,14 +2789,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
-            // the result of bool returning calls.
+            // situations.
             //
             bool removeCast =
 #ifdef TARGET_ARM64
-                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
+                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) && !castOp->isContained() &&
 #endif
-                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIs(GT_OR, GT_XOR, GT_AND)
+                (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
@@ -2817,6 +2816,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
@@ -2824,15 +2825,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     {
                         op1->ClearContained();
                     }
+
                     GenTree* op2 = castOp->gtGetOp2();
                     if ((op2 != nullptr) && !op2->IsCnsIntOrI())
                     {
                         op2->ClearContained();
                     }
-                }
-                else
-                {
-                    castOp->ClearContained();
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;
@@ -3391,13 +3389,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
-    GenTree*   src    = lclStore->gtGetOp1();
-    LclVarDsc* varDsc = comp->lvaGetDesc(lclStore);
-
+    GenTree*   src           = lclStore->gtGetOp1();
+    LclVarDsc* varDsc        = comp->lvaGetDesc(lclStore);
     const bool srcIsMultiReg = src->IsMultiRegNode();
-    const bool dstIsMultiReg = lclStore->IsMultiRegLclVar();
 
-    if (!dstIsMultiReg && varTypeIsStruct(varDsc))
+    if (!srcIsMultiReg && varTypeIsStruct(varDsc))
     {
         // TODO-Cleanup: we want to check `varDsc->lvRegStruct` as the last condition instead of `!varDsc->lvPromoted`,
         // but we do not set it for `CSE` vars so it is currently failing.
@@ -3417,7 +3413,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
     }
 
-    if (srcIsMultiReg || dstIsMultiReg)
+    if (srcIsMultiReg)
     {
         const ReturnTypeDesc* retTypeDesc = nullptr;
         if (src->OperIs(GT_CALL))
@@ -3493,7 +3489,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(lclRegType))
             {
-                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType, CORINFO_TYPE_FLOAT);
+                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType);
 
                 BlockRange().InsertAfter(src, zeroCon);
                 BlockRange().Remove(src);
@@ -3578,7 +3574,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     // src and dst can be in registers, check if we need a bitcast.
     if (!src->TypeIs(TYP_STRUCT) && (varTypeUsesFloatReg(lclRegType) != varTypeUsesFloatReg(src)))
     {
-        assert(!srcIsMultiReg && !dstIsMultiReg);
+        assert(!srcIsMultiReg);
         assert(lclStore->OperIsLocalStore());
         assert(lclRegType != TYP_UNDEF);
 
@@ -3840,6 +3836,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                if (varTypeUsesFloatReg(returnType) != varTypeUsesFloatReg(origType))
+                {
+                    GenTree* bitCast = comp->gtNewBitCastNode(origType, call);
+                    BlockRange().InsertAfter(call, bitCast);
+                    callUse.ReplaceWith(bitCast);
+                    ContainCheckBitCast(bitCast);
+                }
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             default:
                 unreached();
@@ -4980,7 +4988,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
             tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
 
-            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree, false);
+            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree);
             GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
             result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
 
@@ -5204,14 +5212,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
-#ifdef TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
 #ifdef TARGET_ARM64
@@ -7111,7 +7112,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         {
             // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
             GenTree*  data   = ind->Data();
-            double    dblCns = data->AsDblCon()->gtDconVal;
+            double    dblCns = data->AsDblCon()->DconValue();
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
             // XARCH: we can always contain the immediates.
@@ -7413,7 +7414,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             if (arg->IsCnsFltOrDbl())
             {
                 noway_assert(constArgCount < ArrLen(constArgValues));
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->DconValue());
                 constArgCount++;
             }
         }

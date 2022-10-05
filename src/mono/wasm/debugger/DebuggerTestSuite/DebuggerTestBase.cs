@@ -988,7 +988,7 @@ namespace DebuggerTests
             return locals;
         }
 
-        internal async Task<(JToken, JToken, JToken)> GetPropertiesSortedByProtectionLevels(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+        internal async Task<(JToken, JToken)> GetPropertiesSortedByProtectionLevels(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -1004,7 +1004,7 @@ namespace DebuggerTests
                 var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
                 AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString()}, with Result: {result}");
                 if (!result.IsOk)
-                    return (null, null, null);
+                    return (null, null);
                 id = result.Value["result"]?["objectId"]?.Value<string>();
             }
 
@@ -1024,10 +1024,9 @@ namespace DebuggerTests
             var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
             if (!frame_props.IsOk)
-                return (null, null, null);;
+                return (null, null);;
 
             var locals = frame_props.Value["result"];
-            var locals_internal = frame_props.Value["internalProperties"];
             var locals_private = frame_props.Value["privateProperties"];
 
             // FIXME: Should be done when generating the list in dotnet.es6.lib.js, but not sure yet
@@ -1044,7 +1043,7 @@ namespace DebuggerTests
                 }
             }
 
-            return (locals, locals_internal, locals_private);
+            return (locals, locals_private);
         }
 
         internal virtual async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
@@ -1322,7 +1321,7 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name, bool expectBpResolvedEvent)
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name, bool expectBpResolvedEvent, params string[] sourcesToWait)
         {
             byte[] bytes = File.ReadAllBytes(asm_file);
             string asm_base64 = Convert.ToBase64String(bytes);
@@ -1338,7 +1337,7 @@ namespace DebuggerTests
 
             Task eventTask = expectBpResolvedEvent
                                 ? WaitForBreakpointResolvedEvent()
-                                : WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
+                                : WaitForScriptParsedEventsAsync(sourcesToWait);
             (await cli.SendCommand("Runtime.evaluate", load_assemblies, token)).AssertOk();
             await eventTask;
 
@@ -1397,7 +1396,7 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name, bool expectBpResolvedEvent)
+        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name, bool expectBpResolvedEvent, string[] sourcesToWait, string methodName2 = "", string methodName3 = "")
         {
             byte[] bytes = File.ReadAllBytes(asm_file);
             string asm_base64 = Convert.ToBase64String(bytes);
@@ -1434,13 +1433,18 @@ namespace DebuggerTests
 
             Task eventTask = expectBpResolvedEvent
                                 ? WaitForBreakpointResolvedEvent()
-                                : WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
+                                : WaitForScriptParsedEventsAsync(sourcesToWait);
             (await cli.SendCommand("Runtime.evaluate", load_assemblies, token)).AssertOk();
             await eventTask;
 
+            if (methodName2 == "")
+                methodName2 = method_name;
+            if (methodName3 == "")
+                methodName3 = method_name;
+
             var run_method = JObject.FromObject(new
             {
-                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "', '" + methodName2 + "', '" + methodName3 + "'); }, 1);"
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);

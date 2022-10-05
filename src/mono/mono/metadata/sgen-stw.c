@@ -44,7 +44,7 @@ static void unified_suspend_stop_world (MonoThreadInfoFlags flags, unified_suspe
 
 static TV_DECLARE (end_of_last_stw);
 
-guint64 mono_time_since_last_stw ()
+guint64 mono_time_since_last_stw (void)
 {
 	if (end_of_last_stw == 0)
 		return 0;

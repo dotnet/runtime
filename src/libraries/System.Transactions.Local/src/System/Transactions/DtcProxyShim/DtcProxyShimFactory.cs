@@ -30,6 +30,8 @@ internal sealed class DtcProxyShimFactory
     private readonly ConcurrentQueue<ITransactionTransmitter> _cachedTransmitters = new();
     private readonly ConcurrentQueue<ITransactionReceiver> _cachedReceivers = new();
 
+    private static readonly int s_maxCachedInterfaces = Environment.ProcessorCount * 2;
+
     private readonly EventWaitHandle _eventHandle;
 
     private ITransactionDispenser _transactionDispenser = null!; // Late-initialized in ConnectToProxy
@@ -47,7 +49,10 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
-    [UnconditionalSuppressMessage("Trimming", "IL2050", Justification = "Leave me alone")]
+    [RequiresUnreferencedCode("Distributed transactions support may not be compatible with trimming. If your program creates a distributed transaction via System.Transactions, the correctness of the application cannot be guaranteed after trimming.")]
+    private static void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) =>
+        DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser);
+
     public void ConnectToProxy(
         string? nodeName,
         Guid resourceManagerIdentifier,
@@ -56,14 +61,28 @@ internal sealed class DtcProxyShimFactory
         out byte[] whereabouts,
         out ResourceManagerShim resourceManagerShim)
     {
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        switch (RuntimeInformation.ProcessArchitecture)
         {
-            throw new PlatformNotSupportedException(SR.DistributedNotSupportOn32Bits);
+            case Architecture.X86:
+                throw new PlatformNotSupportedException(SR.DistributedNotSupportedOn32Bits);
         }
 
+        ConnectToProxyCore(nodeName, resourceManagerIdentifier, managedIdentifier, out nodeNameMatches, out whereabouts, out resourceManagerShim);
+    }
+
+    private void ConnectToProxyCore(
+        string? nodeName,
+        Guid resourceManagerIdentifier,
+        object managedIdentifier,
+        out bool nodeNameMatches,
+        out byte[] whereabouts,
+        out ResourceManagerShim resourceManagerShim)
+    {
         lock (_proxyInitLock)
         {
-            DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
+#pragma warning disable IL2026 // This warning is left in the product so developers get an ILLink warning when trimming an app using this transaction support
+            DtcGetTransactionManager(nodeName, out ITransactionDispenser? localDispenser);
+#pragma warning restore IL2026
 
             // Check to make sure the node name matches.
             if (nodeName is not null)
@@ -333,7 +352,13 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedTransmitter(ITransactionTransmitter transmitter)
-        => _cachedTransmitters.Enqueue(transmitter);
+    {
+        if (_cachedTransmitters.Count < s_maxCachedInterfaces)
+        {
+            transmitter.Reset();
+            _cachedTransmitters.Enqueue(transmitter);
+        }
+    }
 
     internal ITransactionReceiver GetCachedReceiver()
     {
@@ -349,5 +374,11 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedReceiver(ITransactionReceiver receiver)
-        => _cachedReceivers.Enqueue(receiver);
+    {
+        if (_cachedReceivers.Count < s_maxCachedInterfaces)
+        {
+            receiver.Reset();
+            _cachedReceivers.Enqueue(receiver);
+        }
+    }
 }

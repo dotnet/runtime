@@ -2982,12 +2982,16 @@ mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgct
  * On return the caller must check @klass for load errors.
  */
 static void
-emit_class_init (MonoCompile *cfg, MonoClass *klass)
+emit_class_init (MonoCompile *cfg, MonoClass *klass, gboolean for_field_access)
 {
 	MonoInst *vtable_arg;
 	int context_used;
 
 	context_used = mini_class_check_context_used (cfg, klass);
+
+	if (cfg->compile_aot && !for_field_access && mono_class_is_before_field_init (klass))
+		/* Only field accesses trigger initialization */
+		return;
 
 	if (context_used) {
 		vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
@@ -3403,9 +3407,14 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 
 		if (context_used) {
 			if (cfg->llvm_only) {
+				MonoInst *addr;
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
-				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
-														MONO_RGCTX_INFO_METHOD_FTNDESC);
+				if (mini_is_gsharedvt_klass (klass))
+					addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
+															   MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+				else
+					addr = emit_get_rgctx_method (cfg, context_used, method,
+												  MONO_RGCTX_INFO_METHOD_FTNDESC);
 				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
@@ -6233,6 +6242,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean emitted_funccall_seq_point = FALSE;
 	gboolean detached_before_ret = FALSE;
 	gboolean ins_has_side_effect;
+	MonoMethod* cmethod_override = NULL; // this is ised in call/callvirt handler to override the method to be called (e.g. from box handler)
 
 	if (!cfg->disable_inline)
 		cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
@@ -6741,7 +6751,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Is there a better way to do this?
 			   We need the variable live for the duration
 			   of the whole method. */
-			if (!cfg->llvm_only)
+			if (!COMPILE_LLVM (cfg))
 				cfg->args [0]->flags |= MONO_INST_VOLATILE;
 		}
 	}
@@ -6849,9 +6859,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * Methods with AggressiveInline flag could be inlined even if the class has a cctor.
 		 * This might create a branch so emit it in the first code bblock instead of into initlocals_bb.
 		 */
-		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method)) {
-			emit_class_init (cfg, method->klass);
-		}
+		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method))
+			emit_class_init (cfg, method->klass, FALSE);
 
 		if (skip_dead_blocks) {
 			int ip_offset = GPTRDIFF_TO_INT (ip - header->code);
@@ -7466,7 +7475,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			HandleCallData cdata;
 			memset (&cdata, 0, sizeof (HandleCallData));
 
-			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			// The method to be called may have already been resolved when handling a previous opcode. In that
+			// case, we ignore the operand and act as CALL, instead of CALLVIRT.
+			// E.g. https://github.com/dotnet/runtime/issues/32166 (box+callvirt optimization)
+			if (cmethod_override) {
+				cmethod = cmethod_override;
+				cmethod_override = NULL;
+				virtual_ = FALSE;
+				//il_op = MONO_CEE_CALL;
+			} else {
+				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			}
+
 			CHECK_CFG_ERROR;
 
 			if (cfg->verbose_level > 3)
@@ -7476,10 +7496,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class)) {
 					/* get_constrained_method () doesn't work on the gparams used by generic sharing */
-					// FIXME: Other configurations
-					//if (!cfg->gsharedvt)
-					//	GENERIC_SHARING_FAILURE (CEE_CALL);
 					gshared_static_virtual = TRUE;
+					if (!cfg->gsharedvt)
+						/*
+						 * We can't resolve these calls at compile time, and they are used in
+						 * perf-sensitive code in the BCL, so ask the AOT compiler to try to use specific instances
+						 * instead of this gshared method.
+						 */
+						cfg->prefer_instances = TRUE;
 				} else {
 					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
 					CHECK_CFG_ERROR;
@@ -7702,7 +7726,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * might not get called after the call was patched.
 			 */
 			if (cfg->gshared && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
-				emit_class_init (cfg, cmethod->klass);
+				emit_class_init (cfg, cmethod->klass, FALSE);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
@@ -9033,7 +9057,7 @@ calli_end:
 			}
 
 			if (cfg->gshared && cmethod && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
-				emit_class_init (cfg, cmethod->klass);
+				emit_class_init (cfg, cmethod->klass, FALSE);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
@@ -9200,7 +9224,7 @@ calli_end:
 					 * As a workaround, we call class cctors before allocating objects.
 					 */
 					if (mini_field_access_needs_cctor_run (cfg, method, cmethod->klass, vtable) && !(g_slist_find (class_inits, cmethod->klass))) {
-						emit_class_init (cfg, cmethod->klass);
+						emit_class_init (cfg, cmethod->klass, TRUE);
 						if (cfg->verbose_level > 2)
 							printf ("class %s.%s needs init call for ctor\n", m_class_get_name_space (cmethod->klass), m_class_get_name (cmethod->klass));
 						class_inits = g_slist_prepend (class_inits, cmethod->klass);
@@ -9548,6 +9572,70 @@ calli_end:
 					}
 				}
 			}
+
+			// ASSUME
+			//   interface ISomeIface { void Method(); }
+			//   struct SomeStruct : ISomeIface {...}
+			// OPTIMIZE
+			//   box SomeStruct
+			//   callvirt instance ISomeIface::Method()
+			// TO
+			//   call SomeStruct::Method()
+			guchar* callvirt_ip;
+			guint32 callvirt_proc_token;
+			if (!((cfg->compile_aot || cfg->compile_llvm) && !mono_class_is_def(klass)) && // we cannot devirtualize in AOT when using generics
+				next_ip < end &&
+				(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) && 
+				ip_in_bb (cfg, cfg->cbb, callvirt_ip) ) {
+				MonoMethod* iface_method;
+				MonoMethodSignature* iface_method_sig;
+
+				if (val &&
+					val->flags != MONO_INST_FAULT && // not null
+					!mono_class_is_nullable (klass) &&
+					!mini_is_gsharedvt_klass (klass) &&
+					(iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context)) &&
+					(iface_method_sig = mono_method_signature_internal (iface_method)) && // callee signture is healthy
+					iface_method_sig->hasthis && 
+					iface_method_sig->param_count == 0 && // the callee has no args (other than this)
+					!iface_method_sig->has_type_parameters &&
+					iface_method_sig->generic_param_count == 0) { // and no type params, apparently virtual generic methods require special handling
+					
+					if (!m_class_is_inited (iface_method->klass)) {
+						if (!mono_class_init_internal (iface_method->klass))
+							TYPE_LOAD_ERROR (iface_method->klass);
+					}
+
+					ERROR_DECL (struct_method_error);
+					MonoMethod* struct_method = mono_class_get_virtual_method (klass, iface_method, struct_method_error);
+
+					if (is_ok (struct_method_error)) {
+						MonoMethodSignature* struct_method_sig = mono_method_signature_internal (struct_method);
+
+						if (!struct_method ||
+							!MONO_METHOD_IS_FINAL (struct_method) ||
+							!struct_method_sig ||
+							struct_method_sig->has_type_parameters ||
+							!mono_method_can_access_method (method, struct_method)) {
+							// do not optimize, let full callvirt deal with it
+						} else if (val->opcode == OP_TYPED_OBJREF) {
+							*sp++ = val;
+							cmethod_override = struct_method;
+							break;
+						} else {
+							MonoInst* srcvar = get_vreg_to_inst (cfg, val->dreg);
+							if (!srcvar)
+								srcvar = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
+							EMIT_NEW_VARLOADA (cfg, ins, srcvar, m_class_get_byval_arg (klass));
+							*sp++= ins;
+							cmethod_override = struct_method;
+							break;
+						}
+					} else {
+						mono_error_cleanup (struct_method_error);
+					}
+				} 
+			}			
 
 			gboolean is_true;
 
@@ -9967,7 +10055,7 @@ calli_end:
 				*/
 
 				if (mono_class_needs_cctor_run (klass, method))
-					emit_class_init (cfg, klass);
+					emit_class_init (cfg, klass, TRUE);
 
 				/*
 				 * The pointer we're computing here is
@@ -10008,7 +10096,7 @@ calli_end:
 				if (!addr) {
 					if (mini_field_access_needs_cctor_run (cfg, method, klass, vtable)) {
 						if (!(g_slist_find (class_inits, klass))) {
-							emit_class_init (cfg, klass);
+							emit_class_init (cfg, klass, TRUE);
 							if (cfg->verbose_level > 2)
 								printf ("class %s.%s needs init call for %s\n", m_class_get_name_space (klass), m_class_get_name (klass), mono_field_get_name (field));
 							class_inits = g_slist_prepend (class_inits, klass);

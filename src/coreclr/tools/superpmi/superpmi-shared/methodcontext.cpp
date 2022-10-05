@@ -30,6 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    ignoreStoredConfig = false;
     isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
@@ -1259,6 +1260,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     DEBUG_REP(dmpGetJitFlags(0, value));
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
+    Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
     InitReadyToRunFlag(resultFlags);
     return value.B;
@@ -6902,6 +6904,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -6954,6 +6959,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 
@@ -7007,8 +7015,15 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
     char* obuff = buff;
 
-    // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
+    // Add the Method Signature. Be careful about potentially huge method signatures; truncate if necessary.
+    const char* methodFullName = CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName);
+    int t = _snprintf_s(buff, len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE, _TRUNCATE, "%s -- ", methodFullName);
+    if (t == -1)
+    {
+        // We truncated the name string, meaning we wrote exactly `len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE` characters
+        // (including the terminating null). We advance the buffer pointer by this amount, not including that terminating null.
+        t = len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE - 1;
+    }
     buff += t;
     len -= t;
 

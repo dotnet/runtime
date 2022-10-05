@@ -78,7 +78,7 @@ namespace Internal.Runtime.InteropServices
     }
 
     [SupportedOSPlatform("windows")]
-    public static class ComActivator
+    internal static class ComActivator
     {
         // Collection of all ALCs used for COM activation. In the event we want to support
         // unloadable COM server ALCs, this will need to be changed.

@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests
 {
@@ -17,9 +15,12 @@ namespace XPathTests.FunctionalTests
         /// <summary>
         /// surrogates : xpath testing, return 7 nodes
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void GlobalizationTest566()
+        public static void GlobalizationTest566(Utils.NavigatorKind kind)
         {
             var xml = "Surrogates_1.xml";
             var testExpression =
@@ -89,14 +90,17 @@ namespace XPathTests.FunctionalTests
                     Value = "\n    \n    \uD868\uDCF9\n    2A0F9\n    D868\n    DCF9\n    \n \n   "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// turkish i xpath testing, return 4 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest567()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest567(Utils.NavigatorKind kind)
         {
             var xml = "turkish.xml";
             var testExpression = "data/a[text()=\"\u0131\" or text()=\"I\" or text()=\"i\" or text()=\"\u0130\"] ";
@@ -138,14 +142,17 @@ namespace XPathTests.FunctionalTests
                     Value = "\u0130"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Thai Risky : xpath testing, returns 4 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest568()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest568(Utils.NavigatorKind kind)
         {
             var xml = "Thai_risky_chars.xml";
             var testExpression =
@@ -189,14 +196,17 @@ namespace XPathTests.FunctionalTests
                     Value = "\u0E22\u0E39\u0E48\u0E22\u0E35\u0E48\u0E1B\u0E31\u0E48\u0E19 \u0E01\u0E38\u0E0F\u0E34\u0E42\u0E01\u0E0E\u0E39 \u0E27\u0E34\u0E0D\u0E0D\u0E39 \u0E2D\u0E39\u0E10\u0E10\u0E38\u0E19 \u0E19\u0E49\u0E33\u0E1B\u0E49\u0E33 "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Japanese 1: xpath testing problem char, returns 19 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest569()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest569(Utils.NavigatorKind kind)
         {
             var xml = "JPN_problem_chars_1.xml";
             var testExpression =
@@ -374,14 +384,17 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Japanese 2: xpath testing problem char, returns 7 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5610()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5610(Utils.NavigatorKind kind)
         {
             var xml = "JPN_problem_chars_2.xml";
             var testExpression =
@@ -451,14 +464,17 @@ namespace XPathTests.FunctionalTests
                     Value = "\nKana \uFF90\uFF91\uFF92 \n"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Korean: xpath testing problem char, return 6 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5613()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5613(Utils.NavigatorKind kind)
         {
             var xml = "KOR_problem_chars_b.xml";
             var testExpression =
@@ -519,14 +535,17 @@ namespace XPathTests.FunctionalTests
                     Value = "\uFF2A\uFF55\uFF4E\uFF4A\uFF41"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Single byte char: xpath testing problem char, return 6 nodes
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5614()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5614(Utils.NavigatorKind kind)
         {
             var xml = "Single_byte_problem_chars_b.xml";
             var testExpression =
@@ -587,77 +606,92 @@ namespace XPathTests.FunctionalTests
                     Value = "\u2122 \u00A9\u00AD\u00AE"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate(): CHS gb18030 char
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5615()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5615(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression =
                 "translate('+\u008F\\\u0178\\\u00E0\\\u00E5\\\u00FB\\\u2022\\\u00E5\\\u0161\\\u00E5\\\u2018\\\u00E5\\~\\+', '\u008F\\\u0178\\\u00E0\\\u00E5\\\u00FB\\\u2022\\\u00E5\\\u0161\\\u00E5\\\u2018\\\u00E5\\~\\', '1*2*3*4*5*6*7*8*9*a*b*c*d*e*')";
             var expected = @"+1*2*3*4*5*6*4*8*4*a*4*c*+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate(): Single byte problem char
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5616()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5616(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression =
                 "translate('+\u00F6\u00DC\u00DF\u00A9\u00BF\u00BE\u00D5\u00C4\u00E4\u00D6\u00A7\u00B2\u00B3@\u00B5\u00E5E5\u00E5\u2122\u00AD\u00AE+', '\u00F6\u00DC\u00DF\u00A9\u00BF\u00BE\u00D5\u00C4\u00E4\u00D6\u00A7\u00B2\u00B3@\u00B5\u00E5E5\u00E5\u2122\u00AD\u00AE', '0123456789abcdefghijklm')";
             var expected = @"+0123456789abcdefghfjkl+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate(): Japanese problem char
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5617()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5617(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression =
                 "translate('+\uFF71\uFF72\uFF73\uFF74\uFF75\u3042\u3044\u3046\u3048\u304A\u30A2\u30A4\u30A6\u30A8\u30AA\u4E9C\u4F0A\u5B87\u6C5F\u592A\u5E73\u6D0B\u6BEB\u6B47\u6B49\u6ECC\u6F3E\u9ED1\u5341\u6B43\u6FEC\u85F9\u72BE\u8868\u86DE\u6BEB\u70DF\u7930\u7AF9\uFF41\uFF22\uFF41+', '\uFF71\uFF72\uFF73\uFF74\uFF75\u3042\u3044\u3046\u3048\u304A\u30A2\u30A4\u30A6\u30A8\u30AA\u4E9C\u4F0A\u5B87\u6C5F\u592A\u5E73\u6D0B\u6BEB\u6B47\u6B49\u6ECC\u6F3E\u9ED1\u5341\u6B43\u6FEC\u85F9\u72BE\u8868\u86DE\u6BEB\u70DF\u7930\u7AF9\uFF41\uFF22\uFF41', '0123456789abcdefghijklmnopqrstuvwxyz@#?%^*()_=')";
             var expected = @"+0123456789abcdefghijklmnopqrstuvwxym@#?%^%+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate(): CHT problem char
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5618()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5618(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression =
                 "translate('+\u00F1\u00F2\u00E9\u00D1\u00E4\u00E7\u00D3\u00E7\u00E5\u00E5\u00E5\u00FE\u00A1\u00A1\u00AA\u00FE\u00A8\u00EF\u00E5~\u00A1\u00A2+', '\u00F1\u00F2\u00E9\u00D1\u00E4\u00E7\u00D3\u00E7\u00E5\u00E5\u00E5\u00FE\u00A1\u00A1\u00AA\u00FE\u00A8\u00EF\u00E5~\u00A1\u00A2', '0123456789abcdefghijklmnopqrstuvwxyz@#?%^*()_=')";
             var expected = @"+01234565888bccebgh8jcl+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// translate(): CHS problem char
         /// </summary>
-        [Fact]
-        public static void GlobalizationTest5619()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void GlobalizationTest5619(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression =
                 "translate('+\u00E5\u00FE\u00A1\u00A1\u00B0\u00A1\u00E5\u0178\u00E0\u00FB\u2019\u008F\u0178\u00E0\u00E5\u00FB\u2022\u00E5\u0161\u00E5\u2018\u00E5~+', '\u00E5\u00FE\u00A1\u00A1\u00B0\u00A1\u00E5\u0178\u00E0\u00FB\u2019\u008F\u0178\u00E0\u00E5\u00FB\u2022\u00E5\u0161\u00E5\u2018\u00E5~', '0123456789abcdefghijklmnopqrstuvwxyz@#?%^*()_=')";
             var expected = @"+0122420789ab7809g0i0k0m+";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
     }
 }

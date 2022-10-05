@@ -118,7 +118,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
     if (numElements > 0x10000)
     {
         // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
         size64 = (size64 + (sizeof(uintptr_t)-1)) & ~(sizeof(uintptr_t)-1);
 
         size = (size_t)size64;
@@ -130,7 +130,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
     else
 #endif // !HOST_64BIT
     {
-        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
         size = ALIGN_UP(size, sizeof(uintptr_t));
     }
 
@@ -287,7 +287,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int
     if (numElements > 0x10000)
     {
         // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
         size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
         size = (size_t)size64;
@@ -298,7 +298,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int
     }
     else
     {
-        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
         size = ALIGN_UP(size, sizeof(uintptr_t));
     }
     uint8_t* result = acontext->alloc_ptr;

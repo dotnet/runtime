@@ -293,7 +293,7 @@ async function run() {
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
-        console.info("Initializing.....");
+        console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
             const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
