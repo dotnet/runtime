@@ -196,8 +196,8 @@
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.22503.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.22476.3</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.22476.3</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.22476.3</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.22476.3</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.22503.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.22503.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
     <MicrosoftNETWorkloadEmscriptennet7Manifest80100Version>8.0.0-alpha.1.22504.1</MicrosoftNETWorkloadEmscriptennet7Manifest80100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptennet7Manifest80100Version)</MicrosoftNETRuntimeEmscriptenVersion>
