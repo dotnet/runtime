@@ -56,5 +56,15 @@ namespace System
                 return GetCachedSwitchValue("Switch.System.Xml.AllowDefaultResolver", ref s_allowDefaultResolver);
             }
         }
+
+        private static int s_serializationUseDefaultXmlWriterSettings;
+        public static bool SerializationUseDefaultXmlWriterSettings
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue("Switch.System.Xml.Serialization.UseDefaultXmlWriterSettings", ref s_serializationUseDefaultXmlWriterSettings);
+            }
+        }
     }
 }
