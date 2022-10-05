@@ -1031,20 +1031,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int iid = type_enum_is_float (arg0_type) ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
 #elif TARGET_AMD64
-		/*
-			TODO:
-			1. bitmask where elem is less than zero
-			2. neg vector: 0-args[0]
-			3. conditional select based on bitmask to select from original vector and neg vector
-		*/
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
 
 		if (type_enum_is_float(arg0_type)) {
-			// TOOD Abs(v) = v & ~vector<T>(-0.0)
-			return NULL;
-			//MonoInst* zeros = emit_xzero(cfg, klass);
+			// args [0] & ~vector(-0.0)
+			MonoInst *zero = emit_xzero(cfg, arg_class);	// 0.0
+			zero = emit_simd_ins (cfg, klass, OP_NEGATION, zero->dreg, -1); // -0.0
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_SSE_ANDN, zero->dreg, args [0]->dreg);
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else {
+			// Works correctly even when SSSE3 is not supported or when using I8
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ABS, -1, arg0_type, fsig, args);
 		}
-
-		return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ABS, -1, arg0_type, fsig, args); // TODO works for longs even thought it should?
 #else
 		return NULL;
 #endif
