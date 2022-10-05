@@ -2191,7 +2191,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             spOffset += REGSIZE_BYTES;
         }
-#else // !TARGET_X86
+#else  // !TARGET_X86
         static_assert_no_msg((RBM_STACK_PROBE_HELPER_ARG & (RBM_SECRET_STUB_PARAM | RBM_DEFAULT_HELPER_CALL_TARGET)) ==
                              RBM_NONE);
 #endif // !TARGET_X86
