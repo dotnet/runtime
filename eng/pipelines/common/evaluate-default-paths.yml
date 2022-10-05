@@ -4,6 +4,7 @@ parameters:
 
   # _* parameters are being used as a const array,
   # do not set them when using the template
+  # FIXME: test that mini-wasm-debugger.c etc trigger the correct jobs
   _const_paths:
     _wasm_specific_only: [
         eng/testing/ProvisioningVersions.props
@@ -28,6 +29,7 @@ parameters:
 
     # src/workloads is only used in runtime-official builds
     # where evaluate-paths is not used
+    # FIXME: ignoring all eng/pipelines for testing
     _always_exclude: [
         '*.md'
         LICENSE.TXT
