@@ -227,13 +227,6 @@ jobs:
       - src/libraries/System.Security.Cryptography/*
       - src/libraries/System.Text.Encodings.Web/*
 
-    # anything other than wasm-specific paths
-    - subset: non_wasm
-      exclude:
-      - ${{ parameters._const_paths._wasm_specific_only }}
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      - ${{ parameters._const_paths._always_exclude }}
-
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
@@ -241,7 +234,6 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
-
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
