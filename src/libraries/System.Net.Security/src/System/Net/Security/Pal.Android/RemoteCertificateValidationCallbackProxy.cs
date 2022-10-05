@@ -11,61 +11,77 @@ namespace System.Net
 {
     internal sealed class RemoteCertificateValidationCallbackProxy : IDisposable
     {
-        private static uint s_initialize = 1;
+        private static object s_initializationLock = new();
+        private static bool s_initialized;
+
         private readonly RemoteCertificateValidationCallback _callback;
+        private readonly object _sender;
         private readonly GCHandle _handle;
 
         public IntPtr Handle => GCHandle.ToIntPtr(_handle);
 
         public unsafe RemoteCertificateValidationCallbackProxy(
+            object sender,
             RemoteCertificateValidationCallback callback)
         {
-            if (Interlocked.CompareExchange(ref s_initialize, 0, 1) == 1)
-            {
-                Interop.AndroidCrypto.RegisterTrustManagerValidationCallbackImpl(&ValidateCallback);
-            }
+            EnsureTrustManagerValidationCallbackIsRegistered();
 
+            _sender = sender;
             _callback = callback;
             _handle = GCHandle.Alloc(this);
         }
 
-        public void Dispose()
+        private static unsafe void EnsureTrustManagerValidationCallbackIsRegistered()
         {
-            _handle.Free();
+            lock (s_initializationLock)
+            {
+                if (!s_initialized)
+                {
+                    Interop.AndroidCrypto.RegisterTrustManagerValidationCallbackImpl(&TrustManagerCallback);
+                    s_initialized = true;
+                }
+            }
         }
 
-        private bool Validate(X509Certificate2[] certificates, SslPolicyErrors errors)
-        {
-            // TODO
-            object sender = null!;
-            X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
-            X509Chain chain = null!;
-            return _callback.Invoke(sender, certificate, chain, errors);
-        }
+        public void Dispose()
+            => _handle.Free();
+
 
         [UnmanagedCallersOnly]
-        private static unsafe bool ValidateCallback(
+        private static unsafe bool TrustManagerCallback(
             IntPtr validatorHandle,
-            byte** rawCertificates,
-            int* certificateLengths,
             int certificatesCount,
-            int errors)
+            int* certificateLengths,
+            byte** rawCertificates,
+            bool approvedByDefaultTrustManager)
         {
             RemoteCertificateValidationCallbackProxy validator = FromHandle(validatorHandle);
-            X509Certificate2[] certificates = Convert(rawCertificates, certificateLengths, certificatesCount);
+            X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
-            return validator.Validate(certificates, (SslPolicyErrors)errors);
+            return validator.Validate(certificates, approvedByDefaultTrustManager);
+        }
+
+        private bool Validate(X509Certificate2[] certificates, bool approvedByDefaultTrustManager)
+        {
+            var errors = approvedByDefaultTrustManager
+                ? SslPolicyErrors.None
+                : certificates.Length == 0
+                    ? SslPolicyErrors.RemoteCertificateNotAvailable
+                    : SslPolicyErrors.RemoteCertificateChainErrors;
+
+            X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
+            X509Chain chain = CreateChain(certificates);
+            return _callback.Invoke(_sender, certificate, chain, errors);
         }
 
         private static RemoteCertificateValidationCallbackProxy FromHandle(IntPtr handle)
-        {
-            if (GCHandle.FromIntPtr(handle).Target is RemoteCertificateValidationCallbackProxy validator)
-                return validator;
+            => GCHandle.FromIntPtr(handle).Target as RemoteCertificateValidationCallbackProxy
+                ?? throw new ArgumentNullException(nameof(handle));
 
-            throw new ArgumentNullException(nameof(handle));
-        }
-
-        private static unsafe X509Certificate2[] Convert(byte** rawCertificates, int* certificateLengths, int certificatesCount)
+        private static unsafe X509Certificate2[] Convert(
+            int certificatesCount,
+            int* certificateLengths,
+            byte** rawCertificates)
         {
             var certificates = new X509Certificate2[certificatesCount];
 
@@ -76,6 +92,15 @@ namespace System.Net
             }
 
             return certificates;
+        }
+
+        private static X509Chain CreateChain (X509Certificate2[] certificates)
+        {
+            var chain = new X509Chain();
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            chain.ChainPolicy.ExtraStore.AddRange(certificates);
+            return chain;
         }
     }
 }

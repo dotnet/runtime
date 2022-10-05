@@ -812,6 +812,7 @@ namespace System.Net.Security
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
+                                      sslStream: this,
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -821,6 +822,7 @@ namespace System.Net.Security
                     else
                     {
                         status = SslStreamPal.InitializeSecurityContext(
+                                       sslStream: this,
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,

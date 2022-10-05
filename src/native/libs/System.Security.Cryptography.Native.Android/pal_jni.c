@@ -1076,7 +1076,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertificateGetEncoded = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
 
     g_RemoteCertificateValidationCallbackProxy     = GetClassGRef(env, "net/dot/android/crypto/RemoteCertificateValidationCallbackProxy");
-    g_RemoteCertificateValidationCallbackProxyCtor = GetMethod(env, false, g_RemoteCertificateValidationCallbackProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
+    g_RemoteCertificateValidationCallbackProxyCtor = GetMethod(env, false, g_RemoteCertificateValidationCallbackProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;Ljava/lang/String;)V");
 
     return JNI_VERSION_1_6;
 }

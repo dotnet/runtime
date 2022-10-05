@@ -28,13 +28,16 @@ internal static partial class Interop
             Closed = 4,
         };
 
-        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate",
+            StringMarshalling = StringMarshalling.Utf8)]
         internal static partial SafeSslHandle SSLStreamCreate(
-            IntPtr customValidationDelegateWrapper);
+            IntPtr customValidationDelegateWrapper, string targetHostName);
 
-        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates")]
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates",
+            StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr customValidationDelegateWrapper,
+            string targetHostName,
             ref byte pkcs8PrivateKey,
             int pkcs8PrivateKeyLen,
             PAL_KeyAlgorithm algorithm,
@@ -42,12 +45,14 @@ internal static partial class Interop
             int certsLen);
         internal static SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr customValidationDelegateWrapper,
+            [MarshalAs(UnmanagedType.LPWStr)] string targetHostName,
             ReadOnlySpan<byte> pkcs8PrivateKey,
             PAL_KeyAlgorithm algorithm,
             IntPtr[] certificates)
         {
             return SSLStreamCreateWithCertificates(
                 customValidationDelegateWrapper,
+                targetHostName,
                 ref MemoryMarshal.GetReference(pkcs8PrivateKey),
                 pkcs8PrivateKey.Length,
                 algorithm,
@@ -57,7 +62,7 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterTrustManagerValidationCallback")]
         internal static unsafe partial void RegisterTrustManagerValidationCallbackImpl(
-            delegate* unmanaged<IntPtr, byte**, int*, int, int, bool> validateCertificates);
+            delegate* unmanaged<IntPtr, int, int*, byte**, bool, bool> validateCertificates);
 
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]

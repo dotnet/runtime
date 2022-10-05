@@ -7,10 +7,13 @@ void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallba
     dotnetValidationCallback = callback;
 }
 
-jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dotnetRemoteCertificateValidatorHandle)
+jobjectArray initTrustManagersWithCustomValidatorProxy(
+    JNIEnv* env,
+    intptr_t dotnetRemoteCertificateValidatorHandle,
+    char* targetHostName)
 {
     jobjectArray trustManagers = NULL;
-    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, trustManagerProxy);
+    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, javaTargetHostName, trustManagerProxy);
 
     // string defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
     // TrustManagerFactory tmf = TrustManagerFactory.getInstance(defaultAlgorithm);
@@ -27,10 +30,9 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // boolean foundAndReplaced = false;
-    // int length = trustManagers.getLength();
-    // for (int i = 0; i < length; i++) {
+    // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new RemoteCertificateValidationCallbackProxy(dotnetRemoteCertificateValidatorHandle, trustManagers[i]);
+    //     trustManagers[i] = new RemoteCertificateValidationCallbackProxy(dotnetRemoteCertificateValidatorHandle, trustManagers[i], targetHostName);
     //     foundAndReplaced = true;
     //     break;
     //   }
@@ -44,7 +46,8 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[trustManagerProxy] = (*env)->NewObject(env, g_RemoteCertificateValidationCallbackProxy, g_RemoteCertificateValidationCallbackProxyCtor, (int)dotnetRemoteCertificateValidatorHandle, loc[trustManager]);
+            loc[javaTargetHostName] = make_java_string(env, targetHostName);
+            loc[trustManagerProxy] = (*env)->NewObject(env, g_RemoteCertificateValidationCallbackProxy, g_RemoteCertificateValidationCallbackProxyCtor, (int)dotnetRemoteCertificateValidatorHandle, loc[trustManager], loc[javaTargetHostName]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[trustManagerProxy]);
@@ -108,7 +111,7 @@ jboolean Java_net_dot_android_crypto_RemoteCertificateValidationCallbackProxy_va
         ReleaseLRef(env, loc[encodedCertificate]);
     }
 
-    isAccepted = dotnetValidationCallback(dotnetRemoteCertificateValidatorHandle, rawData, lengths, (int32_t)certificateCount, errors);
+    isAccepted = dotnetValidationCallback(dotnetRemoteCertificateValidatorHandle, (int32_t)certificateCount, lengths, rawData, errors);
 
 cleanup:
     if (rawData != NULL)
