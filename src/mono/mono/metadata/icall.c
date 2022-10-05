@@ -6318,7 +6318,6 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 				 * Since it's store outside the object, offset is an absolute address
 				 */
 				relative = FALSE;
-				ERROR_DECL (error);
 				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
 				offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
 				mono_error_assert_ok (error);
