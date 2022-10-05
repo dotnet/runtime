@@ -31,7 +31,6 @@ parameters:
     # where evaluate-paths is not used
     # FIXME: ignoring all eng/pipelines for testing
     _always_exclude: [
-        '*.md'
         LICENSE.TXT
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
@@ -40,6 +39,7 @@ parameters:
         eng/pipelines/*
         eng/pipelines/common/evaluate-default-paths.yml
         src/workloads/*
+        '*.md'
     ]
 
 jobs:
