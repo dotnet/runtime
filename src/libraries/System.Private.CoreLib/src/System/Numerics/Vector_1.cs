@@ -24,7 +24,7 @@ namespace System.Numerics
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
     /// <summary>Represents a single vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
-    /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+    /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(VectorDebugView<>))]
