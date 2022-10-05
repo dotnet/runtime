@@ -101,8 +101,9 @@
 
   <PropertyGroup>
     <_Net60ServicingVersionOverride>6.0.9</_Net60ServicingVersionOverride>
+    <_Net31ServicingVersionOverride>3.1.29</_Net31ServicingVersionOverride>
   </PropertyGroup>
-  <Target Name="HackTargetingPackBack" BeforeTargets="ProcessFrameworkReferences">
+  <Target Name="HackTargetingPackBack">
     <ItemGroup>
       <KnownFrameworkReference>
         <TargetingPackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</TargetingPackVersion>
@@ -117,6 +118,13 @@
       <KnownCrossgen2Pack>
         <Crossgen2PackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</Crossgen2PackVersion>
       </KnownCrossgen2Pack>
+      
+      <KnownFrameworkReference>
+        <LatestRuntimeFrameworkVersion Condition="'%(TargetFramework)' == 'netcoreapp3.1'">$(_Net31ServicingVersionOverride)</LatestRuntimeFrameworkVersion>
+      </KnownFrameworkReference>
+      <KnownAppHostPack>
+        <AppHostPackVersion Condition="'%(TargetFramework)' == 'netcoreapp3.1'">$(_Net31ServicingVersionOverride)</AppHostPackVersion>
+      </KnownAppHostPack>
     </ItemGroup>
   </Target>  
 </Project>
