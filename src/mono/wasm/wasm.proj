@@ -108,7 +108,6 @@
     <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
            Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
 
-    <!-- keep in sync with src\mono\wasm\build\WasmApp.Native.targets -->
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="FS" />
       <EmccExportedRuntimeMethod Include="print" />
