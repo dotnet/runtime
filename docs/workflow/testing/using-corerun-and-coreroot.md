@@ -82,7 +82,8 @@ On Powershell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
-$Env:PATH += '<repo_root>\artifacts\bin\coreclr\windows.x64.Debug'
+# Also, replace the ';' with ':' if on Linux or MacOS.
+$Env:PATH += ';<repo_root>\artifacts\bin\coreclr\windows.x64.Debug'
 $Env:CORE_LIBRARIES = %ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\7.0.0
 corerun HelloWorld.dll
 ```
@@ -120,7 +121,8 @@ On Powershell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
-$Env:PATH += '<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root'
+# Also, replace the ';' with ':' if on Linux or MacOS.
+$Env:PATH += ';<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root'
 .\corerun HelloWorld.dll
 ```
 

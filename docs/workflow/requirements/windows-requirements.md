@@ -105,7 +105,7 @@ This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the
 
 The commands above need to be on your command lookup path. Some installers will automatically add them to the path as part of the installation, but if not, here is how you can do it.
 
-You can also temporarily add a directory to the PATH environment variable with the syntax `set PATH=%PATH%;DIRECTORY_TO_ADD_TO_PATH`. However, this change will only last until the command windows close.
+You can also temporarily add a directory to the PATH environment variable with the command-prompt syntax `set PATH=%PATH%;DIRECTORY_TO_ADD_TO_PATH`. If you're working with Powershell, then the syntax would be `$Env:PATH += ";DIRECTORY_TO_ADD_TO_PATH"`. However, this change will only last until the command windows close.
 
 You can make your change to the PATH variable persistent by going to _Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables_, and select the `Path` variable under `System Variables` (if you want to change it for all users) or `User Variables` (if you only want to change it for the current user).
 
