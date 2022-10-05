@@ -233,7 +233,7 @@ These scripts have a couple more hidden functionalities, which can be activated 
 
 Let's run one of the Intrinsics tests as an example:
 
-On Windows:
+On Windows Command Prompt:
 
 ```cmd
 set CORE_ROOT=<repo_root>\artifacts\tests\coreclr\windows.<Arch>.<Configuration>\Tests\Core_Root
@@ -247,6 +247,14 @@ On MacOS/Linux:
 export CORE_ROOT=<repo_root>/artifacts/tests/coreclr/<OS>.<Arch>.<Configuration>/Tests/Core_Root
 cd path/to/JIT/Intrinsics/MathRoundDouble_ro
 ./MathRoundDouble_ro.sh
+```
+
+On Powershell:
+
+```powershell
+$Env:CORE_ROOT = '<repo_root>\artifacts\tests\coreclr\windows.<Arch>.<Configuration>\Tests\Core_Root'
+cd path\to\JIT\Intrinsics\MathRoundDouble_ro
+.\MathRoundDouble_ro.cmd
 ```
 
 #### Tests Without a Main Method

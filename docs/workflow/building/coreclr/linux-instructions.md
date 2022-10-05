@@ -21,8 +21,6 @@ Building using Docker will require that you choose the correct image for your en
 
 Note that the OS is strictly speaking not important. For example if you are on Ubuntu 20.04 and build using the Ubuntu 18.04 x64 image there should be no issues. You can even use Linux images on a Windows OS if you have [WSL](https://docs.microsoft.com/en-us/windows/wsl/about) enabled. However, note that you can't run multiple OS's on the same _Docker Daemon_, as it takes resources from the underlying kernel as needed. In other words, you can run either Linux on WSL, or Windows containers. You have to switch between them if you need both, and restart Docker.
 
-<!-- It is actually possible to run a Windows container on a Linux machine. However, I've only read about it, but not tried it out, so I'm not including it in this doc for the time being. -->
-
 The target architecture is more important, as building arm32 using the x64 image will not work. There will be missing _rootfs_ components required by the build. See [Docker Images](#docker-images) below, for more information on choosing an image to build with.
 
 **NOTE**: The image's architecture has to match your machine's supported platforms. For example, you can't run arm32 images on an x64 machine. But you could run x64 and arm64 images on an M1 Mac, for example. This is thanks to the _Rosetta_ emulator that Apple Silicon provides. Same case applies to running x86 on an x64 Windows machine thanks to Windows' _SYSWOW64_.

@@ -47,10 +47,7 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET runtime and libraries.
 
-For other issues, please use the following repos:
-
-* For overall .NET SDK issues, file in the [dotnet/sdk](https://github.com/dotnet/sdk) repo
-* For ASP.NET issues, file in the [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore) repo.
+For other issues, please file them to their appropriate sibling repos. Their respective links are described in the [config issue template doc](/.github/ISSUE_TEMPLATE/config.yml).
 
 ## Useful Links
 

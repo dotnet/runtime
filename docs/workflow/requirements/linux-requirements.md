@@ -24,7 +24,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 ### Toolchain Setup
 
-Building the repo requires CMake 3.14.5 or newer on Linux. Add Kitware's APT feed to your configuration for a newer version of CMake (optional). See their instructions at their [website](https://apt.kitware.com/). You may also need to add LLVM's APT feed to your configuration to obtain the required version of Clang/LLVM (usually not needed). See their instructions [over here](https://apt.llvm.org/).
+Building the repo requires CMake 3.14.5 or newer on Linux. Add Kitware's APT feed to your configuration for a newer version of CMake (optional). See their instructions at their [website](https://apt.kitware.com/).
 
 Install the following packages for the toolchain:
 
@@ -49,7 +49,7 @@ Install the following packages for the toolchain:
 * ninja-build (optional, enables building native code with ninja instead of make)
 
 ```bash
-sudo apt-get install -y cmake llvm clang \
+sudo apt install -y cmake llvm clang \
 build-essential python-is-python3 curl git lldb liblldb-dev \
 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev \
 libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build

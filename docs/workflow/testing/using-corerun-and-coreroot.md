@@ -61,7 +61,7 @@ Now, instead of running our app the usual way, we will use our newly built `core
   * This example assumes your default .NET installation's version is called "_7.0.0_". Same deal as with your runtime build path, adjust to the version you have installed on your machine.
 * Afterwards, we can finally run our app.
 
-On Windows:
+On Windows Command Prompt:
 
 ```cmd
 set PATH=%PATH%;<repo_root>\artifacts\bin\coreclr\windows.x64.Debug
@@ -75,6 +75,15 @@ On MacOS and Linux:
 # Change osx to linux if you're on a Linux machine.
 export PATH="$PATH:<repo_root>/artifacts/bin/coreclr/osx.x64.Debug"
 export CORE_LIBRARIES="/usr/local/share/dotnet/shared/Microsoft.NETCore.App/7.0.0"
+corerun HelloWorld.dll
+```
+
+On Powershell:
+
+```powershell
+# Note the '+=' since we're appending to the already existing PATH variable.
+$Env:PATH += '<repo_root>\artifacts\bin\coreclr\windows.x64.Debug'
+$Env:CORE_LIBRARIES = %ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\7.0.0
 corerun HelloWorld.dll
 ```
 
@@ -92,7 +101,7 @@ The test build script (`src/tests/build.cmd` or `src/tests/build.sh`) sets up a 
 
 Once you have your Core_Root, it's just a matter of calling it directly or adding it to your `PATH` environment variable, and you're ready to run your apps with it.
 
-On Windows:
+On Windows Command Prompt:
 
 ```cmd
 set PATH=%PATH%;<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
@@ -105,6 +114,14 @@ On MacOS and Linux:
 # Change linux to osx if you're on a MacOS machine.
 export PATH="$PATH:<repo_root>/artifacts/tests/coreclr/linux.x64.Debug/Tests/Core_Root"
 corerun HelloWorld.dll
+```
+
+On Powershell:
+
+```powershell
+# Note the '+=' since we're appending to the already existing PATH variable.
+$Env:PATH += '<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root'
+.\corerun HelloWorld.dll
 ```
 
 The advantage of generating the Core_Root, instead of sticking to the _corerun_ from the _clr_ build, is that you can also test and debug libraries at the same time.
