@@ -5,7 +5,7 @@ Not all platforms and runtimes support IL.Emit.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.emit. The primary class is [`AssemblyBuilder`](https://learn.microsoft.com/dotnet/api/system.reflection.emit.AssemblyBuilder).
 
-## Status: [Inactive](../../libraries/README.md)
+## Status: [Inactive](../../libraries/README.md#development-statuses)
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
@@ -21,5 +21,5 @@ Shared code between CoreClr and Mono:
 https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit
 
 ## See also
-- [`System.Reflection.Emit.Lightweight`](..\system.reflection.emit.lightweight/README.md)
-- [`System.Reflection.Emit.ILGeneration`](../system.reflection.emit.ilgeneration/README.md)
+- [`System.Reflection.Emit.Lightweight`](../System.Reflection.Emit.Lightweight/README.md)
+- [`System.Reflection.Emit.ILGeneration`](../System.Reflection.Emit.ILGeneration/README.md)

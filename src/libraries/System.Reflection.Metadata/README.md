@@ -3,7 +3,7 @@ This provides a low-level API for inspecting and writing raw assembly contents a
 
 The primary classes are [MetadataReader](https://learn.microsoft.com/dotnet/api/system.reflection.metadata.metadatareader) and [MetadataBuilder](https://learn.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder). Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.metadata and https://learn.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.
 
-## Status: [Inactive](../../libraries/README.md)
+## Status: [Inactive](../../libraries/README.md#development-statuses)
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment

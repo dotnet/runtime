@@ -3,7 +3,7 @@ This is the primary reflection assembly. It is used for late-bound introspection
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.
 
-## Status: [Active](../../libraries/README.md)
+## Status: [Active](../../libraries/README.md#development-statuses)
 Although these common types are mature, the code base continues to evolve for better performance and to keep up with language and runtime enhancements such as byref-like types.
 
 ## Source
