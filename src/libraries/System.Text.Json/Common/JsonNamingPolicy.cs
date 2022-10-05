@@ -36,7 +36,7 @@ namespace System.Text.Json
         /// <summary>
         /// Returns the naming policy for lower kebab-casing.
         /// </summary>
-        public static JsonNamingPolicy KebabCaseLower { get; } = new JsonSnakeCaseLowerNamingPolicy();
+        public static JsonNamingPolicy KebabCaseLower { get; } = new JsonKebabCaseLowerNamingPolicy();
 
         /// <summary>
         /// Returns the naming policy for upper kebab-casing.
