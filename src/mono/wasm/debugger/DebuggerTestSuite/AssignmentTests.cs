@@ -16,7 +16,7 @@ namespace DebuggerTests
                 : base(testOutput)
         {}
 
-        public static TheoryData<string, JObject, JObject, string> GetTestData => new TheoryData<string, JObject, JObject, string>
+        public static TheoryData<string, JObject, JObject, string> GetTestData => new()
         {
             { "MONO_TYPE_OBJECT",      TObject("object", is_null: true),                        TObject("object"),                                      "DebuggerTests.StepInTest<object>.TestedMethod"},
             { "MONO_TYPE_CLASS",       TObject("DebuggerTests.MONO_TYPE_CLASS", is_null: true), TObject("DebuggerTests.MONO_TYPE_CLASS"),               "DebuggerTests.StepInTest<DebuggerTests.MONO_TYPE_CLASS>.TestedMethod"},
@@ -50,7 +50,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData("GetTestData")]
-        async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue, string methodName)
+        public async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue, string methodName)
         {
             await SetBreakpointInMethod("debugger-test", "DebuggerTests." + clazz, "Prepare", 2);
             await EvaluateAndCheck("window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests." + clazz + ":Prepare'); })", null, -1, -1, $"DebuggerTests.{clazz}.Prepare");
