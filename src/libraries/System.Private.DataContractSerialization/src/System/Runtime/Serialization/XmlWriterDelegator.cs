@@ -452,7 +452,7 @@ namespace System.Runtime.Serialization
 
         internal virtual void WriteDateTime(DateTime value)
         {
-            WriteString(XmlConvert.ToString(value, XmlDateTimeSerializationMode.RoundtripKind));
+            writer.WriteValue(value);
         }
 
         internal void WriteDateTime(DateTime value, XmlDictionaryString name, XmlDictionaryString? ns)
