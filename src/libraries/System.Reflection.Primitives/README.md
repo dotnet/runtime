@@ -4,4 +4,4 @@ Contains reflection types such as [TypeAttributes](https://learn.microsoft.com/d
 ## Status: [Legacy](../../libraries/README.md#development-statuses)
 
 ## Deployment
-Inbox
+[System.Reflection.Primitives](https://www.nuget.org/packages/System.Reflection.Primitives) is part of the shared framework.

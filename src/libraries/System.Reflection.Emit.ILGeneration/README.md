@@ -6,5 +6,4 @@ The primary class is [`ILGenerator`](https://learn.microsoft.com/dotnet/api/syst
 ## Status: [Inactive](../../libraries/README.md#development-statuses)
 
 ## Deployment
-Inbox<br/>
-[System.Reflection.Emit.ILGeneration NuGet Package](https://www.nuget.org/packages/System.Reflection.Emit.ILGeneration)
+[System.Reflection.Emit.ILGeneration](https://www.nuget.org/packages/System.Reflection.Emit.ILGeneration) is included in the shared framework.

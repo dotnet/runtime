@@ -7,8 +7,8 @@ This library takes a dependency on `System.Reflection.Metadata` for reading the 
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Source
-https://github.com/dotnet/runtime/tree/main/src/libraries/System.Reflection.Metadata
+
+* [../System.Reflection.Metadata](../System.Reflection.Metadata)
 
 ## Deployment
-Inbox<br/>
-https://www.nuget.org/packages/System.Reflection.MetadataLoadContext (contains full code for OOB scenarios).
+[System.Reflection.MetadataLoadContext](https://www.nuget.org/packages/System.Reflection.MetadataLoadContext) NuGet package.

@@ -7,14 +7,10 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.refl
 Although these common types are mature, the code base continues to evolve for better performance and to keep up with language and runtime enhancements such as byref-like types.
 
 ## Source
-CoreClr-specific:
- https://github.com/dotnet/runtime/tree/main/src/coreclr/System.Private.CoreLib/src/System/Reflection
 
-Mono-specific::
-https://github.com/dotnet/runtime/tree/main/src/mono/System.Private.CoreLib/src/System/Reflection
-
-Shared between CoreClr and Mono:
-https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Reflection
+* CoreClr-specific: [../../coreclr/System.Private.CoreLib/src/System/Reflection](../../coreclr/System.Private.CoreLib/src/System/Reflection)
+* Mono-specific: [../../mono/System.Private.CoreLib/src/System/Reflection](../../mono/System.Private.CoreLib/src/System/Reflection)
+* Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Reflection](../System.Private.CoreLib/src/System/Reflection)
 
 ## Deployment
-Inbox
+[System.Relection](https://www.nuget.org/packages/System.Reflection) is included in the shared framework.

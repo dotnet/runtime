@@ -6,4 +6,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.refl
 ## Status: [Legacy](../../libraries/README.md#development-statuses)
 
 ## Deployment
-[System.Reflection.Context NuGet Package](https://www.nuget.org/packages/System.Reflection.Context)
+[System.Reflection.Context](https://www.nuget.org/packages/System.Reflection.Context) NuGet package

@@ -9,16 +9,13 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.refl
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
-Inbox<br/>
-[System.Reflection.Emit NuGet Package](https://www.nuget.org/packages/System.Reflection.Emit)
+[System.Reflection.Emit](https://www.nuget.org/packages/System.Reflection.Emit) is included in the shared framework.
 
 ## Source
-Runtime code for CoreClr:
-https://github.com/dotnet/runtime/tree/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit<br/>
-for Mono:<br/>
-https://github.com/dotnet/runtime/tree/main/src/mono/System.Private.CoreLib/src/System/Reflection/Emit<br/>
-Shared code between CoreClr and Mono:
-https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit
+
+* CoreClr-specific: [../../coreclr/System.Private.CoreLib/src/System/Reflection/Emit](../../coreclr/System.Private.CoreLib/src/System/Reflection/Emit)
+* Mono-specific: [../../mono/System.Private.CoreLib/src/System/Reflection/Emit](../../mono/System.Private.CoreLib/src/System/Reflection/Emit)
+* Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Reflection/Emit](../System.Private.CoreLib/src/System/Reflection/Emit)
 
 ## See also
 - [`System.Reflection.Emit.Lightweight`](../System.Reflection.Emit.Lightweight/README.md)

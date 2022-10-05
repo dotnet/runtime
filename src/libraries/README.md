@@ -19,3 +19,8 @@ Some libraries are under more active development than others. Depending on the l
   - Issues are likely to be closed without fixes
   - PRs are unlikely to be accepted
 
+## Deployment
+
+Some libraries are included in the .NET SDK as part of the runtime's [shared framework](https://learn.microsoft.com/en-us/dotnet/standard/glossary#shared-framework). Other libraries are deployed as out-of-band (OOB) NuGet packages and need to be installed separately.
+
+For more information, see the [Runtime libraries overview](https://learn.microsoft.com/en-us/dotnet/standard/runtime-libraries-overview).

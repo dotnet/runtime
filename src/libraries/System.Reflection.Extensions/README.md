@@ -4,5 +4,4 @@ This supports forwarding types to the runtime including [CustomAttributeExtensio
 ## Status: [Legacy](../../libraries/README.md#development-statuses)
 
 ## Deployment
-Inbox
-
+[System.Reflection.Extensions](https://www.nuget.org/packages/System.Reflection.Extensions) is included in the shared framework.
