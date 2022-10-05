@@ -1595,14 +1595,14 @@ private:
     struct PlacedLocal
     {
         unsigned  VarIndex;
-        regMaskTP RegMask;
+        regNumber Reg;
     };
 
     // Locals that are currently placed in registers via PUTARG_REG. These
     // locals are available due to the special PUTARG treatment, and we keep
     // track of them between the PUTARG_REG and CALL to ensure we do not
     // unpreference them.
-    PlacedLocal placedArgLocals[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
+    PlacedLocal placedArgLocals[REG_COUNT];
     size_t      numPlacedArgLocals;
 
     // The set of all register candidates. Note that this may be a subset of tracked vars.

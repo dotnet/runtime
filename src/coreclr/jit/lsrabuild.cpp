@@ -2992,7 +2992,7 @@ void LinearScan::PreferenceDyingLocal(Interval* interval)
         {
             // This local's value is going to be available in this register so
             // keep it in the preferences.
-            unpref &= ~placedArgLocals[i].RegMask;
+            unpref &= ~genRegMask(placedArgLocals[i].Reg);
         }
     }
 
@@ -3979,12 +3979,12 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     placedArgRegs |= argMask;
 
     // If this is a passthrough tracked local then record it so that we can
-    // ensure we do not unpreference if we see a future use (see OnLocalDying).
+    // ensure we do not unpreference if we see a future use (see PreferenceDyingLocal).
     if (isSpecialPutArg)
     {
         assert(numPlacedArgLocals < ArrLen(placedArgLocals));
         placedArgLocals[numPlacedArgLocals].VarIndex = use->getInterval()->getVarIndex(compiler);
-        placedArgLocals[numPlacedArgLocals].RegMask  = argMask;
+        placedArgLocals[numPlacedArgLocals].Reg      = argReg;
         numPlacedArgLocals++;
     }
 
