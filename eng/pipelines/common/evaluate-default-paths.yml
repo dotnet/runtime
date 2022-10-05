@@ -187,24 +187,40 @@ jobs:
       # FIXME: test
       - src/mono/nuget/*
 
-    - subset: any_other_than_wasm_wbt_dbg
+    # wasm/runtimetests need to be run
+    - subset: wasm_runtimetests
+      combined: true
+      include:
+      - src/tests/* #make const
+      - src/mono/*
       exclude:
-      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/nuget/*
+      - src/mono/sample/*
+      - src/mono/tests/*
+      - src/mono/tools/*
+      - src/mono/wasi/*
       - src/mono/wasm/debugger/*
+      - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
-    - subset: wasm_wbt_or_dbg
-      include:
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - src/mono/wasm/debugger/*
-
-    - subset: wasm
+    # Wasm except Wasm.build.Tests, and debugger
+    - subset: wasm_specific_except_wbt_dbg
+      combined: true
       include:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       # other paths that should also trigger wasm jobs
       - src/mono/*
+      exclude:
+      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/workloads-testing.targets
+      - src/mono/mono/component/mini-wasm-debugger.c
+      - src/mono/wasm/debugger/*
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/nuget/Microsoft.NET.Runtime*
+      - src/mono/nuget/Microsoft.NET.Workload*
+      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
 
     # libraries with some wasm specific code
     - subset: wasm_libraries
