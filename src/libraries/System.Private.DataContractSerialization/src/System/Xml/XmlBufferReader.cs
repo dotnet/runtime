@@ -428,7 +428,6 @@ namespace System.Xml
                 byte* pb = (byte*)&value;
                 for (int i = 0; i < sizeof(decimal); i++)
                     pb[i] = buffer[offset + i];
-                Advance(ValueHandleLength.Decimal);
             }
             else
             {
@@ -438,6 +437,7 @@ namespace System.Xml
                 pi[2] = GetInt32(offset); // bottom-of-low64;
                 pi[3] = GetInt32(offset + 4); // top-of-low64;
             }
+            Advance(ValueHandleLength.Decimal);
             return value;
         }
 
