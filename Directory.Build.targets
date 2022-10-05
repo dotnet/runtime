@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="HackTargetingPackBack">  
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -98,4 +98,25 @@
       <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
   </Target>
+
+  <PropertyGroup>
+    <_Net60ServicingVersionOverride>6.0.8</_Net60ServicingVersionOverride>
+  </PropertyGroup>
+  <Target Name="HackTargetingPackBack">
+    <ItemGroup>
+      <KnownFrameworkReference>
+        <TargetingPackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</TargetingPackVersion>
+        <LatestRuntimeFrameworkVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</LatestRuntimeFrameworkVersion>
+      </KnownFrameworkReference>
+      <KnownRuntimePack>
+        <LatestRuntimeFrameworkVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</LatestRuntimeFrameworkVersion>
+      </KnownRuntimePack>
+      <KnownAppHostPack>
+        <AppHostPackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</AppHostPackVersion>
+      </KnownAppHostPack>
+      <KnownCrossgen2Pack>
+        <Crossgen2PackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</Crossgen2PackVersion>
+      </KnownCrossgen2Pack>
+    </ItemGroup>
+  </Target>  
 </Project>
