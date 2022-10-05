@@ -286,8 +286,10 @@
 
     <ItemGroup>
       <HelixWorkItem Include="$(DebuggerHost)-DebuggerTests">
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=&quot;-method DebuggerTests.AssignmentTests.InspectVariableBeforeAndAfterAssignment&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;-method DebuggerTests.AssignmentTests.InspectVariableBeforeAndAfterAssignment&quot;</PreCommands>
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
+        <Command>$(HelixCommand) -method=</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
