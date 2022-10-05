@@ -1919,11 +1919,6 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_instance_field_table);
-
-static GENERATE_GET_CLASS_WITH_CACHE(hot_reload_instance_field_table, "Mono.HotReload", "InstanceFieldTable");
-
-
 static void
 interp_emit_metadata_update_ldflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
@@ -6077,9 +6072,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_ldsflda (td, field, error);
 					goto_if_nok (error, exit);
 				} else {
-					td->sp--;
 					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
-					g_assert (!m_field_is_from_update (field));
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						/* metadata-update: can't add byref fields */
+						g_assert (!m_type_is_byref (ftype));
+						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						td->ip += 5;
+						break;
+					}
+					td->sp--;
 					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
 					if (td->sp->type == STACK_TYPE_O || td->sp->type == STACK_TYPE_I) {
 						interp_add_ins (td, MINT_LDFLDA);
@@ -6151,8 +6154,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				} else {
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
-						g_assert (!m_type_is_byref (field->type));
-						MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
+						g_assert (!m_type_is_byref (ftype));
+						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
 						interp_add_ins (td, interp_get_ldind_for_mt (mt));
@@ -6215,9 +6218,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else {
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
-						// FIXME: if field is byref, we probably just want mono_defaults.int_class
-						g_assert (!m_type_is_byref (field->type));
-						MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
+						// metadata-update: Can't add byref fields
+						g_assert (!m_type_is_byref (ftype));
+						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
 						MonoType *local_type = m_class_get_byval_arg (field_class);
 						int local = create_interp_local (td, local_type);
 						store_local (td, local);

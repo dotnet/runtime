@@ -21,5 +21,10 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             _doubleField = 3.14159;
         }
 
+        public void IncRefDouble (ref double d)
+        {
+            d += 1.0;
+        }
+
     }
 }

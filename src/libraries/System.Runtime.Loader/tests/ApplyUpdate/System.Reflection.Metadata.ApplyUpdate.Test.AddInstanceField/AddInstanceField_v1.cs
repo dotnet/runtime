@@ -8,12 +8,20 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
     public class AddInstanceField
     {
         public AddInstanceField () {
-            _doubleField2 = -5.5e12;
+            _doubleField2 = 5.5;
             _stringField2 = "New Initial Value";
             NewStructField = new NewStruct {
-                D = -1984.0,
+                D = -1985.0,
                 O = new int[2] { 15, 17 },
             };
+            // a little bit ldflda testing
+            IncRefDouble (ref NewStructField.D);
+            IncRefDouble (ref _doubleField2);
+        }
+
+        public void IncRefDouble (ref double d)
+        {
+            d += 1.0;
         }
 
         public string GetStringField => _stringField2;

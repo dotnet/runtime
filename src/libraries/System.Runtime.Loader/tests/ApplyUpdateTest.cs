@@ -333,7 +333,7 @@ namespace System.Reflection.Metadata
                 var x2 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
 
                 Assert.Equal ("New Initial Value", x2.GetStringField);
-                Assert.Equal (-5.5e12, x2.GetDoubleField);
+                Assert.Equal (6.5, x2.GetDoubleField);
                 
                 // now check that reflection can get/set the new fields
                 var fi = x2.GetType().GetField("NewStructField");
