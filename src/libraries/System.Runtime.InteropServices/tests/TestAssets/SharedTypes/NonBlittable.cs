@@ -502,14 +502,14 @@ namespace SharedTypes
 
                 _list = managed;
                 // Always allocate at least one byte when the list is zero-length.
-                int spaceToAllocate = Math.Max(managed.Count, 1);
-                if (spaceToAllocate <= buffer.Length)
+                int countToAllocate = Math.Max(managed.Count, 1);
+                if (countToAllocate <= buffer.Length)
                 {
-                    _span = buffer[0..spaceToAllocate];
+                    _span = buffer[0..countToAllocate];
                 }
                 else
                 {
-                    _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                    _allocatedMemory = Marshal.AllocCoTaskMem(countToAllocate * sizeof(TUnmanagedElement));
                     _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, managed.Count);
                 }
             }
