@@ -28,6 +28,7 @@ namespace System.Runtime.Intrinsics
     // value instead, thus reducing the number of locals and helping prevent us from hitting
     // the internal inlining limits of the JIT.
 
+    /// <summary>Provides a collection of static convenience methods for creating, manipulating, combining, and converting generic 128-bit vectors.</summary>
     public static class Vector128
     {
         internal const int Size = 16;

@@ -23,11 +23,8 @@ namespace System.Numerics
     *
     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    /// <summary>
-    /// A structure that represents a single Vector. The count of this Vector is fixed but CPU register dependent.
-    /// This struct only supports numerical types. This type is intended to be used as a building block for vectorizing
-    /// large algorithms. This type is immutable, individual elements cannot be modified.
-    /// </summary>
+    /// <summary>Represents a single vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
+    /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(VectorDebugView<>))]
