@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -22,7 +23,10 @@ namespace DebuggerTests
             { "MONO_TYPE_BOOLEAN",     TBool(default),                                          TBool(true),                                            "DebuggerTests.StepInTest<bool>.TestedMethod"},
             { "MONO_TYPE_CHAR",        TChar('\u0000'),                                         TChar('a'),                                             "DebuggerTests.StepInTest<char>.TestedMethod"},
             { "MONO_TYPE_STRING",      TString(default),                                        TString("hello"),                                       "DebuggerTests.StepInTest<string>.TestedMethod"},
-            { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/64188")]
+            // { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
+
             { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", "byte[2]"),                            "DebuggerTests.StepInTest<byte[]>.TestedMethod"},
             { "MONO_TYPE_VALUETYPE",   TValueType("DebuggerTests.Point"),                       TValueType("DebuggerTests.Point"),                      "DebuggerTests.StepInTest<DebuggerTests.Point>.TestedMethod"},
             { "MONO_TYPE_VALUETYPE2",  TValueType("System.Decimal","0"),                        TValueType("System.Decimal", "1.1"),                    "DebuggerTests.StepInTest<System.Decimal>.TestedMethod"},
@@ -55,7 +59,9 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, methodName,
                 locals_fn: async (locals) =>
                 {
-                    Assert.Equal(2, locals.Count());
+                    int numLocals = locals.Count();
+                    if (numLocals != 2)
+                        throw new XunitException($"Expected two locals but got {numLocals}. Locals: {locals}");
                     await Check(locals, "r", checkDefault);
                     await Task.CompletedTask;
                 }
@@ -65,7 +71,9 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, methodName, times: 3,
                 locals_fn: async (locals) =>
                 {
-                    Assert.Equal(2, locals.Count());
+                    int numLocals = locals.Count();
+                    if (numLocals != 2)
+                        throw new XunitException($"Expected two locals but got {numLocals}. Locals: {locals}");
                     await Check(locals, "r", checkValue);
                     await Task.CompletedTask;
                 }
