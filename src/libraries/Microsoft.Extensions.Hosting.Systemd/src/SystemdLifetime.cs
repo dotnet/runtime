@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// Instantiates a <see cref="SystemdLifetime"/> object.
         /// </summary>
         /// <param name="environment">Contains information about the host.</param>
-        /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
         /// <param name="systemdNotifier">The <see cref="ISystemdNotifier"/> to notify Systemd about service status.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)

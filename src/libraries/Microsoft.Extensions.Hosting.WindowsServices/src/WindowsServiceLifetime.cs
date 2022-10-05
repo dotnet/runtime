@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
 {
+    /// <summary>
+    /// Listens for shutdown signal and tracks the status of the Windows service.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
@@ -18,11 +21,26 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
 
+        /// <summary>
+        /// Instantiates a <see cref="WindowsServiceLifetime"/> object.
+        /// </summary>
+        /// <param name="environment">Contains information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor)
             : this(environment, applicationLifetime, loggerFactory, optionsAccessor, Options.Options.Create(new WindowsServiceLifetimeOptions()))
         {
         }
 
+        /// <summary>
+        /// Instantiates a <see cref="WindowsServiceLifetime"/> object.
+        /// </summary>
+        /// <param name="environment">Contains information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
+        /// <param name="windowsServiceOptionsAccessor">Contains the Windows service options and is used to find the service name.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
             ThrowHelper.ThrowIfNull(environment);
@@ -84,15 +102,20 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             return Task.CompletedTask;
         }
 
-        // Called by base.Run when the service is ready to start.
+        /// <summary>
+        /// Called by base.Run when the service is ready to start.
+        /// </summary>
+        /// <param name="args">The command line arguments passed to the service.</param>
         protected override void OnStart(string[] args)
         {
             _delayStart.TrySetResult(null);
             base.OnStart(args);
         }
 
-        // Called by base.Stop. This may be called multiple times by service Stop, ApplicationStopping, and StopAsync.
-        // That's OK because StopApplication uses a CancellationTokenSource and prevents any recursion.
+        /// <summary>
+        /// Called by base.Stop to stop the <see cref="WindowsServiceLifetime"/>.
+        /// </summary>
+        /// <remarks>This may be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's OK because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
             ApplicationLifetime.StopApplication();
@@ -101,6 +124,9 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             base.OnStop();
         }
 
+        /// <summary>
+        /// Called when the service starts shutdown.
+        /// </summary>
         protected override void OnShutdown()
         {
             ApplicationLifetime.StopApplication();
@@ -109,6 +135,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             base.OnShutdown();
         }
 
+        /// <summary>
+        /// Disposes the <see cref="WindowsServiceLifetime"/>.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
