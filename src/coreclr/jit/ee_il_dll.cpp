@@ -1620,11 +1620,6 @@ void Compiler::eePrintObjectDescription(const char* prefix, size_t handle)
     const size_t maxStrSize = 64;
     char         str[maxStrSize];
     size_t       actualLen = this->info.compCompHnd->printObject((void*)handle, str, maxStrSize);
-    if (actualLen == -1)
-    {
-        printf("%s 'unknown frozen object'", prefix);
-        return;
-    }
 
     for (int i = 0; i < min(maxStrSize, actualLen); i++)
     {
