@@ -2183,47 +2183,44 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-#ifdef TARGET_X86
         int spOffset = -(int)frameSize;
 
+#ifdef TARGET_X86
         if (compiler->info.compPublishStubParam)
         {
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             spOffset += REGSIZE_BYTES;
         }
+#else // !TARGET_X86
+        static_assert_no_msg((RBM_STACK_PROBE_HELPER_ARG & (RBM_SECRET_STUB_PARAM | RBM_DEFAULT_HELPER_CALL_TARGET)) ==
+                             RBM_NONE);
+#endif // !TARGET_X86
 
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, spOffset);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
-        if (compiler->info.compPublishStubParam)
-        {
-            GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
-            GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
-        }
-        else
-        {
-            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
-        }
-#else  // !TARGET_X86
-        static_assert_no_msg((RBM_STACK_PROBE_HELPER_ARG & (RBM_SECRET_STUB_PARAM | RBM_DEFAULT_HELPER_CALL_TARGET)) ==
-                             RBM_NONE);
-
-        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, -(int)frameSize);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
-
-        genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
-
+#ifdef TARGET_AMD64
         if (initReg == REG_DEFAULT_HELPER_CALL_TARGET)
         {
             *pInitRegZeroed = false;
         }
 
         static_assert_no_msg((RBM_STACK_PROBE_HELPER_TRASH & RBM_STACK_PROBE_HELPER_ARG) == RBM_NONE);
+#endif // TARGET_AMD64
 
-        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
-#endif // !TARGET_X86
+#ifdef TARGET_X86
+        if (compiler->info.compPublishStubParam)
+        {
+            GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
+            GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
+        }
+        else
+#endif // TARGET_X86
+        {
+            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
+        }
 
         compiler->unwindAllocStack(frameSize);
 
