@@ -15248,8 +15248,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // for the field to operate on the address of the struct.
                         if (varTypeIsStruct(obj))
                         {
-                            assert(opcode == CEE_LDFLD && objType != nullptr);
-
+                            if (opcode != CEE_LDFLD)
+                            {
+                                BADCODE3("Unexpected opcode (has to be LDFLD)", ": %02X", (int)opcode);
+                            }
+                            if (objType == nullptr)
+                            {
+                                BADCODE("top of stack must be a value type");
+                            }
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
