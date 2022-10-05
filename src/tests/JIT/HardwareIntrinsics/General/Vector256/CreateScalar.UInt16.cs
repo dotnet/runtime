@@ -40,7 +40,7 @@ namespace JIT.HardwareIntrinsics.General
 
         private static readonly int ElementCount = Unsafe.SizeOf<Vector256<UInt16>>() / sizeof(UInt16);
 
-        public bool Succeeded { get; set; } = true;
+        public bool Succeeded { get { return _succeeded; } set { if (!value) Environment.FailFast("FAILED"); _succeeded = value; } } bool _succeeded = true;
 
         public void RunBasicScenario()
         {

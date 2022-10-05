@@ -152,7 +152,7 @@ namespace JIT.HardwareIntrinsics.General
             _dataTable = new DataTable(_data1, new Int64[RetElementCount], LargestVectorSize);
         }
 
-        public bool Succeeded { get; set; }
+        public bool Succeeded { get { return _succeeded; } set { if (!value) Environment.FailFast("FAILED"); _succeeded = value; } } bool _succeeded;
 
         public void RunBasicScenario_UnsafeRead()
         {
