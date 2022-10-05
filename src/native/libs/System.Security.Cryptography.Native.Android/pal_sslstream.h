@@ -44,14 +44,14 @@ Create an SSL context
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t csharpObjectHandle);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidator);
 
 /*
 Create an SSL context with the specified certificates
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t csharpObjectHandle,
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidator,
                                                                          uint8_t* pkcs8PrivateKey,
                                                                          int32_t pkcs8PrivateKeyLen,
                                                                          PAL_KeyAlgorithm algorithm,

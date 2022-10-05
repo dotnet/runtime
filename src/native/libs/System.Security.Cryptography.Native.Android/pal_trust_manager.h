@@ -4,12 +4,12 @@ typedef bool (*ValidationCallback)(intptr_t, uint8_t**, int32_t*, int32_t, int32
 
 PALEXPORT void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallback callback);
 
-jobjectArray init_trust_managers_with_custom_validator(JNIEnv* env, intptr_t csharpObjectHandle);
+jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dotnetRemoteCertificateValidator);
 
 JNIEXPORT jboolean JNICALL
-Java_net_dot_android_crypto_TrustManagerProxy_validateRemoteCertificate(
+Java_net_dot_android_crypto_RemoteCertificateValidationCallbackProxy_validateRemoteCertificate(
     JNIEnv *env,
-    jobject trustManagerProxy,
-    intptr_t csharpObjectHandle,
+    jobject RemoteCertificateValidationCallbackProxy,
+    intptr_t dotnetRemoteCertificateValidator,
     jobjectArray certificates,
     int errors);

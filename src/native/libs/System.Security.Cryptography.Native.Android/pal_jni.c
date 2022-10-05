@@ -483,9 +483,9 @@ jclass g_X509TrustManager;
 jclass    g_Certificate;
 jmethodID g_CertificateGetEncoded;
 
-// net/dot/android/crypto/TrustManagerProxy
-jclass    g_TrustManagerProxy;
-jmethodID g_TrustManagerProxyCtor;
+// net/dot/android/crypto/RemoteCertificateValidationCallbackProxy
+jclass    g_RemoteCertificateValidationCallbackProxy;
+jmethodID g_RemoteCertificateValidationCallbackProxyCtor;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -1075,8 +1075,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_Certificate     = GetClassGRef(env, "java/security/cert/Certificate");
     g_CertificateGetEncoded     = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
 
-    g_TrustManagerProxy     = GetClassGRef(env, "net/dot/android/crypto/TrustManagerProxy");
-    g_TrustManagerProxyCtor = GetMethod(env, false, g_TrustManagerProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
+    g_RemoteCertificateValidationCallbackProxy     = GetClassGRef(env, "net/dot/android/crypto/RemoteCertificateValidationCallbackProxy");
+    g_RemoteCertificateValidationCallbackProxyCtor = GetMethod(env, false, g_RemoteCertificateValidationCallbackProxy, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
 
     return JNI_VERSION_1_6;
 }

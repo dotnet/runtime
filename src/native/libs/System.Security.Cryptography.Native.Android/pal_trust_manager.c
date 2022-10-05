@@ -7,7 +7,7 @@ void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallba
     validation_callback = callback;
 }
 
-jobjectArray init_trust_managers_with_custom_validator(JNIEnv* env, intptr_t csharpObjectHandle)
+jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dotnetRemoteCertificateValidator)
 {
     jstring defaultAlgorithm = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetDefaultAlgorithm);
     jobject tmf = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetInstance, defaultAlgorithm);
@@ -23,7 +23,7 @@ jobjectArray init_trust_managers_with_custom_validator(JNIEnv* env, intptr_t csh
         jobject trust_manager = (*env)->GetObjectArrayElement(env, trust_managers, (jsize)i);
         if ((*env)->IsInstanceOf(env, trust_manager, g_X509TrustManager))
         {
-            jobject trust_manager_proxy = (*env)->NewObject(env, g_TrustManagerProxy, g_TrustManagerProxyCtor, (int)csharpObjectHandle, trust_manager);
+            jobject trust_manager_proxy = (*env)->NewObject(env, g_RemoteCertificateValidationCallbackProxy, g_RemoteCertificateValidationCallbackProxyCtor, (int)dotnetRemoteCertificateValidator, trust_manager);
             (*env)->SetObjectArrayElement(env, trust_managers, (jsize)i, trust_manager_proxy);
 
             found_and_replaced = true;
@@ -43,10 +43,10 @@ jobjectArray init_trust_managers_with_custom_validator(JNIEnv* env, intptr_t csh
     return trust_managers;
 }
 
-jboolean Java_net_dot_android_crypto_TrustManagerProxy_validateRemoteCertificate(
+jboolean Java_net_dot_android_crypto_RemoteCertificateValidationCallbackProxy_validateRemoteCertificate(
     JNIEnv *env,
-    jobject trustManagerProxy,
-    intptr_t csharpObjectHandle,
+    jobject RemoteCertificateValidationCallbackProxy,
+    intptr_t dotnetRemoteCertificateValidator,
     jobjectArray certificates,
     int32_t errors)
 {
@@ -68,7 +68,7 @@ jboolean Java_net_dot_android_crypto_TrustManagerProxy_validateRemoteCertificate
     }
 
     assert(validation_callback && "validation_callback must be initialized");
-    bool isAccepted = validation_callback(csharpObjectHandle, rawData, lengths, (int32_t)certificateCount, errors);
+    bool isAccepted = validation_callback(dotnetRemoteCertificateValidator, rawData, lengths, (int32_t)certificateCount, errors);
 
     // free all the memory we allocated
     for (size_t i = 0; i < certificateCount; i++)

@@ -386,7 +386,8 @@ public class ApkBuilder
 
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
-        string trustManagerProxyPath = "/Users/simonrozsival/Projects/dotnet/runtime/src/native/libs/System.Security.Cryptography.Native.Android/TrustManagerProxy.java";
+        // TODO move this build somewhere else
+        string remoteCertificateValidationCallbackProxyPath = "/Users/simonrozsival/Projects/dotnet/runtime/src/native/libs/System.Security.Cryptography.Native.Android/RemoteCertificateValidationCallbackProxy.java";
 
         Regex checkNumerics = new Regex(@"\.(\d)");
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
@@ -428,7 +429,7 @@ public class ApkBuilder
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, javac, javaCompilerArgs + trustManagerProxyPath, workingDir: OutputDir);
+        Utils.RunProcess(logger, javac, javaCompilerArgs + remoteCertificateValidationCallbackProxyPath, workingDir: OutputDir);
 
         if (File.Exists(d8))
         {

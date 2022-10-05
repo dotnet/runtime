@@ -284,7 +284,7 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t csharpObjectHandle)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidator)
 {
     JNIEnv* env = GetJNIEnv();
 
@@ -315,8 +315,8 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t csharpObjectHandle)
 
     // Init trust managers
     jobjectArray trustManagers =
-        csharpObjectHandle != 0
-            ? init_trust_managers_with_custom_validator(env, csharpObjectHandle)
+        dotnetRemoteCertificateValidator != 0
+            ? initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidator)
             : NULL;
 
     // Init the SSLContext
@@ -396,7 +396,7 @@ cleanup:
     return ret;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t csharpObjectHandle,
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidator,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -448,7 +448,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t csharpOb
     // KeyManager[] keyManagers = kmf.getKeyManagers();
     // sslContext.init(keyManagers, trustManagers, null);
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
-    loc[trustManagers] = csharpObjectHandle != 0 ? init_trust_managers_with_custom_validator(env, csharpObjectHandle) : NULL;
+    loc[trustManagers] = dotnetRemoteCertificateValidator != 0 ? initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidator) : NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
