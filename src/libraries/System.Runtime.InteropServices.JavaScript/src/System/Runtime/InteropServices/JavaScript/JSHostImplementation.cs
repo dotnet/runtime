@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseCSOwnedObject(IntPtr jsHandle)
+        public static void ReleaseCSOwnedObject(nint jsHandle)
         {
             if (jsHandle != IntPtr.Zero)
             {
@@ -318,7 +318,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
-        public static JSObject CreateCSOwnedProxy(IntPtr jsHandle)
+        public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
             JSObject? res = null;
 
