@@ -100,9 +100,9 @@
   </Target>
 
   <PropertyGroup>
-    <_Net60ServicingVersionOverride>6.0.8</_Net60ServicingVersionOverride>
+    <_Net60ServicingVersionOverride>6.0.9</_Net60ServicingVersionOverride>
   </PropertyGroup>
-  <Target Name="HackTargetingPackBack">
+  <Target Name="HackTargetingPackBack" BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <KnownFrameworkReference>
         <TargetingPackVersion Condition="'%(TargetFramework)' == 'net6.0'">$(_Net60ServicingVersionOverride)</TargetingPackVersion>
