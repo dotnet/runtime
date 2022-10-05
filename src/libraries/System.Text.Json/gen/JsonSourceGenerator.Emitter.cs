@@ -28,6 +28,8 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
+            private const string GetTypeInfoCoreMethodName = "GetTypeInfoCore";
+            private const string GetTypeInfoMethodName = "GetTypeInfo";
             private const string InfoVarName = "info";
             private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
@@ -37,6 +39,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonTypeInfoReturnValueLocalVariableName = "jsonTypeInfo";
             private const string PropInitMethodNameSuffix = "PropInit";
             private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
+            private const string TypeLocalVariableName = "type";
             private const string SerializeHandlerPropName = "SerializeHandler";
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
@@ -1227,9 +1230,9 @@ private static {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>(
             {
                 return @$"
 
-private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, {TypeTypeRef} type, {JsonConverterFactoryTypeRef} factory)
+private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, {TypeTypeRef} {TypeLocalVariableName}, {JsonConverterFactoryTypeRef} factory)
 {{
-    {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {OptionsLocalVariableName});
+    {JsonConverterTypeRef}? converter = factory.CreateConverter({TypeLocalVariableName}, {OptionsLocalVariableName});
     if (converter == null || converter is {JsonConverterFactoryTypeRef})
     {{
         throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
@@ -1245,56 +1248,33 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
 
                 sb.Append(
 @$"/// <inheritdoc/>
-public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
+public override {JsonTypeInfoTypeRef} {GetTypeInfoMethodName}({TypeTypeRef} {TypeLocalVariableName})
+    => {GetTypeInfoCoreMethodName}({TypeLocalVariableName}, {OptionsInstanceVariableName});
+
+{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.{GetTypeInfoMethodName}({TypeTypeRef} {TypeLocalVariableName}, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
+    => {GetTypeInfoCoreMethodName}({TypeLocalVariableName}, {OptionsLocalVariableName});
+");
+
+                sb.AppendLine();
+                sb.Append(@$"private {JsonTypeInfoTypeRef}? {GetTypeInfoCoreMethodName}({TypeTypeRef} {TypeLocalVariableName}, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{");
 
-                HashSet<TypeGenerationSpec> types = new(_currentContext.TypesWithMetadataGenerated);
-
                 // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
-                foreach (TypeGenerationSpec metadata in types)
+                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                     {
                         sb.Append($@"
-    if (type == typeof({metadata.TypeRef}))
+    if ({TypeLocalVariableName} == typeof({metadata.TypeRef}))
     {{
-        return this.{metadata.TypeInfoPropertyName};
+        return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName});
     }}
-");
-                    }
-                }
-
-                sb.AppendLine(@"
-    return null!;
-}");
-
-                // Explicit IJsonTypeInfoResolver implementation
-                sb.AppendLine();
-                sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
-{{
-    if ({OptionsInstanceVariableName} == {OptionsLocalVariableName})
-    {{
-        return this.GetTypeInfo(type);
-    }}
-    else
-    {{");
-                // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
-                foreach (TypeGenerationSpec metadata in types)
-                {
-                    if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
-                    {
-                        sb.Append($@"
-        if (type == typeof({metadata.TypeRef}))
-        {{
-            return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName});
-        }}
 ");
                     }
                 }
 
                 sb.Append($@"
-        return null;
-    }}
+    return null;
 }}
 ");
 

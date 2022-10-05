@@ -463,5 +463,49 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => _getTypeInfo(type, options);
         }
+
+        [Fact]
+        public static void OptionsGetTypeInfoDoesNotReturnContextInstance()
+        {
+            PersonJsonContext context = PersonJsonContext.Default;
+
+            // Context GetTypeInfo(Type) method returns new instance on each call
+            Assert.NotSame(context.GetTypeInfo(typeof(Person)), context.GetTypeInfo(typeof(Person)));
+
+            JsonTypeInfo context_StaticProp_TypeInfo = context.Person;
+            JsonTypeInfo context_Fetched_TypeInfo = context.GetTypeInfo(typeof(Person));
+
+            // Context fetched instance is different from context static instance
+            Assert.NotSame(context_StaticProp_TypeInfo, context_Fetched_TypeInfo);
+            context_Fetched_TypeInfo.Properties.Clear(); // Context fetched instance is mutable
+            Assert.Equal(2, context_StaticProp_TypeInfo.Properties.Count);
+            Assert.Equal(0, context_Fetched_TypeInfo.Properties.Count);
+
+            // Context static instance is not mutable
+            Assert.Throws<InvalidOperationException>(() => context_StaticProp_TypeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => context_StaticProp_TypeInfo.Properties.Clear());
+
+            // Context-owned options is read-only so fetched instance is cached
+            JsonTypeInfo options_Cached_TypeInfo = context.Options.GetTypeInfo(typeof(Person));
+            Assert.Same(options_Cached_TypeInfo, context.Options.GetTypeInfo(typeof(Person)));
+
+            // Context-owned type info is read-only
+            Assert.Throws<InvalidOperationException>(() => options_Cached_TypeInfo.Properties.Clear());
+
+            // Options fetched instance is different from context instances
+            Assert.NotSame(context_StaticProp_TypeInfo, options_Cached_TypeInfo);
+            Assert.NotSame(context_Fetched_TypeInfo, options_Cached_TypeInfo);
+
+            // Context GetTypeInfo(Type, Options) method returns new instance on each call
+            IJsonTypeInfoResolver resolver = context;
+            JsonSerializerOptions options = new() { TypeInfoResolver = context };
+
+            Assert.NotSame(
+                resolver.GetTypeInfo(typeof(Person), options),
+                resolver.GetTypeInfo(typeof(Person), options));
+
+            // Options are still mutable, so fetched type-info's are not cached.
+            Assert.NotSame(options.GetTypeInfo(typeof(Person)), options.GetTypeInfo(typeof(Person)));
+        }
     }
 }
