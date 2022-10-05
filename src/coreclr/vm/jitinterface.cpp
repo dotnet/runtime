@@ -750,6 +750,10 @@ size_t CEEInfo::printObject (
     {
         ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
     }
+    else
+    {
+        _ASSERTE(!"Unexpected object type");
+    }
 
     const UTF8* utf8data = stackStr.GetUTF8();
     charsCount = stackStr.GetCount();
