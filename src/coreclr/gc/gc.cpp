@@ -13822,7 +13822,7 @@ gc_heap::init_semi_shared()
     }
 #else //MULTIPLE_HEAPS
 
-    mark_list_size = max (8192, soh_segment_size/(64*32));
+    mark_list_size = min(100*1024, max (8192, soh_segment_size/(64*32)));
     g_mark_list = make_mark_list (mark_list_size);
 
 #endif //MULTIPLE_HEAPS
