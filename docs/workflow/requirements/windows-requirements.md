@@ -21,7 +21,7 @@ Here are the components you will need to install and setup to work with the repo
 
 ### Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an administrator terminal simply type:
 
@@ -46,7 +46,7 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
   * **Windows 10 SDK (10.0.19041)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
   * **C++/CLI support for v142 build tools (Latest)**, which must be v14.23 or newer.
 
-A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components. You may get a message saying  `Microsoft.Net.Component.4.5.2.TargetingPack has no matching workload or component found`. This is not an issue as long as you have a newer targeting pack installed.
+A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components. You may get a message saying  `Microsoft.Net.Component.4.5.2.TargetingPack has no matching workload or component found`. This is not an issue as long as you have a newer targeting pack installed.
 
 ### Build Tools
 

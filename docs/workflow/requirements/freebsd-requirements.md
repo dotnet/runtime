@@ -52,7 +52,6 @@ Install the following packages:
 * CMake
 * icu
 * libunwind
-* lttng-ust
 * krb5
 * openssl (optional)
 * python39

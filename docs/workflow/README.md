@@ -47,7 +47,7 @@ A quick reminder of some concepts -- see the [glossary](/docs/project/glossary.m
 
 * **Debug Configuration** -- Non-optimized code.  Asserts are enabled.
 * **Checked Configuration** -- Optimized code. Asserts are enabled.  _Only relevant to CoreCLR runtime._
-* **Release Configuration** -- Optimized code. Asserts are disabled. Runs at the best speed, and suitable for performance profiling. You will have limited debugging experience with this one.
+* **Release Configuration** -- Optimized code. Asserts are disabled. Runs at the best speed, and suitable for performance profiling. This will impact the debugging experience due to compiler optimizations that make understanding what the debugging is showing difficult to reason about, relative to the source code.
 
 When we talk about mixing configurations, we're discussing the following sub-components:
 

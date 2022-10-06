@@ -112,7 +112,7 @@ Visual Studio Code instructions coming soon!
 
 Under normal circumstances, SOS usually comes shipped with Windbg, so no additional installation is required. However, if this is not the case for you, you want to use another version, or any other circumstance that requires you to install it separately/additionally, here are two links with useful information on how to get it set up:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-windows-instructions.md).
 
 For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos-debugging-extension-windows.md).
@@ -139,7 +139,7 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 For Linux and MacOS, you have to install SOS by yourself, as opposed to Windows' Windbg. The instructions are very similar however, and you can find them on these two links:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md).
 
 It might also be the case that you would need the latest changes in SOS, or you're working with a not-officially-supported scenario that actually works. The most common occurrence of this scenario is when using MacOS Arm64. In this case, you have to build SOS from the diagnostics repo (linked above). Once you have it done, then simply load it to your `lldb`. More details in the following section.
@@ -161,10 +161,10 @@ It might also be the case that you would need the latest changes in SOS, or you'
 
 #### Disabling Managed Attach/Debugging
 
-The `COMPlus_EnableDiagnostics` _environment variable_ can be used to disable managed debugging. This prevents the various OS artifacts used for debugging, such as named pipes and semaphores on Linux and MacOS, from being created.
+The `DOTNET_EnableDiagnostics` _environment variable_ can be used to disable managed debugging. This prevents the various OS artifacts used for debugging, such as named pipes and semaphores on Linux and MacOS, from being created.
 
 ```bash
-export COMPlus_EnableDiagnostics=0
+export DOTNET_EnableDiagnostics=0
 ```
 
 ### Debugging core dumps with lldb
@@ -215,8 +215,8 @@ Native C++ code is not everything in our runtime. Nowadays, there are lots of st
 * Open the project properties for the new project that was just created and set the following:
   * _Arguments_: Make this match whatever arguments you would have used at the command-line. For example if you would have run `dotnet.exe exec Foo.dll`, then set `arguments = "exec Foo.dll"` (**NOTE**: Make sure you use `dotnet exec` instead of `dotnet run` because the run verb command is implemented to launch the app in a child process, and the debugger won't be attached to that child process).
   * _Working Directory_: Make this match whatever you would have used on the command-line.
-  * _Debugger Type_: Set this to `Managed (CoreCLR)`. If you're going to debug the native C++ code, then you would select `Native Only` instead.
-  * _Environment_: Add any environment variables you would have added at the command-line. You may also consider adding `COMPlus_ZapDisable=1` and `COMPlus_ReadyToRun=0`, which disable NGEN and R2R pre-compilation respectively, and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
+  * _Debugger Type_: Set this to `Managed (.NET Core, .NET 5+)`. If you're going to debug the native C++ code, then you would select `Native Only` instead.
+  * _Environment_: Add any environment variables you would have added at the command-line. You may also consider adding `DOTNET_ZapDisable=1` and `DOTNET_ReadyToRun=0`, which disable NGEN and R2R pre-compilation respectively, and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
 * For managed debugging, there are some additional settings in _Debug -> Options_, _Debugging -> General_ that might be useful:
   * Uncheck `Just My Code`. This will allow you debug into the framework libraries.
   * Check `Enable .NET Framework Source Stepping`. This will configure the debugger to download symbols and source automatically for runtime framework binaries. If you built the framework yourself, then you can omit this step without any problems.

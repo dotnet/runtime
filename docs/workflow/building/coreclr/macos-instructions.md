@@ -27,7 +27,7 @@ After the build has completed, there should be some files placed in `artifacts/b
 
 ### Cross-Compilation
 
-It is possible to get a MacOS ARM64 build using an Intel x64 Mac and viceversa, an x64 one using an M1 Mac. Instructions on how to do this are in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#macos-cross-building).
+It is possible to get a MacOS ARM64 build using an Intel x64 Mac and vice versa, an x64 one using an M1 Mac. Instructions on how to do this are in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#macos-cross-building).
 
 ## Create the Core_Root
 

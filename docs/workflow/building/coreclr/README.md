@@ -2,6 +2,7 @@
 
 * [Introduction](#introduction)
 * [Common Building Options](#common-building-options)
+  * [Build Drivers](#build-drivers)
   * [Extra Flags](#extra-flags)
   * [Build Results Layout](#build-results-layout)
 * [Platform-Specific Instructions](#platform-specific-instructions)
@@ -29,13 +30,35 @@ Specifying `-subset` explicitly is not necessary if it is the first argument: `.
 
 ## Common Building Options
 
-By default, the script generates a _Debug_ build type, which is not optimized code and includes asserts. As its name suggests, this makes it easier and friendlier to debug the code. If you want to make performance measurements, or just want tests to execute more quickly, you can build the _Release_ version instead, which doesn't have any asserts and has all code optimizations enabled. For this, you add the flag `-configuration release` (or `-c release`). For example:
+By default, the script generates a _Debug_ build type, which is not optimized code and includes asserts. As its name suggests, this makes it easier and friendlier to debug the code. If you want to make performance measurements, you ought to build the _Release_ version instead, which doesn't have any asserts and has all code optimizations enabled. Likewise, if you plan on running tests, the _Release_ configuration is more suitable since it's considerably faster than the _Debug_ one. For this, you add the flag `-configuration release` (or `-c release`). For example:
 
 ```bash
 ./build.sh --subset clr --configuration release
 ```
 
 As mentioned before in the [general building document](/docs/workflow/README.md#configurations-and-subsets), CoreCLR also supports a _Checked_ build type which has asserts enabled like _Debug_, but is built with the native compiler optimizer enabled, so it runs much faster. This is the usual mode used for running tests in the CI system.
+
+Now, it is also possible to select a different configuration for each subset when building them together. The `--configuration` flag applies universally to all subsets, but it can be overridden with any one or more of the following ones:
+
+* `--runtimeConfiguration (-rc)`: Flag for the CLR build configuration.
+* `--librariesConfiguration (-lc)`: Flag for the libraries build configuration.
+* `--hostConfiguration (-hc)`: Flag for the host build configuration.
+
+For example, a very common scenario used by developers is to build the _clr_ in _Debug_ mode, and the _libraries_ in _Release_ mode. To achieve this, the command-line would look like the following:
+
+```bash
+./build.sh --subset clr+libs --configuration Release --runtimeConfiguration Debug
+```
+
+Or alternatively:
+
+```bash
+./build.sh --subset clr+libs --librariesConfiguration Release --runtimeConfiguration Debug
+```
+
+For more information about all the different options available, supply the argument `-help|-h` when invoking the build script. On Unix-like systems, non-abbreviated arguments can be passed in with a single `-` or double hyphen `--`.
+
+### Build Drivers
 
 If you want to use _Ninja_ to drive the native build instead of _Make_ on non-Windows platforms, you can pass the `-ninja` flag to the build script as follows:
 
@@ -46,8 +69,6 @@ If you want to use _Ninja_ to drive the native build instead of _Make_ on non-Wi
 If you want to use Visual Studio's _MSBuild_ to drive the native build on Windows, you can pass the `-msbuild` flag to the build script similarly to the `-ninja` flag.
 
 We recommend using _Ninja_ for building the project on Windows since it more efficiently uses the build machine's resources for the native runtime build in comparison to Visual Studio's _MSBuild_.
-
-For more information about all the different options available, supply the argument `--help|-h` when invoking the build script. On Unix-like systems, arguments can be passed in with a single `-` or double hyphen `--`.
 
 ### Extra Flags
 

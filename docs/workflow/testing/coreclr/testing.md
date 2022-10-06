@@ -22,7 +22,7 @@ This guide will walk you through building and running the CoreCLR tests. These a
 
 ## Requirements
 
-In order to build CoreCLR tests, you will need to have built the runtime and the libraries (i.e. _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
+In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
 
 * [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
 * [MacOS](/docs/workflow/building/coreclr/macos-instructions.md)
@@ -36,16 +36,8 @@ As mentioned in the introduction, all test-building work is done from the `src/t
 
 Building the tests can be as simple as calling the build script without any arguments. This will by default look for a _Debug_ built runtime and _Release_ built libraries. However, by passing the appropriate flags, you can define which configurations you want to use. For example, let's suppose you have a _Checked_ runtime with _Debug_ libraries:
 
-On Windows:
-
-```cmd
-.\src\tests\build.cmd checked /p:LibrariesConfiguration=Debug
-```
-
-On MacOS and Linux:
-
 ```bash
-./src/tests/build.sh -checked /p:LibrariesConfiguration=Debug
+./src/tests/build.sh checked /p:LibrariesConfiguration=Debug
 ```
 
 Note that for the libraries configuration, we are passing the argument directly to MSBuild instead of the build script, hence the `/p:LibrariesConfiguration` flag. Also, make sure you use the correct syntax depending on our platform. The _cmd_ script takes the arguments by placing, while the _sh_ script requires them to be with a hyphen.
@@ -60,16 +52,8 @@ Note that, as mentioned in the section above, running the tests build script by 
 
 The simplest command to generate the _Core\_Root_ from the repository's root path is the following:
 
-On Windows:
-
 ```cmd
 .\src\tests\build.cmd generatelayoutonly
-```
-
-On MacOS and Linux:
-
-```bash
-./src/tests/build.sh -generatelayoutonly
 ```
 
 This example assumes you built CoreCLR on _Debug_ mode and the Libraries on _Release_ mode, hence no additional flags are needed. After the build is complete, you will be able to find the output in the `artifacts/tests/coreclr/<OS>.<arch>.<configuration>/Tests/Core_Root` folder.
@@ -84,20 +68,12 @@ The following subsections will explain how to segment the test suite according t
 
 When no set is specified, almost the whole test suite (`src/tests`) is built.
 
-One of the most important attributes tests have is their **priority**. By default, only those tests with _Priority 0_ are built, regardless of whether it's an individual one, a directory, or a subtree, unless otherwise specified with the `-priority` flag. More info on this in [its dedicated section]. Regardless of which subset you build, all the outputs will be placed in `artifacts/tests/coreclr/<OS>.<arch>.<configuration>`.
+One of the most important attributes tests have is their **priority**. By default, only those tests with _Priority 0_ are built, regardless of whether it's an individual one, a directory, or a subtree, unless otherwise specified with the `-priority` flag. More info on this in [its dedicated section](#test-priorities). Regardless of which subset you build, all the outputs will be placed in `artifacts/tests/coreclr/<OS>.<arch>.<configuration>`.
 
 **NOTE**: Some tests have native components to them. It is highly recommended you build all of those prior to attempting to build any managed test in the following sections, as it's not a very costly or lengthy process:
 
-On Windows:
-
 ```cmd
 .\src\tests\build.cmd skipmanaged
-```
-
-On MacOS and Linux:
-
-```bash
-./src/tests/build.sh -skipmanaged
 ```
 
 ### Building an Individual Test
@@ -116,10 +92,10 @@ On MacOS and Linux:
 ./src/tests/build.sh -test:JIT/Intrinsics/MathRoundDouble_ro.csproj -test:JIT/Intrinsics/MathFloorDouble_ro.csproj
 ```
 
-Alternatively, you can call _MSBuild_ directly using the `dotnet.cmd/dotnet.sh` script at the root of the repo and pass all arguments directly yourself:
+Alternatively, you can call _build_ directly using the `dotnet.cmd/dotnet.sh` script at the root of the repo and pass all arguments directly yourself:
 
 ```bash
-./dotnet.sh msbuild src/tests/path/to/test/csproj /p:TargetOS=<Your OS> /p:Configuration=<Your Configuration>
+./dotnet.sh build -c <Your Configuration> src/tests/path/to/test/csproj
 ```
 
 ### Building a Test Directory
@@ -158,16 +134,8 @@ On MacOS and Linux:
 
 By default, the _C++/CLI_ native test components build against the _ref pack_ from the SDK specified in the `global.json` file in the root of the repository. To build these components against the _ref assemblies_ produced in the build, pass the `-cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1` parameters to the test build. For example:
 
-On Windows:
-
-```cmd
-.\src\tests\build.cmd skipmanaged -cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1
-```
-
-On MacOS and Linux:
-
 ```bash
-./src/tests/build.sh -skipmanaged -cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1
+./src/tests/build.sh skipmanaged -cmakeargs -DCPP_CLI_LIVE_REF_ASSEMBLIES=1
 ```
 
 ### Test Priorities
@@ -198,16 +166,8 @@ On MacOS and Linux:
 
 The simplest way to run in-bundle the tests you've built is by using the `run.cmd/run.sh` script after you've worked with `build.cmd/build.sh`. The running script takes flags very similarly to the build one. Let's suppose you have a _Checked_ runtime you want to test on an _x64_ machine. You'd run all your built tests with the following command-line:
 
-On Windows:
-
 ```cmd
 .\src\tests\run.cmd x64 checked
-```
-
-On MacOS/Linux:
-
-```bash
-./src/tests/run.sh -x64 -checked
 ```
 
 The `run.cmd/run.sh` scripts also have a number of flags you can pass to set specific conditions and environment variables, such as _JIT Stress_, _GC Stress_, and so on. Run it with only any one of the help flags for more details.
@@ -255,6 +215,22 @@ On Powershell:
 $Env:CORE_ROOT = '<repo_root>\artifacts\tests\coreclr\windows.<Arch>.<Configuration>\Tests\Core_Root'
 cd path\to\JIT\Intrinsics\MathRoundDouble_ro
 .\MathRoundDouble_ro.cmd
+```
+
+Alternatively, instead of setting the _CORE\_ROOT_ environment variable, you can specify it directly to the test's script via the `-coreroot` flag, as mentioned at the beginning of this section:
+
+On Windows:
+
+```cmd
+cd path\to\JIT\Intrinsics\MathRoundDouble_ro
+.\MathRoundDouble_ro.cmd -coreroot <repo_root>\artifacts\tests\coreclr\windows.<Arch>.<Configuration>\Tests\Core_Root
+```
+
+On MacOS/Linux:
+
+```bash
+cd path/to/JIT/Intrinsics/MathRoundDouble_ro
+./MathRoundDouble_ro.sh -coreroot=<repo_root>/artifacts/tests/coreclr/<OS>.<Arch>.<Configuration>/Tests/Core_Root
 ```
 
 #### Tests Without a Main Method

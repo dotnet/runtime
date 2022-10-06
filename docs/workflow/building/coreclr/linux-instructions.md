@@ -19,18 +19,18 @@ As mentioned in the [Linux requirements doc](/docs/workflow/requirements/linux-r
 
 Building using Docker will require that you choose the correct image for your environment.
 
-Note that the OS is strictly speaking not important. For example if you are on Ubuntu 20.04 and build using the Ubuntu 18.04 x64 image there should be no issues. You can even use Linux images on a Windows OS if you have [WSL](https://docs.microsoft.com/en-us/windows/wsl/about) enabled. However, note that you can't run multiple OS's on the same _Docker Daemon_, as it takes resources from the underlying kernel as needed. In other words, you can run either Linux on WSL, or Windows containers. You have to switch between them if you need both, and restart Docker.
+Note that the OS is strictly speaking not important. For example if you are on Ubuntu 20.04 and build using the Ubuntu 18.04 x64 image there should be no issues. You can even use Linux images on a Windows OS if you have [WSL](https://docs.microsoft.com/windows/wsl/about) enabled. However, note that you can't run multiple OS's on the same _Docker Daemon_, as it takes resources from the underlying kernel as needed. In other words, you can run either Linux on WSL, or Windows containers. You have to switch between them if you need both, and restart Docker.
 
 The target architecture is more important, as building arm32 using the x64 image will not work. There will be missing _rootfs_ components required by the build. See [Docker Images](#docker-images) below, for more information on choosing an image to build with.
 
-**NOTE**: The image's architecture has to match your machine's supported platforms. For example, you can't run arm32 images on an x64 machine. But you could run x64 and arm64 images on an M1 Mac, for example. This is thanks to the _Rosetta_ emulator that Apple Silicon provides. Same case applies to running x86 on an x64 Windows machine thanks to Windows' _SYSWOW64_.
+**NOTE**: The image's architecture has to match your machine's supported platforms. For example, you can't run arm32 images on an x64 machine. But you could run x64 and arm64 images on an M1 Mac, for example. This is thanks to the _Rosetta_ emulator that Apple Silicon provides. Same case applies to running x86 on an x64 Windows machine thanks to Windows' _SYSWOW64_. Likewise, you can run Linux arm32 images on a Linux arm64 host.
 
 Please note that choosing the same image as the host OS you are running on will allow you to run the product/tests outside of the docker container you built in.
 
 Once you have chosen an image, the build is one command run from the root of the runtime repository:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr -clang9
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
 ```
 
 Dissecting the command:
@@ -41,7 +41,6 @@ Dissecting the command:
 * `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2`: Docker image name.
 * `./build.sh`: Command to be run in the container: run the root build command.
 * `-subset clr`: Build the clr subset (excluding libraries and installers).
-* `-clang9`: Argument to use Clang-9 for the build (the only compiler in this specific build image).
 
 To do cross-building for ARM32 or ARM64 using Docker, you need to use either specific images designated for this purpose, or configure your own. Detailed information on this can be found in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#cross-building-using-docker).
 
@@ -57,7 +56,7 @@ This table of images might often become stale as we change our images as our req
 | Ubuntu 18.04  (x64, arm64 ROOTFS) | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220427171722-6e40d49`        | `/crossrootfs/arm64` | -clang9       |
 | Alpine (x64, arm ROOTFS)          | arm             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860`   | `/crossrootfs/arm64` | -clang9       |
 | Alpine (x64, arm64 ROOTFS)        | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860` | `/crossrootfs/arm64` | -clang9       |
-| FreeBSD (x64 ROOTFS)              | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e`   | `/crossrootfs/x64`   | (default)     |
+| FreeBSD (x64 ROOTFS)              | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e`   | `/crossrootfs/x64`   | (default)     |
 
 ## Build using your own Environment
 
