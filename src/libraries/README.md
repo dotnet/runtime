@@ -1,6 +1,6 @@
 # .NET Libraries
 
-This folder contains the source and tests for the .NET Libraries. Different libraries are owned by different team members; refer to the (Areas)[../../docs/area-owners.md#areas] list for lead and owner information.
+This folder contains the source and tests for the .NET Libraries. Different libraries are owned by different team members; refer to the [Areas](../../docs/area-owners.md#areas) list for lead and owner information.
 
 ## Development Statuses
 
