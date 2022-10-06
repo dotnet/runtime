@@ -2136,7 +2136,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public bool IsKnownImmutable => true;
+            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
         }
 
 #pragma warning disable CA1852
