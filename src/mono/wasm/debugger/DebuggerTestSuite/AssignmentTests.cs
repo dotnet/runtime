@@ -25,7 +25,7 @@ namespace DebuggerTests
             { "MONO_TYPE_STRING",      TString(default),                                        TString("hello"),                                       "DebuggerTests.StepInTest<string>.TestedMethod"},
 
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/64188")]
-            // { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
+            { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue"),                     "DebuggerTests.StepInTest<DebuggerTests.RGB>.TestedMethod"},
 
             { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", "byte[2]"),                            "DebuggerTests.StepInTest<byte[]>.TestedMethod"},
             { "MONO_TYPE_VALUETYPE",   TValueType("DebuggerTests.Point"),                       TValueType("DebuggerTests.Point"),                      "DebuggerTests.StepInTest<DebuggerTests.Point>.TestedMethod"},
@@ -33,7 +33,7 @@ namespace DebuggerTests
             { "MONO_TYPE_GENERICINST", TObject("System.Func<int>", is_null: true),              TDelegate("System.Func<int>", "int Prepare ()"),        "DebuggerTests.StepInTest<System.Func<int>>.TestedMethod"},
 
             // Disabled due to https://github.com/dotnet/runtime/issues/65881
-            //{ "MONO_TYPE_FNPTR",       TPointer("*()",  is_null: true),                         TPointer("*()") },
+            { "MONO_TYPE_FNPTR",       TPointer("*()",  is_null: true),                         TPointer("*()"), "xy" },
 
             { "MONO_TYPE_PTR",         TPointer("int*", is_null: true),                         TPointer("int*"),                                       "DebuggerTests.MONO_TYPE_PTR.TestedMethod"},
             { "MONO_TYPE_I1",          TNumber(0),                                              TNumber(-1),                                            "DebuggerTests.StepInTest<sbyte>.TestedMethod"},
