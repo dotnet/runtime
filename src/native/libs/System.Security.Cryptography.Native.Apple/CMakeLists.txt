@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_random.c
     pal_rsa.c
     pal_sec.c
@@ -35,13 +36,6 @@ else()
         pal_seckey_macos.c
         pal_trust_macos.c
         pal_x509_macos.c
-    )
-endif()
-
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
-    set(NATIVECRYPTO_SOURCES
-        ${NATIVECRYPTO_SOURCES}
-        pal_keyderivation.c
     )
 endif()
 
