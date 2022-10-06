@@ -157,6 +157,20 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public static void Create_Using_Abstract_Generic_BaseType_Throws_ArgumentException(bool useGenericCreate)
+        {
+            AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, Abstract_GenericDispatchProxy<TestDispatchProxy>>(useGenericCreate));
+        }
+
+        [Fact]
+        public static void Create_Using__Generic_BaseType_Throws_ArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("proxyType", () => DispatchProxy.Create(typeof(TestType_IHelloService), typeof(TestType_DipatchProxyGenericConstraint<TestDispatchProxy>)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException(bool useGenericCreate)
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>(useGenericCreate));
@@ -178,6 +192,25 @@ namespace DispatchProxyTests
         public static void Non_Generic_Create_With_ProxyType_That_Is_Not_Assignable_To_DispatchProxy_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(typeof(TestType_IHelloService), typeof(object)));
+        }
+
+
+        [Fact]
+        public static void Test_Type_LoadedBy_MetadataLoadContext_Throws_ArgumentException()
+        {
+            string assemblyName = $"{typeof(DispatchProxyTests).Assembly.GetName().Name}.dll";
+            var resolver = new PathAssemblyResolver(new string[] { assemblyName, typeof(object).Assembly.Location });
+            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().ToString());
+
+            Assembly assembly = mlc.LoadFromAssemblyPath(assemblyName);
+
+            Type interfaceType = assembly.GetType(nameof(TestType_IHelloService));
+            Type proxyType = assembly.GetType(nameof(TestDispatchProxy));
+
+            Assert.NotNull(interfaceType);
+            Assert.NotNull(proxyType);
+
+            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(interfaceType, proxyType));
         }
 
         [Fact]
@@ -574,21 +607,11 @@ namespace DispatchProxyTests
             }
             else
             {
-                IEnumerable<MethodInfo> runtimeMethods =
-                    typeof(DispatchProxy)
-                    .GetRuntimeMethods();
-
-                MethodInfo? methodInfo = null;
-                foreach (MethodInfo method in runtimeMethods)
-                {
-                    if (method.Name == "Create" && !method.IsGenericMethod)
-                    {
-                        methodInfo = method;
-                    }
-                }
-
-                proxy = methodInfo!.Invoke(null, new object[] { ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy) });
+                proxy = typeof(DispatchProxy)
+                    .GetRuntimeMethod("Create", new Type[] { typeof(Type), typeof(Type) })!
+                    .Invoke(null, new object[] { ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy) });
             }
+
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {
                 invokedMethods.Add(method);
@@ -630,7 +653,6 @@ namespace DispatchProxyTests
             Assert.NotNull(eventInfo);
         }
 
-
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -644,7 +666,6 @@ namespace DispatchProxyTests
                 invokedMethods.Add(method);
                 return null;
             };
-
 
             proxy["key"] = "testValue";
             string actualValue = proxy["key"];
@@ -675,7 +696,7 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
-        static void testGenericMethodRoundTrip<T>(T testValue, bool useGenericCreate)
+        static void TestGenericMethodRoundTrip<T>(T testValue, bool useGenericCreate)
         {
             var proxy = CreateHelper<TypeType_GenericMethod, TestDispatchProxy>(useGenericCreate);
             ((TestDispatchProxy)proxy).CallOnInvoke = (mi, a) =>
@@ -696,13 +717,13 @@ namespace DispatchProxyTests
         public static void Invoke_Generic_Method(bool useGenericCreate)
         {
             //string
-            testGenericMethodRoundTrip("asdf", useGenericCreate);
+            TestGenericMethodRoundTrip("asdf", useGenericCreate);
             //reference type
-            testGenericMethodRoundTrip(new Version(1, 0, 0, 0), useGenericCreate);
+            TestGenericMethodRoundTrip(new Version(1, 0, 0, 0), useGenericCreate);
             //value type
-            testGenericMethodRoundTrip(42, useGenericCreate);
+            TestGenericMethodRoundTrip(42, useGenericCreate);
             //enum type
-            testGenericMethodRoundTrip(DayOfWeek.Monday, useGenericCreate);
+            TestGenericMethodRoundTrip(DayOfWeek.Monday, useGenericCreate);
         }
 
         [Theory]
@@ -712,16 +733,16 @@ namespace DispatchProxyTests
         {
             string value = "Hello";
 
-            testRefOutInInvocation(p => p.InAttribute(value), "Hello", useGenericCreate);
-            testRefOutInInvocation(p => p.InAttribute_OutAttribute(value), "Hello", useGenericCreate);
-            testRefOutInInvocation(p => p.InAttribute_Ref(ref value), "Hello", useGenericCreate);
-            testRefOutInInvocation(p => p.Out(out _), null, useGenericCreate);
-            testRefOutInInvocation(p => p.OutAttribute(value), "Hello", useGenericCreate);
-            testRefOutInInvocation(p => p.Ref(ref value), "Hello", useGenericCreate);
-            testRefOutInInvocation(p => p.In(in value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.InAttribute(value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.InAttribute_OutAttribute(value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.InAttribute_Ref(ref value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.Out(out _), null, useGenericCreate);
+            TestRefOutInInvocation(p => p.OutAttribute(value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.Ref(ref value), "Hello", useGenericCreate);
+            TestRefOutInInvocation(p => p.In(in value), "Hello", useGenericCreate);
         }
 
-        private static void testRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected, bool useGenericCreate)
+        private static void TestRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected, bool useGenericCreate)
         {
             var proxy = CreateHelper<TestType_IOut_Ref, TestDispatchProxy>(useGenericCreate);
 
@@ -741,7 +762,7 @@ namespace DispatchProxyTests
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>
             CreateHelper<TestType_IHelloService, TestDispatchProxy>(useGenericCreate);
 
-	[ActiveIssue("https://github.com/dotnet/runtime/issues/62503", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62503", TestRuntimes.Mono)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -793,53 +814,18 @@ namespace DispatchProxyTests
 
             static object CreateTestDispatchProxy(Type type, bool useGenericCreate)
             {
-                MethodInfo[] methods = typeof(DispatchProxy).GetMethods();
-                MethodInfo? targetMethod = null;
-
-                foreach (MethodInfo method in methods)
-                {
-                    if (method.Name != nameof(DispatchProxy.Create))
-                    {
-                        continue;
-                    }
-
-                    if (useGenericCreate && method.IsGenericMethod)
-                    {
-                        targetMethod = method;
-                    }
-                    else if (!useGenericCreate && !method.IsGenericMethod)
-                    {
-                        targetMethod = method;
-                    }
-                }
-
-                if (targetMethod == null)
-                {
-                    string genericMessageSection;
-
-                    if (useGenericCreate)
-                    {
-                        genericMessageSection = "generic";
-                    }
-                    else
-                    {
-                        genericMessageSection = "non-generic";
-                    }
-
-                    throw new Exception($"No matching {genericMessageSection} method found for '{nameof(DispatchProxy.Create)}' in the type `{nameof(DispatchProxy)}`");
-                }
-
-                // It has to be a type shared in both ALCs.
                 if (useGenericCreate)
                 {
-                    return targetMethod
-                        .MakeGenericMethod(typeof(IDisposable), type)
-                        .Invoke(null, null);
+                    return typeof(DispatchProxy)
+                           // It has to be a type shared in both ALCs.
+                           .GetMethod("Create", Type.EmptyTypes).MakeGenericMethod(typeof(IDisposable), type)
+                           .Invoke(null, null);
                 }
                 else
                 {
-                    return targetMethod
-                        .Invoke(null, new object[] { typeof(IDisposable), type });
+                    return typeof(DispatchProxy)
+                           .GetMethod("Create", new Type[] { typeof(Type), typeof(Type) })!
+                           .Invoke(null, new object[] { typeof(IDisposable), type });
                 }
             }
         }
@@ -848,10 +834,10 @@ namespace DispatchProxyTests
         {
             if (useGenericCreate)
             {
-                return (TInterface)DispatchProxy.Create(typeof(TInterface), typeof(TProxy));
+                return DispatchProxy.Create<TInterface, TProxy>();
             }
 
-            return DispatchProxy.Create<TInterface, TProxy>();
+            return (TInterface)DispatchProxy.Create(typeof(TInterface), typeof(TProxy));
         }
     }
 }

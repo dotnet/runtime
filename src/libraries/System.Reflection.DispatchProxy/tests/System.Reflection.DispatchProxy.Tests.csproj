@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="TestDependency\System.Reflection.DispatchProxy.TestDependency.csproj" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="6.0.0" />
   </ItemGroup>
   
 </Project>
