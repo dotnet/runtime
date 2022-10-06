@@ -3645,6 +3645,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             }
             break;
 
+        case GT_BLK:
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
             FALLTHROUGH;
