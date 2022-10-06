@@ -1586,25 +1586,6 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
-    // Register mask of argument registers currently occupied because we saw a
-    // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
-    // CALL node and used to preference locals away from these (occupied)
-    // registers that will otherwise force a spill.
-    regMaskTP placedArgRegs;
-
-    struct PlacedLocal
-    {
-        unsigned  VarIndex;
-        regNumber Reg;
-    };
-
-    // Locals that are currently placed in registers via PUTARG_REG. These
-    // locals are available due to the special PUTARG treatment, and we keep
-    // track of them between the PUTARG_REG and CALL to ensure we do not
-    // unpreference them.
-    PlacedLocal placedArgLocals[REG_COUNT];
-    size_t      numPlacedArgLocals;
-
     // The set of all register candidates. Note that this may be a subset of tracked vars.
     VARSET_TP registerCandidateVars;
     // Current set of live register candidate vars, used during building of RefPositions to determine
@@ -1842,7 +1823,6 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
-    void PreferenceDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 

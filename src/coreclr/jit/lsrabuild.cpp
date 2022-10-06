@@ -1734,8 +1734,6 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 assert(varDsc->lvTracked);
                 unsigned varIndex = varDsc->lvVarIndex;
                 VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
-
-                PreferenceDyingLocal(getIntervalForLocalVar(varIndex));
             }
         }
 #else  // TARGET_XARCH
@@ -2261,9 +2259,6 @@ void LinearScan::buildIntervals()
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
     }
-
-    numPlacedArgLocals = 0;
-    placedArgRegs      = RBM_NONE;
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
@@ -2952,58 +2947,6 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
 }
 
 //------------------------------------------------------------------------
-// PreferenceDyingLocal: Preference a local that is dying.
-//
-// Arguments:
-//    interval - the interval for the local
-//
-// Notes:
-//    The "dying" information here is approximate, see the comment in BuildUse.
-//
-void LinearScan::PreferenceDyingLocal(Interval* interval)
-{
-    if (placedArgRegs == RBM_NONE)
-    {
-        return;
-    }
-    // If we see a use of a local between placing a register and a call
-    // then we want to preference that local away from that particular
-    // argument register. Picking that register is otherwise going to force
-    // a spill.
-    //
-    // We only need to do this on liveness updates because if the local is live
-    // _after_ the call, then we are going to preference it to callee-saved
-    // registers anyway, so there is no need to look at such local uses.
-
-    // Write-thru locals are "free" to spill and we are quite conservative
-    // about allocating them to callee-saved registers, so leave them alone
-    // here.
-    if (interval->isWriteThru)
-    {
-        return;
-    }
-
-    // Find registers that are occupied with other values.
-    regMaskTP unpref   = placedArgRegs;
-    unsigned  varIndex = interval->getVarIndex(compiler);
-    for (size_t i = 0; i < numPlacedArgLocals; i++)
-    {
-        if (placedArgLocals[i].VarIndex == varIndex)
-        {
-            // This local's value is going to be available in this register so
-            // keep it in the preferences.
-            unpref &= ~genRegMask(placedArgLocals[i].Reg);
-        }
-    }
-
-    regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
-    if (newPreferences != RBM_NONE)
-    {
-        interval->updateRegisterPreferences(newPreferences);
-    }
-}
-
-//------------------------------------------------------------------------
 // BuildUse: Remove the RefInfoListNode for the given multi-reg index of the given node from
 //           the defList, and build a use RefPosition for the associated Interval.
 //
@@ -3042,7 +2985,6 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         {
             unsigned varIndex = interval->getVarIndex(compiler);
             VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
-            PreferenceDyingLocal(interval);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
@@ -3975,19 +3917,6 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
             def->getInterval()->assignRelatedInterval(use->getInterval());
         }
     }
-
-    placedArgRegs |= argMask;
-
-    // If this is a passthrough tracked local then record it so that we can
-    // ensure we do not unpreference if we see a future use (see PreferenceDyingLocal).
-    if (isSpecialPutArg)
-    {
-        assert(numPlacedArgLocals < ArrLen(placedArgLocals));
-        placedArgLocals[numPlacedArgLocals].VarIndex = use->getInterval()->getVarIndex(compiler);
-        placedArgLocals[numPlacedArgLocals].Reg      = argReg;
-        numPlacedArgLocals++;
-    }
-
     return srcCount;
 }
 
