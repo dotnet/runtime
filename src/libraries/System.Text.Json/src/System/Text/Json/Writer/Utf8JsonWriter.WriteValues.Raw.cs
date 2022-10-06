@@ -118,7 +118,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than or equal to <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or equal to <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
@@ -141,15 +141,15 @@ namespace System.Text.Json
                 ValidateWritingValue();
             }
 
-            long len = utf8Json.Length;
+            int len = checked((int)utf8Json.Length);
 
             if (len == 0)
             {
                 ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
             }
-            if (len >= int.MaxValue)
+            if (len == int.MaxValue)
             {
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(len);
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(int.MaxValue);
             }
 
             if (skipInputValidation)
@@ -164,12 +164,15 @@ namespace System.Text.Json
             {
                 // Utilize reader validation.
                 Utf8JsonReader reader = new(utf8Json);
-                while (reader.Read()) ;
+                while (reader.Read());
                 _tokenType = reader.TokenType;
             }
 
             Debug.Assert(len < int.MaxValue);
-            int maxRequired = (int)len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
+
+            // TODO (https://github.com/dotnet/runtime/issues/29293):
+            // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
+            int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -184,7 +187,7 @@ namespace System.Text.Json
             }
 
             utf8Json.CopyTo(output.Slice(BytesPending));
-            BytesPending += (int)len;
+            BytesPending += len;
 
             SetFlagToAddListSeparatorBeforeNextItem();
         }
@@ -249,10 +252,12 @@ namespace System.Text.Json
             {
                 // Utilize reader validation.
                 Utf8JsonReader reader = new(utf8Json);
-                while (reader.Read()) ;
+                while (reader.Read());
                 _tokenType = reader.TokenType;
             }
 
+            // TODO (https://github.com/dotnet/runtime/issues/29293):
+            // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
             int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
 
             if (_memory.Length - BytesPending < maxRequired)

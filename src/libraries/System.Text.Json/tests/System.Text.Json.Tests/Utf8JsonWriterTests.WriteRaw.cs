@@ -536,7 +536,15 @@ namespace System.Text.Json.Tests
                 using MemoryStream ms = new();
                 using Utf8JsonWriter writer = new(ms);
                 ReadOnlySequence<byte> readonlySeq = CreateLargeReadOnlySequence(len);
-                Assert.Throws<ArgumentException>(() => writer.WriteRawValue(readonlySeq));
+
+                if (len == int.MaxValue)
+                {
+                    Assert.Throws<ArgumentException>(() => writer.WriteRawValue(readonlySeq));
+                }
+                else
+                {
+                    Assert.Throws<OverflowException>(() => writer.WriteRawValue(readonlySeq));
+                }
             }
             catch (OutOfMemoryException) { } // Perhaps failed to allocate large arrays
         }
