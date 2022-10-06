@@ -6,7 +6,8 @@
     <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
     <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
     <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
-    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</VerifySourceLinkFileExists>
+    <!-- Native sourcelink file is used only by Windows build - SourceBuild should ignore its existence. -->
+    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DotNetBuildFromSource)' != 'true'">true</VerifySourceLinkFileExists>
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
