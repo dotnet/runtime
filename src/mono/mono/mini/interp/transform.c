@@ -6072,7 +6072,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_ldsflda (td, field, error);
 					goto_if_nok (error, exit);
 				} else {
-					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
 						/* metadata-update: can't add byref fields */
 						g_assert (!m_type_is_byref (ftype));
