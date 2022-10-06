@@ -1715,6 +1715,7 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            bool IsKnownImmutable { get; }
         }
 
         /// <summary>
@@ -2134,6 +2135,8 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
+
+            public bool IsKnownImmutable => true;
         }
 
 #pragma warning disable CA1852
@@ -2222,6 +2225,8 @@ namespace ILCompiler
 
                 builder.EmitBytes(_data);
             }
+
+            public bool IsKnownImmutable => _elementCount == 0;
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -2341,6 +2346,8 @@ namespace ILCompiler
                 int pointerSize = factory.Target.PointerSize;
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
+
+            public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
         }
 
         private struct FieldAccessor

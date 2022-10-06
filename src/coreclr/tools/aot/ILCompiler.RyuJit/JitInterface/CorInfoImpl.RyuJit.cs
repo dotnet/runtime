@@ -2256,9 +2256,7 @@ namespace Internal.JitInterface
             return obj switch
             {
                 FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
-
                 FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
-
                 _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
             };
         }
@@ -2277,7 +2275,7 @@ namespace Internal.JitInterface
             return obj switch
             {
                 FrozenStringNode => true,
-                FrozenObjectNode => false,
+                FrozenObjectNode frozenObj => frozenObj.IsKnownImmutable,
                 _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
             };
         }

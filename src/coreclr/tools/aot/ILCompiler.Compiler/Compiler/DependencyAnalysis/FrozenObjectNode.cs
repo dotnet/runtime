@@ -37,6 +37,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc ObjectType => _data.Type;
 
+        public bool IsKnownImmutable => _data.IsKnownImmutable;
+
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset
