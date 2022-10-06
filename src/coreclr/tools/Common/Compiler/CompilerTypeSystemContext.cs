@@ -184,19 +184,14 @@ namespace ILCompiler
 
         private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null, bool throwOnFailureToLoad = true)
         {
-            if (filePath != null)
-            {
-                filePath = Path.GetFullPath(filePath);
-            }
-
             PEReader peReader = null;
-
             MemoryMappedViewAccessor mappedViewAccessor = null;
             PdbSymbolReader pdbReader = null;
             try
             {
                 if (oldModuleData == null)
                 {
+                    filePath = Path.GetFullPath(filePath);
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
 
 #if !READYTORUN
