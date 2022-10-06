@@ -599,14 +599,14 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	case MONO_TYPE_U8: {
 		// Ssse3 doesn't have support for HorizontalAdd on i64
 		MonoInst *lower = emit_simd_ins (cfg, vector_class, OP_XLOWER, arg->dreg, -1);
-		MonoInst *upper = emit_simd_ins (cfg, vector_class, OP_XUPPER, arg->dreg, -1);		
+		MonoInst *upper = emit_simd_ins (cfg, vector_class, OP_XUPPER, arg->dreg, -1);
 
 		// Sum lower and upper i64
 		MonoInst *ins = emit_simd_ins (cfg, vector_class, OP_XBINOP, lower->dreg, upper->dreg);
 		ins->inst_c0 = OP_IADD;
 		ins->inst_c1 = element_type;
 
-		return extract_first_element(cfg, vector_class, element_type, ins->dreg);
+		return extract_first_element (cfg, vector_class, element_type, ins->dreg);
 	}
 	default: {
 		return NULL;
@@ -632,7 +632,7 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 		ins->inst_c1 = element_type;
 	}
 
-	return extract_first_element(cfg, vector_class, element_type, ins->dreg);
+	return extract_first_element (cfg, vector_class, element_type, ins->dreg);
 }
 #endif
 
