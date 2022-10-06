@@ -3,8 +3,8 @@ Supports the [`DispatchProxy`](https://learn.microsoft.com/dotnet/api/system.ref
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.dispatchproxy.
 
-## Status: [Legacy](../../libraries/README.md)
-Although used for key scenarios by the community, it has remained relatively unchanged. Internally it uses [Emit](../System.Reflection.Emit/readme.md) to generate the proxies so it doesn't work on all platforms.
+## Status: [Legacy](../../libraries/README.md#development-statuses)
+Although used for key scenarios by the community, it has remained relatively unchanged. Internally it uses [Emit](../System.Reflection.Emit/README.md) to generate the proxies so it doesn't work on all platforms.
 
 ## Deployment
-[System.Reflection.DispatchProxy NuGet Package](https://www.nuget.org/packages/System.Reflection.DispatchProxy)
+[System.Reflection.DispatchProxy](https://www.nuget.org/packages/System.Reflection.DispatchProxy) NuGet package
