@@ -12873,15 +12873,22 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     return cons;
 }
 
-/*****************************************************************************
- *
- * Some conditionals can be folded:
- *   SELECT TRUE  X Y  ->  X
- *   SELECT FALSE X Y  ->  Y
- *   SELECT COND X X   ->  X
- *
- */
-
+//------------------------------------------------------------------------
+// gtFoldExprConditional: see if a conditional is foldable
+//
+// Arguments:
+//    tree - condition to examine
+//
+// Returns:
+//    The original call if no folding happened.
+//    An alternative tree if folding happens.
+//
+// Notes:
+//    Supporting foldings are:
+//      SELECT TRUE  X Y  ->  X
+//      SELECT FALSE X Y  ->  Y
+//      SELECT COND  X X  ->  X
+//
 GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
 {
     GenTree* cond = tree->AsConditional()->gtCond;
