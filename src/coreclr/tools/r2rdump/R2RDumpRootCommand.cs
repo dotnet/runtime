@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
 
 namespace R2RDump
 {
-    public class R2RDumpRootCommand : RootCommand
+    internal sealed class R2RDumpRootCommand : RootCommand
     {
-        public Option<FileInfo[]> In { get; } =
-            new(new[] { "--in", "-i" }, "Input file(s) to dump. Expects them to by ReadyToRun images");
+        public Option<List<string>> In { get; } =
+            new(new[] { "--in", "-i" }, result => Helpers.BuildPathList(result.Tokens), true, "Input file(s) to dump. Expects them to by ReadyToRun images");
         public Option<FileInfo> Out { get; } =
             new(new[] { "--out", "-o" }, "Output file path. Dumps everything to the specified file except for help message and exception messages");
         public Option<bool> Raw { get; } =
@@ -65,8 +67,8 @@ namespace R2RDump
         public Option<int> PerfmapFormatVersion { get; } =
             new(new[] { "--perfmap-format-version" }, () => ILCompiler.Diagnostics.PerfMapWriter.CurrentFormatVersion, "PerfMap format version for --create-perfmap");
 
-        public Option<FileInfo[]> Reference { get; } =
-            new(new[] { "--reference", "-r" }, "Explicit reference assembly files");
+        public Option<List<string>> Reference { get; } =
+            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathList(result.Tokens), true, "Explicit reference assembly files");
         public Option<DirectoryInfo[]> ReferencePath { get; } =
             new(new[] { "--referencePath", "--rp" }, "Search paths for reference assemblies");
 
@@ -74,6 +76,8 @@ namespace R2RDump
             new(new[] { "--signatureBinary", "--sb" }, "Append signature binary to its textual representation");
         public Option<bool> InlineSignatureBinary { get; } =
             new(new[] { "--inlineSignatureBinary", "--isb" }, "Embed binary signature into its textual representation");
+
+        public ParseResult Result;
 
         public R2RDumpRootCommand()
             : base("Parses and outputs the contents of a ReadyToRun image")
@@ -116,96 +120,26 @@ namespace R2RDump
             AddOption(InlineSignatureBinary);
 
             this.SetHandler(context =>
-                context.ExitCode = new R2RDump(new DumpOptions(this, context.ParseResult)).Run());
-        }
-    }
-
-    public partial class DumpOptions
-    {
-        public FileInfo[] In { get; }
-        public FileInfo Out { get; }
-        public bool Raw { get; }
-        public bool Header { get; }
-        public bool Disasm { get; }
-        public bool Naked { get; }
-        public bool HideOffsets { get; }
-
-        public string[] Query { get; }
-        public string[] Keyword { get; }
-        public string[] RuntimeFunction { get; }
-        public string[] Section { get; }
-
-        public bool Unwind { get; }
-        public bool GC { get; }
-        public bool Pgo { get; }
-        public bool SectionContents { get; }
-        public bool EntryPoints { get; }
-        public bool Normalize { get; }
-        public bool HideTransitions { get; }
-        public bool Verbose { get; }
-        public bool Diff { get; }
-        public bool DiffHideSameDisasm { get; }
-
-        public bool CreatePDB { get; }
-        public string PdbPath { get; }
-
-        public bool CreatePerfmap { get; }
-        public string PerfmapPath { get; }
-        public int PerfmapFormatVersion { get; }
-
-        public FileInfo[] Reference { get; }
-        public DirectoryInfo[] ReferencePath { get; }
-
-        public bool SignatureBinary { get; }
-        public bool InlineSignatureBinary { get; }
-
-        public DumpOptions(R2RDumpRootCommand cmd, ParseResult res)
-        {
-            In = res.GetValueForOption(cmd.In);
-            Out = res.GetValueForOption(cmd.Out);
-            Raw = res.GetValueForOption(cmd.Raw);
-            Header = res.GetValueForOption(cmd.Header);
-            Disasm = res.GetValueForOption(cmd.Disasm);
-            Naked = res.GetValueForOption(cmd.Naked);
-            HideOffsets = res.GetValueForOption(cmd.HideOffsets);
-
-            Query = res.GetValueForOption(cmd.Query);
-            Keyword = res.GetValueForOption(cmd.Keyword);
-            RuntimeFunction = res.GetValueForOption(cmd.RuntimeFunction);
-            Section = res.GetValueForOption(cmd.Section);
-
-            Unwind = res.GetValueForOption(cmd.Unwind);
-            GC = res.GetValueForOption(cmd.GC);
-            Pgo = res.GetValueForOption(cmd.Pgo);
-            SectionContents = res.GetValueForOption(cmd.SectionContents);
-            EntryPoints = res.GetValueForOption(cmd.EntryPoints);
-            Normalize = res.GetValueForOption(cmd.Normalize);
-            HideTransitions = res.GetValueForOption(cmd.HideTransitions);
-            Verbose = res.GetValueForOption(cmd.Verbose);
-            Diff = res.GetValueForOption(cmd.Diff);
-            DiffHideSameDisasm = res.GetValueForOption(cmd.DiffHideSameDisasm);
-
-            CreatePDB = res.GetValueForOption(cmd.CreatePDB);
-            PdbPath = res.GetValueForOption(cmd.PdbPath);
-
-            CreatePerfmap = res.GetValueForOption(cmd.CreatePerfmap);
-            PerfmapPath = res.GetValueForOption(cmd.PerfmapPath);
-            PerfmapFormatVersion = res.GetValueForOption(cmd.PerfmapFormatVersion);
-
-            Reference = res.GetValueForOption(cmd.Reference);
-            ReferencePath = res.GetValueForOption(cmd.ReferencePath);
-
-            SignatureBinary = res.GetValueForOption(cmd.SignatureBinary);
-            InlineSignatureBinary = res.GetValueForOption(cmd.InlineSignatureBinary);
-
-            if (Verbose)
             {
-                Disasm = true;
-                Unwind = true;
-                GC = true;
-                Pgo = true;
-                SectionContents = true;
-            }
+                Result = context.ParseResult;
+
+                try
+                {
+                    context.ExitCode = new Program(this).Run();
+                }
+                catch (Exception e)
+                {
+                    Console.ResetColor();
+                    Console.ForegroundColor = ConsoleColor.Red;
+
+                    Console.Error.WriteLine("Error: " + e.Message);
+                    Console.Error.WriteLine(e.ToString());
+
+                    Console.ResetColor();
+
+                    context.ExitCode = 1;
+                }
+            });
         }
     }
 }

@@ -9978,7 +9978,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 {
 	MonoMethod *method = imethod->method;
 	MonoMethodHeader *header = NULL;
-	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	MonoVTable *method_class_vt;
 	MonoGenericContext *generic_context = NULL;
 	InterpMethod tmp_imethod;
@@ -10022,7 +10021,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		/* assumes all internal calls with an array this are built in... */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
 			nm = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
-			signature = mono_method_signature_internal (nm);
 		} else {
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {

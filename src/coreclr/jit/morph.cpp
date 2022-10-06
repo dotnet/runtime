@@ -3789,9 +3789,19 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     ArgElem&       lastElem                 = elems[elemCount - 1];
     assert((elemCount == arg->AbiInfo.NumRegs) || arg->AbiInfo.IsSplit());
 
+    if (layout != nullptr)
+    {
+        assert(ClassLayout::AreCompatible(typGetObjLayout(arg->GetSignatureClassHandle()), layout));
+    }
+    else
+    {
+        assert(varTypeIsSIMD(argValue) && varTypeIsSIMD(arg->GetSignatureType()));
+    }
+
     if (arg->AbiInfo.IsHfaArg() && arg->AbiInfo.IsPassedInFloatRegisters())
     {
         var_types hfaType = arg->AbiInfo.GetHfaType();
+
         for (unsigned inx = 0; inx < elemCount; inx++)
         {
             elems[inx].Type   = hfaType;
@@ -3801,7 +3811,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     else
     {
         assert(structSize <= MAX_ARG_REG_COUNT * TARGET_POINTER_SIZE);
-        assert((layout != nullptr) || varTypeIsSIMD(argValue));
 
         auto getSlotType = [layout](unsigned inx) {
             return (layout != nullptr) ? layout->GetGCPtrType(inx) : TYP_I_IMPL;
@@ -3974,14 +3983,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
                 unsigned offset = lclOffset + elems[inx].Offset;
-#ifdef DEBUG
-                // Make sure we've set up correct GC types above.
-                unsigned  slotIdx   = offset / TARGET_POINTER_SIZE;
-                var_types argGcType = varTypeIsGC(elems[inx].Type) ? elems[inx].Type : TYP_I_IMPL;
-                var_types lclGcType = varDsc->HasGCPtr() ? varDsc->GetLayout()->GetGCPtrType(slotIdx) : TYP_I_IMPL;
-                assert(argGcType == lclGcType);
-#endif // DEBUG
-
                 GenTree* lclFld = gtNewLclFldNode(lclNum, elems[inx].Type, offset);
                 newArg->AddField(this, lclFld, offset, lclFld->TypeGet());
             }
@@ -8312,6 +8313,26 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
 
+    // Try to replace CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE with a constant gc handle
+    // pointing to a frozen segment
+    if (!gtIsActiveCSE_Candidate(call) && gtIsTypeHandleToRuntimeTypeHelper(call))
+    {
+        GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
+        if ((hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
+        {
+            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
+            if (ptr != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                retNode->gtType  = TYP_REF;
+                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                return fgMorphTree(retNode);
+            }
+        }
+    }
+
     // Assign DEF flags if it produces a definition from "return buffer".
     fgAssignSetVarDef(call);
     if (call->OperRequiresAsgFlag())
@@ -11154,7 +11175,7 @@ DONE_MORPHING_CHILDREN:
             //
             if (!tree->AsIndir()->IsVolatile())
             {
-                if (op1->IsIconHandle(GTF_ICON_STR_HDL))
+                if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                 }

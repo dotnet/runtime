@@ -6995,8 +6995,8 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenString();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
+            setMethodHasFrozenObjects();
+            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
@@ -11075,18 +11075,11 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
-                // If *str points to a '\0' then don't print the string's values
-                if ((str != nullptr) && (*str != '\0'))
-                {
-                    printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
-                }
-                else // We can't print the value of the string
-                {
-                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
-                    // and instead always returns nullptr
-                    printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
-                }
+                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
+            }
+            else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            {
+                eePrintObjectDescriptionDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {
@@ -11101,7 +11094,7 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        assert(doesMethodHaveFrozenString());
+                        assert(doesMethodHaveFrozenObjects());
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
@@ -11153,8 +11146,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
                             break;
+                        case GTF_ICON_OBJ_HDL:
                         case GTF_ICON_STR_HDL:
-                            unreached(); // This case is handled above
+                            unreached(); // These cases are handled above
                             break;
                         case GTF_ICON_CONST_PTR:
                             printf(" const ptr");
@@ -17684,12 +17678,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     GenTree* op1 = base->AsOp()->gtOp1;
                     GenTree* op2 = base->AsOp()->gtOp2;
 
-                    const bool op1IsStaticFieldBase = gtIsStaticGCBaseHelperCall(op1);
-
-                    if (op1IsStaticFieldBase && (op2->OperGet() == GT_CNS_INT))
+                    if (op2->IsCnsIntOrI())
                     {
                         FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-
                         if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
@@ -17959,55 +17950,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
     }
 
     return fieldClass;
-}
-
-//------------------------------------------------------------------------
-// gtIsGCStaticBaseHelperCall: true if tree is fetching the gc static base
-//    for a subsequent static field access
-//
-// Arguments:
-//    tree - tree to consider
-//
-// Return Value:
-//    true if the tree is a suitable helper call
-//
-// Notes:
-//    Excludes R2R helpers as they specify the target field in a way
-//    that is opaque to the jit.
-
-bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
-{
-    if (tree->OperGet() != GT_CALL)
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-
-    if (call->gtCallType != CT_HELPER)
-    {
-        return false;
-    }
-
-    const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
-
-    switch (helper)
-    {
-        // We are looking for a REF type so only need to check for the GC base helpers
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            return true;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------

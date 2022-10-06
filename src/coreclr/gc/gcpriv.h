@@ -2200,14 +2200,16 @@ protected:
     BOOL mark_array_bit_set (size_t mark_bit);
     PER_HEAP
     void mark_array_clear_marked (uint8_t* add);
-    PER_HEAP
-    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only=TRUE
+
 #ifdef FEATURE_BASICFREEZE
-        , BOOL read_only=FALSE
-#endif // FEATURE_BASICFREEZE
-        );
+    PER_HEAP
+    void seg_set_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP
+    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -2860,10 +2862,17 @@ protected:
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
+#ifdef FEATURE_BASICFREEZE
+    PER_HEAP
+    void seg_set_mark_bits (heap_segment* seg);
     PER_HEAP
     void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP
-    void sweep_ro_segments (heap_segment* start_seg);
+    void mark_ro_segments();
+    PER_HEAP
+    void sweep_ro_segments();
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,
@@ -5806,6 +5815,8 @@ public:
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
+
+const int min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * LARGE_REGION_FACTOR));
 
 enum allocate_direction
 {

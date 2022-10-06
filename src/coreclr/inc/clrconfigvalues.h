@@ -188,11 +188,6 @@ CONFIG_DWORD_INFO(INTERNAL_DbgNoOpenMDByFile, W("DbgNoOpenMDByFile"), 0, "Allows
 CONFIG_DWORD_INFO(INTERNAL_DbgOOBinFEEE, W("DbgOOBinFEEE"), 0, "Allows forcing oob breakpoints when a fatal error occurs")
 CONFIG_DWORD_INFO(INTERNAL_DbgPingInterop, W("DbgPingInterop"), 0, "Allows checking for deadlocks in interop debugging")
 CONFIG_DWORD_INFO(INTERNAL_DbgRace, W("DbgRace"), 0, "Allows pausing for native debug events to get hijicked")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgRedirect, W("DbgRedirect"), 0, "Allows for redirecting the event pipeline")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectApplication, W("DbgRedirectApplication"), "Specifies the auxiliary debugger application to launch.")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectAttachCmd, W("DbgRedirectAttachCmd"), "Specifies command parameters for attaching the auxiliary debugger.")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectCommonCmd, W("DbgRedirectCommonCmd"), "Specifies a command line format string for the auxiliary debugger.")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectCreateCmd, W("DbgRedirectCreateCmd"), "Specifies command parameters when creating the auxiliary debugger.")
 CONFIG_DWORD_INFO(INTERNAL_DbgShortcutCanary, W("DbgShortcutCanary"), 0, "Allows a way to force canary to fail to be able to test failure paths")
 CONFIG_DWORD_INFO(INTERNAL_DbgSkipMEOnStep, W("DbgSkipMEOnStep"), 0, "Turns off MethodEnter checks")
 CONFIG_DWORD_INFO(INTERNAL_DbgSkipVerCheck, W("DbgSkipVerCheck"), 0, "Allows different RS and LS versions (for servicing work)")
@@ -403,11 +398,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 CONFIG_DWORD_INFO(INTERNAL_LoaderHeapCallTracing, W("LoaderHeapCallTracing"), 0, "Loader heap troubleshooting")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CodeHeapReserveForJumpStubs, W("CodeHeapReserveForJumpStubs"), 1, "Percentage of code heap to reserve for jump stubs")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
-
-///
-/// Frozen segments (aka Frozen Object Heap)
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseFrozenObjectHeap, W("UseFrozenObjectHeap"), 1, "Use frozen object heap for certain types of objects (e.g. string literals) as an optimization.")
 
 ///
 /// Log
