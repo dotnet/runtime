@@ -4951,23 +4951,19 @@ size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size
         {
             *pRequiredBufferSize = (size_t)value.requiredBufferSize;
         }
-        size_t bytesWritten = (size_t)value.bytesWritten;
-        if (buffer != nullptr && bytesWritten > 0)
-        {
-            char* srcBuffer = (char*)PrintObjectDescription->GetBuffer(value.buffer);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(bytesWritten, bufferSize));
 
-            // Make it more resilient than actual implementations
-            if (bytesWritten >= bufferSize)
-            {
-                // Trim data and null-terminate it
-                buffer[bytesWritten - 1] = 0;
-            }
-            else
-            {
-                buffer[bytesWritten] = 0;
-            }
+        size_t bytesWritten = 0;
+
+        BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+        Assert(srcBuffer != nullptr);
+
+        if (bufferSize > 0)
+        {
+            bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+            memcpy(buffer, srcBuffer, bytesWritten);
+
+            // Always null-terminate
+            buffer[bytesWritten] = 0;
         }
         return bytesWritten;
     }
