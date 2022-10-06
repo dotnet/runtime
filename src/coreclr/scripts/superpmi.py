@@ -1982,7 +1982,7 @@ class SuperPMIReplayAsmDiffs:
 
                 if any_diffs:
                     write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Diffs|Improvements|Regressions|Improvements (bytes)|Regressions (bytes)|\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Improvements (bytes)|Regressions (bytes)|\n")
                     write_fh.write("|---|--:|--:|--:|--:|--:|\n")
 
                     def write_row(name, diffs):
