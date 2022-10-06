@@ -729,10 +729,7 @@ size_t CEEInfo::printObjectDescription (
 
     size_t bytesWritten = 0;
 
-    // NOTE: this function is used for pinned/frozen handles
-    // it doesn't need to null-terminate the string
-
-    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
+    _ASSERT(handle != nullptr);
 
     JIT_TO_EE_TRANSITION();
 
