@@ -1850,7 +1850,7 @@ namespace Internal.JitInterface
             }
             if (pRequiredBufferSize != null)
             {
-                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr);
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr) + 1;
             }
             return (nuint)written;
         }
