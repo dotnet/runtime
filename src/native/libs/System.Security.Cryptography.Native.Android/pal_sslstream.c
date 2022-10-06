@@ -353,6 +353,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateV
 
     sslStream = xcalloc(1, sizeof(SSLStream));
     sslStream->sslContext = ToGRef(env, loc[sslContext]);
+    loc[sslContext] = NULL;
 
 cleanup:
     RELEASE_LOCALS(loc, env);

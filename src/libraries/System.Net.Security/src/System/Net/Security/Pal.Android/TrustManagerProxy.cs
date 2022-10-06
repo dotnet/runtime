@@ -9,25 +9,22 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal sealed class RemoteCertificateValidationCallbackProxy : IDisposable
+    internal sealed class TrustManagerProxy : IDisposable
     {
         private static object s_initializationLock = new();
         private static bool s_initialized;
 
-        private readonly RemoteCertificateValidationCallback _callback;
-        private readonly object _sender;
         private readonly GCHandle _handle;
+        private readonly RemoteCertificateVerifier _remoteCertificateVerifier;
+
 
         public IntPtr Handle => GCHandle.ToIntPtr(_handle);
 
-        public unsafe RemoteCertificateValidationCallbackProxy(
-            object sender,
-            RemoteCertificateValidationCallback callback)
+        public unsafe TrustManagerProxy(RemoteCertificateVerifier remoteCertificateVerifier)
         {
             EnsureTrustManagerValidationCallbackIsRegistered();
 
-            _sender = sender;
-            _callback = callback;
+            _remoteCertificateVerifier = remoteCertificateVerifier;
             _handle = GCHandle.Alloc(this);
         }
 
@@ -55,7 +52,7 @@ namespace System.Net
             byte** rawCertificates,
             int errors)
         {
-            RemoteCertificateValidationCallbackProxy validator = FromHandle(validatorHandle);
+            TrustManagerProxy validator = FromHandle(validatorHandle);
             X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
             return validator.Validate(certificates, (SslPolicyErrors)errors);
@@ -64,12 +61,21 @@ namespace System.Net
         private bool Validate(X509Certificate2[] certificates, SslPolicyErrors errors)
         {
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
-            X509Chain chain = CreateChain(certificates);
-            return _callback.Invoke(_sender, certificate, chain, errors);
+
+            // TODO what to do with the rest of the certificates?
+            // should I create an instance of SslCertificateTrust?
+
+            return _remoteCertificateVerifier.VerifyRemoteCertificate(
+                certificate,
+                trust: null,
+                chain: null,
+                remoteCertRequired: true,
+                ref errors,
+                out _);
         }
 
-        private static RemoteCertificateValidationCallbackProxy FromHandle(IntPtr handle)
-            => GCHandle.FromIntPtr(handle).Target as RemoteCertificateValidationCallbackProxy
+        private static TrustManagerProxy FromHandle(IntPtr handle)
+            => GCHandle.FromIntPtr(handle).Target as TrustManagerProxy
                 ?? throw new ArgumentNullException(nameof(handle));
 
         private static unsafe X509Certificate2[] Convert(
@@ -86,15 +92,6 @@ namespace System.Net
             }
 
             return certificates;
-        }
-
-        private static X509Chain CreateChain (X509Certificate2[] certificates)
-        {
-            var chain = new X509Chain();
-            chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-            chain.ChainPolicy.ExtraStore.AddRange(certificates);
-            return chain;
         }
     }
 }

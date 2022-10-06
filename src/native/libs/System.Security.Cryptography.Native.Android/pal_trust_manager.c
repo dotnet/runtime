@@ -1,15 +1,15 @@
 #include "pal_trust_manager.h"
 
-static ValidationCallback dotnetValidationCallback;
+static ValidationCallback dotnetCallback;
 
 void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallback callback)
 {
-    dotnetValidationCallback = callback;
+    dotnetCallback = callback;
 }
 
 jobjectArray initTrustManagersWithCustomValidatorProxy(
     JNIEnv* env,
-    intptr_t dotnetRemoteCertificateValidatorHandle,
+    intptr_t dotnetValidatorHandle,
     char* targetHostName)
 {
     jobjectArray trustManagers = NULL;
@@ -32,7 +32,7 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(
     // boolean foundAndReplaced = false;
     // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new RemoteCertificateValidationCallbackProxy(dotnetRemoteCertificateValidatorHandle, trustManagers[i], targetHostName);
+    //     trustManagers[i] = new DotnetProxyTrustManager(dotnetValidatorHandle, trustManagers[i], targetHostName);
     //     foundAndReplaced = true;
     //     break;
     //   }
@@ -47,7 +47,7 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
             loc[javaTargetHostName] = make_java_string(env, targetHostName);
-            loc[trustManagerProxy] = (*env)->NewObject(env, g_RemoteCertificateValidationCallbackProxy, g_RemoteCertificateValidationCallbackProxyCtor, (int)dotnetRemoteCertificateValidatorHandle, loc[trustManager], loc[javaTargetHostName]);
+            loc[trustManagerProxy] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)dotnetValidatorHandle, loc[trustManager], loc[javaTargetHostName]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[trustManagerProxy]);
@@ -58,6 +58,7 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(
         }
 
         ReleaseLRef(env, loc[trustManager]);
+        loc[trustManager] = NULL;
     }
 
     if (!foundAndReplaced)
@@ -71,20 +72,21 @@ cleanup:
     return trustManagers;
 }
 
-jboolean Java_net_dot_android_crypto_RemoteCertificateValidationCallbackProxy_validateRemoteCertificate(
+jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_validateRemoteCertificate(
     JNIEnv* env,
-    jobject RemoteCertificateValidationCallbackProxy,
-    intptr_t dotnetRemoteCertificateValidatorHandle,
+    jobject handle,
+    intptr_t dotnetValidatorHandle,
     jobjectArray certificates,
     int32_t errors)
 {
-    assert(dotnetValidationCallback && "dotnetValidationCallback has not been registered");
+    assert(dotnetCallback && "dotnetCallback has not been registered");
 
     bool isAccepted = false;
     size_t certificateCount = 0;
     uint8_t** rawData = NULL;
     int32_t* lengths = NULL;
-    INIT_LOCALS(loc, certificate, encodedCertificate);
+    jobject certificate = NULL;
+    jbyteArray encodedCertificate = NULL;
 
     certificateCount = (size_t)(*env)->GetArrayLength(env, certificates);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -93,25 +95,25 @@ jboolean Java_net_dot_android_crypto_RemoteCertificateValidationCallbackProxy_va
 
     for (size_t i = 0; i < certificateCount; i++)
     {
-        loc[certificate] = (*env)->GetObjectArrayElement(env, certificates, (jsize)i);
+        certificate = (*env)->GetObjectArrayElement(env, certificates, (jsize)i);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        loc[encodedCertificate] = (*env)->CallObjectMethod(env, loc[certificate], g_CertificateGetEncoded);
+        encodedCertificate = (*env)->CallObjectMethod(env, certificate, g_CertificateGetEncoded);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        jsize length = (*env)->GetArrayLength(env, loc[encodedCertificate]);
+        jsize length = (*env)->GetArrayLength(env, encodedCertificate);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
         lengths[i] = (int32_t)length;
         rawData[i] = (uint8_t*)xmalloc((size_t)length * sizeof(uint8_t));
-        (*env)->GetByteArrayRegion(env, loc[encodedCertificate], 0, length, (jbyte*)rawData[i]);
+        (*env)->GetByteArrayRegion(env, encodedCertificate, 0, length, (jbyte*)rawData[i]);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        ReleaseLRef(env, loc[certificate]);
-        ReleaseLRef(env, loc[encodedCertificate]);
+        ReleaseLRef(env, certificate);
+        ReleaseLRef(env, encodedCertificate);
     }
 
-    isAccepted = dotnetValidationCallback(dotnetRemoteCertificateValidatorHandle, (int32_t)certificateCount, lengths, rawData, errors);
+    isAccepted = dotnetCallback(dotnetValidatorHandle, (int32_t)certificateCount, lengths, rawData, errors);
 
 cleanup:
     if (rawData != NULL)
@@ -126,7 +128,8 @@ cleanup:
     if (lengths != NULL)
         free(lengths);
 
-    RELEASE_LOCALS(loc, env);
+    // TODO: make sure that we really don't need to free those local refs manually
+    // they seem to be collected when the C# code is invoked
 
     return isAccepted ? JNI_TRUE : JNI_FALSE;
 }

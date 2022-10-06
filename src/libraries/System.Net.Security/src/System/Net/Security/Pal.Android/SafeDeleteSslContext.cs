@@ -30,7 +30,7 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly RemoteCertificateValidationCallbackProxy? _remoteCertificateValidationCallbackProxy;
+        private readonly TrustManagerProxy _trustManagerProxy;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
@@ -40,18 +40,12 @@ namespace System.Net
         public SafeDeleteSslContext(SslStream sslStream, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            IntPtr validatorPtr = IntPtr.Zero;
-            if (authOptions.CertValidationDelegate is not null)
-            {
-                _remoteCertificateValidationCallbackProxy = new RemoteCertificateValidationCallbackProxy(sslStream, authOptions.CertValidationDelegate);
-            }
+            var verifier = new RemoteCertificateVerifier(sslStream, authOptions, securityContext: this);
+            _trustManagerProxy = new TrustManagerProxy(verifier);
 
             try
             {
-                _sslContext = CreateSslContext(
-                    _remoteCertificateValidationCallbackProxy?.Handle ?? IntPtr.Zero,
-                    sslStream.TargetHostName,
-                    authOptions);
+                _sslContext = CreateSslContext(_trustManagerProxy.Handle, sslStream.TargetHostName, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -76,7 +70,7 @@ namespace System.Net
                     sslContext.Dispose();
                 }
 
-                _remoteCertificateValidationCallbackProxy?.Dispose();
+                _trustManagerProxy?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -157,11 +151,11 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(
-            IntPtr validatorPtr,
-            string targetHostName,
-            SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(IntPtr validatorPtr, string targetHostName, SslAuthenticationOptions authOptions)
         {
+            // TODO pass enabled ssl protocols to the SSLStream factory
+            // TODO what else do I need to configure the SSLStream (&friends) correctly?
+
             if (authOptions.CertificateContext == null)
             {
                 return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr, targetHostName);

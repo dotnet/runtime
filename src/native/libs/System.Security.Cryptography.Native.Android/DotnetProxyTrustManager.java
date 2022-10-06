@@ -8,7 +8,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509TrustManager;
 
-class RemoteCertificateValidationCallbackProxy implements X509TrustManager {
+class DotnetProxyTrustManager implements X509TrustManager {
     private static class SslPolicyErrors {
         public static final int None = 0x0;
         public static final int RemoteCertificateNotAvailable = 0x1;
@@ -16,16 +16,16 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager {
         public static final int RemoteCertificateChainErrors = 0x4;
     }
 
-    private int dotnetRemoteCertificateValidatorHandle;
+    private int dotnetValidatorHandle;
     private X509TrustManager internalTrustManager;
     private String targetHostName;
 
-    public RemoteCertificateValidationCallbackProxy(
-        int dotnetRemoteCertificateValidatorHandle,
+    public DotnetProxyTrustManager(
+        int dotnetValidatorHandle,
         X509TrustManager internalTrustManager,
         String targetHostName)
     {
-        this.dotnetRemoteCertificateValidatorHandle = dotnetRemoteCertificateValidatorHandle;
+        this.dotnetValidatorHandle = dotnetValidatorHandle;
         this.internalTrustManager = internalTrustManager;
         this.targetHostName = targetHostName;
     }
@@ -52,7 +52,7 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager {
             errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
         }
 
-        if (!validateUsingDotnetCallback(chain, errors)) {
+        if (!validateInDotnet(chain, errors)) {
             throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
         }
     }
@@ -67,11 +67,11 @@ class RemoteCertificateValidationCallbackProxy implements X509TrustManager {
         return internalTrustManager.getAcceptedIssuers();
     }
 
-    private boolean validateUsingDotnetCallback(X509Certificate[] chain, int errors) {
-        return validateRemoteCertificate(dotnetRemoteCertificateValidatorHandle, chain, errors);
+    private boolean validateInDotnet(X509Certificate[] chain, int errors) {
+        return validateRemoteCertificate(dotnetValidatorHandle, chain, errors);
     }
 
-    static native boolean validateRemoteCertificate(int dotnetRemoteCertificateValidatorHandle, X509Certificate[] chain, int errors);
+    static native boolean validateRemoteCertificate(int dotnetValidatorHandle, X509Certificate[] chain, int errors);
 
     private class FakeSSLSession implements SSLSession {
         private X509Certificate[] certificates;

@@ -498,9 +498,9 @@ extern jclass g_X509TrustManager;
 extern jclass    g_Certificate;
 extern jmethodID g_CertificateGetEncoded;
 
-// net/dot/android/crypto/RemoteCertificateValidationCallbackProxy
-extern jclass    g_RemoteCertificateValidationCallbackProxy;
-extern jmethodID g_RemoteCertificateValidationCallbackProxyCtor;
+// net/dot/android/crypto/DotnetProxyTrustManager
+extern jclass    g_DotnetProxyTrustManager;
+extern jmethodID g_DotnetProxyTrustManagerCtor;
 
 // Compatibility macros
 #if !defined (__mallocfunc)

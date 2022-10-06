@@ -387,7 +387,7 @@ public class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
         // TODO move this build somewhere else
-        string remoteCertificateValidationCallbackProxyPath = "/Users/simonrozsival/Projects/dotnet/runtime/src/native/libs/System.Security.Cryptography.Native.Android/RemoteCertificateValidationCallbackProxy.java";
+        string remoteCertificateValidationCallbackProxyPath = "/Users/simonrozsival/Projects/dotnet/runtime/src/native/libs/System.Security.Cryptography.Native.Android/DotnetProxyTrustManager.java";
 
         Regex checkNumerics = new Regex(@"\.(\d)");
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
