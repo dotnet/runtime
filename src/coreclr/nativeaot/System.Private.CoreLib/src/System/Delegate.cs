@@ -43,7 +43,7 @@ namespace System
 
         internal object m_firstParameter;
         internal object m_helperObject;
-        internal IntPtr m_extraFunctionPointerOrData;
+        internal nint m_extraFunctionPointerOrData;
         internal IntPtr m_functionPointer;
 
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
@@ -100,7 +100,7 @@ namespace System
                 isInterpreterEntrypoint = true;
                 return IntPtr.Zero;
             }
-            else if (m_extraFunctionPointerOrData != IntPtr.Zero)
+            else if (m_extraFunctionPointerOrData != 0)
             {
                 if (GetThunk(OpenInstanceThunk) == m_functionPointer)
                 {

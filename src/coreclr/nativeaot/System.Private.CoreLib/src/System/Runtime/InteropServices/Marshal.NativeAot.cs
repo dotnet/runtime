@@ -18,6 +18,16 @@ namespace System.Runtime.InteropServices
         internal static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
         {
             Debug.Assert(throwIfNotMarshalable);
+
+            if (t is not RuntimeType)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
+
+            if (t.IsPointer /* or IsFunctionPointer */)
+                return IntPtr.Size;
+
+            if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)
+                throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, t));
+
             return RuntimeInteropData.GetStructUnsafeStructSize(t.TypeHandle);
         }
 
@@ -29,6 +39,13 @@ namespace System.Runtime.InteropServices
 
             if (string.IsNullOrEmpty(fieldName))
                 throw new ArgumentNullException(nameof(fieldName));
+
+            // COMPAT: CoreCLR would allow a non-runtime type as long as has a runtime field.
+            // We need a runtime type because we don't reflection-locate the field.
+            if (t is not RuntimeType)
+            {
+                throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
+            }
 
             if (t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
@@ -46,7 +63,7 @@ namespace System.Runtime.InteropServices
 
             if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
             {
-                throw new ArgumentException(nameof(structure), SR.Argument_StructMustNotBeValueClass);
+                throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
             }
 
             PtrToStructureImpl(ptr, structure);
@@ -96,12 +113,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(ptr));
 
             if (structuretype == null)
-                throw new ArgumentNullException(nameof(structuretype));
+                throw new ArgumentNullException("structureType");
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
             if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, "structure");
 
             if (structureTypeHandle.IsEnum() ||
                 structureTypeHandle.IsInterface() ||

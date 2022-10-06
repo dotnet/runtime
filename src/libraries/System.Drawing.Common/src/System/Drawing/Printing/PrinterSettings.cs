@@ -169,7 +169,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Gets the names of all printers installed on the machine.
         /// </summary>
-        public static StringCollection InstalledPrinters
+        public static unsafe StringCollection InstalledPrinters
         {
             get
             {
@@ -202,11 +202,11 @@ namespace System.Drawing.Printing
                     throw new Win32Exception();
                 }
 
+                byte* pBuffer = (byte*)buffer;
                 for (int i = 0; i < count; i++)
                 {
                     // The printer name is at offset 0
-                    //
-                    IntPtr namePointer = (IntPtr)Marshal.ReadIntPtr((IntPtr)(checked((long)buffer + i * sizeofstruct)));
+                    IntPtr namePointer = *(IntPtr*)(pBuffer + (nint)i * sizeofstruct);
                     array[i] = Marshal.PtrToStringAuto(namePointer)!;
                 }
 
@@ -820,7 +820,7 @@ namespace System.Drawing.Printing
             return GetHdevmodeInternal(PrinterNameInternal);
         }
 
-        private IntPtr GetHdevmodeInternal(string printer)
+        private unsafe IntPtr GetHdevmodeInternal(string printer)
         {
             // Create DEVMODE
             int modeSize = Interop.Winspool.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, IntPtr.Zero, NativeMethods.NullHandleRef, 0);
@@ -853,7 +853,7 @@ namespace System.Drawing.Printing
                 // by checking for a large enough buffer size before copying the extrainfo buffer
                 if (_extrabytes <= mode.dmDriverExtra)
                 {
-                    IntPtr pointeroffset = (IntPtr)(checked((long)pointer + (long)mode.dmSize));
+                    IntPtr pointeroffset = (IntPtr)((byte*)pointer + mode.dmSize);
                     Marshal.Copy(_extrainfo, 0, pointeroffset, _extrabytes);
                 }
             }
@@ -910,7 +910,7 @@ namespace System.Drawing.Printing
         ///   Interop.Kernel32.GlobalFree(handle);
         ///   Where "handle" is the return value from this method.
         /// </summary>
-        public IntPtr GetHdevnames()
+        public unsafe IntPtr GetHdevnames()
         {
             string printerName = PrinterName; // the PrinterName property is slow when using the default printer
             string driver = DriverName;  // make sure we are writing out exactly the same string as we got the length of
@@ -925,14 +925,15 @@ namespace System.Drawing.Printing
             uint namesSize = (uint)checked(Marshal.SystemDefaultCharSize * (offset + namesCharacters)); // always >0
             IntPtr handle = Interop.Kernel32.GlobalAlloc(SafeNativeMethods.GMEM_MOVEABLE | SafeNativeMethods.GMEM_ZEROINIT, namesSize);
             IntPtr namesPointer = Interop.Kernel32.GlobalLock(handle);
+            byte* pNamesPointer = (byte*)namesPointer;
 
-            Marshal.WriteInt16(namesPointer, offset); // wDriverOffset
+            *(short*)(pNamesPointer) = offset; // wDriverOffset
             offset += WriteOneDEVNAME(driver, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 2)), offset); // wDeviceOffset
+            *(short*)(pNamesPointer + 2) = offset; // wDeviceOffset
             offset += WriteOneDEVNAME(printerName, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 4)), offset); // wOutputOffset
+            *(short*)(pNamesPointer + 4) = offset; // wOutputOffset
             offset += WriteOneDEVNAME(outPort, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 6)), offset); // wDefault
+            *(short*)(pNamesPointer + 6) = offset; // wDefault
 
             Interop.Kernel32.GlobalUnlock(handle);
             return handle;
@@ -1020,7 +1021,7 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        internal PaperSize[] Get_PaperSizes()
+        internal unsafe PaperSize[] Get_PaperSizes()
         {
             string printerName = PrinterName; //  this is quite expensive if PrinterName is left default
 
@@ -1042,17 +1043,20 @@ namespace System.Drawing.Printing
             FastDeviceCapabilities(SafeNativeMethods.DC_PAPERSIZE, dimensionsBuffer, -1, printerName);
 
             PaperSize[] result = new PaperSize[count];
+            byte* pNamesBuffer = (byte*)namesBuffer;
+            short* pKindsBuffer = (short*)kindsBuffer;
+            int* pDimensionsBuffer = (int*)dimensionsBuffer;
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 64)!;
+                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * (nint)i), 64)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
-                short kind = Marshal.ReadInt16((IntPtr)(checked((long)kindsBuffer + i * 2)));
-                int width = Marshal.ReadInt32((IntPtr)(checked((long)dimensionsBuffer + i * 8)));
-                int height = Marshal.ReadInt32((IntPtr)(checked((long)dimensionsBuffer + i * 8 + 4)));
+                short kind = pKindsBuffer[i];
+                int width = pDimensionsBuffer[i * 2];
+                int height = pDimensionsBuffer[i * 2 + 1];
                 result[i] = new PaperSize((PaperKind)kind, name,
                                           PrinterUnitConvert.Convert(width, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display),
                                           PrinterUnitConvert.Convert(height, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display));
@@ -1064,7 +1068,7 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        internal PaperSource[] Get_PaperSources()
+        internal unsafe PaperSource[] Get_PaperSources()
         {
             string printerName = PrinterName; //  this is quite expensive if PrinterName is left default
 
@@ -1083,17 +1087,19 @@ namespace System.Drawing.Printing
             IntPtr kindsBuffer = Marshal.AllocCoTaskMem(2 * count);
             FastDeviceCapabilities(SafeNativeMethods.DC_BINS, kindsBuffer, -1, printerName);
 
+            byte* pNamesBuffer = (byte*)namesBuffer;
+            short* pKindsBuffer = (short*)kindsBuffer;
             PaperSource[] result = new PaperSource[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 24)!;
+                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * (nint)i), 24)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
 
-                short kind = Marshal.ReadInt16((IntPtr)(checked((long)kindsBuffer + 2 * i)));
+                short kind = pKindsBuffer[i];
                 result[i] = new PaperSource((PaperSourceKind)kind, name);
             }
 
@@ -1102,7 +1108,7 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        internal PrinterResolution[] Get_PrinterResolutions()
+        internal unsafe PrinterResolution[] Get_PrinterResolutions()
         {
             string printerName = PrinterName; //  this is quite expensive if PrinterName is left default
             PrinterResolution[] result;
@@ -1129,10 +1135,11 @@ namespace System.Drawing.Printing
             IntPtr buffer = Marshal.AllocCoTaskMem(checked(8 * count));
             FastDeviceCapabilities(SafeNativeMethods.DC_ENUMRESOLUTIONS, buffer, -1, printerName);
 
+            byte* pBuffer = (byte*)buffer;
             for (int i = 0; i < count; i++)
             {
-                int x = Marshal.ReadInt32((IntPtr)(checked((long)buffer + i * 8)));
-                int y = Marshal.ReadInt32((IntPtr)(checked((long)buffer + i * 8 + 4)));
+                int x = *(int*)(pBuffer + i * 8);
+                int y = *(int*)(pBuffer + i * 8 + 4);
                 result[i + 4] = new PrinterResolution(PrinterResolutionKind.Custom, x, y);
             }
 
@@ -1141,17 +1148,18 @@ namespace System.Drawing.Printing
         }
 
         // names is pointer to DEVNAMES
-        private static string ReadOneDEVNAME(IntPtr pDevnames, int slot)
+        private static unsafe string ReadOneDEVNAME(IntPtr pDevnames, int slot)
         {
-            int offset = checked(Marshal.SystemDefaultCharSize * Marshal.ReadInt16((IntPtr)(checked((long)pDevnames + slot * 2))));
-            string result = Marshal.PtrToStringAuto((IntPtr)(checked((long)pDevnames + offset)))!;
+            byte* bDevNames = (byte*)pDevnames;
+            int offset = Marshal.SystemDefaultCharSize * ((ushort*)bDevNames)[slot];
+            string result = Marshal.PtrToStringAuto((nint)(bDevNames + offset))!;
             return result;
         }
 
         /// <summary>
         /// Copies the relevant information out of the handle and into the PrinterSettings.
         /// </summary>
-        public void SetHdevmode(IntPtr hdevmode)
+        public unsafe void SetHdevmode(IntPtr hdevmode)
         {
             if (hdevmode == IntPtr.Zero)
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
@@ -1172,7 +1180,7 @@ namespace System.Drawing.Printing
             if (_extrabytes > 0)
             {
                 _extrainfo = new byte[_extrabytes];
-                Marshal.Copy((IntPtr)(checked((long)pointer + (long)mode.dmSize)), _extrainfo, 0, _extrabytes);
+                Marshal.Copy((nint)((byte*)pointer + mode.dmSize), _extrainfo, 0, _extrabytes);
             }
 
             if ((mode.dmFields & SafeNativeMethods.DM_COPIES) == SafeNativeMethods.DM_COPIES)
@@ -1234,14 +1242,14 @@ namespace System.Drawing.Printing
         }
 
         // Write null terminated string, return length of string in characters (including null)
-        private static short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
+        private static unsafe short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
             str ??= "";
-            IntPtr address = (IntPtr)(checked((long)bufferStart + index * Marshal.SystemDefaultCharSize));
+            byte* address = (byte*)bufferStart + (nint)index * Marshal.SystemDefaultCharSize;
 
             char[] data = str.ToCharArray();
-            Marshal.Copy(data, 0, address, data.Length);
-            Marshal.WriteInt16((IntPtr)(checked((long)address + data.Length * 2)), 0);
+            Marshal.Copy(data, 0, (nint)address, data.Length);
+            *(short*)(address + data.Length * 2) = 0;
 
             return checked((short)(str.Length + 1));
         }

@@ -53,56 +53,50 @@ namespace
 
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
-    const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
+    const void* STDMETHODCALLTYPE pinvoke_override(const char* library_name, const char* entry_point_name)
     {
-#if defined(_WIN32)
-        const char* hostPolicyLib = "hostpolicy.dll";
-
-        if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
+        // This function is only called with the library name specified for a p/invoke, not any variations.
+        // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
+#if !defined(_WIN32)
+        if (strcmp(library_name, LIB_NAME("System.Net.Security.Native")) == 0)
         {
-            return CompressionResolveDllImport(entrypointName);
-        }
-#else
-        const char* hostPolicyLib = "libhostpolicy";
-
-        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
-        {
-            return CompressionResolveDllImport(entrypointName);
+            return SecurityResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Native")) == 0)
         {
-            return SecurityResolveDllImport(entrypointName);
+            return SystemResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(libraryName, "libSystem.Native") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
-            return SystemResolveDllImport(entrypointName);
-        }
-
-        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
-        {
-            return CryptoResolveDllImport(entrypointName);
+            return CryptoResolveDllImport(entry_point_name);
         }
 #endif
-        // there are two PInvokes in the hostpolicy itself, redirect them here.
-        if (strcmp(libraryName, hostPolicyLib) == 0)
+
+        if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
-            if (strcmp(entrypointName, "corehost_resolve_component_dependencies") == 0)
+            return CompressionResolveDllImport(entry_point_name);
+        }
+
+        // there are two PInvokes in the hostpolicy itself, redirect them here.
+        if (strcmp(library_name, LIB_NAME("hostpolicy")) == 0)
+        {
+            if (strcmp(entry_point_name, "corehost_resolve_component_dependencies") == 0)
             {
                 return (void*)corehost_resolve_component_dependencies;
             }
 
-            if (strcmp(entrypointName, "corehost_set_error_writer") == 0)
+            if (strcmp(entry_point_name, "corehost_set_error_writer") == 0)
             {
                 return (void*)corehost_set_error_writer;
             }
         }
 
 #if defined(TARGET_OSX)
-        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.Apple")) == 0)
         {
-            return CryptoAppleResolveDllImport(entrypointName);
+            return CryptoAppleResolveDllImport(entry_point_name);
         }
 #endif
 
