@@ -16,7 +16,8 @@ namespace System
 {
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        internal static EnumInfo GetEnumInfo(Type enumType, bool _ /*getNames*/ = true)
+#pragma warning disable IDE0060
+        internal static EnumInfo GetEnumInfo(Type enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType is RuntimeType);
@@ -24,6 +25,7 @@ namespace System
 
             return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
         }
+#pragma warning restore
 
         private static object InternalBoxEnum(Type enumType, long value)
         {
