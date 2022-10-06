@@ -772,7 +772,7 @@ size_t CEEInfo::printObjectDescription (
 
     if (pRequiredBufferSize != nullptr)
     {
-        *pRequiredBufferSize = stackStr.GetCount();
+        *pRequiredBufferSize = stackStr.GetCount() + 1;
     }
 
     EE_TO_JIT_TRANSITION();
