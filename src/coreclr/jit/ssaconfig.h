@@ -24,3 +24,7 @@ static const int FIRST_SSA_NUM = 1;
 static const int RESERVED_SSA_NUM = 0;
 
 } // end of namespace SsaConfig
+
+// We use the following format when printing an SSA number.
+// This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
+#define FMT_SSA "ssa%u"

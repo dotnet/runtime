@@ -1145,7 +1145,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         const unsigned lclNum    = unsigned(phiDefFuncApp.m_args[0]);
         const unsigned ssaDefNum = unsigned(phiDefFuncApp.m_args[1]);
         const ValueNum phiVN     = ValueNum(phiDefFuncApp.m_args[2]);
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:%u " FMT_VN "\n",
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:" FMT_SSA " " FMT_VN "\n",
                 block->bbNum, i == 0 ? "first" : "second", lclNum, ssaDefNum, phiVN);
         if (!foundPhiDef)
         {

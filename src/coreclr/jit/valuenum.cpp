@@ -4879,7 +4879,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
         varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
 
-        JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
+        JITDUMP("Tree [%06u] assigned VN to local var V%02u/" FMT_SSA ": ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
                 lclDefSsaNum);
         JITDUMPEXEC(vnpPrint(newLclValue, 1));
         JITDUMP("\n");
@@ -7687,7 +7687,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
+            printf("SSA PHI definition: set VN of local V%02u/" FMT_SSA " to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
             vnpPrint(newSsaDefVNP, 1);
             printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
         }
@@ -7732,7 +7732,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                 // But OSR might leave around "dead" try entry blocks...
                 assert((phiArgs->m_nextArg != nullptr) || opts.IsOSR());
                 ValueNum phiAppVN = vnStore->VNForIntCon(phiArgs->GetSsaNum());
-                JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiAppVN, phiArgs->GetSsaNum());
+                JITDUMP("  Building phi application: $%x = " FMT_SSA ".\n", phiAppVN, phiArgs->GetSsaNum());
                 bool     allSame = true;
                 ValueNum sameVN  = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
                 if (sameVN == ValueNumStore::NoVN)
@@ -7752,7 +7752,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #endif
                     unsigned phiArgSSANum   = phiArgs->GetSsaNum();
                     ValueNum phiArgSSANumVN = vnStore->VNForIntCon(phiArgSSANum);
-                    JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiArgSSANumVN, phiArgSSANum);
+                    JITDUMP("  Building phi application: $%x = " FMT_SSA ".\n", phiArgSSANumVN, phiArgSSANum);
                     phiAppVN = vnStore->VNForFuncNoFolding(TYP_HEAP, VNF_Phi, phiArgSSANumVN, phiAppVN);
                     JITDUMP("  Building phi application: $%x = phi($%x, $%x).\n", phiAppVN, phiArgSSANumVN,
                             oldPhiAppVN);
@@ -7779,7 +7779,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("The SSA definition for %s (#%d) at start of " FMT_BB " is ", memoryKindNames[memoryKind],
+            printf("The SSA definition for %s (" FMT_SSA ") at start of " FMT_BB " is ", memoryKindNames[memoryKind],
                    blk->bbMemorySsaNumIn[memoryKind], blk->bbNum);
             vnPrint(fgCurMemoryVN[memoryKind], 1);
             printf("\n");
@@ -8431,7 +8431,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
             fieldVarSsaDsc->m_vnPair.SetBoth(newUniqueVN);
 
-            JITDUMP("Tree [%06u] assigned VN to the only field V%02u/%u of promoted struct V%02u: new uniq ",
+            JITDUMP("Tree [%06u] assigned VN to the only field V%02u/" FMT_SSA " of promoted struct V%02u: new uniq ",
                     dspTreeID(tree), lhsVarDsc->lvFieldLclStart, lclVarTree->GetSsaNum(), lhsLclNum);
             JITDUMPEXEC(vnPrint(newUniqueVN, 1));
             JITDUMP("\n");
