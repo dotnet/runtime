@@ -1620,9 +1620,15 @@ void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t ha
     const size_t maxStrSize = 64;
     char         str[maxStrSize];
     size_t       actualLen = 0;
-    success = eeRunFunctorWithSPMIErrorTrap([&]() {
-        actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize);
-    });
+
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize); });
+
+    if (!success)
+    {
+        return;
+    }
 
     for (size_t i = 0; i < actualLen; i++)
     {
