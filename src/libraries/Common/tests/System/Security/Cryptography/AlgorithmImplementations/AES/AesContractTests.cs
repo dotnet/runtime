@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Test.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
@@ -172,7 +173,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 return;
 
             if (PlatformDetection.IstvOS && invalidIvSize == 536870928)
-                throw new SkipTestException($"This test case flakily crashes tvOS arm64");
+                throw new SkipTestException($"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
 
             using (Aes aes = AesFactory.Create())
             {
