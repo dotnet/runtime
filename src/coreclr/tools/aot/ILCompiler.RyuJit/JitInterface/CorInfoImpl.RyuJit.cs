@@ -2241,7 +2241,7 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
         {
-            object obj = HandleToObject((IntPtr)objPtr);
+            object obj = HandleToObject(objPtr);
             return obj switch
             {
                 // For now we only support frozen strings
@@ -2264,7 +2264,7 @@ namespace Internal.JitInterface
 
         private bool isObjectImmutable(void* objPtr)
         {
-            object obj = HandleToObject((IntPtr)objPtr);
+            object obj = HandleToObject(objPtr);
             return obj switch
             {
                 FrozenStringNode => true,
