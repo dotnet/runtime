@@ -757,16 +757,12 @@ size_t CEEInfo::printObjectDescription (
     }
 
     const UTF8* utf8data = stackStr.GetUTF8();
-    bytesWritten = min(bufferSize, stackStr.GetCount());
-    memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
+    if (bufferSize > 0)
+    {
+        bytesWritten = min(bufferSize - 1, stackStr.GetCount());
+        memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
 
-    if (bytesWritten == bufferSize)
-    {
-        // Trim data and null-terminate it
-        buffer[bytesWritten - 1] = 0;
-    }
-    else
-    {
+        // Always null-terminate
         buffer[bytesWritten] = 0;
     }
 
