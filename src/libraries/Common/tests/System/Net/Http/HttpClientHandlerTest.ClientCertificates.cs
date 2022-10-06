@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, true)]
         [InlineData(2, true)]
         [InlineData(3, false)]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]

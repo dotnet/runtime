@@ -284,7 +284,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
+        // [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -308,7 +308,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -320,6 +319,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
                     callbackCalled = true;
+                    // the request is null the _second_ time the callback is called because of ConnectHelper.SetUpRemoteCertificateValidationCallback line 49 (localRequest = null!;)
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);

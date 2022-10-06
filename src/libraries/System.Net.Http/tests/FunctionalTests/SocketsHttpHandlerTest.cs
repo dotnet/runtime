@@ -579,6 +579,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+    [ActiveIssue("TODO", TestPlatforms.Android)]
     public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public SocketsHttpHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
@@ -2326,6 +2327,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
@@ -3752,7 +3754,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [SkipOnPlatform(TestPlatforms.Android, "X509ChainPolicy is not supported on Android")]
         public async Task SslOptions_CustomTrust_Ok()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3789,7 +3791,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        // [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_InvalidName_Throws()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3820,7 +3822,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [SkipOnPlatform(TestPlatforms.Android, "X509ChainPolicy is not supported on Android")]
         public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();

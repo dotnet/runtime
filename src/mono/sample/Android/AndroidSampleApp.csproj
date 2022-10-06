@@ -7,12 +7,13 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
+    <UseNativeHttpClient>false</UseNativeHttpClient>
   </PropertyGroup>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  
+
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
   </PropertyGroup>
@@ -31,7 +32,7 @@
       </AotInputAssemblies>
     </ItemGroup>
 
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
              Condition="'$(ForceAOT)' == 'true'"/>
     <RemoveDir Directories="$(ApkDir)" />
 
@@ -105,8 +106,8 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;BuildApp" >
     <PropertyGroup>

@@ -976,7 +976,7 @@ namespace System.Net.Security
 
             // TODO move the initialzation somewhere else
             // can it be done just once in the constructor or something?
-            var remoteCertificateVerifier = new RemoteCertificateVerifier(this, _sslAuthenticationOptions, _securityContext!);
+            var remoteCertificateVerifier = new RemoteCertificateVerification(this, _sslAuthenticationOptions, _securityContext!);
 
             bool success = remoteCertificateVerifier.VerifyRemoteCertificate(
                 _remoteCertificate, trust, chain, RemoteCertRequired, ref sslPolicyErrors, out X509ChainStatus[] chainStatus);

@@ -96,7 +96,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [SkipOnPlatform(TestPlatforms.Android, "TODO: this test would work with GetServerCertificate(). Is there something wrong with the PEMs?")]
+        // [SkipOnPlatform(TestPlatforms.Android, "TODO: this test would work with GetServerCertificate(). Is there something wrong with the PEMs?")]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();

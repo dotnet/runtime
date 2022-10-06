@@ -15,12 +15,12 @@ namespace System.Net
         private static bool s_initialized;
 
         private readonly GCHandle _handle;
-        private readonly RemoteCertificateVerifier _remoteCertificateVerifier;
+        private readonly RemoteCertificateVerification _remoteCertificateVerifier;
 
 
         public IntPtr Handle => GCHandle.ToIntPtr(_handle);
 
-        public unsafe TrustManagerProxy(RemoteCertificateVerifier remoteCertificateVerifier)
+        public unsafe TrustManagerProxy(RemoteCertificateVerification remoteCertificateVerifier)
         {
             EnsureTrustManagerValidationCallbackIsRegistered();
 

@@ -40,7 +40,7 @@ namespace System.Net
         public SafeDeleteSslContext(SslStream sslStream, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            var verifier = new RemoteCertificateVerifier(sslStream, authOptions, securityContext: this);
+            var verifier = new RemoteCertificateVerification(sslStream, authOptions, securityContext: this);
             _trustManagerProxy = new TrustManagerProxy(verifier);
 
             try

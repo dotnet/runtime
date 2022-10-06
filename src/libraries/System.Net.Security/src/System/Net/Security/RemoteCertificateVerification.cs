@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal sealed class RemoteCertificateVerifier
+    internal sealed class RemoteCertificateVerification
     {
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
@@ -17,7 +17,7 @@ namespace System.Net.Security
         private readonly SslAuthenticationOptions _sslAuthenticationOptions;
         private readonly SafeDeleteSslContext? _securityContext;
 
-        public RemoteCertificateVerifier(
+        public RemoteCertificateVerification(
             SslStream sslStream,
             SslAuthenticationOptions sslAuthenticationOptions,
             SafeDeleteSslContext securityContext)
@@ -135,7 +135,11 @@ namespace System.Net.Security
             return success;
         }
 
-        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain chain)
+        private void LogCertificateValidation(
+            RemoteCertificateValidationCallback? remoteCertValidationCallback,
+            SslPolicyErrors sslPolicyErrors,
+            bool success,
+            X509Chain chain)
         {
             if (!NetEventSource.Log.IsEnabled())
                 return;
