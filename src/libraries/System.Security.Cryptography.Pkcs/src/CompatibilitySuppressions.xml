@@ -204,4 +204,22 @@
     <Left>ref/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.CspParameters):[T:System.ComponentModel.EditorBrowsableAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.SignedCms.ComputeSignature:[T:System.ComponentModel.EditorBrowsableAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.SignerInfo.ComputeCounterSignature:[T:System.ComponentModel.EditorBrowsableAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
 </Suppressions>

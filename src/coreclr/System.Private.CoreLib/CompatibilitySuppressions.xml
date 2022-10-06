@@ -24,16 +24,4 @@
     <Left>ref/net7.0/System.Private.CoreLib.dll</Left>
     <Right>lib/Debug/System.Private.CoreLib.dll</Right>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0020</DiagnosticId>
-    <Target>M:System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)</Target>
-    <Left>ref/net7.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/Debug/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0020</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.SafeHandle.SetHandle(System.IntPtr)</Target>
-    <Left>ref/net7.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/Debug/System.Private.CoreLib.dll</Right>
-  </Suppression>
 </Suppressions>
