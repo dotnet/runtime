@@ -2817,8 +2817,6 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
-    // Check if this tree is a gc static base helper call
-    bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
     GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
@@ -11289,6 +11287,8 @@ class StringPrinter
     size_t        m_bufferMax;
     size_t        m_bufferIndex = 0;
 
+    void Grow(size_t newSize);
+
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
         : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
@@ -11319,7 +11319,8 @@ public:
         m_buffer[m_bufferIndex] = '\0';
     }
 
-    void Printf(const char* format, ...);
+    void Append(const char* str);
+    void Append(char chr);
 };
 
 /*****************************************************************************

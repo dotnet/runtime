@@ -182,7 +182,7 @@ namespace Wasm.Build.Tests
         public void WithDllImportInMainAssembly(string config)
         {
             // Based on https://github.com/dotnet/runtime/issues/59255
-            string id = $"blz_dllimp_{config}_{Path.GetRandomFileName()}";
+            string id = $"blz_dllimp_{config}";
             string projectFile = CreateProjectWithNativeReference(id);
             string nativeSource = @"
                 #include <stdio.h>

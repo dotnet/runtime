@@ -1191,7 +1191,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
                            GT_COMMA, GT_CNS_VEC) ||
-               ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
+               ((src->TypeGet() != TYP_STRUCT) && (src->OperIsSIMD() || src->OperIs(GT_BITCAST))));
     }
 #endif // DEBUG
 
@@ -15248,8 +15248,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // for the field to operate on the address of the struct.
                         if (varTypeIsStruct(obj))
                         {
-                            assert(opcode == CEE_LDFLD && objType != nullptr);
-
+                            if (opcode != CEE_LDFLD)
+                            {
+                                BADCODE3("Unexpected opcode (has to be LDFLD)", ": %02X", (int)opcode);
+                            }
+                            if (objType == nullptr)
+                            {
+                                BADCODE("top of stack must be a value type");
+                            }
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
