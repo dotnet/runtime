@@ -1838,15 +1838,11 @@ namespace Internal.JitInterface
             int bufferSize32 = checked((int)bufferSize);
             ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
             var bufferSpan = new Span<byte>(buffer, bufferSize32);
-            Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
-            if (written == bufferSize32)
+            if (bufferSize > 0)
             {
-                // Trim data and null-terminate it
-                bufferSpan[written - 1] = 0;
-            }
-            else
-            {
-                bufferSpan[written] = 0;
+                Utf8.FromUtf16(objStr, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out int written);
+                // Always null-terminate
+                buffer[written] = 0;
             }
             if (pRequiredBufferSize != null)
             {
