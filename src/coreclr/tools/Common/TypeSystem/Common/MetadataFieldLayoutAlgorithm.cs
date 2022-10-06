@@ -53,7 +53,7 @@ namespace Internal.TypeSystem
                 }
 
                 // Global types do not do the rest of instance field layout.
-                ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout();
+                ComputedInstanceFieldLayout result = default(ComputedInstanceFieldLayout);
                 result.Offsets = Array.Empty<FieldAndOffset>();
                 return result;
             }
@@ -180,10 +180,10 @@ namespace Internal.TypeSystem
             }
 
             ComputedStaticFieldLayout result;
-            result.GcStatics = new StaticsBlock();
-            result.NonGcStatics = new StaticsBlock();
-            result.ThreadGcStatics = new StaticsBlock();
-            result.ThreadNonGcStatics = new StaticsBlock();
+            result.GcStatics = default(StaticsBlock);
+            result.NonGcStatics = default(StaticsBlock);
+            result.ThreadGcStatics = default(StaticsBlock);
+            result.ThreadNonGcStatics = default(StaticsBlock);
 
             if (numStaticFields == 0)
             {
@@ -216,7 +216,7 @@ namespace Internal.TypeSystem
 
                 block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment, context.Target);
                 result.Offsets[index] = new FieldAndOffset(field, block.Size);
-                block.Size = block.Size + sizeAndAlignment.Size;
+                block.Size += sizeAndAlignment.Size;
 
                 block.LargestAlignment = LayoutInt.Max(block.LargestAlignment, sizeAndAlignment.Alignment);
 
@@ -228,7 +228,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private ref StaticsBlock GetStaticsBlockForField(ref ComputedStaticFieldLayout layout, FieldDesc field)
+        private static ref StaticsBlock GetStaticsBlockForField(ref ComputedStaticFieldLayout layout, FieldDesc field)
         {
             if (field.IsThreadStatic)
             {
@@ -453,7 +453,6 @@ namespace Internal.TypeSystem
             TypeSystemContext context = type.Context;
 
             bool hasLayout = type.HasLayout();
-            var layoutMetadata = type.GetClassLayout();
 
             // Auto-layout in CoreCLR does not respect packing size.
             int packingSize = type.Context.Target.MaximumAlignment;
@@ -793,7 +792,7 @@ namespace Internal.TypeSystem
             int log2size;
             for (log2size = 0; size > 1; log2size++)
             {
-                size = size >> 1;
+                size >>= 1;
             }
 
             return log2size;
@@ -945,7 +944,7 @@ namespace Internal.TypeSystem
             return ComputeHomogeneousAggregateCharacteristic(type);
         }
 
-        private ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
+        private static ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
         {
             // Use this constant to make the code below more laconic
             const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;

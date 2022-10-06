@@ -45,7 +45,7 @@ namespace System.Formats.Tar.Tests
             {
                 using (WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true))
                 {
-                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+                    await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
                 }
             }
         }

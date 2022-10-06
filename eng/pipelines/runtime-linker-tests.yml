@@ -45,7 +45,17 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
+
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
 #
 # Build Release config vertical for Windows, Linux, Linux musl and OSX
 #
@@ -61,6 +71,10 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: Runtime_Release
+      condition:
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
       buildArgs: -s clr+libs -c $(_BuildConfig)
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
@@ -78,6 +92,12 @@ jobs:
       timeoutInMinutes: 120
       nameSuffix: Runtime_Release
       buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
+      condition:
+        or(
+          eq(variables['isRollingBuild'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
       extraStepsParameters:
           extraTestArgs: '/p:WasmBuildNative=false'

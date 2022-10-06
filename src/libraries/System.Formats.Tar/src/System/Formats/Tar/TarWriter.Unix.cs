@@ -46,7 +46,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)

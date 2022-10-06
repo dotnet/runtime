@@ -14,7 +14,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// This represents a Nullable<T> where T is a known SystemTypeValue.
 	/// It is necessary to track the underlying type to propagate DynamicallyAccessedMembers annotations to the underlying type when applied to a Nullable.
 	/// </summary>
-	sealed record NullableSystemTypeValue : SingleValue
+	internal sealed record NullableSystemTypeValue : SingleValue
 	{
 		public NullableSystemTypeValue (in TypeProxy nullableType, in SystemTypeValue underlyingTypeValue)
 		{

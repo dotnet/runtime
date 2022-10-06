@@ -1606,22 +1606,33 @@ namespace System.Text.RegularExpressions
                         // Coalescing a loop with its same type
                         case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy when nextNode.Kind == currentNode.Kind && currentNode.Ch == nextNode.Ch:
                         case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy when nextNode.Kind == currentNode.Kind && currentNode.Str == nextNode.Str:
-                            if (CanCombineCounts(currentNode.M, currentNode.N, nextNode.M, nextNode.N))
+                            if (nextNode.M > 0 &&
+                                currentNode.Kind is RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic)
                             {
-                                currentNode.M += nextNode.M;
-                                if (currentNode.N != int.MaxValue)
-                                {
-                                    currentNode.N = nextNode.N == int.MaxValue ? int.MaxValue : currentNode.N + nextNode.N;
-                                }
-                                next++;
-                                continue;
+                                // Atomic loops can only be combined if the second loop has no lower bound, as if it has a lower bound,
+                                // combining them changes behavior. Uncombined, the first loop can consume all matching items;
+                                // the second loop might then not be able to meet its minimum and fail.  But if they're combined, the combined
+                                // minimum of the sole loop could now be met, introducing matches where there shouldn't have been any.
+                                break;
                             }
-                            break;
+
+                            if (!CanCombineCounts(currentNode.M, currentNode.N, nextNode.M, nextNode.N))
+                            {
+                                break;
+                            }
+
+                            currentNode.M += nextNode.M;
+                            if (currentNode.N != int.MaxValue)
+                            {
+                                currentNode.N = nextNode.N == int.MaxValue ? int.MaxValue : currentNode.N + nextNode.N;
+                            }
+                            next++;
+                            continue;
 
                         // Coalescing a loop with an additional item of the same type
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.One && currentNode.Ch == nextNode.Ch:
-                        case RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy when nextNode.Kind == RegexNodeKind.Notone && currentNode.Ch == nextNode.Ch:
-                        case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy when nextNode.Kind == RegexNodeKind.Set && currentNode.Str == nextNode.Str:
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.One && currentNode.Ch == nextNode.Ch:
+                        case RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy when nextNode.Kind == RegexNodeKind.Notone && currentNode.Ch == nextNode.Ch:
+                        case RegexNodeKind.Setloop or RegexNodeKind.Setlazy when nextNode.Kind == RegexNodeKind.Set && currentNode.Str == nextNode.Str:
                             if (CanCombineCounts(currentNode.M, currentNode.N, 1, 1))
                             {
                                 currentNode.M++;
@@ -1635,7 +1646,7 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing a loop with a subsequent string
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.Multi && currentNode.Ch == nextNode.Str![0]:
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.Multi && currentNode.Ch == nextNode.Str![0]:
                             {
                                 // Determine how many of the multi's characters can be combined.
                                 // We already checked for the first, so we know it's at least one.
@@ -2056,15 +2067,15 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when node.Ch != subsequent.Str![0]:
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when node.Ch != '\n':
-                            case RegexNodeKind.Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
-                            case RegexNodeKind.NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && node.Ch != subsequent.Ch:
                             case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when subsequent.M == 0 && node.Ch == subsequent.Ch:
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case RegexNodeKind.Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2103,14 +2114,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                            case RegexNodeKind.Boundary when node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
-                            case RegexNodeKind.NonBoundary when node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
-                            case RegexNodeKind.ECMABoundary when node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
-                            case RegexNodeKind.NonECMABoundary when node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case RegexNodeKind.Boundary when node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
+                            case RegexNodeKind.NonBoundary when node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
+                            case RegexNodeKind.ECMABoundary when node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
+                            case RegexNodeKind.NonECMABoundary when node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2125,8 +2136,6 @@ namespace System.Text.RegularExpressions
 
                 // We only get here if the node could be made atomic based on subsequent but subsequent has a lower bound of zero
                 // and thus we need to move subsequent to be the next node in sequence and loop around to try again.
-                Debug.Assert(subsequent.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy);
-                Debug.Assert(subsequent.M == 0);
                 if (!iterateNullableSubsequent)
                 {
                     return false;

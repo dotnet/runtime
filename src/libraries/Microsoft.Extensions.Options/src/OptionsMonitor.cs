@@ -70,8 +70,10 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The present value of the options.
+        /// The present value of the options, equivalent to <c>Get(Options.DefaultName)</c>.
         /// </summary>
+        /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions CurrentValue
         {
             get => Get(Options.DefaultName);
@@ -80,6 +82,10 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance, if <see langword="null"/> <see cref="Options.DefaultName"/> is used.</param>
+        /// <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+        /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public virtual TOptions Get(string? name)
         {
             if (_cache is not OptionsCache<TOptions> optionsCache)

@@ -15,6 +15,7 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,6 +58,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\IJitHashableOnly.cs">
+      <Link>JitInterface\IJitHashableOnly.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>

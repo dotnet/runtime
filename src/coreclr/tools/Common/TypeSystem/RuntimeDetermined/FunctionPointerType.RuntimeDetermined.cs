@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    partial class FunctionPointerType
+    public partial class FunctionPointerType
     {
         public override bool IsRuntimeDeterminedSubtype
         {

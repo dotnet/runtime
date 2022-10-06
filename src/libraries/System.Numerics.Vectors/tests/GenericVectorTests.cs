@@ -25,6 +25,13 @@ namespace System.Numerics.Tests
             dummy = System.Numerics.Vector<float>.One;
         }
 
+        [Fact]
+        public unsafe void IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector.IsHardwareAccelerated, methodInfo.Invoke(null, null));
+        }
+
         #region Constructor Tests
 
         [Fact]
@@ -848,6 +855,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74781", TestRuntimes.Mono)]
         public void VectorDoubleEqualsNonCanonicalNaNTest()
         {
             // max 8 bit exponent, just under half max mantissa
@@ -872,6 +880,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74781", TestRuntimes.Mono)]
         public void VectorSingleEqualsNonCanonicalNaNTest()
         {
             // max 11 bit exponent, just under half max mantissa

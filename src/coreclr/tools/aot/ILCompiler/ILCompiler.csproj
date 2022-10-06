@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
@@ -11,7 +12,8 @@
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <PublishTrimmed>true</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Don't R2R on ARM64 machines because ARM64 crossgen2 that comes with .NET SDK <= 7.0 Preview 7 crashes.-->
+    <PublishReadyToRun Condition="'$(BuildArchitecture)' != 'arm64'">true</PublishReadyToRun>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 

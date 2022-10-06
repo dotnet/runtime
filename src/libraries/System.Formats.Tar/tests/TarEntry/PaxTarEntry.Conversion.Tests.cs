@@ -61,6 +61,15 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionFromGnu_CharacterDevice() => TestConstructionConversion(TarEntryType.CharacterDevice, TarEntryFormat.Gnu, TarEntryFormat.Pax);
 
+        [Fact]
+        public void Constructor_ConversionFromPaxGEA_ToAny_Throw()
+        {
+            Assert.Throws<ArgumentException>(() => new V7TarEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>())));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>())));
+            Assert.Throws<ArgumentException>(() => new PaxTarEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>())));
+            Assert.Throws<ArgumentException>(() => new GnuTarEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>())));
+        }
+
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]

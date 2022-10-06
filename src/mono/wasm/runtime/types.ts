@@ -10,6 +10,9 @@ export type GCHandle = {
 export type JSHandle = {
     __brand: "JSHandle"
 }
+export type JSFnHandle = {
+    __brand: "JSFnHandle"
+}
 export interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject"
 }
@@ -411,10 +414,15 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: void InstallSynchronizationContext()
     install_synchronization_context(): void;
+
+    // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
+    get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 }
 
-export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
-export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs) => void;
+export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
+export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
+export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
+export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 
 export interface JSMarshalerArguments extends NativePointer {
     __brand: "JSMarshalerArguments"
@@ -513,6 +521,7 @@ export type RuntimeAPI = {
     runtimeId: number,
     runtimeBuildInfo: {
         productVersion: string,
+        gitHash: string,
         buildConfiguration: string,
     }
 } & APIType

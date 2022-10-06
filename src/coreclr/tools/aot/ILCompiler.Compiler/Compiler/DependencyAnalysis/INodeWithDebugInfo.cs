@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             ColNumber = colNumber;
         }
     }
-    
+
     public interface INodeWithDebugInfo
     {
         bool IsStateMachineMoveNextMethod { get; }

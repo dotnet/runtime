@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    partial class ReadyToRunGenericHelperNode
+    public partial class ReadyToRunGenericHelperNode
     {
         protected Register GetContextRegister(ref /* readonly */ LoongArch64Emitter encoder)
         {
@@ -216,7 +216,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    partial class ReadyToRunGenericLookupFromTypeNode
+    public partial class ReadyToRunGenericLookupFromTypeNode
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref LoongArch64Emitter encoder, bool relocsOnly)
         {

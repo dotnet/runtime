@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.RequireInitialPointerAlignment();
 
-            builder.EmitShort((short)checked((UInt16)_details.Instantiation.Length));
+            builder.EmitShort((short)checked((ushort)_details.Instantiation.Length));
 
             builder.EmitByte((byte)(hasVariance ? 1 : 0));
 
@@ -116,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis
         public GenericCompositionDetails(TypeDesc genericTypeInstance, bool forceVarianceInfo = false)
         {
             Debug.Assert(!genericTypeInstance.IsTypeDefinition);
-            
+
             Instantiation = genericTypeInstance.Instantiation;
 
             bool emitVarianceInfo = forceVarianceInfo;

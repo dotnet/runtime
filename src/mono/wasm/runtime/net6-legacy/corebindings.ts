@@ -14,9 +14,9 @@ const fn_signatures: SigLine[] = [
     [true, "_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],
     [true, "_get_cs_owned_object_js_handle_ref", "GetCSOwnedObjectJSHandleRef", "mi"],
     [true, "_try_get_cs_owned_object_js_handle_ref", "TryGetCSOwnedObjectJSHandleRef", "mi"],
-    [false, "_create_cs_owned_proxy_ref", "CreateCSOwnedProxyRef", "iiim"],
+    [true, "_create_cs_owned_proxy_ref", "CreateCSOwnedProxyRef", "iiim"],
 
-    [false, "_get_js_owned_object_by_gc_handle_ref", "GetJSOwnedObjectByGCHandleRef", "im"],
+    [true, "_get_js_owned_object_by_gc_handle_ref", "GetJSOwnedObjectByGCHandleRef", "im"],
     [true, "_get_js_owned_object_gc_handle_ref", "GetJSOwnedObjectGCHandleRef", "m"],
 
     [true, "_create_tcs", "CreateTaskSource", ""],
@@ -30,7 +30,7 @@ const fn_signatures: SigLine[] = [
     [true, "_create_date_time_ref", "CreateDateTimeRef", "dm"],
     [true, "_create_uri_ref", "CreateUriRef", "sm"],
     [true, "_is_simple_array_ref", "IsSimpleArrayRef", "m"],
-    [false, "_get_call_sig_ref", "GetCallSignatureRef", "im"],
+    [true, "_get_call_sig_ref", "GetCallSignatureRef", "im"],
 ];
 
 export interface LegacyExports {

@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class ClassConstructorContextMap : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ClassConstructorContextMap : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;

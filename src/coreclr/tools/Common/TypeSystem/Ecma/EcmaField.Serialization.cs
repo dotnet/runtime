@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Ecma
 {
-    partial class EcmaField
+    public partial class EcmaField
     {
         public override bool IsNotSerialized
         {

@@ -229,10 +229,8 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
-                bool created = false;
                 try
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
@@ -241,17 +239,13 @@ namespace System.Threading
                     {
                         IsThreadPoolThread = true,
                         IsBackground = true,
-                        Name = ".NET ThreadPool Gate"
+                        Name = ".NET TP Gate"
                     };
                     gateThread.UnsafeStart();
-                    created = true;
                 }
-                finally
+                catch (Exception e)
                 {
-                    if (!created)
-                    {
-                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
-                    }
+                    Environment.FailFast("Failed to create the thread pool Gate thread.", e);
                 }
             }
 

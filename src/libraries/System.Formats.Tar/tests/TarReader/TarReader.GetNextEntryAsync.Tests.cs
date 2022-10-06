@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
 
                 await using (TarReader reader = new TarReader(malformed))
                 {
-                    await Assert.ThrowsAsync<FormatException>(async () => await reader.GetNextEntryAsync());
+                    await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
                 }
             }
         }

@@ -464,19 +464,14 @@ enum GenTreeFlags : unsigned int
 
     GTF_VAR_MULTIREG        = 0x02000000, // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                           // to/from a multireg source or destination (e.g. a call arg or return, or an op
-                                          // that returns its result in multiple registers such as a long multiply).
+                                          // that returns its result in multiple registers such as a long multiply). Set by
+                                          // (and thus only valid after) lowering.
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
-    GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00100000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
-                                      // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
-                                      // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
-                                      // on their parents in post-order morph.
-                                      // Relevant for inlining optimizations (see fgInlinePrependStatements)
+    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -915,10 +910,10 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
-    // Node is contained, but it isn't contained due to being a containable int.
-    bool isContainedAndNotIntOrIImmed() const
+    // Node and its child in isolation form a contained compare chain.
+    bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return isContained() && !isContainedIntOrIImmed();
+        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
     }
 
     bool isContainedFltOrDblImmed() const
@@ -1860,6 +1855,9 @@ public:
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     GenTreeFlags GetRegSpillFlagByIdx(int regIndex) const;
 
+    // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
+
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
     GenTreeFlags GetLastUseBit(int regIndex) const;
@@ -2313,20 +2311,18 @@ public:
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
-        {
-            return true;
-        }
-        return false;
+        return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
+
     void SetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
+
     void ResetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 
@@ -3306,7 +3302,19 @@ inline void GenTreeIntConCommon::SetValueTruncating(T value)
 
 struct GenTreeDblCon : public GenTree
 {
+private:
     double gtDconVal;
+
+public:
+    double DconValue() const
+    {
+        return gtDconVal;
+    }
+
+    void SetDconValue(double value)
+    {
+        gtDconVal = FloatingPointUtils::normalize(value);
+    }
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
@@ -3315,9 +3323,10 @@ struct GenTreeDblCon : public GenTree
         return (bits == otherBits);
     }
 
-    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type), gtDconVal(val)
+    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type)
     {
         assert(varTypeIsFloating(type));
+        SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeDblCon() : GenTree()
@@ -3364,26 +3373,6 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
         simd32_t gtSimd32Val;
     };
-
-private:
-    // TODO-1stClassStructs: Tracking the size and base type should be unnecessary since the
-    // size should be `gtType` and the handle should be looked up at callsites where required
-
-    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-
-public:
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
-    }
-
-    var_types GetSimdBaseType() const;
 
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
@@ -3507,11 +3496,9 @@ public:
         }
     }
 
-    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
-        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
+    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
-        assert(gtSimdBaseJitType == simdBaseJitType);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -5720,6 +5707,16 @@ struct GenTreeQmark : public GenTreeOp
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
+    GenTree* ThenNode()
+    {
+        return gtOp2->AsColon()->ThenNode();
+    }
+
+    GenTree* ElseNode()
+    {
+        return gtOp2->AsColon()->ElseNode();
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeQmark() : GenTreeOp()
     {
@@ -5989,12 +5986,12 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*       gtInlineOperands[2];
-    uint16_t       gtLayoutNum;
-    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
-    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
-    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+    GenTree*           gtInlineOperands[2];
+    regNumberSmall     gtOtherReg;    // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags;  // Spill flags for multi-reg intrinsics.
+    unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 #if defined(FEATURE_SIMD)
     union {
@@ -6006,17 +6003,6 @@ protected:
 #endif
 
 public:
-    unsigned GetLayoutNum() const
-    {
-        return gtLayoutNum;
-    }
-
-    void SetLayoutNum(unsigned layoutNum)
-    {
-        assert(FitsIn<uint16_t>(layoutNum));
-        gtLayoutNum = static_cast<uint16_t>(layoutNum);
-    }
-
     regNumber GetOtherReg() const
     {
         return (regNumber)gtOtherReg;
@@ -6026,6 +6012,16 @@ public:
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
+    }
+
+    GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
+    {
+        return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
+    }
+
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, unsigned idx)
+    {
+        gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
     CorInfoType GetAuxiliaryJitType() const
@@ -6101,9 +6097,9 @@ public:
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -6129,9 +6125,9 @@ protected:
                          nodeBuilder.GetBuiltOperands(),
                          nodeBuilder.GetOperandCount(),
                          gtInlineOperands DEBUGARG(false))
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -8446,7 +8442,7 @@ inline bool GenTree::IsFloatAllBitsSet() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
 
         if (TypeIs(TYP_FLOAT))
         {
@@ -8473,7 +8469,7 @@ inline bool GenTree::IsFloatNaN() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNaN(constValue);
     }
 
@@ -8491,7 +8487,7 @@ inline bool GenTree::IsFloatNegativeZero() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNegativeZero(constValue);
     }
 
@@ -8512,7 +8508,7 @@ inline bool GenTree::IsFloatPositiveZero() const
         // This implementation is almost identical to IsCnsNonZeroFltOrDbl
         // but it is easier to parse out
         // rather than using !IsCnsNonZeroFltOrDbl.
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isPositiveZero(constValue);
     }
 
@@ -9083,6 +9079,13 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 #endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
@@ -9090,6 +9093,63 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 
     assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return GTF_EMPTY;
+}
+
+//-----------------------------------------------------------------------------------
+// SetRegSpillFlagByIdx: Set a specific register's spill flags, based on regIndex,
+//                       for this multi-reg node.
+//
+// Arguments:
+//     flags    - the flags to set
+//     regIndex - which register's spill flags to set
+//
+// Notes:
+//     This must be a multireg node and 'regIndex' must be a valid index for this node.
+//     This method takes the GTF "equivalent" flags and sets the packed flags on the
+//     multireg node.
+//
+inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        AsCall()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        AsPutArgSplit()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_ARG_SPLIT
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        AsMultiRegOp()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // !defined(TARGET_64BIT)
+
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        AsHWIntrinsic()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (OperIsScalarLocal())
+    {
+        AsLclVar()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+    assert(!"Invalid node type for SetRegSpillFlagByIdx");
 }
 
 //-----------------------------------------------------------------------------------
@@ -9300,7 +9360,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return *(__int64*)&constValue != 0;
     }
 

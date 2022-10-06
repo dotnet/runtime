@@ -2753,7 +2753,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
     // Do not optimise further if op1 has a contained chain.
     if (op1->OperIs(GT_AND) &&
-        (op1->gtGetOp1()->isContainedAndNotIntOrIImmed() || op1->gtGetOp2()->isContainedAndNotIntOrIImmed()))
+        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
     {
         return cmp;
     }
@@ -2789,14 +2789,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
-            // the result of bool returning calls.
+            // situations.
             //
             bool removeCast =
 #ifdef TARGET_ARM64
-                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
+                (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) && !castOp->isContained() &&
 #endif
-                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIs(GT_OR, GT_XOR, GT_AND)
+                (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
@@ -2817,6 +2816,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
@@ -2824,15 +2825,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     {
                         op1->ClearContained();
                     }
+
                     GenTree* op2 = castOp->gtGetOp2();
                     if ((op2 != nullptr) && !op2->IsCnsIntOrI())
                     {
                         op2->ClearContained();
                     }
-                }
-                else
-                {
-                    castOp->ClearContained();
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;
@@ -2850,38 +2848,33 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
 
-        if (op2Value != 0)
+        //
+        // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
+        // into ((x AND mask) NE|EQ 0) when mask is a single bit.
+        //
+        if ((op2Value != 0) && isPow2(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
         {
-            // Optimizes (X & 1) == 1 to (X & 1)
-            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            op2Value = 0;
+            op2->SetIconValue(0);
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        }
+
+        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
+        {
             LIR::Use cmpUse;
-            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
             {
-                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
-                    !cmpUse.User()->OperIsConditional())
-                {
-                    GenTree* next = cmp->gtNext;
+                GenTree* next = cmp->gtNext;
 
-                    cmpUse.ReplaceWith(op1);
+                cmpUse.ReplaceWith(op1);
 
-                    BlockRange().Remove(cmp->gtGetOp2());
-                    BlockRange().Remove(cmp);
+                BlockRange().Remove(cmp->gtGetOp2());
+                BlockRange().Remove(cmp);
 
-                    return next;
-                }
-            }
-
-            //
-            // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
-            // into ((x AND mask) NE|EQ 0) when mask is a single bit.
-            //
-
-            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
-            {
-                op2Value = 0;
-                op2->SetIconValue(0);
-                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                return next;
             }
         }
 
@@ -3396,13 +3389,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
-    GenTree*   src    = lclStore->gtGetOp1();
-    LclVarDsc* varDsc = comp->lvaGetDesc(lclStore);
-
+    GenTree*   src           = lclStore->gtGetOp1();
+    LclVarDsc* varDsc        = comp->lvaGetDesc(lclStore);
     const bool srcIsMultiReg = src->IsMultiRegNode();
-    const bool dstIsMultiReg = lclStore->IsMultiRegLclVar();
 
-    if (!dstIsMultiReg && varTypeIsStruct(varDsc))
+    if (!srcIsMultiReg && varTypeIsStruct(varDsc))
     {
         // TODO-Cleanup: we want to check `varDsc->lvRegStruct` as the last condition instead of `!varDsc->lvPromoted`,
         // but we do not set it for `CSE` vars so it is currently failing.
@@ -3422,7 +3413,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
     }
 
-    if (srcIsMultiReg || dstIsMultiReg)
+    if (srcIsMultiReg)
     {
         const ReturnTypeDesc* retTypeDesc = nullptr;
         if (src->OperIs(GT_CALL))
@@ -3498,7 +3489,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(lclRegType))
             {
-                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType, CORINFO_TYPE_FLOAT);
+                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType);
 
                 BlockRange().InsertAfter(src, zeroCon);
                 BlockRange().Remove(src);
@@ -3583,7 +3574,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     // src and dst can be in registers, check if we need a bitcast.
     if (!src->TypeIs(TYP_STRUCT) && (varTypeUsesFloatReg(lclRegType) != varTypeUsesFloatReg(src)))
     {
-        assert(!srcIsMultiReg && !dstIsMultiReg);
+        assert(!srcIsMultiReg);
         assert(lclStore->OperIsLocalStore());
         assert(lclRegType != TYP_UNDEF);
 
@@ -3845,6 +3836,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                if (varTypeUsesFloatReg(returnType) != varTypeUsesFloatReg(origType))
+                {
+                    GenTree* bitCast = comp->gtNewBitCastNode(origType, call);
+                    BlockRange().InsertAfter(call, bitCast);
+                    callUse.ReplaceWith(bitCast);
+                    ContainCheckBitCast(bitCast);
+                }
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             default:
                 unreached();
@@ -4985,7 +4988,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
             tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
 
-            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree, false);
+            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree);
             GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
             result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
 
@@ -5209,14 +5212,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
-#ifdef TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
 #ifdef TARGET_ARM64
@@ -5362,29 +5358,43 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+
+    if (index != nullptr)
     {
-        index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-        MakeSrcContained(addrMode, index);
-    }
-
-    // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
-    if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && !varTypeIsStruct(targetType))
-    {
-        // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
-        GenTreeCast* cast = index->gtGetOp1()->AsCast();
-        assert(cast->isContained());
-
-        const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
-
-        // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
-        // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
-        if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && (genTypeSize(targetType) == (1U << shiftBy)) &&
-            (scale == 1) && (offset == 0))
+        if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-            // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
-            MakeSrcContained(addrMode, index);
+            if (IsSafeToContainMem(parent, index))
+            {
+                // Check containment safety against the parent node - this will ensure that LEA with the contained
+                // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+                index->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
+                MakeSrcContained(addrMode, index);
+            }
+        }
+        else if (index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) && index->gtGetOp2()->IsCnsIntOrI() &&
+                 !varTypeIsStruct(targetType))
+        {
+            // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
+            // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
+            GenTreeCast* cast = index->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+
+            const unsigned shiftBy = (unsigned)index->gtGetOp2()->AsIntCon()->IconValue();
+
+            // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
+            // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
+            if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
+                (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
+            {
+                if (IsSafeToContainMem(parent, index))
+                {
+                    // Check containment safety against the parent node - this will ensure that LEA with the contained
+                    // index will itself always be contained. We do not support uncontained LEAs with contained indices.
+
+                    // TODO: Make sure that genCreateAddrMode marks such BFIZ candidates as GTF_DONT_CSE for better CQ.
+                    MakeSrcContained(addrMode, index);
+                }
+            }
         }
     }
 #endif
@@ -5764,15 +5774,10 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-#ifdef TARGET_ARMARCH
                 divMod->SetOper(GT_CAST);
-                divMod->SetUnsigned();
                 divMod->AsCast()->gtCastType = TYP_INT;
-#else
-                divMod->SetOper(GT_BITCAST);
-#endif
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
+                divMod->gtOp1                = mulhi;
+                divMod->gtOp2                = nullptr;
             }
         }
 
@@ -7107,7 +7112,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         {
             // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
             GenTree*  data   = ind->Data();
-            double    dblCns = data->AsDblCon()->gtDconVal;
+            double    dblCns = data->AsDblCon()->DconValue();
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
             // XARCH: we can always contain the immediates.
@@ -7409,7 +7414,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             if (arg->IsCnsFltOrDbl())
             {
                 noway_assert(constArgCount < ArrLen(constArgValues));
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->DconValue());
                 constArgCount++;
             }
         }
