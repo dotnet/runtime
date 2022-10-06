@@ -21406,8 +21406,9 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 // Returns:
 //     Exact class handle returned by the intrinsic call, if known.
 //     Nullptr if not known, or not likely to lead to beneficial optimization.
-CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE methodHnd)
+CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call)
 {
+    CORINFO_METHOD_HANDLE methodHnd = call->gtCallMethHnd;
     JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
 
     CORINFO_CLASS_HANDLE result = nullptr;
@@ -21434,7 +21435,26 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
             //
             // We can use CORINFO_FLG_FINAL to screen out both of these cases.
             const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
+            bool        isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
+
+            if (!isFinalType)
+            {
+                CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+                if (instParam != nullptr)
+                {
+                    assert(instParam->GetNext() == nullptr);
+                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetEarlyNode());
+                    if (hClass != NO_CLASS_HANDLE)
+                    {
+                        hClass = getTypeInstantiationArgument(hClass, 0);
+                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_FINAL) != 0)
+                        {
+                            typeHnd     = hClass;
+                            isFinalType = true;
+                        }
+                    }
+                }
+            }
 
             if (isFinalType)
             {
