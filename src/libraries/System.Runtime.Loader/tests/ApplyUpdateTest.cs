@@ -308,6 +308,7 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76702", TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddInstanceField()
         {
