@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Called when the service starts shutdown.
+        /// Executes when the service starts shutdown.
         /// </summary>
         protected override void OnShutdown()
         {
@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Disposes the <see cref="WindowsServiceLifetime"/>.
+        /// Releases the resources used by the <see cref="WindowsServiceLifetime"/>.
         /// </summary>
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected override void Dispose(bool disposing)
