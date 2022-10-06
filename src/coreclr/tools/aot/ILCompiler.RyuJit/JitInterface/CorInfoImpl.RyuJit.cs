@@ -2244,10 +2244,8 @@ namespace Internal.JitInterface
             object obj = HandleToObject(objPtr);
             return obj switch
             {
-                // For now we only support frozen strings
                 FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
 
-                // and frozen objects like arrays
                 FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
 
                 _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")

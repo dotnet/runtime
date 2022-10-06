@@ -6038,27 +6038,20 @@ bool CEEInfo::isObjectImmutable(void* objPtr)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool isImmutable = false;
-
+#ifdef DEBUG
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
     Object* obj = (Object*)objPtr;
     MethodTable* type = obj->GetMethodTable();
 
-    if (type->IsString() || type == g_pRuntimeTypeClass)
-    {
-        isImmutable = true;
-    }
-    else
-    {
-        // Unexpected type of object
-        UNREACHABLE();
-    }
+    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
 
     EE_TO_JIT_TRANSITION();
+#endif
 
-    return isImmutable;
+     // All currently allocated frozen objects can be treated as immutable
+    return true;
 }
 
 /***********************************************************************/
