@@ -52,60 +52,83 @@ namespace System.Buffers.Text
             return digits;
         }
 
+        // Based on do_count_digits from https://github.com/fmtlib/fmt/blob/662adf4f33346ba9aba8b072194e319869ede54a/include/fmt/format.h#L1124
+        /*
+          Formatting library for C++
+          Copyright (c) 2012 - present, Victor Zverovich
+          Permission is hereby granted, free of charge, to any person obtaining
+          a copy of this software and associated documentation files (the
+          "Software"), to deal in the Software without restriction, including
+          without limitation the rights to use, copy, modify, merge, publish,
+          distribute, sublicense, and/or sell copies of the Software, and to
+          permit persons to whom the Software is furnished to do so, subject to
+          the following conditions:
+          The above copyright notice and this permission notice shall be
+          included in all copies or substantial portions of the Software.
+          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+          EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+          MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+          NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+          LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+          OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+          WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+          --- Optional exception to the license ---
+          As an exception, if, as a result of your compiling your source code, portions
+          of this Software are embedded into a machine-executable object form of such
+          source code, you may redistribute such embedded portions in such object form
+          without including the above copyright and permission notices.
+         */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountDigits(ulong value)
         {
-            int digits = 1;
-            uint part;
-            if (value >= 10000000)
+            // Map the log2(value) to a power of 10.
+            ReadOnlySpan<byte> log2ToPow10 = new byte[]
             {
-                if (value >= 100000000000000)
-                {
-                    part = (uint)(value / 100000000000000);
-                    digits += 14;
-                }
-                else
-                {
-                    part = (uint)(value / 10000000);
-                    digits += 7;
-                }
-            }
-            else
+                1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
+                6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10, 10,
+                10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15,
+                15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
+            };
+            Debug.Assert(log2ToPow10.Length == 64);
+            uint index = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
+
+            // TODO https://github.com/dotnet/runtime/issues/60948: Use ReadOnlySpan<ulong> instead of ReadOnlySpan<byte>.
+            // Read the associated power of 10.
+            ReadOnlySpan<byte> powersOf10 = new byte[]
             {
-                part = (uint)value;
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // unused entry to avoid needing to subtract
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0
+                0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 10
+                0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 100
+                0xE8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 1000
+                0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 10000
+                0xA0, 0x86, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, // 100000
+                0x40, 0x42, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, // 1000000
+                0x80, 0x96, 0x98, 0x00, 0x00, 0x00, 0x00, 0x00, // 10000000
+                0x00, 0xE1, 0xF5, 0x05, 0x00, 0x00, 0x00, 0x00, // 100000000
+                0x00, 0xCA, 0x9A, 0x3B, 0x00, 0x00, 0x00, 0x00, // 1000000000
+                0x00, 0xE4, 0x0B, 0x54, 0x02, 0x00, 0x00, 0x00, // 10000000000
+                0x00, 0xE8, 0x76, 0x48, 0x17, 0x00, 0x00, 0x00, // 100000000000
+                0x00, 0x10, 0xA5, 0xD4, 0xE8, 0x00, 0x00, 0x00, // 1000000000000
+                0x00, 0xA0, 0x72, 0x4E, 0x18, 0x09, 0x00, 0x00, // 10000000000000
+                0x00, 0x40, 0x7A, 0x10, 0xF3, 0x5A, 0x00, 0x00, // 100000000000000
+                0x00, 0x80, 0xC6, 0xA4, 0x7E, 0x8D, 0x03, 0x00, // 1000000000000000
+                0x00, 0x00, 0xC1, 0x6F, 0xF2, 0x86, 0x23, 0x00, // 10000000000000000
+                0x00, 0x00, 0x8A, 0x5D, 0x78, 0x45, 0x63, 0x01, // 100000000000000000
+                0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, // 1000000000000000000
+                0x00, 0x00, 0xE8, 0x89, 0x04, 0x23, 0xC7, 0x8A, // 10000000000000000000
+            };
+            Debug.Assert((index + 1) * sizeof(ulong) <= powersOf10.Length);
+            ulong powerOf10 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), index * sizeof(ulong)));
+            if (!BitConverter.IsLittleEndian)
+            {
+                powerOf10 = BinaryPrimitives.ReverseEndianness(powerOf10);
             }
 
-            if (part < 10)
-            {
-                // no-op
-            }
-            else if (part < 100)
-            {
-                digits++;
-            }
-            else if (part < 1000)
-            {
-                digits += 2;
-            }
-            else if (part < 10000)
-            {
-                digits += 3;
-            }
-            else if (part < 100000)
-            {
-                digits += 4;
-            }
-            else if (part < 1000000)
-            {
-                digits += 5;
-            }
-            else
-            {
-                Debug.Assert(part < 10000000);
-                digits += 6;
-            }
-
-            return digits;
+            // Return the number of digits based on the power of 10, shifted by 1
+            // if it falls below the threshold.
+            bool lessThan = value < powerOf10;
+            return (int)(index - Unsafe.As<bool, byte>(ref lessThan)); // while arbitrary bools may be non-0/1, comparison operators are expected to return 0/1
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
