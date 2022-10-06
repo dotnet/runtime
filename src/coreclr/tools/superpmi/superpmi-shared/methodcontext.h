@@ -622,9 +622,9 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
-    void recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t length);
-    void dmpPrintObjectDescription(DLDL key, DLD value);
-    size_t repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize);
+    void recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value);
+    size_t repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);

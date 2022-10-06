@@ -718,7 +718,8 @@ int CEEInfo::getStringLiteral (
 size_t CEEInfo::printObjectDescription (
         void*  handle,
         char*  buffer,
-        size_t bufferSize)
+        size_t bufferSize,
+        size_t* pRequiredBufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -767,7 +768,11 @@ size_t CEEInfo::printObjectDescription (
     else
     {
         buffer[bytesWritten] = 0;
-        bytesWritten++;
+    }
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = stackStr.GetCount();
     }
 
     EE_TO_JIT_TRANSITION();

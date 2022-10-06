@@ -1831,7 +1831,7 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
-        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize)
+        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
@@ -1847,7 +1847,10 @@ namespace Internal.JitInterface
             else
             {
                 bufferSpan[written] = 0;
-                written++;
+            }
+            if (pRequiredBufferSize != null)
+            {
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr);
             }
             return (nuint)written;
         }

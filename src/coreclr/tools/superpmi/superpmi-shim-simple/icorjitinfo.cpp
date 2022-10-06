@@ -280,9 +280,10 @@ int interceptor_ICJI::getStringLiteral(
 size_t interceptor_ICJI::printObjectDescription(
           void* handle,
           char* buffer,
-          size_t bufferSize)
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    return original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize);
+    return original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(

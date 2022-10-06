@@ -38,7 +38,7 @@ void
 void*
 const void *,void*
 JITINTERFACE_HRESULT,HRESULT
-size_t*,void*
+size_t*,UIntPtr*
 int
 int32_t,int
 uint32_t,uint
@@ -192,7 +192,7 @@ FUNCTIONS
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
-    size_t printObjectDescription(void* handle, char* buffer, size_t bufferSize)
+    size_t printObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)

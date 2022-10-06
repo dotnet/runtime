@@ -4898,35 +4898,36 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t length)
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
 {
     if (PrintObjectDescription == nullptr)
-        PrintObjectDescription = new LightWeightMap<DLDL, DLD>();
+        PrintObjectDescription = new LightWeightMap<DLDL, Agnostic_PrintObjectDescriptionResult>();
 
     DLDL key;
     key.A = CastHandle(handle);
     key.B = (DWORDLONG)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr && length > 0)
+    if (buffer != nullptr && bytesWritten > 0)
     {
-        size_t bufferRealSize = min(length, bufferSize);
+        size_t bufferRealSize = min(bytesWritten, bufferSize);
         strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
     }
 
-    DLD value;
-    value.A = (DWORDLONG)length;
-    value.B = (DWORD)strBuf;
+    Agnostic_PrintObjectDescriptionResult value;
+    value.bytesWritten = (DWORDLONG)bytesWritten;
+    value.requiredBufferSize = (DWORDLONG)(pRequiredBufferSize == nullptr ? 0 : *pRequiredBufferSize);
+    value.buffer = (DWORD)strBuf;
 
     PrintObjectDescription->Add(key, value);
     DEBUG_REC(dmpPrintObjectDescription(key, value));
 }
-void MethodContext::dmpPrintObjectDescription(DLDL key, DLD value)
+void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value)
 {
-    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, len-%u", key.A, (unsigned)key.B, (unsigned)value.A);
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, bytesWritten-%u, pRequiredBufferSize-%u", key.A, (unsigned)key.B, (unsigned)value.bytesWritten, (unsigned)value.requiredBufferSize);
     PrintObjectDescription->Unlock();
 }
-size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize)
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     if (PrintObjectDescription == nullptr)
     {
@@ -4944,16 +4945,31 @@ size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size
     }
     else
     {
-        DLD value = PrintObjectDescription->Get(key);
+        Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
         DEBUG_REP(dmpPrintObjectDescription(key, value));
-        size_t srcBufferLength = (size_t)value.A;
-        if (buffer != nullptr && srcBufferLength > 0)
+        if (pRequiredBufferSize != nullptr)
         {
-            char* srcBuffer = (char*)PrintObjectDescription->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
+            *pRequiredBufferSize = value.requiredBufferSize;
         }
-        return srcBufferLength;
+        size_t bytesWritten = (size_t)value.bytesWritten;
+        if (buffer != nullptr && bytesWritten > 0)
+        {
+            char* srcBuffer = (char*)PrintObjectDescription->GetBuffer(value.buffer);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(bytesWritten, bufferSize));
+
+            // Make it more resilient than actual implementations
+            if (bytesWritten >= bufferSize)
+            {
+                // Trim data and null-terminate it
+                buffer[bytesWritten - 1] = 0;
+            }
+            else
+            {
+                buffer[bytesWritten] = 0;
+            }
+        }
+        return bytesWritten;
     }
 }
 
