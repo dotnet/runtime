@@ -279,7 +279,57 @@ jobs:
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x64 Source Build
+# Centos 7 x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Centos7_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: centos.7-x64
+      platform: Centos7_Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: centos-7-source-build-20210714125450-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        isSourceBuild: true
+        isNonPortableSourceBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Non-existent RID Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Banana24_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: banana.24-x64
+      platform: Banana24_Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: centos-7-source-build-20210714125450-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        isSourceBuild: true
+        isNonPortableSourceBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Portable Linux x64 Source Build
 
 - ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
   - template: xplat-setup.yml
@@ -300,8 +350,9 @@ jobs:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        isSourceBuild: true
+        isNonPortableSourceBuild: false
         ${{ insert }}: ${{ parameters.jobParameters }}
-        buildingOnSourceBuildImage: true
 
 # Linux s390x
 
