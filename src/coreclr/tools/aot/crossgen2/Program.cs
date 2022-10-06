@@ -625,8 +625,6 @@ namespace ILCompiler
                                 compilationRoots.Add(xmlProvider);
                             }
 
-                            compilationRoots.Add(new ReadyToRunMainMethodRootProvider(module));
-
                             if (!_command.CompositeOrInputBubble)
                             {
                                 break;

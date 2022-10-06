@@ -78,11 +78,7 @@ namespace ILCompiler
         private class CompilationRootProvider : ProcessLinkerXmlBase
         {
             private const string NamespaceElementName = "namespace";
-            private const string _required = "required";
             private const string _preserve = "preserve";
-            private const string _accessors = "accessors";
-            private static readonly string[] _accessorsAll = new string[] { "all" };
-            private static readonly char[] _accessorsSep = new char[] { ';' };
             private readonly IRootingServiceProvider _rootingServiceProvider;
 
             public CompilationRootProvider(IRootingServiceProvider provider, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)

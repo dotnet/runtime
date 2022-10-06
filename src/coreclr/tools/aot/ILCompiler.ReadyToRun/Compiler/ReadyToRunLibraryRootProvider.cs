@@ -89,6 +89,11 @@ namespace ILCompiler
 
                     RootMethods(typeWithMethods, "Library module method", rootProvider, ((EcmaAssembly)_module.Assembly).HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"));
                 }
+
+                if (_module.EntryPoint is not null)
+                {
+                    rootProvider.AddCompilationRoot(_module.EntryPoint, rootMinimalDependencies: false, $"{_module.Assembly.GetName()} Main Method");
+                }
             }
         }
 
