@@ -77,7 +77,7 @@ namespace Microsoft.Interop.JavaScript
         public BlockSyntax GenerateJSImportBody()
         {
             StatementSyntax invoke = InvokeSyntax();
-            JSGeneratedStatements statements = JSGeneratedStatements.Create(_marshallers, _context, invoke);
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
 
@@ -96,8 +96,9 @@ namespace Microsoft.Interop.JavaScript
 
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
+            tryStatements.AddRange(statements.PinnedMarshal);
 
-            tryStatements.AddRange(statements.InvokeStatements);
+            tryStatements.Add(invoke);
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,

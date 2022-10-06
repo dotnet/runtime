@@ -16,7 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
-    <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == ''">Shared</NativeLib>
+    <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == '' and '$(IlcMultiModule)' != 'true'">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
@@ -47,6 +47,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
+    <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">

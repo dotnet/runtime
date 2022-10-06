@@ -14,6 +14,10 @@
 #include "utilcode.h"
 #include "ex.h"
 
+#ifdef HOST_WINDOWS
+#include <versionhelpers.h>
+#endif
+
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
@@ -25,65 +29,26 @@ RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 //*****************************************************************************
 void InitRunningOnVersionStatus ()
 {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    BOOL fSupportedPlatform = FALSE;
-    OSVERSIONINFOEX sVer;
-    DWORDLONG dwlConditionMask;
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 2;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    if(IsWindows8OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 1;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    else if(IsWindows7OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN7;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-CHECK_SUPPORTED:
-
-    if (!fSupportedPlatform)
+    else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
-        fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
+        fprintf(stderr, "Platform not supported: Windows 7 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-#endif // TARGET_UNIX
+#endif // HOST_WINDOWS
 } // InitRunningOnVersionStatus
 
 #ifndef HOST_64BIT
@@ -468,6 +433,27 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 #endif // TARGET_UNIX
 
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
+
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int
+GuidToLPSTR(
+                          GUID   guid,      // The GUID to convert.
+    _Out_writes_(cchGuid) LPSTR szGuid,     // String into which the GUID is stored
+                          DWORD  cchGuid)   // Count in chars
+{
+    if (cchGuid < 39)
+        return 0;
+
+    return sprintf_s(szGuid, cchGuid, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid.Data1, guid.Data2, guid.Data3,
+            guid.Data4[0], guid.Data4[1],
+            guid.Data4[2], guid.Data4[3],
+            guid.Data4[4], guid.Data4[5],
+            guid.Data4[6], guid.Data4[7]) + 1;
+}
 
 //*****************************************************************************
 // Convert hex value into a wide string of hex digits

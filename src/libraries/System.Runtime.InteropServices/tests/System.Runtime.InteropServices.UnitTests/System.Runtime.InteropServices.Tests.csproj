@@ -44,7 +44,6 @@
     <Compile Include="System\Runtime\InteropServices\GuidAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleRefTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LibraryImportAttributeTests.cs" />

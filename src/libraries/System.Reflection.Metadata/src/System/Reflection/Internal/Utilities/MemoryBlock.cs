@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -315,33 +314,23 @@ namespace System.Reflection.Internal
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
         /// <returns>Length (byte count) not including terminator.</returns>
-        internal int GetUtf8NullTerminatedLength(int offset, out int numberOfBytesRead, char terminator = '\0')
+        internal int GetUtf8NullTerminatedLength(int offset, out int numberOfBytesRead, char terminator)
         {
             CheckBounds(offset, 0);
 
             Debug.Assert(terminator <= 0x7f);
 
-            byte* start = Pointer + offset;
-            byte* end = Pointer + Length;
-            byte* current = start;
-
-            while (current < end)
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + offset, Length - offset);
+            int length = terminator != '\0' ?
+                span.IndexOfAny((byte)0, (byte)terminator) :
+                span.IndexOf((byte)0);
+            if (length >= 0)
             {
-                byte b = *current;
-                if (b == 0 || b == terminator)
-                {
-                    break;
-                }
-
-                current++;
+                numberOfBytesRead = length + 1; // we also read the terminator
             }
-
-            int length = (int)(current - start);
-            numberOfBytesRead = length;
-            if (current < end)
+            else
             {
-                // we also read the terminator
-                numberOfBytesRead++;
+                numberOfBytesRead = length = span.Length;
             }
 
             return length;
@@ -353,22 +342,11 @@ namespace System.Reflection.Internal
 
             Debug.Assert(asciiChar != 0 && asciiChar <= 0x7f);
 
-            for (int i = startOffset; i < Length; i++)
-            {
-                byte b = Pointer[i];
-
-                if (b == 0)
-                {
-                    break;
-                }
-
-                if (b == asciiChar)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + startOffset, Length - startOffset);
+            int i = span.IndexOfAny((byte)asciiChar, (byte)0);
+            return i >= 0 && span[i] == asciiChar ?
+                startOffset + i :
+                -1;
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
@@ -545,19 +523,10 @@ namespace System.Reflection.Internal
 
         internal int IndexOfUnchecked(byte b, int start)
         {
-            byte* p = Pointer + start;
-            byte* end = Pointer + Length;
-            while (p < end)
-            {
-                if (*p == b)
-                {
-                    return (int)(p - Pointer);
-                }
-
-                p++;
-            }
-
-            return -1;
+            int i = new ReadOnlySpan<byte>(Pointer + start, Length - start).IndexOf(b);
+            return i >= 0 ?
+                i + start :
+                -1;
         }
 
         // same as Array.BinarySearch, but without using IComparer

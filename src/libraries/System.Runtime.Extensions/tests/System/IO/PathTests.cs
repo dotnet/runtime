@@ -182,7 +182,18 @@ namespace System.IO.Tests
             try
             {
                 Assert.True(File.Exists(tmpFile));
-                Assert.Equal(".tmp", Path.GetExtension(tmpFile), ignoreCase: true, ignoreLineEndingDifferences: false, ignoreWhiteSpaceDifferences: false);
+                string fileName = Path.GetFileName(tmpFile);
+                Assert.StartsWith("tmp", fileName);
+                Assert.Equal("tmpXXXXXX.tmp".Length, fileName.Length);
+                Assert.EndsWith(".tmp", fileName);
+
+                const string ValidChars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                for (int i = 3; i < 9; i++)
+                {
+                    // Unix allows upper and lower case
+                    Assert.True(ValidChars.Contains(char.ToLowerInvariant(fileName[i])));
+                }
+
                 Assert.Equal(-1, tmpFile.IndexOfAny(Path.GetInvalidPathChars()));
                 using (FileStream fs = File.OpenRead(tmpFile))
                 {
@@ -218,6 +229,42 @@ namespace System.IO.Tests
                 finally
                 {
                     tempPathWithUnicode.Delete(recursive: true);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetTempFileNameTempInvalidTemp()
+        {
+            // GetTempFileName has retries in it. It shouldn't hang in the face of a
+            // bad temp path.
+            RemoteExecutor.Invoke(() =>
+            {
+                string goodTemp = Path.GetTempPath();
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TMP" : "TMPDIR";
+
+                try
+                {
+                    string badTemp = Path.GetTempFileName();
+                    Assert.True(File.Exists(badTemp));
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, badTemp);
+
+                    Assert.StartsWith(badTemp, Path.GetTempPath());
+
+                    Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // file not directory
+                    File.Delete(badTemp);
+                    Assert.Throws<DirectoryNotFoundException>(() => Path.GetTempFileName()); // non existent
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Environment.SetEnvironmentVariable(tempEnvVar, "|||");
+                        Assert.Throws<IOException>(() => Path.GetTempFileName()); // invalid path
+                    }
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(tempEnvVar, goodTemp);
                 }
             }).Dispose();
         }

@@ -3738,7 +3738,7 @@ namespace System.Tests
             yield return new object[] { new int[] { 3, 1, 2 }, new string[] { "a", "b", "c" }, 0, 3, null, new int[] { 1, 2, 3 }, new string[] { "b", "c", "a" } };
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 1, 2, null, new int[] { 3, 1, 2, 4 }, new string[] { "a", "c", "b", "d" } };
 
-            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, new ReverseIntegerComparer(), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
+            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, Comparer<int>.Create((x, y) => -((int)x).CompareTo((int)y)), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
 
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d", "e", "f" }, 0, 4, new IntegerComparer(), new int[] { 1, 2, 3, 4 }, new string[] { "c", "b", "a", "d", "e", "f" } }; // Items.Length > keys.Length
 
@@ -4599,11 +4599,6 @@ namespace System.Tests
             bool IEqualityComparer.Equals(object x, object y) => ((int)x) == ((int)y);
 
             public int GetHashCode(object obj) => ((int)obj) >> 2;
-        }
-
-        public class ReverseIntegerComparer : IComparer
-        {
-            public int Compare(object x, object y) => -((int)x).CompareTo((int)y);
         }
 
         private class StringComparer : IComparer, IComparer<string>

@@ -20,7 +20,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -58,7 +57,6 @@ STDMETHODIMP RegMeta::SetModuleProps(   // S_OK or error.
     LOG((LOGMD, "RegMeta::SetModuleProps(%S)\n", MDSTR(szName)));
 
 
-    START_MD_PERF()
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -77,7 +75,6 @@ STDMETHODIMP RegMeta::SetModuleProps(   // S_OK or error.
 
 ErrExit:
 
-    STOP_MD_PERF(SetModuleProps);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -95,7 +92,6 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     LOG((LOGMD, "RegMeta::Save(%S, 0x%08x)\n", MDSTR(szFile), dwSaveFlags));
-    START_MD_PERF()
     LOCKWRITE();
 
     // Check reserved param..
@@ -119,7 +115,6 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
 
 ErrExit:
 
-    STOP_MD_PERF(Save);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -139,13 +134,11 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
     LOCKWRITE();
 
     LOG((LOGMD, "RegMeta::SaveToStream(0x%08x, 0x%08x)\n", pIStream, dwSaveFlags));
-    START_MD_PERF()
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
     hr = _SaveToStream(pIStream, dwSaveFlags);
 
-    STOP_MD_PERF(SaveToStream);
 
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
@@ -200,7 +193,6 @@ STDMETHODIMP RegMeta::SaveToMemory(           // S_OK or error.
 
     LOG((LOGMD, "MD RegMeta::SaveToMemory(0x%08x, 0x%08x)\n",
         pbData, cbData));
-    START_MD_PERF();
 
 #ifdef _DEBUG
     ULONG       cbActual;               // Size of the real data.
@@ -219,7 +211,6 @@ STDMETHODIMP RegMeta::SaveToMemory(           // S_OK or error.
 ErrExit:
     if (pStream)
         pStream->Release();
-    STOP_MD_PERF(SaveToMemory);
     END_ENTRYPOINT_NOTHROW;
 
     return (hr);
@@ -239,7 +230,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
     FilterTable *ft = NULL;
 
     LOG((LOGMD, "RegMeta::GetSaveSize(0x%08x, 0x%08x)\n", fSave, pdwSaveSize));
-    START_MD_PERF();
     LOCKWRITE();
 
     ft = m_pStgdb->m_MiniMd.GetFilterTable();
@@ -284,7 +274,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
     hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions);
 
 ErrExit:
-    STOP_MD_PERF(GetSaveSize);
 
     END_ENTRYPOINT_NOTHROW;
 
@@ -314,7 +303,6 @@ HRESULT RegMeta::UnmarkAll()
 
     LOG((LOGMD, "RegMeta::UnmarkAll\n"));
 
-    START_MD_PERF();
     LOCKWRITE();
 
 #if 0
@@ -429,7 +417,6 @@ HRESULT RegMeta::UnmarkAll()
     }
 ErrExit:
 
-    STOP_MD_PERF(UnmarkAll);
 
     END_ENTRYPOINT_NOTHROW;
 
@@ -475,7 +462,6 @@ STDMETHODIMP RegMeta::MarkToken(        // Return code.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     // LOG((LOGMD, "RegMeta::MarkToken(0x%08x)\n", tk));
-    START_MD_PERF();
     LOCKWRITE();
 
     if (m_pStgdb->m_MiniMd.GetFilterTable() == NULL || m_pFilterManager == NULL)
@@ -551,7 +537,6 @@ STDMETHODIMP RegMeta::MarkToken(        // Return code.
     }
 ErrExit:
 
-    STOP_MD_PERF(MarkToken);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -574,7 +559,6 @@ HRESULT RegMeta::IsTokenMarked(
     FilterTable *pFilter = NULL;
 
     LOG((LOGMD, "RegMeta::IsTokenMarked(0x%08x)\n", tk));
-    START_MD_PERF();
     LOCKREAD();
 
     pFilter = m_pStgdb->m_MiniMd.GetFilterTable();
@@ -635,7 +619,6 @@ HRESULT RegMeta::IsTokenMarked(
     }
 ErrExit:
 
-    STOP_MD_PERF(IsTokenMarked);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -660,7 +643,6 @@ STDMETHODIMP RegMeta::DefineTypeDef(                // S_OK or error.
     LOG((LOGMD, "RegMeta::DefineTypeDef(%S, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             MDSTR(szTypeDef), dwTypeDefFlags, tkExtends,
             rtkImplements, ptd));
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -670,7 +652,6 @@ STDMETHODIMP RegMeta::DefineTypeDef(                // S_OK or error.
     IfFailGo(_DefineTypeDef(szTypeDef, dwTypeDefFlags,
                 tkExtends, rtkImplements, mdTokenNil, ptd));
 ErrExit:
-    STOP_MD_PERF(DefineTypeDef);
 
     END_ENTRYPOINT_NOTHROW;
 
@@ -691,7 +672,6 @@ STDMETHODIMP RegMeta::SetHandler(       // S_OK.
     IMapToken *pIMap = NULL;
 
     LOG((LOGMD, "RegMeta::SetHandler(0x%08x)\n", pUnk));
-    START_MD_PERF();
     LOCKWRITE();
 
     m_pHandler = pUnk;
@@ -708,7 +688,6 @@ STDMETHODIMP RegMeta::SetHandler(       // S_OK.
 
 ErrExit:
 
-    STOP_MD_PERF(SetHandler);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -817,7 +796,6 @@ HRESULT RegMeta::RefToDefOptimization()
 
 
 
-    START_MD_PERF();
 
     // the Ref to Def map is still up-to-date
     if (IsMemberDefDirty() == false && IsTypeDefDirty() == false && m_hasOptimizedRefToDef == true)
@@ -960,7 +938,6 @@ HRESULT RegMeta::RefToDefOptimization()
     SetTypeDefDirty(false);
     m_hasOptimizedRefToDef = true;
 ErrExit:
-    STOP_MD_PERF(RefToDefOptimization);
 
     return hr;
 } // RegMeta::RefToDefOptimization

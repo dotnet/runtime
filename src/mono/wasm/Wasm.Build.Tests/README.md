@@ -38,7 +38,7 @@ For this, the builds get cached using `BuildArgs` as the key.
 
 - when running locally, the default is to test with workloads. For this, sdk
   with `$(SdkVersionForWorkloadTesting)` is installed in
-  `artifacts/bin/dotnet-workload`. And the workload packs are installed there
+  `artifacts/bin/dotnet-latest`. And the workload packs are installed there
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
     - If the packages get updated, then the workload will get installed again.
 
@@ -53,3 +53,7 @@ For this, the builds get cached using `BuildArgs` as the key.
 
 - Each test gets a randomly generated "id". This `id` can be used to find the
   binlogs, or the test directories.
+
+## Useful environment variables
+
+- `SHOW_BUILD_OUTPUT` - will show the build output to the console

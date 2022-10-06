@@ -503,6 +503,15 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 #endif
 }
 
+void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
+{
+#ifdef FEATURE_BASICFREEZE
+    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
+    heap_segment_committed(heap_seg) = committed;
+    heap_segment_allocated(heap_seg) = allocated;
+#endif // FEATURE_BASICFREEZE
+}
+
 bool GCHeap::RuntimeStructuresValid()
 {
     return GCScan::GetGcRuntimeStructuresValid();
