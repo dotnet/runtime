@@ -4949,7 +4949,7 @@ size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size
         DEBUG_REP(dmpPrintObjectDescription(key, value));
         if (pRequiredBufferSize != nullptr)
         {
-            *pRequiredBufferSize = value.requiredBufferSize;
+            *pRequiredBufferSize = (size_t)value.requiredBufferSize;
         }
         size_t bytesWritten = (size_t)value.bytesWritten;
         if (buffer != nullptr && bytesWritten > 0)
