@@ -4755,16 +4755,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    // Calculate size costs.
-    // First reclaculate existing costs to make sure they are up to date.
-    gtSetEvalOrder(last);
-    gtSetEvalOrder(asgNode);
-    // If the condition is against 0 then JTRUE will have no size cost as it'll be merged into the compare.
-    int currentCostSz =
-        asgNode->GetCostSz() + (cond->gtGetOp2()->IsIntegralConst(0) ? cond->GetCostSz() : last->GetCostSz());
-    int postOptCostSz =
-        asgNode->GetCostSz() + 1 /* GT_SELECT */ + cond->GetCostSz() + asgNode->AsOp()->gtOp1->GetCostSz();
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4777,9 +4767,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 #endif
 
-    if (postOptCostSz > currentCostSz)
+    // Using SELECT nodes means that full assignment is always evaluated.
+    // Put a limit on the original source and destination of the assignment.
+    int costing = asgNode->gtGetOp1()->GetCostEx() + asgNode->gtGetOp2()->GetCostEx() - 2;
+    if (costing > 0 && !compStressCompile(STRESS_IF_CONVERSION, 0))
     {
-        JITDUMP("Aborting If Conversion: optimisation too expensive (%d>%d)\n", postOptCostSz, currentCostSz);
+        JITDUMP("Aborting If Conversion: optimisation too expensive (+%d)\n", costing);
         return false;
     }
 
