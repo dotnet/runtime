@@ -302,25 +302,25 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b496d9ec07e2dec4fe85b63ea80a8b10b608ca59</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.4.0-3.22480.9">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.4.0-3.22505.18">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>b189d3e226ef8b389560aaece38fa263e2cf1c15</Sha>
+      <Sha>6a0bbe19399f7da58f006b25c282c1cd5c5a96eb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.4.0-3.22480.9">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.4.0-3.22505.18">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>b189d3e226ef8b389560aaece38fa263e2cf1c15</Sha>
+      <Sha>6a0bbe19399f7da58f006b25c282c1cd5c5a96eb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-3.22480.9">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-3.22505.18">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>b189d3e226ef8b389560aaece38fa263e2cf1c15</Sha>
+      <Sha>6a0bbe19399f7da58f006b25c282c1cd5c5a96eb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4-beta1.22503.2">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4-beta1.22504.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>f54c092f4099a87d4336a1f39e02d1a3cd553af9</Sha>
+      <Sha>846a766f73caa82608db6fee9f2860004298449f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22503.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22504.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>f54c092f4099a87d4336a1f39e02d1a3cd553af9</Sha>
+      <Sha>846a766f73caa82608db6fee9f2860004298449f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22462.3">
       <Uri>https://github.com/dotnet/sdk</Uri>
