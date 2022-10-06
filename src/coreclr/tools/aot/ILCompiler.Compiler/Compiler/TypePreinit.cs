@@ -1769,11 +1769,7 @@ namespace ILCompiler
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            public virtual bool GetRawData(NodeFactory factory, out object data)
-            {
-                data = null;
-                return false;
-            }
+            public abstract bool GetRawData(NodeFactory factory, out object data);
 
             private static T ThrowInvalidProgram<T>()
             {
@@ -1917,6 +1913,12 @@ namespace ILCompiler
             {
                 throw new NotSupportedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
@@ -1943,6 +1945,12 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
             }
         }
 
@@ -1989,6 +1997,12 @@ namespace ILCompiler
             {
                 // This would imply we have a byref-typed static field. The layout algorithm should have blocked this.
                 throw new NotImplementedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
             }
         }
 

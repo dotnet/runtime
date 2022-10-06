@@ -2219,8 +2219,9 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
-                        // Write "null" to buffer
                         Debug.Assert(bufferSize >= targetPtrSize);
+
+                        // Write "null" to buffer
                         new Span<byte>(buffer, targetPtrSize).Clear();
                         return true;
                     }
@@ -2229,14 +2230,17 @@ namespace Internal.JitInterface
                     {
                         switch (data)
                         {
-                            case byte[] bytes when bytes.Length <= bufferSize:
+                            case byte[] bytes:
+                                Debug.Assert(bufferSize >= bytes.Length);
+
                                 bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
                                 return true;
 
                             case FrozenObjectNode or FrozenStringNode:
+                                Debug.Assert(bufferSize >= targetPtrSize);
+
                                 // save handle's value to buffer
                                 nint handle = ObjectToHandle(data);
-                                Debug.Assert(bufferSize >= targetPtrSize);
                                 new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
                                 return true;
                         }
