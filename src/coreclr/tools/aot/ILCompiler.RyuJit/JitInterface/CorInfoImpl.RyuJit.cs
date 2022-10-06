@@ -2215,9 +2215,13 @@ namespace Internal.JitInterface
                     TypePreinit.ISerializableValue value = preinitManager
                         .GetPreinitializationInfo(owningType).GetFieldValue(field);
 
+                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
+
                     if (value == null)
                     {
-                        *((nint*)buffer) = 0;
+                        // Write "null" to buffer
+                        Debug.Assert(bufferSize >= targetPtrSize);
+                        new Span<byte>(buffer, targetPtrSize).Clear();
                         return true;
                     }
 
@@ -2230,7 +2234,10 @@ namespace Internal.JitInterface
                                 return true;
 
                             case FrozenObjectNode or FrozenStringNode:
-                                *(nint*)buffer = ObjectToHandle(data);
+                                // save handle's value to buffer
+                                nint handle = ObjectToHandle(data);
+                                Debug.Assert(bufferSize >= targetPtrSize);
+                                new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
                                 return true;
                         }
                     }
