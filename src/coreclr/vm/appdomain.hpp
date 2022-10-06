@@ -1094,6 +1094,12 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    static CrstStatic* GetMethodTableExposedClassObjectLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_MethodTableExposedClassObjectCrst;
+    }
+
     void AssertLoadLockHeld()
     {
         _ASSERTE(m_FileLoadLock.HasLock());
@@ -1135,7 +1141,7 @@ protected:
 #endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics
-    static CrstStatic   m_SpecialStaticsCrst;
+    static CrstStatic m_MethodTableExposedClassObjectCrst;
 
 public:
     // Only call this routine when you can guarantee there are no

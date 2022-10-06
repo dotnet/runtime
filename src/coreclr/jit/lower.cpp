@@ -2753,7 +2753,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
     // Do not optimise further if op1 has a contained chain.
     if (op1->OperIs(GT_AND) &&
-        (op1->gtGetOp1()->isContainedAndNotIntOrIImmed() || op1->gtGetOp2()->isContainedAndNotIntOrIImmed()))
+        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
     {
         return cmp;
     }
