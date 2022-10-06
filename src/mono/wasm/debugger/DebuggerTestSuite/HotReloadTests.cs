@@ -561,5 +561,33 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly2.dll/MethodBody2.cs", 12, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", $"dotnet://ApplyUpdateReferencedAssembly2.dll/MethodBody2.cs", 18, 12, "ApplyUpdateReferencedAssembly.AddMethod.StaticMethod2");
         }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReload_NewInstanceFields()
+        {
+            string asm_name = "ApplyUpdateReferencedAssembly3";
+            string asm_file = Path.Combine (DebuggerTestAppPath, asm_name + ".dll");
+            string pdb_file = Path.Combine (DebuggerTestAppPath, asm_name + ".pdb");
+            string asm_file_hot_reload = Path.Combine (DebuggerTestAppPath, "..", "wasm", asm_name+ ".dll");
+            _testOutput.WriteLine ("aleksey 123");
+            var pause_location = await LoadAssemblyAndTestHotReload(asm_file, pdb_file, asm_file_hot_reload, "AddInstanceFields", "StaticMethod1",
+                                                                    expectBpResolvedEvent: false, sourcesToWait: new string [] { "MethodBody2.cs" });
+            var frame = pause_location["callFrames"][0];
+            var c_props = await GetObjectOnFrame (frame, "c");
+            _testOutput.WriteLine ("aleksey 234");
+#if false
+            await CheckProps (c_props, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 0);
+            await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
+                                       locals_fn: async (locals) => {
+                                           var c_props1 = await GetObjectOnFrame (locals, "c");
+                                           await CheckProps (c_props1, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c1", num_fields: 1);
+                                       });
+            await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
+                                       locals_fn: async (locals) => {
+                                           var c_props2 = await GetObjectOnFrame (locals, "c");
+                                           await CheckProps (c_props2, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c2", num_fields: 2);
+                                       });
+#endif
+        }
     }
 }
