@@ -177,10 +177,14 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 //
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
-    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType);
+    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
     RefPosition* newRP = &refPositions.back();
 #ifdef DEBUG
-    newRP->rpNum = static_cast<unsigned>(refPositions.size() - 1);
+    // Reset currBuildNode so we do not set it for subsequent refpositions belonging
+    // to the same treeNode and hence, avoid printing it for every refposition inside
+    // the allocation table.
+    currBuildNode = nullptr;
+    newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
 #endif // DEBUG
     return newRP;
 }
@@ -1749,6 +1753,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // the last RefPosition prior to those created for this node.
     RefPositionIterator refPositionMark = refPositions.backPosition();
     int                 oldDefListCount = defList.Count();
+    currBuildNode                       = tree;
 #endif // DEBUG
 
     int consume = BuildNode(tree);
@@ -2327,7 +2332,6 @@ void LinearScan::buildIntervals()
                     {
                         // If we are using locations from a predecessor, we should never require DummyDefs.
                         assert(!predBlockIsAllocated);
-
                         JITDUMP("Creating dummy definitions\n");
                         VarSetOps::Iter iter(compiler, newLiveIn);
                         unsigned        varIndex = 0;

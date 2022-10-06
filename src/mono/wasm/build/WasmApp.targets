@@ -82,6 +82,8 @@
                                     <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
                                     <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
                                     <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+      - @(EmccExportedRuntimeMethod) - Extra method for emcc flag EXPORTED_RUNTIME_METHODS
+      - @(EmccExportedFunction)      - Extra function for emcc flag EXPORTED_FUNCTIONS
   -->
 
   <PropertyGroup>

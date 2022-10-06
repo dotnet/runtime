@@ -2753,7 +2753,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
     // Do not optimise further if op1 has a contained chain.
     if (op1->OperIs(GT_AND) &&
-        (op1->gtGetOp1()->isContainedAndNotIntOrIImmed() || op1->gtGetOp2()->isContainedAndNotIntOrIImmed()))
+        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
     {
         return cmp;
     }
@@ -2816,6 +2816,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
@@ -2823,15 +2825,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     {
                         op1->ClearContained();
                     }
+
                     GenTree* op2 = castOp->gtGetOp2();
                     if ((op2 != nullptr) && !op2->IsCnsIntOrI())
                     {
                         op2->ClearContained();
                     }
-                }
-                else
-                {
-                    castOp->ClearContained();
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;

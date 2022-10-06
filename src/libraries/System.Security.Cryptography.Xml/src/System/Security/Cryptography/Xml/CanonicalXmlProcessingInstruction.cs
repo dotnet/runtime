@@ -44,27 +44,31 @@ namespace System.Security.Cryptography.Xml
             if (!IsInNodeSet)
                 return;
 
-            UTF8Encoding utf8 = new UTF8Encoding(false);
             byte[] rgbData;
             if (docPos == DocPosition.AfterRootElement)
             {
-                rgbData = utf8.GetBytes("(char) 10");
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
-            rgbData = utf8.GetBytes("<?");
+
+            rgbData = "<?"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes((Name));
+
+            rgbData = Encoding.UTF8.GetBytes(Name);
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
+
             if ((Value != null) && (Value.Length > 0))
             {
-                rgbData = utf8.GetBytes(" " + Value);
+                rgbData = Encoding.UTF8.GetBytes(" " + Value);
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
-            rgbData = utf8.GetBytes("?>");
+
+            rgbData = "?>"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
+
             if (docPos == DocPosition.BeforeRootElement)
             {
-                rgbData = utf8.GetBytes("(char) 10");
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }

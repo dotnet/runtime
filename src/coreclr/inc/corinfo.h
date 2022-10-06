@@ -2265,6 +2265,30 @@ public:
             int                         bufferSize  /* IN  */
             ) = 0;
 
+
+    //------------------------------------------------------------------------------
+    // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
+    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic 
+    //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
+    //
+    // Arguments:
+    //    handle     -          Direct object handle
+    //    buffer     -          Pointer to buffer
+    //    bufferSize -          Buffer size
+    //    pRequiredBufferSize - Full length of the textual UTF8 representation, can be used to call this
+    //                          API again with a bigger buffer to get the full string if the first buffer
+    //                          from that first attempt was not big enough.
+    //
+    // Return Value:
+    //    Bytes written to the given buffer, the range is [0..bufferSize)
+    //
+    virtual size_t printObjectDescription (
+            void*                       handle,                       /* IN  */
+            char*                       buffer,                       /* OUT */
+            size_t                      bufferSize,                   /* IN  */
+            size_t*                     pRequiredBufferSize = nullptr /* OUT */
+            ) = 0;
+
     /**********************************************************************************/
     //
     // ICorClassInfo
@@ -2472,6 +2496,10 @@ public:
     // helper has been created.
 
     virtual CorInfoHelpFunc getUnBoxHelper(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    virtual void* getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
