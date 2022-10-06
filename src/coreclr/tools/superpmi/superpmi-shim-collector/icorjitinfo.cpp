@@ -453,14 +453,15 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
-int interceptor_ICJI::objectToString(void* handle,    /* IN  */
-                                     char* buffer,    /* OUT */
-                                     int   bufferSize /* IN  */
-                                     )
+size_t interceptor_ICJI::printObjectDescription(void*   handle,             /* IN  */
+                                                char*   buffer,             /* OUT */
+                                                size_t  bufferSize,         /* IN  */
+                                                size_t* pRequiredBufferSize /* OUT */
+                                                )
 {
-    mc->cr->AddCall("objectToString");
-    int temp = original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
-    mc->recObjectToString(handle, buffer, bufferSize, temp);
+    mc->cr->AddCall("printObjectDescription");
+    size_t temp = original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
+    mc->recPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize, temp);
     return temp;
 }
 

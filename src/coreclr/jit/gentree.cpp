@@ -11079,7 +11079,7 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                eePrintFrozenObjectDescription(" ", tree->AsIntCon()->gtIconVal);
+                eePrintObjectDescriptionDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {
@@ -17054,12 +17054,13 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (node->GetHWIntrinsicId())
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             // These intrinsics are meant to set the same value to every element.
@@ -17691,12 +17692,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     GenTree* op1 = base->AsOp()->gtOp1;
                     GenTree* op2 = base->AsOp()->gtOp2;
 
-                    const bool op1IsStaticFieldBase = gtIsStaticGCBaseHelperCall(op1);
-
-                    if (op1IsStaticFieldBase && (op2->OperGet() == GT_CNS_INT))
+                    if (op2->IsCnsIntOrI())
                     {
                         FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-
                         if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
@@ -17966,55 +17964,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
     }
 
     return fieldClass;
-}
-
-//------------------------------------------------------------------------
-// gtIsGCStaticBaseHelperCall: true if tree is fetching the gc static base
-//    for a subsequent static field access
-//
-// Arguments:
-//    tree - tree to consider
-//
-// Return Value:
-//    true if the tree is a suitable helper call
-//
-// Notes:
-//    Excludes R2R helpers as they specify the target field in a way
-//    that is opaque to the jit.
-
-bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
-{
-    if (tree->OperGet() != GT_CALL)
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-
-    if (call->gtCallType != CT_HELPER)
-    {
-        return false;
-    }
-
-    const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
-
-    switch (helper)
-    {
-        // We are looking for a REF type so only need to check for the GC base helpers
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            return true;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -18581,7 +18530,6 @@ bool GenTreeSIMD::OperIsMemoryLoad() const
     return GetSIMDIntrinsicId() == SIMDIntrinsicInitArray;
 }
 
-// TODO-Review: why are layouts not compared here?
 /* static */ bool GenTreeSIMD::Equals(GenTreeSIMD* op1, GenTreeSIMD* op2)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetSIMDIntrinsicId() == op2->GetSIMDIntrinsicId()) &&
@@ -18652,9 +18600,24 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX_LoadVector256:
+        {
+            // These loads are contained as part of a HWIntrinsic operation
+            return true;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_Extract:
+        case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         case NI_AVX_ExtractVector128:
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         {
+            // These HWIntrinsic operations are contained as part of a store
             return true;
         }
 
@@ -22830,7 +22793,6 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
     gtHWIntrinsicId = intrinsicId;
 }
 
-// TODO-Review: why are layouts not compared here?
 /* static */ bool GenTreeHWIntrinsic::Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&

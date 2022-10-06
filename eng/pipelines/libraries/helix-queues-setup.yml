@@ -28,8 +28,8 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Debian.10.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20210304164340-6616c63
-        - (Debian.11.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20210304164347-5a7c380
+        - (Debian.10.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20221001191150-66a2140
+        - (Debian.11.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20221001191150-66a2140
 
     # Linux armv6
     - ${{ if eq(parameters.platform, 'Linux_armv6') }}:
@@ -50,7 +50,7 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20220803180115-99b3286
+        - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20220912172439-e7e8d1c
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.313.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-amd64-20210910135845-8a6f4f3
 

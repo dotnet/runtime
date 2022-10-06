@@ -314,13 +314,14 @@ int interceptor_ICJI::getStringLiteral(
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-int interceptor_ICJI::objectToString(
+size_t interceptor_ICJI::printObjectDescription(
           void* handle,
           char* buffer,
-          int bufferSize)
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    mcs->AddCall("objectToString");
-    return original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
+    mcs->AddCall("printObjectDescription");
+    return original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(

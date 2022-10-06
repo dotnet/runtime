@@ -10,7 +10,7 @@ jobs:
 #
 - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}

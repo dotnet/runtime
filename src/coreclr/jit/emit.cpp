@@ -4135,7 +4135,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     else if (flag == GTF_ICON_OBJ_HDL)
     {
 #ifdef DEBUG
-        emitComp->eePrintFrozenObjectDescription(commentPrefix, handle);
+        emitComp->eePrintObjectDescriptionDescription(commentPrefix, handle);
 #else
         str                   = "frozen object handle";
 #endif

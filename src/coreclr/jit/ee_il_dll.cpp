@@ -1518,7 +1518,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
         printer.Truncate(0);
-        printer.Printf("hackishClassName");
+        printer.Append("hackishClassName");
     }
 
     return printer.GetBuffer();
@@ -1615,31 +1615,22 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
+void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t handle)
 {
-    const int maxStrSize = 64;
-    char      str[maxStrSize];
-    int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
-    if (realLength == -1)
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = 0;
+
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize); });
+
+    if (!success)
     {
-        printf("%s 'unknown frozen object'", prefix);
         return;
     }
-    else if (realLength >= maxStrSize)
-    {
-        // string is too long, trim it and null-terminate
-        str[maxStrSize - 4] = '.';
-        str[maxStrSize - 3] = '.';
-        str[maxStrSize - 2] = '.';
-        str[maxStrSize - 1] = 0;
-    }
-    else
-    {
-        // objectToString doesn't null-terminate buffer
-        str[realLength] = 0;
-    }
 
-    for (int i = 0; i < min(maxStrSize, realLength); i++)
+    for (size_t i = 0; i < actualLen; i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')

@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         /// <param name="equivalences">If <paramref name="c"/> is involved in case conversion, then equivalences will contain the
         /// span of character which should be considered equal to <paramref name="c"/> in a case-insensitive comparison.</param>
         /// <returns><see langword="true"/> if <paramref name="c"/> is involved in case conversion; otherwise, <see langword="false"/></returns>
-        public static bool TryFindCaseEquivalencesForCharWithIBehavior(char c, CultureInfo culture, ref RegexCaseBehavior mappingBehavior, out ReadOnlySpan<char> equivalences)
+        public static bool TryFindCaseEquivalencesForCharWithIBehavior(char c, CultureInfo culture, scoped ref RegexCaseBehavior mappingBehavior, out ReadOnlySpan<char> equivalences)
         {
             if ((c | 0x20) == 'i' || (c | 0x01) == '\u0131')
             {

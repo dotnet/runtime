@@ -42,9 +42,20 @@ public:
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
 private:
+    // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
     uint8_t* m_pStart;
+
+    // Pointer to the end of the current segment, ready to be used as a pMT for a new object
+    // meaning that "m_pCurrent - sizeof(ObjHeader)" is the actual start of the new object (header).
+    //
+    // m_pCurrent <= m_SizeCommitted
     uint8_t* m_pCurrent;
+
+    // Memory committed in the current segment
+    //
+    // m_SizeCommitted <= m_pStart + FOH_SIZE_RESERVED
     size_t m_SizeCommitted;
+
     segment_handle m_SegmentHandle;
     INDEBUG(size_t m_ObjectsCount);
 };
