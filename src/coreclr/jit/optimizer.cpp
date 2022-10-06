@@ -6300,6 +6300,92 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
     return false;
 }
 
+//------------------------------------------------------------------------
+// optRecordSsaUses: note any SSA uses within tree
+//
+// Arguments:
+//   tree     - tree to examine
+//   block    - block that does (or will) contain tree
+//
+// Notes:
+//   Ignores SSA defs. We assume optimizations that modify trees with
+//   SSA defs are introducing new defs for locals that do not require PHIs
+//   or updating existing defs in place.
+//
+//   Currently does not examine PHI_ARG nodes as no opt phases introduce new PHIs.
+//
+//   Assumes block is a block that was rewritten by SSA or introduced post-SSA
+//   (in particular, block is not unreachable).
+//
+void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
+{
+    class SsaRecordingVisitor : public GenTreeVisitor<SsaRecordingVisitor>
+    {
+    private:
+        BasicBlock* const m_block;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true
+        };
+
+        SsaRecordingVisitor(Compiler* compiler, BasicBlock* block)
+            : GenTreeVisitor<SsaRecordingVisitor>(compiler), m_block(block)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* const tree = (*use)->AsLclVarCommon();
+
+            const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
+            const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
+
+            if (isUse)
+            {
+                unsigned   lclNum = tree->GetLclNum();
+                LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+                // SSA will be associated with the first field if it can replace the var.
+                //
+                if (!varDsc->lvInSsa && varDsc->CanBeReplacedWithItsField(m_compiler))
+                {
+                    lclNum = varDsc->lvFieldLclStart;
+                    varDsc = m_compiler->lvaGetDesc(lclNum);
+                }
+
+                if (!varDsc->lvInSsa)
+                {
+                    assert(!tree->HasSsaName());
+                    return fgWalkResult::WALK_CONTINUE;
+                }
+
+                // We should have a valid SSA num.
+                //
+                assert(tree->HasSsaName());
+                unsigned const      ssaNum    = tree->GetSsaNum();
+                LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+                ssaVarDsc->AddUse(m_block);
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    SsaRecordingVisitor srv(this, block);
+    srv.WalkTree(&tree, nullptr);
+}
+
+//------------------------------------------------------------------------
+// optPerformHoistExpr: hoist an expression into the preheader of a loop
+//
+// Arguments:
+//   origExpr - tree to hoist
+//   exprBb   - block containing the tree
+//   lnum     - loop that we're hoisting origExpr out of
+//
 void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
 {
     assert(exprBb != nullptr);
@@ -6349,6 +6435,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
+
+    // Scan the tree for any new SSA uses.
+    //
+    optRecordSsaUses(hoist, preHead);
 
     preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
