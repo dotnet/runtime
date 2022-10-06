@@ -4910,7 +4910,7 @@ void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t
     DWORD strBuf = (DWORD)-1;
     if (buffer != nullptr && bytesWritten > 0)
     {
-        size_t bufferRealSize = min(bytesWritten, bufferSize);
+        size_t bufferRealSize = min(bytesWritten, bufferSize - 1);
         strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
     }
 
