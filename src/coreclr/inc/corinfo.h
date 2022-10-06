@@ -3198,12 +3198,7 @@ public:
     //    field represents a statically initialized readonly field of any type, it might be:
     //    * integer/floating point primitive
     //    * null
-    //    * frozen object which in turn can be:
-    //       * string
-    //       * RuntimeType (CoreCLR only)
-    //       * Array (NativeAOT only)
-    //       * Delegate (NativeAOT only)
-    //       * Object wihtout fields (NativeAOT only)
+    //    * frozen object reference (string, array or object)
     //
     // Arguments:
     //    field      - field handle
@@ -3211,7 +3206,7 @@ public:
     //    bufferSize - size of buffer
     //
     // Return Value:
-    //    Returns true if field's constant value was succesfully copied to buffer
+    //    Returns true if field's constant value was available and successfully copied to buffer
     //
     virtual bool getReadonlyStaticFieldValue(
                     CORINFO_FIELD_HANDLE    field,
