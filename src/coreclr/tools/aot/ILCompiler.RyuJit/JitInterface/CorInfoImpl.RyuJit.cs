@@ -2230,9 +2230,8 @@ namespace Internal.JitInterface
                     {
                         switch (data)
                         {
-                            case byte[] bytes:
-                                Debug.Assert(bufferSize >= bytes.Length);
-
+                            case byte[] bytes when bufferSize >= bytes.Length:
+                                // Ensure we have enough room in the buffer, it can be a large struct
                                 bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
                                 return true;
 
