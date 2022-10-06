@@ -589,8 +589,8 @@ void SsaBuilder::AddPhiArg(
     }
 #endif // DEBUG
 
-    DBG_SSA_JITDUMP("Added PHI arg u:" FMT_SSA " for V%02u from " FMT_BB " in " FMT_BB ".\n", ssaNum, lclNum, pred->bbNum,
-                    block->bbNum);
+    DBG_SSA_JITDUMP("Added PHI arg u:" FMT_SSA " for V%02u from " FMT_BB " in " FMT_BB ".\n", ssaNum, lclNum,
+                    pred->bbNum, block->bbNum);
 }
 
 /**
@@ -955,7 +955,8 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
         }
 
         // Otherwise...
-        DBG_SSA_JITDUMP("Definition of %s/d:" FMT_SSA " in block " FMT_BB " has exn handler; adding as phi arg to handlers.\n",
+        DBG_SSA_JITDUMP("Definition of %s/d:" FMT_SSA " in block " FMT_BB
+                        " has exn handler; adding as phi arg to handlers.\n",
                         memoryKindNames[memoryKind], ssaNum, block->bbNum);
         EHblkDsc* tryBlk = m_pCompiler->ehGetBlockExnFlowDsc(block);
         while (true)
@@ -999,8 +1000,8 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
                     handlerMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(ssaNum, handlerMemoryPhi);
                 }
 
-                DBG_SSA_JITDUMP("   Added phi arg u:" FMT_SSA " for %s to phi defn in handler block " FMT_BB ".\n", ssaNum,
-                                memoryKindNames[memoryKind], memoryKind, handler->bbNum);
+                DBG_SSA_JITDUMP("   Added phi arg u:" FMT_SSA " for %s to phi defn in handler block " FMT_BB ".\n",
+                                ssaNum, memoryKindNames[memoryKind], memoryKind, handler->bbNum);
 
                 if ((memoryKind == ByrefExposed) && m_pCompiler->byrefStatesMatchGcHeapStates)
                 {
@@ -1046,8 +1047,8 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
                 unsigned ssaNum = m_pCompiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
                 m_renameStack.PushMemory(memoryKind, block, ssaNum);
 
-                DBG_SSA_JITDUMP("Ssa # for %s phi on entry to " FMT_BB " is " FMT_SSA ".\n", memoryKindNames[memoryKind],
-                                block->bbNum, ssaNum);
+                DBG_SSA_JITDUMP("Ssa # for %s phi on entry to " FMT_BB " is " FMT_SSA ".\n",
+                                memoryKindNames[memoryKind], block->bbNum, ssaNum);
 
                 block->bbMemorySsaNumIn[memoryKind] = ssaNum;
             }
@@ -1108,8 +1109,9 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
             }
         }
 
-        DBG_SSA_JITDUMP("Ssa # for %s on entry to " FMT_BB " is " FMT_SSA "; on exit is " FMT_SSA ".\n", memoryKindNames[memoryKind],
-                        block->bbNum, block->bbMemorySsaNumIn[memoryKind], block->bbMemorySsaNumOut[memoryKind]);
+        DBG_SSA_JITDUMP("Ssa # for %s on entry to " FMT_BB " is " FMT_SSA "; on exit is " FMT_SSA ".\n",
+                        memoryKindNames[memoryKind], block->bbNum, block->bbMemorySsaNumIn[memoryKind],
+                        block->bbMemorySsaNumOut[memoryKind]);
     }
 }
 
@@ -1758,9 +1760,9 @@ void Compiler::JitTestCheckSSA()
                     printTreeID(lcl);
                     printf(", SSA name = <V%02u, " FMT_SSA "> was declared in SSA name class %d,\n", lcl->GetLclNum(),
                            lcl->GetSsaNum(), tlAndN.m_num);
-                    printf(
-                        "but this SSA name <V%02u, " FMT_SSA "> has already been associated with a different SSA name class: %d.\n",
-                        ssaNm.m_lvNum, ssaNm.m_ssaNum, num2);
+                    printf("but this SSA name <V%02u, " FMT_SSA
+                           "> has already been associated with a different SSA name class: %d.\n",
+                           ssaNm.m_lvNum, ssaNm.m_ssaNum, num2);
                     unreached();
                 }
                 // And the current node must be of the specified SSA family.

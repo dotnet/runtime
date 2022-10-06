@@ -11361,11 +11361,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     assert(tree->gtFlags & GTF_VAR_DEF);
-                    printf("ud:" FMT_SSA "->" FMT_SSA, tree->AsLclVarCommon()->GetSsaNum(), GetSsaNumForLocalVarDef(tree));
+                    printf("ud:" FMT_SSA "->" FMT_SSA, tree->AsLclVarCommon()->GetSsaNum(),
+                           GetSsaNumForLocalVarDef(tree));
                 }
                 else
                 {
-                    printf("%s:" FMT_SSA, (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->AsLclVarCommon()->GetSsaNum());
+                    printf("%s:" FMT_SSA, (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u",
+                           tree->AsLclVarCommon()->GetSsaNum());
                 }
             }
 

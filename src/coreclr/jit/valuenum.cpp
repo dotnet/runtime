@@ -4879,8 +4879,8 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
         varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
 
-        JITDUMP("Tree [%06u] assigned VN to local var V%02u/" FMT_SSA ": ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
-                lclDefSsaNum);
+        JITDUMP("Tree [%06u] assigned VN to local var V%02u/" FMT_SSA ": ", dspTreeID(storeNode),
+                lclDefNode->GetLclNum(), lclDefSsaNum);
         JITDUMPEXEC(vnpPrint(newLclValue, 1));
         JITDUMP("\n");
     }
@@ -7687,7 +7687,8 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("SSA PHI definition: set VN of local V%02u/" FMT_SSA " to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
+            printf("SSA PHI definition: set VN of local V%02u/" FMT_SSA " to ", newSsaDef->GetLclNum(),
+                   newSsaDef->GetSsaNum());
             vnpPrint(newSsaDefVNP, 1);
             printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
         }
