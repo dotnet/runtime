@@ -2817,8 +2817,6 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
-    // Check if this tree is a gc static base helper call
-    bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
     GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
