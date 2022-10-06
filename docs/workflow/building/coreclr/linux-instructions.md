@@ -58,6 +58,8 @@ This table of images might often become stale as we change our images as our req
 | Alpine (x64, arm64 ROOTFS)        | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860` | `/crossrootfs/arm64` | -clang9       |
 | FreeBSD (x64 ROOTFS)              | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e`   | `/crossrootfs/x64`   | (default)     |
 
+These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
+
 ## Build using your own Environment
 
 Ensure you have all of the prerequisites installed from the [Linux Requirements](/docs/workflow/requirements/linux-requirements.md).

@@ -152,12 +152,10 @@ It might also be the case that you would need the latest changes in SOS, or you'
 2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb /path/to/corerun /path/to/app.dll <app args go here>`
 3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for MacOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
 4. Launch program: `process launch -s`
-5. To stop breaks on _SIGUSR1/SIGUSR2_ signals used by the runtime run the following command: `process handle -s false SIGUSR1 SIGUSR2`
-6. Set a breakpoint where CoreCLR is initialized, as it's the most stable point to begin debugging: `breakpoint set -n LoadLibraryExW`.
+5. To stop breaks on _SIGUSR1_ signals used by the runtime run the following command: `process handle -s false SIGUSR1`
+6. Set a breakpoint where CoreCLR is initialized, as it's the most stable point to begin debugging: `breakpoint set -n coreclr_execute_assembly`.
 7. Get to that point by issuing `process continue` after setting the breakpoint.
 8. Now, you're ready to begin your debugging session. You can set breakpoints or run SOS commands like `clrstack` or `sos VerifyHeap`.  Note that SOS command names are case sensitive.
-
-**NOTE:** _Corerun_ is a simple host that does not support resolving NuGet dependencies. It relies on libraries being locatable via the `CORE_LIBRARIES` environment variable, or present in the same directory as the _corerun_ executable. The instructions above are equally applicable to the _dotnet_ host.
 
 #### Disabling Managed Attach/Debugging
 

@@ -5,16 +5,15 @@
   * [Toolchain Setup](#toolchain-setup)
     * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
       * [Alpine ARM Cross-Building Requirements](#alpine-arm-cross-building-requirements)
-  * [Unsupported OSes](#unsupported-oses)
+  * [Gentoo Special Case](#gentoo-special-case)
 
 This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.
 
-There are two suggested ways to go about doing this. The first one is you are able to use the [provided Docker environments](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) used in the official builds, or you can set up the environment yourself. The documentation will go over both ways. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
+There are two suggested ways to go about doing this. You can use the Docker images used in the official builds, or you can set up the environment yourself. The documentation will go over both ways. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
 
 ## Docker
 
-Install Docker. For further installation instructions, see [here](https://docs.docker.com/install/). You can find the official .NET images in [their Docker hub](https://hub.docker.com/_/microsoft-dotnet). You can also use the images used for the official builds. More details on these ones in the [Linux building instructions doc](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
-All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
+Install Docker. For further installation instructions, see [here](https://docs.docker.com/install/). Details on the images used by the official builds can be found in the [Linux building instructions doc](/docs/workflow/building/coreclr/linux-instructions.md#docker-images). All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
 
 ## Environment
 
@@ -30,16 +29,13 @@ Install the following packages for the toolchain:
 
 * CMake
 * llvm
+* lld
 * clang
 * build-essential
 * python-is-python3
 * curl
 * git
 * lldb
-* liblldb-dev
-* libunwind8
-* libunwind8-dev
-* gettext
 * libicu-dev
 * liblttng-ust-dev
 * libssl-dev
@@ -49,9 +45,8 @@ Install the following packages for the toolchain:
 * ninja-build (optional, enables building native code with ninja instead of make)
 
 ```bash
-sudo apt install -y cmake llvm clang \
-build-essential python-is-python3 curl git lldb liblldb-dev \
-libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev \
+sudo apt install -y cmake llvm lld clang build-essential
+python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
 libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
@@ -65,33 +60,10 @@ If you are planning to use your Linux environment to do cross-building for other
 * qemu-user-static
 * binfmt-support
 * debootstrap
-* binutils-arm-linux-gnueabihf _(for Arm32 cross-building)_
-* binutils-aarch64-linux-gnu   _(for Arm64 cross-building)_
-* binutils-arm-linux-gnueabi   _(for Armel cross-building)_
 
-##### Alpine ARM Cross-Building Requirements
+**NOTE**: These dependencies are used to build the `crossrootfs`, not the runtime itself.
 
-To cross-compile for _linux-musl_, most commonly for Alpine distros, you need to build the `binutils` from their repo, since unfortunately, they are not available as packages like the ones you installed in the encompassing section.
-
-To build them, follow these steps:
-
-* Clone the `musl-cross-make` repo (<https://github.com/richfelker/musl-cross-make>)
-* Create a new `config.mak` file in the root of the repo, and add the following lines into it:
-
-```makefile
-# Note that these two 'TARGET' clauses are for demonstration purposes only.
-# For an actual build, you have to only write one, since they are mutually exclusive.
-
-TARGET = armv6-alpine-linux-musleabihf # if cross-compiling for Arm32
-TARGET = aarch64-alpine-linux-musl     # if cross-compiling for Arm64
-OUTPUT = /usr
-BINUTILS_CONFIG=--enable-gold=yes
-```
-
-* Run `make` from the root of the repo.
-* Run `sudo make install`, also from the root of the repo.
-
-### Unsupported OSes
+### Gentoo Special Case
 
 In case you have Gentoo you can run following command:
 
