@@ -7050,7 +7050,8 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 
     assert(cmp->OperIsCompare());
 
-    cmp->gtType  = TYP_VOID;
+  //  cmp->gtType = TYP_VOID;
+    MakeSrcContained(node, node->gtGetOp1());
 }
 
 //------------------------------------------------------------------------

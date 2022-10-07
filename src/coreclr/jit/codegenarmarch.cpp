@@ -359,6 +359,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_ARM64
         case GT_TEST_EQ:
         case GT_TEST_NE:
+            assert(!treeNode->isContained());
             // On ARM64 genCodeForCompare does not consume its own operands because
             // genCodeForBinary also has this behavior and it can end up calling
             // genCodeForCompare when generating compare chains for GT_AND.

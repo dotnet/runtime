@@ -3127,6 +3127,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
+    if (node->OperIsCompare())
+    {
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {

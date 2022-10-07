@@ -226,10 +226,10 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_JTRUE:
         {
-            srcCount = 0;
             assert(dstCount == 0);
             GenTree* cmp = tree->gtGetOp1();
-            assert(!cmp->IsValue());
+            srcCount     = BuildOperandUses(cmp);
+            assert(cmp->isContained());
         }
         break;
 
