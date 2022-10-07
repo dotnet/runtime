@@ -933,8 +933,6 @@ private:
                 indir->AsLclFld()->SetLayout(indirLayout);
                 lclNode = indir->AsLclVarCommon();
 
-                // Promoted locals aren't currently handled here so partial access can't be
-                // later be transformed into a LCL_VAR and the variable cannot be enregistered.
                 m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 break;
 
@@ -1000,13 +998,6 @@ private:
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
-            if (varDsc->lvPromoted)
-            {
-                // TODO-ADDR: support promoted locals here by moving the promotion morphing
-                // from pre-order to post-order.
-                return IndirTransform::None;
-            }
-
             if (indir->TypeGet() == varDsc->TypeGet())
             {
                 return IndirTransform::LclVar;
