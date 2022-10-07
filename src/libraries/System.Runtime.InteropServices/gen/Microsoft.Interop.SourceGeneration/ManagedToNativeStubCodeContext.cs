@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+
 namespace Microsoft.Interop
 {
     public sealed record ManagedToNativeStubCodeContext : StubCodeContext
@@ -19,13 +22,12 @@ namespace Microsoft.Interop
         private readonly string _nativeReturnIdentifier;
 
         public ManagedToNativeStubCodeContext(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
+            StubEnvironment environment,
             string returnIdentifier,
             string nativeReturnIdentifier)
         {
-            _framework = targetFramework;
-            _frameworkVersion = targetFrameworkVersion;
+            _framework = environment.TargetFramework;
+            _frameworkVersion = environment.TargetFrameworkVersion;
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
         }

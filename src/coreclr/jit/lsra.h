@@ -1396,7 +1396,7 @@ private:
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
     char             indentFormat[MAX_FORMAT_CHARS];
-    static const int MAX_LEGEND_FORMAT_CHARS = 34;
+    static const int MAX_LEGEND_FORMAT_CHARS = 25;
     char             bbRefPosFormat[MAX_LEGEND_FORMAT_CHARS];
     char             legendFormat[MAX_LEGEND_FORMAT_CHARS];
 
@@ -1422,8 +1422,6 @@ private:
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
     // Print the number of spaces occupied by a dumpRefPositionShort()
     void dumpEmptyRefPosition();
-    // Print the number of spaces occupied by tree ID.
-    void dumpEmptyTreeID();
     // A dump of Referent, in exactly regColumnWidth characters
     void dumpIntervalName(Interval* interval);
 
@@ -1565,12 +1563,6 @@ private:
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 
-#ifdef DEBUG
-    // Tracks the GenTree* for which intervals are being
-    // built. Use for displaying in allocation table.
-    GenTree* currBuildNode;
-#endif
-
     // True if there are any register candidate lclVars available for allocation.
     bool enregisterLocalVars;
 
@@ -1597,7 +1589,7 @@ private:
     // The set of all register candidates. Note that this may be a subset of tracked vars.
     VARSET_TP registerCandidateVars;
     // Current set of live register candidate vars, used during building of RefPositions to determine
-    // whether to give preference to callee-save.
+    // whether to preference to callee-save.
     VARSET_TP currentLiveVars;
     // Set of variables that may require resolution across an edge.
     // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
@@ -2308,16 +2300,9 @@ public:
     // The unique RefPosition number, equal to its index in the
     // refPositions list. Only used for debugging dumps.
     unsigned rpNum;
-
-    // Tracks the GenTree* for which this refposition was built.
-    // Use for displaying in allocation table.
-    GenTree* buildNode;
 #endif // DEBUG
 
-    RefPosition(unsigned int bbNum,
-                LsraLocation nodeLocation,
-                GenTree*     treeNode,
-                RefType refType DEBUG_ARG(GenTree* buildNode))
+    RefPosition(unsigned int bbNum, LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
@@ -2341,7 +2326,6 @@ public:
 #ifdef DEBUG
         , minRegCandidateCount(1)
         , rpNum(0)
-        , buildNode(buildNode)
 #endif
     {
     }

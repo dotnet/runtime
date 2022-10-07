@@ -1615,31 +1615,45 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t handle)
+const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-    const size_t maxStrSize = 64;
-    char         str[maxStrSize];
-    size_t       actualLen = 0;
+#ifdef HOST_UNIX
+    return nullptr;
+#else
+    char buff[512 + sizeof(CORINFO_String)];
 
-    // Ignore potential SPMI failures
-    bool success = eeRunFunctorWithSPMIErrorTrap(
-        [&]() { actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize); });
-
-    if (!success)
+    // make this bulletproof, so it works even if we are wrong.
+    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
     {
-        return;
+        return (nullptr);
     }
 
-    for (size_t i = 0; i < actualLen; i++)
+    CORINFO_String* asString = nullptr;
+    if (impGetStringClass() == *((CORINFO_CLASS_HANDLE*)strHandle))
     {
-        // Replace \n and \r symbols with whitespaces
-        if (str[i] == '\n' || str[i] == '\r')
-        {
-            str[i] = ' ';
-        }
+        // strHandle is a frozen string
+        // We assume strHandle is never an "interior" pointer in a frozen string
+        // (jit is not expected to perform such foldings)
+        asString = (CORINFO_String*)strHandle;
+    }
+    else
+    {
+        // strHandle is a pinned handle to a string object
+        asString = *((CORINFO_String**)strHandle);
     }
 
-    printf("%s '%s'\n", prefix, str);
+    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
+    {
+        return (nullptr);
+    }
+
+    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
+    {
+        return nullptr;
+    }
+
+    return (WCHAR*)(asString->chars);
+#endif // HOST_UNIX
 }
 #else  // DEBUG
 void jitprintf(const char* fmt, ...)

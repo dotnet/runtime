@@ -33,6 +33,7 @@ private:
     Crst m_Crst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
+    bool m_Enabled;
 };
 
 class FrozenObjectSegment

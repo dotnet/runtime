@@ -14,10 +14,8 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         /// <summary>
-        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given name.
         /// </summary>
-        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance, if <see langword="null"/> <see cref="Options.DefaultName"/> is used.</param>
-        /// <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
         TOptions Get(string? name);
     }
 }

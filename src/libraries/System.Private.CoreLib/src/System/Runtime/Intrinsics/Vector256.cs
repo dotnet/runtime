@@ -59,8 +59,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Abs(vector._lower),
-                Vector128.Abs(vector._upper)
+                Vector128.Abs(vector.GetLower()),
+                Vector128.Abs(vector.GetUpper())
             );
         }
 
@@ -73,7 +73,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left + right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Add(left.GetLower(), right.GetLower()),
+                Vector128.Add(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -87,8 +93,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.AndNot(left._lower, right._lower),
-                Vector128.AndNot(left._upper, right._upper)
+                Vector128.AndNot(left.GetLower(), right.GetLower()),
+                Vector128.AndNot(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -279,7 +285,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left & right;
+            where T : struct
+        {
+            return Create(
+                Vector128.BitwiseAnd(left.GetLower(), right.GetLower()),
+                Vector128.BitwiseAnd(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -290,7 +302,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left | right;
+            where T : struct
+        {
+            return Create(
+                Vector128.BitwiseOr(left.GetLower(), right.GetLower()),
+                Vector128.BitwiseOr(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -301,8 +319,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> Ceiling(Vector256<float> vector)
         {
             return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
+                Vector128.Ceiling(vector.GetLower()),
+                Vector128.Ceiling(vector.GetUpper())
             );
         }
 
@@ -315,8 +333,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<double> Ceiling(Vector256<double> vector)
         {
             return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
+                Vector128.Ceiling(vector.GetLower()),
+                Vector128.Ceiling(vector.GetUpper())
             );
         }
 
@@ -333,8 +351,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.ConditionalSelect(condition._lower, left._lower, right._lower),
-                Vector128.ConditionalSelect(condition._upper, left._upper, right._upper)
+                Vector128.ConditionalSelect(condition.GetLower(), left.GetLower(), right.GetLower()),
+                Vector128.ConditionalSelect(condition.GetUpper(), left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -364,8 +382,8 @@ namespace System.Runtime.Intrinsics
             else
             {
                 return Create(
-                    Vector128.ConvertToDouble(vector._lower),
-                    Vector128.ConvertToDouble(vector._upper)
+                    Vector128.ConvertToDouble(vector.GetLower()),
+                    Vector128.ConvertToDouble(vector.GetUpper())
                 );
             }
         }
@@ -397,8 +415,8 @@ namespace System.Runtime.Intrinsics
             else
             {
                 return Create(
-                    Vector128.ConvertToDouble(vector._lower),
-                    Vector128.ConvertToDouble(vector._upper)
+                    Vector128.ConvertToDouble(vector.GetLower()),
+                    Vector128.ConvertToDouble(vector.GetUpper())
                 );
             }
         }
@@ -411,8 +429,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> ConvertToInt32(Vector256<float> vector)
         {
             return Create(
-                Vector128.ConvertToInt32(vector._lower),
-                Vector128.ConvertToInt32(vector._upper)
+                Vector128.ConvertToInt32(vector.GetLower()),
+                Vector128.ConvertToInt32(vector.GetUpper())
             );
         }
 
@@ -424,8 +442,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<long> ConvertToInt64(Vector256<double> vector)
         {
             return Create(
-                Vector128.ConvertToInt64(vector._lower),
-                Vector128.ConvertToInt64(vector._upper)
+                Vector128.ConvertToInt64(vector.GetLower()),
+                Vector128.ConvertToInt64(vector.GetUpper())
             );
         }
 
@@ -437,8 +455,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> ConvertToSingle(Vector256<int> vector)
         {
             return Create(
-                Vector128.ConvertToSingle(vector._lower),
-                Vector128.ConvertToSingle(vector._upper)
+                Vector128.ConvertToSingle(vector.GetLower()),
+                Vector128.ConvertToSingle(vector.GetUpper())
             );
         }
 
@@ -483,8 +501,8 @@ namespace System.Runtime.Intrinsics
             else
             {
                 return Create(
-                    Vector128.ConvertToSingle(vector._lower),
-                    Vector128.ConvertToSingle(vector._upper)
+                    Vector128.ConvertToSingle(vector.GetLower()),
+                    Vector128.ConvertToSingle(vector.GetUpper())
                 );
             }
         }
@@ -498,8 +516,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> ConvertToUInt32(Vector256<float> vector)
         {
             return Create(
-                Vector128.ConvertToUInt32(vector._lower),
-                Vector128.ConvertToUInt32(vector._upper)
+                Vector128.ConvertToUInt32(vector.GetLower()),
+                Vector128.ConvertToUInt32(vector.GetUpper())
             );
         }
 
@@ -512,8 +530,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> ConvertToUInt64(Vector256<double> vector)
         {
             return Create(
-                Vector128.ConvertToUInt64(vector._lower),
-                Vector128.ConvertToUInt64(vector._upper)
+                Vector128.ConvertToUInt64(vector.GetLower()),
+                Vector128.ConvertToUInt64(vector.GetUpper())
             );
         }
 
@@ -527,6 +545,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if (destination.Length < Vector256<T>.Count)
@@ -550,6 +570,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination, int startIndex)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if ((uint)startIndex >= (uint)destination.Length)
@@ -575,6 +597,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this Vector256<T> vector, Span<T> destination)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector256<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -707,6 +731,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Create<T>(T[] values)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if (values.Length < Vector256<T>.Count)
@@ -729,6 +755,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Create<T>(T[] values, int index)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if ((index < 0) || ((values.Length - index) < Vector256<T>.Count))
@@ -750,6 +778,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Create<T>(ReadOnlySpan<T> values)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             if (values.Length < Vector256<T>.Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
@@ -1151,7 +1181,10 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> CreateScalar<T>(T value)
-            where T : struct => Vector128.CreateScalar(value).ToVector256();
+            where T : struct
+        {
+            return Vector128.CreateScalar(value).ToVector256();
+        }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1233,7 +1266,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector256{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1243,7 +1276,7 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
             Unsafe.SkipInit(out Vector256<T> result);
 
             result.SetElementUnsafe(0, value);
@@ -1351,8 +1384,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Divide(left._lower, right._lower),
-                Vector128.Divide(left._upper, right._upper)
+                Vector128.Divide(left.GetLower(), right.GetLower()),
+                Vector128.Divide(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1371,8 +1404,8 @@ namespace System.Runtime.Intrinsics
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
             // and otherwise the software vs accelerated implementations may differ in returned result.
 
-            T result = Vector128.Dot(left._lower, right._lower);
-            result = Scalar<T>.Add(result, Vector128.Dot(left._upper, right._upper));
+            T result = Vector128.Dot(left.GetLower(), right.GetLower());
+            result = Scalar<T>.Add(result, Vector128.Dot(left.GetUpper(), right.GetUpper()));
             return result;
         }
 
@@ -1388,8 +1421,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Equals(left._lower, right._lower),
-                Vector128.Equals(left._upper, right._upper)
+                Vector128.Equals(left.GetLower(), right.GetLower()),
+                Vector128.Equals(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1402,7 +1435,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left == right;
+            where T : struct
+        {
+            return Vector128.EqualsAll(left.GetLower(), right.GetLower())
+                && Vector128.EqualsAll(left.GetUpper(), right.GetUpper());
+        }
 
         /// <summary>Compares two vectors to determine if any elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1415,8 +1452,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.EqualsAny(left._lower, right._lower)
-                || Vector128.EqualsAny(left._upper, right._upper);
+            return Vector128.EqualsAny(left.GetLower(), right.GetLower())
+                || Vector128.EqualsAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
@@ -1430,8 +1467,8 @@ namespace System.Runtime.Intrinsics
         public static uint ExtractMostSignificantBits<T>(this Vector256<T> vector)
             where T : struct
         {
-            uint result = vector._lower.ExtractMostSignificantBits();
-            result |= vector._upper.ExtractMostSignificantBits() << Vector128<T>.Count;
+            uint result = vector.GetLower().ExtractMostSignificantBits();
+            result |= vector.GetUpper().ExtractMostSignificantBits() << Vector128<T>.Count;
             return result;
         }
 
@@ -1444,8 +1481,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> Floor(Vector256<float> vector)
         {
             return Create(
-                Vector128.Floor(vector._lower),
-                Vector128.Floor(vector._upper)
+                Vector128.Floor(vector.GetLower()),
+                Vector128.Floor(vector.GetUpper())
             );
         }
 
@@ -1458,8 +1495,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<double> Floor(Vector256<double> vector)
         {
             return Create(
-                Vector128.Floor(vector._lower),
-                Vector128.Floor(vector._upper)
+                Vector128.Floor(vector.GetLower()),
+                Vector128.Floor(vector.GetUpper())
             );
         }
 
@@ -1475,6 +1512,8 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector256<T> vector, int index)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -1537,8 +1576,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.GreaterThan(left._lower, right._lower),
-                Vector128.GreaterThan(left._upper, right._upper)
+                Vector128.GreaterThan(left.GetLower(), right.GetLower()),
+                Vector128.GreaterThan(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1553,8 +1592,8 @@ namespace System.Runtime.Intrinsics
         public static bool GreaterThanAll<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.GreaterThanAll(left._lower, right._lower)
-                && Vector128.GreaterThanAll(left._upper, right._upper);
+            return Vector128.GreaterThanAll(left.GetLower(), right.GetLower())
+                && Vector128.GreaterThanAll(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine if any elements are greater.</summary>
@@ -1568,8 +1607,8 @@ namespace System.Runtime.Intrinsics
         public static bool GreaterThanAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.GreaterThanAny(left._lower, right._lower)
-                || Vector128.GreaterThanAny(left._upper, right._upper);
+            return Vector128.GreaterThanAny(left.GetLower(), right.GetLower())
+                || Vector128.GreaterThanAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -1584,8 +1623,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.GreaterThanOrEqual(left._lower, right._lower),
-                Vector128.GreaterThanOrEqual(left._upper, right._upper)
+                Vector128.GreaterThanOrEqual(left.GetLower(), right.GetLower()),
+                Vector128.GreaterThanOrEqual(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1600,8 +1639,8 @@ namespace System.Runtime.Intrinsics
         public static bool GreaterThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.GreaterThanOrEqualAll(left._lower, right._lower)
-                && Vector128.GreaterThanOrEqualAll(left._upper, right._upper);
+            return Vector128.GreaterThanOrEqualAll(left.GetLower(), right.GetLower())
+                && Vector128.GreaterThanOrEqualAll(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine if any elements are greater or equal.</summary>
@@ -1615,8 +1654,8 @@ namespace System.Runtime.Intrinsics
         public static bool GreaterThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.GreaterThanOrEqualAny(left._lower, right._lower)
-                || Vector128.GreaterThanOrEqualAny(left._upper, right._upper);
+            return Vector128.GreaterThanOrEqualAny(left.GetLower(), right.GetLower())
+                || Vector128.GreaterThanOrEqualAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -1631,8 +1670,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.LessThan(left._lower, right._lower),
-                Vector128.LessThan(left._upper, right._upper)
+                Vector128.LessThan(left.GetLower(), right.GetLower()),
+                Vector128.LessThan(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1647,8 +1686,8 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanAll<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.LessThanAll(left._lower, right._lower)
-                && Vector128.LessThanAll(left._upper, right._upper);
+            return Vector128.LessThanAll(left.GetLower(), right.GetLower())
+                && Vector128.LessThanAll(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine if any elements are less.</summary>
@@ -1662,8 +1701,8 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.LessThanAny(left._lower, right._lower)
-                || Vector128.LessThanAny(left._upper, right._upper);
+            return Vector128.LessThanAny(left.GetLower(), right.GetLower())
+                || Vector128.LessThanAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1678,8 +1717,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.LessThanOrEqual(left._lower, right._lower),
-                Vector128.LessThanOrEqual(left._upper, right._upper)
+                Vector128.LessThanOrEqual(left.GetLower(), right.GetLower()),
+                Vector128.LessThanOrEqual(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1694,8 +1733,8 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.LessThanOrEqualAll(left._lower, right._lower)
-                && Vector128.LessThanOrEqualAll(left._upper, right._upper);
+            return Vector128.LessThanOrEqualAll(left.GetLower(), right.GetLower())
+                && Vector128.LessThanOrEqualAll(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine if any elements are less or equal.</summary>
@@ -1709,8 +1748,8 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct
         {
-            return Vector128.LessThanOrEqualAny(left._lower, right._lower)
-                || Vector128.LessThanOrEqualAny(left._upper, right._upper);
+            return Vector128.LessThanOrEqualAny(left.GetLower(), right.GetLower())
+                || Vector128.LessThanOrEqualAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -1801,8 +1840,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Max(left._lower, right._lower),
-                Vector128.Max(left._upper, right._upper)
+                Vector128.Max(left.GetLower(), right.GetLower()),
+                Vector128.Max(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1818,8 +1857,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Min(left._lower, right._lower),
-                Vector128.Min(left._upper, right._upper)
+                Vector128.Min(left.GetLower(), right.GetLower()),
+                Vector128.Min(left.GetUpper(), right.GetUpper())
             );
         }
 
@@ -1832,7 +1871,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left * right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Multiply(left.GetLower(), right.GetLower()),
+                Vector128.Multiply(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1843,7 +1888,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Multiply<T>(Vector256<T> left, T right)
-            where T : struct => left * right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Multiply(left.GetLower(), right),
+                Vector128.Multiply(left.GetUpper(), right)
+            );
+        }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1854,7 +1905,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Multiply<T>(T left, Vector256<T> right)
-            where T : struct => left * right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Multiply(left, right.GetLower()),
+                Vector128.Multiply(left, right.GetUpper())
+            );
+        }
 
         /// <summary>Narrows two <see cref="Vector256{Double}"/> instances into one <see cref="Vector256{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
@@ -1865,8 +1922,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> Narrow(Vector256<double> lower, Vector256<double> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1880,8 +1937,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> Narrow(Vector256<short> lower, Vector256<short> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1894,8 +1951,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> Narrow(Vector256<int> lower, Vector256<int> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1908,8 +1965,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> Narrow(Vector256<long> lower, Vector256<long> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1923,8 +1980,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<byte> Narrow(Vector256<ushort> lower, Vector256<ushort> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1938,8 +1995,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ushort> Narrow(Vector256<uint> lower, Vector256<uint> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1953,8 +2010,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> Narrow(Vector256<ulong> lower, Vector256<ulong> upper)
         {
             return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1966,7 +2023,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Negate<T>(Vector256<T> vector)
-            where T : struct => -vector;
+            where T : struct
+        {
+            return Create(
+                Vector128.Negate(vector.GetLower()),
+                Vector128.Negate(vector.GetUpper())
+            );
+        }
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1979,8 +2042,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.OnesComplement(vector._lower),
-                Vector128.OnesComplement(vector._upper)
+                Vector128.OnesComplement(vector.GetLower()),
+                Vector128.OnesComplement(vector.GetUpper())
             );
         }
 
@@ -1993,8 +2056,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2007,8 +2070,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2021,8 +2084,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> ShiftLeft(Vector256<int> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2035,8 +2098,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<long> ShiftLeft(Vector256<long> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2049,8 +2112,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nint> ShiftLeft(Vector256<nint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2064,8 +2127,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nuint> ShiftLeft(Vector256<nuint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2079,8 +2142,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> ShiftLeft(Vector256<sbyte> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2094,8 +2157,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ushort> ShiftLeft(Vector256<ushort> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2109,8 +2172,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2124,8 +2187,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
+                Vector128.ShiftLeft(vector.GetLower(), shiftCount),
+                Vector128.ShiftLeft(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2138,8 +2201,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> ShiftRightArithmetic(Vector256<short> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
+                Vector128.ShiftRightArithmetic(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightArithmetic(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2152,8 +2215,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> ShiftRightArithmetic(Vector256<int> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
+                Vector128.ShiftRightArithmetic(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightArithmetic(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2166,8 +2229,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<long> ShiftRightArithmetic(Vector256<long> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
+                Vector128.ShiftRightArithmetic(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightArithmetic(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2180,8 +2243,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nint> ShiftRightArithmetic(Vector256<nint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
+                Vector128.ShiftRightArithmetic(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightArithmetic(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2195,8 +2258,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> ShiftRightArithmetic(Vector256<sbyte> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
+                Vector128.ShiftRightArithmetic(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightArithmetic(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2209,8 +2272,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<byte> ShiftRightLogical(Vector256<byte> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2223,8 +2286,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2237,8 +2300,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> ShiftRightLogical(Vector256<int> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2251,8 +2314,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<long> ShiftRightLogical(Vector256<long> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2265,8 +2328,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nint> ShiftRightLogical(Vector256<nint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2280,8 +2343,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2295,8 +2358,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> ShiftRightLogical(Vector256<sbyte> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2310,8 +2373,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2325,8 +2388,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> ShiftRightLogical(Vector256<uint> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2340,8 +2403,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount)
         {
             return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
+                Vector128.ShiftRightLogical(vector.GetLower(), shiftCount),
+                Vector128.ShiftRightLogical(vector.GetUpper(), shiftCount)
             );
         }
 
@@ -2600,8 +2663,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Create(
-                Vector128.Sqrt(vector._lower),
-                Vector128.Sqrt(vector._upper)
+                Vector128.Sqrt(vector.GetLower()),
+                Vector128.Sqrt(vector.GetUpper())
             );
         }
 
@@ -2690,7 +2753,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left - right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Subtract(left.GetLower(), right.GetLower()),
+                Vector128.Subtract(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -2706,8 +2775,8 @@ namespace System.Runtime.Intrinsics
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
             // and otherwise the software vs accelerated implementations may differ in returned result.
 
-            T result = Vector128.Sum(vector._lower);
-            result = Scalar<T>.Add(result, Vector128.Sum(vector._upper));
+            T result = Vector128.Sum(vector.GetLower());
+            result = Scalar<T>.Add(result, Vector128.Sum(vector.GetUpper()));
             return result;
         }
 
@@ -2734,6 +2803,8 @@ namespace System.Runtime.Intrinsics
         public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             if ((uint)destination.Length < (uint)Vector256<T>.Count)
             {
                 return false;
@@ -2802,6 +2873,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -2883,7 +2956,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left ^ right;
+            where T : struct
+        {
+            return Create(
+                Vector128.Xor(left.GetLower(), right.GetLower()),
+                Vector128.Xor(left.GetUpper(), right.GetUpper())
+            );
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
@@ -2921,7 +3000,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ushort> WidenLower(Vector256<byte> source)
         {
-            Vector128<byte> lower = source._lower;
+            Vector128<byte> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2933,7 +3012,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<int> WidenLower(Vector256<short> source)
         {
-            Vector128<short> lower = source._lower;
+            Vector128<short> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2945,7 +3024,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<long> WidenLower(Vector256<int> source)
         {
-            Vector128<int> lower = source._lower;
+            Vector128<int> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2957,7 +3036,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<short> WidenLower(Vector256<sbyte> source)
         {
-            Vector128<sbyte> lower = source._lower;
+            Vector128<sbyte> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2969,7 +3048,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<double> WidenLower(Vector256<float> source)
         {
-            Vector128<float> lower = source._lower;
+            Vector128<float> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2981,7 +3060,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<uint> WidenLower(Vector256<ushort> source)
         {
-            Vector128<ushort> lower = source._lower;
+            Vector128<ushort> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -2993,7 +3072,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ulong> WidenLower(Vector256<uint> source)
         {
-            Vector128<uint> lower = source._lower;
+            Vector128<uint> lower = source.GetLower();
 
             return Create(
                 Vector128.WidenLower(lower),
@@ -3005,7 +3084,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ushort> WidenUpper(Vector256<byte> source)
         {
-            Vector128<byte> upper = source._upper;
+            Vector128<byte> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3017,7 +3096,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<int> WidenUpper(Vector256<short> source)
         {
-            Vector128<short> upper = source._upper;
+            Vector128<short> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3029,7 +3108,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<long> WidenUpper(Vector256<int> source)
         {
-            Vector128<int> upper = source._upper;
+            Vector128<int> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3041,7 +3120,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<short> WidenUpper(Vector256<sbyte> source)
         {
-            Vector128<sbyte> upper = source._upper;
+            Vector128<sbyte> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3053,7 +3132,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<double> WidenUpper(Vector256<float> source)
         {
-            Vector128<float> upper = source._upper;
+            Vector128<float> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3065,7 +3144,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<uint> WidenUpper(Vector256<ushort> source)
         {
-            Vector128<ushort> upper = source._upper;
+            Vector128<ushort> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),
@@ -3077,7 +3156,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ulong> WidenUpper(Vector256<uint> source)
         {
-            Vector128<uint> upper = source._upper;
+            Vector128<uint> upper = source.GetUpper();
 
             return Create(
                 Vector128.WidenLower(upper),

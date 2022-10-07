@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -46,8 +49,7 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public PInvokeStubCodeGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
+            StubEnvironment environment,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
@@ -59,21 +61,21 @@ namespace Microsoft.Interop
             // supports target framework value with this value.
             if (_setLastError)
             {
-                SupportsTargetFramework = targetFramework == TargetFramework.Net
-                    && targetFrameworkVersion.Major >= 6;
+                SupportsTargetFramework = environment.TargetFramework == TargetFramework.Net
+                    && environment.TargetFrameworkVersion.Major >= 6;
             }
             else
             {
                 SupportsTargetFramework = true;
             }
 
-            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
+            _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
 
             bool noMarshallingNeeded = true;
@@ -82,7 +84,7 @@ namespace Microsoft.Interop
             {
                 // Check if marshalling info and generator support the current target framework.
                 SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
-                    && generator.Generator.IsSupported(targetFramework, targetFrameworkVersion);
+                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }

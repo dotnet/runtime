@@ -715,64 +715,6 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
-size_t CEEInfo::printObjectDescription (
-        void*  handle,
-        char*  buffer,
-        size_t bufferSize,
-        size_t* pRequiredBufferSize)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    size_t bytesWritten = 0;
-
-    _ASSERT(handle != nullptr);
-
-    JIT_TO_EE_TRANSITION();
-
-    Object* obj = (Object*)handle;
-
-    GCX_COOP();
-
-    StackSString stackStr;
-
-    // Currently only supported for String and RuntimeType
-    if (obj->GetMethodTable()->IsString())
-    {
-        ((StringObject*)obj)->GetSString(stackStr);
-    }
-    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
-    {
-        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
-    }
-    else
-    {
-        _ASSERTE(!"Unexpected object type");
-    }
-
-    const UTF8* utf8data = stackStr.GetUTF8();
-    if (bufferSize > 0)
-    {
-        bytesWritten = min(bufferSize - 1, stackStr.GetCount());
-        memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
-
-        // Always null-terminate
-        buffer[bytesWritten] = 0;
-    }
-
-    if (pRequiredBufferSize != nullptr)
-    {
-        *pRequiredBufferSize = stackStr.GetCount() + 1;
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return bytesWritten;
-}
-
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -6001,31 +5943,6 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         return CORINFO_HELP_UNBOX_NULLABLE;
 
     return CORINFO_HELP_UNBOX;
-}
-
-/***********************************************************************/
-void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void* pointer = nullptr;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle typeHnd(clsHnd);
-    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
-    {
-        GCX_COOP();
-        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return pointer;
 }
 
 /***********************************************************************/

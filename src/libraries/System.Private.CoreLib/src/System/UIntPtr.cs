@@ -219,11 +219,7 @@ namespace System
             return nuint_t.TryParse(s, out Unsafe.As<nuint, nuint_t>(ref result));
         }
 
-        /// <summary>Tries to parse a string into a value.</summary>
-        /// <param name="s">A read-only span of characters containing a number to convert.</param>
-        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
-        /// <param name="result">When this method returns, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
-        /// <returns><see langword="true" /> if <paramref name="s" /> was converted successfully; otherwise, <see langword="false" />.</returns>
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nuint result)
         {
             Unsafe.SkipInit(out result);
@@ -242,7 +238,6 @@ namespace System
             return nuint_t.TryParse(s, out Unsafe.As<nuint, nuint_t>(ref result));
         }
 
-        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nuint result)
         {
             Unsafe.SkipInit(out result);

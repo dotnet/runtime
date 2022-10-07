@@ -657,12 +657,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         // We were unable to determine the relop value via dominance checks.
         // See if we can jump thread via phi disambiguation.
         //
-        // optJumpThreadPhi disabled as it is exposing problems with stale SSA.
-        // See issue #76636 and related.
-        //
-        // return optJumpThreadPhi(block, tree, treeNormVN);
-
-        return false;
+        return optJumpThreadPhi(block, tree, treeNormVN);
     }
 
     // Be conservative if there is an exception effect and we're in an EH region

@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -19,13 +22,33 @@ namespace Microsoft.Interop.JavaScript
     public sealed class JSImportGenerator : IIncrementalGenerator
     {
         internal sealed record IncrementalStubGenerationContext(
+            StubEnvironment Environment,
             JSSignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> GeneratorFactoryKey,
+            ImmutableArray<Diagnostic> Diagnostics)
+        {
+            public bool Equals(IncrementalStubGenerationContext? other)
+            {
+                return other is not null
+                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
+                    && SignatureContext.Equals(other.SignatureContext)
+                    && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                    && StubMethodSyntaxTemplate.Equals(other.StubMethodSyntaxTemplate)
+                    && JSImportData.Equals(other.JSImportData)
+                    && DiagnosticLocation.Equals(DiagnosticLocation)
+                    && GeneratorFactoryKey.Equals(other.GeneratorFactoryKey)
+                    && Diagnostics.SequenceEqual(other.Diagnostics);
+            }
+
+            public override int GetHashCode()
+            {
+                throw new UnreachableException();
+            }
+        }
 
         public static class StepNames
         {
@@ -205,13 +228,14 @@ namespace Microsoft.Interop.JavaScript
 
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
             return new IncrementalStubGenerationContext(
+                environment,
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(originalSyntax),
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+                generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
@@ -229,8 +253,7 @@ namespace Microsoft.Interop.JavaScript
 
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
+            incrementalContext.Environment,
             incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSImportData,
             incrementalContext.SignatureContext,
@@ -242,7 +265,7 @@ namespace Microsoft.Interop.JavaScript
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)

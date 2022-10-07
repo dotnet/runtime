@@ -2255,21 +2255,26 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
 
-    if (parent->isContainedCompareChainSegment(child))
+    if (child->isContainedAndNotIntOrIImmed())
     {
         // Already have a chain.
+        assert(child->OperIs(GT_AND) || child->OperIsCmpCompare());
         return true;
     }
-    else if (child->OperIs(GT_AND))
+    else
     {
-        // Count both sides.
-        return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
-               IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
-    }
-    else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
-    {
-        // Can the child compare be contained.
-        return IsSafeToContainMem(parent, child);
+        if (child->OperIs(GT_AND))
+        {
+            // Count both sides.
+            return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
+                   IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
+        }
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
+        {
+            // Can the child compare be contained.
+            return IsSafeToContainMem(parent, child);
+        }
     }
 
     return false;
@@ -2294,9 +2299,9 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
     *startOfChain = nullptr; // Nothing found yet.
 
-    if (parent->isContainedCompareChainSegment(child))
+    if (child->isContainedAndNotIntOrIImmed())
     {
-        // Already have a contained chain.
+        // Already have a chain.
         return true;
     }
     // Can the child be contained.
@@ -2305,7 +2310,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         if (child->OperIs(GT_AND))
         {
             // If Op2 is not contained, then try to contain it.
-            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp2()))
+            if (!child->AsOp()->gtGetOp2()->isContainedAndNotIntOrIImmed())
             {
                 if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
                 {
@@ -2315,7 +2320,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             }
 
             // If Op1 is not contained, then try to contain it.
-            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp1()))
+            if (!child->AsOp()->gtGetOp1()->isContainedAndNotIntOrIImmed())
             {
                 if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
                 {

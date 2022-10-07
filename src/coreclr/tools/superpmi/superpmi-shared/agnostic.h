@@ -769,13 +769,6 @@ struct Agnostic_RecordCallSite
     DWORDLONG                 methodHandle;
 };
 
-struct Agnostic_PrintObjectDescriptionResult
-{
-    DWORDLONG bytesWritten;
-    DWORDLONG requiredBufferSize;
-    DWORD buffer;
-};
-
 #pragma pack(pop)
 
 #endif // _Agnostic

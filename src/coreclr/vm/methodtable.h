@@ -299,9 +299,11 @@ struct MethodTableWriteableData
     };
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
+    /*
+     * m_hExposedClassObject is LoaderAllocator slot index to
+     * a RuntimeType instance for this class.
+     */
+    LOADERHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
@@ -333,7 +335,7 @@ public:
 #endif
 
 
-    inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
+    inline LOADERHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_hExposedClassObject;

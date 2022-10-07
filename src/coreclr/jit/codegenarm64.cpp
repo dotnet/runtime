@@ -2696,7 +2696,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         return;
     }
 
-    if (tree->isContainedCompareChainSegment(op2))
+    if (tree->OperIs(GT_AND) && op2->isContainedAndNotIntOrIImmed())
     {
         GenCondition cond;
         bool         chain = false;
