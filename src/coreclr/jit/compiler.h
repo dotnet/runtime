@@ -5855,7 +5855,6 @@ private:
 #endif
 
     PhaseStatus fgPromoteStructs();
-    bool fgMorphStructField(GenTree* indir, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
     // Reset the refCount for implicit byrefs.
