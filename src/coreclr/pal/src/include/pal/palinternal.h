@@ -505,9 +505,7 @@ function_name() to call the system's implementation
 #undef fprintf
 #undef fwprintf
 #undef vfprintf
-#undef vfwprintf
 #undef vprintf
-#undef wprintf
 #undef wcstod
 #undef wcstoul
 #undef _wcstoui64
@@ -517,7 +515,6 @@ function_name() to call the system's implementation
 #undef wcsncmp
 #undef wcschr
 #undef wcsrchr
-#undef swscanf
 #undef wcspbrk
 #undef wcsstr
 #undef wcscmp
@@ -526,7 +523,6 @@ function_name() to call the system's implementation
 #undef iswspace
 #undef towlower
 #undef towupper
-#undef wvsnprintf
 
 #ifdef HOST_AMD64
 #undef _mm_getcsr
