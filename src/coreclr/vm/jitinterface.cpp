@@ -11926,10 +11926,9 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 {
                     void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
                     _ASSERTE(fldAddr != nullptr);
-                        _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
-                        memcpy(buffer, fldAddr, bufferSize);
-                        result = true;
-                    }
+                    _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+                    memcpy(buffer, fldAddr, bufferSize);
+                    result = true;
                 }
             }
         }
