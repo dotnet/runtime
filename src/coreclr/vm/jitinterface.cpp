@@ -11928,7 +11928,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                     if (fldAddr != nullptr)
                     {
                         _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
-                        memcpy(fldAddr, fldAddr, field->GetSize());
+                        memcpy(buffer, fldAddr, bufferSize);
                         result = true;
                     }
                 }
