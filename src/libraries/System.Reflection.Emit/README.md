@@ -9,7 +9,7 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.refl
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
-[System.Reflection.Emit](https://www.nuget.org/packages/System.Reflection.Emit) is included in the shared framework.
+[System.Reflection.Emit](https://www.nuget.org/packages/System.Reflection.Emit) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.1; it only needs to be installed when targeting .NET Standard 2.0.
 
 ## Source
 
