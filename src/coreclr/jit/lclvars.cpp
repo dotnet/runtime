@@ -2496,7 +2496,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvType          = pFieldInfo->fldType;
         fieldVarDsc->lvExactSize     = pFieldInfo->fldSize;
         fieldVarDsc->lvIsStructField = true;
-        fieldVarDsc->lvFieldHnd      = pFieldInfo->fldHnd;
         fieldVarDsc->lvFldOffset     = pFieldInfo->fldOffset;
         fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
         fieldVarDsc->lvParentLcl     = lclNum;

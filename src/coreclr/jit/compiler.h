@@ -1009,8 +1009,6 @@ public:
         return structHnd;
     }
 
-    CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
-
 private:
     ClassLayout* m_layout; // layout info for structs
 
