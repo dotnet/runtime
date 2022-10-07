@@ -16173,75 +16173,85 @@ PhaseStatus Compiler::fgPromoteStructs()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
+bool Compiler::fgMorphStructField(GenTree* indir, GenTree* parent)
 {
-    noway_assert(tree->OperGet() == GT_FIELD);
+    assert(indir->OperIs(GT_IND, GT_FIELD));
 
-    GenTreeField* field  = tree->AsField();
-    GenTree*      objRef = field->GetFldObj();
-    GenTree*      obj    = ((objRef != nullptr) && (objRef->gtOper == GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
-    noway_assert((tree->gtFlags & GTF_GLOB_REF) || ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR)));
+    GenTree* objRef = indir->AsUnOp()->gtOp1;
+    GenTree* obj    = ((objRef != nullptr) && objRef->OperIs(GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
+    if (indir->OperIs(GT_FIELD))
+    {
+        noway_assert(((indir->gtFlags & GTF_GLOB_REF) != 0) || ((obj != nullptr) && obj->OperIs(GT_LCL_VAR)));
+    }
 
-    /* Is this an instance data member? */
-
-    if ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR))
+    // TODO-Bug: this code does not pay attention to "GTF_IND_VOLATILE".
+    if ((obj != nullptr) && obj->OperIs(GT_LCL_VAR))
     {
         unsigned         lclNum = obj->AsLclVarCommon()->GetLclNum();
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         if (varDsc->lvPromoted)
         {
-            // Promoted struct
-            unsigned fldOffset   = field->gtFldOffset;
-            unsigned fieldLclNum = lvaGetFieldLocal(varDsc, fldOffset);
+            unsigned fieldOffset = indir->OperIs(GT_FIELD) ? indir->AsField()->gtFldOffset : 0;
+            unsigned fieldLclNum = lvaGetFieldLocal(varDsc, fieldOffset);
 
             if (fieldLclNum == BAD_VAR_NUM)
             {
                 // Access a promoted struct's field with an offset that doesn't correspond to any field.
                 // It can happen if the struct was cast to another struct with different offsets.
-                return;
+                return false;
             }
 
             const LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
             var_types        fieldType   = fieldDsc->TypeGet();
             GenTree*         lclVarNode  = nullptr;
-            GenTreeFlags     lclVarFlags = field->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+            GenTreeFlags     lclVarFlags = indir->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
 
             assert(fieldType != TYP_STRUCT); // promoted LCL_VAR can't have a struct type.
-            if ((field->TypeGet() == fieldType) || parent->OperIs(GT_ADDR))
+            if ((indir->TypeGet() == fieldType) || ((parent != nullptr) && parent->OperIs(GT_ADDR)))
             {
-                lclVarNode = field;
+                lclVarNode = indir;
 
-                if (parent->OperIs(GT_ASG) && (parent->AsOp()->gtOp1 == field))
+                if (parent != nullptr)
                 {
-                    lclVarFlags |= GTF_VAR_DEF;
-                }
-                else if (parent->OperIs(GT_ADDR))
-                {
-                    // TODO-Bug: delete this quirk.
-                    lclVarFlags &= ~GTF_DONT_CSE;
+                    if (parent->OperIs(GT_ASG) && (parent->AsOp()->gtOp1 == indir))
+                    {
+                        lclVarFlags |= GTF_VAR_DEF;
+                    }
+                    else if (parent->OperIs(GT_ADDR))
+                    {
+                        // TODO-ADDR: delete this quirk.
+                        lclVarFlags &= ~GTF_DONT_CSE;
+                    }
                 }
             }
-            else // Here we will turn "FIELD(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
+            else // Here we will turn "FIELD/IND(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
             {
                 // This type mismatch is somewhat common due to how we retype fields of struct type that
                 // recursively simplify down to a primitive. E. g. for "struct { struct { int a } A, B }",
                 // the promoted local would look like "{ int a, B }", while the IR would contain "FIELD"
                 // nodes for the outer struct "A".
                 //
-                if (field->TypeIs(TYP_STRUCT))
+                if (indir->TypeIs(TYP_STRUCT))
                 {
-                    ClassLayout* layout = field->GetLayout(this);
-                    field->SetOper(GT_OBJ);
-                    field->AsBlk()->SetLayout(layout);
-                    field->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+                    // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
+                    if (indir->OperIs(GT_IND))
+                    {
+                        // We do not have a layout for this node.
+                        return false;
+                    }
+
+                    ClassLayout* layout = indir->GetLayout(this);
+                    indir->SetOper(GT_OBJ);
+                    indir->AsBlk()->SetLayout(layout);
+                    indir->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
 #ifndef JIT32_GCENCODER
-                    field->AsBlk()->gtBlkOpGcUnsafe = false;
+                    indir->AsBlk()->gtBlkOpGcUnsafe = false;
 #endif // !JIT32_GCENCODER
                 }
                 else
                 {
-                    field->SetOper(GT_IND);
+                    indir->SetOper(GT_IND);
                 }
 
                 lclVarNode = obj;
@@ -16253,8 +16263,11 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
             lclVarNode->gtFlags = lclVarFlags;
 
             JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
+            return true;
         }
     }
+
+    return false;
 }
 
 void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)

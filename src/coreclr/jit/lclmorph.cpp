@@ -381,7 +381,7 @@ public:
     {
         GenTree* const node = *use;
 
-        if (node->OperIs(GT_FIELD))
+        if (node->OperIs(GT_IND, GT_FIELD))
         {
             MorphStructField(node, user);
         }
@@ -1073,23 +1073,22 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // MorphStructField: Replaces a GT_FIELD based promoted/normed struct field access
-    //    (e.g. FIELD(ADDR(LCL_VAR))) with a GT_LCL_VAR that references the struct field.
+    // MorphStructField: Reduces indirect access to a promoted local (e.g.
+    //    FIELD(ADDR(LCL_VAR))) to a GT_LCL_VAR that references the struct field.
     //
     // Arguments:
-    //    node - the GT_FIELD node
+    //    node - the GT_IND/GT_FIELD node
     //    user - the node that uses the field
     //
     // Notes:
-    //    This does not do anything if the field access does not denote
-    //    a promoted/normed struct field.
+    //    This does not do anything if the access does not denote a promoted
+    //    struct field.
     //
     void MorphStructField(GenTree* node, GenTree* user)
     {
-        assert(node->OperIs(GT_FIELD));
+        assert(node->OperIs(GT_IND, GT_FIELD));
         // TODO-Cleanup: Move fgMorphStructField implementation here, it's not used anywhere else.
-        m_compiler->fgMorphStructField(node, user);
-        m_stmtModified |= !node->OperIs(GT_FIELD);
+        m_stmtModified |= m_compiler->fgMorphStructField(node, user);
     }
 
     //------------------------------------------------------------------------
