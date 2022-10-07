@@ -23,11 +23,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.IO;
 using Xunit;
 
 namespace System.Drawing.Printing.Tests
 {
-    public class PrintDocumentTests
+    public class PrintDocumentTests : FileCleanupTestBase
     {
         private readonly PageSettings _pageSettings = new PageSettings()
         {
@@ -184,6 +185,21 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
+        [ConditionalFact(nameof(CanPrintToPdf))]
+        public void Print_DefaultPrintController_Success()
+        {
+            string printFilePath = GetTestFilePath();
+            using (var document = new PrintDocument())
+            {
+                document.PrinterSettings.PrinterName = PrintToPdfPrinterName;
+                document.PrinterSettings.PrintFileName = printFilePath;
+                document.PrinterSettings.PrintToFile = true;
+                document.Print();
+            }
+
+            Assert.True(File.Exists(printFilePath));
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26428")]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PrintPage_SetValue_ReturnsExpected()
@@ -251,6 +267,23 @@ namespace System.Drawing.Printing.Tests
 
             Assert.True(Enum.IsDefined(typeof(PrinterResolutionKind), pageSettings.PrinterResolution.Kind));
             Assert.True(pageSettings.PrinterSettings.IsDefaultPrinter);
+        }
+
+        private const string PrintToPdfPrinterName = "Microsoft Print to PDF";
+        private static bool CanPrintToPdf()
+        {
+            if (!PlatformDetection.IsWindows || !PlatformDetection.IsDrawingSupported)
+                return false;
+
+            foreach (string name in PrinterSettings.InstalledPrinters)
+            {
+                if (name == PrintToPdfPrinterName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private class TestPrintController : PrintController
