@@ -342,7 +342,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
             }
 
             // See https://github.com/whatwg/encoding/issues/172
-            const bytes = typeof SharedArrayBuffer !== "undefined" && buffer instanceof SharedArrayBuffer
+            const bytes = typeof SharedArrayBuffer !== "undefined" && buffer.constructor.name === 'SharedArrayBuffer'
                 ? (<any>buffer).slice(0, offset)
                 : buffer.subarray(0, offset);
             return _text_decoder_utf8.decode(bytes);
