@@ -228,7 +228,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
             GenTree* cmp = tree->gtGetOp1();
-            srcCount     = BuildOperandUses(cmp);
+            srcCount     = BuildCmp(cmp);
             assert(cmp->isContained());
         }
         break;

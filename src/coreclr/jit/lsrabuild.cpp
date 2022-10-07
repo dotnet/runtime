@@ -4015,7 +4015,7 @@ int LinearScan::BuildCmp(GenTree* tree)
 #ifdef TARGET_X86
     // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
     // to store the result into the low byte of a register, which requires the dst be a byteable register.
-    if (tree->TypeGet() != TYP_VOID)
+    if (tree->TypeGet() != TYP_VOID && !tree->isContained())
     {
         dstCandidates = allByteRegs();
     }
@@ -4065,7 +4065,7 @@ int LinearScan::BuildCmp(GenTree* tree)
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);
-    if (tree->TypeGet() != TYP_VOID)
+    if (tree->TypeGet() != TYP_VOID && !tree->isContained())
     {
         BuildDef(tree, dstCandidates);
     }

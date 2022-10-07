@@ -3222,6 +3222,8 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
     {
         if (next->OperIs(GT_JTRUE))
         {
+            assert(!relop->isContained());
+
             // If the instruction immediately following 'relop', i.e. 'next' is a conditional branch,
             // it should always have 'relop' as its 'op1'. If it doesn't, then we have improperly
             // constructed IL (the setting of a condition code should always immediately precede its
@@ -7050,8 +7052,7 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 
     assert(cmp->OperIsCompare());
 
-  //  cmp->gtType = TYP_VOID;
-    MakeSrcContained(node, node->gtGetOp1());
+    MakeSrcContained(node, cmp);
 }
 
 //------------------------------------------------------------------------

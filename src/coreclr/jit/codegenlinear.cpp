@@ -1643,7 +1643,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-         //   noway_assert(varDsc->GetRegNum() == REG_STK);
+            noway_assert(varDsc->GetRegNum() == REG_STK);
             noway_assert(tree->IsRegOptional() || !varDsc->lvLRACandidate);
 
             // Update the life of the lcl var.
