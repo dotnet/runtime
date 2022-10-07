@@ -11890,7 +11890,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
-    if (field->IsStatic() && !field->IsThreadStatic() && (bufferSize == field->GetSize()))
+    if (field->IsStatic() && !field->IsThreadStatic() && ((unsigned)bufferSize == field->GetSize()))
     {
         MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
         if (!pEnclosingMT->IsSharedByGenericInstantiations())
