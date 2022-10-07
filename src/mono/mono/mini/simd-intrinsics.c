@@ -551,7 +551,7 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 }
 #endif
 #ifdef TARGET_WASM
-static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args);
+static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg);
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1343,9 +1343,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc, arg0_type, fsig, args);
 
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
-#else
-		return emit_sum_vector (cfg, klass, fsig, arg0_type, &pairwise_multiply);
-#endif
 #else
 		return NULL;
 #endif
@@ -4243,11 +4240,12 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 #ifdef TARGET_WASM
 
 static MonoInst*
-emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
+emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
 {
-	MonoInst* vsum = emit_simd_ins (cfg, klass, OP_WASM_SIMD_SUM, args[0]->dreg, -1);
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
+	MonoInst* vsum = emit_simd_ins (cfg, vector_class, OP_WASM_SIMD_SUM, arg->dreg, -1);
 
-	return extract_first_element (cfg, klass, element_type, vsum->dreg);
+	return extract_first_element (cfg, vector_class, element_type, vsum->dreg);
 }
 
 static SimdIntrinsic packedsimd_methods [] = {
