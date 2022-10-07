@@ -979,7 +979,7 @@ namespace System.Net.Security
             var remoteCertificateVerifier = new RemoteCertificateVerification(this, _sslAuthenticationOptions, _securityContext!);
 
             bool success = remoteCertificateVerifier.VerifyRemoteCertificate(
-                _remoteCertificate, trust, chain, RemoteCertRequired, ref sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                _remoteCertificate, trust, chain, RemoteCertRequired, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
 
             if (!success)
             {

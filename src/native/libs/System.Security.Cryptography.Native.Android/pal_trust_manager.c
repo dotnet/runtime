@@ -7,13 +7,10 @@ void AndroidCryptoNative_RegisterTrustManagerValidationCallback(ValidationCallba
     dotnetCallback = callback;
 }
 
-jobjectArray initTrustManagersWithCustomValidatorProxy(
-    JNIEnv* env,
-    intptr_t dotnetValidatorHandle,
-    char* targetHostName)
+jobjectArray initTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dotnetValidatorHandle)
 {
     jobjectArray trustManagers = NULL;
-    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, javaTargetHostName, trustManagerProxy);
+    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, trustManagerProxy);
 
     // string defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
     // TrustManagerFactory tmf = TrustManagerFactory.getInstance(defaultAlgorithm);
@@ -32,7 +29,7 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(
     // boolean foundAndReplaced = false;
     // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new DotnetProxyTrustManager(dotnetValidatorHandle, trustManagers[i], targetHostName);
+    //     trustManagers[i] = new DotnetProxyTrustManager(dotnetValidatorHandle, trustManagers[i]);
     //     foundAndReplaced = true;
     //     break;
     //   }
@@ -46,8 +43,7 @@ jobjectArray initTrustManagersWithCustomValidatorProxy(
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[javaTargetHostName] = make_java_string(env, targetHostName);
-            loc[trustManagerProxy] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)dotnetValidatorHandle, loc[trustManager], loc[javaTargetHostName]);
+            loc[trustManagerProxy] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)dotnetValidatorHandle, loc[trustManager]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[trustManagerProxy]);
@@ -76,8 +72,7 @@ jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_validateRemoteCerti
     JNIEnv* env,
     jobject handle,
     intptr_t dotnetValidatorHandle,
-    jobjectArray certificates,
-    int32_t errors)
+    jobjectArray certificates)
 {
     assert(dotnetCallback && "dotnetCallback has not been registered");
 
@@ -113,7 +108,7 @@ jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_validateRemoteCerti
         ReleaseLRef(env, encodedCertificate);
     }
 
-    isAccepted = dotnetCallback(dotnetValidatorHandle, (int32_t)certificateCount, lengths, rawData, errors);
+    isAccepted = dotnetCallback(dotnetValidatorHandle, (int32_t)certificateCount, lengths, rawData);
 
 cleanup:
     if (rawData != NULL)

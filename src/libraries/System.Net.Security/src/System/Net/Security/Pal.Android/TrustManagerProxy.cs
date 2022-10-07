@@ -43,35 +43,32 @@ namespace System.Net
         public void Dispose()
             => _handle.Free();
 
-
         [UnmanagedCallersOnly]
         private static unsafe bool TrustManagerCallback(
             IntPtr validatorHandle,
             int certificatesCount,
             int* certificateLengths,
-            byte** rawCertificates,
-            int errors)
+            byte** rawCertificates)
         {
             TrustManagerProxy validator = FromHandle(validatorHandle);
             X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
-            return validator.Validate(certificates, (SslPolicyErrors)errors);
+            bool isValid = validator.Validate(certificates);
+
+            // foreach (var certificate in certificates)
+            //     certificate.Dispose();
+
+            return isValid;
         }
 
-        private bool Validate(X509Certificate2[] certificates, SslPolicyErrors errors)
+        private bool Validate(X509Certificate2[] certificates)
         {
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
+            // var certificateCollection = new X509Certificate2Collection(certificates);
+            // var trust = SslCertificateTrust.CreateForX509Collection(certificateCollection);
+            SslCertificateTrust? trust = null;
 
-            // TODO what to do with the rest of the certificates?
-            // should I create an instance of SslCertificateTrust?
-
-            return _remoteCertificateVerifier.VerifyRemoteCertificate(
-                certificate,
-                trust: null,
-                chain: null,
-                remoteCertRequired: true,
-                ref errors,
-                out _);
+            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust, chain: null, remoteCertRequired: true, out _, out _);
         }
 
         private static TrustManagerProxy FromHandle(IntPtr handle)

@@ -325,7 +325,7 @@ cleanup:
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle, char* targetHostName)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle)
 {
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
@@ -342,7 +342,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateV
     // Init trust managers
     if (dotnetRemoteCertificateValidatorHandle != 0)
     {
-        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle, targetHostName);
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
         if (loc[trustManagers] == NULL)
             goto cleanup;
     }
@@ -424,7 +424,6 @@ cleanup:
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidatorHandle,
-                                                               char* targetHostName,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -469,7 +468,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     if (dotnetRemoteCertificateValidatorHandle != 0)
     {
-        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle, targetHostName);
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
         if (loc[trustManagers] == NULL)
             goto cleanup;
     }

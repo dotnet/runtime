@@ -7,32 +7,25 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-try
+var handler = new SocketsHttpHandler();
+handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+
+var client = new HttpClient(handler);
+
+var urls = new[]
 {
-    var handler = new SocketsHttpHandler();
-    handler.SslOptions.RemoteCertificateValidationCallback =
-        (sender, certificate, chain, errors) =>
-        {
-            Console.WriteLine("Validation callback called.");
-            Console.WriteLine($"  sender: {sender}");
-            Console.WriteLine($"  certificate: {certificate}");
-            Console.WriteLine($"  chain: {chain}");
-            Console.WriteLine($"  errors: {errors}");
+    "https://self-signed.badssl.com",
+    "https://wrong.host.badssl.com",
+    "https://microsoft.com",
+};
 
-            var ret = true;
-            Console.WriteLine($"Returning {ret}");
-            return ret;
-        };
-
-    var client = new HttpClient(handler);
-    var response = await client.GetAsync("https://self-signed.badssl.com");
-    Console.WriteLine(response);
-
-    return 42;
-}
-catch (Exception ex)
+var allSucceeded = true;
+foreach (var url in urls)
 {
-    Console.WriteLine(ex);
+    var response = await client.GetAsync(url);
+    Console.WriteLine($"{url} -> {response.StatusCode}");
+
+    allSucceeded &= response.IsSuccessStatusCode;
 }
 
-return 1;
+return allSucceeded ? 42 : 1;

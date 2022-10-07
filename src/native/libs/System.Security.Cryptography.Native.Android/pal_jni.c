@@ -1075,8 +1075,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_Certificate =           GetClassGRef(env, "java/security/cert/Certificate");
     g_CertificateGetEncoded = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
 
-    g_DotnetProxyTrustManager     = GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
-    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(ILjavax/net/ssl/X509TrustManager;Ljava/lang/String;)V");
+    g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
+    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(ILjavax/net/ssl/X509TrustManager;)V");
 
     return JNI_VERSION_1_6;
 }

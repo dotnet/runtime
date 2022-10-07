@@ -32,18 +32,19 @@ namespace System.Net.Security
             SslCertificateTrust? trust,
             X509Chain? chain,
             bool remoteCertRequired,
-            ref SslPolicyErrors sslPolicyErrors,
+            out SslPolicyErrors sslPolicyErrors,
             out X509ChainStatus[] chainStatus)
         {
             bool success = false;
+            sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = Array.Empty<X509ChainStatus>();
 
             try
             {
                 if (remoteCertificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && remoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+                    // if (NetEventSource.Log.IsEnabled() && remoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                    // sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
                 {
@@ -79,13 +80,13 @@ namespace System.Net.Security
                         chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
                     }
 
-                    sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
-                        _securityContext!,
-                        chain,
-                        remoteCertificate,
-                        _sslAuthenticationOptions.CheckCertName,
-                        _sslAuthenticationOptions.IsServer,
-                        _sslAuthenticationOptions.TargetHost);
+                    // sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                    //     _securityContext!,
+                    //     chain,
+                    //     remoteCertificate,
+                    //     _sslAuthenticationOptions.CheckCertName,
+                    //     _sslAuthenticationOptions.IsServer,
+                    //     _sslAuthenticationOptions.TargetHost);
                 }
 
                 var remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
@@ -104,11 +105,11 @@ namespace System.Net.Security
                     success = (sslPolicyErrors == SslPolicyErrors.None);
                 }
 
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
-                    NetEventSource.Info(this, $"Cert validation, remote cert = {remoteCertificate}");
-                }
+                // if (NetEventSource.Log.IsEnabled())
+                // {
+                //     LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
+                //     NetEventSource.Info(this, $"Cert validation, remote cert = {remoteCertificate}");
+                // }
 
                 if (!success && chain != null)
                 {
@@ -117,75 +118,75 @@ namespace System.Net.Security
             }
             finally
             {
-                // At least on Win2k server the chain is found to have dependencies on the original cert context.
-                // So it should be closed first.
+                // // At least on Win2k server the chain is found to have dependencies on the original cert context.
+                // // So it should be closed first.
 
-                if (chain != null)
-                {
-                    int elementsCount = chain.ChainElements.Count;
-                    for (int i = 0; i < elementsCount; i++)
-                    {
-                        chain.ChainElements[i].Certificate.Dispose();
-                    }
+                // if (chain != null)
+                // {
+                //     int elementsCount = chain.ChainElements.Count;
+                //     for (int i = 0; i < elementsCount; i++)
+                //     {
+                //         chain.ChainElements[i].Certificate.Dispose();
+                //     }
 
-                    chain.Dispose();
-                }
+                //     chain.Dispose();
+                // }
             }
 
             return success;
         }
 
-        private void LogCertificateValidation(
-            RemoteCertificateValidationCallback? remoteCertValidationCallback,
-            SslPolicyErrors sslPolicyErrors,
-            bool success,
-            X509Chain chain)
-        {
-            if (!NetEventSource.Log.IsEnabled())
-                return;
+        // private void LogCertificateValidation(
+        //     RemoteCertificateValidationCallback? remoteCertValidationCallback,
+        //     SslPolicyErrors sslPolicyErrors,
+        //     bool success,
+        //     X509Chain chain)
+        // {
+        //     if (!NetEventSource.Log.IsEnabled())
+        //         return;
 
-            if (sslPolicyErrors != SslPolicyErrors.None)
-            {
-                NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_has_errors);
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
-                {
-                    NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_not_available);
-                }
+        //     if (sslPolicyErrors != SslPolicyErrors.None)
+        //     {
+        //         NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_has_errors);
+        //         if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
+        //         {
+        //             NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_not_available);
+        //         }
 
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
-                {
-                    NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_name_mismatch);
-                }
+        //         if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+        //         {
+        //             NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_name_mismatch);
+        //         }
 
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
-                {
-                    string chainStatusString = "ChainStatus: ";
-                    foreach (X509ChainStatus chainStatus in chain.ChainStatus)
-                    {
-                        chainStatusString += "\t" + chainStatus.StatusInformation;
-                    }
-                    NetEventSource.Log.RemoteCertificateError(_sslStream, chainStatusString);
-                }
-            }
+        //         if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+        //         {
+        //             string chainStatusString = "ChainStatus: ";
+        //             foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+        //             {
+        //                 chainStatusString += "\t" + chainStatus.StatusInformation;
+        //             }
+        //             NetEventSource.Log.RemoteCertificateError(_sslStream, chainStatusString);
+        //         }
+        //     }
 
-            if (success)
-            {
-                if (remoteCertValidationCallback != null)
-                {
-                    NetEventSource.Log.RemoteCertDeclaredValid(_sslStream);
-                }
-                else
-                {
-                    NetEventSource.Log.RemoteCertHasNoErrors(_sslStream);
-                }
-            }
-            else
-            {
-                if (remoteCertValidationCallback != null)
-                {
-                    NetEventSource.Log.RemoteCertUserDeclaredInvalid(_sslStream);
-                }
-            }
-        }
+        //     if (success)
+        //     {
+        //         if (remoteCertValidationCallback != null)
+        //         {
+        //             NetEventSource.Log.RemoteCertDeclaredValid(_sslStream);
+        //         }
+        //         else
+        //         {
+        //             NetEventSource.Log.RemoteCertHasNoErrors(_sslStream);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         if (remoteCertValidationCallback != null)
+        //         {
+        //             NetEventSource.Log.RemoteCertUserDeclaredInvalid(_sslStream);
+        //         }
+        //     }
+        // }
     }
 }
