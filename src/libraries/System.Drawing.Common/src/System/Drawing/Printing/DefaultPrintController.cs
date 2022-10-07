@@ -28,7 +28,7 @@ namespace System.Drawing.Printing
             if (!document.PrinterSettings.IsValid)
                 throw new InvalidPrinterException(document.PrinterSettings);
 
-            Debug.Assert(_modeHandle != null);
+            Debug.Assert(_modeHandle != null, "_modeHandle should have been set by PrintController.OnStartPrint");
             _dc = document.PrinterSettings.CreateDeviceContext(_modeHandle);
             Interop.Gdi32.DOCINFO info = new Interop.Gdi32.DOCINFO();
             info.lpszDocName = document.DocumentName;
