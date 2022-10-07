@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.Interop.UnitTests;
 using static Microsoft.Interop.LibraryImportGenerator;
 
 namespace LibraryImportGenerator.UnitTests
