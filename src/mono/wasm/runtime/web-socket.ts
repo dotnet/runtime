@@ -8,6 +8,7 @@ import { mono_assert } from "./types";
 import { Module } from "./imports";
 import { setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
+import { isSharedArrayBuffer }  from "./shared-array-buffer.ts"
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -342,7 +343,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
             }
 
             // See https://github.com/whatwg/encoding/issues/172
-            const bytes = typeof SharedArrayBuffer !== "undefined" && buffer.constructor.name === 'SharedArrayBuffer'
+            const bytes = isSharedArrayBuffer(buffer)
                 ? (<any>buffer).slice(0, offset)
                 : buffer.subarray(0, offset);
             return _text_decoder_utf8.decode(bytes);

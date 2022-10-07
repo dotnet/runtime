@@ -8,6 +8,7 @@ import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
+import { isSharedArrayBuffer } from "./shared-array-buffer";
 
 export class StringDecoder {
 
@@ -80,7 +81,7 @@ export class StringDecoder {
             // N.B. don't use `Module.HEAPU8.buffer instanceof SharedArrayBuffer` if a worker
             // resized the heap, the buffer will be an instance of that worker's SharedArrayBuffer,
             // not the current globalThis.SharedArrayBuffer
-            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer.constructor.name === 'SharedArrayBuffer'
+            const subArray = isSharedArrayBuffer(Module.HEAPU8.buffer)
                 ? Module.HEAPU8.slice(<any>start, <any>end)
                 : Module.HEAPU8.subarray(<any>start, <any>end);
 
