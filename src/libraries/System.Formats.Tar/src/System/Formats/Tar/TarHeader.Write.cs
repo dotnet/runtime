@@ -474,7 +474,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    Debug.Assert(_typeFlag is not TarEntryType.ExtendedAttributes);
+                    Debug.Assert(_typeFlag is not TarEntryType.ExtendedAttributes and not TarEntryType.GlobalExtendedAttributes);
                     Debug.Assert(Convert.ToInt64(ExtendedAttributes[PaxEaSize]) > TarHelpers.MaxSizeLength);
                 }
             }

@@ -410,28 +410,23 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public async Task WriteEntry_FileSizeOverLegacyLimit_Throws_Async(TarEntryFormat entryFormat)
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public async Task WriteEntry_FileSizeOverLegacyLimit_Throws_Async(TarEntryFormat entryFormat, bool unseekableStream)
         {
             const long FileSizeOverLimit = LegacyMaxFileSize + 1;
 
-            FileStreamOptions options = new()
-            {
-                Mode = FileMode.Create,
-                Access = FileAccess.ReadWrite,
-                Options = FileOptions.DeleteOnClose // we don't want an 8 Gb file living for too long.
-            };
-            FileStream longFile = File.Open(GetTestFilePath(), options);
-            longFile.Seek(FileSizeOverLimit - 1, SeekOrigin.Begin);
-            longFile.WriteByte(42);
-            longFile.Position = 0;
+            MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
             string tarFilePath = GetTestFilePath();
             await using TarWriter writer = new(File.Create(tarFilePath));
             TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
-            writeEntry.DataStream = longFile;
+            writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
 
             Assert.Equal(FileSizeOverLimit, writeEntry.Length);
 
