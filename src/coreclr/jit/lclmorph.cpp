@@ -1090,13 +1090,9 @@ private:
 
         GenTree* objRef = indir->AsUnOp()->gtOp1;
         GenTree* obj    = ((objRef != nullptr) && objRef->OperIs(GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
-        if (indir->OperIs(GT_FIELD))
-        {
-            noway_assert(((indir->gtFlags & GTF_GLOB_REF) != 0) || ((obj != nullptr) && obj->OperIs(GT_LCL_VAR)));
-        }
 
         // TODO-Bug: this code does not pay attention to "GTF_IND_VOLATILE".
-        if ((obj != nullptr) && obj->OperIs(GT_LCL_VAR))
+        if ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) && varTypeIsStruct(obj))
         {
             const LclVarDsc* varDsc = m_compiler->lvaGetDesc(obj->AsLclVarCommon());
 
