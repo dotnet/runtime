@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private readonly HostOptions _hostOptions;
 
         /// <summary>
-        /// Instantiates a <see cref="WindowsServiceLifetime"/> object.
+        /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
         /// </summary>
-        /// <param name="environment">Contains information about the host.</param>
+        /// <param name="environment">Information about the host.</param>
         /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
@@ -34,13 +34,13 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Instantiates a <see cref="WindowsServiceLifetime"/> object.
+        /// Initializes a new instance of the <see cref="WindowsServiceLifetime"/> class.
         /// </summary>
-        /// <param name="environment">Contains information about the host.</param>
+        /// <param name="environment">Information about the host.</param>
         /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
-        /// <param name="windowsServiceOptionsAccessor">Contains the Windows service options and is used to find the service name.</param>
+        /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
             ThrowHelper.ThrowIfNull(environment);
@@ -115,7 +115,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <summary>
         /// Called by base.Stop to stop the <see cref="WindowsServiceLifetime"/>.
         /// </summary>
-        /// <remarks>This may be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's OK because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
+        /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
             ApplicationLifetime.StopApplication();
@@ -138,7 +138,8 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <summary>
         /// Releases the resources used by the <see cref="WindowsServiceLifetime"/>.
         /// </summary>
-        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        /// <param name="disposing">
+               <see langword="true /> only when called from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false" />.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
