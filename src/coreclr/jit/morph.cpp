@@ -16189,123 +16189,75 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
         unsigned         lclNum = obj->AsLclVarCommon()->GetLclNum();
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varTypeIsStruct(obj))
+        if (varDsc->lvPromoted)
         {
-            if (varDsc->lvPromoted)
+            // Promoted struct
+            unsigned fldOffset   = field->gtFldOffset;
+            unsigned fieldLclNum = lvaGetFieldLocal(varDsc, fldOffset);
+
+            if (fieldLclNum == BAD_VAR_NUM)
             {
-                // Promoted struct
-                unsigned fldOffset     = field->gtFldOffset;
-                unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                // Access a promoted struct's field with an offset that doesn't correspond to any field.
+                // It can happen if the struct was cast to another struct with different offsets.
+                return;
+            }
 
-                if (fieldLclIndex == BAD_VAR_NUM)
+            const LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
+            var_types        fieldType   = fieldDsc->TypeGet();
+            GenTree*         lclVarNode  = nullptr;
+            GenTreeFlags     lclVarFlags = field->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+
+            assert(fieldType != TYP_STRUCT); // promoted LCL_VAR can't have a struct type.
+            if ((field->TypeGet() == fieldType) || parent->OperIs(GT_ADDR))
+            {
+                lclVarNode = field;
+
+                if (parent->OperIs(GT_ASG) && (parent->AsOp()->gtOp1 == field))
                 {
-                    // Access a promoted struct's field with an offset that doesn't correspond to any field.
-                    // It can happen if the struct was cast to another struct with different offsets.
-                    return;
+                    lclVarFlags |= GTF_VAR_DEF;
                 }
-
-                const LclVarDsc* fieldDsc  = lvaGetDesc(fieldLclIndex);
-                var_types        fieldType = fieldDsc->TypeGet();
-
-                assert(fieldType != TYP_STRUCT); // promoted LCL_VAR can't have a struct type.
-                if (tree->TypeGet() != fieldType)
+                else if (parent->OperIs(GT_ADDR))
                 {
-                    if (tree->TypeGet() != TYP_STRUCT)
-                    {
-                        // This is going to be an incorrect instruction promotion.
-                        // For example when we try to read int as long.
-                        return;
-                    }
-
-                    if (field->gtFldHnd != fieldDsc->lvFieldHnd)
-                    {
-                        CORINFO_CLASS_HANDLE fieldTreeClass = nullptr, fieldDscClass = nullptr;
-
-                        CorInfoType fieldTreeType = info.compCompHnd->getFieldType(field->gtFldHnd, &fieldTreeClass);
-                        CorInfoType fieldDscType = info.compCompHnd->getFieldType(fieldDsc->lvFieldHnd, &fieldDscClass);
-                        if (fieldTreeType != fieldDscType || fieldTreeClass != fieldDscClass)
-                        {
-                            // Access the promoted field with a different class handle, can't check that types match.
-                            return;
-                        }
-                        // Access the promoted field as a field of a non-promoted struct with the same class handle.
-                    }
-                    else
-                    {
-                        // As we already checked this above, we must have a tree with a TYP_STRUCT type
-                        //
-                        assert(tree->TypeGet() == TYP_STRUCT);
-
-                        // The field tree accesses it as a struct, but the promoted LCL_VAR field
-                        // says that it has another type. This happens when struct promotion unwraps
-                        // a single field struct to get to its ultimate type.
-                        //
-                        // Note that currently, we cannot have a promoted LCL_VAR field with a struct type.
-                        //
-                        // This mismatch in types can lead to problems for some parent node type like GT_RETURN.
-                        // So we check the parent node and only allow this optimization when we have
-                        // a GT_ADDR or a GT_ASG.
-                        //
-                        // Note that for a GT_ASG we have to do some additional work,
-                        // see below after the SetOper(GT_LCL_VAR)
-                        //
-                        if (!parent->OperIs(GT_ADDR, GT_ASG))
-                        {
-                            // Don't transform other operations such as GT_RETURN
-                            //
-                            return;
-                        }
+                    // TODO-Bug: delete this quirk.
+                    lclVarFlags &= ~GTF_DONT_CSE;
+                }
+            }
+            else // Here we will turn "FIELD(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
+            {
+                if (field->TypeIs(TYP_STRUCT))
+                {
 #ifdef DEBUG
-                        // This is an additional DEBUG-only sanity check
-                        //
-                        assert(structPromotionHelper != nullptr);
-                        structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-#endif // DEBUG
-                    }
-                }
-
-                tree->SetOper(GT_LCL_VAR);
-                tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
-                tree->gtType = fieldType;
-                tree->gtFlags &= GTF_NODE_MASK; // Note: that clears all flags except `GTF_COLON_COND`.
-
-                if (parent->gtOper == GT_ASG)
-                {
-                    // If we are changing the left side of an assignment, we need to set
-                    // these two flags:
-                    //
-                    if (parent->AsOp()->gtOp1 == tree)
-                    {
-                        tree->gtFlags |= GTF_VAR_DEF;
-                        tree->gtFlags |= GTF_DONT_CSE;
-                    }
-
                     // Promotion of struct containing struct fields where the field
                     // is a struct with a single pointer sized scalar type field: in
                     // this case struct promotion uses the type  of the underlying
                     // scalar field as the type of struct field instead of recursively
-                    // promoting. This can lead to a case where we have a block-asgn
-                    // with its RHS replaced with a scalar type.  Mark RHS value as
-                    // DONT_CSE so that assertion prop will not do const propagation.
-                    // The reason this is required is that if RHS of a block-asg is a
-                    // constant, then it is interpreted as init-block incorrectly.
-                    //
-                    // TODO - This can also be avoided if we implement recursive struct
-                    // promotion, tracked by #10019.
-                    if (varTypeIsStruct(parent) && parent->AsOp()->gtOp2 == tree && !varTypeIsStruct(tree))
-                    {
-                        tree->gtFlags |= GTF_DONT_CSE;
-                    }
-                }
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Replacing the field in promoted struct with local var V%02u\n", fieldLclIndex);
-                }
+                    // promoting.
+                    structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
 #endif // DEBUG
+                    ClassLayout* layout = field->GetLayout(this);
+                    field->SetOper(GT_OBJ);
+                    field->AsBlk()->SetLayout(layout);
+                    field->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+                    field->AsBlk()->gtBlkOpGcUnsafe = false;
+#endif // !JIT32_GCENCODER
+                }
+                else
+                {
+                    field->SetOper(GT_IND);
+                }
+
+                lclVarNode = obj;
             }
+
+            lclVarNode->SetOper(GT_LCL_VAR);
+            lclVarNode->AsLclVarCommon()->SetLclNum(fieldLclNum);
+            lclVarNode->gtType  = fieldType;
+            lclVarNode->gtFlags = lclVarFlags;
+
+            JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
         }
-        else
+        else if (!varTypeIsStruct(obj))
         {
             // Normed struct
             // A "normed struct" is a struct that the VM tells us is a basic type. This can only happen if

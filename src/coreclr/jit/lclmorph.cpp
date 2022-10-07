@@ -1098,7 +1098,7 @@ private:
         assert(node->OperIs(GT_FIELD));
         // TODO-Cleanup: Move fgMorphStructField implementation here, it's not used anywhere else.
         m_compiler->fgMorphStructField(node, user);
-        m_stmtModified |= node->OperIs(GT_LCL_VAR);
+        m_stmtModified |= !node->OperIs(GT_FIELD);
     }
 
     //------------------------------------------------------------------------
