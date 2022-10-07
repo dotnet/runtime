@@ -8740,146 +8740,54 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// fgMorphBlockOperand: Canonicalize an operand of a block assignment
+// fgMorphBlockOperand: Retype an operand of a block assignment
 //
 // Arguments:
-//    tree        - The block operand
-//    asgType     - The type of the assignment
-//    blockLayout - The struct layout of the block (for STRUCT "asgType"s)
-//    isBlkReqd   - true iff this operand must remain a block node
+//    tree    - The block operand
+//    asgType - The (new) scalar type of the assignment
 //
 // Return Value:
 //    Returns the morphed block operand
 //
-// Notes:
-//    This does the following:
-//    - Ensures that a struct operand is a block node or lclVar.
-//    - Ensures that any COMMAs are above ADDR nodes.
-//    Although 'tree' WAS an operand of a block assignment, the assignment
-//    may have been retyped to be a scalar assignment.
-//
-GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd)
+GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType)
 {
+    assert(asgType != TYP_STRUCT);
+
     GenTree* effectiveVal = tree->gtEffectiveVal();
+    unsigned blockWidth   = genTypeSize(asgType);
 
-    if (asgType != TYP_STRUCT)
+    if (effectiveVal->OperIsIndir())
     {
-        unsigned blockWidth = genTypeSize(asgType);
+        GenTree* addr = effectiveVal->AsIndir()->Addr();
+        if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == asgType))
+        {
+            effectiveVal = addr->gtGetOp1();
+        }
+        else if (effectiveVal->OperIsBlk())
+        {
+            effectiveVal->SetOper(GT_IND);
+        }
 
-        if (effectiveVal->OperIsIndir())
-        {
-            if (!isBlkReqd)
-            {
-                GenTree* addr = effectiveVal->AsIndir()->Addr();
-                if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == asgType))
-                {
-                    effectiveVal = addr->gtGetOp1();
-                }
-                else if (effectiveVal->OperIsBlk())
-                {
-                    effectiveVal->SetOper(GT_IND);
-                }
-            }
-            effectiveVal->gtType = asgType;
-        }
-        else if (effectiveVal->TypeGet() != asgType)
-        {
-            if (effectiveVal->IsCall())
-            {
-#ifdef DEBUG
-                GenTreeCall* call = effectiveVal->AsCall();
-                assert(call->TypeGet() == TYP_STRUCT);
-                assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
-#endif
-            }
-            else
-            {
-                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-                effectiveVal  = gtNewIndir(asgType, addr);
-            }
-        }
+        effectiveVal->gtType = asgType;
     }
-    else
+    else if (effectiveVal->TypeGet() != asgType)
     {
-        assert(blockLayout != nullptr);
-
-        GenTreeIndir*        indirTree        = nullptr;
-        GenTreeLclVarCommon* lclNode          = nullptr;
-        bool                 needsIndirection = true;
-
-        if (effectiveVal->OperIsIndir())
+        if (effectiveVal->IsCall())
         {
-            indirTree     = effectiveVal->AsIndir();
-            GenTree* addr = effectiveVal->AsIndir()->Addr();
-            if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->OperGet() == GT_LCL_VAR))
-            {
-                lclNode = addr->gtGetOp1()->AsLclVarCommon();
-            }
-        }
-        else if (effectiveVal->OperGet() == GT_LCL_VAR)
-        {
-            lclNode = effectiveVal->AsLclVarCommon();
-        }
-        else if (effectiveVal->OperIs(GT_LCL_FLD))
-        {
-            needsIndirection = false;
-            assert(ClassLayout::AreCompatible(effectiveVal->AsLclFld()->GetLayout(), blockLayout));
-        }
-        else if (effectiveVal->IsCall())
-        {
-            needsIndirection = false;
 #ifdef DEBUG
             GenTreeCall* call = effectiveVal->AsCall();
             assert(call->TypeGet() == TYP_STRUCT);
-            assert(blockLayout->GetSize() == info.compCompHnd->getClassSize(call->gtRetClsHnd));
+            assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
 #endif
         }
-#ifdef TARGET_ARM64
-        else if (effectiveVal->OperIsHWIntrinsic())
+        else
         {
-            needsIndirection = false;
-#ifdef DEBUG
-            GenTreeHWIntrinsic* intrinsic = effectiveVal->AsHWIntrinsic();
-            assert(intrinsic->TypeGet() == TYP_STRUCT);
-            assert(HWIntrinsicInfo::IsMultiReg(intrinsic->GetHWIntrinsicId()));
-#endif
-        }
-#endif // TARGET_ARM64
-
-        if (lclNode != nullptr)
-        {
-            const LclVarDsc* varDsc = lvaGetDesc(lclNode);
-            if (varTypeIsStruct(varDsc) && ClassLayout::AreCompatible(varDsc->GetLayout(), blockLayout))
-            {
-                if (effectiveVal != lclNode)
-                {
-                    JITDUMP("Replacing block node [%06d] with lclVar V%02u\n", dspTreeID(tree), lclNode->GetLclNum());
-                    effectiveVal = lclNode;
-                }
-                needsIndirection = false;
-            }
-            else
-            {
-                // This may be a lclVar that was determined to be address-exposed.
-                effectiveVal->gtFlags |= (lclNode->gtFlags & GTF_ALL_EFFECT);
-            }
-        }
-
-        if (needsIndirection)
-        {
-            if ((indirTree != nullptr) && (indirTree->OperIsBlk() || !isBlkReqd))
-            {
-                effectiveVal->gtType = asgType;
-            }
-            else
-            {
-                effectiveVal = gtNewStructVal(blockLayout, gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal));
-                gtUpdateNodeSideEffects(effectiveVal);
-            }
+            GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+            effectiveVal  = gtNewIndir(asgType, addr);
         }
     }
 
-    assert(effectiveVal->TypeIs(asgType) || (varTypeIsSIMD(asgType) && varTypeIsStruct(effectiveVal)));
+    assert(effectiveVal->TypeIs(asgType));
     return effectiveVal;
 }
 
