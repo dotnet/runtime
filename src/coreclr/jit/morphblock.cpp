@@ -795,6 +795,14 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcLclNum = m_srcLclNode->GetLclNum();
         m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
     }
+
+    // Verify that the types on the LHS and RHS match.
+    assert(m_dst->TypeGet() == m_src->TypeGet());
+    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
+    if (m_dst->TypeIs(TYP_STRUCT) && !m_src->OperIs(GT_IND))
+    {
+        assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
