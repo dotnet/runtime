@@ -1145,8 +1145,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
-			// Works correctly even when SSSE3 is not supported or when using I8
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ABS, -1, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
 		}
 #else
 		return NULL;
@@ -3380,7 +3379,7 @@ static SimdIntrinsic sse3_methods [] = {
 };
 
 static SimdIntrinsic ssse3_methods [] = {
-	{SN_Abs, OP_SSSE3_ABS},
+	{SN_Abs, OP_VECTOR_IABS},
 	{SN_AlignRight},
 	{SN_HorizontalAdd},
 	{SN_HorizontalAddSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHADDSW},
