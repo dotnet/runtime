@@ -11924,6 +11924,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 }
                 else
                 {
+                    // GetStaticAddressHandle doesn't work for structs
+                    _ASSERT(field->GetFieldType() != ELEMENT_TYPE_VALUETYPE);
                     void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
                     _ASSERTE(fldAddr != nullptr);
                     _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
