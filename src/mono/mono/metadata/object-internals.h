@@ -1775,9 +1775,6 @@ mono_error_set_pending_exception (MonoError *error)
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 
-MonoObject*
-mono_boxed_intptr_to_pointer (MonoObject *boxed_intptr, MonoType *ret_type, MonoError *error);
-
 MONO_COMPONENT_API MonoObject *
 mono_object_new_checked (MonoClass *klass, MonoError *error);
 
@@ -1880,6 +1877,10 @@ mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **par
 
 void
 mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
+
+MonoObject*
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+				MonoObject **exc, MonoError *error);
 
 void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);

@@ -4554,7 +4554,7 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
 	return do_try_exec_main (method, args, exc);
 }
 
-MonoObject*
+static MonoObject*
 mono_boxed_intptr_to_pointer (MonoObject *boxed_intptr, MonoType *ret_type, MonoError *error)
 {
 	MonoClass *pointer_class;
@@ -4656,6 +4656,143 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 	}
 	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+static gpointer
+invoke_byrefs_extract_argument (gpointer *params_byref, int i, MonoType *t)
+{
+	gpointer result = NULL;
+again:
+	switch (t->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_VALUETYPE:
+			result = params_byref [i];
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			if (m_type_is_byref (t))
+				result = params_byref [i];
+			else
+				result = *(MonoObject**)params_byref [i];
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (m_type_is_byref (t))
+				t = m_class_get_this_arg (t->data.generic_class->container_class);
+			else
+				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			goto again;
+		case MONO_TYPE_PTR: {
+			result = *(gpointer*)params_byref [i];
+			break;
+		}
+		default:
+			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", t->type);
+	}
+
+	return result;
+}
+
+MonoObject*
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+                               MonoObject **exc, MonoError *error)
+{
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	int params_length = sig->param_count;
+	gpointer *pa = NULL;
+	MonoObject *res;
+
+	if (params_length > 0) {
+		pa = g_newa (gpointer, params_length);
+		for (int i = 0; i < params_length; i++) {
+			MonoType *t = sig->params [i];
+			pa [i] = invoke_byrefs_extract_argument (params_byref, i, t);
+			goto_if_nok (error, exit_null);
+		}
+	}
+	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
+		gpointer o = obj;
+		if (mono_class_is_nullable (method->klass)) {
+			/* Need to create a boxed vtype instead */
+			g_assert (!obj);
+
+			if (params_length == 0) {
+				goto_if_nok (error, exit_null);
+			} else {
+				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
+				goto exit;
+			}
+		}
+
+		if (!obj) {
+			MonoObjectHandle obj_h = mono_object_new_handle (method->klass, error);
+			goto_if_nok (error, exit_null);
+			obj = MONO_HANDLE_RAW (obj_h);
+			g_assert (obj);
+			if (m_class_is_valuetype (method->klass))
+				o = mono_object_unbox_internal ((MonoObject *)obj);
+			else
+				o = obj;
+		} else if (m_class_is_valuetype (method->klass)) {
+			MonoObjectHandle obj_h = mono_value_box_handle (method->klass, obj, error);
+			goto_if_nok (error, exit_null);
+			obj = MONO_HANDLE_RAW (obj_h);
+		}
+
+		if (exc)
+			mono_runtime_try_invoke (method, o, pa, exc, error);
+		else
+			mono_runtime_invoke_checked (method, o, pa, error);
+		res = (MonoObject*)obj;
+	} else {
+		if (mono_class_is_nullable (method->klass)) {
+			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+				obj = NULL;
+			} else {
+				/* Convert the unboxed vtype into a Nullable structure */
+				MonoObjectHandle nullable_h = mono_object_new_handle (method->klass, error);
+				goto_if_nok (error, exit_null);
+				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
+
+				mono_nullable_init_unboxed ((guint8 *)mono_object_unbox_internal (nullable), obj, method->klass);
+				obj = mono_object_unbox_internal (nullable);
+			}
+		}
+
+		if (exc)
+                        res = mono_runtime_try_invoke (method, obj, pa, exc, error);
+                else
+                        res = mono_runtime_invoke_checked (method, obj, pa, error);
+
+		MONO_HANDLE_PIN (res);
+		goto_if_nok (error, exit_null);
+
+		if (sig->ret->type == MONO_TYPE_PTR) {
+			res = mono_boxed_intptr_to_pointer (res, sig->ret, error);
+			goto_if_nok (error, exit_null);
+		}
+	}
+
+	goto exit;
+exit_null:
+	res = NULL;
+exit:
 	return res;
 }
 
