@@ -590,7 +590,7 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 //
 ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 {
-    assert(TypeIs(TYP_STRUCT));
+    assert(varTypeIsStruct(TypeGet()));
 
     CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
     switch (OperGet())
@@ -607,6 +607,11 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 
         case GT_COMMA:
             return AsOp()->gtOp2->GetLayout(compiler);
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->GetLayout(compiler);
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_MKREFANY:
             structHnd = compiler->impGetRefAnyClass();

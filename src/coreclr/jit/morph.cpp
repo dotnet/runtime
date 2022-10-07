@@ -16408,18 +16408,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
         {
             madeChanges = true;
 
-            unsigned size;
-
-            if (varDsc->lvSize() > REGSIZE_BYTES)
-            {
-                size = varDsc->lvSize();
-            }
-            else
-            {
-                CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
-                size                         = info.compCompHnd->getClassSize(typeHnd);
-            }
-
             if (varDsc->lvPromoted)
             {
                 // This implicit-by-ref was promoted; create a new temp to represent the
@@ -16498,8 +16486,9 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     fgEnsureFirstBBisScratch();
                     GenTree* lhs = gtNewLclvNode(newLclNum, varDsc->lvType);
                     // RHS is an indirection (using GT_OBJ) off the parameter.
-                    GenTree* addr   = gtNewLclvNode(lclNum, TYP_BYREF);
-                    GenTree* rhs    = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, typGetBlkLayout(size));
+                    GenTree* addr = gtNewLclvNode(lclNum, TYP_BYREF);
+                    GenTree* rhs  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewObjNode(varDsc->GetLayout(), addr)
+                                                                     : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* assign = gtNewAssignNode(lhs, rhs);
                     fgNewStmtAtBeg(fgFirstBB, assign);
                 }
