@@ -376,7 +376,8 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            long size = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            long size = (long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            Debug.Assert(size <= TarHelpers.MaxSizeLength, "size exceeded the max value possible with 11 octal digits. Actual size " + size);
             if (size < 0)
             {
                 throw new InvalidDataException(string.Format(SR.TarSizeFieldNegative));
