@@ -1,0 +1,4 @@
+#include "resource.windows.h"
+#include <winuser.h>
+
+IDR_ACTCTX_MANIFEST RT_MANIFEST "common_controls.manifest"

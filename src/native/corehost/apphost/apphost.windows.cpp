@@ -4,8 +4,11 @@
 #include "apphost.windows.h"
 #include "error_codes.h"
 #include "pal.h"
+#include "resource.windows.h"
 #include "trace.h"
 #include "utils.h"
+
+#include <commctrl.h>
 #include <shellapi.h>
 
 namespace
@@ -86,7 +89,52 @@ namespace
         return msg;
     }
 
-    void show_error_dialog(const pal::char_t *executable_name, int error_code)
+    class activation_context final
+    {
+    public:
+        activation_context(const pal::char_t* source, const pal::char_t* resource_name)
+            : m_activated{false}
+            , m_context_handle{INVALID_HANDLE_VALUE}
+            , m_cookie{}
+        {
+            ACTCTXW actctx = { sizeof(ACTCTXW), 0, source };
+            if (resource_name != nullptr)
+            {
+                actctx.lpResourceName = resource_name;
+                actctx.dwFlags = ACTCTX_FLAG_RESOURCE_NAME_VALID;
+            }
+
+            m_context_handle = ::CreateActCtxW(&actctx);
+            if (m_context_handle == INVALID_HANDLE_VALUE)
+                return;
+
+            if (::ActivateActCtx(m_context_handle, &m_cookie) == FALSE)
+                return;
+
+            m_activated = true;
+        }
+
+        ~activation_context()
+        {
+            if (m_activated)
+                ::DeactivateActCtx(0, m_cookie);
+
+            if (m_context_handle != INVALID_HANDLE_VALUE)
+                ::ReleaseActCtx(m_context_handle);
+        }
+
+        bool activated()
+        {
+            return m_activated;
+        }
+
+    private:
+        bool m_activated;
+        HANDLE m_context_handle;
+        ULONG_PTR m_cookie;
+    };
+
+    void show_error_dialog(const pal::char_t* executable_path, const pal::char_t* executable_name, int error_code)
     {
         pal::string_t gui_errors_disabled;
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
@@ -177,6 +225,10 @@ namespace
         assert(is_gui_application());
         url.append(_X("&gui=true"));
 
+        // Create an activation context using a manifest that enables visual styles
+        // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
+        activation_context ctx(executable_path, MAKEINTRESOURCEW(IDR_ACTCTX_MANIFEST));
+
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - dialog message: %s"), executable_name, error_code, url.c_str(), dialogMsg.c_str());
         if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
         {
@@ -213,5 +265,5 @@ void apphost::write_buffered_errors(int error_code)
     write_errors_to_event_log(executable_path.c_str(), executable_name.c_str());
 
     if (is_gui_application())
-        show_error_dialog(executable_name.c_str(), error_code);
+        show_error_dialog(executable_path.c_str(), executable_name.c_str(), error_code);
 }
