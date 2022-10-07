@@ -188,16 +188,21 @@ namespace System.Drawing.Printing.Tests
         [ConditionalFact(nameof(CanPrintToPdf))]
         public void Print_DefaultPrintController_Success()
         {
-            string printFilePath = GetTestFilePath();
+            bool endPrintCalled = false;
+            var endPrintHandler = new PrintEventHandler((sender, e) => endPrintCalled = true);
             using (var document = new PrintDocument())
             {
                 document.PrinterSettings.PrinterName = PrintToPdfPrinterName;
-                document.PrinterSettings.PrintFileName = printFilePath;
+                document.PrinterSettings.PrintFileName = GetTestFilePath();
                 document.PrinterSettings.PrintToFile = true;
+                document.EndPrint += endPrintHandler;
                 document.Print();
+                document.EndPrint -= endPrintHandler;
             }
 
-            Assert.True(File.Exists(printFilePath));
+            // File may not have finished saving to disk when Print returns,
+            // so we check for EndPrint being called instead of file existence.
+            Assert.True(endPrintCalled);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26428")]
