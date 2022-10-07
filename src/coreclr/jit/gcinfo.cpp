@@ -252,13 +252,19 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
+    // Write-barriers are no-op for frozen objects (as values)
     if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
 #ifndef TARGET_XARCH
         const ssize_t handle = store->Data()->AsIntCon()->IconValue();
         if (!compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
         {
-            // See https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310
+            // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+            // when we publish a potentially mutable object
+            // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+            // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+            // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
             store->gtFlags |= GTF_IND_VOLATILE;
         }
 #endif

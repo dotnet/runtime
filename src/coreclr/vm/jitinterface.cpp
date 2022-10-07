@@ -11889,6 +11889,19 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     JIT_TO_EE_TRANSITION();
 
+    auto setResult = [&](void* data, int size)
+    {
+        if (size > bufferSize)
+        {
+            result = false;
+        }
+        else
+        {
+            memcpy(buffer, data, size);
+            result = true;
+        }
+    };
+
     FieldDesc* field = (FieldDesc*)fieldHnd;
     if (field->IsStatic() && !field->IsThreadStatic())
     {
@@ -11911,15 +11924,13 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                         Object* obj = OBJECTREFToObject(fieldObj);
                         if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                         {
-                            intptr_t ptr = (intptr_t)obj;
-                            memcpy(buffer, &ptr, sizeof(intptr_t));
-                            result = true;
+                            setResult(&obj, sizeof(intptr_t));
                         }
                     }
                     else
                     {
-                        memset(buffer, 0, sizeof(intptr_t));
-                        result = true;
+                        intptr_t zero = 0;
+                        setResult(&zero, sizeof(intptr_t));
                     }
                 }
                 else
@@ -11934,26 +11945,26 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                             case ELEMENT_TYPE_BOOLEAN:
                             case ELEMENT_TYPE_I1:
                             case ELEMENT_TYPE_U1:
-                                memcpy(buffer, fldAddr, sizeof(uint8_t));
+                                setResult(fldAddr, sizeof(uint8_t));
                                 break;
                             case ELEMENT_TYPE_CHAR:
                             case ELEMENT_TYPE_I2:
                             case ELEMENT_TYPE_U2:
-                                memcpy(buffer, fldAddr, sizeof(uint16_t));
+                                setResult(fldAddr, sizeof(uint16_t));
                                 break;
                             case ELEMENT_TYPE_I4:
                             case ELEMENT_TYPE_U4:
                             case ELEMENT_TYPE_R4:
-                                memcpy(buffer, fldAddr, sizeof(uint32_t));
+                                setResult(fldAddr, sizeof(uint32_t));
                                 break;
                             case ELEMENT_TYPE_I8:
                             case ELEMENT_TYPE_U8:
                             case ELEMENT_TYPE_R8:
-                                memcpy(buffer, fldAddr, sizeof(uint64_t));
+                                setResult(fldAddr, sizeof(uint64_t));
                                 break;
                             case ELEMENT_TYPE_I:
                             case ELEMENT_TYPE_U:
-                                memcpy(buffer, fldAddr, sizeof(intptr_t));
+                                setResult(fldAddr, sizeof(intptr_t));
                                 break;
                             default:
                                 result = false;
