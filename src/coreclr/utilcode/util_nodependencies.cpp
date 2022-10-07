@@ -628,29 +628,19 @@ LPCWSTRToGuid(
     }
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    // ^
-    if (szGuid[0] != W('{')) return FALSE;
-
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //  ^^^^^^^^
     if (FAILED (GetHex(&dw, szGuid+1 , 4))) return FALSE;
     pGuid->Data1 = dw;
-
-    if (szGuid[9] != W('-')) return FALSE;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //           ^^^^
     if (FAILED (GetHex(&dw, szGuid+10, 2))) return FALSE;
     pGuid->Data2 = (WORD)dw;
 
-    if (szGuid[14] != W('-')) return FALSE;
-
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                ^^^^
     if (FAILED (GetHex(&dw, szGuid+15, 2))) return FALSE;
     pGuid->Data3 = (WORD)dw;
-
-    if (szGuid[19] != W('-')) return FALSE;
 
     // Get the last two fields (which are byte arrays).
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -661,8 +651,6 @@ LPCWSTRToGuid(
         pGuid->Data4[i] = (BYTE)dw;
     }
 
-    if (szGuid[24] != W('-')) return FALSE;
-
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                          ^^^^^^^^^^^^
     for (i=0; i < 6; ++i)
@@ -670,10 +658,6 @@ LPCWSTRToGuid(
         if (FAILED(GetHex(&dw, szGuid + 25 + (i * 2), 1))) return FALSE;
         pGuid->Data4[i+2] = (BYTE)dw;
     }
-
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    //                                      ^
-    if (szGuid[37] != W('}')) return FALSE;
 
     return TRUE;
 } // LPCWSTRToGuid
