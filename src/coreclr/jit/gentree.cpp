@@ -592,6 +592,7 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 {
     assert(varTypeIsStruct(TypeGet()));
 
+    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
     switch (OperGet())
     {
         case GT_LCL_VAR:
@@ -605,11 +606,18 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
             return AsBlk()->GetLayout();
 
         case GT_MKREFANY:
-            return compiler->typGetObjLayout(compiler->impGetRefAnyClass());
+            structHnd = compiler->impGetRefAnyClass();
+            break;
+
+        case GT_FIELD:
+            compiler->eeGetFieldType(AsField()->gtFldHnd, &structHnd);
+            break;
 
         default:
             unreached();
     }
+
+    return compiler->typGetObjLayout(structHnd);
 }
 
 //-----------------------------------------------------------
