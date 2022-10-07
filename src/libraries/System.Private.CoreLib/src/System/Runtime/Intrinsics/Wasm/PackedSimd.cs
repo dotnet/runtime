@@ -118,10 +118,10 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         public static long   ExtractLane(Vector128<long>   value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
-        [Intrinsic]
         /// <summary>
         ///   i64x2.extract_lane
         /// </summary>
+        [Intrinsic]
         public static ulong  ExtractLane(Vector128<ulong>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
         /// <summary>
         ///   f32x4.extract_lane
