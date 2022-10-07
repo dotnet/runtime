@@ -11905,8 +11905,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             {
                 if (field->IsObjRef())
                 {
-                    _ASSERT(bufferSize >= sizeof(intptr_t));
-
                     OBJECTREF fieldObj = field->GetStaticOBJECTREF();
                     if (fieldObj != NULL)
                     {
@@ -11929,7 +11927,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                     void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
                     if (fldAddr != nullptr)
                     {
-                        _ASSERT((unsigned)bufferSize >= field->GetSize());
                         _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
                         memcpy(fldAddr, fldAddr, field->GetSize());
                         result = true;

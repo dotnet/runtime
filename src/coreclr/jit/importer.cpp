@@ -8179,7 +8179,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
         }
         case TYP_REF:
         {
-            ssize_t ptr;
+            void* ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
 
             if (ptr == 0)
@@ -8189,7 +8189,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
             else
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
                 INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
             }

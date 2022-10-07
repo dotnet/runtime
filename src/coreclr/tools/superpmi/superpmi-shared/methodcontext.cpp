@@ -3658,7 +3658,7 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
 
-    AssertMapExistsNoMessage(GetReadonlyStaticFieldValue);
+    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
 
     DD value = GetReadonlyStaticFieldValue->Get(key);
     DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
