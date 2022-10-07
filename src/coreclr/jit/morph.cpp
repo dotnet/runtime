@@ -16224,16 +16224,13 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
             }
             else // Here we will turn "FIELD(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
             {
+                // This type mismatch is somewhat common due to how we retype fields of struct type that
+                // recursively simplify down to a primitive. E. g. for "struct { struct { int a } A, B }",
+                // the promoted local would look like "{ int a, B }", while the IR would contain "FIELD"
+                // nodes for the outer struct "A".
+                //
                 if (field->TypeIs(TYP_STRUCT))
                 {
-#ifdef DEBUG
-                    // Promotion of struct containing struct fields where the field
-                    // is a struct with a single pointer sized scalar type field: in
-                    // this case struct promotion uses the type  of the underlying
-                    // scalar field as the type of struct field instead of recursively
-                    // promoting.
-                    structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-#endif // DEBUG
                     ClassLayout* layout = field->GetLayout(this);
                     field->SetOper(GT_OBJ);
                     field->AsBlk()->SetLayout(layout);
