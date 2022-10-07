@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Common\TestUtils.cs" Link="System\Runtime\InteropServices\Common\TestUtils.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
     <Compile Include="CodeSnippets.cs" />
     <Compile Include="Fails.cs" />
     <Compile Include="Compiles.cs" />

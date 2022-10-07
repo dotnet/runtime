@@ -452,7 +452,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 
-void mono_initialize_internals ()
+void mono_initialize_internals (void)
 {
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
@@ -465,7 +465,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_register_bundled_satellite_assemblies ()
+mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
@@ -641,7 +641,7 @@ mono_wasm_assembly_load (const char *name)
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib ()
+mono_wasm_get_corlib (void)
 {
 	MonoAssembly* result;
 	MONO_ENTER_GC_UNSAFE;
@@ -912,7 +912,7 @@ _get_uri_class(MonoException** exc)
 }
 
 static void
-_ensure_classes_resolved ()
+_ensure_classes_resolved (void)
 {
 	MONO_ENTER_GC_UNSAFE;
 	if (!datetime_class && !resolved_datetime_class) {

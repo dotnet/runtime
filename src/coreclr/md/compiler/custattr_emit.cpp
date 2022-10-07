@@ -1218,17 +1218,17 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         { // Just verify the attribute.  It still gets stored as a real custom attribute.
         // format is "{01234567-0123-0123-0123-001122334455}"
         GUID guid;
-        WCHAR wzGuid[40];
+        CHAR zGuid[40];
         int cch = qArgs[0].val.str.cbStr;
 
         // Guid should be 36 characters; need to add curlies.
         if (cch == 36)
         {
-            WszMultiByteToWideChar(CP_UTF8, 0, qArgs[0].val.str.pStr,cch, wzGuid+1,39);
-            wzGuid[0] = '{';
-            wzGuid[37] = '}';
-            wzGuid[38] = 0;
-            hr = IIDFromString(wzGuid, &guid);
+            memcpy(zGuid+1, qArgs[0].val.str.pStr, cch);
+            zGuid[0] = '{';
+            zGuid[37] = '}';
+            zGuid[38] = 0;
+            hr = LPCSTRToGuid(zGuid, &guid) ? S_OK : E_FAIL;
         }
         else
             hr = META_E_CA_INVALID_UUID;

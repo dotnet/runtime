@@ -40,11 +40,11 @@ namespace Wasm.Build.NativeRebuild.Tests
         [InlineData("Release")]
         public void BlazorNoopRebuild(string config)
         {
-            string id = $"blz_rebuild_{config}";
+            string id = $"blz_rebuild_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
 
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
@@ -67,11 +67,11 @@ namespace Wasm.Build.NativeRebuild.Tests
         [InlineData("Release")]
         public void BlazorOnlyLinkRebuild(string config)
         {
-            string id = $"blz_relink_{config}";
+            string id = $"blz_relink_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
 
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),

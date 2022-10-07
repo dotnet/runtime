@@ -383,16 +383,16 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 static MonoInst*
 emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 	int op = -1;
 	switch (id){
 	case SN_Negate:
 	case SN_op_UnaryNegation:
-		op = OP_ARM64_XNEG;
+		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
 	case SN_op_OnesComplement:
-		op = OP_ARM64_MVN;
+		op = OP_ONES_COMPLEMENT;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -567,13 +567,14 @@ extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_
 }
 
 static MonoInst*
-emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
+emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
 {
-	MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+	MonoClass *arg_class = mono_class_from_mono_type_internal (vector_type);
 	int size = mono_class_value_size (arg_class, NULL);
 	if (size != 16) 		// Works only with Vector128
 		return NULL;
 
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
 	int instc0 = -1;
 	switch (element_type) {
 	case MONO_TYPE_R4:
@@ -590,23 +591,30 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 	case MONO_TYPE_U2:
 		instc0 = INTRINS_SSE_PHADDW;
 		break;
+#if TARGET_SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		instc0 = INTRINS_SSE_PHADDD;
 		break;
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		// Ssse3 doesn't have support for HorizontalAdd on i64
-		MonoInst *lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
-		MonoInst *upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
+		MonoInst *lower = emit_simd_ins (cfg, vector_class, OP_XLOWER, arg->dreg, -1);
+		MonoInst *upper = emit_simd_ins (cfg, vector_class, OP_XUPPER, arg->dreg, -1);
 
 		// Sum lower and upper i64
-		args[0] = lower;
-		args[1] = upper;
-		fsig->param_count = 2;
-		MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
+		MonoInst *ins = emit_simd_ins (cfg, vector_class, OP_XBINOP, lower->dreg, upper->dreg);
+		ins->inst_c0 = OP_IADD;
+		ins->inst_c1 = element_type;
 
-		return extract_first_element (cfg, klass, element_type, ins->dreg);
+		return extract_first_element (cfg, vector_class, element_type, ins->dreg);
 	}
 	default: {
 		return NULL;
@@ -624,16 +632,15 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 	int num_rounds = fast_log2[num_elems];
 
 	MonoInst *tmp = emit_xzero (cfg, arg_class);
-	MonoInst *ins = NULL;
-	args[1] = tmp;
-	fsig->param_count = 2;
+	MonoInst *ins = arg;
 	// HorizontalAdds over vector log2(num_elems) times
 	for (int i = 0; i < num_rounds; ++i) {
-		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, element_type, fsig, args);
-		args[0] = ins;
+		ins = emit_simd_ins (cfg, vector_class, OP_XOP_X_X_X, ins->dreg, tmp->dreg);
+		ins->inst_c0 = instc0;
+		ins->inst_c1 = element_type;
 	}
 
-	return extract_first_element (cfg, klass, element_type, ins->dreg);
+	return extract_first_element (cfg, vector_class, element_type, ins->dreg);
 }
 #endif
 
@@ -1274,17 +1281,62 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
 		break;
 	}
-	case SN_CreateScalar:
+	case SN_CreateScalar: {
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
-	case SN_CreateScalarUnsafe:
+	}
+	case SN_CreateScalarUnsafe: {
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+	}
 	case SN_Dot: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-
+#ifdef TARGET_ARM64
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#elif defined(TARGET_AMD64)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+		int instc =-1;
+		if (type_enum_is_float (arg0_type)) {
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41)) {
+				int mask_reg = alloc_ireg (cfg);
+				switch (arg0_type) {
+				case MONO_TYPE_R4: 
+					instc = OP_SSE41_DPPS; 
+					MONO_EMIT_NEW_ICONST (cfg, mask_reg, 0xf1);		// 0xf1 ... 0b11110001
+					break;
+				case MONO_TYPE_R8: 
+					instc = OP_SSE41_DPPD; 
+					MONO_EMIT_NEW_ICONST (cfg, mask_reg, 0x31);		// 0x31 ... 0b00110001
+					break;	
+				default:
+					return NULL;
+				}	
+				MonoInst *dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+				dot->sreg3 = mask_reg;
+
+				return extract_first_element (cfg, klass, arg0_type, dot->dreg);
+			} else {
+				instc = OP_FMUL;
+			}	
+		} else {
+			if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)
+				return NULL; 	// We don't support sum vector for byte, sbyte types yet
+
+			instc = OP_IMUL;
+		}
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc, arg0_type, fsig, args);
 
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
 #else
@@ -1510,10 +1562,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Sum: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-#ifdef TARGET_ARM64
-		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);		
-#elif defined(TARGET_AMD64)
-		return emit_sum_vector(cfg, klass, fsig, arg0_type, args);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
 #else
 		return NULL;
 #endif
@@ -2628,11 +2678,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyWideningUpper, OP_ARM64_SMULL2, None, OP_ARM64_UMULL2},
 	{SN_MultiplyWideningUpperAndAdd, OP_ARM64_SMLAL2, None, OP_ARM64_UMLAL2},
 	{SN_MultiplyWideningUpperAndSubtract, OP_ARM64_SMLSL2, None, OP_ARM64_UMLSL2},
-	{SN_Negate, OP_ARM64_XNEG},
+	{SN_Negate, OP_NEGATION},
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
-	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
-	{SN_Not, OP_ARM64_MVN},
+	{SN_NegateScalar, OP_NEGATION_SCALAR},
+	{SN_Not, OP_ONES_COMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ORNOT},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
@@ -3671,10 +3721,18 @@ emit_x86_intrinsics (
 			case MONO_TYPE_U2:
 				op = is_imm ? INTRINS_SSE_PSRLI_W : INTRINS_SSE_PSRL_W;
 				break;
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 				op = is_imm ? INTRINS_SSE_PSRLI_D : INTRINS_SSE_PSRL_D;
 				break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				op = is_imm ? INTRINS_SSE_PSRLI_Q : INTRINS_SSE_PSRL_Q;
@@ -3707,10 +3765,18 @@ emit_x86_intrinsics (
 			case MONO_TYPE_U2:
 				op = is_imm ? INTRINS_SSE_PSLLI_W : INTRINS_SSE_PSLL_W;
 				break;
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 				op = is_imm ? INTRINS_SSE_PSLLI_D : INTRINS_SSE_PSLL_D;
 				break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				op = is_imm ? INTRINS_SSE_PSLLI_Q : INTRINS_SSE_PSLL_Q;
@@ -3754,8 +3820,16 @@ emit_x86_intrinsics (
 		case SN_LoadScalarVector128: {
 			int op = 0;
 			switch (arg0_type) {
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4: op = OP_SSE2_MOVD; break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8: op = OP_SSE2_MOVQ; break;
 			case MONO_TYPE_R8: op = OP_SSE2_MOVUPD; break;
@@ -3845,17 +3919,19 @@ emit_x86_intrinsics (
 			int op = 0;
 			switch (arg0_type) {
 			case MONO_TYPE_U1: op = OP_XEXTRACT_I1; break;
-			case MONO_TYPE_U4: case MONO_TYPE_I4: op = OP_XEXTRACT_I4; break;
-			case MONO_TYPE_U8: case MONO_TYPE_I8: op = OP_XEXTRACT_I8; break;
-			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
+#if TARGET_SIZEOF_VOID_P == 4
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-				op = OP_XEXTRACT_I8;
-#else
-				op = OP_XEXTRACT_I4;
 #endif
-				break;
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4: op = OP_XEXTRACT_I4; break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8: op = OP_XEXTRACT_I8; break;
+			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
 			default: g_assert_not_reached(); break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);

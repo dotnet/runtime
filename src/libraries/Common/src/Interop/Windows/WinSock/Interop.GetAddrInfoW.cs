@@ -26,7 +26,7 @@ internal static partial class Interop
             internal AddressFamily ai_family;
             internal int ai_socktype;
             internal int ai_protocol;
-            internal IntPtr ai_addrlen;
+            internal nuint ai_addrlen;
             internal sbyte* ai_canonname;   // Ptr to the canonical name - check for NULL
             internal byte* ai_addr;         // Ptr to the sockaddr structure
             internal AddressInfo* ai_next;  // Ptr to the next AddressInfo structure

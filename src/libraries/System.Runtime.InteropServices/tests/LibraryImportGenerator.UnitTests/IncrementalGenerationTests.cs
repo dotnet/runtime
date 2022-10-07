@@ -8,10 +8,12 @@ using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.Interop.UnitTests;
 using static Microsoft.Interop.LibraryImportGenerator;
 
 namespace LibraryImportGenerator.UnitTests
@@ -227,6 +229,7 @@ namespace LibraryImportGenerator.UnitTests
             Assert.False(reference.IsAlive);
             GC.KeepAlive(driver);
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static (WeakReference reference, GeneratorDriver driver) RunTwoGeneratorOnTwoIterativeCompilationsAndReturnFirst(Compilation startingCompilation)
             {
                 Compilation comp2 = startingCompilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct NewType {}", new CSharpParseOptions(LanguageVersion.Preview)));

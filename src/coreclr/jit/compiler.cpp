@@ -6342,7 +6342,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             break;
     }
 
-    info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
+    info.compRetType = JITtype2varType(methodInfo->args.retType);
+    if (info.compRetType == TYP_STRUCT)
+    {
+        info.compRetType = impNormStructType(methodInfo->args.retTypeClass);
+    }
 
     info.compUnmanagedCallCountWithGCTransition = 0;
     info.compLvFrameListRoot                    = BAD_VAR_NUM;
@@ -7797,34 +7801,34 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 
 #if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
 const char* PhaseNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) string_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"
 };
 
 const char* PhaseEnums[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) #enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) #enum_nm,
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseShortNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) W(short_nm),
+const LPCWSTR PhaseEnumsW[] = {
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
 #include "compphases.h"
 };
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
 bool PhaseHasChildren[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) hasChildren,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) hasChildren,
 #include "compphases.h"
 };
 
 int PhaseParent[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) parent,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) parent,
 #include "compphases.h"
 };
 
 bool PhaseReportsIRSize[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) measureIR,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) measureIR,
 #include "compphases.h"
 };
 
@@ -9413,6 +9417,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STR_HDL:
 
                         chars += printf("[ICON_STR_HDL]");
+                        break;
+
+                    case GTF_ICON_OBJ_HDL:
+
+                        chars += printf("[ICON_OBJ_HDL]");
                         break;
 
                     case GTF_ICON_CONST_PTR:

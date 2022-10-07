@@ -81,6 +81,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_STATUS_STREAM_LIMIT_REACHED ERROR_QUIC_STREAM_LIMIT_REACHED")]
         public const int QUIC_STATUS_STREAM_LIMIT_REACHED = unchecked((int)(0x80410008));
 
+        [NativeTypeName("#define QUIC_STATUS_ALPN_IN_USE ERROR_QUIC_ALPN_IN_USE")]
+        public const int QUIC_STATUS_ALPN_IN_USE = unchecked((int)(0x80410009L));
+
         [NativeTypeName("#define QUIC_STATUS_CLOSE_NOTIFY QUIC_STATUS_TLS_ALERT(0)")]
         public const int QUIC_STATUS_CLOSE_NOTIFY = unchecked(((int)(0x80410100)) | (0xff & 0));
 

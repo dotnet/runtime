@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   platform: ''
   crossBuild: false
-  crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
   shouldContinueOnError: false
@@ -74,7 +73,6 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
     variables:

@@ -29,8 +29,6 @@
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplType.cs" />
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
