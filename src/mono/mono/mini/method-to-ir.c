@@ -5681,6 +5681,7 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 		return TRUE;
 
+	mono_class_setup_vtable (klass);
 	if (m_class_get_vtable (klass) == NULL)
 		return FALSE;
 
@@ -5693,7 +5694,7 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 		}
 	}
 
-	if (method->slot != -1 && mono_class_is_interface (method->klass))  {
+	if (method->slot != -1 && mono_class_is_interface (method->klass)) {
 		gboolean variance_used = FALSE;
 		int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
 		if (iface_offset <= 0)
