@@ -4647,7 +4647,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Don't optimise the block if it is inside a loop
     // When inside a loop, branches are quicker than selects.
     // Detect via the block weight as that will be high when inside a loop.
-    if (block->getBBWeight(this) > BB_UNITY_WEIGHT)
+    if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 0))
     {
         return false;
     }
@@ -4776,7 +4776,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Using SELECT nodes means that full assignment is always evaluated.
     // Put a limit on the original source and destination of the assignment.
     int costing = asgNode->gtGetOp1()->GetCostEx() + asgNode->gtGetOp2()->GetCostEx() - 2;
-    if (costing > 0 && !compStressCompile(STRESS_IF_CONVERSION, 0))
+    if (costing > 0 && !compStressCompile(STRESS_IF_CONVERSION_COST, 0))
     {
         JITDUMP("Aborting If Conversion: optimisation too expensive (+%d)\n", costing);
         return false;

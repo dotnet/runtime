@@ -9525,7 +9525,8 @@ public:
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(FLATFP)                                                                     \
         STRESS_MODE(GENERIC_CHECK)                                                              \
-        STRESS_MODE(IF_CONVERSION)                                                              \
+        STRESS_MODE(IF_CONVERSION_COST)                                                         \
+        STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
