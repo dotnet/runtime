@@ -11,7 +11,6 @@ namespace System.Reflection
     /// </summary>
     public abstract class DispatchProxy
     {
-        private static readonly Type s_dispatchProxyType = typeof(DispatchProxy);
         protected DispatchProxy()
         {
         }
@@ -58,7 +57,7 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(interfaceType);
             ArgumentNullException.ThrowIfNull(proxyType);
 
-            if (!proxyType.IsAssignableTo(s_dispatchProxyType))
+            if (!proxyType.IsAssignableTo(typeof(DispatchProxy)))
             {
                 throw new ArgumentException(SR.Format(SR.ProxyType_Must_Be_Derived_From_DispatchProxy, proxyType.Name), nameof(proxyType));
             }

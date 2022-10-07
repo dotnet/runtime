@@ -198,7 +198,7 @@ namespace DispatchProxyTests
         [Fact]
         public static void Test_Type_LoadedBy_MetadataLoadContext_Throws_ArgumentException()
         {
-            if (Assembly.GetExecutingAssembly().GetName().Name == "")
+            if (Assembly.GetExecutingAssembly().Location == "")
             {
                 return;
             }
