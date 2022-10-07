@@ -135,7 +135,7 @@ namespace DispatchProxyTests
         [InlineData(true)]
         public static void Create_Using_Concrete_Proxy_Type_Throws_ArgumentException(bool useGenericCreate)
         {
-            AssertExtensions.Throws<ArgumentException>("T", () => CreateHelper<TestType_ConcreteClass, TestDispatchProxy>(useGenericCreate));
+            AssertExtensions.Throws<ArgumentException>(useGenericCreate ? "T" : "interfaceType", () => CreateHelper<TestType_ConcreteClass, TestDispatchProxy>(useGenericCreate));
         }
 
         [Theory]
@@ -143,7 +143,7 @@ namespace DispatchProxyTests
         [InlineData(true)]
         public static void Create_Using_Sealed_BaseType_Throws_ArgumentException(bool useGenericCreate)
         {
-            AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, Sealed_TestDispatchProxy>(useGenericCreate));
+            AssertExtensions.Throws<ArgumentException>(useGenericCreate ? "TProxy" : "proxyType", () => CreateHelper<TestType_IHelloService, Sealed_TestDispatchProxy>(useGenericCreate));
         }
 
         [Theory]
@@ -151,7 +151,7 @@ namespace DispatchProxyTests
         [InlineData(true)]
         public static void Create_Using_Abstract_BaseType_Throws_ArgumentException(bool useGenericCreate)
         {
-            AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, Abstract_TestDispatchProxy>(useGenericCreate));
+            AssertExtensions.Throws<ArgumentException>(useGenericCreate ? "TProxy" : "proxyType", () => CreateHelper<TestType_IHelloService, Abstract_TestDispatchProxy>(useGenericCreate));
         }
 
         [Theory]
@@ -159,7 +159,7 @@ namespace DispatchProxyTests
         [InlineData(true)]
         public static void Create_Using_Abstract_Generic_BaseType_Throws_ArgumentException(bool useGenericCreate)
         {
-            AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, Abstract_GenericDispatchProxy<TestDispatchProxy>>(useGenericCreate));
+            AssertExtensions.Throws<ArgumentException>(useGenericCreate ? "TProxy" : "proxyType", () => CreateHelper<TestType_IHelloService, Abstract_GenericDispatchProxy<TestDispatchProxy>>(useGenericCreate));
         }
 
         [Fact]
@@ -173,7 +173,7 @@ namespace DispatchProxyTests
         [InlineData(true)]
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException(bool useGenericCreate)
         {
-            AssertExtensions.Throws<ArgumentException>("TProxy", () => CreateHelper<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>(useGenericCreate));
+            AssertExtensions.Throws<ArgumentException>(useGenericCreate ? "TProxy" : "proxyType", () => CreateHelper<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>(useGenericCreate));
         }
 
         [Fact]
@@ -191,14 +191,19 @@ namespace DispatchProxyTests
         [Fact]
         public static void Non_Generic_Create_With_ProxyType_That_Is_Not_Assignable_To_DispatchProxy_Throws_ArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(typeof(TestType_IHelloService), typeof(object)));
+            AssertExtensions.Throws<ArgumentException>("proxyType", () => DispatchProxy.Create(typeof(TestType_IHelloService), typeof(object)));
         }
 
 
         [Fact]
         public static void Test_Type_LoadedBy_MetadataLoadContext_Throws_ArgumentException()
         {
-            string assemblyName = $"{typeof(DispatchProxyTests).Assembly.GetName().Name}.dll";
+            if (Assembly.GetExecutingAssembly().GetName().Name == "")
+            {
+                return;
+            }
+
+            string assemblyName = $"{Assembly.GetExecutingAssembly().GetName().Name}.dll";
             var resolver = new PathAssemblyResolver(new string[] { assemblyName, typeof(object).Assembly.Location });
             using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().ToString());
 
@@ -210,6 +215,8 @@ namespace DispatchProxyTests
             Assert.NotNull(interfaceType);
             Assert.NotNull(proxyType);
 
+            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(typeof(TestType_IHelloService), proxyType));
+            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy)));
             AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(interfaceType, proxyType));
         }
 

@@ -72,7 +72,7 @@
   <data name="PlatformNotSupported_ReflectionDispatchProxy" xml:space="preserve">
     <value>This operation is not supported on .NET Standard as Reflection.Emit is not available.</value>
   </data>
-  <data name="ProxyType_Must_Be_Assignable_To_DispatchProxy" xml:space="preserve">
+  <data name="ProxyType_Must_Be_Derived_From_DispatchProxy" xml:space="preserve">
     <value>The provided proxy type '{0}' must be derived from 'DispatchProxy'.</value>
   </data>
 </root>
