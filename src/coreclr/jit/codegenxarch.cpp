@@ -5282,81 +5282,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            instruction ins  = INS_invalid;
-            emitAttr    attr = emitTypeSize(tree);
-
-            if (data->isContained())
-            {
-                if (data->OperIs(GT_BSWAP, GT_BSWAP16))
-                {
-                    ins = INS_movbe;
-                }
-#if defined(FEATURE_HW_INTRINSICS)
-                else if (data->OperIsHWIntrinsic())
-                {
-                    GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
-                    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-                    var_types           baseType    = hwintrinsic->GetSimdBaseType();
-
-                    switch (intrinsicId)
-                    {
-                        case NI_SSE2_ConvertToInt32:
-                        case NI_SSE2_ConvertToUInt32:
-                        case NI_SSE2_X64_ConvertToInt64:
-                        case NI_SSE2_X64_ConvertToUInt64:
-                        case NI_AVX2_ConvertToInt32:
-                        case NI_AVX2_ConvertToUInt32:
-                        {
-                            // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                            attr = emitActualTypeSize(baseType);
-                            break;
-                        }
-
-                        case NI_SSE2_Extract:
-                        case NI_SSE41_Extract:
-                        case NI_SSE41_X64_Extract:
-                        case NI_AVX_ExtractVector128:
-                        case NI_AVX2_ExtractVector128:
-                        {
-                            // These intrinsics are "ins reg/mem, xmm, imm8"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                            attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
-
-                            if (intrinsicId == NI_SSE2_Extract)
-                            {
-                                // The encoding that supports containment is SSE4.1 only
-                                ins = INS_pextrw_sse41;
-                            }
-
-                            // The hardware intrinsics take unsigned bytes between [0, 255].
-                            // However, the emitter expects "fits in byte" to always be signed
-                            // and therefore we need [128, 255] to be sign extended up to fill
-                            // the entire constant value.
-
-                            GenTreeIntCon* op2  = hwintrinsic->Op(2)->AsIntCon();
-                            ssize_t        ival = op2->IconValue();
-
-                            assert((ival >= 0) && (ival <= 255));
-                            op2->gtIconVal = static_cast<int8_t>(ival);
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
-                        }
-                    }
-                }
-#endif // FEATURE_HW_INTRINSICS
-            }
-
-            if (ins == INS_invalid)
-            {
-                ins = ins_Store(data->TypeGet());
-            }
-
-            GetEmitter()->emitInsStoreInd(ins, attr, tree);
+            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained()
+                                              ? INS_movbe
+                                              : ins_Store(data->TypeGet()),
+                                          emitTypeSize(tree), tree);
         }
     }
 }

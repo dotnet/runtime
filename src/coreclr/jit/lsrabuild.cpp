@@ -3130,23 +3130,13 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
-        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-
-        if (hwintrinsic->OperIsMemoryLoad())
+        if (node->AsHWIntrinsic()->OperIsMemoryLoad())
         {
-            return BuildAddrUses(hwintrinsic->Op(1));
+            return BuildAddrUses(node->AsHWIntrinsic()->Op(1));
         }
 
-        size_t numArgs = hwintrinsic->GetOperandCount();
-
-        if (numArgs != 1)
-        {
-            assert(numArgs == 2);
-            assert(hwintrinsic->Op(2)->isContained());
-            assert(hwintrinsic->Op(2)->IsCnsIntOrI());
-        }
-
-        BuildUse(hwintrinsic->Op(1), candidates);
+        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
+        BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
