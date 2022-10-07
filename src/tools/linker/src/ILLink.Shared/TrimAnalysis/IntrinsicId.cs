@@ -10,14 +10,42 @@ namespace ILLink.Shared.TrimAnalysis
 	enum IntrinsicId
 	{
 		None = 0,
+		/// <summary>
+		/// <see cref="System.Reflection.IntrospectionExtensions.GetTypeInfo(System.Type)"/>
+		/// </summary>
 		IntrospectionExtensions_GetTypeInfo,
+		/// <summary>
+		/// <see cref="System.Type.GetTypeFromHandle(System.RuntimeTypeHandle)"/>
+		/// </summary>
 		Type_GetTypeFromHandle,
+		/// <summary>
+		/// <see cref="System.Type.TypeHandle"/>
+		/// </summary>
 		Type_get_TypeHandle,
+		/// <summary>
+		/// <see cref="System.Object.GetType()"/>
+		/// </summary>
 		Object_GetType,
+		/// <summary>
+		/// <see cref="System.Reflection.TypeDelegator()"/>
+		/// </summary>
 		TypeDelegator_Ctor,
+		/// <summary>
+		/// <see cref="System.Array.Empty{T}"/>
+		/// </summary>
 		Array_Empty,
+		/// <summary>
+		/// <see cref="System.Reflection.TypeInfo.AsType()"/>
+		/// </summary>
 		TypeInfo_AsType,
+		/// <summary>
+		/// <see cref="System.Reflection.MethodBase.GetMethodFromHandle(System.RuntimeMethodHandle)"/> or 
+		/// <see cref="System.Reflection.MethodBase.GetMethodFromHandle(System.RuntimeMethodHandle, System.RuntimeTypeHandle)"/>
+		/// </summary>
 		MethodBase_GetMethodFromHandle,
+		/// <summary>
+		/// <see cref="System.Reflection.MethodBase.MethodHandle"/>
+		/// </summary>
 		MethodBase_get_MethodHandle,
 
 		// Anything above this marker will require the method to be run through
@@ -26,19 +54,19 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_MakeGenericType,
 		Type_GetType,
 		Type_GetConstructor,
-		Type_GetConstructors,
+		Type_GetConstructors__BindingFlags,
 		Type_GetMethod,
-		Type_GetMethods,
+		Type_GetMethods__BindingFlags,
 		Type_GetField,
-		Type_GetFields,
+		Type_GetFields__BindingFlags,
 		Type_GetProperty,
-		Type_GetProperties,
+		Type_GetProperties__BindingFlags,
 		Type_GetEvent,
-		Type_GetEvents,
+		Type_GetEvents__BindingFlags,
 		Type_GetNestedType,
-		Type_GetNestedTypes,
+		Type_GetNestedTypes__BindingFlags,
 		Type_GetMember,
-		Type_GetMembers,
+		Type_GetMembers__BindingFlags,
 		Type_GetInterface,
 		Type_get_AssemblyQualifiedName,
 		Type_get_UnderlyingSystemType,
@@ -53,8 +81,8 @@ namespace ILLink.Shared.TrimAnalysis
 		Marshal_PtrToStructure,
 		Marshal_DestroyStructure,
 		Marshal_GetDelegateForFunctionPointer,
-		Activator_CreateInstance_Type,
-		Activator_CreateInstance_AssemblyName_TypeName,
+		Activator_CreateInstance__Type,
+		Activator_CreateInstance__AssemblyName_TypeName,
 		Activator_CreateInstanceFrom,
 		AppDomain_CreateInstance,
 		AppDomain_CreateInstanceAndUnwrap,

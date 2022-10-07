@@ -252,8 +252,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);
+			MethodProxy method = new (calledMethod);
+			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
 
-			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue, out var intrinsicId)) {
+			if (!handleCallAction.Invoke (method, instance, arguments, intrinsicId, out MultiValue methodReturnValue)) {
 				switch (intrinsicId) {
 				case IntrinsicId.Array_Empty:
 					methodReturnValue = ArrayValue.Create (0);

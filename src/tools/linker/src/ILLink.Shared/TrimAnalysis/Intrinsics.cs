@@ -146,7 +146,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetConstructors,
+					=> IntrinsicId.Type_GetConstructors__BindingFlags,
 
 				// System.Type.GetMethod (string)
 				// System.Type.GetMethod (string, BindingFlags)
@@ -169,7 +169,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetMethods,
+					=> IntrinsicId.Type_GetMethods__BindingFlags,
 
 				// System.Type.GetField (string)
 				// System.Type.GetField (string, BindingFlags)
@@ -183,7 +183,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetFields,
+					=> IntrinsicId.Type_GetFields__BindingFlags,
 
 				// System.Type.GetEvent (string)
 				// System.Type.GetEvent (string, BindingFlags)
@@ -197,7 +197,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetEvents,
+					=> IntrinsicId.Type_GetEvents__BindingFlags,
 
 				// System.Type.GetNestedType (string)
 				// System.Type.GetNestedType (string, BindingFlags)
@@ -211,7 +211,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetNestedTypes,
+					=> IntrinsicId.Type_GetNestedTypes__BindingFlags,
 
 				// System.Type.GetMember (String)
 				// System.Type.GetMember (String, BindingFlags)
@@ -229,7 +229,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetMembers,
+					=> IntrinsicId.Type_GetMembers__BindingFlags,
 
 				// System.Type.GetInterface (string)
 				// System.Type.GetInterface (string, bool)
@@ -275,7 +275,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags")
 					&& calledMethod.HasParametersCount (1)
 					&& !calledMethod.IsStatic ()
-					=> IntrinsicId.Type_GetProperties,
+					=> IntrinsicId.Type_GetProperties__BindingFlags,
 
 				// static System.Object.GetType ()
 				"GetType" when calledMethod.IsDeclaredOnType ("System.Object")
@@ -297,7 +297,7 @@ namespace ILLink.Shared.TrimAnalysis
 				"CreateInstance" when calledMethod.IsDeclaredOnType ("System.Activator")
 					&& !calledMethod.HasGenericParameters ()
 					&& calledMethod.HasParameterOfType (0, "System.Type")
-					=> IntrinsicId.Activator_CreateInstance_Type,
+					=> IntrinsicId.Activator_CreateInstance__Type,
 
 				// static System.Activator.CreateInstance (string assemblyName, string typeName)
 				// static System.Activator.CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
@@ -306,7 +306,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& !calledMethod.HasGenericParameters ()
 					&& calledMethod.HasParameterOfType (0, "System.String")
 					&& calledMethod.HasParameterOfType (1, "System.String")
-					=> IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName,
+					=> IntrinsicId.Activator_CreateInstance__AssemblyName_TypeName,
 
 				// static System.Activator.CreateInstanceFrom (string assemblyFile, string typeName)
 				// static System.Activator.CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
