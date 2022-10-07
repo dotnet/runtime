@@ -45,30 +45,36 @@ namespace System.Net
 
         [UnmanagedCallersOnly]
         private static unsafe bool TrustManagerCallback(
-            IntPtr validatorHandle,
+            IntPtr proxyHandle,
             int certificatesCount,
             int* certificateLengths,
             byte** rawCertificates)
         {
-            TrustManagerProxy validator = FromHandle(validatorHandle);
+            TrustManagerProxy proxy = FromHandle(proxyHandle);
             X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
-            bool isValid = validator.Validate(certificates);
-
-            // foreach (var certificate in certificates)
-            //     certificate.Dispose();
-
-            return isValid;
+            try
+            {
+                return proxy.Validate(certificates);
+            }
+            catch
+            {
+                // TODO log the exception somehow
+                return false;
+            }
+            finally
+            {
+                foreach (var certificate in certificates)
+                    certificate.Dispose();
+            }
         }
 
         private bool Validate(X509Certificate2[] certificates)
         {
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
-            // var certificateCollection = new X509Certificate2Collection(certificates);
-            // var trust = SslCertificateTrust.CreateForX509Collection(certificateCollection);
-            SslCertificateTrust? trust = null;
+            // todo init the chain with the certificates
 
-            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust, chain: null, remoteCertRequired: true, out _, out _);
+            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain: null, remoteCertRequired: true, out _, out _);
         }
 
         private static TrustManagerProxy FromHandle(IntPtr handle)
