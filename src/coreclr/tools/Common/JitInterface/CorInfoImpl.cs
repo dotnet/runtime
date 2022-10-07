@@ -539,7 +539,7 @@ namespace Internal.JitInterface
                 }
             }
 #else
-            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+            var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
@@ -683,24 +683,24 @@ namespace Internal.JitInterface
             return handle;
         }
 
-        private object HandleToObject(IntPtr handle)
+        private object HandleToObject(void* handle)
         {
 #if DEBUG
-            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+            handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
 
-        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((IntPtr)method);
+        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((void*)method);
         private CORINFO_METHOD_STRUCT_* ObjectToHandle(MethodDesc method) => (CORINFO_METHOD_STRUCT_*)ObjectToHandle((object)method);
-        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((IntPtr)type);
+        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((void*)type);
         private CORINFO_CLASS_STRUCT_* ObjectToHandle(TypeDesc type) => (CORINFO_CLASS_STRUCT_*)ObjectToHandle((object)type);
-        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((IntPtr)field);
+        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((void*)field);
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) => (CORINFO_FIELD_STRUCT_*)ObjectToHandle((object)field);
-        private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((IntPtr)module);
+        private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((void*)module);
         private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodILScope methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
-        private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((IntPtr)method);
+        private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((void*)method);
         private MethodSignatureInfo* ObjectToHandle(MethodSignature method) => (MethodSignatureInfo*)ObjectToHandle((object)method);
 
         private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
@@ -915,12 +915,12 @@ namespace Internal.JitInterface
 
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
-            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(method)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
+            return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(method)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
         }
 
         private CORINFO_CONTEXT_STRUCT* contextFromType(TypeDesc type)
         {
-            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(type)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
+            return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(type)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
         }
 
         private static CORINFO_CONTEXT_STRUCT* contextFromMethodBeingCompiled()
@@ -935,13 +935,13 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled;
             }
 
-            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            if (((nuint)contextStruct & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return null;
             }
             else
             {
-                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
         }
 
@@ -952,13 +952,13 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled.OwningType;
             }
 
-            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            if (((nuint)contextStruct & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
-                return HandleToObject((CORINFO_CLASS_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+                return HandleToObject((CORINFO_CLASS_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
             else
             {
-                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
             }
         }
 
@@ -969,7 +969,7 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
             }
 
-            return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+            return (TypeSystemEntity)HandleToObject((void*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
         private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
@@ -1608,7 +1608,7 @@ namespace Internal.JitInterface
             var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
-                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
+                MethodBeingCompiled : HandleToObject((void*)pResolvedToken.tokenContext);
 
             object result = GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, pResolvedToken.token);
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
@@ -1662,7 +1662,7 @@ namespace Internal.JitInterface
             var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
-                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
+                MethodBeingCompiled : HandleToObject((void*)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1831,19 +1831,25 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private int objectToString(void* handle, byte* buffer, int bufferSize)
-#pragma warning restore CA1822 // Mark members as static
+        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
-            // NOTE: this function is used for pinned/frozen handles
-            // it doesn't need to null-terminate the string
+            int bufferSize32 = checked((int)bufferSize);
+            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
 
-            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
-            var bufferSpan = new Span<byte>(buffer, bufferSize);
-            Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
-            return written;
+            int written = 0;
+            if (bufferSize > 0)
+            {
+                Utf8.FromUtf16(objStr, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
+                // Always null-terminate
+                buffer[written] = 0;
+            }
+            if (pRequiredBufferSize != null)
+            {
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr) + 1;
+            }
+            return (nuint)written;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -2931,7 +2937,7 @@ namespace Internal.JitInterface
         private CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
         {
             int index = (int)args;
-            object sigObj = HandleToObject((IntPtr)sig->methodSignature);
+            object sigObj = HandleToObject((void*)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
 
@@ -2956,7 +2962,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
-            object sigObj = HandleToObject((IntPtr)sig->methodSignature);
+            object sigObj = HandleToObject((void*)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
             if (methodSig != null)
@@ -3655,7 +3661,7 @@ namespace Internal.JitInterface
 
                 default:
                     // Reloc points to something outside of the generated blocks
-                    var targetObject = HandleToObject((IntPtr)target);
+                    var targetObject = HandleToObject(target);
 
 #if READYTORUN
                     if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
@@ -3887,7 +3893,7 @@ namespace Internal.JitInterface
                     {
                         foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
                         {
-                            IntPtr ptrVal;
+                            nint ptrVal;
 
                             if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
                             {

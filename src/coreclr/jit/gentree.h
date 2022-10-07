@@ -472,11 +472,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
-                                      // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
-                                      // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
-                                      // on their parents in post-order morph.
-                                      // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -916,10 +911,10 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
-    // Node is contained, but it isn't contained due to being a containable int.
-    bool isContainedAndNotIntOrIImmed() const
+    // Node and its child in isolation form a contained compare chain.
+    bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return isContained() && !isContainedIntOrIImmed();
+        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
     }
 
     bool isContainedFltOrDblImmed() const
@@ -4119,6 +4114,12 @@ public:
     // Only needed for X86 and arm32.
     void InitializeLongReturnType();
 
+    // Initialize the Return Type Descriptor.
+    void InitializeReturnType(Compiler*                comp,
+                              var_types                type,
+                              CORINFO_CLASS_HANDLE     retClsHnd,
+                              CorInfoCallConvExtension callConv);
+
     // Reset type descriptor to defaults
     void Reset()
     {
@@ -4149,6 +4150,7 @@ public:
     // Return Value:
     //   Count of return registers.
     //   Returns 0 if the return type is not returned in registers.
+    //
     unsigned GetReturnRegCount() const
     {
         assert(m_inited);
@@ -5711,6 +5713,16 @@ struct GenTreeQmark : public GenTreeOp
         // These must follow a specific form.
         assert((cond != nullptr) && cond->TypeIs(TYP_INT));
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
+    }
+
+    GenTree* ThenNode()
+    {
+        return gtOp2->AsColon()->ThenNode();
+    }
+
+    GenTree* ElseNode()
+    {
+        return gtOp2->AsColon()->ElseNode();
     }
 
 #if DEBUGGABLE_GENTREE

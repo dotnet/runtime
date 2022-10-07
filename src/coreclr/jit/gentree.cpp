@@ -11079,7 +11079,7 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                eePrintFrozenObjectDescription(" ", tree->AsIntCon()->gtIconVal);
+                eePrintObjectDescriptionDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {
@@ -17054,12 +17054,13 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (node->GetHWIntrinsicId())
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             // These intrinsics are meant to set the same value to every element.
@@ -17677,12 +17678,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     GenTree* op1 = base->AsOp()->gtOp1;
                     GenTree* op2 = base->AsOp()->gtOp2;
 
-                    const bool op1IsStaticFieldBase = gtIsStaticGCBaseHelperCall(op1);
-
-                    if (op1IsStaticFieldBase && (op2->OperGet() == GT_CNS_INT))
+                    if (op2->IsCnsIntOrI())
                     {
                         FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-
                         if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
@@ -17952,55 +17950,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
     }
 
     return fieldClass;
-}
-
-//------------------------------------------------------------------------
-// gtIsGCStaticBaseHelperCall: true if tree is fetching the gc static base
-//    for a subsequent static field access
-//
-// Arguments:
-//    tree - tree to consider
-//
-// Return Value:
-//    true if the tree is a suitable helper call
-//
-// Notes:
-//    Excludes R2R helpers as they specify the target field in a way
-//    that is opaque to the jit.
-
-bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
-{
-    if (tree->OperGet() != GT_CALL)
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-
-    if (call->gtCallType != CT_HELPER)
-    {
-        return false;
-    }
-
-    const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
-
-    switch (helper)
-    {
-        // We are looking for a REF type so only need to check for the GC base helpers
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            return true;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -18637,9 +18586,24 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX_LoadVector256:
+        {
+            // These loads are contained as part of a HWIntrinsic operation
+            return true;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_Extract:
+        case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         case NI_AVX_ExtractVector128:
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         {
+            // These HWIntrinsic operations are contained as part of a store
             return true;
         }
 
@@ -22875,8 +22839,6 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 {
     assert(!m_inited);
 
-#if FEATURE_MULTIREG_RET
-
     assert(retClsHnd != NO_CLASS_HANDLE);
     unsigned structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
@@ -22902,8 +22864,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             // We should have an hfa struct type
             assert(varTypeIsValidHfaType(hfaType));
 
-            // Note that the retail build issues a warning about a potential division by zero without this Max function
-            unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
+            // Note that the retail build issues a warning about a potential divsion by zero without this "max",
+            unsigned elemSize = max(1, genTypeSize(hfaType));
 
             // The size of this struct should be evenly divisible by elemSize
             assert((structSize % elemSize) == 0);
@@ -23006,24 +22968,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             //
             NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
 
-#endif // UNIX_AMD64_ABI
-
+#endif             // UNIX_AMD64_ABI
             break; // for case SPK_ByValue
         }
 
         case Compiler::SPK_ByReference:
-
-            // We are returning using the return buffer argument
-            // There are no return registers
+            // We are returning using the return buffer argument, there are no return registers.
             break;
 
         default:
-
             unreached(); // By the contract of getReturnTypeForStruct we should never get here.
 
     } // end of switch (howToReturnStruct)
-
-#endif //  FEATURE_MULTIREG_RET
 
 #ifdef DEBUG
     m_inited = true;
@@ -23053,6 +23009,40 @@ void ReturnTypeDesc::InitializeLongReturnType()
 #ifdef DEBUG
     m_inited = true;
 #endif
+}
+
+//---------------------------------------------------------------------------------------
+// InitializeReturnType: Initialize the descriptor for a method that returns any type.
+//
+// Arguments:
+//    comp      - The Compiler instance
+//    type      - The return type as specififed by the signature
+//    retClsHnd - Handle for struct return types
+//    callConv  - Method's calling convention
+//
+void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
+                                          var_types                type,
+                                          CORINFO_CLASS_HANDLE     retClsHnd,
+                                          CorInfoCallConvExtension callConv)
+{
+    if (varTypeIsStruct(type))
+    {
+        InitializeStructReturnType(comp, retClsHnd, callConv);
+    }
+    else if (type == TYP_LONG)
+    {
+        InitializeLongReturnType();
+    }
+    else
+    {
+        if (type != TYP_VOID)
+        {
+            assert(varTypeIsEnregisterable(type));
+            m_regType[0] = type;
+        }
+
+        INDEBUG(m_inited = true);
+    }
 }
 
 //-------------------------------------------------------------------
@@ -23120,6 +23110,10 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
             }
         }
     }
+#elif defined(WINDOWS_AMD64_ABI)
+
+    assert(idx == 0);
+    resultReg = varTypeUsesFloatReg(GetReturnRegType(0)) ? REG_FLOATRET : REG_INTRET;
 
 #elif defined(TARGET_X86)
 

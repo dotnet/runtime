@@ -95,7 +95,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
     if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
@@ -157,7 +157,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 
 #elif defined(TARGET_OSX)
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
 #ifndef OSX_ICU_LIBRARY_PATH
     c_static_assert_msg(false, "The ICU Library path is not defined");
@@ -448,7 +448,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
 // return 0 if failed to load ICU and 1 otherwise
-int32_t GlobalizationNative_LoadICU()
+int32_t GlobalizationNative_LoadICU(void)
 {
     char symbolName[SYMBOL_NAME_SIZE];
     char symbolVersion[MaxICUVersionStringLength + 1]="";
@@ -545,7 +545,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
 // GlobalizationNative_GetICUVersion
 // return the current loaded ICU version
-int32_t GlobalizationNative_GetICUVersion()
+int32_t GlobalizationNative_GetICUVersion(void)
 {
     if (u_getVersion_ptr == NULL)
         return 0;

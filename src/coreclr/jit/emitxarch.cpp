@@ -3399,7 +3399,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     if (data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained())
     {
         assert(ins == INS_movbe);
-
         data = data->gtGetOp1();
     }
 
@@ -3409,6 +3408,27 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         {
             emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (data->OperIsHWIntrinsic() && data->isContained())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
+
+            if (numArgs == 1)
+            {
+                emitIns_C_R(ins, attr, addr->AsClsVar()->gtClsVarHnd, op1->GetRegNum(), 0);
+            }
+            else
+            {
+                assert(numArgs == 2);
+
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3421,10 +3441,32 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
+
         if (data->isContainedIntOrIImmed())
         {
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (data->OperIsHWIntrinsic() && data->isContained())
+        {
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
+
+            if (numArgs == 1)
+            {
+                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset);
+            }
+            else
+            {
+                assert(numArgs == 2);
+
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3449,6 +3491,37 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         sz = emitInsSizeAM(id, insCodeMI(ins), icon);
         id->idCodeSize(sz);
     }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (data->OperIsHWIntrinsic() && data->isContained())
+    {
+        GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+        size_t              numArgs     = hwintrinsic->GetOperandCount();
+        GenTree*            op1         = hwintrinsic->Op(1);
+
+        if (numArgs == 1)
+        {
+            id = emitNewInstrAmd(attr, offset);
+            id->idIns(ins);
+            emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+            id->idReg1(op1->GetRegNum());
+            sz = emitInsSizeAM(id, insCodeMR(ins));
+            id->idCodeSize(sz);
+        }
+        else
+        {
+            assert(numArgs == 2);
+            int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+
+            id = emitNewInstrAmdCns(attr, offset, icon);
+            id->idIns(ins);
+            id->idReg1(op1->GetRegNum());
+            emitHandleMemOp(mem, id, IF_AWR_RRD_CNS, ins);
+            sz = emitInsSizeAM(id, insCodeMR(ins), icon);
+            id->idCodeSize(sz);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
     else
     {
         assert(!data->isContained());
@@ -6135,6 +6208,44 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNum
 }
 
 //------------------------------------------------------------------------
+// emitIns_C_R_I: emits the code for an instruction that takes a static member,
+//                a register operand, and an immediate.
+//
+// Arguments:
+//    ins       - The instruction being emitted
+//    attr      - The emit attribute
+//    fldHnd    - The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      - The offset for the stack operand
+//    reg       - The register operand
+//    ival      - The immediate value
+//
+void emitter::emitIns_C_R_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(reg != REG_NA);
+
+    // Static always need relocs
+    if (!jitStaticFldIsGlobAddr(fldHnd))
+    {
+        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+    }
+
+    instrDesc* id = emitNewInstrCnsDsp(attr, ival, offs);
+
+    id->idIns(ins);
+    id->idInsFmt(IF_MWR_RRD_CNS);
+    id->idReg1(reg);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+
+    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeMR(ins), ival);
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//------------------------------------------------------------------------
 // emitIns_S_R_I: emits the code for an instruction that takes a stack operand,
 //                a register operand, and an immediate.
 //
@@ -6148,9 +6259,9 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNum
 //
 void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival)
 {
-    // This is only used for INS_vextracti128 and INS_vextractf128, and for these 'ival' must be 0 or 1.
-    assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-    assert((ival == 0) || (ival == 1));
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(reg != REG_NA);
+
     instrDesc* id = emitNewInstrAmdCns(attr, 0, ival);
 
     id->idIns(ins);
@@ -6168,10 +6279,20 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     emitCurIGsize += sz;
 }
 
+//------------------------------------------------------------------------
+// emitIns_A_R_I: emits the code for an instruction that takes an address,
+//                a register operand, and an immediate.
+//
+// Arguments:
+//    ins       - The instruction being emitted
+//    attr      - The emit attribute
+//    indir     - The GenTreeIndir used for the memory address
+//    reg       - The register operand
+//    ival      - The immediate value
+//
 void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm)
 {
-    assert((ins == INS_vextracti128) || (ins == INS_vextractf128));
-    assert(attr == EA_32BYTE);
+    assert(IsSSEOrAVXInstruction(ins));
     assert(reg != REG_NA);
 
     instrDesc* id = emitNewInstrAmdCns(attr, indir->Offset(), imm);
@@ -9224,9 +9345,12 @@ void emitter::emitDispIns(
 
         case IF_AWR_RRD_CNS:
         {
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
-            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            if ((ins == INS_vextracti128) || (ins == INS_vextractf128))
+            {
+                // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+                sstr = codeGen->genSizeStr(EA_ATTR(16));
+            }
+
             printf(sstr);
             emitDispAddrMode(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -9415,8 +9539,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
 
             printf("%s", sstr);
@@ -9778,9 +9901,12 @@ void emitter::emitDispIns(
 
         case IF_MWR_RRD_CNS:
         {
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
-            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            if ((ins == INS_vextracti128) || (ins == INS_vextractf128))
+            {
+                // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+                sstr = codeGen->genSizeStr(EA_ATTR(16));
+            }
+
             printf(sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -14185,8 +14311,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_AWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputAM(dst, id, code, &cnsVal);
@@ -14324,8 +14449,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseVEXEncoding());
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);

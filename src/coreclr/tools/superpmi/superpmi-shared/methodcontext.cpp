@@ -30,6 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    ignoreStoredConfig = false;
     isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
@@ -4897,64 +4898,74 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recObjectToString(void* handle, char* buffer, int bufferSize, int length)
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
 {
-    if (ObjectToString == nullptr)
-        ObjectToString = new LightWeightMap<DLD, DD>();
+    if (PrintObjectDescription == nullptr)
+        PrintObjectDescription = new LightWeightMap<DLDL, Agnostic_PrintObjectDescriptionResult>();
 
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    DLDL key;
     key.A = CastHandle(handle);
-    key.B = (DWORD)bufferSize;
+    key.B = (DWORDLONG)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr && length != -1)
+    if (buffer != nullptr && bytesWritten > 0)
     {
-        int bufferRealSize = min(length, bufferSize);
-        strBuf = (DWORD)ObjectToString->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+        size_t bufferRealSize = min(bytesWritten, bufferSize - 1);
+        strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
     }
 
-    DD value;
-    value.A = (DWORD)length;
-    value.B = (DWORD)strBuf;
+    Agnostic_PrintObjectDescriptionResult value;
+    value.bytesWritten = (DWORDLONG)bytesWritten;
+    value.requiredBufferSize = (DWORDLONG)(pRequiredBufferSize == nullptr ? 0 : *pRequiredBufferSize);
+    value.buffer = (DWORD)strBuf;
 
-    ObjectToString->Add(key, value);
-    DEBUG_REC(dmpObjectToString(key, value));
+    PrintObjectDescription->Add(key, value);
+    DEBUG_REC(dmpPrintObjectDescription(key, value));
 }
-void MethodContext::dmpObjectToString(DLD key, DD value)
+void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value)
 {
-    printf("ObjectToString key hnd-%016llX bufSize-%u, len-%u", key.A, key.B, value.A);
-    ObjectToString->Unlock();
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, bytesWritten-%u, pRequiredBufferSize-%u", key.A, (unsigned)key.B, (unsigned)value.bytesWritten, (unsigned)value.requiredBufferSize);
+    PrintObjectDescription->Unlock();
 }
-int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    if (ObjectToString == nullptr)
+    if (PrintObjectDescription == nullptr)
     {
-        return -1;
+        return 0;
     }
 
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    DLDL key;
     key.A = CastHandle(handle);
-    key.B = (DWORD)bufferSize;
+    key.B = (DWORDLONG)bufferSize;
 
-    int itemIndex = ObjectToString->GetIndex(key);
+    int itemIndex = PrintObjectDescription->GetIndex(key);
     if (itemIndex < 0)
     {
-        return -1;
+        return 0;
     }
     else
     {
-        DD value = ObjectToString->Get(key);
-        DEBUG_REP(dmpObjectToString(key, value));
-        int srcBufferLength = (int)value.A;
-        if (buffer != nullptr && srcBufferLength > 0)
+        Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
+        DEBUG_REP(dmpPrintObjectDescription(key, value));
+        if (pRequiredBufferSize != nullptr)
         {
-            char* srcBuffer = (char*)ObjectToString->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
+            *pRequiredBufferSize = (size_t)value.requiredBufferSize;
         }
-        return srcBufferLength;
+
+        size_t bytesWritten = 0;
+
+        BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+        Assert(srcBuffer != nullptr);
+
+        if (bufferSize > 0)
+        {
+            bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+            memcpy(buffer, srcBuffer, bytesWritten);
+
+            // Always null-terminate
+            buffer[bytesWritten] = 0;
+        }
+        return bytesWritten;
     }
 }
 
@@ -6987,6 +6998,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -7039,6 +7053,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 

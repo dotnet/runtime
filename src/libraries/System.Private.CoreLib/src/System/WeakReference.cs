@@ -150,10 +150,7 @@ namespace System
             // Unlike WeakReference<T> case, the instance could be of a derived type and
             //       in such case it is finalized via a finalizer.
 
-// eager finalization is NYI on Mono
-#if !MONO
             Debug.Assert(this.GetType() != typeof(WeakReference));
-#endif
 
             IntPtr handle = Handle;
             if (handle != default(IntPtr))

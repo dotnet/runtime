@@ -5206,7 +5206,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 }
 
-void mono_precompile_assemblies ()
+void mono_precompile_assemblies (void)
 {
 	GHashTable *assemblies = g_hash_table_new (NULL, NULL);
 

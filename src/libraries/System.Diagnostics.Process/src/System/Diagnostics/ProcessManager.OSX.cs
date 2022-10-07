@@ -83,7 +83,7 @@ namespace System.Diagnostics
                     _processId = pid,
                     _threadId = t.Key,
                     _basePriority = procInfo.BasePriority,
-                    _startAddress = IntPtr.Zero
+                    _startAddress = null
                 };
 
                 // Fill in additional info if we were able to retrieve such data about the thread

@@ -109,6 +109,17 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
 
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Promotion()
+        => PromotionCore();
+
+    // #76010
+    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    public void Promotion_twice()
+    {
+        PromotionCore();
+        PromotionCore();
+    }
+
+    private void PromotionCore()
     {
         Test(() =>
         {
@@ -203,28 +214,30 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         static void Remote1(string propagationTokenFilePath)
             => Test(() =>
             {
-                using var tx = new CommittableTransaction();
-
                 var outcomeEvent = new AutoResetEvent(false);
-                var enlistment = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent);
-                tx.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
 
-                // We now have an OleTx transaction. Save its propagation token to disk so that the main process can read it when promoting.
-                byte[] propagationToken = TransactionInterop.GetTransmitterPropagationToken(tx);
-                File.WriteAllBytes(propagationTokenFilePath, propagationToken);
+                using (var tx = new CommittableTransaction())
+                {
+                    var enlistment = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent);
+                    tx.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
 
-                // Signal to the main process that the propagation token is ready to be read
-                using var waitHandle1 = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion1");
-                waitHandle1.Set();
+                    // We now have an OleTx transaction. Save its propagation token to disk so that the main process can read it when promoting.
+                    byte[] propagationToken = TransactionInterop.GetTransmitterPropagationToken(tx);
+                    File.WriteAllBytes(propagationTokenFilePath, propagationToken);
 
-                // The main process will now import our transaction via the propagation token, and propagate it to a 2nd process.
-                // In the main process the transaction is delegated; we're the one who started it, and so we're the one who need to Commit.
-                // When Commit() is called in the main process, that will trigger a SinglePhaseCommit on the PSPE which represents us. In SQL Server this
-                // contacts the DB to actually commit the transaction with MSDTC. In this simulation we'll just use the wait handle again to trigger this.
-                using var waitHandle3 = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion3");
-                Assert.True(waitHandle3.WaitOne(Timeout));
+                    // Signal to the main process that the propagation token is ready to be read
+                    using var waitHandle1 = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion1");
+                    waitHandle1.Set();
 
-                tx.Commit();
+                    // The main process will now import our transaction via the propagation token, and propagate it to a 2nd process.
+                    // In the main process the transaction is delegated; we're the one who started it, and so we're the one who need to Commit.
+                    // When Commit() is called in the main process, that will trigger a SinglePhaseCommit on the PSPE which represents us. In SQL Server this
+                    // contacts the DB to actually commit the transaction with MSDTC. In this simulation we'll just use the wait handle again to trigger this.
+                    using var waitHandle3 = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion3");
+                    Assert.True(waitHandle3.WaitOne(Timeout));
+
+                    tx.Commit();
+                }
 
                 // Wait for the commit to occur on our enlistment, then exit successfully.
                 Assert.True(outcomeEvent.WaitOne(Timeout));
@@ -234,18 +247,20 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         static void Remote2(string exportCookieFilePath)
             => Test(() =>
             {
+                var outcomeEvent = new AutoResetEvent(false);
+
                 // Load the export cookie and enlist durably
                 byte[] exportCookie = File.ReadAllBytes(exportCookieFilePath);
-                using var tx = TransactionInterop.GetTransactionFromExportCookie(exportCookie);
+                using (var tx = TransactionInterop.GetTransactionFromExportCookie(exportCookie))
+                {
+                    // Now enlist durably. This triggers promotion of the first PSPE, reading the propagation token.
+                    var enlistment = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent);
+                    tx.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
 
-                // Now enlist durably. This triggers promotion of the first PSPE, reading the propagation token.
-                var outcomeEvent = new AutoResetEvent(false);
-                var enlistment = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed, outcomeReceived: outcomeEvent);
-                tx.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
-
-                // Signal to the main process that we're enlisted and ready to commit
-                using var waitHandle = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion2");
-                waitHandle.Set();
+                    // Signal to the main process that we're enlisted and ready to commit
+                    using var waitHandle = new EventWaitHandle(initialState: false, EventResetMode.ManualReset, "System.Transactions.Tests.OleTxTests.Promotion2");
+                    waitHandle.Set();
+                }
 
                 // Wait for the main process to commit the transaction
                 Assert.True(outcomeEvent.WaitOne(Timeout));
@@ -414,6 +429,22 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             Assert.Equal(tx.TransactionInformation.DistributedIdentifier, tx2.TransactionInformation.DistributedIdentifier);
         });
 
+    // #76010
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    public void TransactionScope_with_DependentTransaction()
+    => Test(() =>
+    {
+        using var committableTransaction = new CommittableTransaction();
+        var propagationToken = TransactionInterop.GetTransmitterPropagationToken(committableTransaction);
+
+        var dependentTransaction = TransactionInterop.GetTransactionFromTransmitterPropagationToken(propagationToken);
+
+        using (var scope = new TransactionScope(dependentTransaction))
+        {
+            scope.Complete();
+        }
+    });
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void GetExportCookie()
         => Test(() =>
@@ -472,7 +503,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         // In CI, we sometimes get XACT_E_TMNOTAVAILABLE; when it happens, it's typically on the very first
         // attempt to connect to MSDTC (flaky/slow on-demand startup of MSDTC), though not only.
         // This catches that error and retries.
-        int nRetries = 5;
+        int nRetries = 60;
 
         while (true)
         {

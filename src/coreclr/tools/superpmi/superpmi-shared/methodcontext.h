@@ -77,9 +77,6 @@ public:
     MethodContext();
 
 private:
-    MethodContext(HANDLE hFile);
-    MethodContext(unsigned char* buff, unsigned int totalLen);
-
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
     void MethodInitHelperFile(HANDLE hFile);
 
@@ -93,6 +90,11 @@ public:
     static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
+
+    void setIgnoreStoredConfig()
+    {
+        ignoreStoredConfig = true;
+    }
 
     bool Equal(MethodContext* other);
     unsigned int saveToFile(HANDLE hFile);
@@ -113,8 +115,6 @@ public:
     bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
-
-    void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -622,9 +622,9 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
-    void recObjectToString(void* handle, char* buffer, int bufferSize, int length);
-    void dmpObjectToString(DLD key, DD value);
-    int repObjectToString(void* handle, char* buffer, int bufferSize);
+    void recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value);
+    size_t repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
@@ -887,6 +887,7 @@ public:
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
+    bool           ignoreStoredConfig;
 
 private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
@@ -1138,7 +1139,7 @@ enum mcPackets
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
-    Packet_ObjectToString = 197,
+    Packet_PrintObjectDescription = 197,
 };
 
 void SetDebugDumpVariables();

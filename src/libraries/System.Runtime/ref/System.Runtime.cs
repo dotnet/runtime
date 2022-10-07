@@ -7608,7 +7608,7 @@ namespace System.Collections.ObjectModel
             public System.Collections.Generic.IEnumerator<TKey> GetEnumerator() { throw null; }
             void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
             void System.Collections.Generic.ICollection<TKey>.Clear() { }
-            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
+            public bool Contains(TKey item) { throw null; }
             bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
             void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
@@ -10217,6 +10217,14 @@ namespace System.Numerics
         public static int TrailingZeroCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, byte data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, ushort data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, uint data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, ulong data) { throw null; }
     }
     public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {
@@ -10462,8 +10470,8 @@ namespace System.Numerics
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
-        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
-        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result);
+        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result);
     }
     public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>?
     {

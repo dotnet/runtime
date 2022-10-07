@@ -305,17 +305,13 @@ VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunk* pEntryThunk)
 
     SString namespaceOrClassName;
     SString methodName;
-    SString moduleName;
-
     pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-    moduleName.SetUTF8(pMethodDesc->GetModule()->GetSimpleName());
 
     SString message;
-
-    message.Printf(W("A callback was made on a garbage collected delegate of type '%s!%s::%s'."),
-        moduleName.GetUnicode(),
-        namespaceOrClassName.GetUnicode(),
-        methodName.GetUnicode());
+    message.Printf("A callback was made on a garbage collected delegate of type '%s!%s::%s'.",
+        pMethodDesc->GetModule()->GetSimpleName(),
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }

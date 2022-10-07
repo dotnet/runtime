@@ -252,7 +252,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->revPInvokeOffset = header.revPInvokeOffset;
 
     infoPtr->doubleAlign     = header.doubleAlign;
-    infoPtr->securityCheck   = header.security;
     infoPtr->handlers        = header.handlers;
     infoPtr->localloc        = header.localloc;
     infoPtr->editNcontinue   = header.editNcontinue;
@@ -378,19 +377,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
 // We do a "pop eax; jmp eax" to return from a fault or finally handler
 const size_t END_FIN_POP_STACK = sizeof(TADDR);
 
-
-// The offset (in bytes) from EBP for the secutiy object on the stack
-inline size_t GetSecurityObjectOffset(hdrInfo * info)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(info->securityCheck && info->ebpFrame);
-
-    unsigned position = info->savedRegsCountExclFP +
-                        1;
-    return position * sizeof(TADDR);
-}
-
 inline
 size_t GetLocallocSPOffset(hdrInfo * info)
 {
@@ -399,7 +385,6 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
-                        info->securityCheck +
                         1;
     return position * sizeof(TADDR);
 }
@@ -412,7 +397,6 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
-                        info->securityCheck +
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
     return position * sizeof(TADDR);
@@ -906,9 +890,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     /* @TODO: Check if we have grown out of space for locals, in the face of localloc */
     _ASSERTE(!oldInfo.localloc && !newInfo.localloc);
 
-    // Always reserve space for the securityCheck slot
-    _ASSERTE(oldInfo.securityCheck && newInfo.securityCheck);
-
     // @TODO: If nesting level grows above the MAX_EnC_HANDLER_NESTING_LEVEL,
     // we should return EnC_NESTED_HANLDERS
     _ASSERTE(oldInfo.handlers && newInfo.handlers);
@@ -1045,14 +1026,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     }
 
     TADDR callerSP = oldStackBase + oldFixedStackSize;
-
-    // If the old code saved a security object, store the object's reference now.
-    OBJECTREF securityObject = NULL;
-    INT32 nOldSecurityObjectStackSlot = oldGcDecoder.GetSecurityObjectStackSlot();
-    if (nOldSecurityObjectStackSlot != NO_SECURITY_OBJECT)
-    {
-        securityObject = ObjectToOBJECTREF(*PTR_PTR_Object(callerSP + nOldSecurityObjectStackSlot));
-    }
 
 #ifdef _DEBUG
     // If the old method has a PSPSym, then its value should == FP for x64 and callerSP for arm64
@@ -1433,19 +1406,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset((void*)(size_t)(pCtx->Esp), 0, newInfo.stackSize - frameHeaderSize );
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
         memset((void*)newStackBase, 0, newFixedStackSize - frameHeaderSize);
-
-        // On AMD64/ARM64, after zeroing out the stack, restore the security object and PSPSym...
-
-        // There is no relationship we can guarantee between the old code having a security
-        // object and the new code having a security object.  If the new code does have a
-        // security object, then we copy over the old security object's reference if there
-        // was one (else we copy over NULL, which is fine).  If the new code doesn't have a
-        // security object, we do nothing.
-        INT32 nNewSecurityObjectStackSlot = newGcDecoder.GetSecurityObjectStackSlot();
-        if (nNewSecurityObjectStackSlot != NO_SECURITY_OBJECT)
-        {
-            *PTR_PTR_Object(callerSP + nNewSecurityObjectStackSlot) = OBJECTREFToObject(securityObject);
-        }
 
         // Restore PSPSym for the new function. Its value should be set to our new FP. But
         // first, we gotta find PSPSym's location on the stack
@@ -4263,15 +4223,6 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
     if (pUnwindInfo != NULL)
     {
-        pUnwindInfo->securityObjectOffset = 0;
-        if (info->securityCheck)
-        {
-            _ASSERTE(info->ebpFrame);
-            SIZE_T securityObjectOffset = (GetSecurityObjectOffset(info) / sizeof(void*));
-            _ASSERTE(securityObjectOffset != 0);
-            pUnwindInfo->securityObjectOffset = DWORD(securityObjectOffset);
-        }
-
         pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
         pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
     }

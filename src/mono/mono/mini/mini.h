@@ -1492,6 +1492,7 @@ typedef struct {
 	guint            after_method_to_ir : 1;
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
+	guint            prefer_instances : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;

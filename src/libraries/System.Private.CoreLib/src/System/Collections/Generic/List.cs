@@ -24,7 +24,7 @@ namespace System.Collections.Generic
 
         internal T[] _items; // Do not rename (binary serialization)
         internal int _size; // Do not rename (binary serialization)
-        private int _version; // Do not rename (binary serialization)
+        internal int _version; // Do not rename (binary serialization)
 
 #pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
@@ -449,7 +449,7 @@ namespace System.Collections.Generic
         /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
-        private void Grow(int capacity)
+        internal void Grow(int capacity)
         {
             Debug.Assert(_items.Length < capacity);
 

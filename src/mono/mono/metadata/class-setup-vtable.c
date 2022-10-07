@@ -1656,6 +1656,10 @@ check_vtable_covariant_override_impls (MonoClass *klass, MonoMethod **vtable, in
 				break;
 			MonoMethod *prev_impl = cur_class->vtable[slot];
 
+			// if the current class re-abstracted the method, it may not be there.
+			if (!prev_impl)
+				continue;
+
 			if (prev_impl != last_checked_prev_override) {
 				/*
 				 * the new impl should be subsumed by the prior one, ie this

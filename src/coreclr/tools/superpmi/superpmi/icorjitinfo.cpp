@@ -388,13 +388,14 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-int MyICJI::objectToString(void*     handle,    /* IN  */
-                           char*     buffer,    /* OUT */
-                           int       bufferSize /* IN  */
-                           )
+size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */
+                                      char*  buffer,              /* OUT */
+                                      size_t bufferSize,          /* IN  */
+                                      size_t* pRequiredBufferSize /* OUT */
+                                     )
 {
-    jitInstance->mc->cr->AddCall("objectToString");
-    return jitInstance->mc->repObjectToString(handle, buffer, bufferSize);
+    jitInstance->mc->cr->AddCall("printObjectDescription");
+    return jitInstance->mc->repPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 /**********************************************************************************/
