@@ -72,8 +72,8 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 // Arguments:
 //    use - A use of a GT_IND node of SIMD type
 //
-// TODO-1stClassStructs: These should be eliminated earlier, once we can handle
-// lclVars in all the places that used to have GT_OBJ.
+// TODO-ADDR: delete this once block morphing stops taking addresses of locals
+// under COMMAs.
 //
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
