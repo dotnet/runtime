@@ -77,7 +77,7 @@ jobs:
   timeoutInMinutes: 150
   pool:
     name: NetCore-Svc-Public
-    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
+    demands: ImageOverride -equals windows.vs2019.amd64.open
 
   steps:
   - checkout: self
