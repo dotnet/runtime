@@ -251,10 +251,6 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
-            {
-                yield return statement;
-            }
             // <marshallerType>.Free(<nativeIdentifier>);
             yield return ExpressionStatement(
                 InvocationExpression(
@@ -376,19 +372,11 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(numElementsIdentifier))));
-            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
-            // The value will never be used unless it has been initialized, so this is safe.
-            yield return MarshallerHelpers.SkipInitOrDefaultInit(
-                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
-                {
-                    InstanceIdentifier = numElementsIdentifier
-                }, context);
+                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
@@ -524,15 +512,7 @@ namespace Microsoft.Interop
 
         public TypeSyntax AsNativeType(TypePositionInfo info) => _nativeTypeSyntax;
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
-        {
-            StatementSyntax elementCleanup = GenerateElementCleanupStatement(info, context);
-
-            if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
-            {
-                yield return elementCleanup;
-            }
-        }
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -608,19 +588,11 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(numElementsIdentifier))));
-            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
-            // The value will never be used unless it has been initialized, so this is safe.
-            yield return MarshallerHelpers.SkipInitOrDefaultInit(
-                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
-                {
-                    InstanceIdentifier = numElementsIdentifier
-                }, context);
+                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();

@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Used to fetch <see cref="IChangeToken"/> used for tracking options changes.
     /// </summary>
-    /// <typeparam name="TOptions">The options type being changed.</typeparam>
+    /// <typeparam name="TOptions">Options type.</typeparam>
     public interface IOptionsChangeTokenSource<out TOptions>
     {
         /// <summary>

@@ -104,7 +104,32 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // a GC object pointed by RDX will not be collected.
     if (!pushReg)
     {
-        if (compiler->compMethodReturnsRetBufAddr())
+        // Handle multi-reg return type values
+        if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            ReturnTypeDesc retTypeDesc;
+            if (varTypeIsLong(compiler->info.compRetNativeType))
+            {
+                retTypeDesc.InitializeLongReturnType();
+            }
+            else // we must have a struct return type
+            {
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
+                                                       compiler->info.compCallConv);
+            }
+
+            const unsigned regCount = retTypeDesc.GetReturnRegCount();
+
+            // Only x86 and x64 Unix ABI allows multi-reg return and
+            // number of result regs should be equal to MAX_RET_REG_COUNT.
+            assert(regCount == MAX_RET_REG_COUNT);
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+            }
+        }
+        else if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
             // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
@@ -114,15 +139,21 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
             gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
         }
+        // ... all other cases.
         else
         {
-            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
+#ifdef TARGET_AMD64
+            // For x64, structs that are not returned in registers are always
+            // returned in implicit RetBuf. If we reached here, we should not have
+            // a RetBuf and the return type should not be a struct.
+            assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
+            assert(!varTypeIsStruct(compiler->info.compRetNativeType));
+#endif // TARGET_AMD64
 
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
-            }
+            // For x86 Windows we can't make such assertions since we generate code for returning of
+            // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
+            // compRetNativeType could be TYP_STRUCT.
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
         }
     }
 

@@ -388,16 +388,6 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
-size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */
-                                      char*  buffer,              /* OUT */
-                                      size_t bufferSize,          /* IN  */
-                                      size_t* pRequiredBufferSize /* OUT */
-                                     )
-{
-    jitInstance->mc->cr->AddCall("printObjectDescription");
-    return jitInstance->mc->repPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
-}
-
 /**********************************************************************************/
 //
 // ICorClassInfo
@@ -670,13 +660,6 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getUnBoxHelper");
     CorInfoHelpFunc result = jitInstance->mc->repGetUnBoxHelper(cls);
-    return result;
-}
-
-void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
-    void* result = jitInstance->mc->repGetRuntimeTypePointer(cls);
     return result;
 }
 

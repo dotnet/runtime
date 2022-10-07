@@ -625,8 +625,6 @@ namespace System.Reflection.Metadata
                 var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
 
                 Assert.Equal("123", i.ItfMethod(123));
-
-                System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass.ExistingMethod ();
             });
         }
     }
