@@ -590,7 +590,7 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 //
 ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 {
-    assert(varTypeIsStruct(TypeGet()));
+    assert(TypeIs(TYP_STRUCT));
 
     CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
     switch (OperGet())
@@ -605,12 +605,19 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
         case GT_BLK:
             return AsBlk()->GetLayout();
 
+        case GT_COMMA:
+            return AsOp()->gtOp2->GetLayout(compiler);
+
         case GT_MKREFANY:
             structHnd = compiler->impGetRefAnyClass();
             break;
 
         case GT_FIELD:
             compiler->eeGetFieldType(AsField()->gtFldHnd, &structHnd);
+            break;
+
+        case GT_CALL:
+            structHnd = AsCall()->gtRetClsHnd;
             break;
 
         default:
