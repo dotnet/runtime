@@ -1601,14 +1601,14 @@ namespace System.Numerics
 
                 // Use ToString for small values
 
-                if (_bits is null || _bits.Length <= 2)
+                if ((_bits is null) || (_bits.Length <= 2))
                 {
                     return ToString();
                 }
 
-                // Estimate the value x as L*2^n, while L is the value of high bits, and n is the length of low bits
-                // Represent L as k*10^i, then x = L*2^n = k*10^(i+n*Log10(2))
-                // Let m=n*Log10(2), the final result would be x = (k*10^(m-[m]))*10^(i+[m])
+                // Estimate the value x as `L * 2^n`, while L is the value of high bits, and n is the length of low bits
+                // Represent L as `k * 10^i`, then `x = L * 2^n = k * 10^(i + (n * log10(2)))`
+                // Let `m = n * log10(2)`, the final result would be `x = (k * 10^(m - [m])) * 10^(i+[m])`
 
                 ulong highBits = ((ulong)_bits[^1] << kcbitUint) + _bits[^2];
                 double lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
