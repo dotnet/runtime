@@ -727,20 +727,22 @@ function run_test {
     return $testScriptExitCode
 }
 
-# Variables for running tests in the background
-if [ `uname` = "NetBSD" ]; then
-    NumProc=$(getconf NPROCESSORS_ONLN)
-elif [ `uname` = "Darwin" ]; then
-    NumProc=$(getconf _NPROCESSORS_ONLN)
+# Get the number of processors available to the scheduler
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "Darwin" ]]; then
+  NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-    if [ -x "$(command -v nproc)" ]; then
-        NumProc=$(nproc --all)
-    elif [ -x "$(command -v getconf)" ]; then
-        NumProc=$(getconf _NPROCESSORS_ONLN)
-    else
-        NumProc=1
-    fi
+  NumProc=1
 fi
+
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
 ((processCount = 0))
@@ -1111,7 +1113,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            export RunCrossGen=1
+            export RunCrossGen2=1
             ;;
         --sequential)
             ((maxProcesses = 1))

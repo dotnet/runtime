@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        protected sealed override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
+        protected sealed override bool ReadAndCacheConstructorArgument(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
             Debug.Assert(jsonParameterInfo.Options != null);
@@ -34,16 +34,13 @@ namespace System.Text.Json.Serialization.Converters
 
         protected sealed override object CreateObject(ref ReadStackFrame frame)
         {
-            object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
+            Debug.Assert(frame.CtorArgumentState != null);
+            Debug.Assert(frame.JsonTypeInfo.CreateObjectWithArgs != null);
+
+            object[] arguments = (object[])frame.CtorArgumentState.Arguments;
             frame.CtorArgumentState.Arguments = null!;
 
-            var createObject = (Func<object[], T>?)frame.JsonTypeInfo.CreateObjectWithArgs;
-
-            if (createObject == null)
-            {
-                // This means this constructor has more than 64 parameters.
-                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(TypeToConvert);
-            }
+            Func<object[], T> createObject = (Func<object[], T>)frame.JsonTypeInfo.CreateObjectWithArgs;
 
             object obj = createObject(arguments);
 

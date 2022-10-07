@@ -11,8 +11,49 @@ namespace System.SpanTests
     public class IndexOfAnyExceptTests_Char : IndexOfAnyExceptTests<char> { protected override char Create(int value) => (char)value; }
     public class IndexOfAnyExceptTests_Int32 : IndexOfAnyExceptTests<int> { protected override int Create(int value) => value; }
     public class IndexOfAnyExceptTests_Int64 : IndexOfAnyExceptTests<long> { protected override long Create(int value) => value; }
-    public class IndexOfAnyExceptTests_String : IndexOfAnyExceptTests<string> { protected override string Create(int value) => ((char)value).ToString(); }
     public class IndexOfAnyExceptTests_Record : IndexOfAnyExceptTests<SimpleRecord> { protected override SimpleRecord Create(int value) => new SimpleRecord(value); }
+    public class IndexOfAnyExceptTests_String : IndexOfAnyExceptTests<string>
+    {
+        protected override string Create(int value) => ((char)value).ToString();
+
+        [Theory]
+
+        [InlineData(new string[] { null, "a", "a", "a", "a" }, new string[] { "a" }, 0)]
+        [InlineData(new string[] { "a", "a", null, "a", "a" }, new string[] { "a" }, 2)]
+        [InlineData(new string[] { "a", "a", "a", "a", "a" }, new string[] { null }, 0)]
+        [InlineData(new string[] { null, null, null, null, null }, new string[] { null }, -1)]
+        [InlineData(new string[] { null, null, null, null, "a" }, new string[] { null }, 4)]
+
+        [InlineData(new string[] { null, "a", "a", "a", "a" }, new string[] { "a", null }, -1)]
+        [InlineData(new string[] { null, null, null, null, "a" }, new string[] { null, "a" }, -1)]
+        [InlineData(new string[] { "a", "a", null, "a", "a" }, new string[] { "a", "b" }, 2)]
+        [InlineData(new string[] { "a", "a", "a", "a", "a" }, new string[] { null, null, }, 0)]
+        [InlineData(new string[] { null, null, null, null, null }, new string[] { null, null }, -1)]
+
+        [InlineData(new string[] { null, "a", "a", "a", "a" }, new string[] { "a", null, null }, -1)]
+        [InlineData(new string[] { null, null, null, null, "a" }, new string[] { null, null, "a" }, -1)]
+        [InlineData(new string[] { "a", "a", null, "a", "a" }, new string[] { "a", "b", null }, -1)]
+        [InlineData(new string[] { "a", "a", null, "a", "a" }, new string[] { "a", "a", "a" }, 2)]
+        [InlineData(new string[] { "a", "a", "a", "a", "a" }, new string[] { null, null, null }, 0)]
+        [InlineData(new string[] { null, null, null, null, null }, new string[] { null, null, null }, -1)]
+
+        public void SearchingNulls(string[] input, string[] targets, int expected)
+        {
+            Assert.Equal(expected, input.AsSpan().IndexOfAnyExcept(targets));
+            switch (targets.Length)
+            {
+                case 1:
+                    Assert.Equal(expected, input.AsSpan().IndexOfAnyExcept(targets[0]));
+                    break;
+                case 2:
+                    Assert.Equal(expected, input.AsSpan().IndexOfAnyExcept(targets[0], targets[1]));
+                    break;
+                case 3:
+                    Assert.Equal(expected, input.AsSpan().IndexOfAnyExcept(targets[0], targets[1], targets[2]));
+                    break;
+            }
+        }
+    }
 
     public record SimpleRecord(int Value);
 

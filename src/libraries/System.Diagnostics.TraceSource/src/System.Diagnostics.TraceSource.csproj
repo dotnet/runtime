@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
+    <Compile Include="System\Diagnostics\InitializingSwitchEventArgs.cs" />
+    <Compile Include="System\Diagnostics\InitializingTraceSourceEventArgs.cs" />
     <Compile Include="System\Diagnostics\CorrelationManager.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
@@ -24,6 +26,7 @@
     <Compile Include="System\Diagnostics\TraceOptions.cs" />
     <Compile Include="System\Diagnostics\TraceSource.cs" />
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />
+    <Compile Include="System\Diagnostics\TraceUtils.cs" />
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
   </ItemGroup>

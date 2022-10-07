@@ -116,8 +116,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return TypeAttributes.Public;
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
-
         internal sealed override string InternalFullNameOfAssembly
         {
             get

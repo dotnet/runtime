@@ -1041,6 +1041,11 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                                if (!spec.IsPublic && !propertyInfo.PropertyType.IsPublic)
+                                {
+                                    continue;
+                                }
+
                                 CacheMemberHelper(propertyInfo.GetDiagnosticLocation());
                             }
 
@@ -1052,6 +1057,11 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                if (!spec.IsPublic && !fieldInfo.FieldType.IsPublic)
+                                {
+                                    continue;
+                                }
+
                                 CacheMemberHelper(fieldInfo.GetDiagnosticLocation());
                             }
 

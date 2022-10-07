@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Globalization;
 using Xunit;
 
@@ -1985,6 +1986,94 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, Half.TanPi(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, Half.TanPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> BitDecrement_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                  Half.NegativeInfinity };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC248),  BitConverter.UInt16BitsToHalf(0xC249) };    // value: -(pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC170),  BitConverter.UInt16BitsToHalf(0xC171) };    // value: -(e)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC09B),  BitConverter.UInt16BitsToHalf(0xC09C) };    // value: -(ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBE48),  BitConverter.UInt16BitsToHalf(0xBE49) };    // value: -(pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBDC5),  BitConverter.UInt16BitsToHalf(0xBDC6) };    // value: -(log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBDA8),  BitConverter.UInt16BitsToHalf(0xBDA9) };    // value: -(sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBC83),  BitConverter.UInt16BitsToHalf(0xBC84) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBC00),  BitConverter.UInt16BitsToHalf(0xBC01) };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBA48),  BitConverter.UInt16BitsToHalf(0xBA49) };    // value: -(pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB9A8),  BitConverter.UInt16BitsToHalf(0xB9A9) };    // value: -(1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB98C),  BitConverter.UInt16BitsToHalf(0xB98D) };    // value: -(ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB918),  BitConverter.UInt16BitsToHalf(0xB919) };    // value: -(2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB6F3),  BitConverter.UInt16BitsToHalf(0xB6F4) };    // value: -(log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB518),  BitConverter.UInt16BitsToHalf(0xB519) };    // value: -(1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), -Half.Epsilon };
+            yield return new object[] { Half.NaN,                               Half.NaN };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), -Half.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3518),  BitConverter.UInt16BitsToHalf(0x3517) };    // value:  (1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x36F3),  BitConverter.UInt16BitsToHalf(0x36F2) };    // value:  (log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3918),  BitConverter.UInt16BitsToHalf(0x3917) };    // value:  (2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x398C),  BitConverter.UInt16BitsToHalf(0x398B) };    // value:  (ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x39A8),  BitConverter.UInt16BitsToHalf(0x39A7) };    // value:  (1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3A48),  BitConverter.UInt16BitsToHalf(0x3A47) };    // value:  (pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3C00),  BitConverter.UInt16BitsToHalf(0x3BFF) };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3C83),  BitConverter.UInt16BitsToHalf(0x3C82) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3DA8),  BitConverter.UInt16BitsToHalf(0x3DA7) };    // value:  (sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3DC5),  BitConverter.UInt16BitsToHalf(0x3DC4) };    // value:  (log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3E48),  BitConverter.UInt16BitsToHalf(0x3E47) };    // value:  (pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x409B),  BitConverter.UInt16BitsToHalf(0x409A) };    // value:  (ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x4170),  BitConverter.UInt16BitsToHalf(0x416F) };    // value:  (e)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x4248),  BitConverter.UInt16BitsToHalf(0x4247) };    // value:  (pi)
+            yield return new object[] { Half.PositiveInfinity,                  Half.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(BitDecrement_TestData))]
+        public static void BitDecrement(Half value, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.BitDecrement(value), Half.Zero);
+        }
+
+        public static IEnumerable<object[]> BitIncrement_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                 Half.MinValue };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC248), BitConverter.UInt16BitsToHalf(0xC247) };    // value: -(pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC170), BitConverter.UInt16BitsToHalf(0xC16F) };    // value: -(e)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xC09B), BitConverter.UInt16BitsToHalf(0xC09A) };    // value: -(ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBE48), BitConverter.UInt16BitsToHalf(0xBE47) };    // value: -(pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBDC5), BitConverter.UInt16BitsToHalf(0xBDC4) };    // value: -(log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBDA8), BitConverter.UInt16BitsToHalf(0xBDA7) };    // value: -(sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBC83), BitConverter.UInt16BitsToHalf(0xBC82) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBC00), BitConverter.UInt16BitsToHalf(0xBBFF) };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xBA48), BitConverter.UInt16BitsToHalf(0xBA47) };    // value: -(pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB9A8), BitConverter.UInt16BitsToHalf(0xB9A7) };    // value: -(1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB98C), BitConverter.UInt16BitsToHalf(0xB98B) };    // value: -(ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB918), BitConverter.UInt16BitsToHalf(0xB917) };    // value: -(2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB6F3), BitConverter.UInt16BitsToHalf(0xB6F2) };    // value: -(log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0xB518), BitConverter.UInt16BitsToHalf(0xB517) };    // value: -(1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), Half.Epsilon };
+            yield return new object[] { Half.NaN,                              Half.NaN };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), Half.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3518), BitConverter.UInt16BitsToHalf(0x3519) };    // value:  (1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x36F3), BitConverter.UInt16BitsToHalf(0x36F4) };    // value:  (log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3918), BitConverter.UInt16BitsToHalf(0x3919) };    // value:  (2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x398C), BitConverter.UInt16BitsToHalf(0x398D) };    // value:  (ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x39A8), BitConverter.UInt16BitsToHalf(0x39A9) };    // value:  (1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3A48), BitConverter.UInt16BitsToHalf(0x3A49) };    // value:  (pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3C00), BitConverter.UInt16BitsToHalf(0x3C01) };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3C83), BitConverter.UInt16BitsToHalf(0x3C84) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3DA8), BitConverter.UInt16BitsToHalf(0x3DA9) };    // value:  (sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3DC5), BitConverter.UInt16BitsToHalf(0x3DC6) };    // value:  (log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x3E48), BitConverter.UInt16BitsToHalf(0x3E49) };    // value:  (pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x409B), BitConverter.UInt16BitsToHalf(0x409C) };    // value:  (ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x4170), BitConverter.UInt16BitsToHalf(0x4171) };    // value:  (e)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x4248), BitConverter.UInt16BitsToHalf(0x4249) };    // value:  (pi)
+            yield return new object[] { Half.PositiveInfinity,                 Half.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(BitIncrement_TestData))]
+        public static void BitIncrement(Half value, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.BitIncrement(value), Half.Zero);
         }
     }
 }

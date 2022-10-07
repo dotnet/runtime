@@ -53,6 +53,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsByRefLike { get; }
         public sealed override bool IsCollectible => false;
+        public abstract override string Name { get; }
 
         public abstract override Assembly Assembly { get; }
 
@@ -446,7 +447,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             // We intentionally don't validate the number of arguments or their suitability to the generic type's constraints.
-            // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
+            // In a pay-for-play world, this can cause needless missing metadata exceptions. There is no harm in creating
             // the Type object for an inconsistent generic type - no MethodTable will ever match it so any attempt to "invoke" it
             // will throw an exception.
             bool foundSignatureType = false;
@@ -498,18 +499,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return this.InternalDeclaringType;
-            }
-        }
-
-        public sealed override string Name
-        {
-            get
-            {
-                Type? rootCauseForFailure = null;
-                string? name = InternalGetNameIfAvailable(ref rootCauseForFailure);
-                if (name == null)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(rootCauseForFailure);
-                return name;
             }
         }
 
@@ -612,8 +601,6 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         internal abstract string InternalFullNameOfAssembly { get; }
 
-        internal abstract override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure);
-
         //
         // Left unsealed as HasElement types must override this.
         //
@@ -647,11 +634,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return 0 != (Classification & TypeClassification.IsDelegate);
             }
         }
-
-        //
-        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
-        //
-        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
 
         //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)

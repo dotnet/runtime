@@ -556,15 +556,15 @@ namespace System.Xml
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             if (_stream.CanWrite)
             {
                 Flush();
             }
 
+            base.Close();
             _stream.Dispose();
-            base.Dispose(disposing);
         }
 
         public override void Flush()
@@ -726,8 +726,4 @@ namespace System.Xml
             throw new NotSupportedException();
         }
     }
-
-    // Add format exceptions
-    // Do we need to modify the stream position/Seek to account for the buffer?
-    // ASSUMPTION (Microsoft): This class will only be used for EITHER reading OR writing.
 }

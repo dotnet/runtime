@@ -9,7 +9,6 @@ parameters:
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
   compositeBuildMode: false
   helixQueues: ''
   stagedBuild: false
@@ -66,8 +65,7 @@ steps:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 

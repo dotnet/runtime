@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Caching abstractions for in-memory cache and distributed cache.
 
 Commonly Used Types:

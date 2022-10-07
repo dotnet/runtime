@@ -992,9 +992,6 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         ThreadStore::AttachCurrentThread();
         Thread* pThread = ThreadStore::GetCurrentThread();
 
-        // Doing this prevents the GC from trying to walk this thread's stack for roots.
-        pThread->SetGCSpecial(true);
-
         // While doing the GC, much code assumes & asserts the thread doing the GC is in
         // cooperative mode.
         pThread->DisablePreemptiveMode();
@@ -3842,7 +3839,9 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
             OBJECTREF innerExceptionObj;
             STRINGREF exceptionMessageRef;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.exceptionObj = NULL;
+        gc.innerExceptionObj = NULL;
+        gc.exceptionMessageRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         gc.exceptionObj = pThread->GetThrowable();
@@ -4053,7 +4052,7 @@ void ETW::InfoLog::RuntimeInformation(INT32 type)
             USHORT vmBuildVersion = VER_PRODUCTBUILD;
             USHORT vmQfeVersion = VER_PRODUCTBUILD_QFE;
 
-            //version info for mscorlib.dll
+            //version info for System.Private.CoreLib.dll
             USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
             USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
             USHORT bclBuildVersion = VER_ASSEMBLYBUILD;

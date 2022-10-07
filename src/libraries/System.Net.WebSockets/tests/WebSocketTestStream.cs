@@ -206,7 +206,7 @@ namespace System.Net.WebSockets.Tests
             Write(buffer.Span);
         }
 
-        public override void Flush() => throw new NotSupportedException();
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 

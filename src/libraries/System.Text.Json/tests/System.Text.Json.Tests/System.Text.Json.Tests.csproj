@@ -226,6 +226,9 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
     <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="Serialization\ConvertersForUnsupportedTypesFunctionalTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>

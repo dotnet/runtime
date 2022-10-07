@@ -17,8 +17,6 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal static bool UsePortableThreadPoolForIO => true;
-
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
         internal static bool YieldFromDispatchLoop => false;
@@ -74,15 +72,6 @@ namespace System.Threading
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
         internal static void RequestWorkerThread() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
-
-        /// <summary>
-        /// Called from the gate thread periodically to perform runtime-specific gate activities
-        /// </summary>
-        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
-        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-#pragma warning disable IDE0060
-        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
-#pragma warning restore IDE0060
 
         internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 

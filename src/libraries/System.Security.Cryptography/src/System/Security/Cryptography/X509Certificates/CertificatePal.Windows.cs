@@ -277,7 +277,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                     Interop.Crypt32.DATA_BLOB* pValue = value ? &blob : (Interop.Crypt32.DATA_BLOB*)null;
                     if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, pValue))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
             }
         }
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(pFriendlyName, checked(2 * ((uint)friendlyName.Length + 1)));
                         if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, &blob))
-                            throw Marshal.GetLastWin32Error().ToCryptographicException();
+                            throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
                     finally
                     {

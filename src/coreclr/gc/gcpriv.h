@@ -648,8 +648,6 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() {}
-
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
         index = _index;
@@ -1230,7 +1228,7 @@ public:
 
     uint8_t* get_next_marked();
 
-    ~mark_queue_t();
+    void verify_empty();
 };
 
 //class definition of the internal class
@@ -2065,7 +2063,7 @@ protected:
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
-    bool decommit_step ();
+    bool decommit_step (uint64_t step_milliseconds);
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
@@ -2202,14 +2200,16 @@ protected:
     BOOL mark_array_bit_set (size_t mark_bit);
     PER_HEAP
     void mark_array_clear_marked (uint8_t* add);
-    PER_HEAP
-    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only=TRUE
+
 #ifdef FEATURE_BASICFREEZE
-        , BOOL read_only=FALSE
-#endif // FEATURE_BASICFREEZE
-        );
+    PER_HEAP
+    void seg_set_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP
+    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -2862,10 +2862,17 @@ protected:
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
+#ifdef FEATURE_BASICFREEZE
+    PER_HEAP
+    void seg_set_mark_bits (heap_segment* seg);
     PER_HEAP
     void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP
-    void sweep_ro_segments (heap_segment* start_seg);
+    void mark_ro_segments();
+    PER_HEAP
+    void sweep_ro_segments();
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,
@@ -3852,7 +3859,7 @@ public:
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
 
-    PER_HEAP_ISOLATED
+    PER_HEAP
     bool special_sweep_p;
 
 #ifdef BACKGROUND_GC
@@ -3919,7 +3926,7 @@ public:
 #else //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t allocation_running_time;
+    uint64_t allocation_running_time;
 
     PER_HEAP
     size_t allocation_running_amount;
@@ -4962,8 +4969,10 @@ protected:
     PER_HEAP
     heap_segment* freeable_uoh_segment;
 
+#ifndef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
+#endif
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
@@ -5806,6 +5815,8 @@ public:
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
+
+const int min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * LARGE_REGION_FACTOR));
 
 enum allocate_direction
 {

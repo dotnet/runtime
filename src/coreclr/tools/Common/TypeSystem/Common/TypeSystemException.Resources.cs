@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Resources;
 using System.Reflection;
@@ -11,7 +10,7 @@ using System.Reflection;
 // need to support accessing these strings via the ResourceManager
 namespace Internal.TypeSystem
 {
-    partial class TypeSystemException : Exception
+    public partial class TypeSystemException : Exception
     {
         private static Lazy<ResourceManager> s_stringResourceManager =
             new Lazy<ResourceManager>(() => new ResourceManager("Internal.TypeSystem.Strings", typeof(TypeSystemException).GetTypeInfo().Assembly));

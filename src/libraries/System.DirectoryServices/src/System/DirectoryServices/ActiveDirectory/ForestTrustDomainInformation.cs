@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
             global::Interop.BOOL result = global::Interop.Advapi32.ConvertSidToStringSid(domainInfo.sid, out sidLocal);
             if (result == global::Interop.BOOL.FALSE)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             DomainSid = sidLocal;

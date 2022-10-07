@@ -13,7 +13,7 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 #include <emscripten/emscripten.h>
 #endif
 
@@ -98,14 +98,14 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM)  && !defined(HOST_WASI)
 static void
 mono_wasm_event_pipe_init (void);
 #endif
 
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
-#ifndef HOST_WASM
+#if !defined(HOST_WASM) || defined(HOST_WASI)
 	&ep_init,
 #else
 	&mono_wasm_event_pipe_init,
@@ -345,7 +345,7 @@ mono_component_event_pipe_init (void)
 }
 
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 
 static MonoWasmEventPipeSessionID
@@ -426,4 +426,4 @@ mono_wasm_event_pipe_init (void)
 	mono_wasm_event_pipe_early_startup_callback ();
 }
 
-#endif /* HOST_WASM */
+#endif /* HOST_WASM && !HOST_WASI */

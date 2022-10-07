@@ -268,7 +268,7 @@ mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoA
  * if \p r is a lower version than \p l, or zero if \p l and \p r are equal
  * versions (comparing upto \p maxcomps components).
  *
- * Components are \c major, \c minor, \c revision, and \c build. \p maxcomps 1 means just compare
+ * Components are \c major, \c minor, \c build, and \c revision. \p maxcomps 1 means just compare
  * majors. 2 means majors then minors. etc.
  */
 static int
@@ -284,9 +284,9 @@ assembly_names_compare_versions (MonoAssemblyName *l, MonoAssemblyName *r, int m
 	++i;
 	CMP (minor);
 	++i;
-	CMP (revision);
-	++i;
 	CMP (build);
+	++i;
+	CMP (revision);
 #undef CMP
 	return 0;
 }
@@ -857,7 +857,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	// Looking up corlib resources here can cause an infinite loop
-	// See: https://github.com/dotnet/coreclr/blob/0a762eb2f3a299489c459da1ddeb69e042008f07/src/vm/appdomain.cpp#L5178-L5239
+	// See: https://github.com/dotnet/runtime/blob/753d12facef5aa9d7926e3e284bfb40b7197f016/src/coreclr/vm/appdomain.cpp#L3518-L3572
 	if (!(strcmp (aname->name, MONO_ASSEMBLY_CORLIB_RESOURCE_NAME) == 0 && is_satellite) && postload) {
 		reference = mono_assembly_invoke_search_hook_internal (alc, requesting, aname, TRUE);
 		if (reference) {
@@ -2680,7 +2680,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 }
 
 MonoAssembly*
-mono_assembly_load_corlib ()
+mono_assembly_load_corlib (void)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;

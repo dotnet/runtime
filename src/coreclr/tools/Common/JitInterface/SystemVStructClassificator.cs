@@ -5,12 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
+using static Internal.JitInterface.SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR;
+using static Internal.JitInterface.SystemVClassificationType;
 
 namespace Internal.JitInterface
 {
-    using static SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR;
-    using static SystemVClassificationType;
-
     internal static class SystemVStructClassificator
     {
         private struct SystemVStructRegisterPassingHelper
@@ -65,7 +64,7 @@ namespace Internal.JitInterface
             public int[]                       FieldOffsets;
         };
 
-        private class FieldEnumerator
+        private static class FieldEnumerator
         {
             internal static IEnumerable<FieldDesc> GetInstanceFields(TypeDesc typeDesc, bool isFixedBuffer, int numIntroducedFields)
             {
@@ -167,7 +166,7 @@ namespace Internal.JitInterface
 
         // If we have a field classification already, but there is a union, we must merge the classification type of the field. Returns the
         // new, merged classification type.
-        static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
+        private static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
         {
             Debug.Assert((newFieldClassification == SystemVClassificationTypeInteger) ||
                             (newFieldClassification == SystemVClassificationTypeIntegerReference) ||
@@ -226,10 +225,7 @@ namespace Internal.JitInterface
             {
                 if (!field.IsStatic)
                 {
-                    if (firstField == null)
-                    {
-                        firstField = field;
-                    }
+                    firstField ??= field;
                     numIntroducedFields++;
                 }
             }

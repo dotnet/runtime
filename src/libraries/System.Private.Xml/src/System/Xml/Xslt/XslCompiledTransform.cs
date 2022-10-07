@@ -82,7 +82,7 @@ namespace System.Xml.Xsl
         public void Load(XmlReader stylesheet)
         {
             Reset();
-            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver());
+            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver(), originalStylesheetResolver: null);
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -90,7 +90,7 @@ namespace System.Xml.Xsl
         public void Load(XmlReader stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
-            LoadInternal(stylesheet, settings, stylesheetResolver);
+            LoadInternal(stylesheet, settings, stylesheetResolver, stylesheetResolver);
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -98,7 +98,7 @@ namespace System.Xml.Xsl
         public void Load(IXPathNavigable stylesheet)
         {
             Reset();
-            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver());
+            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver(), originalStylesheetResolver: null);
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -106,29 +106,32 @@ namespace System.Xml.Xsl
         public void Load(IXPathNavigable stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
-            LoadInternal(stylesheet, settings, stylesheetResolver);
+            LoadInternal(stylesheet, settings, stylesheetResolver, stylesheetResolver);
         }
 
         public void Load(string stylesheetUri)
         {
             Reset();
             ArgumentNullException.ThrowIfNull(stylesheetUri);
-            LoadInternal(stylesheetUri, XsltSettings.Default, CreateDefaultResolver());
+            LoadInternal(stylesheetUri, XsltSettings.Default, CreateDefaultResolver(), originalStylesheetResolver: null);
         }
 
         public void Load(string stylesheetUri, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
             ArgumentNullException.ThrowIfNull(stylesheetUri);
-            LoadInternal(stylesheetUri, settings, stylesheetResolver);
+            LoadInternal(stylesheetUri, settings, stylesheetResolver, stylesheetResolver);
         }
 
-        private void LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
+        // The 'originalStylesheetResolver' argument should be the original XmlResolver
+        // that was passed to the caller (or null), *before* any default substitutions
+        // were made by the caller.
+        private void LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver, XmlResolver? originalStylesheetResolver)
         {
             ArgumentNullException.ThrowIfNull(stylesheet);
 
             settings ??= XsltSettings.Default;
-            CompileXsltToQil(stylesheet, settings, stylesheetResolver);
+            CompileXsltToQil(stylesheet, settings, stylesheetResolver, originalStylesheetResolver);
             CompilerError? error = GetFirstError();
             if (error != null)
             {
@@ -142,9 +145,9 @@ namespace System.Xml.Xsl
 
         [MemberNotNull(nameof(_compilerErrorColl))]
         [MemberNotNull(nameof(_qil))]
-        private void CompileXsltToQil(object stylesheet, XsltSettings settings, XmlResolver? stylesheetResolver)
+        private void CompileXsltToQil(object stylesheet, XsltSettings settings, XmlResolver? stylesheetResolver, XmlResolver? originalStylesheetResolver)
         {
-            _compilerErrorColl = new Compiler(settings, _enableDebug, null).Compile(stylesheet, stylesheetResolver, out _qil);
+            _compilerErrorColl = new Compiler(settings, _enableDebug, null).Compile(stylesheet, stylesheetResolver, originalStylesheetResolver, out _qil);
         }
 
         /// <summary>
@@ -405,7 +408,7 @@ namespace System.Xml.Xsl
                 return new XmlUrlResolver();
             }
 
-            return XmlNullResolver.Singleton;
+            return XmlResolver.ThrowingResolver;
         }
     }
 }

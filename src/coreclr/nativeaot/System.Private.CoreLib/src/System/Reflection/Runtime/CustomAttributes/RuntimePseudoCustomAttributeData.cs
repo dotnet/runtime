@@ -51,14 +51,6 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
         }
 
-        internal sealed override string AttributeTypeString
-        {
-            get
-            {
-                return _attributeType.FormatTypeNameForReflection();
-            }
-        }
-
         internal sealed override IList<CustomAttributeTypedArgument> GetConstructorArguments(bool throwIfMissingMetadata)
         {
             return _constructorArguments;

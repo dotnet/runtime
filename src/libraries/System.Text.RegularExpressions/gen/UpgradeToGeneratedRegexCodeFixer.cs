@@ -100,10 +100,7 @@ namespace System.Text.RegularExpressions.Generator
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
             SyntaxNode? typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
 
-            if (typeDeclarationOrCompilationUnit is null)
-            {
-                typeDeclarationOrCompilationUnit = await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-            }
+            typeDeclarationOrCompilationUnit ??= await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
@@ -191,11 +188,31 @@ namespace System.Text.RegularExpressions.Generator
             // Allow user to pick a different name for the method.
             newMethod = newMethod.ReplaceToken(newMethod.Identifier, SyntaxFactory.Identifier(methodName).WithAdditionalAnnotations(RenameAnnotation.Create()));
 
-            // Generate the GeneratedRegex attribute syntax node with the specified parameters.
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue) switch
+            // We now need to check if we have to pass in the cultureName parameter. This parameter will be required in case the option
+            // RegexOptions.IgnoreCase is set for this Regex. To determine that, we first get the passed in options (if any), and then,
+            // we also need to parse the pattern in case there are options that were specified inside the pattern via the `(?i)` switch.
+            SyntaxNode? cultureNameValue = null;
+            RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgument(operationArguments) : RegexOptions.None;
+            string pattern = GetRegexPatternFromArgument(operationArguments);
+            regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+
+            // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture in order to pass
+            // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.
+            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
             {
-                ({ }, null) => new[] { patternValue },
-                ({ }, { }) => new[] { patternValue, regexOptionsValue },
+                // If CultureInvariant wasn't specified as options, we default to the current culture.
+                cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+
+                // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
+                regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
+            }
+
+            // Generate the GeneratedRegex attribute syntax node with the specified parameters.
+            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
+            {
+                ({ }, null, null) => new[] { patternValue },
+                ({ }, { }, null) => new[] { patternValue, regexOptionsValue },
+                ({ }, { }, { }) => new[] { patternValue, regexOptionsValue, cultureNameValue },
                 _ => Array.Empty<SyntaxNode>(),
             });
 
@@ -223,10 +240,29 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            static string GetRegexPatternFromArgument(ImmutableArray<IArgumentOperation> arguments)
+            {
+                IArgumentOperation? patternArgument = arguments.SingleOrDefault(arg => arg.Parameter.Name == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+                if (patternArgument is null)
+                {
+                    return null;
+                }
+
+                return patternArgument.Value.ConstantValue.Value as string;
+            }
+
+            static RegexOptions GetRegexOptionsFromArgument(ImmutableArray<IArgumentOperation> arguments)
+            {
+                IArgumentOperation? optionsArgument = arguments.SingleOrDefault(arg => arg.Parameter.Name == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
+
+                return optionsArgument is null ? RegexOptions.None :
+                    (RegexOptions)(int)optionsArgument.Value.ConstantValue.Value;
+            }
+
             // Helper method that looks generates the node for pattern argument or options argument.
             static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> arguments, SyntaxGenerator generator, string parameterName)
             {
-                var argument = arguments.SingleOrDefault(arg => arg.Parameter.Name == parameterName);
+                IArgumentOperation? argument = arguments.SingleOrDefault(arg => arg.Parameter.Name == parameterName);
                 if (argument is null)
                 {
                     return null;

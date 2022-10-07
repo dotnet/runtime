@@ -56,7 +56,7 @@ namespace ILCompiler
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
-            
+
             foreach (var refType in reflectableTypes)
             {
                 _reflectableTypes.Add(refType.Entity, refType.Category);
@@ -214,7 +214,7 @@ namespace ILCompiler
             private readonly MetadataBlockingPolicy _blockingPolicy;
             private readonly AnalysisBasedMetadataManager _parent;
 
-            public Policy(MetadataBlockingPolicy blockingPolicy, 
+            public Policy(MetadataBlockingPolicy blockingPolicy,
                 AnalysisBasedMetadataManager parent)
             {
                 _blockingPolicy = blockingPolicy;

@@ -39,8 +39,8 @@ namespace System.Numerics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // OOM on 32 bit
-        [SkipOnPlatform(TestPlatforms.Browser, "OOM on browser due to large array allocations")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
+        [OuterLoop("Allocates large arrays")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "OOM on browser and mobile due to large array allocations")]
         public static void RunGetBitLengthTestsLarge()
         {
             // Very large cases

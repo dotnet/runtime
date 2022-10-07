@@ -208,12 +208,12 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(realChild.HasFullName);
 
             int numberOfSegments = 0;
-            foreach (char c in fullName)
+            ReadOnlySpan<char> span = fullName.AsSpan();
+            int dotPos;
+            while ((dotPos = span.IndexOf('.')) >= 0)
             {
-                if (c == '.')
-                {
-                    numberOfSegments++;
-                }
+                span = span.Slice(dotPos + 1);
+                numberOfSegments++;
             }
 
             StringHandle simpleName = GetSimpleName(realChild, numberOfSegments);

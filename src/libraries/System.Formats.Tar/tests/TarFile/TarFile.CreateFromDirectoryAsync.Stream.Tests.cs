@@ -48,7 +48,7 @@ namespace System.Formats.Tar.Tests
             {
                 await using (WrappedStream unwritable = new WrappedStream(archiveStream, canRead: true, canWrite: false, canSeek: true))
                 {
-                    await Assert.ThrowsAsync<IOException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path", destination: unwritable, includeBaseDirectory: false));
+                    await Assert.ThrowsAsync<ArgumentException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path", destination: unwritable, includeBaseDirectory: false));
                 }
             }
         }

@@ -1,26 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
-             Link="Common\System\IO\TempDirectory.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs"
-             Link="Source\ConfigPathUtility.cs" />
-    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs"
-             Link="Source\ExceptionUtil.cs" />
-    <Compile Include="..\src\System\Configuration\StringUtil.cs"
-             Link="Source\StringUtil.cs" />
-    <Compile Include="..\src\System\Configuration\TypeUtil.cs"
-             Link="Source\TypeUtil.cs" />
-    <Compile Include="..\src\System\Configuration\UrlPath.cs"
-             Link="Source\UrlPath.cs" />
-    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs"
-             Link="Source\ValidatorUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs" Link="Source\ConfigPathUtility.cs" />
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs" Link="Source\ExceptionUtil.cs" />
+    <Compile Include="..\src\System\Configuration\StringUtil.cs" Link="Source\StringUtil.cs" />
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs" Link="Source\TypeUtil.cs" />
+    <Compile Include="..\src\System\Configuration\UrlPath.cs" Link="Source\UrlPath.cs" />
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs" Link="Source\ValidatorUtils.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Mono\CallbackValidatorTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
@@ -98,6 +90,8 @@
     <Compile Include="System\Configuration\UriSectionTests.cs" />
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticsTestData.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System\Diagnostics\TraceSourceConfigurationTests.cs"  Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
   </ItemGroup>
   <ItemGroup>

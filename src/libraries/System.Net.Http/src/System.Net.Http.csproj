@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -134,6 +134,8 @@
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs"
              Link="Common\System\Net\HttpDateParser.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
@@ -208,8 +210,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
-             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
@@ -469,7 +469,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">

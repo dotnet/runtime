@@ -92,16 +92,8 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             }
         }
 
-        internal sealed override string AttributeTypeString
-        {
-            get
-            {
-                return new QTypeDefRefOrSpec(_reader, _customAttribute.GetAttributeTypeHandle(_reader)).FormatTypeName(new TypeContext(null, null));
-            }
-        }
-
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal sealed override IList<CustomAttributeTypedArgument> GetConstructorArguments(bool throwIfMissingMetadata)
         {
@@ -158,7 +150,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         }
 
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal sealed override IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata)
         {

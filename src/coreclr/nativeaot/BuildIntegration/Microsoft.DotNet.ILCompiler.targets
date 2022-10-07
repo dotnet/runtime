@@ -1,67 +1,18 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!--
+***********************************************************************************************
+Microsoft.DotNet.ILCompiler.targets
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
 
-    <!-- Define the name of the runtime specific compiler package to import -->
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</OSIdentifier>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</OSIdentifier>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</OSIdentifier>
-    <OSIdentifier Condition="'$(OSIdentifier)' == ''">linux</OSIdentifier>
-
-    <!-- Determine TargetArchitecture from RuntimeIdentifier -->
-    <RidWithHyphen>$(RuntimeIdentifier)-</RidWithHyphen>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x86-'))">x86</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x64-'))">x64</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm-'))">arm</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm64-'))">arm64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">unknown</TargetArchitecture>
-
-    <RuntimeIlcPackageName>runtime.$(OSIdentifier)-$(TargetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
-
-    <OSHostArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</OSHostArch>
-    <!-- OSArchitecture does not report the true OS architecture for x86 and x64 processes running on Windows ARM64. -->
-    <!-- The following condition checks those cases. -->
-    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('Windows')) and
-        $([System.Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE', EnvironmentVariableTarget.Machine)) == 'ARM64'">arm64</OSHostArch>
-
-    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
-    <IlcCalledViaPackage>true</IlcCalledViaPackage>
-
-  </PropertyGroup>
-
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>  
+  <!--We need to support SDK6.0 loading the latest ILC packages-->
   <PropertyGroup>
-
-    <!-- If the NativeAOT toolchain is being consumed via package, runtime-specific properties must be set before compilation can proceed -->
-    <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
-    <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
-    <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
-
+    <NeedNativePublishSupportForSDK6>$(NETCoreSdkVersion.StartsWith('6'))</NeedNativePublishSupportForSDK6>
   </PropertyGroup>
-
-  <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
-    <!-- This targets file is imported by the SDK when the AotRuntimePackageLoadedViaSDK property is set. SDK resolves runtime package paths differently-->
-    <Error Condition="'@(ResolvedILCompilerPack)' == '' AND '$(AotRuntimePackageLoadedViaSDK)' == 'true'" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
-    <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PackageDefinitions)' == '' AND '$(AotRuntimePackageLoadedViaSDK)' != 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
-
-
-    <!-- This targets file is imported by the SDK when the AotRuntimePackageLoadedViaSDK property is set. Use the SDK runtime package resolve property to set  down stream properties -->
-    <PropertyGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' == 'true'">
-      <RuntimePackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
-      <IlcHostPackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
-      <IlcPath>>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcPath>
-    </PropertyGroup>
-
-    <!-- Use the non-SDK runtime package resolve property to set down stream properties if there is an explicit reference in the project -->
-    <PropertyGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true'">
-      <RuntimePackagePath Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'">%(PackageDefinitions.ResolvedPath)</RuntimePackagePath>
-      <IlcHostPackagePath Condition="'%(PackageDefinitions.Name)' == '$(IlcHostPackageName)'">%(PackageDefinitions.ResolvedPath)</IlcHostPackagePath>
-    </PropertyGroup>
-
-  </Target>
-
-  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets" />
-
+ <Import Project="$(ILCompilerTargetsPath)" Condition="'$(NeedNativePublishSupportForSDK6)' == 'true'"/>
 </Project>

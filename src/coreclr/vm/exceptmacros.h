@@ -240,7 +240,16 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
-LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
+enum VEH_ACTION
+{
+    VEH_NO_ACTION = -3,
+    VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION = -2,
+    VEH_CONTINUE_EXECUTION = EXCEPTION_CONTINUE_EXECUTION,
+    VEH_CONTINUE_SEARCH = EXCEPTION_CONTINUE_SEARCH,
+    VEH_EXECUTE_HANDLER = EXCEPTION_EXECUTE_HANDLER
+};
+
+VEH_ACTION CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 
 // Actual UEF worker prototype for use by GCUnhandledExceptionFilter.
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);

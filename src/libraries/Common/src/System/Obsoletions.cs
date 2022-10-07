@@ -150,5 +150,11 @@ namespace System
 
         internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
         internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
+
+        internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
+        internal const string XmlSecureResolverDiagId = "SYSLIB0047";
+
+        internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
+        internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
     }
 }

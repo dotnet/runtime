@@ -6638,6 +6638,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
         reinterpret_cast<ULONG64>(s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress) :
         reinterpret_cast<ULONG64>(reinterpret_cast<PVOID>(GetIP(pExceptionInfo->ContextRecord)));
 
+#if defined(HOST_WINDOWS)
 #if defined(TARGET_X86)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 #elif defined(TARGET_AMD64)
@@ -6646,10 +6647,9 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
-#elif defined(TARGET_LOONGARCH64)
-    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
+#endif
 #endif
 }
 
@@ -6792,7 +6792,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
     // format because changing HKLM keys requires admin priviledge.  Padding with zeros is not a security mitigation,
     // but rather a forward looking compatibility measure.  If future versions of Windows introduces more parameters for
     // JIT debugger launch, it is preferrable to pass zeros than other random values for those unsupported parameters.
-    pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    pStrArgsBuf->Printf(ssDebuggerString.GetUTF8(), pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     return true;
 #else // !TARGET_UNIX
@@ -8710,25 +8710,22 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         tid = GetCurrentThreadId();
 
         DWORD flags = 0;
-        UINT resIDMessage = 0;
 
+        CHAR const* msg;
         if (userBreakpoint)
         {
-            resIDMessage = IDS_DEBUG_USER_BREAKPOINT_MSG;
+            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
         }
         else
         {
-            resIDMessage = IDS_DEBUG_UNHANDLED_EXCEPTION_MSG;
+            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
         }
 
-        SString text;
-        text.LoadResource(CCompRC::Error, resIDMessage);
-
         // Format message string using optional parameters
         StackSString formattedMessage;
-        formattedMessage.Printf((LPWSTR)text.GetUnicode(), pid, pid, tid, tid);
+        formattedMessage.Printf(msg, pid, pid, tid, tid);
 
         {
             // Another potential hang. This may get run on the helper if we have a stack overflow.
@@ -13191,19 +13188,14 @@ void STDCALL ExceptionHijackWorker(
 //    See code:ExceptionHijackPersonalityRoutine for more information.
 //
 // Arguments:
-//    * pExceptionRecord   - not used
-//    * MemoryStackFp      - not used
-//    * BackingStoreFp     - not used
-//    * pContextRecord     - not used
-//    * pDispatcherContext - not used
-//    * GlobalPointer      - not used
+//    Standard personality routine signature.
 //
 // Return Value:
 //    Always return ExceptionContinueSearch.
 //
 
 EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                              IN     ULONG64             MemoryStackFp,
+                                              IN     PVOID               pEstablisherFrame,
                                               IN OUT PCONTEXT            pContextRecord,
                                               IN OUT PDISPATCHER_CONTEXT pDispatcherContext)
 {
@@ -13216,7 +13208,7 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 // Personality routine for unwinder the assembly hijack stub on 64-bit.
 //
 // Arguments:
-//    standard Personality routine signature.
+//    Standard personality routine signature.
 //
 // Assumptions:
 //    This is caleld by the OS exception logic during exception handling.
@@ -13243,9 +13235,8 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 //    On AMD64, we work around this by using an empty personality routine.
 
 EXTERN_C EXCEPTION_DISPOSITION
-ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                        BIT64_ARG(IN     ULONG64             MemoryStackFp)
-                    NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
+ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                                  IN     PVOID               pEstablisherFrame,
                                   IN OUT PCONTEXT            pContextRecord,
                                   IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                  )
@@ -13268,7 +13259,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
 
     // This copies pHijackContext into pDispatcherContext, which the OS can then
     // use to walk the stack.
-    FixupDispatcherContext(pDispatcherContext, pHijackContext, pContextRecord, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
+    FixupDispatcherContext(pDispatcherContext, pHijackContext, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
 #else
     _ASSERTE(!"NYI - ExceptionHijackPersonalityRoutine()");
 #endif
@@ -16596,22 +16587,23 @@ Debugger::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     DAC_ENUM_VTHIS();
     SUPPORTS_DAC;
-    _ASSERTE(m_rgHijackFunction != NULL);
 
-    if ( flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pMethodInfos.IsValid())
         {
             m_pMethodInfos->EnumMemoryRegions(flags);
         }
 
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData),
-                                sizeof(DebuggerLazyInit));
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData), sizeof(DebuggerLazyInit));
     }
 
     // Needed for stack walking from an initial native context.  If the debugger can find the
     // on-disk image of clr.dll, then this is not necessary.
-    DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    if (m_rgHijackFunction.IsValid())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    }
 }
 
 

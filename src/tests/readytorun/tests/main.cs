@@ -414,6 +414,13 @@ class Program
             Assert.AreEqual(value[i], (byte)(9 - i));
     }
 
+    // public constructor, so we run something when loading from byte array in the test below
+    public Program()
+    {
+        // do something in the constructor to see if it works
+        TestVirtualMethodCalls();
+    }
+
     static void TestLoadR2RImageFromByteArray()
     {
         Assembly assembly1 = typeof(Program).Assembly;
@@ -422,6 +429,8 @@ class Program
         Assembly assembly2 = Assembly.Load(array);
 
         Assert.AreEqual(assembly2.FullName, assembly1.FullName);
+
+        assembly2.CreateInstance("Program");
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -513,9 +522,8 @@ class Program
         Console.WriteLine("RVAFieldTest");
         RVAFieldTest();
 
-//        Disable for https://github.com/dotnet/runtime/issues/71507
-//        Console.WriteLine("TestLoadR2RImageFromByteArray");
-//        TestLoadR2RImageFromByteArray();
+        Console.WriteLine("TestLoadR2RImageFromByteArray");
+        TestLoadR2RImageFromByteArray();
 
         Console.WriteLine("TestILBodyChange");
         TestILBodyChange();

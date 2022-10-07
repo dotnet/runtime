@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 // View the certificate
                 if (!Interop.CryptUI.CryptUIDlgViewCertificateW(ViewInfo, IntPtr.Zero))
-                    dwErrorCode = Marshal.GetLastWin32Error();
+                    dwErrorCode = Marshal.GetLastPInvokeError();
 
                 // CryptUIDlgViewCertificateW returns ERROR_CANCELLED if the user closes
                 // the window through the x button or by pressing CANCEL, so ignore this error code
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
             {
-                Exception e = new CryptographicException(Marshal.GetLastWin32Error());
+                Exception e = new CryptographicException(Marshal.GetLastPInvokeError());
                 safeCertStoreHandle?.Dispose();
                 throw e;
             }
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates
                                                         Interop.Crypt32.CERT_STORE_ADD_ALWAYS,
                                                         ppStoreContext))
                 {
-                    dwErrorCode = Marshal.GetLastWin32Error();
+                    dwErrorCode = Marshal.GetLastPInvokeError();
                 }
             }
 

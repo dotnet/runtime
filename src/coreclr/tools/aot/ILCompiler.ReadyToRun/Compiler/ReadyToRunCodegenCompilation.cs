@@ -228,12 +228,6 @@ namespace ILCompiler
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
         /// <summary>
-        /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
-        /// because their construction takes a significant amount of time.
-        /// </summary>
-        private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
-
-        /// <summary>
         /// Input MSIL file names.
         /// </summary>
         private readonly IEnumerable<string> _inputFiles;
@@ -243,6 +237,7 @@ namespace ILCompiler
         private readonly bool _resilient;
 
         private readonly int _parallelism;
+        private readonly CorInfoImpl[] _corInfoImpls;
 
         private readonly bool _generateMapFile;
         private readonly bool _generateMapCsvFile;
@@ -269,6 +264,7 @@ namespace ILCompiler
         /// for the same type during compilation so preserve the computed value.
         /// </summary>
         private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
+        private Func<TypeDesc, bool> _computedFixedLayoutTypesUncached;
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -306,8 +302,10 @@ namespace ILCompiler
                   logger,
                   instructionSetSupport)
         {
+            _computedFixedLayoutTypesUncached = IsLayoutFixedInCurrentVersionBubbleInternal;
             _resilient = resilient;
             _parallelism = parallelism;
+            _corInfoImpls = new CorInfoImpl[_parallelism];
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
@@ -322,7 +320,6 @@ namespace ILCompiler
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
-            _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
@@ -344,6 +341,11 @@ namespace ILCompiler
         public override void Compile(string outputFile)
         {
             _dependencyGraph.ComputeMarkedNodes();
+
+            _doneAllCompiling = true;
+            Array.Clear(_corInfoImpls);
+            _compilationThreadSemaphore.Release(_parallelism);
+
             var nodes = _dependencyGraph.MarkedNodeList;
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
@@ -507,7 +509,7 @@ namespace ILCompiler
         }
 
         public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
-            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
+            _computedFixedLayoutTypes.GetOrAdd(type, _computedFixedLayoutTypesUncached);
 
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {
@@ -556,10 +558,21 @@ namespace ILCompiler
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
-                foreach (var method in methodsThatNeedILBodies)
-                    _methodsWhichNeedMutableILBodies.Add(method);
+                if (methodsThatNeedILBodies != null)
+                    foreach (var method in methodsThatNeedILBodies)
+                        _methodsWhichNeedMutableILBodies.Add(method);
             }
         }
+
+        [ThreadStatic]
+        private static int s_methodsCompiledPerThread = 0;
+
+        private SemaphoreSlim _compilationThreadSemaphore = new(0);
+        private volatile IEnumerator<DependencyNodeCore<NodeFactory>> _currentCompilationMethodList;
+        private volatile bool _doneAllCompiling;
+        private int _finishedThreadCount;
+        private ManualResetEventSlim _compilationSessionComplete = new ManualResetEventSlim();
+        private bool _hasCreatedCompilationThreads = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -695,23 +708,69 @@ namespace ILCompiler
                 if (_parallelism == 1)
                 {
                     foreach (var dependency in methodList)
-                        CompileOneMethod(dependency);
+                        CompileOneMethod(dependency, 0);
                 }
                 else
                 {
-                    ParallelOptions options = new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = _parallelism
-                    };
+                    _currentCompilationMethodList = methodList.GetEnumerator();
+                    _finishedThreadCount = 0;
+                    _compilationSessionComplete.Reset();
 
-                    Parallel.ForEach(methodList, options, CompileOneMethod);
+                    if (!_hasCreatedCompilationThreads)
+                    {
+                        for (int compilationThreadId = 1; compilationThreadId < _parallelism; compilationThreadId++)
+                        {
+                            new Thread(CompilationThread).Start((object)compilationThreadId);
+                        }
+                        _hasCreatedCompilationThreads = true;
+                    }
+
+                    _compilationThreadSemaphore.Release(_parallelism - 1);
+                    CompileOnThread(0);
+                    _compilationSessionComplete.Wait();
                 }
 
                 // Re-enable generation of new tokens after the multi-threaded compile
                 NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = false;
             }
 
-            void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency)
+            void CompilationThread(object objThreadId)
+            {
+                while(true)
+                {
+                    _compilationThreadSemaphore.Wait();
+                    lock(this)
+                    {
+                        if (_doneAllCompiling)
+                            return;
+                    }
+                    CompileOnThread((int)objThreadId);
+                }
+            }
+
+            void CompileOnThread(int compilationThreadId)
+            {
+                var compilationMethodList = _currentCompilationMethodList;
+                while (true)
+                {
+                    DependencyNodeCore<NodeFactory> dependency;
+                    lock (compilationMethodList)
+                    {
+                        if (!compilationMethodList.MoveNext())
+                        {
+                            if (Interlocked.Increment(ref _finishedThreadCount) == _parallelism)
+                                _compilationSessionComplete.Set();
+
+                            return;
+                        }
+                        dependency = compilationMethodList.Current;
+                    }
+
+                    CompileOneMethod(dependency, compilationThreadId);
+                }
+            }
+
+            void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency, int compileThreadId)
             {
                 MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                 if (methodCodeNodeNeedingCode == null)
@@ -744,9 +803,35 @@ namespace ILCompiler
                 {
                     using (PerfEventSource.StartStopEvents.JitMethodEvents())
                     {
-                        // Create only 1 CorInfoImpl per thread.
-                        // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
-                        CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
+                        s_methodsCompiledPerThread++;
+                        bool createNewCorInfoImpl = false;
+
+                        if (_corInfoImpls[compileThreadId] == null)
+                            createNewCorInfoImpl = true;
+                        else
+                        {
+                            if (_parallelism == 1)
+                            {
+                                // Create only 1 CorInfoImpl if not using parallelism
+                                // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                            }
+                            else
+                            {
+                                // Periodically create a new CorInfoImpl to clear out stale caches
+                                // This is done as the CorInfoImpl holds a cache of data structures visible to the JIT
+                                // Those data structures include both structures which will last for the lifetime of the compilation
+                                // process, as well as various temporary structures that would really be better off with thread lifetime.
+                                if ((s_methodsCompiledPerThread % 3000) == 0)
+                                {
+                                    createNewCorInfoImpl = true;
+                                }
+                            }
+                        }
+
+                        if (createNewCorInfoImpl)
+                            _corInfoImpls[compileThreadId] = new CorInfoImpl(this);
+
+                        CorInfoImpl corInfoImpl = _corInfoImpls[compileThreadId];
                         corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
                     }
                 }
@@ -782,7 +867,7 @@ namespace ILCompiler
 
         public override void Dispose()
         {
-            _corInfoImpls?.Clear();
+            Array.Clear(_corInfoImpls);
         }
     }
 }

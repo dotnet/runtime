@@ -22,15 +22,12 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         //Even though TOptions is annotated, we need to annotate as RUC as we can't guarantee properties on referenced types are preserved.
+        [RequiresDynamicCode(OptionsBuilderConfigurationExtensions.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(OptionsBuilderConfigurationExtensions.TrimmingRequiredUnreferencedCodeMessage)]
         public ConfigureFromConfigurationOptions(IConfiguration config)
-            : base(options => BindFromOptions(options, config))
+            : base(options => ConfigurationBinder.Bind(config, options))
         {
             ThrowHelper.ThrowIfNull(config);
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The only call to this method is the constructor which is already annotated as RequiresUnreferencedCode.")]
-        private static void BindFromOptions(TOptions options, IConfiguration config) => ConfigurationBinder.Bind(config, options);
     }
 }

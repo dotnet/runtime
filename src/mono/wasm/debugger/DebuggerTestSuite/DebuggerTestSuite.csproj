@@ -26,7 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
-    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration)" ReferenceOutputAssembly="false" Private="false" />
 
     <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
     <!-- needed for ConditionalFact etc -->

@@ -59,7 +59,6 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
-#define LegacyCoreLibName_A "mscorlib"
 
 class StringArrayList;
 
@@ -3466,6 +3465,14 @@ private:
 
     BYTE m_inited;
 };
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int GuidToLPSTR(                  // Return status.
+    GUID        Guid,                  // [IN] The GUID to convert.
+    _Out_writes_ (cchGuid) LPSTR szGuid, // [OUT] String into which the GUID is stored
+    DWORD       cchGuid);              // [IN] Size in chars of szGuid
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.

@@ -243,6 +243,10 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
+#ifdef HOST_WASI
+static gboolean debugger_enabled = FALSE;
+#endif
+
 static void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 
@@ -4088,6 +4092,18 @@ call:
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I1)
+			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U1)
+			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I2)
+			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U2)
+			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
 			goto exit_frame;
@@ -6792,6 +6808,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
 			/* Just a placeholder for a breakpoint */
+#if HOST_WASI
+			if (debugger_enabled)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
@@ -8189,4 +8209,8 @@ mono_ee_interp_init (const char *opts)
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
+
+#ifdef HOST_WASI
+	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
+#endif
 }

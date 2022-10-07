@@ -715,6 +715,64 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+size_t CEEInfo::printObjectDescription (
+        void*  handle,
+        char*  buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    size_t bytesWritten = 0;
+
+    _ASSERT(handle != nullptr);
+
+    JIT_TO_EE_TRANSITION();
+
+    Object* obj = (Object*)handle;
+
+    GCX_COOP();
+
+    StackSString stackStr;
+
+    // Currently only supported for String and RuntimeType
+    if (obj->GetMethodTable()->IsString())
+    {
+        ((StringObject*)obj)->GetSString(stackStr);
+    }
+    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+    }
+    else
+    {
+        _ASSERTE(!"Unexpected object type");
+    }
+
+    const UTF8* utf8data = stackStr.GetUTF8();
+    if (bufferSize > 0)
+    {
+        bytesWritten = min(bufferSize - 1, stackStr.GetCount());
+        memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
+
+        // Always null-terminate
+        buffer[bytesWritten] = 0;
+    }
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = stackStr.GetCount() + 1;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return bytesWritten;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -1302,7 +1360,7 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         helper += delta;
     }
     else
-    if (!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics())
+    if ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited())
     {
         const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
 
@@ -4882,7 +4940,7 @@ void CEEInfo::getCallInfo(
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
     DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
-    pResult->exactContextNeedsRuntimeLookup = (!constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+    pResult->exactContextNeedsRuntimeLookup = (fIsStaticVirtualMethod && !fResolvedConstraint && !constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
 
     if (pTargetMD->HasMethodInstantiation())
     {
@@ -5943,6 +6001,31 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         return CORINFO_HELP_UNBOX_NULLABLE;
 
     return CORINFO_HELP_UNBOX;
+}
+
+/***********************************************************************/
+void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void* pointer = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
+    {
+        GCX_COOP();
+        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return pointer;
 }
 
 /***********************************************************************/
@@ -7142,6 +7225,25 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
+{
+    if (!methodTable->IsValueType() ||
+        !CanCompareBitsOrUseFastGetHashCode(methodTable))
+    {
+        return false;
+    }
+
+    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
+    // We also need to check for an IEquatable<T> implementation.
+    Instantiation inst(&typeHandle, 1);
+    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     CORINFO_METHOD_INFO * methInfo)
 {
@@ -7192,8 +7294,9 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
 
         // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). But for now we'll
-        // do the simple thing and hardcode the list of types we know fulfill this contract.
+        // (i.e., its operator == could be implemented via memcmp). The best we can do
+        // for now is hardcode a list of known supported types and then also include anything
+        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
 
@@ -7210,7 +7313,8 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum())
+            || methodTable->IsEnum()
+            || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
         }
@@ -9458,6 +9562,32 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 /*********************************************************************/
 
+int CEEInfo::getExactClasses (
+        CORINFO_CLASS_HANDLE  baseType,
+        int                   maxExactClasses,
+        CORINFO_CLASS_HANDLE* exactClsRet
+        )
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    int exactClassesCount = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    // This function is currently implemented only on NativeAOT
+    // but can be implemented for CoreCLR as well (e.g. for internal types)
+
+    EE_TO_JIT_TRANSITION();
+
+    return exactClassesCount;
+}
+
+/*********************************************************************/
+
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     CORINFO_SIG_INFO*       sig,
     CORINFO_ARG_LIST_HANDLE args
@@ -10542,9 +10672,9 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     {
         SString output;
         output.Printf(
-            W("JIT assert failed:\n")
-            W("%hs\n")
-            W("    File: %hs Line: %d\n"),
+            "JIT assert failed:\n"
+            "%s\n"
+            "    File: %s Line: %d\n",
             szExpr, szFile, iLine);
         COMPlusThrowNonLocalized(kInvalidProgramException, output.GetUnicode());
     }
@@ -11594,7 +11724,19 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        *ppValue = (LPVOID)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
+        void* ppPinnedString = nullptr;
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+
+        if (ppPinnedString != nullptr)
+        {
+            *ppValue = ppPinnedString;
+            result = IAT_VALUE;
+        }
+        else
+        {
+            *ppValue = (void*)ptr;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -11614,7 +11756,19 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     InfoAccessType result = IAT_PVALUE;
 
     JIT_TO_EE_TRANSITION();
-    *ppValue = StringObject::GetEmptyStringRefPtr();
+    void* pinnedStr = nullptr;
+    void* pinnedStrHandlePtr = StringObject::GetEmptyStringRefPtr(&pinnedStr);
+
+    if (pinnedStr != nullptr)
+    {
+        *ppValue = pinnedStr;
+        result = IAT_VALUE;
+    }
+    else
+    {
+        *ppValue = pinnedStrHandlePtr;
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -13300,7 +13454,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (rid == 0)
             {
                 // Empty string
-                result = (size_t)StringObject::GetEmptyStringRefPtr();
+                result = (size_t)StringObject::GetEmptyStringRefPtr(nullptr);
             }
             else
             {
@@ -13636,16 +13790,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 else
                 {
                     // Verification failures are failfast events
-                    DefineFullyQualifiedNameForClassW();
+                    DefineFullyQualifiedNameForClass();
                     SString fatalErrorString;
-                    fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    fatalErrorString.Printf("Verify_TypeLayout '%s' failed to verify type layout",
+                        GetFullyQualifiedNameForClass(pMT));
 
 #ifdef _DEBUG
                     {
-                        StackSString buf;
-                        buf.SetAndConvertToUTF8(fatalErrorString.GetUnicode());
-                        _ASSERTE_MSG(false, buf.GetUTF8());
+                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
                         // Run through the type layout logic again, after the assert, makes debugging easy
                         TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                     }
@@ -13710,25 +13862,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
             {
                 // Verification failures are failfast events
-                DefineFullyQualifiedNameForClassW();
-                SString ssFieldName(SString::Utf8, pField->GetName());
+                DefineFullyQualifiedNameForClass();
 
                 SString fatalErrorString;
-                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)"),
-                    GetFullyQualifiedNameForClassW(pEnclosingMT),
-                    ssFieldName.GetUnicode(),
+                fatalErrorString.Printf("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)",
+                    GetFullyQualifiedNameForClass(pEnclosingMT),
+                    pField->GetName(),
                     fieldOffset,
                     actualFieldOffset,
                     baseOffset,
                     actualBaseOffset);
-
-#ifdef _DEBUG
-                {
-                    StackSString buf;
-                    buf.SetAndConvertToUTF8(fatalErrorString.GetUnicode());
-                    _ASSERTE_MSG(false, buf.GetUTF8());
-                }
-#endif
+                _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
 
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                 return FALSE;
@@ -13818,7 +13962,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 else
                 {
                     // Verification failures are failfast events
-                    DefineFullyQualifiedNameForClassW();
+                    DefineFullyQualifiedNameForClass();
                     SString methodNameDecl;
                     SString methodNameImplRuntime(W("(NULL)"));
                     SString methodNameImplCompiler(W("(NULL)"));
@@ -13838,19 +13982,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     }
 
                     SString fatalErrorString;
-                    fatalErrorString.Printf(W("Verify_VirtualFunctionOverride Decl Method '%s' on type '%s' is '%s'(actual) instead of expected '%s'(from compiler)"),
-                        methodNameDecl.GetUnicode(),
-                        GetFullyQualifiedNameForClassW(thImpl.GetMethodTable()),
-                        methodNameImplRuntime.GetUnicode(),
-                        methodNameImplCompiler.GetUnicode());
+                    fatalErrorString.Printf("Verify_VirtualFunctionOverride Decl Method '%s' on type '%s' is '%s'(actual) instead of expected '%s'(from compiler)",
+                        methodNameDecl.GetUTF8(),
+                        GetFullyQualifiedNameForClass(thImpl.GetMethodTable()),
+                        methodNameImplRuntime.GetUTF8(),
+                        methodNameImplCompiler.GetUTF8());
 
-#ifdef _DEBUG
-                    {
-                        StackSString buf;
-                        buf.SetAndConvertToUTF8(fatalErrorString.GetUnicode());
-                        _ASSERTE_MSG(false, buf.GetUTF8());
-                    }
-#endif
+                    _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
                     _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
@@ -13976,7 +14114,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
                 else
                 {
-                    DefineFullyQualifiedNameForClassW();
+                    DefineFullyQualifiedNameForClass();
                     SString methodName;
                     pMDCompare->GetFullMethodInfo(methodName);
                     void* compileTimeTypes = types.OpenRawBuffer();
@@ -13988,21 +14126,16 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     void* runtimeTypeData = pMethodMetadata != NULL ? (void*)pMethodMetadata->pTypes : (void*)NULL;
 
                     SString fatalErrorString;
-                    fatalErrorString.Printf(W("VERIFY_IL_BODY Method '%s' type '%s' does not match IL body expected DEBUGINFO MethodData {%d} {%p} RuntimeMethodData {%d} {%p} Types {%d} {%p} RuntimeTypes {%d} {%p}"),
-                        methodName.GetUnicode(),
-                        GetFullyQualifiedNameForClassW(pMDCompare->GetMethodTable()),
+                    fatalErrorString.Printf("VERIFY_IL_BODY Method '%s' type '%s' does not match IL body expected DEBUGINFO MethodData {%d} {%p} RuntimeMethodData {%d} {%p} Types {%d} {%p} RuntimeTypes {%d} {%p}",
+                        methodName.GetUTF8(),
+                        GetFullyQualifiedNameForClass(pMDCompare->GetMethodTable()),
                         (int)dwBlobSize, pBlobStart,
                         runtimeMethodDataSize, runtimeMethodData,
                         (int)cTypes, compileTimeTypes,
                         runtimeTypeCount, runtimeTypeData
                         );
 
-#ifdef _DEBUG
-                    {
-                        StackSString buf;
-                        buf.SetAndConvertToUTF8(fatalErrorString.GetUnicode());
-                        _ASSERTE_MSG(false, buf.GetUTF8());                    }
-#endif
+                    _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
                     _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());

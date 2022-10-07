@@ -39,6 +39,17 @@ namespace System.Diagnostics
         public System.Diagnostics.SourceLevels EventType { get { throw null; } set { } }
         public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string? formatOrMessage, object?[]? args, object? data1, object?[]? data) { throw null; }
     }
+    public sealed partial class InitializingSwitchEventArgs : System.EventArgs
+    {
+        public InitializingSwitchEventArgs(System.Diagnostics.Switch @switch) { }
+        public System.Diagnostics.Switch Switch { get { throw null; } }
+    }
+    public sealed partial class InitializingTraceSourceEventArgs : System.EventArgs
+    {
+        public InitializingTraceSourceEventArgs(System.Diagnostics.TraceSource traceSource) { }
+        public System.Diagnostics.TraceSource TraceSource { get { throw null; } }
+        public bool WasInitialized { get { throw null; } set { } }
+    }
     public partial class SourceFilter : System.Diagnostics.TraceFilter
     {
         public SourceFilter(string source) { }
@@ -71,13 +82,16 @@ namespace System.Diagnostics
         protected Switch(string displayName, string? description) { }
         protected Switch(string displayName, string? description, string defaultSwitchValue) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public string DefaultValue { get { throw null; } }
         public string Description { get { throw null; } }
         public string DisplayName { get { throw null; } }
+        public static event System.EventHandler<System.Diagnostics.InitializingSwitchEventArgs>? Initializing { add { } remove { } }
         protected int SwitchSetting { get { throw null; } set { } }
-        protected string Value { get { throw null; } set { } }
+        public string Value { get { throw null; } set { } }
         protected virtual string[]? GetSupportedAttributes() { throw null; }
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
+        public void Refresh() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property)]
     public sealed partial class SwitchAttribute : System.Attribute
@@ -121,6 +135,7 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Indent() { }
         public static void Refresh() { }
+        public static event System.EventHandler? Refreshing { add { } remove { } }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceError(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
@@ -286,6 +301,8 @@ namespace System.Diagnostics
         public TraceSource(string name) { }
         public TraceSource(string name, System.Diagnostics.SourceLevels defaultLevel) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public System.Diagnostics.SourceLevels DefaultLevel { get { throw null; } }
+        public static event System.EventHandler<System.Diagnostics.InitializingTraceSourceEventArgs>? Initializing { add { } remove { } }
         public System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Diagnostics.SourceSwitch Switch { get { throw null; } set { } }

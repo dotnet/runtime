@@ -21,7 +21,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
     /// </summary>
     public enum OperatingSystem
     {
@@ -226,6 +226,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return _composite;
             }
         }
+
+        /// <summary>
+        /// Starting with R2R version 6.3, component assemblies start at index 2 in manifest metadata
+        /// (rowid = 1 represents the manifest metadata itself).
+        /// </summary>
+        public bool ComponentAssemblyIndicesStartAtTwo
+        {
+            get
+            {
+                EnsureHeader();
+                return _readyToRunHeader.MajorVersion > 6 || (_readyToRunHeader.MajorVersion == 6 && _readyToRunHeader.MinorVersion >= 3);
+            }
+        }
+
+        public int ComponentAssemblyIndexOffset => (ComponentAssemblyIndicesStartAtTwo ? 2 : 1);
 
         /// <summary>
         /// The preferred address of the first byte of image when loaded into memory;
@@ -756,7 +771,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     if (ReadyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out methodEntryPointSection))
                     {
-                        methodDefSectionReader(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        methodDefSectionReader(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + ComponentAssemblyIndexOffset));
                     }
                 }
             }
@@ -1188,7 +1203,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_readyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(
                         ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
                     {
-                        ParseAvailableTypesSection(assemblyIndex, availableTypesSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        ParseAvailableTypesSection(assemblyIndex, availableTypesSection, OpenReferenceAssembly(assemblyIndex + ComponentAssemblyIndexOffset));
                     }
                 }
             }
@@ -1388,7 +1403,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         /// <summary>
         /// Reads the method entrypoint from the offset. Used for non-generic methods
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
         /// </summary>
         private void GetRuntimeFunctionIndexFromOffset(int offset, out int runtimeFunctionIndex, out int? fixupOffset)
         {
@@ -1433,7 +1448,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
             {
                 int index = refAsmIndex - assemblyRefCount;
-                if (ReadyToRunHeader.MajorVersion > 6 || (ReadyToRunHeader.MajorVersion == 6 && ReadyToRunHeader.MinorVersion >= 3))
+                if (ComponentAssemblyIndicesStartAtTwo)
                 {
                     if (index == 1)
                     {

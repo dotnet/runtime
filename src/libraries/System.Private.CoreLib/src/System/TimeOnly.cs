@@ -933,8 +933,10 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
         public static TimeOnly Parse(string s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //

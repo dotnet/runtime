@@ -121,7 +121,6 @@ LNew:
         tempPtr = new (nothrow) CacheLine();
         if (tempPtr != NULL)
         {
-            tempPtr->Init64();
             tempPtr->m_pAddr[0] = pv;
             m_registryList.InsertHead(tempPtr);
         }
@@ -181,38 +180,32 @@ void *CCacheLineAllocator::GetCacheLine64()
     CONTRACT_END;
 
     LPCacheLine tempPtr = m_freeList64.RemoveHead();
-    if (tempPtr != NULL)
+    if (tempPtr == NULL)
     {
-        // initialize the bucket before returning
-        tempPtr->Init64();
-        RETURN tempPtr;
+        const ULONG AllocSize  = 4096 * 16;
+
+        // Virtual Allocation for some more cache lines
+        BYTE* ptr = (BYTE*)VAlloc(AllocSize);
+        if(!ptr)
+            RETURN NULL;
+
+        tempPtr = (LPCacheLine)ptr;
+        // Link all the buckets
+        tempPtr = tempPtr+1;
+        LPCacheLine maxPtr = (LPCacheLine)(ptr + AllocSize);
+
+        while(tempPtr < maxPtr)
+        {
+            m_freeList64.InsertHead(tempPtr);
+            tempPtr++;
+        }
+
+        // return the first block
+        tempPtr = (LPCacheLine)ptr;
     }
 
-#define AllocSize (4096*16)
-
-    ////////////////////////////////'
-    /// Virtual Allocation for some more cache lines
-
-    BYTE* ptr = (BYTE*)VAlloc(AllocSize);
-
-    if(!ptr)
-        RETURN NULL;
-
-
-    tempPtr = (LPCacheLine)ptr;
-    // Link all the buckets
-    tempPtr = tempPtr+1;
-    LPCacheLine maxPtr = (LPCacheLine)(ptr + AllocSize);
-
-    while(tempPtr < maxPtr)
-    {
-        m_freeList64.InsertHead(tempPtr);
-        tempPtr++;
-    }
-
-    // return the first block
-    tempPtr = (LPCacheLine)ptr;
-    tempPtr->Init64();
+    // initialize cacheline, 64 bytes
+    memset((void*)tempPtr,0,64);
     RETURN tempPtr;
 }
 
@@ -238,8 +231,8 @@ void *CCacheLineAllocator::GetCacheLine32()
     LPCacheLine tempPtr = m_freeList32.RemoveHead();
     if (tempPtr != NULL)
     {
-        // initialize the bucket before returning
-        tempPtr->Init32();
+        // initialize cacheline, 32 bytes
+        memset((void*)tempPtr,0,32);
         RETURN tempPtr;
     }
     tempPtr = (LPCacheLine)GetCacheLine64();

@@ -21,7 +21,7 @@ namespace ILCompiler
 
         private MetadataStringDecoder _metadataStringDecoder;
 
-        private class ModuleData
+        private sealed class ModuleData
         {
             public string SimpleName;
             public string FilePath;
@@ -30,7 +30,7 @@ namespace ILCompiler
             public MemoryMappedViewAccessor MappedViewAccessor;
         }
 
-        private class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
+        private sealed class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
         {
             protected override int GetKeyHashCode(EcmaModule key)
             {
@@ -42,11 +42,11 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(EcmaModule key, ModuleData value)
             {
-                return Object.ReferenceEquals(key, value.Module);
+                return ReferenceEquals(key, value.Module);
             }
             protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
             {
-                return Object.ReferenceEquals(value1.Module, value2.Module);
+                return ReferenceEquals(value1.Module, value2.Module);
             }
             protected override ModuleData CreateValueFromKey(EcmaModule key)
             {
@@ -56,9 +56,9 @@ namespace ILCompiler
         }
         private readonly ModuleHashtable _moduleHashtable = new ModuleHashtable();
 
-        private class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
+        private sealed class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
         {
-            StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
+            private StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
 
             protected override int GetKeyHashCode(string key)
             {
@@ -200,7 +200,8 @@ namespace ILCompiler
                     throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
+                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else
                 {
@@ -253,10 +254,8 @@ namespace ILCompiler
             }
             finally
             {
-                if (mappedViewAccessor != null)
-                    mappedViewAccessor.Dispose();
-                if (pdbReader != null)
-                    pdbReader.Dispose();
+                mappedViewAccessor?.Dispose();
+                pdbReader?.Dispose();
             }
         }
 
@@ -313,8 +312,7 @@ namespace ILCompiler
 
         public MetadataStringDecoder GetMetadataStringDecoder()
         {
-            if (_metadataStringDecoder == null)
-                _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
+            _metadataStringDecoder ??= new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
             return _metadataStringDecoder;
         }
 
@@ -327,7 +325,7 @@ namespace ILCompiler
             string pdbFileName = null;
             BlobContentId pdbContentId = default;
 
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;
@@ -353,11 +351,8 @@ namespace ILCompiler
 
             // Try to open the symbol file as portable pdb first
             PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFileName, GetMetadataStringDecoder(), pdbContentId);
-            if (reader == null)
-            {
-                // Fallback to the diasymreader for non-portable pdbs
-                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, Path.GetDirectoryName(pdbFileName));
-            }
+            // Fallback to the diasymreader for non-portable pdbs
+            reader ??= UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, Path.GetDirectoryName(pdbFileName));
 
             return reader;
         }

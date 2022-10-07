@@ -17,6 +17,9 @@ namespace System.Xml
             int count;
             if (reader.TryGetArrayLength(out count))
             {
+                if (count > maxArrayLength)
+                    XmlExceptionHelper.ThrowMaxArrayLengthOrMaxItemsQuotaExceeded(reader, maxArrayLength);
+
                 if (count > XmlDictionaryReader.MaxInitialArrayLength)
                     count = XmlDictionaryReader.MaxInitialArrayLength;
             }
@@ -35,6 +38,8 @@ namespace System.Xml
                         break;
                     read += actual;
                 }
+                if (totalRead > maxArrayLength - read)
+                    XmlExceptionHelper.ThrowMaxArrayLengthOrMaxItemsQuotaExceeded(reader, maxArrayLength);
                 totalRead += read;
                 if (read < array.Length || reader.NodeType == XmlNodeType.EndElement)
                     break;

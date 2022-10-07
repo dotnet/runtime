@@ -68,7 +68,6 @@ GPTR_IMPL(MethodTable,      g_pValueTypeClass);
 GPTR_IMPL(MethodTable,      g_pEnumClass);
 GPTR_IMPL(MethodTable,      g_pThreadClass);
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
-GPTR_IMPL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 

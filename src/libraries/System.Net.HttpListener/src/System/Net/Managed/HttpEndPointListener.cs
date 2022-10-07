@@ -56,7 +56,7 @@ namespace System.Net
             if (secure)
             {
                 _secure = secure;
-                _cert = HttpListener.LoadCertificateAndKey (addr, port);
+                _cert = HttpListener.LoadCertificateAndKey(addr, port);
             }
 
             _endpoint = new IPEndPoint(addr, port);
@@ -80,38 +80,39 @@ namespace System.Net
 
         private void Accept(SocketAsyncEventArgs e)
         {
-            e.AcceptSocket = null;
-            bool asyn;
-            try
+            bool asyn = false;
+            while (!asyn)
             {
-                asyn = _socket.AcceptAsync(e);
-            }
-            catch (ObjectDisposedException)
-            {
-                // Once the listener starts running, it kicks off an async accept,
-                // and each subsequent accept initiates the next async accept.  At
-                // point if the listener is torn down, the socket will be disposed
-                // and the AcceptAsync on the socket can fail with an ODE.  Far from
-                // ideal, but for now just eat such exceptions.
-                return;
-            }
-            if (!asyn)
-            {
-                ProcessAccept(e);
+                try
+                {
+                    e.AcceptSocket = null;
+                    asyn = _socket.AcceptAsync(e);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Once the listener starts running, it kicks off an async accept,
+                    // and each subsequent accept initiates the next async accept.  At
+                    // point if the listener is torn down, the socket will be disposed
+                    // and the AcceptAsync on the socket can fail with an ODE.  Far from
+                    // ideal, but for now just eat such exceptions.
+                    return;
+                }
+
+                if (!asyn)
+                {
+                    ProcessAccept(e);
+                }
             }
         }
 
-        private static void ProcessAccept(SocketAsyncEventArgs args)
+        private void ProcessAccept(SocketAsyncEventArgs args)
         {
-            HttpEndPointListener epl = (HttpEndPointListener)args.UserToken!;
-
             Socket? accepted = args.SocketError == SocketError.Success ? args.AcceptSocket : null;
-            epl.Accept(args);
 
             if (accepted == null)
                 return;
 
-            if (epl._secure && epl._cert == null)
+            if (_secure && _cert == null)
             {
                 accepted.Close();
                 return;
@@ -120,7 +121,7 @@ namespace System.Net
             HttpConnection conn;
             try
             {
-                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert!);
+                conn = new HttpConnection(accepted, this, _secure, _cert!);
             }
             catch
             {
@@ -128,16 +129,18 @@ namespace System.Net
                 return;
             }
 
-            lock (epl._unregisteredConnections)
+            lock (_unregisteredConnections)
             {
-                epl._unregisteredConnections[conn] = conn;
+                _unregisteredConnections[conn] = conn;
             }
             conn.BeginReadRequest();
         }
 
         private static void OnAccept(object? sender, SocketAsyncEventArgs e)
         {
-            ProcessAccept(e);
+            HttpEndPointListener epl = (HttpEndPointListener)e.UserToken!;
+            epl.ProcessAccept(e);
+            epl.Accept(e);
         }
 
         internal void RemoveConnection(HttpConnection conn)

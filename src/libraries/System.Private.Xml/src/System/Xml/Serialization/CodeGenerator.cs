@@ -303,6 +303,11 @@ namespace System.Xml.Serialization
                           CodeGenerator.InstanceBindingFlags,
                           Type.EmptyTypes
                           )!;
+                    // ICollection is not a value type, and ICollection::get_Count is a virtual method. So Call() here
+                    // will do a 'callvirt'. If we are working with a value type, box it before calling.
+                    Debug.Assert(ICollection_get_Count.IsVirtual && !ICollection_get_Count.DeclaringType!.IsValueType);
+                    if (varType.IsValueType)
+                        Box(varType);
                     Call(ICollection_get_Count);
                 }
                 Blt(forState.BeginLabel);

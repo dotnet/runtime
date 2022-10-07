@@ -94,6 +94,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(DestroyStructure_InvalidType_TestData))]
         public void DestroyStructure_NonRuntimeType_ThrowsArgumentException(Type invalidType)
@@ -102,6 +103,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void DestroyStructure_AutoLayout_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.DestroyStructure<AutoLayoutStruct>((IntPtr)1));

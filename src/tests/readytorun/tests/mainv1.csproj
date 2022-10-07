@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CrossGenTest>false</CrossGenTest>
+    <!-- https://github.com/dotnet/runtime/issues/73138 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />

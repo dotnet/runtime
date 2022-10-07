@@ -1034,12 +1034,12 @@ namespace System
                 // We don't know whether all slashes were the back ones
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
-                for (ushort i = 0; i < (ushort)count; ++i)
+                Span<char> slashSpan = result.AsSpan(0, count);
+                int slashPos;
+                while ((slashPos = slashSpan.IndexOf('/')) >= 0)
                 {
-                    if (result[i] == '/')
-                    {
-                        result[i] = '\\';
-                    }
+                    slashSpan[slashPos] = '\\';
+                    slashSpan = slashSpan.Slice(slashPos + 1);
                 }
 
                 return new string(result, 0, count);

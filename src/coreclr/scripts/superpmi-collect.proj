@@ -1,30 +1,40 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
-   <!--
-    This is useful for local testing to print the produced helix items
+  <!--
+    This is useful for local testing to print the produced Helix items.
     To use this when you are changing how items are produced, uncomment the target
     and replace the Project item at the top of the file with this:
-    <Project DefaultTargets="printItems">
+
+      <Project DefaultTargets="printItems">
 
     Once you've done that you can run this to see the results:
-    dotnet msbuild .\superpmi.proj /v:n
-   -->
 
-   <!-- <PropertyGroup>
-     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <InputArtifacts>D:\git\runtime\workitem\pmiAssembliesDirectory\libraries</InputArtifacts>
-     <MchFileTag>x64.checked</MchFileTag>
-     <CollectionName>benchmarks</CollectionName>
-     <CollectionType>pmi</CollectionType>
-   </PropertyGroup>
+      dotnet msbuild .\superpmi-collect.proj /v:n
+
+    ===========
+
+  <PropertyGroup>
+    <CorrelationPayloadDirectory>c:\bugs\spmicollect14\payload\correlation</CorrelationPayloadDirectory>
+    <WorkItemDirectory>c:\bugs\spmicollect14\payload\workitem</WorkItemDirectory>
+    <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+    <InputArtifacts>c:\bugs\spmicollect14\payload\workitem\collectAssembliesDirectory\libraries</InputArtifacts>
+    <Architecture>x64</Architecture>
+    <BuildConfig>Checked</BuildConfig>
+    <MchFileTag>windows.x64.checked</MchFileTag>
+    <CollectionName>libraries</CollectionName>
+    <CollectionType>crossgen2</CollectionType>
+    <AGENT_OS>Windows_NT</AGENT_OS>
+  </PropertyGroup>
   <Target Name="printItems">
-        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
-     dir: %(HelixWorkItem.PayloadDirectory)
-     pre: %(HelixWorkItem.PreCommands)
-     command: %(HelixWorkItem.Command)
-     post: %(HelixWorkItem.PostCommands)
-     timeout: %(HelixWorkItem.Timeout)  '"/>
-  </Target> -->
+    <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+    dir: %(HelixWorkItem.PayloadDirectory)
+    pre: %(HelixWorkItem.PreCommands)
+    command: %(HelixWorkItem.Command)
+    post: %(HelixWorkItem.PostCommands)
+    timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target>
+
+  -->
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <FileSeparatorChar>\</FileSeparatorChar>
@@ -33,62 +43,88 @@
     <FileSeparatorChar>/</FileSeparatorChar>
   </PropertyGroup>
 
-    <!-- The directory structure of pmiAssembliesPayload is
-         source\workitem\pmiAssembliesDirectory\<machine_specific_load_0>\binaries
-         source\workitem\pmiAssembliesDirectory\<machine_specific_load_1>\binaries
-         ...
-         source\workitem\pmiAssembliesDirectory\<machine_specific_load_N>\binaries
+  <!-- The directory structure of collectAssembliesPayload is
+       source\workitem\collectAssembliesDirectory\<machine_specific_load_0>\binaries
+       source\workitem\collectAssembliesDirectory\<machine_specific_load_1>\binaries
+       ...
+       source\workitem\collectAssembliesDirectory\<machine_specific_load_N>\binaries
 
-         PmiAssembliesPayload - Path that will be sent to helix machine to run collection on
-         PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
-    -->
+       AssembliesPayload          - Path that will be sent to helix machine to run collection on
+       AssembliesDirectoryOnHelix - Path on helix machine itself where superpmi.py will discover the sent assemblies.
+  -->
+
+  <!-- OS-specific settings for all collections -->
+
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT' ">
+    <Python>%HELIX_PYTHONPATH%</Python>
+    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
+    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>$HELIX_PYTHONPATH</Python>
+    <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
+    <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+
+  <!-- OS-specific settings for non-benchmarks collections -->
+
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(AGENT_OS)' == 'Windows_NT' ">
+    <AssembliesDirectoryOnHelix>%HELIX_WORKITEM_PAYLOAD%\binaries</AssembliesDirectoryOnHelix>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(AGENT_OS)' != 'Windows_NT' ">
+    <AssembliesDirectoryOnHelix>$HELIX_WORKITEM_PAYLOAD/binaries</AssembliesDirectoryOnHelix>
+  </PropertyGroup>
+
+  <!-- OS-specific settings for benchmarks collections -->
+
+  <PropertyGroup Condition=" '$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' == 'Windows_NT' ">
+    <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' != 'Windows_NT' ">
+    <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
+  </PropertyGroup>
+
+  <!-- Common non-OS-specific settings -->
+
+  <PropertyGroup>
+    <AssembliesPayload>$(WorkItemDirectory)$(FileSeparatorChar)collectAssembliesDirectory$(FileSeparatorChar)$(CollectionName)</AssembliesPayload>
+  </PropertyGroup>
+
+  <!-- Settings for PMI collections -->
 
   <ItemGroup>
+    <!-- Relative directories in the $(SuperPMIDirectory) that should be added to the PMIPATH variable
+         (via `superpmi.py -pmi_path` argument) for PMI collections.
+    -->
     <PmiPathDirectories Include="R2RDump" />
     <PmiPathDirectories Include="R2RTest" />
     <PmiPathDirectories Include="crossgen2" />
     <PmiPathDirectories Include="xunit" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <Python>%HELIX_PYTHONPATH%</Python>
-    <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
-    <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
-    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
-
-    <!-- Related to Benchmarks -->
-    <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
-
-    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)\%(Identity)', ' ')</WorkItemCommand>
+  <PropertyGroup Condition=" '$(CollectionType)' == 'pmi' and '$(AGENT_OS)' == 'Windows_NT' ">
+    <PmiArguments>-pmi_location $(SuperPMIDirectory)\pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)\%(Identity)', ' ')</PmiArguments>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
-    <Python>$HELIX_PYTHONPATH</Python>
-    <PmiAssembliesPayload>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesPayload>
-    <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
-    <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
-
-    <!-- Related to Benchmarks -->
-    <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
-
-    <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)/%(Identity)', ' ')</WorkItemCommand>
+  <PropertyGroup Condition=" '$(CollectionType)' == 'pmi' and '$(AGENT_OS)' != 'Windows_NT' ">
+    <PmiArguments>-pmi_location $(SuperPMIDirectory)/pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)/%(Identity)', ' ')</PmiArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' != 'pmi' ">
+    <PmiArguments></PmiArguments>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
-  </PropertyGroup>
+  <!-- Define the Helix work item command and timeout for each collection type -->
 
   <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks'">
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) -assemblies $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -101,12 +137,12 @@
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
+
   <!-- We're currently not using .dotnet on the Helix agents -->
   <!--
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet%3B%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
@@ -123,15 +159,21 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
+  <!-- For non-benchmark collections, we create one Helix work item for each sub-directory
+       in the `InputArtifacts` directory.
+  -->
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
-    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" CollectAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
 
-  <PropertyGroup>
+  <!-- For benchmark collections, we create one Helix work item for each `BDN_Partition` item
+       in the ItemGroup below.
+  -->
+  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <PartitionCount>30</PartitionCount>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <BDN_Partition Include="Partition0" Index="0" />
     <BDN_Partition Include="Partition1" Index="1" />
     <BDN_Partition Include="Partition2" Index="2" />
@@ -167,7 +209,7 @@
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
     <HelixWorkItem Include="@(Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
-      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
+      <PayloadDirectory>$(AssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.CollectAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>

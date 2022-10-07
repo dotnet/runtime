@@ -56,6 +56,33 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [Fact]
+        public async Task SetsLastModifiedTimeOnExtractedFiles()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string inDir = Path.Join(root.Path, "indir");
+            string inFile = Path.Join(inDir, "file");
+
+            string tarFile = Path.Join(root.Path, "file.tar");
+
+            string outDir = Path.Join(root.Path, "outdir");
+            string outFile = Path.Join(outDir, "file");
+
+            Directory.CreateDirectory(inDir);
+            File.Create(inFile).Dispose();
+            var dt = new DateTime(2001, 1, 2, 3, 4, 5, DateTimeKind.Local);
+            File.SetLastWriteTime(inFile, dt);
+
+            await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: inDir, destinationFileName: tarFile, includeBaseDirectory: false);
+
+            Directory.CreateDirectory(outDir);
+            await TarFile.ExtractToDirectoryAsync(sourceFileName: tarFile, destinationDirectoryName: outDir, overwriteFiles: false);
+
+            Assert.True(File.Exists(outFile));
+            Assert.InRange(File.GetLastWriteTime(outFile).Ticks, dt.AddSeconds(-3).Ticks, dt.AddSeconds(3).Ticks); // include some slop for filesystem granularity
+        }
+
         [Theory]
         [InlineData(TestTarFormat.v7)]
         [InlineData(TestTarFormat.ustar)]
@@ -189,6 +216,107 @@ namespace System.Formats.Tar.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UnixFileModes_Async(bool overwrite)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string archivePath = Path.Join(source.Path, "archive.tar");
+            using FileStream archiveStream = File.Create(archivePath);
+            using (TarWriter writer = new TarWriter(archiveStream))
+            {
+                PaxTarEntry dir = new PaxTarEntry(TarEntryType.Directory, "dir");
+                dir.Mode = TestPermission1;
+                writer.WriteEntry(dir);
+
+                PaxTarEntry file = new PaxTarEntry(TarEntryType.RegularFile, "file");
+                file.Mode = TestPermission2;
+                writer.WriteEntry(file);
+
+                // Archive has no entry for missing_parent.
+                PaxTarEntry missingParentDir = new PaxTarEntry(TarEntryType.Directory, "missing_parent/dir");
+                missingParentDir.Mode = TestPermission3;
+                writer.WriteEntry(missingParentDir);
+
+                // out_of_order_parent/file entry comes before out_of_order_parent entry.
+                PaxTarEntry outOfOrderFile = new PaxTarEntry(TarEntryType.RegularFile, "out_of_order_parent/file");
+                writer.WriteEntry(outOfOrderFile);
+
+                PaxTarEntry outOfOrderDir = new PaxTarEntry(TarEntryType.Directory, "out_of_order_parent");
+                outOfOrderDir.Mode = TestPermission4;
+                writer.WriteEntry(outOfOrderDir);
+            }
+
+            string dirPath = Path.Join(destination.Path, "dir");
+            string filePath = Path.Join(destination.Path, "file");
+            string missingParentPath = Path.Join(destination.Path, "missing_parent");
+            string missingParentDirPath = Path.Join(missingParentPath, "dir");
+            string outOfOrderDirPath = Path.Join(destination.Path, "out_of_order_parent");
+
+            if (overwrite)
+            {
+                File.OpenWrite(filePath).Dispose();
+                Directory.CreateDirectory(dirPath);
+                Directory.CreateDirectory(missingParentDirPath);
+                Directory.CreateDirectory(outOfOrderDirPath);
+            }
+
+            await TarFile.ExtractToDirectoryAsync(archivePath, destination.Path, overwriteFiles: overwrite);
+
+            Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
+            AssertFileModeEquals(dirPath, TestPermission1);
+
+            Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
+            AssertFileModeEquals(filePath, TestPermission2);
+
+            // Missing parents are created with CreateDirectoryDefaultMode.
+            Assert.True(Directory.Exists(missingParentPath), $"{missingParentPath}' does not exist.");
+            AssertFileModeEquals(missingParentPath, CreateDirectoryDefaultMode);
+
+            Assert.True(Directory.Exists(missingParentDirPath), $"{missingParentDirPath}' does not exist.");
+            AssertFileModeEquals(missingParentDirPath, TestPermission3);
+
+            // Directory modes that are out-of-order are still applied.
+            Assert.True(Directory.Exists(outOfOrderDirPath), $"{outOfOrderDirPath}' does not exist.");
+            AssertFileModeEquals(outOfOrderDirPath, TestPermission4);
+        }
+
+        [Fact]
+        public async Task UnixFileModes_RestrictiveParentDir_Async()
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string archivePath = Path.Join(source.Path, "archive.tar");
+            using FileStream archiveStream = File.Create(archivePath);
+            using (TarWriter writer = new TarWriter(archiveStream))
+            {
+                PaxTarEntry dir = new PaxTarEntry(TarEntryType.Directory, "dir");
+                dir.Mode = UnixFileMode.None; // Restrict permissions.
+                writer.WriteEntry(dir);
+
+                PaxTarEntry file = new PaxTarEntry(TarEntryType.RegularFile, "dir/file");
+                file.Mode = TestPermission1;
+                writer.WriteEntry(file);
+            }
+
+            await TarFile.ExtractToDirectoryAsync(archivePath, destination.Path, overwriteFiles: false);
+
+            string dirPath = Path.Join(destination.Path, "dir");
+            Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
+            AssertFileModeEquals(dirPath, UnixFileMode.None);
+
+            // Set dir permissions so we can access file.
+            SetUnixFileMode(dirPath, UserAll);
+
+            string filePath = Path.Join(dirPath, "file");
+            Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
+            AssertFileModeEquals(filePath, TestPermission1);
         }
     }
 }

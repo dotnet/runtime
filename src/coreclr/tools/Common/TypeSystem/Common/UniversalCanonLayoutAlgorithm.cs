@@ -3,10 +3,6 @@
 
 using System;
 
-using Internal.NativeFormat;
-
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     public class UniversalCanonLayoutAlgorithm : FieldLayoutAlgorithm

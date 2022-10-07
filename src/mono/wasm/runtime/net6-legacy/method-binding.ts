@@ -64,7 +64,7 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
     let uriPrefix = "", escapedFunctionIdentifier = "";
 
     if (name) {
-        uriPrefix = "//# sourceURL=https://mono-wasm.invalid/" + name + "\r\n";
+        uriPrefix = "//# sourceURL=https://dotnet.generated.invalid/" + name + "\r\n";
         escapedFunctionIdentifier = name;
     } else {
         escapedFunctionIdentifier = "unnamed";

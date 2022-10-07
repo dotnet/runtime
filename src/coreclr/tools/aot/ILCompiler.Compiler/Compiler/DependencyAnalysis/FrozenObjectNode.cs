@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
         private readonly int _allocationSiteId;
-        
+
         public FrozenObjectNode(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             _owningType = owningType;
@@ -48,11 +48,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
+            int initialOffset = dataBuilder.CountBytes;
+
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
             // byte contents
             _data.WriteContent(ref dataBuilder, this, factory);
+
+            int objectSize = dataBuilder.CountBytes - initialOffset;
+            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
+            if (objectSize < minimumObjectSize)
+            {
+                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

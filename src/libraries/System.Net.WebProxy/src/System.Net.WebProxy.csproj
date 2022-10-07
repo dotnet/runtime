@@ -10,6 +10,7 @@
     <Compile Condition="'$(TargetPlatformIdentifier)' != 'Browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />

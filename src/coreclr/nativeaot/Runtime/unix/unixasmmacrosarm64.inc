@@ -73,6 +73,7 @@ C_FUNC(\Name):
 #if defined(__APPLE__)
         adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
         ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  \HelperReg, [\HelperReg]
 #else
         adrp \HelperReg, C_FUNC(\Name)
         ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
@@ -82,7 +83,8 @@ C_FUNC(\Name):
 .macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
 #if defined(__APPLE__)
         adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  w\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  w\HelperReg, [x\HelperReg]
 #else
         adrp x\HelperReg, C_FUNC(\Name)
         ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
@@ -164,49 +166,6 @@ C_FUNC(\Name):
         brk #0
 .endm
 
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-.macro SAVE_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    x0, x1, [\reg, #(\ofs)]
-        stp                    x2, x3, [\reg, #(\ofs + 16)]
-        stp                    x4, x5, [\reg, #(\ofs + 32)]
-        stp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-.macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    d0, d1, [\reg, #(\ofs)]
-        stp                    d2, d3, [\reg, #(\ofs + 16)]
-        stp                    d4, d5, [\reg, #(\ofs + 32)]
-        stp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    x0, x1, [\reg, #(\ofs)]
-        ldp                    x2, x3, [\reg, #(\ofs + 16)]
-        ldp                    x4, x5, [\reg, #(\ofs + 32)]
-        ldp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    d0, d1, [\reg, #(\ofs)]
-        ldp                    d2, d3, [\reg, #(\ofs + 16)]
-        ldp                    d4, d5, [\reg, #(\ofs + 32)]
-        ldp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
 .macro EPILOG_BRANCH_REG reg
 
         br \reg
@@ -225,6 +184,10 @@ C_FUNC(\Name):
     .endif
 
     stp     x0, lr, [sp,#-0x10]!
+#if defined(__APPLE__)
+    // Apple's tls_get_var trashes xip0 (and possibly xip1)
+    stp     xip0, xip1, [sp,#-0x10]!
+#endif
 
     // This sequence of instructions is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
@@ -249,6 +212,9 @@ C_FUNC(\Name):
     add     \target, \target, x0
 #endif
 
+#if defined(__APPLE__)
+    ldp     xip0, xip1, [sp],#0x10
+#endif
     ldp     x0, lr, [sp],#0x10
 .endm
 
@@ -303,7 +269,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 96
 .endm
 
-.macro  ArmInterlockedOperationBarrier
+.macro  InterlockedOperationBarrier
     dmb ish
 .endm
 

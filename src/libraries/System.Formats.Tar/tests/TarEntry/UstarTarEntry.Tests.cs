@@ -19,19 +19,19 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_UnsupportedEntryTypes()
         {
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry((TarEntryType)byte.MaxValue, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry((TarEntryType)byte.MaxValue, InitialEntryName));
 
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.ContiguousFile, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.DirectoryList, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.ExtendedAttributes, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.GlobalExtendedAttributes, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.LongLink, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.LongPath, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.MultiVolume, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.V7RegularFile, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.RenamedOrSymlinked, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.SparseFile, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new UstarTarEntry(TarEntryType.TapeVolume, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.ContiguousFile, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.DirectoryList, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.ExtendedAttributes, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.GlobalExtendedAttributes, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.LongLink, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.LongPath, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.MultiVolume, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.V7RegularFile, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.RenamedOrSymlinked, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.SparseFile, InitialEntryName));
+            Assert.Throws<ArgumentException>(() => new UstarTarEntry(TarEntryType.TapeVolume, InitialEntryName));
         }
 
         [Fact]

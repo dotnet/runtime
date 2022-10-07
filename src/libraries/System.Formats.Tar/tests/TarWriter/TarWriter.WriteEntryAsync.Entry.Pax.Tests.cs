@@ -505,5 +505,15 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(overLimitTimestamp, actualCTime);
             }
         }
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task Write_LinkEntry_EmptyLinkName_Throws_Async(TarEntryType entryType)
+        {
+            await using MemoryStream archiveStream = new MemoryStream();
+            await using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(new PaxTarEntry(entryType, "link")));
+        }
     }
 }

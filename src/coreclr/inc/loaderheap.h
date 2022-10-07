@@ -327,6 +327,9 @@ private:
     // has run out, reserve another set of pages
     BOOL GetMoreCommittedPages(size_t dwMinSize);
 
+    // Commit memory pages starting at the specified adress
+    BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
+
 protected:
     // Reserve some pages at any address
     BOOL UnlockedReservePages(size_t dwCommitBlockSize);

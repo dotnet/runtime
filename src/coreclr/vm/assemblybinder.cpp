@@ -45,30 +45,28 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
     static const size_t MVID_TEXT_LENGTH = 39;
-    WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(mvidActual, assemblyMvidText, MVID_TEXT_LENGTH);
+    CHAR assemblyMvidText[MVID_TEXT_LENGTH];
+    GuidToLPSTR(mvidActual, assemblyMvidText, MVID_TEXT_LENGTH);
 
-    WCHAR componentMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(mvidExpected, componentMvidText, MVID_TEXT_LENGTH);
+    CHAR componentMvidText[MVID_TEXT_LENGTH];
+    GuidToLPSTR(mvidExpected, componentMvidText, MVID_TEXT_LENGTH);
 
     SString message;
     if (compositeComponent)
     {
-        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-            SString(SString::Utf8, simpleName).GetUnicode(),
+        message.Printf("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)",
+            simpleName,
             assemblyMvidText,
-            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            assemblyRequirementName,
             componentMvidText);
     }
     else
     {
-        SString simpleNameUtf8(SString::Utf8, simpleName);
-
-        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and version of assembly '%s' expected by assembly '%s' (MVID = %s)"),
-            simpleNameUtf8.GetUnicode(),
+        message.Printf("MVID mismatch between loaded assembly '%s' (MVID = %s) and version of assembly '%s' expected by assembly '%s' (MVID = %s)",
+            simpleName,
             assemblyMvidText,
-            simpleNameUtf8.GetUnicode(),
-            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            simpleName,
+            assemblyRequirementName,
             componentMvidText);
     }
 
@@ -78,7 +76,7 @@ static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 s
 void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 imageName)
 {
     _ASSERTE(imageName != NULL);
-    
+
     // If the table is empty, then we didn't fill it with all the loaded assemblies as they were loaded. Record this detail, and fix after adding the dependency
     bool addAllLoadedModules = false;
     if (m_assemblySimpleNameMvidCheckHash.GetCount() == 0)
@@ -180,10 +178,10 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
     OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
 
     GCX_COOP();
-    struct _gc {
+    struct {
         STRINGREF alcName;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.alcName = NULL;
 
     GCPROTECT_BEGIN(gc);
 

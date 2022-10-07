@@ -39,6 +39,14 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+resources:
+  containers:
+  # Define auxilary containers used by the installer jobs
+  - container: debpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
+  - container: rpmpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
+
 variables:
   - template: /eng/pipelines/common/variables.yml
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -114,8 +122,9 @@ stages:
 
   # Installer official builds need to build installers and need the libraries all configurations build
   - ${{ if eq(variables.isOfficialBuild, true) }}:
-    - template: /eng/pipelines/installer/installer-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
+        jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
         jobParameters:
           liveRuntimeBuildConfig: Release
           liveLibrariesBuildConfig: Release

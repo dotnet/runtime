@@ -3326,6 +3326,12 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
+                if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
+                {
+                    // Int128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
                 // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
@@ -5635,7 +5641,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsGenericComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
+        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
     CONTRACT_END;
 
@@ -5649,7 +5655,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     }
 #ifdef FEATURE_COMINTEROP
     else
-    if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
+    if (pMD->IsComPlusCall())
     {
         pStub = ComPlusCall::GetStubForILStub(pMD, &pStubMD);
     }

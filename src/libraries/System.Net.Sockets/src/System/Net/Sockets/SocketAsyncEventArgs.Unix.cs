@@ -335,9 +335,22 @@ namespace System.Net.Sockets
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
             System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
-            _acceptSocket = _currentSocket!.CreateAcceptSocket(
+            Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+            if (_acceptSocket is null)
+            {
+                // Store the accepted socket
+                _acceptSocket = acceptedSocket;
+            }
+            else
+            {
+                // Copy state from the accepted socket into the caller-supplied socket and then dispose of the original.
+                _acceptSocket.DisposeHandle();
+                _acceptSocket.CopyStateFromSource(acceptedSocket);
+                acceptedSocket.ClearHandle();
+                acceptedSocket.Dispose();
+            }
             return SocketError.Success;
         }
 

@@ -54,6 +54,8 @@ namespace System.IO
         internal const string UncNTPathPrefix = @"\??\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
         internal const string ParentDirectoryPrefix = @"..\";
+        internal const string DirectorySeparators = @"\/";
+        internal static ReadOnlySpan<byte> Utf8DirectorySeparators => @"\/"u8;
 
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;

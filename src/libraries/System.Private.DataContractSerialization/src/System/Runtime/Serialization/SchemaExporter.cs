@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -35,6 +36,7 @@ namespace System.Runtime.Serialization
 
         private XmlDocument XmlDoc => _xmlDoc ??= new XmlDocument();
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Export()
         {
@@ -42,7 +44,7 @@ namespace System.Runtime.Serialization
             {
                 // Remove this if we decide to publish serialization schema at well-known location
                 ExportSerializationSchema();
-                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet)
+                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet.Contracts)
                 {
                     DataContract dataContract = pair.Value;
                     if (!_dataContractSet.IsContractProcessed(dataContract))
@@ -71,6 +73,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportDataContract(DataContract dataContract)
         {
@@ -80,7 +83,7 @@ namespace System.Runtime.Serialization
                 ExportXmlDataContract((XmlDataContract)dataContract);
             else
             {
-                XmlSchema schema = GetSchema(dataContract.StableName.Namespace);
+                XmlSchema schema = GetSchema(dataContract.XmlName.Namespace);
 
                 if (dataContract is ClassDataContract classDataContract)
                 {
@@ -100,7 +103,7 @@ namespace System.Runtime.Serialization
 
         private XmlSchemaElement ExportTopLevelElement(DataContract dataContract, XmlSchema? schema)
         {
-            if (schema == null || dataContract.StableName.Namespace != dataContract.TopLevelElementNamespace!.Value)
+            if (schema == null || dataContract.XmlName.Namespace != dataContract.TopLevelElementNamespace!.Value)
                 schema = GetSchema(dataContract.TopLevelElementNamespace!.Value);
 
             XmlSchemaElement topLevelElement = new XmlSchemaElement();
@@ -111,11 +114,12 @@ namespace System.Runtime.Serialization
             return topLevelElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportClassDataContract(ClassDataContract classDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
-            type.Name = classDataContract.StableName.Name;
+            type.Name = classDataContract.XmlName.Name;
             schema.Items.Add(type);
             XmlElement? genericInfoElement = null;
             if (classDataContract.UnderlyingType.IsGenericType)
@@ -129,12 +133,12 @@ namespace System.Runtime.Serialization
                 XmlSchemaElement element = new XmlSchemaElement();
                 element.Name = dataMember.Name;
                 XmlElement? actualTypeElement = null;
-                DataContract memberTypeContract = DataContractSet.GetMemberTypeDataContract(dataMember);
+                DataContract memberTypeContract = _dataContractSet.GetMemberTypeDataContract(dataMember);
                 if (CheckIfMemberHasConflict(dataMember))
                 {
                     element.SchemaTypeName = AnytypeQualifiedName;
-                    actualTypeElement = ExportActualType(memberTypeContract.StableName);
-                    SchemaHelper.AddSchemaImport(memberTypeContract.StableName.Namespace, schema);
+                    actualTypeElement = ExportActualType(memberTypeContract.XmlName);
+                    SchemaHelper.AddSchemaImport(memberTypeContract.XmlName.Namespace, schema);
                 }
                 else
                     SetElementType(element, memberTypeContract, schema);
@@ -149,11 +153,11 @@ namespace System.Runtime.Serialization
             }
 
             XmlElement? isValueTypeElement = null;
-            if (classDataContract.BaseContract != null)
+            if (classDataContract.BaseClassContract != null)
             {
-                XmlSchemaComplexContentExtension extension = CreateTypeContent(type, classDataContract.BaseContract.StableName, schema);
+                XmlSchemaComplexContentExtension extension = CreateTypeContent(type, classDataContract.BaseClassContract.XmlName, schema);
                 extension.Particle = rootSequence;
-                if (classDataContract.IsReference && !classDataContract.BaseContract.IsReference)
+                if (classDataContract.IsReference && !classDataContract.BaseClassContract.IsReference)
                 {
                     AddReferenceAttributes(extension.Attributes, schema);
                 }
@@ -179,19 +183,18 @@ namespace System.Runtime.Serialization
 
         private static void SetElementType(XmlSchemaElement element, DataContract dataContract, XmlSchema schema)
         {
-            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
             {
                 element.SchemaType = xmlDataContract.XsdType;
             }
             else
             {
-                element.SchemaTypeName = dataContract.StableName;
+                element.SchemaTypeName = dataContract.XmlName;
 
                 if (element.SchemaTypeName.Namespace.Equals(Globals.SerializationNamespace))
                     schema.Namespaces.Add(Globals.SerPrefixForSchema, Globals.SerializationNamespace);
 
-                SchemaHelper.AddSchemaImport(dataContract.StableName.Namespace, schema);
+                SchemaHelper.AddSchemaImport(dataContract.XmlName.Namespace, schema);
             }
         }
 
@@ -242,6 +245,7 @@ namespace System.Runtime.Serialization
             return actualTypeElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlElement ExportGenericInfo(Type clrType, string elementName, string elementNs)
         {
@@ -279,7 +283,7 @@ namespace System.Runtime.Serialization
                 genericArgumentCounts = DataContract.GetDataContractNameForGenericName(typeName, null);
                 clrType = clrType.GetGenericTypeDefinition();
             }
-            XmlQualifiedName dcqname = DataContract.GetStableName(clrType);
+            XmlQualifiedName dcqname = DataContract.GetXmlName(clrType);
             if (nestedCollectionLevel > 0)
             {
                 string collectionName = dcqname.Name;
@@ -329,17 +333,34 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
-        private static XmlElement? ExportSurrogateData(object key)
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private XmlElement? ExportSurrogateData(object key)
         {
-            // IDataContractSurrogate is not available on NetCore.
-            return null;
+            object? surrogateData = _dataContractSet.GetSurrogateData(key);
+            if (surrogateData == null)
+                return null;
+            StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+            XmlWriterSettings writerSettings = new XmlWriterSettings();
+            writerSettings.OmitXmlDeclaration = true;
+            XmlWriter xmlWriter = XmlWriter.Create(stringWriter, writerSettings);
+            Collection<Type> knownTypes = new Collection<Type>();
+            if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
+                DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
+            DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
+                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes, int.MaxValue,
+                ignoreExtensionDataObject: false, preserveObjectReferences: true);
+            serializer.WriteObject(xmlWriter, surrogateData);
+            xmlWriter.Flush();
+            return (XmlElement?)XmlDoc.ReadNode(XmlReader.Create(new StringReader(stringWriter.ToString())));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportCollectionDataContract(CollectionDataContract collectionDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
-            type.Name = collectionDataContract.StableName.Name;
+            type.Name = collectionDataContract.XmlName.Name;
             schema.Items.Add(type);
             XmlElement? genericInfoElement = null, isDictionaryElement = null;
             if (collectionDataContract.UnderlyingType.IsGenericType && CollectionDataContract.IsCollectionDataContract(collectionDataContract.UnderlyingType))
@@ -363,7 +384,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlSchemaElement keyValueElement = new XmlSchemaElement();
                     keyValueElement.Name = dataMember.Name;
-                    SetElementType(keyValueElement, DataContractSet.GetMemberTypeDataContract(dataMember), schema);
+                    SetElementType(keyValueElement, _dataContractSet.GetMemberTypeDataContract(dataMember), schema);
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
@@ -377,7 +398,7 @@ namespace System.Runtime.Serialization
             {
                 if (collectionDataContract.IsItemTypeNullable)
                     element.IsNillable = true;
-                DataContract itemContract = DataContractSet.GetItemTypeDataContract(collectionDataContract);
+                DataContract itemContract = _dataContractSet.GetItemTypeDataContract(collectionDataContract);
                 SetElementType(element, itemContract, schema);
             }
             SchemaHelper.AddElementForm(element, schema);
@@ -396,12 +417,12 @@ namespace System.Runtime.Serialization
             return isDictionaryElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportEnumDataContract(EnumDataContract enumDataContract, XmlSchema schema)
         {
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();
-            type.Name = enumDataContract.StableName.Name;
-            // https://github.com/dotnet/runtime/issues/41448 - enumDataContract.BaseContractName is always null, but this method is not reachable
-            Debug.Assert(enumDataContract.BaseContractName != null, "BaseContractName is always null, but this method is not reachable. Suppressing compiler error.");
+            type.Name = enumDataContract.XmlName.Name;
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
             type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
             schema.Items.Add(type);
@@ -437,20 +458,21 @@ namespace System.Runtime.Serialization
             return isFlags ? (long)Math.Pow(2, index) : index;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportISerializableDataContract(ClassDataContract dataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
-            type.Name = dataContract.StableName.Name;
+            type.Name = dataContract.XmlName.Name;
             schema.Items.Add(type);
             XmlElement? genericInfoElement = null;
             if (dataContract.UnderlyingType.IsGenericType)
                 genericInfoElement = ExportGenericInfo(dataContract.UnderlyingType, Globals.GenericTypeLocalName, Globals.SerializationNamespace);
 
             XmlElement? isValueTypeElement = null;
-            if (dataContract.BaseContract != null)
+            if (dataContract.BaseClassContract != null)
             {
-                _ = CreateTypeContent(type, dataContract.BaseContract.StableName, schema);
+                _ = CreateTypeContent(type, dataContract.BaseClassContract.XmlName, schema);
             }
             else
             {
@@ -477,6 +499,7 @@ namespace System.Runtime.Serialization
             return extension;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportXmlDataContract(XmlDataContract dataContract)
         {
@@ -491,7 +514,7 @@ namespace System.Runtime.Serialization
 
             if (hasRoot)
             {
-                if (!(typeQName.Equals(dataContract.StableName)))
+                if (!(typeQName.Equals(dataContract.XmlName)))
                 {
                     Fx.Assert("XML data contract type name does not match schema name");
                 }
@@ -564,27 +587,29 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static void GetXmlTypeInfo(Type type, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
+        internal static void GetXmlTypeInfo(Type type, out XmlQualifiedName xmlName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
-            if (IsSpecialXmlType(type, out stableName!, out xsdType, out hasRoot))
+            if (IsSpecialXmlType(type, out xmlName!, out xsdType, out hasRoot))
                 return;
             XmlSchemaSet schemas = new XmlSchemaSet();
             schemas.XmlResolver = null;
-            InvokeSchemaProviderMethod(type, schemas, out stableName, out xsdType, out hasRoot);
-            if (stableName.Name == null || stableName.Name.Length == 0)
+            InvokeSchemaProviderMethod(type, schemas, out xmlName, out xsdType, out hasRoot);
+            if (xmlName.Name == null || xmlName.Name.Length == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidXmlDataContractName, DataContract.GetClrTypeFullName(type))));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool InvokeSchemaProviderMethod(Type clrType, XmlSchemaSet schemas, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
+        private static bool InvokeSchemaProviderMethod(Type clrType, XmlSchemaSet schemas, out XmlQualifiedName xmlName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
             xsdType = null;
             hasRoot = true;
             object[] attrs = clrType.GetCustomAttributes(Globals.TypeOfXmlSchemaProviderAttribute, false);
             if (attrs == null || attrs.Length == 0)
             {
-                stableName = DataContract.GetDefaultStableName(clrType);
+                xmlName = DataContract.GetDefaultXmlName(clrType);
                 return false;
             }
 
@@ -599,7 +624,7 @@ namespace System.Runtime.Serialization
             {
                 if (!provider.IsAny)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidGetSchemaMethod, DataContract.GetClrTypeFullName(clrType))));
-                stableName = DataContract.GetDefaultStableName(clrType);
+                xmlName = DataContract.GetDefaultXmlName(clrType);
             }
             else
             {
@@ -616,26 +641,25 @@ namespace System.Runtime.Serialization
                 {
                     if (typeInfo != null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidNonNullReturnValueByIsAny, DataContract.GetClrTypeFullName(clrType), methodName)));
-                    stableName = DataContract.GetDefaultStableName(clrType);
+                    xmlName = DataContract.GetDefaultXmlName(clrType);
                 }
                 else if (typeInfo == null)
                 {
                     xsdType = CreateAnyElementType();
                     hasRoot = false;
-                    stableName = DataContract.GetDefaultStableName(clrType);
+                    xmlName = DataContract.GetDefaultXmlName(clrType);
                 }
                 else
                 {
-                    XmlSchemaType? providerXsdType = typeInfo as XmlSchemaType;
-                    if (providerXsdType != null)
+                    if (typeInfo is XmlSchemaType providerXsdType)
                     {
                         string? typeName = providerXsdType.Name;
                         string? typeNs = null;
                         if (typeName == null || typeName.Length == 0)
                         {
-                            DataContract.GetDefaultStableName(DataContract.GetClrTypeFullName(clrType), out typeName, out typeNs);
-                            stableName = new XmlQualifiedName(typeName, typeNs);
-                            providerXsdType.Annotation = GetSchemaAnnotation(ExportActualType(stableName, new XmlDocument()));
+                            DataContract.GetDefaultXmlName(DataContract.GetClrTypeFullName(clrType), out typeName, out typeNs);
+                            xmlName = new XmlQualifiedName(typeName, typeNs);
+                            providerXsdType.Annotation = GetSchemaAnnotation(ExportActualType(xmlName, new XmlDocument()));
                             xsdType = providerXsdType;
                         }
                         else
@@ -655,11 +679,11 @@ namespace System.Runtime.Serialization
                             }
                             if (typeNs == null)
                                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.MissingSchemaType, typeName, DataContract.GetClrTypeFullName(clrType))));
-                            stableName = new XmlQualifiedName(typeName, typeNs);
+                            xmlName = new XmlQualifiedName(typeName, typeNs);
                         }
                     }
                     else
-                        stableName = (XmlQualifiedName)typeInfo;
+                        xmlName = (XmlQualifiedName)typeInfo;
                 }
             }
             return true;
@@ -668,19 +692,19 @@ namespace System.Runtime.Serialization
         private static void InvokeGetSchemaMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type clrType,
-            XmlSchemaSet schemas, XmlQualifiedName stableName)
+            XmlSchemaSet schemas, XmlQualifiedName xmlName)
         {
             IXmlSerializable ixmlSerializable = (IXmlSerializable)Activator.CreateInstance(clrType)!;
             XmlSchema? schema = ixmlSerializable.GetSchema();
             if (schema == null)
             {
-                AddDefaultDatasetType(schemas, stableName.Name, stableName.Namespace);
+                AddDefaultDatasetType(schemas, xmlName.Name, xmlName.Namespace);
             }
             else
             {
                 if (schema.Id == null || schema.Id.Length == 0)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidReturnSchemaOnGetSchemaMethod, DataContract.GetClrTypeFullName(clrType))));
-                AddDefaultTypedDatasetType(schemas, schema, stableName.Name, stableName.Namespace);
+                AddDefaultTypedDatasetType(schemas, schema, xmlName.Name, xmlName.Namespace);
             }
         }
 
@@ -738,7 +762,7 @@ namespace System.Runtime.Serialization
                     name = "ArrayOfXmlNode";
                     hasRoot = true;
                 }
-                typeName = new XmlQualifiedName(name, DataContract.GetDefaultStableNamespace(type));
+                typeName = new XmlQualifiedName(name, DataContract.GetDefaultXmlNamespace(type));
                 return true;
             }
             typeName = null;

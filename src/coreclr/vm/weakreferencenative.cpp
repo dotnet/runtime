@@ -13,7 +13,6 @@
 #include "gchandleutilities.h"
 #include "weakreferencenative.h"
 #include "typestring.h"
-#include "typeparse.h"
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
 
@@ -203,8 +202,9 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
         OBJECTREF rcw;
         OBJECTREF target;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
     gc.weakReference = weakReference;
+    gc.rcw = NULL;
+    gc.target = NULL;
 
     FC_INNER_PROLOG_NO_ME_SETUP();
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_PROTECT(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, gc);

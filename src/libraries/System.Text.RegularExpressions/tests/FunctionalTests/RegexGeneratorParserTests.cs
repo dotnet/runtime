@@ -120,6 +120,40 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
         }
 
+        [Theory]
+        [InlineData("null")]
+        [InlineData("\"xxxxxxxxxxxxxxxxxxxx-ThisIsNotAValidCultureName-xxxxxxxxxxxxxxxxxxxx\"")]
+        public async Task Diagnostic_InvalidCultureName(string cultureName)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@$"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [GeneratedRegex(""(?i)ab"", RegexOptions.None, {cultureName})]
+                    private static partial Regex InvalidPattern();
+                }}
+            ");
+
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
+        }
+
+        [Theory]
+        [InlineData("(?i)abc", "RegexOptions.CultureInvariant")]
+        [InlineData("abc", "RegexOptions.CultureInvariant | RegexOptions.IgnoreCase")]
+        public async Task Diagnostic_InvalidOptionsForCaseInsensitive(string pattern, string options)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@$"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [GeneratedRegex(""{pattern}"", {options}, ""en-US"")]
+                    private static partial Regex InvalidPattern();
+                }}
+            ");
+
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
+        }
+
         [Fact]
         public async Task Diagnostic_MethodMustReturnRegex()
         {
@@ -289,13 +323,13 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public async Task Diagnostic_CustomGeneratedRegexAttribute_FourArgCtor()
+        public async Task Diagnostic_CustomGeneratedRegexAttribute_FiveArgCtor()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
                 partial class C
                 {
-                    [GeneratedRegex(""a"", RegexOptions.None, -1, ""b""]
+                    [GeneratedRegex(""a"", RegexOptions.None, -1, ""en-Us"", ""b""]
                     private static partial Regex InvalidCtor();
                 }
 

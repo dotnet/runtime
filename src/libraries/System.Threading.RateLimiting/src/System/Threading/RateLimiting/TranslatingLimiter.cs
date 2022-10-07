@@ -1,10 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Threading.RateLimiting
@@ -13,20 +9,22 @@ namespace System.Threading.RateLimiting
     {
         private readonly PartitionedRateLimiter<TInner> _innerRateLimiter;
         private readonly Func<TResource, TInner> _keyAdapter;
+        private readonly bool _disposeInnerLimiter;
 
-        private bool _disposed;
+        private int _disposed;
 
-        public TranslatingLimiter(PartitionedRateLimiter<TInner> inner, Func<TResource, TInner> keyAdapter)
+        public TranslatingLimiter(PartitionedRateLimiter<TInner> inner, Func<TResource, TInner> keyAdapter, bool leaveOpen)
         {
             _innerRateLimiter = inner;
             _keyAdapter = keyAdapter;
+            _disposeInnerLimiter = !leaveOpen;
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
             ThrowIfDispose();
             TInner key = _keyAdapter(resource);
-            return _innerRateLimiter.GetAvailablePermits(key);
+            return _innerRateLimiter.GetStatistics(key);
         }
 
         protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
@@ -45,21 +43,32 @@ namespace System.Threading.RateLimiting
 
         protected override void Dispose(bool disposing)
         {
-            _disposed = true;
-            base.Dispose(disposing);
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+            {
+                if (_disposeInnerLimiter)
+                {
+                    _innerRateLimiter.Dispose();
+                }
+            }
         }
 
         protected override ValueTask DisposeAsyncCore()
         {
-            _disposed = true;
-            return base.DisposeAsyncCore();
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+            {
+                if (_disposeInnerLimiter)
+                {
+                    return _innerRateLimiter.DisposeAsync();
+                }
+            }
+            return default(ValueTask);
         }
 
         private void ThrowIfDispose()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
-                throw new ObjectDisposedException(nameof(PartitionedRateLimiter));
+                throw new ObjectDisposedException(nameof(PartitionedRateLimiter<TResource>));
             }
         }
     }

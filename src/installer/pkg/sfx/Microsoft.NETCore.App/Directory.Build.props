@@ -95,7 +95,6 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -213,7 +212,6 @@
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet-crypto-worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
@@ -233,6 +231,7 @@
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />

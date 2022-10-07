@@ -18,7 +18,6 @@
 #include "typestring.h"
 #include "daccess.h"
 #include "binder.h"
-#include "win32threadpool.h"
 #include "runtimeinfo.h"
 
 #ifdef FEATURE_COMWRAPPERS
@@ -283,6 +282,21 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     return S_OK;
 }
 
+HRESULT ClrDataAccess::EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+
+    HRESULT status = S_OK;
+
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        EEJitManager* managerPtr = ExecutionManager::GetEEJitManager();
+        managerPtr->EnumMemoryRegions(flags);
+    }
+
+    return status;
+}
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // This function reports memory that a heap dump need to debug CLR
@@ -324,6 +338,9 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
 
     // Dump AppDomain-specific info
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAppDomainInfo(flags); )
+
+    // Dump jit manager info
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpJitManagerInfo(flags); )
 
     // Dump the Debugger object data needed
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pDebugger->EnumMemoryRegions(flags); )
@@ -679,6 +696,11 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
 HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
+
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
 
     AppDomainIterator adIter(FALSE);
     EX_TRY
@@ -1853,7 +1875,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
             // triage micro-dump
             status = EnumMemoryRegionsWorkerMicroTriage(flags);
         }
-        else if (flags == CLRDATA_ENUM_MEM_HEAP)
+        else if (flags == CLRDATA_ENUM_MEM_HEAP || flags == CLRDATA_ENUM_MEM_HEAP2)
         {
             status = EnumMemoryRegionsWorkerHeap(flags);
         }
@@ -1937,13 +1959,24 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     // It is expected to fail on pre Win8 OSes.
     callback->QueryInterface(IID_ICLRDataEnumMemoryRegionsCallback2, (void **)&m_updateMemCb);
 
+    // QI for optional logging callback that createdump uses
+    callback->QueryInterface(IID_ICLRDataLoggingCallback, (void **)&m_logMessageCb);
+
     EX_TRY
     {
         ClearDumpStats();
         if (miniDumpFlags & MiniDumpWithPrivateReadWriteMemory)
         {
             // heap dump
-            status = EnumMemoryRegionsWrapper(CLRDATA_ENUM_MEM_HEAP);
+            if (flags == CLRDATA_ENUM_MEM_HEAP2)
+            {
+                DacLogMessage("EnumMemoryRegions(CLRDATA_ENUM_MEM_HEAP2)\n");
+            }
+            else
+            {
+                flags = CLRDATA_ENUM_MEM_HEAP;
+            }
+            status = EnumMemoryRegionsWrapper(flags);
         }
         else if (miniDumpFlags & MiniDumpWithFullAuxiliaryState)
         {
@@ -1999,6 +2032,11 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     {
         m_updateMemCb->Release();
         m_updateMemCb = NULL;
+    }
+    if (m_logMessageCb)
+    {
+        m_logMessageCb->Release();
+        m_logMessageCb = NULL;
     }
     m_enumMemCb = NULL;
 

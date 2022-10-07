@@ -459,8 +459,6 @@ namespace System
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
             const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
             const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
@@ -567,10 +565,12 @@ namespace System
             // PutDispProperty and\or PutRefDispProperty ==> SetProperty.
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
+
+            ArgumentNullException.ThrowIfNull(name);
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
             {
                 // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
-                name = GetDefaultMemberName()! ?? "ToString";
+                name = GetDefaultMemberName() ?? "ToString";
             }
 
             // GetField or SetField

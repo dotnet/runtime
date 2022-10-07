@@ -824,24 +824,21 @@ namespace System.Reflection.Emit
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
-                        fb.ResolveUserTypes();
+                    fb?.ResolveUserTypes();
                 }
             }
             if (methods != null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
-                        mb.ResolveUserTypes();
+                    mb?.ResolveUserTypes();
                 }
             }
             if (ctors != null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
-                        cb.ResolveUserTypes();
+                    cb?.ResolveUserTypes();
                 }
             }
         }
@@ -959,12 +956,13 @@ namespace System.Reflection.Emit
 
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+            // Suppression can be removed after https://github.com/dotnet/linker/issues/2673 is resolved.
+#pragma warning disable IL2085
             return GetEvents(DefaultBindingFlags);
+#pragma warning restore IL2085
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]

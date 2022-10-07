@@ -2176,7 +2176,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            if (member.IsList && !member.Mapping.ReadOnly && member.Mapping.TypeDesc.IsNullable)
+                            if (member.IsList && !member.Mapping.ReadOnly) //&& member.Mapping.TypeDesc.IsNullable) // nullable or not, we are likely to assign null in the next step if we don't do this initialization. So just do this.
                             {
                                 // we need to new the Collections and ArrayLists
                                 ILGenLoad(member.Source, typeof(object));
@@ -2881,7 +2881,8 @@ namespace System.Xml.Serialization
                 )!;
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
-            ilg.IfNot();
+            ilg.IfNot();    // if (!ReadNull()) { // EnterScope
+            ilg.EnterScope();
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -2976,11 +2977,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.Else();
+                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.Else();         // } else { EnterScope
+                ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
+            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 

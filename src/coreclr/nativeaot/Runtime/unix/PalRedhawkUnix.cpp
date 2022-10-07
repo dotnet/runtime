@@ -13,6 +13,8 @@
 #include "UnixHandle.h"
 #include <pthread.h>
 #include "gcenv.h"
+#include "gcenv.ee.h"
+#include "gcconfig.h"
 #include "holder.h"
 #include "UnixSignals.h"
 #include "UnixContext.h"
@@ -417,6 +419,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     ConfigureSignals();
 
+    GCConfig::Initialize();
+
     if (!GCToOSInterface::Initialize())
     {
         return false;
@@ -651,45 +655,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 // time).
 REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    {
-        retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-    }
-#elif HAVE_CLOCK_MONOTONIC
-    {
-        clockid_t clockType =
-#if HAVE_CLOCK_MONOTONIC_COARSE
-            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-            CLOCK_MONOTONIC;
-#endif
-        struct timespec ts;
-        if (clock_gettime(clockType, &ts) == 0)
-        {
-            retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
-        }
-    }
-#else
-    {
-        struct timeval tv;
-        if (gettimeofday(&tv, NULL) == 0)
-        {
-            retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
-        }
-    }
-#endif
-
-    return retval;
+    return GCToOSInterface::GetLowPrecisionTimeStamp();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -711,6 +677,11 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 }
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
+{
+    return true;
+}
+
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
 {
     return true;
 }
@@ -772,8 +743,16 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         static const size_t Alignment = 64 * 1024;
 
         size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
+        int flags = MAP_ANON | MAP_PRIVATE;
 
-        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, MAP_ANON | MAP_PRIVATE, -1, 0);
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        if (unixProtect & PROT_EXEC)
+        {
+            flags |= MAP_JIT;
+        }
+#endif
+
+        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, flags, -1, 0);
 
         if (pRetVal != NULL)
         {
@@ -828,6 +807,33 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
 
+REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+{
+#if defined(__linux__) && defined(HOST_ARM)
+    // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
+    // implementing cacheflush syscall. cacheflush flushes only the first page in range [pAddress, pAddress + size)
+    // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
+    //
+    // As a workaround, we call __builtin___clear_cache on each page separately.
+
+    const size_t pageSize = getpagesize();
+    uint8_t* begin = (uint8_t*)pAddress;
+    uint8_t* end = begin + size;
+
+    while (begin < end)
+    {
+        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        if (endOrNextPageBegin > end)
+            endOrNextPageBegin = end;
+
+        __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
+        begin = endOrNextPageBegin;
+    }
+#else
+    __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
+#endif
+}
+
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
@@ -869,7 +875,22 @@ extern "C" UInt32_BOOL DuplicateHandle(
 
 extern "C" UInt32_BOOL InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 {
-    return pthread_mutex_init(&lpCriticalSection->mutex, NULL) == 0;
+    pthread_mutexattr_t mutexAttributes;
+    int st = pthread_mutexattr_init(&mutexAttributes);
+    if (st != 0)
+    {
+        return false;
+    }
+
+    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    if (st == 0)
+    {
+        st = pthread_mutex_init(&lpCriticalSection->mutex, &mutexAttributes);
+    }
+
+    pthread_mutexattr_destroy(&mutexAttributes);
+
+    return (st == 0);
 }
 
 extern "C" UInt32_BOOL InitializeCriticalSectionEx(CRITICAL_SECTION * lpCriticalSection, uint32_t arg2, uint32_t arg3)
@@ -1011,7 +1032,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    if ((status != 0) && (status != EAGAIN) && (status != ESRCH))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -1038,10 +1059,6 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
 
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
@@ -1160,24 +1177,14 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
+extern "C" uint64_t PalQueryPerformanceCounter()
 {
-    // TODO: More efficient, platform-specific implementation
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("gettimeofday() failed");
-        return UInt32_FALSE;
-    }
-    lpPerformanceCount->QuadPart =
-        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceCounter();
 }
 
-extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
+extern "C" uint64_t PalQueryPerformanceFrequency()
 {
-    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
@@ -1237,6 +1244,19 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
+{
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+      );
+    // check OS has enabled XMM, YMM and ZMM state support
+    return ((eax & 0xE6) == 0x0E6) ? 1 : 0;
+}
+
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined (HOST_ARM64)

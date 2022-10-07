@@ -3,17 +3,18 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [JSExport]
         public static int TestMeaning()
         {
             var config = AppContext.GetData("test_runtimeconfig_json");

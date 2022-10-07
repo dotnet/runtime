@@ -109,7 +109,7 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public override Type BaseType => _typeSymbol.BaseType!.AsType(_metadataLoadContext);
+        public override Type BaseType => _typeSymbol.BaseType.AsType(_metadataLoadContext);
 
         public override Type DeclaringType => _typeSymbol.ContainingType?.ConstructedFrom.AsType(_metadataLoadContext);
 
@@ -499,9 +499,29 @@ namespace System.Text.Json.Reflection
                     _typeAttributes |= TypeAttributes.Interface;
                 }
 
-                if (_typeSymbol.ContainingType != null && _typeSymbol.DeclaredAccessibility == Accessibility.Private)
+                bool isNested = _typeSymbol.ContainingType != null;
+
+                switch (_typeSymbol.DeclaredAccessibility)
                 {
-                    _typeAttributes |= TypeAttributes.NestedPrivate;
+                    case Accessibility.NotApplicable:
+                    case Accessibility.Private:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedPrivate : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.ProtectedAndInternal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamANDAssem : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Protected:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamily : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Internal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedAssembly : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.ProtectedOrInternal:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedFamORAssem : TypeAttributes.NotPublic;
+                        break;
+                    case Accessibility.Public:
+                        _typeAttributes |= isNested ? TypeAttributes.NestedPublic : TypeAttributes.Public;
+                        break;
                 }
             }
 

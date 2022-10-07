@@ -177,10 +177,14 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 //
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
-    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType);
+    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
     RefPosition* newRP = &refPositions.back();
 #ifdef DEBUG
-    newRP->rpNum = static_cast<unsigned>(refPositions.size() - 1);
+    // Reset currBuildNode so we do not set it for subsequent refpositions belonging
+    // to the same treeNode and hence, avoid printing it for every refposition inside
+    // the allocation table.
+    currBuildNode = nullptr;
+    newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
 #endif // DEBUG
     return newRP;
 }
@@ -1749,6 +1753,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // the last RefPosition prior to those created for this node.
     RefPositionIterator refPositionMark = refPositions.backPosition();
     int                 oldDefListCount = defList.Count();
+    currBuildNode                       = tree;
 #endif // DEBUG
 
     int consume = BuildNode(tree);
@@ -2044,11 +2049,6 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 //    The argument is live on entry to the function
 //    (or is untracked and therefore assumed live)
 //
-// Notes:
-//    This relies on a method in regAlloc.cpp that is shared between LSRA
-//    and regAlloc.  It is further abstracted here because regState is updated
-//    separately for tracked and untracked variables in LSRA.
-//
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -2204,7 +2204,7 @@ void LinearScan::buildIntervals()
             RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
             pos->setRegOptional(true);
         }
-        else if (varTypeIsStruct(argDsc->lvType))
+        else if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
@@ -2236,7 +2236,7 @@ void LinearScan::buildIntervals()
     {
         LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
 
-        if (argDsc->lvPromotedStruct())
+        if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
@@ -2332,7 +2332,6 @@ void LinearScan::buildIntervals()
                     {
                         // If we are using locations from a predecessor, we should never require DummyDefs.
                         assert(!predBlockIsAllocated);
-
                         JITDUMP("Creating dummy definitions\n");
                         VarSetOps::Iter iter(compiler, newLiveIn);
                         unsigned        varIndex = 0;
@@ -2729,7 +2728,7 @@ void LinearScan::validateIntervals()
 }
 #endif // DEBUG
 
-#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
+#ifndef TARGET_ARM
 //------------------------------------------------------------------------
 // setTgtPref: Set a  preference relationship between the given Interval
 //             and a Use RefPosition.
@@ -2760,7 +2759,8 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
         }
     }
 }
-#endif // TARGET_XARCH || FEATURE_HW_INTRINSICS
+#endif // !TARGET_ARM
+
 //------------------------------------------------------------------------
 // BuildDef: Build a RefTypeDef RefPosition for the given node
 //
@@ -2841,13 +2841,16 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         RefInfoListNode* refInfo = listNodePool.GetNode(defRefPosition, tree);
         defList.Append(refInfo);
     }
-#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
+
+#ifndef TARGET_ARM
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
-#endif // TARGET_XARCH
+#endif // !TARGET_ARM
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     assert(!interval->isPartiallySpilled);
 #endif
+
     return defRefPosition;
 }
 
@@ -3131,27 +3134,38 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
-        if (node->AsHWIntrinsic()->OperIsMemoryLoad())
+        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+
+        if (hwintrinsic->OperIsMemoryLoad())
         {
-            return BuildAddrUses(node->AsHWIntrinsic()->Op(1));
+            return BuildAddrUses(hwintrinsic->Op(1));
         }
 
-        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
-        BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
+        size_t numArgs = hwintrinsic->GetOperandCount();
+
+        if (numArgs != 1)
+        {
+            assert(numArgs == 2);
+            assert(hwintrinsic->Op(2)->isContained());
+            assert(hwintrinsic->Op(2)->IsCnsIntOrI());
+        }
+
+        BuildUse(hwintrinsic->Op(1), candidates);
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_MUL) || node->OperIsCmpCompare() || node->OperIs(GT_AND))
     {
-        // Can be contained for MultiplyAdd on arm64.
+        // MUL can be contained for madd or msub on arm64.
         // Compare and AND may be contained due to If Conversion.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
     {
-        // GT_NEG can be contained for MultiplyAdd on arm64
-        // GT_CAST and GT_LSH for ADD with sign/zero extension
+        // NEG can be contained for mneg on arm64
+        // CAST and LSH for ADD with sign/zero extension
+        // LSH, RSH, and RSZ for various "shifted register" instructions on arm64
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif
@@ -3308,6 +3322,40 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
         srcCount += BuildOperandUses(op2, candidates);
     }
     return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildCastUses: Build uses for a cast's source, preferencing it as appropriate.
+//
+// Arguments:
+//    cast       - The cast node to build uses for
+//    candidates - The candidate registers for the uses
+//
+// Return Value:
+//    The number of actual register operands.
+//
+int LinearScan::BuildCastUses(GenTreeCast* cast, regMaskTP candidates)
+{
+    GenTree* src = cast->CastOp();
+
+    // Casts can have contained memory operands.
+    if (src->isContained())
+    {
+        return BuildOperandUses(src, candidates);
+    }
+
+    RefPosition* srcUse = BuildUse(src, candidates);
+
+#ifdef TARGET_64BIT
+    // A long -> int cast is a copy - the code generator will elide
+    // it if the source and destination registers are the same.
+    if (src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT))
+    {
+        tgtPrefUse = srcUse;
+    }
+#endif // TARGET_64BIT
+
+    return 1;
 }
 
 //------------------------------------------------------------------------
@@ -3524,11 +3572,11 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
         GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = bitCastSrc->TypeGet();
+        RegisterType registerType = regType(bitCastSrc->TypeGet());
         singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
 
         Interval* srcInterval = singleUseRef->getInterval();
-        assert(srcInterval->registerType == registerType);
+        assert(regType(srcInterval->registerType) == registerType);
         srcCount = 1;
     }
 #ifndef TARGET_64BIT
@@ -3833,32 +3881,6 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     bool     isSpecialPutArg = false;
     int      srcCount        = 1;
     GenTree* op1             = node->gtGetOp1();
-
-    // First, handle the GT_OBJ case, which loads into the arg register
-    // (so we don't set the use to prefer that register for the source address).
-    if (op1->OperIs(GT_OBJ))
-    {
-        GenTreeObj* obj  = op1->AsObj();
-        GenTree*    addr = obj->Addr();
-        unsigned    size = obj->GetLayout()->GetSize();
-        assert(size <= MAX_PASS_SINGLEREG_BYTES);
-        if (addr->OperIsLocalAddr())
-        {
-            // We don't need a source register.
-            assert(addr->isContained());
-            srcCount = 0;
-        }
-        else if (!isPow2(size))
-        {
-            // We'll need an internal register to do the odd-size load.
-            // This can only happen with integer registers.
-            assert(genIsValidIntReg(argReg));
-            buildInternalIntRegisterDefForNode(node);
-            BuildUse(addr);
-            buildInternalRegisterUses();
-        }
-        return srcCount;
-    }
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.

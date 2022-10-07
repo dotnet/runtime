@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _module = module;
         }
-        
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return $"Getting embedded descriptor file from {_module.ToString()}";
+            return $"Embedded descriptor from {_module}";
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

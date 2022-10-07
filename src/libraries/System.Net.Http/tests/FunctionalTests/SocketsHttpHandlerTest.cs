@@ -24,6 +24,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
@@ -1225,10 +1227,25 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
-    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : HttpClientHandler_MaxResponseHeadersLength_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2 : HttpClientHandler_MaxResponseHeadersLength_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74896")]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : HttpClientHandler_MaxResponseHeadersLength_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
@@ -3080,6 +3097,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73772", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNativeAot))]
         public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -3725,6 +3743,140 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        public async Task SslOptions_CustomTrust_Ok()
+        {
+            X509Certificate2Collection caCerts = new X509Certificate2Collection();
+            X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: false);
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+
+                    var policy = new X509ChainPolicy()
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    };
+
+                    policy.ExtraStore.AddRange(caCerts);
+                    policy.CustomTrustStore.Add(caCerts[caCerts.Count - 1]);
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    using HttpClient client = CreateHttpClient(handler);
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                    // This will drive SNI and name verification
+                    request.Headers.Host = "localhost";
+                    HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                    Assert.Equal("foo", await response.Content.ReadAsStringAsync());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                }, options: options);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        public async Task SslOptions_InvalidName_Throws()
+        {
+            X509Certificate2Collection caCerts = new X509Certificate2Collection();
+            using X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: false);
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                    using HttpClient client = CreateHttpClient(handler);
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                    // This will drive SNI and name verification
+                    request.Headers.Host = Guid.NewGuid().ToString("N");
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request, HttpCompletionOption.ResponseContentRead));
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    }
+                    catch { };
+                }, options: options);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
+        {
+            X509Certificate2Collection caCerts = new X509Certificate2Collection();
+            X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: false);
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+
+                    var policy = new X509ChainPolicy()
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        VerificationFlags = X509VerificationFlags.IgnoreInvalidName,
+                    };
+
+                    policy.ExtraStore.AddRange(caCerts);
+                    policy.CustomTrustStore.Add(caCerts[caCerts.Count -1]);
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                    // This will drive SNI and name verification
+                    request.Headers.Host = Guid.NewGuid().ToString("N");
+
+                    HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                    Assert.Equal("foo", await response.Content.ReadAsStringAsync());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                }, options: options);
+        }
+    }
+
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11 : SocketsHttpHandler_SecurityTest
+    {
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2 : SocketsHttpHandler_SecurityTest
+    {
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
+    {
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

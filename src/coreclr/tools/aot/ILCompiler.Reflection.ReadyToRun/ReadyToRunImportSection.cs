@@ -10,7 +10,7 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_IMPORT_SECTION
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_IMPORT_SECTION
     /// </summary>
     public struct ReadyToRunImportSection
     {
