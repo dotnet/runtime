@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -214,6 +215,55 @@ namespace System.Runtime.CompilerServices
                 if (interfaceCount != 0)
                 {
                     MethodTable** interfaceMap = mt->InterfaceMap;
+
+                    if (Vector256.IsHardwareAccelerated && interfaceCount >= Vector256<nuint>.Count)
+                    {
+                        Vector256<nuint> cmpTypeHnd = Vector256.Create((nuint)toTypeHnd);
+                        do
+                        {
+                            Vector256<nuint> cmpMap = Vector256.LoadUnsafe(ref Unsafe.AsRef<nuint>(interfaceMap));
+                            if (Vector256.EqualsAny(cmpMap, cmpTypeHnd))
+                            {
+                                goto done;
+                            }
+
+                            interfaceMap += Vector256<nuint>.Count;
+                            interfaceCount -= Vector256<nuint>.Count;
+                        } while (interfaceCount >= Vector256<nuint>.Count);
+
+                        if (interfaceCount == 0)
+                        {
+                            goto extra;
+                        }
+
+                        goto few;
+                    }
+
+#if !TARGET_64BIT
+                    if (Vector128.IsHardwareAccelerated && interfaceCount >= Vector128<nuint>.Count)
+                    {
+                        Vector128<nuint> cmpTypeHnd = Vector128.Create((nuint)toTypeHnd);
+                        do
+                        {
+                            Vector128<nuint> cmpMap = Vector128.LoadUnsafe(ref Unsafe.AsRef<nuint>(interfaceMap));
+                            if (Vector128.EqualsAny(cmpMap, cmpTypeHnd))
+                            {
+                                goto done;
+                            }
+
+                            interfaceMap += Vector128<nuint>.Count;
+                            interfaceCount -= Vector128<nuint>.Count;
+                        } while (interfaceCount >= Vector128<nuint>.Count);
+
+                        if (interfaceCount == 0)
+                        {
+                            goto extra;
+                        }
+
+                        goto few;
+                    }
+#endif
+
                     if (interfaceCount < unrollSize)
                     {
                         // If not enough for unrolled, jmp straight to small loop
@@ -407,6 +457,55 @@ namespace System.Runtime.CompilerServices
                 }
 
                 MethodTable** interfaceMap = mt->InterfaceMap;
+
+                if (Vector256.IsHardwareAccelerated && interfaceCount >= Vector256<nuint>.Count)
+                {
+                    Vector256<nuint> cmpTypeHnd = Vector256.Create((nuint)toTypeHnd);
+                    do
+                    {
+                        Vector256<nuint> cmpMap = Vector256.LoadUnsafe(ref Unsafe.AsRef<nuint>(interfaceMap));
+                        if (Vector256.EqualsAny(cmpMap, cmpTypeHnd))
+                        {
+                            goto done;
+                        }
+
+                        interfaceMap += Vector256<nuint>.Count;
+                        interfaceCount -= Vector256<nuint>.Count;
+                    } while (interfaceCount >= Vector256<nuint>.Count);
+
+                    if (interfaceCount == 0)
+                    {
+                        goto slowPath;
+                    }
+
+                    goto few;
+                }
+
+#if !TARGET_64BIT
+                    if (Vector128.IsHardwareAccelerated && interfaceCount >= Vector128<nuint>.Count)
+                    {
+                        Vector128<nuint> cmpTypeHnd = Vector128.Create((nuint)toTypeHnd);
+                        do
+                        {
+                            Vector128<nuint> cmpMap = Vector128.LoadUnsafe(ref Unsafe.AsRef<nuint>(interfaceMap));
+                            if (Vector128.EqualsAny(cmpMap, cmpTypeHnd))
+                            {
+                                goto done;
+                            }
+
+                            interfaceMap += Vector128<nuint>.Count;
+                            interfaceCount -= Vector128<nuint>.Count;
+                        } while (interfaceCount >= Vector128<nuint>.Count);
+
+                        if (interfaceCount == 0)
+                        {
+                            goto slowPath;
+                        }
+
+                        goto few;
+                    }
+#endif
+
                 if (interfaceCount < unrollSize)
                 {
                     // If not enough for unrolled, jmp straight to small loop
