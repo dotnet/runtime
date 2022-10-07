@@ -184,6 +184,7 @@ stages:
             arguments: -task SigningValidation -restore -msbuildEngine vs
               /p:PackageBasePath='$(Build.ArtifactStagingDirectory)/PackageArtifacts'
               /p:SignCheckExclusionsFile='$(Build.SourcesDirectory)/eng/SignCheckExclusionsFile.txt'
+              /p:CheckEolTargetFramework=false
               ${{ parameters.signingValidationAdditionalParameters }}
 
         - template: ../steps/publish-logs.yml
@@ -258,7 +259,14 @@ stages:
         - name: BARBuildId
           value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.BARBuildId'] ]
       pool:
-        vmImage: 'windows-2019'
+        # We don't use the collection uri here because it might vary (.visualstudio.com vs. dev.azure.com)
+        ${{ if eq(variables['System.TeamProject'], 'DevDiv') }}:
+          name: VSEngSS-MicroBuild2022-1ES
+          demands: Cmd
+        # If it's not devdiv, it's dnceng
+        ${{ else }}:
+          name: NetCore1ESPool-Svc-Internal
+          demands: ImageOverride -equals 1es-windows-2022
       steps:
         - task: PowerShell@2
           displayName: Publish Using Darc

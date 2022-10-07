@@ -1,17 +1,17 @@
 {
   "sdk": {
-    "version": "5.0.401",
+    "version": "5.0.408",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "5.0.401"
+    "dotnet": "5.0.408"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.21565.1",
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.21565.1",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.21565.1",
-    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.21565.1",
+    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.22506.2",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.22506.2",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.22506.2",
+    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.22506.2",
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-preview.8.20359.4",
     "Microsoft.Build.NoTargets": "2.0.1",
