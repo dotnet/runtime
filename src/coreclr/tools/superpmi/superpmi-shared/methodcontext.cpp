@@ -3665,6 +3665,7 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     if (itemIndex < 0)
     {
         LogException(EXCEPTIONCODE_MC, "repGetReadonlyStaticFieldValue: didn't find buffer for {fld-%016llX, %d}", field, bufferSize);
+        return false;
     }
     else
     {

@@ -105,5 +105,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
+
+        public override string ToString() => $"Frozen {_data.Type.GetDisplayNameWithoutNamespace()} object";
     }
 }
