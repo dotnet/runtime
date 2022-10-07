@@ -472,9 +472,6 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
                 """
                 <Project>
-                  <ItemGroup>
-                      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
-                  </ItemGroup>
                   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                       <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
                   </Target>
