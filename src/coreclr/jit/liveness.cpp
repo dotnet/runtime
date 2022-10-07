@@ -2136,7 +2136,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 {
     assert(!node->OperIsLocal());
-    if (!node->IsValue() || node->IsUnusedValue())
+    if ((!node->IsValue() || node->IsUnusedValue()) && !node->OperIsCompare())
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
         // (as opposed to side effects of their children).
