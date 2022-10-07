@@ -5,8 +5,6 @@ using Microsoft.Interop.UnitTests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Interop;
-using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
-
-using StringMarshalling = Microsoft.Interop.StringMarshalling;
 
 namespace LibraryImportGenerator.UnitTests
 {

@@ -4,7 +4,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Interop.UnitTests;
 
-namespace Microsoft.Interop.UnitTests
+namespace LibraryImportGenerator.UnitTests
 {
     internal partial class CodeSnippets : ICustomMarshallingSignatureTestProvider
     {
