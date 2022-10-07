@@ -512,7 +512,7 @@ namespace System.Reflection.Internal
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-            return BlobUtilities.ReadBytes(Pointer + offset, byteCount);
+            return new ReadOnlySpan<byte>(Pointer + offset, byteCount).ToArray();
         }
 
         internal int IndexOf(byte b, int start)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
@@ -11,16 +10,6 @@ namespace System.Reflection
 {
     internal static unsafe class BlobUtilities
     {
-        public static byte[] ReadBytes(byte* buffer, int byteCount)
-        {
-            return new ReadOnlySpan<byte>(buffer, byteCount).ToArray();
-        }
-
-        public static ImmutableArray<byte> ReadImmutableBytes(byte* buffer, int byteCount)
-        {
-            return ImmutableArray.Create(new ReadOnlySpan<byte>(buffer, byteCount));
-        }
-
         public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
             Debug.Assert(buffer.Length > 0);
