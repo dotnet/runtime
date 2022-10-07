@@ -87,7 +87,7 @@ namespace Sample
         class DotInt : VectorMeasurement
         {
             Vector128<int> vector1, vector2;
-            float result;
+            int result;
 
             public override string Name => "Dot product int";
 
@@ -106,7 +106,7 @@ namespace Sample
         class DotULong : VectorMeasurement
         {
             Vector128<ulong> vector1, vector2;
-            float result;
+            ulong result;
 
             public override string Name => "Dot product ulong";
 
