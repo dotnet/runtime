@@ -3653,32 +3653,22 @@ void MethodContext::dmpGetReadonlyStaticFieldValue(DLD key, DD value)
 }
 bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
 {
-    if (GetReadonlyStaticFieldValue == nullptr)
-        return false;
-
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
 
-    int itemIndex = GetReadonlyStaticFieldValue->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapExistsNoMessage(GetReadonlyStaticFieldValue, key);
+
+    DD value = GetReadonlyStaticFieldValue->Get(key);
+    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
+    if (buffer != nullptr && (bool)value.A)
     {
-        LogException(EXCEPTIONCODE_MC, "repGetReadonlyStaticFieldValue: didn't find buffer for {fld-%016llX, %d}", field, bufferSize);
-        return false;
+        uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, bufferSize);
     }
-    else
-    {
-        DD value = GetReadonlyStaticFieldValue->Get(key);
-        DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
-        if (buffer != nullptr && (bool)value.A)
-        {
-            uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, bufferSize);
-        }
-        return (bool)value.A;
-    }
+    return (bool)value.A;
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
