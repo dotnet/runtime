@@ -2206,6 +2206,10 @@ namespace Internal.JitInterface
 
         private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
         {
+            Debug.Assert(fieldHandle != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+
             FieldDesc field = HandleToObject(fieldHandle);
             if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
@@ -2230,7 +2234,9 @@ namespace Internal.JitInterface
                     {
                         switch (data)
                         {
-                            case byte[] bytes when bufferSize >= bytes.Length:
+                            case byte[] bytes:
+                                Debug.Assert(bufferSize >= bytes.Length);
+
                                 // Ensure we have enough room in the buffer, it can be a large struct
                                 bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
                                 return true;

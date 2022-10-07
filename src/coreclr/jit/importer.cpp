@@ -15291,13 +15291,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             const int bufferSize         = sizeof(uint64_t);
                             uint8_t   buffer[bufferSize] = {0};
-                            if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer, bufferSize))
+                            if (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF))
                             {
-                                GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
-                                if (cnsValue != nullptr)
+                                assert(bufferSize >= genTypeSize(lclTyp));
+                                if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
+                                                                                  genTypeSize(lclTyp)))
                                 {
-                                    op1 = cnsValue;
-                                    goto FIELD_DONE;
+                                    GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
+                                    if (cnsValue != nullptr)
+                                    {
+                                        op1 = cnsValue;
+                                        goto FIELD_DONE;
+                                    }
                                 }
                             }
                         }

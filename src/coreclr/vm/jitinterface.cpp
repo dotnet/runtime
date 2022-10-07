@@ -11883,24 +11883,11 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     _ASSERT(fieldHnd != NULL);
     _ASSERT(buffer != NULL);
-    _ASSERT(bufferSize == sizeof(uint64_t));
+    _ASSERT(bufferSize > 0);
 
     bool result = false;
 
     JIT_TO_EE_TRANSITION();
-
-    auto setResult = [&](void* data, int size)
-    {
-        if (size > bufferSize)
-        {
-            result = false;
-        }
-        else
-        {
-            memcpy(buffer, data, size);
-            result = true;
-        }
-    };
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
     if (field->IsStatic() && !field->IsThreadStatic())
@@ -11918,19 +11905,23 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             {
                 if (field->IsObjRef())
                 {
+                    _ASSERT(bufferSize >= sizeof(intptr_t));
+
                     OBJECTREF fieldObj = field->GetStaticOBJECTREF();
                     if (fieldObj != NULL)
                     {
                         Object* obj = OBJECTREFToObject(fieldObj);
                         if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                         {
-                            setResult(&obj, sizeof(intptr_t));
+                            intptr_t ptr = (intptr_t)obj;
+                            memcpy(buffer, &ptr, sizeof(intptr_t));
+                            result = true;
                         }
                     }
                     else
                     {
-                        intptr_t zero = 0;
-                        setResult(&zero, sizeof(intptr_t));
+                        memset(buffer, 0, sizeof(intptr_t));
+                        result = true;
                     }
                 }
                 else
@@ -11938,38 +11929,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                     void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
                     if (fldAddr != nullptr)
                     {
+                        _ASSERT((unsigned)bufferSize >= field->GetSize());
                         _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+                        memcpy(fldAddr, fldAddr, field->GetSize());
                         result = true;
-                        switch (field->GetFieldType())
-                        {
-                            case ELEMENT_TYPE_BOOLEAN:
-                            case ELEMENT_TYPE_I1:
-                            case ELEMENT_TYPE_U1:
-                                setResult(fldAddr, sizeof(uint8_t));
-                                break;
-                            case ELEMENT_TYPE_CHAR:
-                            case ELEMENT_TYPE_I2:
-                            case ELEMENT_TYPE_U2:
-                                setResult(fldAddr, sizeof(uint16_t));
-                                break;
-                            case ELEMENT_TYPE_I4:
-                            case ELEMENT_TYPE_U4:
-                            case ELEMENT_TYPE_R4:
-                                setResult(fldAddr, sizeof(uint32_t));
-                                break;
-                            case ELEMENT_TYPE_I8:
-                            case ELEMENT_TYPE_U8:
-                            case ELEMENT_TYPE_R8:
-                                setResult(fldAddr, sizeof(uint64_t));
-                                break;
-                            case ELEMENT_TYPE_I:
-                            case ELEMENT_TYPE_U:
-                                setResult(fldAddr, sizeof(intptr_t));
-                                break;
-                            default:
-                                result = false;
-                                break;
-                        }
                     }
                 }
             }

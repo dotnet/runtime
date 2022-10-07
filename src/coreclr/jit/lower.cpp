@@ -7108,6 +7108,23 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#ifndef TARGET_XARCH
+        if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
+            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
+            {
+                // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+                // when we publish a potentially mutable object
+                // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+                // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+                // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
+                ind->gtFlags |= GTF_IND_VOLATILE;
+            }
+        }
+#endif
+
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
             // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
