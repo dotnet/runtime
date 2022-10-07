@@ -1735,7 +1735,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 unsigned varIndex = varDsc->lvVarIndex;
                 VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
 
-                UpdatePreferenceOfDyingLocal(getIntervalForLocalVar(varIndex));
+                UpdatePreferencesOfDyingLocal(getIntervalForLocalVar(varIndex));
             }
         }
 #else  // TARGET_XARCH
@@ -2952,7 +2952,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
 }
 
 //------------------------------------------------------------------------
-// UpdatePreferenceOfDyingLocal: Update the preference of a dying local.
+// UpdatePreferencesOfDyingLocal: Update the preference of a dying local.
 //
 // Arguments:
 //    interval - the interval for the local
@@ -2960,7 +2960,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
 // Notes:
 //    The "dying" information here is approximate, see the comment in BuildUse.
 //
-void LinearScan::UpdatePreferenceOfDyingLocal(Interval* interval)
+void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 {
     assert(!VarSetOps::IsMember(compiler, currentLiveVars, interval->getVarIndex(compiler)));
 
@@ -2999,21 +2999,19 @@ void LinearScan::UpdatePreferenceOfDyingLocal(Interval* interval)
         }
     }
 
-    regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
-    if (newPreferences != RBM_NONE)
+    if (unpref != RBM_NONE)
     {
 #ifdef DEBUG
         if (VERBOSE)
         {
-            printf("Last-use of V%02u between a PUTARG and CALL node. Removing following already-placed argument "
-                   "registers "
-                   "from its preferences: ",
+            printf("Last use of V%02u between PUTARG and CALL. Removing occupied arg regs from preferences: ",
                    compiler->lvaTrackedIndexToLclNum(varIndex));
             dumpRegMask(unpref);
             printf("\n");
         }
 #endif
 
+        regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
         interval->updateRegisterPreferences(newPreferences);
     }
 }
@@ -3057,7 +3055,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         {
             unsigned varIndex = interval->getVarIndex(compiler);
             VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
-            UpdatePreferenceOfDyingLocal(interval);
+            UpdatePreferencesOfDyingLocal(interval);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
@@ -3972,7 +3970,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 
         // Record that this local is available in the register to ensure we
         // keep the register in its local set if we see it die before the call
-        // (see UpdatePreferenceOfDyingLocal).
+        // (see UpdatePreferencesOfDyingLocal).
         assert(numPlacedArgLocals < ArrLen(placedArgLocals));
         placedArgLocals[numPlacedArgLocals].VarIndex = use->getInterval()->getVarIndex(compiler);
         placedArgLocals[numPlacedArgLocals].Reg      = argReg;

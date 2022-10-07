@@ -1842,7 +1842,7 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
-    void UpdatePreferenceOfDyingLocal(Interval* interval);
+    void UpdatePreferencesOfDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
