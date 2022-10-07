@@ -77,7 +77,10 @@ export class StringDecoder {
             // When threading is enabled, TextDecoder does not accept a view of a
             // SharedArrayBuffer, we must make a copy of the array first.
             // See https://github.com/whatwg/encoding/issues/172
-            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer instanceof SharedArrayBuffer
+            // N.B. don't use `Module.HEAPU8.buffer instanceof SharedArrayBuffer` if a worker
+            // resized the heap, the buffer will be an instance of that worker's SharedArrayBuffer,
+            // not the current globalThis.SharedArrayBuffer
+            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer.constructor.name === 'SharedArrayBuffer'
                 ? Module.HEAPU8.slice(<any>start, <any>end)
                 : Module.HEAPU8.subarray(<any>start, <any>end);
 
