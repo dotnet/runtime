@@ -21,25 +21,64 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(NestedPublicContext.NestedProtectedInternalClass.Default);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void ContextMetadataIsImmutable()
+        [Fact]
+        public static void PropertyMetadataIsImmutable()
         {
-            RemoteExecutor.Invoke(
-                static () =>
-                {
-                    JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
+            JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
 
-                    Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
-                    Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
-                    Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
 
-                    JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
-                    Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
-                    Assert.Throws<InvalidOperationException>(() => propertyInfo.IsExtensionData = true);
-                    Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
-                    Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
-                }).Dispose();
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+        }
+
+        [Fact]
+        public static void JsonSerializerContext_GetTypeInfo_MetadataIsImmutable()
+        {
+            JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)PersonJsonContext.Default.GetTypeInfo(typeof(Person));
+
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+        }
+
+        [Fact]
+        public static void IJsonTypeInfoResolver_GetTypeInfo_MetadataIsMutable()
+        {
+            IJsonTypeInfoResolver resolver = PersonJsonContext.Default;
+            JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
+
+            Assert.NotSame(typeInfo, PersonJsonContext.Default.Person);
+
+            JsonTypeInfo<Person> typeInfo2 = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
+            Assert.NotSame(typeInfo, typeInfo2);
+
+            typeInfo.CreateObject = null;
+            typeInfo.OnDeserializing = obj => { };
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            propertyInfo.Name = "differentName";
+            propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            propertyInfo.IsRequired = true;
+            propertyInfo.Order = -1;
+
+            typeInfo.Properties.Clear();
+            Assert.Equal(0, typeInfo.Properties.Count);
+
+            // Changes should not impact other metadata instances
+            Assert.Equal(2, typeInfo2.Properties.Count);
+            Assert.Equal(2, PersonJsonContext.Default.Person.Properties.Count);
         }
 
         [Fact]
