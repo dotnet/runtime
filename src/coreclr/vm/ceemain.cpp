@@ -677,7 +677,7 @@ void EEStartupHelper()
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
-            unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
+            unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO10000);
             unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
             CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);

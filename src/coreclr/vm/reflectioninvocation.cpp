@@ -811,16 +811,6 @@ Done:
     ;
     HELPER_METHOD_FRAME_END();
 
-    if (gc.retVal != NULL && gc.retVal->GetMethodTable()->GetNumInstanceFieldBytes() == 32)
-    {
-        uint64_t* pData = (uint64_t*)gc.retVal->GetData();
-
-        STRESS_LOG6(LF_CLASSLOADER, LL_INFO10, "RuntimeMethodHandle::InvokeMethod returning obj=%p pMT=%p %p %p %p %p\n",
-            OBJECTREFToObject(gc.retVal),
-            gc.retVal->GetMethodTable(),
-            pData[0], pData[1], pData[2], pData[3]);
-    }
-
     return OBJECTREFToObject(gc.retVal);
 }
 FCIMPLEND
