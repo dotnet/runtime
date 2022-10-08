@@ -243,7 +243,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 
 	/* Save fp regs */
 	if (!mono_arch_is_soft_float ()) {
-		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (guint32)(sizeof (double) * 16));
 		cfa_offset += sizeof (double) * 16;
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
 		ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);
@@ -375,7 +375,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
  * \returns a function pointer which can be used to raise
  * corlib exceptions. The returned function has the following
  * signature: void (*func) (guint32 ex_token, guint32 offset);
- * Here, \c offset is the offset which needs to be substracted from the caller IP
+ * Here, \c offset is the offset which needs to be subtracted from the caller IP
  * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  * On ARM, the ip is passed instead of an offset.
@@ -517,7 +517,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* Clear thumb bit */
 		new_ctx->pc &= ~1;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		return TRUE;
@@ -550,7 +550,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* Clear thumb bit */
 		new_ctx->pc &= ~1;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);

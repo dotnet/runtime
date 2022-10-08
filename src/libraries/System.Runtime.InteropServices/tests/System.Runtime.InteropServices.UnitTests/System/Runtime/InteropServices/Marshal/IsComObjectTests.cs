@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { collectibleComImportObject };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(IsComObject_TestData))]
         public void IsComObject_NonComObject_ReturnsFalse(object value)
         {

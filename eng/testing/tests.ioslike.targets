@@ -25,11 +25,10 @@
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       sign &quot;$app&quot;
-      xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- 
-    </_AfterBuildCommands>
+      xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- </_AfterBuildCommands>
 
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
-  </PropertyGroup> 
+  </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.props"
           Condition="'$(BuildTestsOn)' == 'local'" />

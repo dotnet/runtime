@@ -49,6 +49,31 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
+        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        /// </summary>
+        /// <param name="ruleSet">The encoding constraints for the writer.</param>
+        /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="ruleSet"/> is not defined.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="initialCapacity"/> is a negative number.</para>
+        /// </exception>
+        /// <remarks>
+        ///   Specifying <paramref name="initialCapacity" /> with a value of zero behaves as if no initial capacity were
+        ///   specified.
+        /// </remarks>
+        public AsnWriter(AsnEncodingRules ruleSet, int initialCapacity) : this(ruleSet)
+        {
+            if (initialCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (initialCapacity > 0)
+            {
+                _buffer = new byte[initialCapacity];
+            }
+        }
+
+        /// <summary>
         ///   Reset the writer to have no data, without releasing resources.
         /// </summary>
         public void Reset()
@@ -223,8 +248,13 @@ namespace System.Formats.Asn1
         ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
         ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        public bool EncodedValueEquals(AsnWriter other!!)
+        public bool EncodedValueEquals(AsnWriter other)
         {
+            if (other is null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
 
@@ -258,10 +288,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
-                {
-                    oldBytes.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG
@@ -378,8 +405,13 @@ namespace System.Formats.Asn1
         ///   This writer's value is encoded in a manner that is not compatible with the
         ///   ruleset for the destination writer.
         /// </exception>
-        public void CopyTo(AsnWriter destination!!)
+        public void CopyTo(AsnWriter destination)
         {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
             try
             {
                 destination.WriteEncodedValue(EncodeAsSpan());
@@ -439,10 +471,7 @@ namespace System.Formats.Asn1
 
         private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            if (_nestingStack == null)
-            {
-                _nestingStack = new Stack<StackFrame>();
-            }
+            _nestingStack ??= new Stack<StackFrame>();
 
             Debug.Assert(tag.IsConstructed);
             WriteTag(tag);
@@ -578,17 +607,26 @@ namespace System.Formats.Asn1
             // Since it's not mutating, any restrictions imposed by CER or DER will
             // still be maintained.
             var reader = new AsnReader(new ReadOnlyMemory<byte>(buffer, start, len), AsnEncodingRules.BER);
+            int pos = start;
+            ReadOnlyMemory<byte> encoded = reader.ReadEncodedValue();
+
+            if (!reader.HasData)
+            {
+                // If there is no more data, then there was only one value, so we don't need to sort anything.
+                return;
+            }
 
             List<(int, int)> positions = new List<(int, int)>();
+            positions.Add((pos, encoded.Length));
+            pos += encoded.Length;
 
-            int pos = start;
-
-            while (reader.HasData)
+            do
             {
-                ReadOnlyMemory<byte> encoded = reader.ReadEncodedValue();
+                encoded = reader.ReadEncodedValue();
                 positions.Add((pos, encoded.Length));
                 pos += encoded.Length;
             }
+            while (reader.HasData);
 
             Debug.Assert(pos == end);
 
@@ -609,22 +647,6 @@ namespace System.Formats.Asn1
 
             Buffer.BlockCopy(tmp, 0, buffer, start, len);
             CryptoPool.Return(tmp, len);
-        }
-
-        internal static void Reverse(Span<byte> span)
-        {
-            int i = 0;
-            int j = span.Length - 1;
-
-            while (i < j)
-            {
-                byte tmp = span[i];
-                span[i] = span[j];
-                span[j] = tmp;
-
-                i++;
-                j--;
-            }
         }
 
         private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)

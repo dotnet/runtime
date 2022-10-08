@@ -9,16 +9,14 @@ namespace System
     {
         public static string Intern(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternalIntern(str);
         }
 
         public static string IsInterned(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternalIsInterned(str);
         }
@@ -47,16 +45,27 @@ namespace System
                 }
                 return;
             }
-            if (val != 0)
+#if TARGET_64BIT
+            const int word_size = 8;
+            long word_val;
+#else
+            const int word_size = 4;
+            int word_val;
+#endif
+            word_val = val;
+            if (word_val != 0)
             {
-                val = val | (val << 8);
-                val = val | (val << 16);
+                word_val |= (word_val << 8);
+                word_val |= (word_val << 16);
+#if TARGET_64BIT
+                word_val |= (word_val << 32);
+#endif
             }
-            // align to 4
-            int rest = (int)dest & 3;
+            // align to word_size
+            int rest = (int)dest & (word_size - 1);
             if (rest != 0)
             {
-                rest = 4 - rest;
+                rest = word_size - rest;
                 len -= rest;
                 do
                 {
@@ -65,20 +74,30 @@ namespace System
                     --rest;
                 } while (rest != 0);
             }
+
             while (len >= 16)
             {
-                ((int*)dest)[0] = val;
-                ((int*)dest)[1] = val;
-                ((int*)dest)[2] = val;
-                ((int*)dest)[3] = val;
+#if TARGET_64BIT
+                ((long*)dest)[0] = word_val;
+                ((long*)dest)[1] = word_val;
+#else
+                ((int*)dest)[0] = word_val;
+                ((int*)dest)[1] = word_val;
+                ((int*)dest)[2] = word_val;
+                ((int*)dest)[3] = word_val;
+#endif
                 dest += 16;
                 len -= 16;
             }
-            while (len >= 4)
+            while (len >= word_size)
             {
-                ((int*)dest)[0] = val;
-                dest += 4;
-                len -= 4;
+#if TARGET_64BIT
+                ((long*)dest)[0] = word_val;
+#else
+                ((int*)dest)[0] = word_val;
+#endif
+                dest += word_size;
+                len -= word_size;
             }
             // tail bytes
             while (len > 0)

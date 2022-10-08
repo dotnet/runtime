@@ -15,8 +15,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private object? _cachedValue;
         private volatile bool _isValueCached;
 
-        public ExportingMember(ExportDefinition definition!!, ReflectionMember member!!)
+        public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(member);
+
             _definition = definition;
             _member = member;
         }

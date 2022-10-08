@@ -61,13 +61,13 @@ namespace System
         public static readonly string FalseString = FalseLiteral;
 
         //
-        // Overriden Instance Methods
+        // Overridden Instance Methods
         //
         /*=================================GetHashCode==================================
         **Args:  None
         **Returns: 1 or 0 depending on whether this instance represents true or false.
         **Exceptions: None
-        **Overriden From: Value
+        **Overridden From: Value
         ==============================================================================*/
         // Provides a hash code for this instance.
         public override int GetHashCode()
@@ -99,7 +99,7 @@ namespace System
         {
             if (m_value)
             {
-                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/runtime/issues/10596
+                if (destination.Length > 3)
                 {
                     ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
                     MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref true_val);
@@ -109,7 +109,7 @@ namespace System
             }
             else
             {
-                if ((uint)destination.Length > 4)
+                if (destination.Length > 4)
                 {
                     ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
                     MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref fals_val);
@@ -208,8 +208,10 @@ namespace System
 
         // Determines whether a String represents true or false.
         //
-        public static bool Parse(string value!!)
+        public static bool Parse(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             return Parse(value.AsSpan());
         }
 

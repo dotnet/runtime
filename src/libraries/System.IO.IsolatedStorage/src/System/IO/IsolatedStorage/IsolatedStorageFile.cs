@@ -43,9 +43,7 @@ namespace System.IO.IsolatedStorage
             // InitStore will set up the IdentityHash
             InitStore(scope, null, null);
 
-            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
-            sb.Append(SeparatorExternal);
-            sb.Append(IdentityHash);
+            StringBuilder sb = new StringBuilder(GetIsolatedStorageRoot());
             sb.Append(SeparatorExternal);
 
             if (Helper.IsApplication(scope))
@@ -116,8 +114,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteFile(string file!!)
+        public void DeleteFile(string file)
         {
+            ArgumentNullException.ThrowIfNull(file);
+
             EnsureStoreIsValid();
 
             try
@@ -131,22 +131,28 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public bool FileExists(string path!!)
+        public bool FileExists(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             EnsureStoreIsValid();
 
             return File.Exists(GetFullPath(path));
         }
 
-        public bool DirectoryExists(string path!!)
+        public bool DirectoryExists(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             EnsureStoreIsValid();
 
             return Directory.Exists(GetFullPath(path));
         }
 
-        public void CreateDirectory(string dir!!)
+        public void CreateDirectory(string dir)
         {
+            ArgumentNullException.ThrowIfNull(dir);
+
             EnsureStoreIsValid();
 
             string isPath = GetFullPath(dir); // Prepend IS root
@@ -178,8 +184,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteDirectory(string dir!!)
+        public void DeleteDirectory(string dir)
         {
+            ArgumentNullException.ThrowIfNull(dir);
+
             EnsureStoreIsValid();
 
             try
@@ -199,8 +207,10 @@ namespace System.IO.IsolatedStorage
         }
 
         // foo\abc*.txt will give all abc*.txt files in foo directory
-        public string[] GetFileNames(string searchPattern!!)
+        public string[] GetFileNames(string searchPattern)
         {
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             EnsureStoreIsValid();
 
             try
@@ -221,8 +231,10 @@ namespace System.IO.IsolatedStorage
         }
 
         // foo\data* will give all directory names in foo directory that starts with data
-        public string[] GetDirectoryNames(string searchPattern!!)
+        public string[] GetDirectoryNames(string searchPattern)
         {
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             EnsureStoreIsValid();
 
             try
@@ -449,7 +461,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorage.Quota instead.")]
+        [Obsolete("IsolatedStorageFile.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorageFile.Quota instead.")]
         public override ulong MaximumSize
         {
             get
@@ -475,7 +487,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorage.UsedSize instead.")]
+        [Obsolete("IsolatedStorageFile.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorageFile.UsedSize instead.")]
         public override ulong CurrentSize
         {
             get

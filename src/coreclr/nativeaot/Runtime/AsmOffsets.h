@@ -35,14 +35,14 @@ ASM_CONST(     E,    16, STRING_BASE_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
-ASM_OFFSET(    2,     2, MethodTable, m_usFlags)
+ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
 ASM_OFFSET(   14,    18, MethodTable, m_VTable)
 
 ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
 ASM_OFFSET(   28,    38, Thread, m_ThreadStateFlags)
 ASM_OFFSET(   2c,    40, Thread, m_pTransitionFrame)
-ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
+ASM_OFFSET(   30,    48, Thread, m_pDeferredTransitionFrame)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 #ifdef HOST_64BIT
@@ -94,12 +94,12 @@ ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
 // constant to find to BogusFunction(), and build.
 //
 // Here's a sample compiler error:
-// In file included from corert/src/Native/Runtime/AsmOffsetsVerify.cpp:38:
-// corert/src/Native/Runtime/Full/../AsmOffsets.h:117:61: error: calling a private constructor of class
+// In file included from nativeaot/Runtime/AsmOffsetsVerify.cpp:38:
+// nativeaot/Runtime/Full/../AsmOffsets.h:117:61: error: calling a private constructor of class
 //      'AsmOffsets::FindCompileTimeConstant<25>'
 //    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
 //                                                            ^
-// corert/src/Native/Runtime/Full/../AsmOffsets.h:111:5: note: declared private here
+// nativeaot/Runtime/Full/../AsmOffsets.h:111:5: note: declared private here
 //    FindCompileTimeConstant();
 //    ^
 template<size_t N>

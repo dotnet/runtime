@@ -239,7 +239,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 // Nullable types don't satisfy bounds of EnumType, or the underlying type of the enum
                                 // even though the conversion from Nullable to these types is a boxing conversion
                                 // This is a rare case, because these bounds can never be directly stated ...
-                                // These bounds can only occur when one type paramter is constrained to a second type parameter
+                                // These bounds can only occur when one type parameter is constrained to a second type parameter
                                 // and the second type parameter is instantiated with Enum or the underlying type of the first type
                                 // parameter
                                 error = ErrorCode.ERR_GenericConstraintNotSatisfiedNullableEnum;

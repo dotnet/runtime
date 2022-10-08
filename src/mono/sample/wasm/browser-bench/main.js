@@ -3,13 +3,89 @@
 
 "use strict";
 
+import { dotnet, exit } from './dotnet.js'
+
 let runBenchmark;
 let setTasks;
+let getFullJsonResults;
+let legacyExportTargetInt;
+let jsExportTargetInt;
+let legacyExportTargetString;
+let jsExportTargetString;
+
+function runLegacyExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetInt(i);
+    }
+}
+
+function runJSExportInt(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetInt(i);
+    }
+}
+
+function runLegacyExportString(count) {
+    for (let i = 0; i < count; i++) {
+        legacyExportTargetString("A" + i);
+    }
+}
+
+function runJSExportString(count) {
+    for (let i = 0; i < count; i++) {
+        jsExportTargetString("A" + i);
+    }
+}
+
+function importTargetInt(value) {
+    return value + 1;
+}
+
+function importTargetString(value) {
+    return value + "A";
+}
+
+function importTargetManyArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+    return 1 + arg1 + arg2 + arg3.length + arg4.length + arg7 + arg9 + arg10.valueOf();
+}
+
+async function importTargetTask(value) {
+    await value;
+    return;
+}
+
+function importTargetThrows(value) {
+    throw new Error("test" + value);
+}
 
 class MainApp {
-    init({ BINDING }) {
-        runBenchmark = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark");
-        setTasks = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks");
+    async init({ getAssemblyExports, setModuleImports, BINDING }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+        runBenchmark = exports.Sample.Test.RunBenchmark;
+        setTasks = exports.Sample.Test.SetTasks;
+        getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
+
+        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
+        jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
+        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
+        jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
+
+        setModuleImports("main.js", {
+            Sample: {
+                Test: {
+                    runLegacyExportInt,
+                    runJSExportInt,
+                    runLegacyExportString,
+                    runJSExportString,
+                    importTargetInt,
+                    importTargetString,
+                    importTargetManyArgs,
+                    importTargetTask,
+                    importTargetThrows,
+                }
+            }
+        });
+
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
@@ -29,11 +105,19 @@ class MainApp {
                 setTimeout(() => { this.yieldBench(); }, 0);
             } else {
                 document.getElementById("out").innerHTML += "Finished";
+                fetch("/results.json", {
+                    method: 'POST',
+                    body: getFullJsonResults()
+                }).then(r => { console.log("post request complete, response: ", r); });
+                fetch("/results.html", {
+                    method: 'POST',
+                    body: document.getElementById("out").innerHTML
+                }).then(r => { console.log("post request complete, response: ", r); });
             }
         });
     }
 
-    async PageShow() {
+    async pageShow() {
         try {
             await this.waitFor('pageshow');
         } finally {
@@ -41,7 +125,7 @@ class MainApp {
         }
     }
 
-    async ReachedManaged() {
+    async frameReachedManaged() {
         try {
             await this.waitFor('reached');
         } finally {
@@ -76,30 +160,18 @@ class MainApp {
     }
 }
 
-globalThis.mainApp = new MainApp();
+try {
+    globalThis.mainApp = new MainApp();
+    globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
+    globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-createDotnetRuntime(({ BINDING }) => ({
-    disableDotnet6Compatibility: true,
-    configSrc: "./mono-config.json",
-    onDotnetReady: () => {
-        try {
-            mainApp.init({ BINDING });
-        } catch (error) {
-            set_exit_code(1, error);
-            throw (error);
-        }
-    },
-    onAbort: (error) => {
-        set_exit_code(1, error);
-    },
-}));
+    const runtime = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
 
-function set_exit_code(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
-
-    console.log(`WASM EXIT ${exit_code}`);
-};
+    await mainApp.init(runtime);
+}
+catch (err) {
+    exit(1, err);
+}

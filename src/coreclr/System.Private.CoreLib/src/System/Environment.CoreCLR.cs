@@ -59,10 +59,9 @@ namespace System
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
+        internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetCommandLineArgsNative();
+        private static string[]? s_commandLineArgs;
 
         public static string[] GetCommandLineArgs()
         {
@@ -82,6 +81,22 @@ namespace System
             return s_commandLineArgs != null ?
                 (string[])s_commandLineArgs.Clone() :
                 GetCommandLineArgsNative();
+        }
+
+        private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
+        {
+            string[] commandLineArgs = new string[argc + 1];
+            string[] mainMethodArgs = new string[argc];
+
+            commandLineArgs[0] = new string(exePath);
+
+            for (int i = 0; i < mainMethodArgs.Length; i++)
+            {
+                 commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
+            }
+
+            s_commandLineArgs = commandLineArgs;
+            return mainMethodArgs;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]

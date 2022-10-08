@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -638,15 +637,13 @@ HRESULT ParseKnownCaNamedArgs(
         // Better have found an argument.
         if (ixParam == cNamedParams)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, namedArg.cName, namedArg.szName));
         }
 
         // Argument had better not have been seen already.
         if (pNamedParams[ixParam].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_REPEATED_ARG, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
         IfFailGo(ParseKnownCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type));
@@ -714,7 +711,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 
     LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
             pCustomAttribute, cbCustomAttribute, pcv));
-    START_MD_PERF();
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);
@@ -827,7 +823,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
 
 ErrExit:
-    STOP_MD_PERF(DefineCustomAttribute);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -851,7 +846,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     CustomAttributeRec  *pRecord = NULL;// Existing custom Attribute record.
 
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -865,7 +859,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
 
-    STOP_MD_PERF(SetCustomAttributeValue);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -1114,7 +1107,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_CallingConvention].val.type.tag)
         {   // Calling convention makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_CallingConvention].szName));
+            }
             // Turn off all callconv bits, then turn on specified value.
             dwFlags &= ~pmCallConvMask;
             switch (qNamedArgs[DI_CallingConvention].val.u4)
@@ -1157,7 +1152,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_SetLastError].val.type.tag)
         {   // SetLastError makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_SetLastError].szName));
+            }
             if (qNamedArgs[DI_SetLastError].val.u1)
                 dwFlags |= pmSupportsLastError;
         }
@@ -1221,17 +1218,17 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         { // Just verify the attribute.  It still gets stored as a real custom attribute.
         // format is "{01234567-0123-0123-0123-001122334455}"
         GUID guid;
-        WCHAR wzGuid[40];
+        CHAR zGuid[40];
         int cch = qArgs[0].val.str.cbStr;
 
         // Guid should be 36 characters; need to add curlies.
         if (cch == 36)
         {
-            WszMultiByteToWideChar(CP_UTF8, 0, qArgs[0].val.str.pStr,cch, wzGuid+1,39);
-            wzGuid[0] = '{';
-            wzGuid[37] = '}';
-            wzGuid[38] = 0;
-            hr = IIDFromString(wzGuid, &guid);
+            memcpy(zGuid+1, qArgs[0].val.str.pStr, cch);
+            zGuid[0] = '{';
+            zGuid[37] = '}';
+            zGuid[38] = 0;
+            hr = LPCSTRToGuid(zGuid, &guid) ? S_OK : E_FAIL;
         }
         else
             hr = META_E_CA_INVALID_UUID;
@@ -1318,9 +1315,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         FALLTHROUGH;
     case CA_MethodImplAttribute3:
         // Validate bits.
-        if (qArgs[0].val.u4 & ~(miUserMask))
+        if (qArgs[0].val.u2 & ~(miUserMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
-        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u4);
+        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u2);
         if (!qNamedArgs[MI_CodeType].val.type.tag)
             break;
         // fall through to set the code type.
@@ -1328,10 +1325,10 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     case CA_MethodImplAttribute1:
         {
         USHORT usFlags = reinterpret_cast<MethodRec*>(pRow)->GetImplFlags();
-        if (qNamedArgs[MI_CodeType].val.i4 & ~(miCodeTypeMask))
+        if (qNamedArgs[MI_CodeType].val.u2 & ~(miCodeTypeMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         // Mask out old value, put in new one.
-        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.i4;
+        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.u2;
         reinterpret_cast<MethodRec*>(pRow)->SetImplFlags(usFlags);
         }
         break;

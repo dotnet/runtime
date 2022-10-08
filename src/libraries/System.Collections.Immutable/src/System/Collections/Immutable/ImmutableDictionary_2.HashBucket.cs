@@ -327,10 +327,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal void Freeze()
             {
-                if (_additionalElements != null)
-                {
-                    _additionalElements.Freeze();
-                }
+                _additionalElements?.Freeze();
             }
 
             /// <summary>

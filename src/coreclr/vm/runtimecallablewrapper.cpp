@@ -68,7 +68,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
-    StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+    GuidToLPWSTR(m_rclsid, strClsid);
 
     SString strHRHex;
     strHRHex.Printf("%.8x", hr);
@@ -508,7 +508,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
-        StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+        GuidToLPWSTR(m_rclsid, strClsid);
 
         SString strHRHex;
         strHRHex.Printf("%.8x", hr);
@@ -1474,9 +1474,9 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
 
     // We can't safely pump here for Releasing (or directly release)
     // if we're currently in a SendMessage.
-    // Also, clients can opt out of this. The option is is a per-thread flag which they can
+    // Also, clients can opt out of this. The option is a per-thread flag which they can
     // set by calling DisableComEagerCleanup on the appropriate thread. Why would they
-    // want to opt out? Because pumping can lead to re-entrancy in in unexpected places.
+    // want to opt out? Because pumping can lead to re-entrancy in unexpected places.
     // If a client decides to opt out, they are required to cleanup RCWs themselves by
     // calling Marshal.CleanupUnusedObjectsInCurrentContext periodically. The best place
     // to make that call is within their own message pump.
@@ -1871,7 +1871,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         pNewRCW->InitNoCheck(NewWrapperObj);
 
         // Insert the wrapper into the hashtable. The wrapper will be a duplicate however we
-        // we fix the identity to ensure there is no collison in the hash table & it is required
+        // we fix the identity to ensure there is no collision in the hash table & it is required
         // since the hashtable is used on appdomain unload to determine what RCW's need to released.
         {
             RCWCache::LockHolder lh(pCache);
@@ -2293,7 +2293,7 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 }
 
 //---------------------------------------------------------------------
-// Helper function called from ReleaseAllInterfacesCallBack do do the
+// Helper function called from ReleaseAllInterfacesCallBack to do the
 // actual releases.
 void RCW::ReleaseAllInterfaces()
 {
@@ -2636,7 +2636,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
 
         // Convert the IID to a string.
         WCHAR strIID[39];
-        StringFromGUID2(iid, strIID, sizeof(strIID) / sizeof(WCHAR));
+        GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
         SString strHRDescription;
@@ -2654,7 +2654,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
 
             // Convert the source interface IID to a string.
             WCHAR strSrcItfIID[39];
-            StringFromGUID2(SrcItfIID, strSrcItfIID, sizeof(strSrcItfIID) / sizeof(WCHAR));
+            GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
@@ -2668,7 +2668,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         {
             // Convert the source interface IID to a string.
             WCHAR strNativeItfIID[39];
-            StringFromGUID2(*pNativeIID, strNativeItfIID, sizeof(strNativeItfIID) / sizeof(WCHAR));
+            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
 
             // Query for the interface to determine the failure HRESULT.
             HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);

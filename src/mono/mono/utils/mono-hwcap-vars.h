@@ -19,10 +19,6 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 // Nothing here yet.
 
-#elif defined (TARGET_MIPS)
-
-// Nothing here yet.
-
 #elif defined (TARGET_POWERPC) || defined (TARGET_POWERPC64)
 
 MONO_HWCAP_VAR(ppc_has_icache_snoop)
@@ -60,10 +56,6 @@ MONO_HWCAP_VAR(s390x_has_mie3)
 MONO_HWCAP_VAR(s390x_has_gs)
 MONO_HWCAP_VAR(s390x_has_vef2)
 MONO_HWCAP_VAR(s390x_has_eif)
-
-#elif defined (TARGET_SPARC) || defined (TARGET_SPARC64)
-
-MONO_HWCAP_VAR(sparc_is_v9)
 
 #elif defined (TARGET_X86) || defined (TARGET_AMD64)
 

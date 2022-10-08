@@ -11,10 +11,11 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     public class TypeWrapperTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void MetadataLoadFilePathHandle()
         {
             // Create a MetadataReference from new code.
@@ -80,7 +81,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void CanGetAttributes()
         {
             string source = @"
@@ -197,6 +197,124 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 },
                 receivedMembersWithAttributeNames
             );
+        }
+
+        [Fact]
+        public void VariousGenericSerializableTypesAreSupported()
+        {
+            string source = @"
+            using System;
+            using System.Collections.Generic;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                [JsonSerializable(typeof(Dictionary<string, string>))]
+                [JsonSerializable(typeof(HelloWorld.MyClass.NestedGenericClass<string>))]
+                [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedClass))]
+                [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedGenericClass<int>))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
+                public class MyClass
+                {
+                    public class NestedGenericClass<T>
+                    {
+                    }
+                }
+
+                public class MyGenericClass<T1>
+                {
+                    public class NestedClass
+                    {
+                    }
+                    public class NestedGenericClass<T2>
+                    {
+                    }
+                }
+            }";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation outCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            Assert.Empty(generatorDiags.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(outCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+            Assert.Equal(4, types.Count);
+
+            // Check for generic class.
+            Type originalType = typeof(Dictionary<string, string>);
+            Type foundType = types[originalType.FullName];
+            Assert.Equal(originalType, foundType, TestComparerForType.Instance);
+            Assert.Equal(originalType.GetGenericArguments(), foundType.GetGenericArguments(), TestComparerForType.Instance);
+
+            // Check for generic type definition.
+            Type foundGenericTypeDefinition = foundType.GetGenericTypeDefinition();
+            Type originalGenericTypeDefinition = originalType.GetGenericTypeDefinition();
+            Assert.Equal(originalGenericTypeDefinition, foundGenericTypeDefinition, TestComparerForType.Instance);
+            Assert.Equal(originalGenericTypeDefinition.GetGenericArguments(), foundGenericTypeDefinition.GetGenericArguments(), TestComparerForType.Instance);
+
+            // Check for nested generic class.
+            foundType = types.Values.Single(t => t.FullName.Contains("MyClass") && t.FullName.Contains("NestedGenericClass"));
+            Assert.Equal("NestedGenericClass`1", foundType.Name);
+            Assert.Equal($"HelloWorld.MyClass+NestedGenericClass`1[[{typeof(string).AssemblyQualifiedName}]]", foundType.FullName);
+            Assert.True(foundType.IsGenericType);
+            Assert.Equal(new[] { typeof(string) }, foundType.GetGenericArguments(), TestComparerForType.Instance);
+
+            // Check for declaring type.
+            foundType = foundType.DeclaringType;
+            Assert.Equal("MyClass", foundType.Name);
+            Assert.Equal("HelloWorld.MyClass", foundType.FullName);
+            Assert.False(foundType.IsGenericType);
+
+            // Check for class nested in generic class.
+            foundType = types.Values.Single(t => t.FullName.Contains("MyGenericClass") && t.FullName.Contains("NestedClass"));
+            Assert.Equal("NestedClass", foundType.Name);
+            Assert.Equal($"HelloWorld.MyGenericClass`1+NestedClass[[{typeof(string).AssemblyQualifiedName}]]", foundType.FullName);
+            Assert.True(foundType.IsGenericType);
+            Assert.Equal(new[] { typeof(string) }, foundType.GetGenericArguments(), TestComparerForType.Instance);
+
+            // Check for generic class nested in generic class.
+            foundType = types.Values.Single(t => t.FullName.Contains("MyGenericClass") && t.FullName.Contains("NestedGenericClass"));
+            Assert.Equal("NestedGenericClass`1", foundType.Name);
+            Assert.Equal($"HelloWorld.MyGenericClass`1+NestedGenericClass`1[[{typeof(string).AssemblyQualifiedName}],[{typeof(int).AssemblyQualifiedName}]]", foundType.FullName);
+            Assert.True(foundType.IsGenericType);
+            Assert.Equal(new[] { typeof(string), typeof(int) }, foundType.GetGenericArguments(), TestComparerForType.Instance);
+
+            // Check for generic declaring type.
+            foundType = foundType.DeclaringType;
+            Assert.Equal("MyGenericClass`1", foundType.Name);
+            Assert.Equal("HelloWorld.MyGenericClass`1", foundType.FullName);
+            Assert.True(foundType.IsGenericType);
+            Assert.True(foundType.IsGenericTypeDefinition);
+            Assert.Equal("T1", foundType.GetGenericArguments().Single().Name);
+        }
+
+        sealed class TestComparerForType : EqualityComparer<Type>
+        {
+            public static TestComparerForType Instance { get; } = new TestComparerForType();
+            public override bool Equals(Type? x, Type? y)
+            {
+                if (x is null || y is null)
+                {
+                    return x == y;
+                }
+                return x.Name == y.Name &&
+                    x.FullName == y.FullName &&
+                    x.AssemblyQualifiedName == y.AssemblyQualifiedName &&
+                    Instance.Equals(x.DeclaringType, y.DeclaringType) &&
+                    x.IsGenericType == y.IsGenericType &&
+                    x.IsGenericParameter == y.IsGenericParameter &&
+                    x.IsGenericTypeDefinition == y.IsGenericTypeDefinition &&
+                    x.ContainsGenericParameters == y.ContainsGenericParameters;
+            }
+            public override int GetHashCode(Type obj) => obj.Name.GetHashCode();
         }
     }
 }

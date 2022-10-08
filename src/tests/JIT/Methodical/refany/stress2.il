@@ -16,12 +16,12 @@
 }
 .assembly extern xunit.core {}
 // MVID: {5A1483AA-BABB-44FA-9E05-6A081C8BFE56}
-.namespace JitTest
+.namespace JitTest_stress2_il
 {
-  .class private auto ansi StressTest
+  .class public auto ansi StressTest
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -68,6 +68,6 @@
 
   } // end of class StressTest
 
-} // end of namespace JitTest
+} // end of namespace JitTest_stress2_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

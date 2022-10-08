@@ -229,7 +229,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [Fact]
         public static void ExcessivelyPreciseFraction()
         {
-            byte[] inputData = Text.Encoding.ASCII.GetBytes("\u0018\u002A2017092118.012345678901234567890123456789Z");
+            byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123456789Z"u8.ToArray();
 
             AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
             DateTimeOffset value = berReader.ReadGeneralizedTime();
@@ -244,7 +244,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [Fact]
         public static void ExcessivelyPreciseFraction_OneTenthPlusEpsilon()
         {
-            byte[] inputData = Text.Encoding.ASCII.GetBytes("\u0018\u002A20170921180044.10000000000000000000000001Z");
+            byte[] inputData = "\u0018\u002A20170921180044.10000000000000000000000001Z"u8.ToArray();
 
             AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
             DateTimeOffset value = derReader.ReadGeneralizedTime();
@@ -287,7 +287,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [Fact]
         public static void ExcessivelyPreciseFraction_OneTenthPlusEpsilonAndZero()
         {
-            byte[] inputData = Text.Encoding.ASCII.GetBytes("\u0018\u002A20170921180044.10000000000000000000000010Z");
+            byte[] inputData = "\u0018\u002A20170921180044.10000000000000000000000010Z"u8.ToArray();
 
             AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
             DateTimeOffset value = berReader.ReadGeneralizedTime();
@@ -305,7 +305,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [Fact]
         public static void ExcessivelyPreciseNonFraction()
         {
-            byte[] inputData = Text.Encoding.ASCII.GetBytes("\u0018\u002A2017092118.012345678901234567890123Q56789Z");
+            byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123Q56789Z"u8.ToArray();
             AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
 
             Assert.Throws<AsnContentException>(() => berReader.ReadGeneralizedTime());

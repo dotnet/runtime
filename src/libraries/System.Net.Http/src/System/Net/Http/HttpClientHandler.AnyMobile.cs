@@ -617,6 +617,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
         {
             get
@@ -736,16 +738,9 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsNativeHandlerEnabled)
-                {
-                    throw new PlatformNotSupportedException();
-                }
-                else
-                {
-                    return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
-                    Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-                    s_dangerousAcceptAnyServerCertificateValidator;
-                }
+                return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
+                Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
+                s_dangerousAcceptAnyServerCertificateValidator;
             }
         }
 

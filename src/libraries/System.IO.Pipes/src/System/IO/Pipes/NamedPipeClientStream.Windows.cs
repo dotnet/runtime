@@ -50,6 +50,8 @@ namespace System.IO.Pipes
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
+                handle.Dispose();
+
                 // CreateFileW: "If the CreateNamedPipe function was not successfully called on the server prior to this operation,
                 // a pipe will not exist and CreateFile will fail with ERROR_FILE_NOT_FOUND"
                 // WaitNamedPipeW: "If no instances of the specified named pipe exist,
@@ -84,6 +86,8 @@ namespace System.IO.Pipes
                 if (handle.IsInvalid)
                 {
                     errorCode = Marshal.GetLastPInvokeError();
+
+                    handle.Dispose();
 
                     // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
                     // because the instance was closed by the server or opened by another client."

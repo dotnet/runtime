@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
@@ -72,11 +71,9 @@
              Link="Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

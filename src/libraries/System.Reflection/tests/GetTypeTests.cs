@@ -155,8 +155,8 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
-                // and so the best we can do is compare the names.
+                // layout of private hash tables.) As a result, we do not expect the same result across runtimes and so the best
+                // we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
                 Assert.Equal(expectedResult, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -209,8 +209,8 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
-                // and so the best we can do is compare the names.
+                // layout of private hash tables.) As a result, we do not expect the same result across runtimes and so the best
+                // we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
                 Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: false));

@@ -217,7 +217,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __analysis_hint(hint)               _SA_annotes1(SAL_analysisHint, hint)
 // For "breakpoint": doesn't return as far as analysis is concerned.
 #define __analysis_noreturn                 __declspec(noreturn)
-/* Internal defintions */
+/* Internal definitions */
 #define __inner_data_source(src_raw)        _SA_annotes1(SAL_untrusted_data_source,src_raw)
 #define __inner_this_data_source(src_raw)   _SA_annotes1(SAL_untrusted_data_source_this,src_raw)
 #define __inner_out_validated(typ_raw)      _Post_ _SA_annotes1(SAL_validated,typ_raw)
@@ -250,7 +250,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __analysis_assert(e)
 #define __analysis_hint(hint)
 #define __analysis_noreturn
-/* Internal defintions */
+/* Internal definitions */
 #define __inner_data_source(src_raw)
 #define __inner_this_data_source(src_raw)
 #define __inner_out_validated(typ_raw)
@@ -469,8 +469,8 @@ __inner_analysis_assume_nullterminated_dec
 
 #ifdef _PREFIX_
 /**************************************************************************
-* Defintion of __pfx_assume and __pfx_assert. Thse should be the only
-* defintions of these functions.
+* Definition of __pfx_assume and __pfx_assert. Thse should be the only
+* definitions of these functions.
 ***************************************************************************/
 #if __cplusplus
 extern "C" void __pfx_assert(bool, const char *);
@@ -480,7 +480,7 @@ void __pfx_assert(int, const char *);
 void __pfx_assume(int, const char *);
 #endif
 /**************************************************************************
-* Redefintion of __analysis_assume and __analysis_assert for PREFIX build
+* Redefinition of __analysis_assume and __analysis_assert for PREFIX build
 **************************************************************************/
 #undef  __analysis_assume
 #undef  __analysis_assert

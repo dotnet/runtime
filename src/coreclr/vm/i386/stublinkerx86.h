@@ -44,7 +44,7 @@ extern PCODE GetPreStubEntryPoint();
 // Encodes X86 registers. The numbers are chosen to match Intel's opcode
 // encoding.
 //----------------------------------------------------------------------
-enum X86Reg
+enum X86Reg : UCHAR
 {
     kEAX = 0,
     kECX = 1,

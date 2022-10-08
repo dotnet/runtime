@@ -114,7 +114,7 @@ namespace System.Net.Http.Headers
             }
 
             int current = startIndex + nameValueLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             NameValueWithParametersHeaderValue? nameValueWithParameters =
                 nameValue as NameValueWithParametersHeaderValue;
             Debug.Assert(nameValueWithParameters != null);

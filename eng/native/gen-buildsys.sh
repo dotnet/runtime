@@ -10,7 +10,7 @@ if [[ "$#" -lt 4 ]]; then
   echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
-  echo "Specify the target architecture."
+  echo "Specify the host architecture (the architecture the built tools should run on)."
   echo "Specify the name of compiler (clang or gcc)."
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
@@ -19,12 +19,12 @@ if [[ "$#" -lt 4 ]]; then
   exit 1
 fi
 
-build_arch="$3"
+host_arch="$3"
 compiler="$4"
 
 if [[ "$compiler" != "default" ]]; then
     nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
-    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler"
+    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$host_arch" "$compiler"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
@@ -67,7 +67,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
         exit 1
     fi
 
-    TARGET_BUILD_ARCH="$build_arch"
+    TARGET_BUILD_ARCH="$host_arch"
     export TARGET_BUILD_ARCH
 
     cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
@@ -79,7 +79,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     fi
 fi
 
-if [[ "$build_arch" == "armel" ]]; then
+if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
@@ -92,7 +92,7 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
-if [[ "$build_arch" == "wasm" ]]; then
+if [[ "$host_arch" == "wasm" ]]; then
     cmake_command="emcmake $cmake_command"
 fi
 

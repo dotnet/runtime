@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public string Category { get { throw null; } }
         public Microsoft.Extensions.Logging.EventId EventId { get { throw null; } }
         public System.Exception? Exception { get { throw null; } }
-        public System.Func<TState, System.Exception?, string>? Formatter { get { throw null; } }
+        public System.Func<TState, System.Exception?, string> Formatter { get { throw null; } }
         public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
         public TState State { get { throw null; } }
     }

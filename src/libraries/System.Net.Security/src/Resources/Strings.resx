@@ -164,6 +164,51 @@
   <data name="net_io_eof" xml:space="preserve">
     <value> Received an unexpected EOF or 0 bytes from the transport stream.</value>
   </data>
+  <data name="net_log_listener_no_cbt_disabled" xml:space="preserve">
+    <value>No channel binding check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_http" xml:space="preserve">
+    <value>No channel binding check for requests without a secure channel.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_trustedproxy" xml:space="preserve">
+    <value>No channel binding check for the trusted proxy scenario.</value>
+  </data>
+  <data name="net_log_listener_cbt" xml:space="preserve">
+    <value>Channel binding check enabled.</value>
+  </data>
+  <data name="net_log_listener_no_spns" xml:space="preserve">
+    <value>No service names could be determined from the registered prefixes. Specify an ExtendedProtectionPolicy object which contains an explicit list of service names.</value>
+  </data>
+  <data name="net_log_listener_no_spn_kerberos" xml:space="preserve">
+    <value>No explicit service name check because Kerberos authentication already validates the service name.</value>
+  </data>
+  <data name="net_log_listener_no_spn_disabled" xml:space="preserve">
+    <value>No service name check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_spn_cbt" xml:space="preserve">
+    <value>No service name check because the channel binding was already checked.</value>
+  </data>
+  <data name="net_log_listener_no_spn_whensupported" xml:space="preserve">
+    <value>No service name check because the client did not provide a service name and the server was configured for PolicyEnforcement.WhenSupported.</value>
+  </data>
+  <data name="net_log_listener_spn" xml:space="preserve">
+    <value>Client provided service name '{0}'.</value>
+  </data>
+  <data name="net_log_listener_spn_passed" xml:space="preserve">
+    <value>Service name check succeeded.</value>
+  </data>
+  <data name="net_log_listener_spn_failed" xml:space="preserve">
+    <value>Service name check failed.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_always" xml:space="preserve">
+    <value>Service name check failed because the client did not provide a service name and the server was configured for PolicyEnforcement.Always.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_empty" xml:space="preserve">
+    <value>No acceptable service names were configured!</value>
+  </data>
+  <data name="net_log_listener_spn_failed_dump" xml:space="preserve">
+    <value>Dumping acceptable service names:</value>
+  </data>
   <data name="net_ssl_io_frame" xml:space="preserve">
     <value>The handshake failed due to an unexpected packet format.</value>
   </data>
@@ -388,5 +433,8 @@
   </data>
   <data name="net_ssl_trust_handshake" xml:space="preserve">
     <value>Sending trust in handshake is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
   </data>
 </root>

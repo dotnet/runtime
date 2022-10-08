@@ -18,49 +18,33 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
             }
 
-            if (UsePortableThreadPoolForIO)
-            {
-                // OS doesn't signal handle, so do it here
-                overlapped->InternalLow = IntPtr.Zero;
+            // OS doesn't signal handle, so do it here
+            overlapped->InternalLow = IntPtr.Zero;
 
-                PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
-                return true;
-            }
-
-            return PostQueuedCompletionStatus(overlapped);
+            PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
+            return true;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(IntPtr osHandle)
         {
-            if (UsePortableThreadPoolForIO)
-            {
-                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
-                return true;
-            }
-
-            return BindIOCompletionCallbackNative(osHandle);
+            PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
+            return true;
         }
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle!!)
+        public static bool BindHandle(SafeHandle osHandle)
         {
+            ArgumentNullException.ThrowIfNull(osHandle);
+
             bool mustReleaseSafeHandle = false;
             try
             {
                 osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
 
-                if (UsePortableThreadPoolForIO)
-                {
-                    PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
-                    return true;
-                }
-
-                return BindIOCompletionCallbackNative(osHandle.DangerousGetHandle());
+                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
+                return true;
             }
             finally
             {
@@ -68,8 +52,5 @@ namespace System.Threading
                     osHandle.DangerousRelease();
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
     }
 }

@@ -37,7 +37,7 @@ class StackFrameHelper : public Object
 {
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
-    // classlib defintion of the StackFrameHelper class.
+    // classlib definition of the StackFrameHelper class.
 public:
     THREADBASEREF targetThread;
     I4ARRAYREF rgiOffset;

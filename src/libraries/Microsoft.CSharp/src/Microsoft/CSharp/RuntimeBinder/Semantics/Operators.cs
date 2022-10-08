@@ -245,11 +245,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         switch (GetConvKind(info.ptRaw1, bos.pt1))
                         {
                             default:
-                                grflt = grflt | LiftFlags.Convert1;
+                                grflt |= LiftFlags.Convert1;
                                 break;
                             case ConvKind.Implicit:
                             case ConvKind.Identity:
-                                grflt = grflt | LiftFlags.Lift1;
+                                grflt |= LiftFlags.Lift1;
                                 break;
                         }
                         break;
@@ -272,11 +272,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         switch (GetConvKind(info.ptRaw1, bos.pt1))
                         {
                             default:
-                                grflt = grflt | LiftFlags.Convert1;
+                                grflt |= LiftFlags.Convert1;
                                 break;
                             case ConvKind.Implicit:
                             case ConvKind.Identity:
-                                grflt = grflt | LiftFlags.Lift1;
+                                grflt |= LiftFlags.Lift1;
                                 break;
                         }
                         break;
@@ -330,11 +330,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         switch (GetConvKind(info.ptRaw2, bos.pt2))
                         {
                             default:
-                                grflt = grflt | LiftFlags.Convert2;
+                                grflt |= LiftFlags.Convert2;
                                 break;
                             case ConvKind.Implicit:
                             case ConvKind.Identity:
-                                grflt = grflt | LiftFlags.Lift2;
+                                grflt |= LiftFlags.Lift2;
                                 break;
                         }
                         break;
@@ -357,11 +357,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         switch (GetConvKind(info.ptRaw2, bos.pt2))
                         {
                             default:
-                                grflt = grflt | LiftFlags.Convert2;
+                                grflt |= LiftFlags.Convert2;
                                 break;
                             case ConvKind.Implicit:
                             case ConvKind.Identity:
-                                grflt = grflt | LiftFlags.Lift2;
+                                grflt |= LiftFlags.Lift2;
                                 break;
                         }
                         break;
@@ -750,7 +750,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (info.type2 is NullableType)
             {
-                pgrflt = pgrflt | LiftFlags.Lift2;
+                pgrflt |= LiftFlags.Lift2;
                 ptypeSig2 = TypeManager.GetNullable(info.typeRaw2);
             }
             else
@@ -785,7 +785,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (info.type1 is NullableType)
             {
-                pgrflt = pgrflt | LiftFlags.Lift1;
+                pgrflt |= LiftFlags.Lift1;
                 ptypeSig1 = TypeManager.GetNullable(info.typeRaw1);
             }
             else
@@ -809,7 +809,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (info.type1 != info.typeRaw1)
             {
                 Debug.Assert(info.type1 is NullableType);
-                grflt = grflt | LiftFlags.Lift1;
+                grflt |= LiftFlags.Lift1;
                 typeSig1 = TypeManager.GetNullable(info.typeRaw1);
             }
             else
@@ -820,7 +820,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (info.type2 != info.typeRaw2)
             {
                 Debug.Assert(info.type2 is NullableType);
-                grflt = grflt | LiftFlags.Lift2;
+                grflt |= LiftFlags.Lift2;
                 typeSig2 = TypeManager.GetNullable(info.typeRaw2);
             }
             else
@@ -1283,11 +1283,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Try the conversion - if it fails, do a cast without user defined casts.
-            Expr arg = tryConvert(pArgument, uofs.GetType());
-            if (arg == null)
-            {
-                arg = mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
-            }
+            Expr arg =
+                tryConvert(pArgument, uofs.GetType()) ??
+                mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
 
             return uofs.pfn(this, ek, flags, arg);
         }
@@ -1482,11 +1480,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     switch (GetConvKind(ptRaw, uos.pt))
                     {
                         default:
-                            grflt = grflt | LiftFlags.Convert1;
+                            grflt |= LiftFlags.Convert1;
                             break;
                         case ConvKind.Implicit:
                         case ConvKind.Identity:
-                            grflt = grflt | LiftFlags.Lift1;
+                            grflt |= LiftFlags.Lift1;
                             break;
                     }
 
@@ -1836,8 +1834,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Bind a shift operator: <<, >>. These can have integer or long first operands,
             and second operand must be int.
         */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All types used here are builtin and will not be trimmed.")]
         private static ExprBinOp BindShiftOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.LeftShirt || ek == ExpressionKind.RightShift);
@@ -1904,8 +1900,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return BindBoolBinOp(this, ek, flags, expr1, expr2);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All types used here are builtin and will not be trimmed.")]
         private static Expr BindLiftedBoolBitwiseOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2) => null;
 
         /*

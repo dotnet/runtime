@@ -15,7 +15,6 @@ parameters:
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
-  runCrossGen: ''
   runCrossGen2: ''
   runPALTestsDir: ''
   compositeBuildMode: false
@@ -24,9 +23,10 @@ parameters:
   tieringTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
-  runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeFlavor: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
+  SuperPmiCollect: ''
 
 
 steps:
@@ -46,7 +46,6 @@ steps:
       _HelixSource: ${{ parameters.helixSource }}
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
-      _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
@@ -57,8 +56,9 @@ steps:
       _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
+      _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

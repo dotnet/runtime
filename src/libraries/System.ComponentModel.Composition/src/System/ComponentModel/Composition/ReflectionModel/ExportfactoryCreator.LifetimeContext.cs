@@ -47,7 +47,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 if (disposable != null)
                 {
-                    disposeAction = () => disposable.Dispose();
+                    disposeAction = disposable.Dispose;
                 }
                 else
                 {

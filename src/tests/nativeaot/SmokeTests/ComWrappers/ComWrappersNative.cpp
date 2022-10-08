@@ -78,7 +78,7 @@ DLL_EXPORT int __stdcall CaptureComPointer(IComInterface* pUnk)
     return capturedComObject->DoWork(11);
 }
 
-DLL_EXPORT int __stdcall RetreiveCapturedComPointer(IComInterface** ppUnk)
+DLL_EXPORT int __stdcall RetrieveCapturedComPointer(IComInterface** ppUnk)
 {
     *ppUnk = capturedComObject;
     return S_OK;

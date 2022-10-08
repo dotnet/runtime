@@ -142,7 +142,7 @@ worker_try_finish (WorkerData *data)
 			 * Log to be able to get the duration of normal concurrent M&S phase.
 			 * Worker indexes are 1 based, since 0 is logically considered gc thread.
 			 */
-			sgen_binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time + sgen_timestamp () - last_start);
+			sgen_binary_protocol_worker_finish_stats (GPTRDIFF_TO_INT (data - &context->workers_data [0] + 1), context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time + sgen_timestamp () - last_start);
 			goto work_available;
 		}
 	}
@@ -168,7 +168,7 @@ worker_try_finish (WorkerData *data)
 	mono_os_mutex_unlock (&context->finished_lock);
 
 	data->total_time += (sgen_timestamp () - last_start);
-	sgen_binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time);
+	sgen_binary_protocol_worker_finish_stats (GPTRDIFF_TO_INT (data - &context->workers_data [0] + 1), context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time);
 
 	sgen_gray_object_queue_trim_free_list (&data->private_gray_queue);
 	return;

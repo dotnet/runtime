@@ -70,8 +70,13 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException">The stream doesn't support seek operations.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
-        public PEHeaders(Stream peStream!!, int size, bool isLoadedImage)
+        public PEHeaders(Stream peStream, int size, bool isLoadedImage)
         {
+            if (peStream is null)
+            {
+                Throw.ArgumentNull(nameof(peStream));
+            }
+
             if (!peStream.CanRead || !peStream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));

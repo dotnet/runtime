@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 public class ArrayMarshal
@@ -316,7 +317,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_Struct(InitStructArray(ARRAY_SIZE), ARRAY_SIZE));
         Assert.True(CStyle_Array_Bool(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
 
-        if (OperatingSystem.IsWindows())
+        if (PlatformDetection.IsBuiltInComEnabled)
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -349,7 +350,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_Struct_In(InitStructArray(ARRAY_SIZE), ARRAY_SIZE));
         Assert.True(CStyle_Array_Bool_In(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
 
-        if (OperatingSystem.IsWindows())
+        if (PlatformDetection.IsBuiltInComEnabled)
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -556,7 +557,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_Bool_Out(boolArr, ARRAY_SIZE));
         Assert.True(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)));
 
-        if (OperatingSystem.IsWindows())
+        if (PlatformDetection.IsBuiltInComEnabled)
         {
             object[] oArr = new object[ARRAY_SIZE];
             Assert.True(CStyle_Array_Object_Out(oArr, ARRAY_SIZE));

@@ -132,7 +132,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourcef, (float*)(floatTable.inArrayPtr), indexi, maskf,  Four);
@@ -157,7 +157,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -201,7 +201,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vd = Avx2.GatherMaskVector256(sourced, (double*)(doubletTable.inArrayPtr), indexi128, maskd,  Eight);
@@ -226,7 +226,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -270,7 +270,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourcei, (int*)(intTable.inArrayPtr), indexi, maski, Four);
@@ -295,7 +295,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -337,7 +337,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourceui, (uint*)(intTable.inArrayPtr), indexi, maskui, Four);
@@ -362,7 +362,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -406,7 +406,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourcel, (long*)(longTable.inArrayPtr), indexi128, maskl, Eight);
@@ -431,7 +431,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -475,7 +475,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourceul, (ulong*)(longTable.inArrayPtr), indexi128, maskul,  Eight);
@@ -500,11 +500,11 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
-                // public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, byte scale) 
+                // public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, byte scale)
                 using (TestTable<long, long> longTable = new TestTable<long, long>(longSourceTable, new long[4]))
                 {
                     var vf = Avx2.GatherMaskVector256(sourcel, (long*)(longTable.inArrayPtr), indexl, maskl, 8);
@@ -544,7 +544,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourcel, (long*)(longTable.inArrayPtr), indexl, maskl, Eight);
@@ -569,7 +569,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
@@ -613,7 +613,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vf = Avx2.GatherMaskVector256(sourceul, (ulong*)(longTable.inArrayPtr), indexl, maskul,  Eight);
@@ -638,9 +638,9 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
-                }                
+                }
 
                 // public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, byte scale)
                 using (TestTable<double, long> doubletTable = new TestTable<double, long>(doubleSourceTable, new double[4]))
@@ -682,7 +682,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
 
                     vd = Avx2.GatherMaskVector256(sourced, (double*)(doubletTable.inArrayPtr), indexl, maskd, Eight);
@@ -707,13 +707,13 @@ namespace IntelHardwareIntrinsicTest
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
-                        // sucess
+                        // success
                     }
                 }
 
             }
 
-            
+
 
             return testResult;
         }

@@ -42,6 +42,14 @@ namespace ILCompiler
             }
         }
 
+        public CustomAttributeHandleCollection GetCustomAttributes
+        {
+            get
+            {
+                return Definition.GetCustomAttributes();
+            }
+        }
+
         public MetadataType OwningType
         {
             get

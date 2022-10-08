@@ -21,8 +21,13 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException">The body is not found in the metadata or is invalid.</exception>
         /// <exception cref="InvalidOperationException">Section where the method is stored is not available.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
-        public static MethodBodyBlock GetMethodBody(this PEReader peReader!!, int relativeVirtualAddress)
+        public static MethodBodyBlock GetMethodBody(this PEReader peReader, int relativeVirtualAddress)
         {
+            if (peReader is null)
+            {
+                Throw.ArgumentNull(nameof(peReader));
+            }
+
             var block = peReader.GetSectionData(relativeVirtualAddress);
             if (block.Length == 0)
             {
@@ -71,8 +76,13 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
-        public static unsafe MetadataReader GetMetadataReader(this PEReader peReader!!, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder)
+        public static unsafe MetadataReader GetMetadataReader(this PEReader peReader, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder)
         {
+            if (peReader is null)
+            {
+                Throw.ArgumentNull(nameof(peReader));
+            }
+
             var metadata = peReader.GetMetadata();
             return new MetadataReader(metadata.Pointer, metadata.Length, options, utf8Decoder, memoryOwner: peReader);
         }

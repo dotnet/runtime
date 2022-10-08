@@ -56,13 +56,15 @@ namespace System
         #region Static Members
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
-            string typeName!!,
+            string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -172,12 +174,7 @@ namespace System
             }
 
             int[]? modifiers = GetModifiers();
-
-            fixed (int* ptr = modifiers)
-            {
-                IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
-            }
+            return RuntimeTypeHandle.GetTypeHelper(baseType, types!, modifiers);
         }
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)

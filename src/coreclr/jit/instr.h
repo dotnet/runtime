@@ -6,7 +6,11 @@
 #define _INSTR_H_
 /*****************************************************************************/
 
+#ifdef TARGET_LOONGARCH64
+#define BAD_CODE 0XFFFFFFFF
+#else
 #define BAD_CODE 0x0BADC0DE // better not match a real encoding!
+#endif
 
 /*****************************************************************************/
 
@@ -47,6 +51,11 @@ enum instruction : unsigned
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
+#elif defined(TARGET_LOONGARCH64)
+    #define INST(id, nm, ldst, e1) INS_##id,
+    #include "instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -131,7 +140,7 @@ enum insFlags : uint32_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
-    
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1 << 27,
     INS_FLAGS_Has_Sbit = 1 << 28,
@@ -140,7 +149,7 @@ enum insFlags : uint32_t
     INS_FLAGS_DONT_CARE = 0x00,
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -291,6 +300,33 @@ enum insBarrier : unsigned
     INS_BARRIER_LD    = 13,
     INS_BARRIER_ST    = 14,
     INS_BARRIER_SY    = 15,
+};
+#elif defined(TARGET_LOONGARCH64)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_RC,     // see ::emitIns_R_C().
+    INS_OPTS_RL,     // see ::emitIns_R_L().
+    INS_OPTS_JIRL,   // see ::emitIns_J_R().
+    INS_OPTS_J,      // see ::emitIns_J().
+    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_C,      // see ::emitIns_Call().
+    INS_OPTS_RELOC,  // see ::emitIns_R_AI().
+};
+
+enum insBarrier : unsigned
+{
+    // TODO-LOONGARCH64-CQ: ALL there are the same value right now.
+    // These are reserved for future extension.
+    // Because the LoongArch64 doesn't support these right now.
+    INS_BARRIER_FULL  =  0,
+    INS_BARRIER_WMB   =  INS_BARRIER_FULL,//4,
+    INS_BARRIER_MB    =  INS_BARRIER_FULL,//16,
+    INS_BARRIER_ACQ   =  INS_BARRIER_FULL,//17,
+    INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
+    INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
 };
 #endif
 

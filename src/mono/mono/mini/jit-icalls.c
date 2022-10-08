@@ -167,9 +167,9 @@ mono_llmult (gint64 a, gint64 b)
 guint64
 mono_llmult_ovf_un (guint64 a, guint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	guint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	guint32 bh = b >> 32;
 	guint64 res, t1;
 
@@ -201,9 +201,9 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 guint64
 mono_llmult_ovf_un_oom (guint64 a, guint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	guint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	guint32 bh = b >> 32;
 	guint64 res, t1;
 
@@ -235,9 +235,9 @@ mono_llmult_ovf_un_oom (guint64 a, guint64 b)
 guint64
 mono_llmult_ovf (gint64 a, gint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	gint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	gint32 bh = b >> 32;
 	/*
 	Use Karatsuba algorithm where:
@@ -258,7 +258,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	gint64 res, t1;
 	gint32 sign;
 
-	/* need to work with absoulte values, so find out what the
+	/* need to work with absolute values, so find out what the
 	   resulting sign will be and convert any negative numbers
 	   from two's complement
 	*/
@@ -1605,6 +1605,14 @@ mono_ckfinite (double d)
 }
 
 void
+mono_throw_ambiguous_implementation (void)
+{
+	ERROR_DECL (error);
+	mono_error_set_ambiguous_implementation (error, "Ambiguous implementation found");
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 {
 	char *caller_name = mono_method_get_reflection_name (caller);
@@ -1618,7 +1626,7 @@ mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 }
 
 void
-mono_throw_bad_image ()
+mono_throw_bad_image (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
@@ -1626,7 +1634,7 @@ mono_throw_bad_image ()
 }
 
 void
-mono_throw_not_supported ()
+mono_throw_not_supported (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
@@ -1634,7 +1642,7 @@ mono_throw_not_supported ()
 }
 
 void
-mono_throw_platform_not_supported ()
+mono_throw_platform_not_supported (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "PlatformNotSupportedException", "");

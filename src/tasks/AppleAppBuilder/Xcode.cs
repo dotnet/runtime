@@ -26,7 +26,7 @@ public class XcodeCreateProject : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 
@@ -73,7 +73,7 @@ public class XcodeBuildApp : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 
@@ -134,6 +134,7 @@ internal sealed class Xcode
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
@@ -150,7 +151,7 @@ internal sealed class Xcode
         string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -191,6 +192,7 @@ internal sealed class Xcode
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
@@ -216,7 +218,6 @@ internal sealed class Xcode
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
-            .Concat(Directory.GetFiles(binDir, "*.aotdata"))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -257,9 +258,12 @@ internal sealed class Xcode
             entitlements.Add (KeyValuePair.Create ("com.apple.security.network.client", "<true/>"));
         }
 
+        string appResources = string.Join(Environment.NewLine, asmDataFiles.Select(r => "    " + r));
+        appResources += string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r)));
+
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
-            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r))))
+            .Replace("%AppResources%", appResources)
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
@@ -299,7 +303,7 @@ internal sealed class Xcode
                 }
             }
 
-            // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+            // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
             if (!File.Exists(componentLibToLink))
             {
                 Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");

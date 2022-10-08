@@ -13,12 +13,12 @@
 /*
 	1. copy an existing file to existing with overwrite true
 	2. copy an existing file to existing with overwrite false
-	3. copy an existing file to non-existant with overwrite true
-	4. copy an existing file to non-existant with overwrite false
-	5. copy non-existant file to existing with overwrite true
-	6. copy non-existant file to existing with overwrite false
-	7. copy non-existant file to non-existant with overwrite true
-	8. copy non-existant file to non-existant with overwrite false
+	3. copy an existing file to non-existent with overwrite true
+	4. copy an existing file to non-existent with overwrite false
+	5. copy non-existent file to existing with overwrite true
+	6. copy non-existent file to existing with overwrite false
+	7. copy non-existent file to non-existent with overwrite true
+	8. copy non-existent file to non-existent with overwrite false
 */
 
 #include <palsuite.h>
@@ -34,9 +34,9 @@ struct TESTS{
 PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test1/paltest_copyfilea_test1")
 {
     char szSrcExisting[] =     {"src_existing.tmp"};
-    char szSrcNonExistant[] =  {"src_non-existant.tmp"};
+    char szSrcNonExistent[] =  {"src_non-existent.tmp"};
     char szDstExisting[] =     {"dst_existing.tmp"};
-    char szDstNonExistant[] =  {"dst_non-existant.tmp"};
+    char szDstNonExistent[] =  {"dst_non-existent.tmp"};
     BOOL bRc = TRUE;
     BOOL bSuccess = TRUE;
     FILE* tempFile = NULL;
@@ -45,12 +45,12 @@ PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test
     {
         {szSrcExisting, szDstExisting, FALSE, 1},
         {szSrcExisting, szDstExisting, TRUE, 0},
-        {szSrcExisting, szDstNonExistant, FALSE, 1},
-        {szSrcExisting, szDstNonExistant, TRUE, 1},
-        {szSrcNonExistant, szDstExisting, FALSE, 0},
-        {szSrcNonExistant, szDstExisting, TRUE, 0},
-        {szSrcNonExistant, szDstNonExistant, FALSE, 0},
-        {szSrcNonExistant, szDstNonExistant, TRUE, 0}
+        {szSrcExisting, szDstNonExistent, FALSE, 1},
+        {szSrcExisting, szDstNonExistent, TRUE, 1},
+        {szSrcNonExistent, szDstExisting, FALSE, 0},
+        {szSrcNonExistent, szDstExisting, TRUE, 0},
+        {szSrcNonExistent, szDstNonExistent, FALSE, 0},
+        {szSrcNonExistent, szDstNonExistent, TRUE, 0}
     };
 
 
@@ -136,7 +136,7 @@ PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test
                 }
                 else
                 {
-                    /* verify attributes of destination file to source file*/                    
+                    /* verify attributes of destination file to source file*/
                     if(GetFileAttributes(testCase[i].lpSource) !=
                             GetFileAttributes(testCase[i].lpDestination))
                     {
@@ -149,7 +149,7 @@ PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test
             }
         }
         /* delete file file but don't worry if it fails */
-        DeleteFileA(szDstNonExistant);
+        DeleteFileA(szDstNonExistent);
     }
 
     int exitCode = bSuccess ? PASS : FAIL;

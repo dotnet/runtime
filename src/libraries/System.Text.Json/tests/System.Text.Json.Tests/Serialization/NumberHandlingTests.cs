@@ -13,6 +13,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -359,7 +360,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void Number_AsCollectionElement_RoundTrip()
         {
             RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -373,17 +373,22 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
             RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+            }
         }
 
         private static void RunAsCollectionElementTest<T>(List<T> numbers)
@@ -981,7 +986,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void EscapingTest()
         {
             // Cause all characters to be escaped.

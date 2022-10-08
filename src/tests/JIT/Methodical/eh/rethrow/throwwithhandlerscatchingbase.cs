@@ -7,10 +7,11 @@
 
 using System;
 using System.IO;
+using Xunit;
 
-namespace hello
+namespace hello_throwwithhandlerscatchingbase_rethrow_cs
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -55,7 +56,8 @@ namespace hello
             }
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();

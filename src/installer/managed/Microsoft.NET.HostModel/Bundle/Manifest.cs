@@ -53,7 +53,7 @@ namespace Microsoft.NET.HostModel.Bundle
     {
         // NetcoreApp3CompatMode flag is set on a .net5 app,
         // which chooses to build single-file apps in .netcore3.x compat mode,
-        // by constructing the bundler with BundleAllConent option.
+        // by constructing the bundler with BundleAllContent option.
         // This mode is expected to be deprecated in future versions of .NET.
         [Flags]
         private enum HeaderFlags : ulong
@@ -63,7 +63,7 @@ namespace Microsoft.NET.HostModel.Bundle
         }
 
         // Bundle ID is a string that is used to uniquely
-        // identify this bundle. It is choosen to be compatible
+        // identify this bundle. It is chosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
         public string BundleID { get; private set; }
@@ -139,7 +139,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public long Write(BinaryWriter writer)
         {
-            BundleID = BundleID ?? GenerateDeterministicId();
+            BundleID ??= GenerateDeterministicId();
 
             long startOffset = writer.BaseStream.Position;
 

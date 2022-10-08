@@ -26,8 +26,10 @@ namespace System.Xml.Linq
         /// <exception cref="ArgumentNullException">
         /// Thrown if the specified value is null.
         /// </exception>
-        public XComment(string value!!)
+        public XComment(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             this.value = value;
         }
 
@@ -35,8 +37,10 @@ namespace System.Xml.Linq
         /// Initializes a new comment node from an existing comment node.
         /// </summary>
         /// <param name="other">Comment node to copy from.</param>
-        public XComment(XComment other!!)
+        public XComment(XComment other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             this.value = other.value;
         }
 
@@ -87,8 +91,10 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XComment"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteComment(value);
         }
 
@@ -99,8 +105,10 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to write this <see cref="XComment"/> to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return writer.WriteCommentAsync(value);

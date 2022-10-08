@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Xml.Extensions;
 using System.Xml.Schema;
 
 // UnconditionalSuppressMessage that specify a Target need to be at the assembly or module level for now. Also,
@@ -170,7 +169,7 @@ namespace System.Xml.Serialization
                 {
                     var xmlns = new XmlSerializerNamespaces();
                     p[index] = xmlns;
-                    member.XmlnsSource = (ns, name) => xmlns.Add(ns, name);
+                    member.XmlnsSource = xmlns.Add;
                 }
 
                 member.Source = source;
@@ -199,10 +198,7 @@ namespace System.Xml.Serialization
                 {
                     anyMember.Collection = new CollectionMember();
                     anyMember.ArraySource = anyMember.Source;
-                    anyMember.Source = (item) =>
-                    {
-                        anyMember.Collection.Add(item);
-                    };
+                    anyMember.Source = anyMember.Collection.Add;
 
                     anyAttribute = anyMember;
                 }
@@ -226,10 +222,7 @@ namespace System.Xml.Serialization
                             if (mapping.Attribute == null && mapping.Text == null)
                             {
                                 anyMember.Collection = new CollectionMember();
-                                anyMember.ArraySource = (item) =>
-                                {
-                                    anyMember.Collection.Add(item);
-                                };
+                                anyMember.ArraySource = anyMember.Collection.Add;
 
                                 textOrArrayMembersList.Add(anyMember);
                             }
@@ -248,10 +241,7 @@ namespace System.Xml.Serialization
                     && !(mapping.Elements!.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                 {
                     anyMember.Collection = new CollectionMember();
-                    anyMember.ArraySource = (item) =>
-                    {
-                        anyMember.Collection.Add(item);
-                    };
+                    anyMember.ArraySource = anyMember.Collection.Add;
 
                     membersList.Add(anyMember);
                     textOrArrayMembersList.Add(anyMember);
@@ -595,10 +585,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (collection == null)
-                {
-                    collection = ReflectionCreateObject(collectionType)!;
-                }
+                collection ??= ReflectionCreateObject(collectionType)!;
 
                 AddObjectsIntoTargetCollection(collection, collectionMember, collectionType);
             }
@@ -1164,10 +1151,7 @@ namespace System.Xml.Serialization
 
                     var arrayMember = new Member(memberMapping);
                     arrayMember.Collection = new CollectionMember();
-                    arrayMember.ArraySource = (item) =>
-                    {
-                        arrayMember.Collection.Add(item);
-                    };
+                    arrayMember.ArraySource = arrayMember.Collection.Add;
 
                     if ((readOnly && o == null) || Reader.IsEmptyElement)
                     {
@@ -1634,7 +1618,6 @@ namespace System.Xml.Serialization
                 }
 
                 var allMembersList = new List<Member>(mappings.Length);
-                var allMemberMappingList = new List<MemberMapping>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1682,18 +1665,11 @@ namespace System.Xml.Serialization
                         {
                             member.Source = (item) =>
                             {
-                                if (member.Collection == null)
-                                {
-                                    member.Collection = new CollectionMember();
-                                }
+                                member.Collection ??= new CollectionMember();
 
                                 member.Collection.Add(item);
                             };
                             member.ArraySource = member.Source;
-                        }
-                        else if (!mapping.TypeDesc.IsArray)
-                        {
-
                         }
                     }
 
@@ -1726,10 +1702,7 @@ namespace System.Xml.Serialization
                                 var xmlSerializerNamespaces = new XmlSerializerNamespaces();
                                 var setMemberValue = GetSetMemberValueDelegate(o!, member.Mapping.Name);
                                 setMemberValue(o, xmlSerializerNamespaces);
-                                member.XmlnsSource = (ns, name) =>
-                                {
-                                    xmlSerializerNamespaces.Add(ns, name);
-                                };
+                                member.XmlnsSource = xmlSerializerNamespaces.Add;
                             }
                             else
                             {
@@ -1747,10 +1720,7 @@ namespace System.Xml.Serialization
                         {
                             string specifiedMemberName = $"{member.Mapping.Name}Specified";
                             MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
-                            if (specifiedMethodInfo != null)
-                            {
-                                specifiedMethodInfo.Invoke(o, new object[] { true });
-                            }
+                            specifiedMethodInfo?.Invoke(o, new object[] { true });
                         }
                     }
 
@@ -1775,7 +1745,6 @@ namespace System.Xml.Serialization
                         }
                     }
 
-                    allMemberMappingList.Add(mapping);
                     allMembersList.Add(member);
 
                     if (mapping == anyElement)
@@ -2133,17 +2102,11 @@ namespace System.Xml.Serialization
             {
                 if (memberInfo is PropertyInfo propInfo)
                 {
-                    return delegate (object? o, object? p)
-                    {
-                        propInfo.SetValue(o, p);
-                    };
+                    return propInfo.SetValue;
                 }
                 else if (memberInfo is FieldInfo fieldInfo)
                 {
-                    return delegate (object? o, object? p)
-                    {
-                        fieldInfo.SetValue(o, p);
-                    };
+                    return fieldInfo.SetValue;
                 }
 
                 throw new InvalidOperationException(SR.XmlInternalError);
@@ -2156,11 +2119,7 @@ namespace System.Xml.Serialization
                     var setMethod = propInfo.GetSetMethod(true);
                     if (setMethod == null)
                     {
-                        return delegate (object? o, object? p)
-                        {
-                            // Maintain the same failure behavior as non-cached delegate
-                            propInfo.SetValue(o, p);
-                        };
+                        return propInfo.SetValue;
                     }
 
                     setTypedDelegate = (Action<TObj, TParam>)setMethod.CreateDelegate(typeof(Action<TObj, TParam>));

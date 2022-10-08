@@ -17,11 +17,8 @@ parameters:
   # for the given platform and helixQueueGroup.
   helixQueuesTemplate: ''
   stagedBuild: false
-  # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
-  # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
-  # Handled as an opt-in parameter to avoid excessive yaml.
-  passPlatforms: false
   container: ''
+  shouldContinueOnError: false
   jobParameters: {}
   variables: []
 
@@ -38,18 +35,14 @@ jobs:
       archType: arm
       targetRid: linux-arm
       platform: Linux_arm
-      container:
-        image: ubuntu-16.04-cross-20210719121212-8a8d3be
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux armv6
@@ -63,18 +56,14 @@ jobs:
       archType: armv6
       targetRid: linux-armv6
       platform: Linux_armv6
-      container:
-        image: ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_armv6
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/armv6'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux arm64
@@ -89,21 +78,19 @@ jobs:
       archType: arm64
       targetRid: linux-arm64
       platform: Linux_arm64
-      container:
-        ${{ if eq(parameters.container, '') }}:
-          image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
-        ${{ if ne(parameters.container, '') }}:
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      ${{ if eq(parameters.container, '') }}:
+        container: Linux_arm64
+      ${{ if ne(parameters.container, '') }}:
+        container:
           image: ${{ parameters.container }}
-        registry: mcr
+          registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl x64
@@ -119,15 +106,12 @@ jobs:
       archType: x64
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
-      container:
-        image: alpine-3.13-WithNode-20210910135845-c401c85
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_musl_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -144,18 +128,14 @@ jobs:
       archType: arm
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
-      container:
-        image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_musl_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm64
@@ -171,18 +151,61 @@ jobs:
       archType: arm64
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
-      container:
-        image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_musl_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux Bionic arm64
+
+- ${{ if containsValue(parameters.platforms, 'Linux_bionic_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      osSubgroup: _bionic
+      archType: arm64
+      targetRid: linux-bionic-arm64
+      platform: Linux_bionic_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
+      jobParameters:
+        runtimeFlavor: mono
+        # We build on Linux, but the test queue runs Windows, so
+        # we need to override the test script generation
+        runScriptWindowsCmd: true
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux Bionic x64
+
+- ${{ if containsValue(parameters.platforms, 'Linux_bionic_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      osSubgroup: _bionic
+      archType: x64
+      targetRid: linux-bionic-x64
+      platform: Linux_bionic_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x64
@@ -197,18 +220,17 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
-      container:
-        ${{ if eq(parameters.container, '') }}:
-          image: centos-7-20210714125435-9b5bbc2
-        ${{ if ne(parameters.container, '') }}:
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      ${{ if eq(parameters.container, '') }}:
+        container: Linux_x64
+      ${{ if ne(parameters.container, '') }}:
+        container:
           image: ${{ parameters.container }}
-        registry: mcr
+          registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -224,22 +246,68 @@ jobs:
       archType: x86
       targetRid: linux-x86
       platform: Linux_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_x86
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        disableClrTest: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Centos 7 x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Centos7_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: centos.7-x64
+      platform: Centos7_Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-x86-linux-20211022152824-f853169
+        image: centos-7-source-build-20210714125450-5d87b80
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        crossBuild: true
-        crossrootfsDir: '/crossrootfs/x86'
-        disableClrTest: true
+        isSourceBuild: true
+        isNonPortableSourceBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x64 Source Build
+# Non-existent RID Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Banana24_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: banana.24-x64
+      platform: Banana24_Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: centos-7-source-build-20210714125450-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        isSourceBuild: true
+        isNonPortableSourceBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Portable Linux x64 Source Build
 
 - ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
   - template: xplat-setup.yml
@@ -251,18 +319,16 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
-      container:
-        image: centos-7-source-build-20210714125450-5d87b80
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: SourceBuild_Linux_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        isSourceBuild: true
+        isNonPortableSourceBuild: false
         ${{ insert }}: ${{ parameters.jobParameters }}
-        buildingOnSourceBuildImage: true
 
 # Linux s390x
 
@@ -276,18 +342,36 @@ jobs:
       archType: s390x
       targetRid: linux-s390x
       platform: Linux_s390x
-      container:
-        image: ubuntu-18.04-cross-s390x-20201102145728-d6e0352
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_s390x
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/s390x'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux PPC64le
+
+- ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: ppc64le
+      targetRid: linux-ppc64le
+      platform: Linux_ppc64le
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_ppc64le
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly
@@ -302,16 +386,34 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
-      container:
-        image: ubuntu-18.04-webassembly-20220118141522-180197c
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Browser_wasm
       jobParameters:
         hostedOs: Linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WebAssembly Linux Firefox
+
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: Browser_wasm_firefox
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Browser_wasm
+      jobParameters:
+        hostedOs: Linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly on Windows
@@ -326,13 +428,12 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_win
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         hostedOs: windows
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
@@ -346,17 +447,13 @@ jobs:
       archType: x64
       targetRid: freebsd-x64
       platform: FreeBSD_x64
-      container:
-        image: ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: FreeBSD_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/x64'
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android x64
@@ -371,15 +468,12 @@ jobs:
       archType: x64
       targetRid: android-x64
       platform: Android_x64
-      container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -395,15 +489,12 @@ jobs:
       archType: x86
       targetRid: android-x86
       platform: Android_x86
-      container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -419,15 +510,12 @@ jobs:
       archType: arm
       targetRid: android-arm
       platform: Android_arm
-      container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -443,15 +531,12 @@ jobs:
       archType: arm64
       targetRid: android-arm64
       platform: Android_arm64
-      container:
-        image: ubuntu-18.04-android-20220131172314-3983b4e
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -467,12 +552,11 @@ jobs:
       archType: x64
       targetRid: maccatalyst-x64
       platform: MacCatalyst_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -488,12 +572,11 @@ jobs:
       archType: arm64
       targetRid: maccatalyst-arm64
       platform: MacCatalyst_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -509,12 +592,11 @@ jobs:
       archType: arm64
       targetRid: tvos-arm64
       platform: tvOS_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -530,12 +612,11 @@ jobs:
       archType: x64
       targetRid: tvossimulator-x64
       platform: tvOSSimulator_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -551,12 +632,11 @@ jobs:
       archType: arm64
       targetRid: tvossimulator-arm64
       platform: tvOSSimulator_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -572,12 +652,11 @@ jobs:
       archType: arm
       targetRid: ios-arm
       platform: iOS_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -593,12 +672,11 @@ jobs:
       archType: arm64
       targetRid: ios-arm64
       platform: iOS_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -614,12 +692,11 @@ jobs:
       archType: x64
       targetRid: iossimulator-x64
       platform: iOSSimulator_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -635,12 +712,11 @@ jobs:
       archType: x86
       targetRid: iossimulator-x86
       platform: iOSsimulator_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -657,12 +733,11 @@ jobs:
       archType: arm64
       targetRid: iossimulator-arm64
       platform: iOSSimulator_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -678,12 +753,11 @@ jobs:
       archType: arm64
       targetRid: osx-arm64
       platform: OSX_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -700,12 +774,11 @@ jobs:
       archType: x64
       targetRid: osx-x64
       platform: OSX_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -721,18 +794,14 @@ jobs:
       archType: armel
       targetRid: tizen-armel
       platform: Tizen_armel
-      container:
-        image: ubuntu-18.04-cross-armel-tizen-20210719212651-8b02f56
-        registry: mcr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Tizen_armel
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/armel'
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -748,12 +817,11 @@ jobs:
       archType: x64
       targetRid: win-x64
       platform: windows_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -769,12 +837,11 @@ jobs:
       archType: x86
       targetRid: win-x86
       platform: windows_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -789,12 +856,11 @@ jobs:
       archType: arm
       targetRid: win-arm
       platform: windows_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -810,11 +876,10 @@ jobs:
       archType: arm64
       targetRid: win-arm64
       platform: windows_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}

@@ -115,7 +115,7 @@ void LoaderAllocator::AddReference()
     CONTRACTL_END;
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    FastInterlockIncrement((LONG *)&m_cReferences);
+    InterlockedIncrement((LONG *)&m_cReferences);
 }
 #endif //!DACCESS_COMPILE
 
@@ -146,7 +146,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
             return FALSE;
         }
 
-        UINT32 cOriginalReferences = FastInterlockCompareExchange(
+        UINT32 cOriginalReferences = InterlockedCompareExchange(
             (LONG *)&m_cReferences,
             cReferencesLocalSnapshot + 1,
             cReferencesLocalSnapshot);
@@ -181,7 +181,7 @@ BOOL LoaderAllocator::Release()
 #ifndef DACCESS_COMPILE
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    LONG cNewReferences = FastInterlockDecrement((LONG *)&m_cReferences);
+    LONG cNewReferences = InterlockedDecrement((LONG *)&m_cReferences);
     return (cNewReferences == 0);
 #else //DACCESS_COMPILE
 
@@ -285,7 +285,6 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
         TypeHandle arg = inst[i];
-        _ASSERTE(!arg.IsEncodedFixup());
         LoaderAllocator *pOtherLA = arg.GetLoaderModule()->GetLoaderAllocator();
 
         if (pOtherLA == this)
@@ -382,8 +381,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 #endif //0
 
     AppDomain::AssemblyIterator i;
-    // Iterate through every loader allocator, marking as we go
     {
+        // Iterate through every loader allocator, marking as we go
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
@@ -405,17 +405,11 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 }
             }
         }
-    }
 
-    // Iterate through every loader allocator, unmarking marked loaderallocators, and
-    // build a free list of unmarked ones
-    {
-        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
-        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
-
+        // Iterate through every loader allocator, unmarking marked loaderallocators, and
+        // build a free list of unmarked ones
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
 
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
@@ -577,13 +571,17 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
         pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
 
+        // The native objects in dependent handles may refer to the virtual call stub manager's heaps, so clear the dependent
+        // handles first
+        pDomainLoaderAllocatorDestroyIterator->CleanupDependentHandlesToNativeObjects();
+
         // The following code was previously happening on delete ~DomainAssembly->Terminate
         // We are moving this part here in order to make sure that we can unload a LoaderAllocator
         // that didn't have a DomainAssembly
         // (we have now a LoaderAllocator with 0-n DomainAssembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
-        // It would be useful to reduce duplication and also establish clear responsibilites
+        // It would be useful to reduce duplication and also establish clear responsibilities
         // for LoaderAllocator::Destroy, Assembly::Terminate, LoaderAllocator::Terminate
         // and LoaderAllocator::~LoaderAllocator. We need to establish how these
         // cleanup paths interact with app-domain unload and process tear-down, too.
@@ -735,15 +733,17 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
     LOADERHANDLE retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         LOADERALLOCATORREF loaderAllocator;
         PTRARRAYREF handleTable;
         PTRARRAYREF handleTableOld;
     } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
+    gc.value = NULL;
+    gc.loaderAllocator = NULL;
+    gc.handleTable = NULL;
+    gc.handleTableOld = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -905,14 +905,16 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
 
     OBJECTREF retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         OBJECTREF compare;
         OBJECTREF previous;
     } gc;
+    gc.value = NULL;
+    gc.compare = NULL;
+    gc.previous = NULL;
 
-    ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
     gc.value = valueUNSAFE;
@@ -921,10 +923,11 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        gc.previous = *ptr;
-        if ((*ptr) == gc.compare)
+
+        gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
+        if (gc.previous == gc.compare)
         {
-            SetObjectReference(ptr, gc.value);
+            ErectWriteBarrier(ptr, gc.value);
         }
     }
     else
@@ -1446,6 +1449,7 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
+    EMEM_OUT(("MEM: %p LoaderAllocator\n", dac_cast<TADDR>(this)));
     if (m_pLowFrequencyHeap.IsValid())
     {
         m_pLowFrequencyHeap->EnumMemoryRegions(flags);
@@ -1462,9 +1466,27 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pPrecodeHeap->EnumMemoryRegions(flags);
     }
-    if (m_pPrecodeHeap.IsValid())
+    if (m_pExecutableHeap.IsValid())
     {
-        m_pPrecodeHeap->EnumMemoryRegions(flags);
+        m_pExecutableHeap->EnumMemoryRegions(flags);
+    }
+#ifdef FEATURE_READYTORUN
+    if (m_pDynamicHelpersHeap.IsValid())
+    {
+        m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
+    }
+#endif
+    if (m_pFixupPrecodeHeap.IsValid())
+    {
+        m_pFixupPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pNewStubPrecodeHeap.IsValid())
+    {
+        m_pNewStubPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pVirtualCallStubManager.IsValid())
+    {
+        m_pVirtualCallStubManager->EnumMemoryRegions(flags);
     }
 }
 #endif //DACCESS_COMPILE
@@ -1513,7 +1535,7 @@ DispatchToken LoaderAllocator::GetDispatchToken(
             SimpleWriteLockHolder lock(pFatTokenSetLock);
             NewHolder<FatTokenSet> pFatTokenSet = new FatTokenSet;
 
-            if (FastInterlockCompareExchangePointer(
+            if (InterlockedCompareExchangeT(
                     &m_pFatTokenSetLock, pFatTokenSetLock.GetValue(), NULL) != NULL)
             {   // Someone beat us to it
                 lock.Release();
@@ -1681,6 +1703,11 @@ void AssemblyLoaderAllocator::SetCollectible()
 void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
 {
     m_Id.Init();
+
+    // This is CRST_UNSAFE_ANYMODE to enable registering/unregistering dependent handles to native objects without changing the
+    // GC mode, in case the caller requires that
+    m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+
     LoaderAllocator::Init((BaseDomain *)pAppDomain);
     if (IsCollectible())
     {
@@ -1713,7 +1740,7 @@ void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelea
     m_binderToRelease = binderToRelease;
 }
 
-STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData)
+STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -1729,7 +1756,7 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, CanUnload(), ppPinnedString);
 }
 
 //*****************************************************************************
@@ -1787,7 +1814,7 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, FALSE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, FALSE, CanUnload());
 }
 
 STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
@@ -1806,7 +1833,7 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, TRUE, CanUnload());
 }
 
 void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
@@ -1873,6 +1900,70 @@ void AssemblyLoaderAllocator::CleanupHandles()
     {
         HandleCleanupListItem * pItem = m_handleCleanupList.RemoveHead();
         DestroyTypedHandle(pItem->m_handle);
+    }
+}
+
+void AssemblyLoaderAllocator::RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) == NULL);
+    m_dependentHandleToNativeObjectSet.Add(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) != NULL);
+    m_dependentHandleToNativeObjectSet.Remove(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
+    // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
+    // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+    CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    for (DependentHandleToNativeObjectSet::Iterator it = m_dependentHandleToNativeObjectSet.Begin(),
+            itEnd = m_dependentHandleToNativeObjectSet.End();
+        it != itEnd;
+        ++it)
+    {
+        LADependentHandleToNativeObject *dependentHandle = *it;
+        dependentHandle->Clear();
     }
 }
 
@@ -1990,7 +2081,7 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     {
         UMEntryThunkCache *pUMEntryThunkCache = new UMEntryThunkCache(GetAppDomain());
 
-        if (FastInterlockCompareExchangePointer(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pUMEntryThunkCache;
@@ -2102,7 +2193,7 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
     {
         OnStackReplacementManager * newManager = new OnStackReplacementManager(this);
 
-        if (FastInterlockCompareExchangePointer(&m_onStackReplacementManager, newManager, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_onStackReplacementManager, newManager, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete newManager;

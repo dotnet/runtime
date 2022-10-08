@@ -15,7 +15,6 @@
 #include "stringarraylist.h"
 #include "loadcontext.hpp"
 #include "failurecache.hpp"
-#include "assemblyidentitycache.hpp"
 #include "utils.hpp"
 #include "ex.h"
 #include "clr/fs/path.h"
@@ -211,39 +210,6 @@ namespace BINDER_SPACE
 
             m_appPaths.Append(pathName);
         }
-
-    Exit:
-        return hr;
-    }
-
-    HRESULT ApplicationContext::GetAssemblyIdentity(LPCSTR                 szTextualIdentity,
-                                                    AssemblyIdentityUTF8 **ppAssemblyIdentity)
-    {
-        HRESULT hr = S_OK;
-
-        _ASSERTE(szTextualIdentity != NULL);
-        _ASSERTE(ppAssemblyIdentity != NULL);
-
-        CRITSEC_Holder contextLock(GetCriticalSectionCookie());
-
-        AssemblyIdentityUTF8 *pAssemblyIdentity = m_assemblyIdentityCache.Lookup(szTextualIdentity);
-        if (pAssemblyIdentity == NULL)
-        {
-            NewHolder<AssemblyIdentityUTF8> pNewAssemblyIdentity;
-            SString sTextualIdentity;
-
-            SAFE_NEW(pNewAssemblyIdentity, AssemblyIdentityUTF8);
-            sTextualIdentity.SetUTF8(szTextualIdentity);
-
-            IF_FAIL_GO(TextualIdentityParser::Parse(sTextualIdentity, pNewAssemblyIdentity));
-            IF_FAIL_GO(m_assemblyIdentityCache.Add(szTextualIdentity, pNewAssemblyIdentity));
-
-            pNewAssemblyIdentity->PopulateUTF8Fields();
-
-            pAssemblyIdentity = pNewAssemblyIdentity.Extract();
-        }
-
-        *ppAssemblyIdentity = pAssemblyIdentity;
 
     Exit:
         return hr;

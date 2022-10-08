@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -133,9 +134,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task IgnoreCycles_OnRecursiveDictionary()
         {
             var root = new RecursiveDictionary();
@@ -182,9 +180,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task IgnoreCycles_OnRecursiveList()
         {
             var root = new RecursiveList();
@@ -239,9 +234,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics()
         {
             // Object
@@ -278,9 +270,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66421")]
-#endif
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics_Polymorphic()
         {
             // Object

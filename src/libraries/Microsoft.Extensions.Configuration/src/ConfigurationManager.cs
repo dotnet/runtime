@@ -81,8 +81,10 @@ namespace Microsoft.Extensions.Configuration
             _providerManager.Dispose();
         }
 
-        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source!!)
+        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             _sources.Add(source);
             return this;
         }
@@ -118,7 +120,7 @@ namespace Microsoft.Extensions.Configuration
             IConfigurationProvider provider = source.Build(this);
 
             provider.Load();
-            _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
+            _changeTokenRegistrations.Add(ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged));
 
             _providerManager.AddProvider(provider);
             RaiseChanged();
@@ -141,7 +143,7 @@ namespace Microsoft.Extensions.Configuration
             foreach (IConfigurationProvider p in newProvidersList)
             {
                 p.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
+                _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
             }
 
             _providerManager.ReplaceProviders(newProvidersList);

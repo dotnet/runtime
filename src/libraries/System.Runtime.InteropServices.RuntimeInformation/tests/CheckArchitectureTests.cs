@@ -29,7 +29,15 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     break;
 
                 case Architecture.Arm64:
-                    Assert.Equal(IntPtr.Size == 4 ? Architecture.Arm : Architecture.Arm64, processArch);
+                    if (IntPtr.Size == 8)
+                    {
+                        Assert.Equal(Architecture.Arm64, processArch);
+                    }
+                    else
+                    {
+                        // armv7/armv6 process running on arm64 host
+                        Assert.True(processArch == Architecture.Arm || processArch == Architecture.Armv6, $"Unexpected process architecture: {processArch}");
+                    }
                     break;
 
                 case Architecture.Wasm:
@@ -46,6 +54,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
                 case Architecture.Armv6:
                     Assert.Equal(Architecture.Armv6, processArch);
+                    break;
+
+                case Architecture.Ppc64le:
+                    Assert.Equal(Architecture.Ppc64le, processArch);
                     break;
 
                 default:

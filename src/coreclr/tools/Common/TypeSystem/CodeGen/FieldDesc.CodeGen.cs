@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Additional members of FieldDesc related to code generation.
-    partial class FieldDesc
+    public partial class FieldDesc
     {
         /// <summary>
         /// Gets a value indicating whether this is a field that needs to be treated
@@ -19,7 +19,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class FieldForInstantiatedType
+    public partial class FieldForInstantiatedType
     {
         public override bool IsIntrinsic
         {

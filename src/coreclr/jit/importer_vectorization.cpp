@@ -6,6 +6,9 @@
 #pragma hdrstop
 #endif
 
+// For now the max possible size is Vector256<ushort>.Count * 2
+#define MaxPossibleUnrollSize 32
+
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
 //
@@ -88,17 +91,23 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 #ifdef TARGET_XARCH
     if (simdType == TYP_SIMD32)
     {
-        GenTree* long1 = comp->gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
-        GenTree* long2 = comp->gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
-        GenTree* long3 = comp->gtNewIconNode(*(ssize_t*)(cns + 8), TYP_LONG);
-        GenTree* long4 = comp->gtNewIconNode(*(ssize_t*)(cns + 12), TYP_LONG);
+        ssize_t fourLongs[4];
+        memcpy(fourLongs, cns, sizeof(ssize_t) * 4);
+
+        GenTree* long1 = comp->gtNewIconNode(fourLongs[0], TYP_LONG);
+        GenTree* long2 = comp->gtNewIconNode(fourLongs[1], TYP_LONG);
+        GenTree* long3 = comp->gtNewIconNode(fourLongs[2], TYP_LONG);
+        GenTree* long4 = comp->gtNewIconNode(fourLongs[3], TYP_LONG);
         return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, baseType, 32);
     }
 #endif // TARGET_XARCH
 
+    ssize_t twoLongs[2];
+    memcpy(twoLongs, cns, sizeof(ssize_t) * 2);
+
     assert(simdType == TYP_SIMD16);
-    GenTree* long1 = comp->gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
-    GenTree* long2 = comp->gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
+    GenTree* long1 = comp->gtNewIconNode(twoLongs[0], TYP_LONG);
+    GenTree* long2 = comp->gtNewIconNode(twoLongs[1], TYP_LONG);
     return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, baseType, 16);
 }
 
@@ -139,8 +148,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
-    constexpr int maxPossibleLength = 32;
-    assert(len >= 8 && len <= maxPossibleLength);
+    assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
     if (!IsBaselineSimdIsaSupported())
     {
@@ -153,7 +161,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     int       simdSize;
     var_types simdType;
 
-    NamedIntrinsic niZero;
     NamedIntrinsic niEquals;
 
     GenTree* cnsVec1     = nullptr;
@@ -164,10 +171,10 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // Optimization: don't use two vectors for Length == 8 or 16
     bool useSingleVector = false;
 
-    WCHAR cnsValue[maxPossibleLength]    = {};
-    WCHAR toLowerMask[maxPossibleLength] = {};
+    WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
+    WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
 
-    CopyMemory((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
+    memcpy((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
 
     if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {
@@ -184,7 +191,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         simdSize = 32;
         simdType = TYP_SIMD32;
 
-        niZero   = NI_Vector256_get_Zero;
         niEquals = NI_Vector256_op_Equality;
 
         // Special case: use a single vector for Length == 16
@@ -209,7 +215,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         simdSize = 16;
         simdType = TYP_SIMD16;
 
-        niZero   = NI_Vector128_get_Zero;
         niEquals = NI_Vector128_op_Equality;
 
         // Special case: use a single vector for Length == 8
@@ -231,7 +236,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-    GenTree* zero = gtNewSimdHWIntrinsicNode(simdType, niZero, baseType, simdSize);
+    GenTree* zero = gtNewZeroConNode(simdType);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
     GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);
@@ -574,10 +579,11 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         const NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
-            assert(argCall->gtCallArgs->GetNext() == nullptr);
-            if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+            assert(argCall->gtArgs.CountArgs() == 1);
+            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetNode();
+            if (arg->OperIs(GT_CNS_STR))
             {
-                return argCall->gtCallArgs->GetNode()->AsStrCon();
+                return arg->AsStrCon();
             }
         }
     }
@@ -647,15 +653,20 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
 
     GenTree*       varStr;
     GenTreeStrCon* cnsStr;
-    if (op1->OperIs(GT_CNS_STR))
-    {
-        cnsStr = op1->AsStrCon();
-        varStr = op2;
-    }
-    else
+    if (op2->OperIs(GT_CNS_STR))
     {
         cnsStr = op2->AsStrCon();
         varStr = op1;
+    }
+    else
+    {
+        if (startsWith)
+        {
+            // StartsWith is not commutative
+            return nullptr;
+        }
+        cnsStr = op1->AsStrCon();
+        varStr = op2;
     }
 
     bool needsNullcheck = true;
@@ -671,8 +682,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    int      cnsLength;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -681,13 +692,13 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if ((cnsLength < 0) || (str == nullptr))
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"%ws\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"cns\")...\n")
     }
 
     // Create a temp which is safe to gtClone for varStr
@@ -798,19 +809,24 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 
     GenTree*       spanObj;
     GenTreeStrCon* cnsStr;
-    if (op1Str != nullptr)
-    {
-        cnsStr  = op1Str;
-        spanObj = op2;
-    }
-    else
+    if (op2Str != nullptr)
     {
         cnsStr  = op2Str;
         spanObj = op1;
     }
+    else
+    {
+        if (startsWith)
+        {
+            // StartsWith is not commutative
+            return nullptr;
+        }
+        cnsStr  = op1Str;
+        spanObj = op2;
+    }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    int      cnsLength = -1;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -819,8 +835,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if (cnsLength < 0 || str == nullptr)
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
@@ -851,7 +867,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, (unsigned)CHECK_SPILL_NONE, true));
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, CHECK_SPILL_NONE, true));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {

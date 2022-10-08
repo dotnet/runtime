@@ -9,8 +9,10 @@ namespace System.Collections.Generic
     {
         private readonly Queue<T> _queue;
 
-        public QueueDebugView(Queue<T> queue!!)
+        public QueueDebugView(Queue<T> queue)
         {
+            ArgumentNullException.ThrowIfNull(queue);
+
             _queue = queue;
         }
 

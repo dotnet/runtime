@@ -17,9 +17,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem.Tests", "ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj", "{9E65EC58-B500-4C4A-B57D-BF242129A3C6}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		ILLink.Shared\ILLink.Shared.projitems*{83a832de-bf4a-44c4-b361-90f5f88b979b}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|Any CPU = Checked|Any CPU
 		Checked|x64 = Checked|x64

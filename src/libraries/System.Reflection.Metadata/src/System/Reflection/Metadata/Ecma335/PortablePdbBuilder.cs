@@ -45,11 +45,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="tablesAndHeaps"/> or <paramref name="typeSystemRowCounts"/> is null.</exception>
         public PortablePdbBuilder(
-            MetadataBuilder tablesAndHeaps!!,
+            MetadataBuilder tablesAndHeaps,
             ImmutableArray<int> typeSystemRowCounts,
             MethodDefinitionHandle entryPoint,
             Func<IEnumerable<Blob>, BlobContentId>? idProvider = null)
         {
+            if (tablesAndHeaps is null)
+            {
+                Throw.ArgumentNull(nameof(tablesAndHeaps));
+            }
+
             ValidateTypeSystemRowCounts(typeSystemRowCounts);
 
             _builder = tablesAndHeaps;
@@ -117,8 +122,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="builder">Builder to write to.</param>
         /// <returns>The id of the serialized content.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="builder"/> is null.</exception>
-        public BlobContentId Serialize(BlobBuilder builder!!)
+        public BlobContentId Serialize(BlobBuilder builder)
         {
+            if (builder is null)
+            {
+                Throw.ArgumentNull(nameof(builder));
+            }
+
             // header:
             MetadataBuilder.SerializeMetadataHeader(builder, MetadataVersion, _serializedMetadata.Sizes);
 

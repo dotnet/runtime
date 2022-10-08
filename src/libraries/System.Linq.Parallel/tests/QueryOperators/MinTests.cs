@@ -283,8 +283,8 @@ namespace System.Linq.Parallel.Tests
         {
             _ = min;
             ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(0, query.Select(x => DelgatedComparable.Delegate(x, Comparer<int>.Default)).Min().Value);
-            Assert.Equal(count - 1, query.Select(x => DelgatedComparable.Delegate(x, ReverseComparer.Instance)).Min().Value);
+            Assert.Equal(0, query.Select(x => DelegatedComparable.Delegate(x, Comparer<int>.Default)).Min().Value);
+            Assert.Equal(count - 1, query.Select(x => DelegatedComparable.Delegate(x, ReverseComparer.Instance)).Min().Value);
         }
 
         [Theory]
@@ -311,8 +311,8 @@ namespace System.Linq.Parallel.Tests
         {
             _ = min;
             ParallelQuery<int> query = labeled.Item;
-            Assert.Equal(count / 2, query.Min(x => x >= count / 2 ? DelgatedComparable.Delegate(x, Comparer<int>.Default) : null).Value);
-            Assert.Equal(count - 1, query.Min(x => x >= count / 2 ? DelgatedComparable.Delegate(x, ReverseComparer.Instance) : null).Value);
+            Assert.Equal(count / 2, query.Min(x => x >= count / 2 ? DelegatedComparable.Delegate(x, Comparer<int>.Default) : null).Value);
+            Assert.Equal(count - 1, query.Min(x => x >= count / 2 ? DelegatedComparable.Delegate(x, ReverseComparer.Instance) : null).Value);
         }
 
         [Theory]

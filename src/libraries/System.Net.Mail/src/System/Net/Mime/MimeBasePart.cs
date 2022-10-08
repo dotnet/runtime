@@ -43,7 +43,6 @@ namespace System.Net.Mime
         }
 
         private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
-        private static readonly char[] s_questionMarkSplitChars = new char[] { '?' };
 
         internal static string DecodeHeaderValue(string? value)
         {
@@ -65,7 +64,7 @@ namespace System.Net.Mime
                 //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
                 //an encoded string other than as a separator for these five parts.
                 //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split(s_questionMarkSplitChars);
+                string[] subStrings = foldedSubString.Split('?');
                 if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
                 {
                     return value;
@@ -107,8 +106,10 @@ namespace System.Net.Mime
             return Encoding.GetEncoding(charSet);
         }
 
-        internal static bool IsAscii(string value!!, bool permitCROrLF)
+        internal static bool IsAscii(string value, bool permitCROrLF)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             foreach (char c in value)
             {
                 if (c > 0x7f)
@@ -160,21 +161,12 @@ namespace System.Net.Mime
             get
             {
                 //persist existing info before returning
-                if (_headers == null)
-                {
-                    _headers = new HeaderCollection();
-                }
+                _headers ??= new HeaderCollection();
 
-                if (_contentType == null)
-                {
-                    _contentType = new ContentType();
-                }
+                _contentType ??= new ContentType();
                 _contentType.PersistIfNeeded(_headers, false);
 
-                if (_contentDisposition != null)
-                {
-                    _contentDisposition.PersistIfNeeded(_headers, false);
-                }
+                _contentDisposition?.PersistIfNeeded(_headers, false);
 
                 return _headers;
             }
@@ -215,8 +207,10 @@ namespace System.Net.Mime
             throw new NotImplementedException();
         }
 
-        internal void EndSend(IAsyncResult asyncResult!!)
+        internal void EndSend(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
 
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)

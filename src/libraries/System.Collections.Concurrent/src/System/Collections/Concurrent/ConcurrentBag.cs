@@ -53,8 +53,10 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentBag{T}"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
-        public ConcurrentBag(IEnumerable<T> collection!!)
+        public ConcurrentBag(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _locals = new ThreadLocal<WorkStealingQueue>();
 
             WorkStealingQueue queue = GetCurrentThreadWorkStealingQueue(forceCreate: true)!;
@@ -272,8 +274,10 @@ namespace System.Collections.Concurrent
         /// -or- the number of elements in the source <see
         /// cref="ConcurrentBag{T}"/> is greater than the available space from
         /// <paramref name="index"/> to the end of the destination <paramref name="array"/>.</exception>
-        public void CopyTo(T[] array!!, int index)
+        public void CopyTo(T[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
@@ -745,8 +749,8 @@ namespace System.Collections.Concurrent
                             // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
                             // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
                             // for the head to end up > than the tail, since you can't set any more bits than all of them.
-                            _headIndex = _headIndex & _mask;
-                            _tailIndex = tail = tail & _mask;
+                            _headIndex &= _mask;
+                            _tailIndex = tail &= _mask;
                             Debug.Assert(_headIndex - _tailIndex <= 0);
 
                             Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this

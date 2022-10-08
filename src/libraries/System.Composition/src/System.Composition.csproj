@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <!-- A meta package doesn't have any artifacts per TargetFramework. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <!-- Reference dependencies to persiste them in the project's project.assets.json file which is used to calculate package dependencies. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <PackageDescription>This packages provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.
+    <PackageDescription>This package provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.
 
 Commonly Used Types:
 System.Composition.ExportAttribute

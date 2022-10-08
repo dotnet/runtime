@@ -32,30 +32,28 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions)
+            SslAuthenticationOptions sslAuthenticationOptions,
+            SelectClientCertificate clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
         public static SecurityStatusPal Renegotiate(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions,
@@ -64,21 +62,9 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
-            SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols,
-            EncryptionPolicy policy,
-            bool isServer)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
-        }
-
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteSslContext? context)
-        {
-            if (context == null)
-                return null;
-
-            return Interop.AppleCrypto.SslGetAlpnSelected(context.SslContext);
+            return null;
         }
 
         public static SecurityStatusPal EncryptMessage(
@@ -225,28 +211,26 @@ namespace System.Net.Security
 
         public static void QueryContextConnectionInfo(
             SafeDeleteSslContext securityContext,
-            out SslConnectionInfo connectionInfo)
+            ref SslConnectionInfo connectionInfo)
         {
-            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
+            connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            SecureChannel secureChannel,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions)
+            SslAuthenticationOptions sslAuthenticationOptions,
+            SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            Debug.Assert(!credential.IsInvalid);
-
             try
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
                 if ((null == context) || context.IsInvalid)
                 {
-                    sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
+                    sslContext = new SafeDeleteSslContext(sslAuthenticationOptions);
                     context = sslContext;
                 }
 
@@ -257,9 +241,9 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status = PerformHandshake(sslHandle);
-                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
                 {
-                    X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
+                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
                     if (clientCertificate != null)
                     {
                         sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);

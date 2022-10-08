@@ -333,7 +333,7 @@ static inline void mono_atomic_store_i32(volatile gint32 *dst, gint32 val)
 	} while (gcc_sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
-#if defined (TARGET_OSX) || defined (__arm__) || (defined (__mips__) && !defined (__mips64)) || (defined (__powerpc__) && !defined (__powerpc64__)) || (defined (__sparc__) && !defined (__arch64__))
+#if defined (TARGET_OSX) || defined (__arm__) || (defined (__powerpc__) && !defined (__powerpc64__))
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
 

@@ -140,13 +140,6 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
     }
     CONTRACTL_END
 
-        // We temporarily disable IBC logging here
-        // because the pMD that we search through may not be restored
-        // and ComputePreferredZapModule will assert on finding an
-        // encode fixup pointer
-        //
-        IBCLoggingDisabler disableIbcLogging;
-
     MethodDesc *pMDResult = NULL;
 
     DWORD dwHash = Hash(declaringType, token, inst);

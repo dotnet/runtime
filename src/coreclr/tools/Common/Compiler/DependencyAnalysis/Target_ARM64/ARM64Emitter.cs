@@ -175,11 +175,11 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
 
             Builder.EmitUInt(0b01010100_0000000000000000000_0_0001u | offset << 5);
-                
+
             EmitJMP(symbol);
         }
 
-        private bool InSignedByteRange(int i)
+        private static bool InSignedByteRange(int i)
         {
             return i == (int)(sbyte)i;
         }

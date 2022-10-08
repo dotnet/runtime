@@ -344,7 +344,7 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     NumUntracked += other.NumUntracked;
     NumTransitions += other.NumTransitions;
     SizeOfCode += other.SizeOfCode;
-    EncPreservedSlots += other.EncPreservedSlots;
+    EncInfoSize += other.EncInfoSize;
 
     UntrackedSlotSize += other.UntrackedSlotSize;
     NumUntrackedSize += other.NumUntrackedSize;
@@ -392,7 +392,7 @@ void GcInfoSize::Log(DWORD level, const char * header)
         LogSpew(LF_GCINFO, level, "NumUntracked: %Iu\n", NumUntracked);
         LogSpew(LF_GCINFO, level, "NumTransitions: %Iu\n", NumTransitions);
         LogSpew(LF_GCINFO, level, "SizeOfCode: %Iu\n", SizeOfCode);
-        LogSpew(LF_GCINFO, level, "EncPreservedSlots: %Iu\n", EncPreservedSlots);
+        LogSpew(LF_GCINFO, level, "EncInfoSize: %Iu\n", EncInfoSize);
 
         LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
         LogSpew(LF_GCINFO, level, "Total: %Iu\n", TotalSize);
@@ -473,7 +473,6 @@ GcInfoEncoder::GcInfoEncoder(
     m_NumCallSites = 0;
 #endif
 
-    m_SecurityObjectStackSlot = NO_SECURITY_OBJECT;
     m_GSCookieStackSlot = NO_GS_COOKIE;
     m_GSCookieValidRangeStart = 0;
     _ASSERTE(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
@@ -484,6 +483,9 @@ GcInfoEncoder::GcInfoEncoder(
 
     m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+    m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
     m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
 #ifdef TARGET_AMD64
     m_WantsReportOnlyLeaf = false;
@@ -691,18 +693,6 @@ void GcInfoEncoder::SetCodeLength( UINT32 length )
     m_CodeLength = length;
 }
 
-
-void GcInfoEncoder::SetSecurityObjectStackSlot( INT32 spOffset )
-{
-    _ASSERTE( spOffset != NO_SECURITY_OBJECT );
-#if defined(TARGET_AMD64)
-    _ASSERTE( spOffset < 0x10 && "The security object cannot reside in an input variable!" );
-#endif
-    _ASSERTE( m_SecurityObjectStackSlot == NO_SECURITY_OBJECT || m_SecurityObjectStackSlot == spOffset );
-
-    m_SecurityObjectStackSlot  = spOffset;
-}
-
 void GcInfoEncoder::SetPrologSize( UINT32 prologSize )
 {
     _ASSERTE(prologSize != 0);
@@ -759,6 +749,13 @@ void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
     _ASSERTE( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     m_SizeOfEditAndContinuePreservedArea = slots;
 }
+
+#ifdef TARGET_ARM64
+void GcInfoEncoder::SetSizeOfEditAndContinueFixedStackFrame( UINT32 size )
+{
+    m_SizeOfEditAndContinueFixedStackFrame = size;
+}
+#endif
 
 #ifdef TARGET_AMD64
 void GcInfoEncoder::SetWantsReportOnlyLeaf()
@@ -1009,12 +1006,11 @@ void GcInfoEncoder::Build()
     ///////////////////////////////////////////////////////////////////////
 
 
-    UINT32 hasSecurityObject = (m_SecurityObjectStackSlot != NO_SECURITY_OBJECT);
     UINT32 hasGSCookie = (m_GSCookieStackSlot != NO_GS_COOKIE);
     UINT32 hasContextParamType = (m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT);
     UINT32 hasReversePInvokeFrame = (m_ReversePInvokeFrameSlot != NO_REVERSE_PINVOKE_FRAME);
 
-    BOOL slimHeader = (!m_IsVarArg && !hasSecurityObject && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
+    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
         (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) &&
@@ -1042,7 +1038,7 @@ void GcInfoEncoder::Build()
     {
         GCINFO_WRITE(m_Info1, 1, 1, FlagsSize); // Fat encoding
         GCINFO_WRITE(m_Info1, (m_IsVarArg ? 1 : 0), 1, FlagsSize);
-        GCINFO_WRITE(m_Info1, (hasSecurityObject ? 1 : 0), 1, FlagsSize);
+        GCINFO_WRITE(m_Info1, 0 /* unused - was hasSecurityObject */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, ((m_PSPSymStackSlot != NO_PSP_SYM) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
@@ -1085,7 +1081,7 @@ void GcInfoEncoder::Build()
         GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
         GCINFO_WRITE_VARL_U(m_Info1, normEpilogSize, NORM_EPILOG_SIZE_ENCBASE, ProEpilogSize);
     }
-    else if (hasSecurityObject || hasContextParamType)
+    else if (hasContextParamType)
     {
         _ASSERTE(!slimHeader);
         // Save the prolog size, to be used for determining when it is not safe
@@ -1095,19 +1091,6 @@ void GcInfoEncoder::Build()
         _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
 
         GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
-    }
-
-    // Encode the offset to the security object.
-    if(hasSecurityObject)
-    {
-        _ASSERTE(!slimHeader);
-#ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "Security object at " FMT_STK "\n",
-             DBG_STK(m_SecurityObjectStackSlot)
-             ));
-#endif
-
-        GCINFO_WRITE_VARL_S(m_Info1, NORMALIZE_STACK_SLOT(m_SecurityObjectStackSlot), SECURITY_OBJECT_STACK_SLOT_ENCBASE, SecObjSize);
     }
 
     // Encode the offset to the GS cookie.
@@ -1157,7 +1140,10 @@ void GcInfoEncoder::Build()
 
     if (m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA)
     {
-        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncPreservedSlots);
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncInfoSize);
+#ifdef TARGET_ARM64
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinueFixedStackFrame, SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, EncInfoSize);
+#endif
     }
 
     if (hasReversePInvokeFrame)

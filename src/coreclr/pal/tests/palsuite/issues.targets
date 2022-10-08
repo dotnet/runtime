@@ -1,12 +1,6 @@
 <?xml version="1.0" ?>
 <Project DefaultTargets = "ProducePALTestList" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch/Runtime excludes -->
-    <ItemGroup>
-        <ExcludeList Include="file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3">
-            <Issue>https://github.com/dotnet/runtime/issues/42289</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- Target specific excludes -->
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetOS)' == 'Linux'">
         <ExcludeList Include="eventprovider/eventprovidertest">
@@ -30,10 +24,4 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">
-        <ExcludeList Include="filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4">
-            <!-- Test tries to set RWX on general memory page -->
-            <Issue>https://github.com/dotnet/runtime/issues/48783</Issue>
-        </ExcludeList>
-    </ItemGroup>
 </Project>

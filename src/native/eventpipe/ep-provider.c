@@ -178,7 +178,7 @@ ep_provider_alloc (
 	instance->provider_name = ep_rt_utf8_string_dup (provider_name);
 	ep_raise_error_if_nok (instance->provider_name != NULL);
 
-	instance->provider_name_utf16 = ep_rt_utf8_to_utf16_string (provider_name, -1);
+	instance->provider_name_utf16 = ep_rt_utf8_to_utf16le_string (provider_name, -1);
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
 
 	ep_rt_event_list_alloc (&instance->event_list);
@@ -244,6 +244,16 @@ ep_provider_add_event (
 	EP_ASSERT (provider != NULL);
 
 	ep_requires_lock_not_held ();
+
+	// Keyword bits 44-47 are reserved for use by EventSources, and every EventSource sets them all.
+	// We filter out those bits here so later comparisons don't have to take them in to account. Without
+	// filtering, EventSources wouldn't show up with Keywords=0.
+	uint64_t session_mask = ~0xF00000000000;
+	// -1 is special, it means all keywords. Don't change it.
+	uint64_t all_keywords = (uint64_t)(-1);
+	if (keywords != all_keywords) {
+		keywords &= session_mask;
+	}
 
 	EventPipeEvent *instance = ep_event_alloc (
 		provider,
@@ -508,7 +518,7 @@ ep_on_error:
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_provider;
 const char quiet_linker_empty_file_warning_eventpipe_provider = 0;
 #endif

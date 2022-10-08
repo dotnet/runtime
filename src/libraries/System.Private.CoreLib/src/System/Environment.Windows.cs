@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -178,6 +179,33 @@ namespace System
                     return 0;
                 }
                 return (long)memoryCounters.WorkingSetSize;
+            }
+        }
+
+        private static unsafe string[] GetCommandLineArgsNative()
+        {
+            char* lpCmdLine = Interop.Kernel32.GetCommandLine();
+            Debug.Assert(lpCmdLine != null);
+
+            int numArgs = 0;
+            char** argvW = Interop.Shell32.CommandLineToArgv(lpCmdLine, &numArgs);
+            if (argvW == null)
+            {
+                ThrowHelper.ThrowOutOfMemoryException();
+            }
+
+            try
+            {
+                string[] result = new string[numArgs];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = new string(*(argvW + i));
+                }
+                return result;
+            }
+            finally
+            {
+                Interop.Kernel32.LocalFree((IntPtr)argvW);
             }
         }
     }

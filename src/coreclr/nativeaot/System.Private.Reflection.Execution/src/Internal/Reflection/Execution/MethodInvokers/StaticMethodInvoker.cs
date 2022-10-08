@@ -24,18 +24,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected sealed override object Invoke(object thisObject, object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            object result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject,
+            object? result = MethodInvokeInfo.Invoke(
+                null, // this pointer is ignored for static methods
                 MethodInvokeInfo.LdFtnResult,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: false);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

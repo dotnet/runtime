@@ -1465,7 +1465,7 @@ Use `#ifdef DEBUG` for debug-only code. Do not use `#ifdef _DEBUG` (with a leadi
 
 Use the `INDEBUG(x)` macro (and related macros) judiciously, for code that only runs in DEBUG, to avoid `#ifdef`s.
 
-Use the `JITDUMP(x)` macro for printing things to the JIT dump output. Note that these things will only get printed when the `verbose` variable is set, which is when `COMPlus_JitDump=*` or when `COMPlus_JitDump=XXX` and we are JITting function XXX; or when `COMPlus_NgenDump=*` or `COMPlus_NgenDump=XXX` and we are NGENing function XXX. Do not use `JITDUMP` for all output in a debug-only function that might be useful to call from the debugger. In that case, define a function that uses `printf` (which is a JIT-specific implementation of this function), which can be called from the debugger, and invoke that function like this:
+Use the `JITDUMP(x)` macro for printing things to the JIT dump output. Note that these things will only get printed when the `verbose` variable is set, which is when `COMPlus_JitDump=*` or when `COMPlus_JitDump=XXX` and we are JITting function XXX. Do not use `JITDUMP` for all output in a debug-only function that might be useful to call from the debugger. In that case, define a function that uses `printf` (which is a JIT-specific implementation of this function), which can be called from the debugger, and invoke that function like this:
 
 ```c++
 DBEXEC(verbose, MyDumpFunction());

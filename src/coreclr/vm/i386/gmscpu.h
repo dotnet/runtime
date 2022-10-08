@@ -57,7 +57,7 @@ struct MachState {
 
 
 protected:
-    // Note the fields are layed out to make generating a
+    // Note the fields are laid out to make generating a
     // MachState structure from assembly code very easy
 
     // The state of all the callee saved registers.
@@ -112,7 +112,7 @@ private:
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 {
     // _pRetAddr has to be the last thing updated when we make the copy (because its
-    // is the the _pRetAddr becoming non-zero that flips this from invalid to valid.
+    // is the _pRetAddr becoming non-zero that flips this from invalid to valid.
     // we assert that it is the last field in the struct.
     static_assert_no_msg(offsetof(MachState, _pRetAddr) + sizeof(_pRetAddr) == sizeof(MachState));
 
@@ -129,10 +129,10 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 EXTERN_C int __fastcall LazyMachStateCaptureState(struct LazyMachState *pState);
 
 // CAPTURE_STATE captures just enough register state so that the state of the
-// processor can be deterined just after the the routine that has CAPTURE_STATE in
+// processor can be deterined just after the routine that has CAPTURE_STATE in
 // it returns.
 
-// Note that the return is never taken, is is there for epilog walking
+// Note that the return is never taken, it is there for epilog walking
 #define CAPTURE_STATE(machState, ret)                       \
     if (LazyMachStateCaptureState(machState)) ret
 

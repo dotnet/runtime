@@ -24,6 +24,11 @@ namespace System.Text.Json
         /// </summary>
         public ReadOnlySpan<byte> EncodedUtf8Bytes => _utf8Value;
 
+        /// <summary>
+        /// Returns the UTF-16 encoded representation of the pre-encoded JSON text as a <see cref="string"/>.
+        /// </summary>
+        public string Value => _value ?? string.Empty;
+
         private JsonEncodedText(byte[] utf8Value)
         {
             Debug.Assert(utf8Value != null);
@@ -43,8 +48,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-16 characters.
         /// </exception>
-        public static JsonEncodedText Encode(string value!!, JavaScriptEncoder? encoder = null)
+        public static JsonEncodedText Encode(string value, JavaScriptEncoder? encoder = null)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             return Encode(value.AsSpan(), encoder);
         }
 

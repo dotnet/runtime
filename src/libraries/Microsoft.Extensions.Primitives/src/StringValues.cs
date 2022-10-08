@@ -366,7 +366,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException(nameof(array));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
                 if (arrayIndex < 0)
                 {
@@ -727,7 +727,12 @@ namespace Microsoft.Extensions.Primitives
             return false;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
         public override int GetHashCode()
         {
             object? value = _values;
@@ -774,6 +779,10 @@ namespace Microsoft.Extensions.Primitives
                 _index = 0;
             }
 
+            /// <summary>
+            /// Instantiates an <see cref="Enumerator"/> using a <see cref="StringValues"/>.
+            /// </summary>
+            /// <param name="values">The <see cref="StringValues"/> to enumerate.</param>
             public Enumerator(ref StringValues values) : this(values._values)
             { }
 

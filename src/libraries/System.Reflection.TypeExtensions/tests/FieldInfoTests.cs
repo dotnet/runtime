@@ -46,6 +46,10 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> GetValue_TestData()
         {
+            // Trick trimming into keeping the Empty field
+            if (string.Empty.Length > 0)
+                typeof(string).GetField("Empty");
+
             yield return new object[] { typeof(string), "Empty", "abc", "" };
 
             yield return new object[] { typeof(FI_BaseClass), "_privateStringField", new FI_BaseClass(), "2" };

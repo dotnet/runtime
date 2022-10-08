@@ -169,6 +169,7 @@ namespace System.IO.MemoryMappedFiles
             // finished retrying but couldn't create or open
             if (handle == null || handle.IsInvalid)
             {
+                handle?.Dispose();
                 throw new InvalidOperationException(SR.InvalidOperation_CantCreateFileMapping);
             }
 
@@ -232,7 +233,7 @@ namespace System.IO.MemoryMappedFiles
         {
             SafeMemoryMappedFileHandle handle = Interop.OpenFileMapping(
                 desiredAccessRights, (inheritability & HandleInheritability.Inheritable) != 0, mapName);
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
 
             if (handle.IsInvalid)
             {

@@ -44,7 +44,8 @@ namespace System.Net.Test.Common
         MaxConcurrentStreams = 0x3,
         InitialWindowSize = 0x4,
         MaxFrameSize = 0x5,
-        MaxHeaderListSize = 0x6
+        MaxHeaderListSize = 0x6,
+        EnableConnect = 0x8
     }
 
     public class Frame

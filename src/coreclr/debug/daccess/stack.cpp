@@ -201,7 +201,7 @@ ClrDataStackWalk::Next(void)
             switch(action)
             {
             case SWA_CONTINUE:
-                // We sucessfully unwound a frame so update
+                // We successfully unwound a frame so update
                 // the previous stack pointer before going into
                 // filtering to get the amount of stack skipped
                 // by the filtering.

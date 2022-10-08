@@ -36,6 +36,11 @@
     <XunitExcludesTxtFileContent>$(_withoutCategories.Replace(';', '%0dcategory='))</XunitExcludesTxtFileContent>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
+    <!-- Pass the results file -->
+    <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TestSingleFile)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner"
                       Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)"

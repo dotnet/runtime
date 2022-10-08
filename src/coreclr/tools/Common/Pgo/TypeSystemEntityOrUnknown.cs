@@ -18,7 +18,12 @@ namespace Internal.Pgo
             _data = type;
         }
 
-        readonly object _data;
+        public TypeSystemEntityOrUnknown(MethodDesc method)
+        {
+            _data = method;
+        }
+
+        private readonly object _data;
         public TypeDesc AsType => _data as TypeDesc;
         public MethodDesc AsMethod => _data as MethodDesc;
         public FieldDesc AsField => _data as FieldDesc;
@@ -34,7 +39,7 @@ namespace Internal.Pgo
             }
             else
             {
-                return object.ReferenceEquals(_data, other._data);
+                return ReferenceEquals(_data, other._data);
             }
         }
 

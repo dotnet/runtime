@@ -6,10 +6,8 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
   compositeBuildMode: false
   helixQueues: ''
   stagedBuild: false
@@ -18,8 +16,6 @@ parameters:
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavor: 'mono'
-  runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
   condition: always()
@@ -32,7 +28,7 @@ parameters:
 
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=monointerpreter /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -mono os Browser wasm $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -mono os Browser wasm $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -44,8 +40,9 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)
@@ -67,8 +64,7 @@ steps:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 

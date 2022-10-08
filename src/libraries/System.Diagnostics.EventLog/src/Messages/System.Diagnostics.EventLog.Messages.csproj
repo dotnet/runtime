@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Set Nullable to empty so Roslyn doesn't emit CodeAnalysis attributes into the assembly. -->
+    <Nullable></Nullable>
     <Win32Resource>EventLogMessages.res</Win32Resource>
     <!-- Override the parent Directory.Build.props -->
     <SupportedOSPlatforms />

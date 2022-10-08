@@ -33,8 +33,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                if (_objectDictionary == null)
-                    _objectDictionary = new Dictionary<object, object?>();
+                _objectDictionary ??= new Dictionary<object, object?>();
 
                 _objectDictionary.Add(obj, null);
                 _count++;

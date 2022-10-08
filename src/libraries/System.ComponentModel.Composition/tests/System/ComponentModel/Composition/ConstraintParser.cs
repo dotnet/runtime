@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
-    public class ContraintParser
+    public class ConstraintParser
     {
         private static readonly PropertyInfo _exportDefinitionContractNameProperty = typeof(ExportDefinition).GetProperty("ContractName");
         private static readonly PropertyInfo _exportDefinitionMetadataProperty = typeof(ExportDefinition).GetProperty("Metadata");
@@ -134,8 +134,11 @@ namespace System.ComponentModel.Composition
             return true;
         }
 
-        private static bool TryParseExpressionAsMetadataConstraintBody(Expression expression!!, Expression parameter!!, out string requiredMetadataKey, out Type requiredMetadataType)
+        private static bool TryParseExpressionAsMetadataConstraintBody(Expression expression, Expression parameter, out string requiredMetadataKey, out Type requiredMetadataType)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+            ArgumentNullException.ThrowIfNull(parameter);
+
             requiredMetadataKey = null;
             requiredMetadataType = null;
 
@@ -208,9 +211,11 @@ namespace System.ComponentModel.Composition
             return true;
         }
 
-        private static bool TryParseConstant<T>(ConstantExpression constant!!, out T result)
+        private static bool TryParseConstant<T>(ConstantExpression constant, out T result)
             where T : class
         {
+            ArgumentNullException.ThrowIfNull(constant);
+
             if (constant.Type == typeof(T) && constant.Value != null)
             {
                 result = (T)constant.Value;

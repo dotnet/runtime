@@ -25,8 +25,10 @@ namespace System.Xml
             _strings = new PriorityDictionary<string, int>();
         }
 
-        public virtual bool TryAdd(XmlDictionaryString value!!, out int key)
+        public virtual bool TryAdd(XmlDictionaryString value, out int key)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             IntArray? keys;
 
             if (_maps.TryGetValue(value.Dictionary, out keys))
@@ -86,10 +88,7 @@ namespace System.Xml
 
             if (_strings.TryGetValue(s.Value, out key))
             {
-                if (keys == null)
-                {
-                    keys = AddKeys(s.Dictionary, s.Key + 1);
-                }
+                keys ??= AddKeys(s.Dictionary, s.Key + 1);
 
                 keys[s.Key] = (key + 1);
                 return true;
@@ -116,8 +115,7 @@ namespace System.Xml
                 _now = 0;
                 _listCount = 0;
                 Array.Clear(_list);
-                if (_dictionary != null)
-                    _dictionary.Clear();
+                _dictionary?.Clear();
             }
 
             public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)

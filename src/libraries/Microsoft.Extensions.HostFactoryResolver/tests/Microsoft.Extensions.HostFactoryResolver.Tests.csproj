@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ApplicationNameSetFromAgrument\ApplicationNameSetFromAgrument.csproj" />
+    <ProjectReference Include="ApplicationNameSetFromArgument\ApplicationNameSetFromArgument.csproj" />
     <ProjectReference Include="BuildWebHostInvalidSignature\BuildWebHostInvalidSignature.csproj" />
     <ProjectReference Include="BuildWebHostPatternTestSite\BuildWebHostPatternTestSite.csproj" />
     <ProjectReference Include="CreateHostBuilderInvalidSignature\CreateHostBuilderInvalidSignature.csproj" />

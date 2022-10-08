@@ -82,6 +82,7 @@ namespace System.Reflection
             set => _cultureInfo = (value == null) ? null : new CultureInfo(value);
         }
 
+        [Obsolete(Obsoletions.AssemblyNameCodeBaseMessage, DiagnosticId = Obsoletions.AssemblyNameCodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string? CodeBase
         {
             [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
@@ -89,6 +90,7 @@ namespace System.Reflection
             set => _codeBase = value;
         }
 
+        [Obsolete(Obsoletions.AssemblyNameCodeBaseMessage, DiagnosticId = Obsoletions.AssemblyNameCodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {
@@ -385,7 +387,7 @@ namespace System.Reflection
                         // Means we don't reEncode '%' but check for the possible escaped sequence
                         dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
                             c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        if (i + 2 < end && HexConverter.IsHexChar(pStr[i + 1]) && HexConverter.IsHexChar(pStr[i + 2]))
+                        if (i + 2 < end && char.IsAsciiHexDigit(pStr[i + 1]) && char.IsAsciiHexDigit(pStr[i + 2]))
                         {
                             // leave it escaped
                             dest[destPos++] = '%';
@@ -459,23 +461,11 @@ namespace System.Reflection
 
         internal static bool IsUnreserved(char c)
         {
-            if (IsAsciiLetterOrDigit(c))
+            if (char.IsAsciiLetterOrDigit(c))
             {
                 return true;
             }
             return RFC3986UnreservedMarks.Contains(c);
-        }
-
-        // Only consider ASCII characters
-        internal static bool IsAsciiLetter(char character)
-        {
-            return (character >= 'a' && character <= 'z') ||
-                   (character >= 'A' && character <= 'Z');
-        }
-
-        internal static bool IsAsciiLetterOrDigit(char character)
-        {
-            return IsAsciiLetter(character) || (character >= '0' && character <= '9');
         }
 
         internal const char c_DummyChar = (char)0xFFFF;     // An Invalid Unicode character used as a dummy char passed into the parameter

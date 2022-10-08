@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail()
                 .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
                 .And.FindAnySdk(false)
-                .And.HaveStdErrContaining("aka.ms/dotnet-download")
+                .And.HaveStdErrContaining("aka.ms/dotnet/download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions
@@ -988,7 +988,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // This method adds a list of new sdk version folders in the specified directory.
-        // The actual contents are 'fake' and the mininum required for SDK discovery.
+        // The actual contents are 'fake' and the minimum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(params string[] availableVersions)
         {
@@ -1050,12 +1050,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public string TestAssetsPath { get; }
 
+            private readonly TestArtifact _baseDirArtifact;
+
             public SharedTestState()
             {
                 // The dotnetSDKLookup dir will contain some folders and files that will be
                 // necessary to perform the tests
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
                 BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+                _baseDirArtifact = new TestArtifact(BaseDir);
 
                 // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
                 //     All dirs will be placed inside the base folder
@@ -1084,10 +1087,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 if (disposing)
                 {
-                    if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDir))
-                    {
-                        Directory.Delete(BaseDir, true);
-                    }
+                    _baseDirArtifact.Dispose();
                 }
             }
         }

@@ -428,7 +428,7 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void)
+static bool X509ChainSupportsRevocationOptions(void)
 {
     return g_CertPathValidatorGetRevocationChecker != NULL && g_PKIXRevocationCheckerClass != NULL;
 }
@@ -507,7 +507,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
         else
         {
             certPathToUse = ctx->certPath;
-            if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
+            if (X509ChainSupportsRevocationOptions())
             {
                 // Only add the ONLY_END_ENTITY if we are not just checking the trust anchor. If ONLY_END_ENTITY is
                 // specified, revocation checking will skip the trust anchor even if it is the only certificate.
@@ -536,7 +536,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     }
 
     jobject params = ctx->params;
-    if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
+    if (X509ChainSupportsRevocationOptions())
     {
         // PKIXRevocationChecker checker = validator.getRevocationChecker();
         loc[checker] = (*env)->CallObjectMethod(env, validator, g_CertPathValidatorGetRevocationChecker);

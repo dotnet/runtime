@@ -4,27 +4,33 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
+using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
     [UnsupportedOSPlatform("browser")]
     public static class ConsoleLoggerExtensions
     {
+        internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
         internal const string TrimmingRequiresUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";
 
         /// <summary>
         /// Adds a console logger named 'Console' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "AddConsoleFormatter and RegisterProviderOptions are only called with Options types which only have simple properties.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "AddConsoleFormatter and RegisterProviderOptions are only dangerous when the Options type cannot be statically analyzed, but that is not the case here. " +
             "The DynamicallyAccessedMembers annotations on them will make sure to preserve the right members from the different options objects.")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(JsonWriterOptions))]
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder)
         {
             builder.AddConfiguration();
@@ -44,8 +50,10 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
-        public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure!!)
+        public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddConsole();
             builder.Services.Configure(configure);
 
@@ -103,9 +111,11 @@ namespace Microsoft.Extensions.Logging
         public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder) =>
             builder.AddFormatterWithName(ConsoleFormatterNames.Systemd);
 
-        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure!!)
+        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddFormatterWithName(name);
             builder.Services.Configure(configure);
 
@@ -119,6 +129,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds a custom console logger formatter 'TFormatter' to be configured with options 'TOptions'.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
         public static ILoggingBuilder AddConsoleFormatter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this ILoggingBuilder builder)
             where TOptions : ConsoleFormatterOptions
@@ -138,11 +149,14 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure options 'TOptions' for custom formatter 'TFormatter'.</param>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
-        public static ILoggingBuilder AddConsoleFormatter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this ILoggingBuilder builder, Action<TOptions> configure!!)
+        public static ILoggingBuilder AddConsoleFormatter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this ILoggingBuilder builder, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
             where TFormatter : ConsoleFormatter
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddConsoleFormatter<TFormatter, TOptions>();
             builder.Services.Configure(configure);
             return builder;
@@ -154,6 +168,7 @@ namespace Microsoft.Extensions.Logging
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
     {
+        [RequiresDynamicCode(ConsoleLoggerExtensions.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(ConsoleLoggerExtensions.TrimmingRequiresUnreferencedCodeMessage)]
         public ConsoleLoggerFormatterConfigureOptions(ILoggerProviderConfiguration<ConsoleLoggerProvider> providerConfiguration) :
             base(providerConfiguration.Configuration.GetSection("FormatterOptions"))

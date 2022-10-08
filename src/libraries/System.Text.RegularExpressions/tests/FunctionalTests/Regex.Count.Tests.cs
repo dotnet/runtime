@@ -8,13 +8,23 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexCountTests
+    public partial class RegexCountTests
     {
         [Theory]
         [MemberData(nameof(Count_ReturnsExpectedCount_TestData))]
-        public async Task Count_ReturnsExpectedCount(RegexEngine engine, string pattern, string input, RegexOptions options, int expectedCount)
+        public async Task Count_ReturnsExpectedCount(RegexEngine engine, string pattern, string input, int startat, RegexOptions options, int expectedCount)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+
+            Assert.Equal(expectedCount, r.Count(input.AsSpan(), startat));
+            Assert.Equal(r.Count(input.AsSpan(), startat), r.Matches(input, startat).Count);
+
+            bool isDefaultStartAt = startat == ((options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);
+            if (!isDefaultStartAt)
+            {
+                return;
+            }
+
             Assert.Equal(expectedCount, r.Count(input));
             Assert.Equal(expectedCount, r.Count(input.AsSpan()));
             Assert.Equal(r.Count(input), r.Matches(input).Count);
@@ -44,22 +54,43 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, @"", "", RegexOptions.None, 1 };
-                yield return new object[] { engine, @"", "a", RegexOptions.None, 2 };
-                yield return new object[] { engine, @"", "ab", RegexOptions.None, 3 };
+                yield return new object[] { engine, @"", "", 0, RegexOptions.None, 1 };
+                yield return new object[] { engine, @"", "a", 0, RegexOptions.None, 2 };
+                yield return new object[] { engine, @"", "ab", 0, RegexOptions.None, 3 };
+                yield return new object[] { engine, @"", "ab", 1, RegexOptions.None, 2 };
 
-                yield return new object[] { engine, @"\w", "", RegexOptions.None, 0 };
-                yield return new object[] { engine, @"\w", "a", RegexOptions.None, 1 };
-                yield return new object[] { engine, @"\w", "ab", RegexOptions.None, 2 };
+                yield return new object[] { engine, @"\w", "", 0, RegexOptions.None, 0 };
+                yield return new object[] { engine, @"\w", "a", 0, RegexOptions.None, 1 };
+                yield return new object[] { engine, @"\w", "ab", 0, RegexOptions.None, 2 };
+                yield return new object[] { engine, @"\w", "ab", 1, RegexOptions.None, 1 };
+                yield return new object[] { engine, @"\w", "ab", 2, RegexOptions.None, 0 };
 
-                yield return new object[] { engine, @"\b\w+\b", "abc def ghi jkl", RegexOptions.None, 4 };
+                yield return new object[] { engine, @"\b\w+\b", "abc def ghi jkl", 0, RegexOptions.None, 4 };
+                yield return new object[] { engine, @"\b\w+\b", "abc def ghi jkl", 7, RegexOptions.None, 2 };
 
-                yield return new object[] { engine, @"A", "", RegexOptions.IgnoreCase, 0 };
-                yield return new object[] { engine, @"A", "a", RegexOptions.IgnoreCase, 1 };
-                yield return new object[] { engine, @"A", "aAaA", RegexOptions.IgnoreCase, 4 };
+                yield return new object[] { engine, @"A", "", 0, RegexOptions.IgnoreCase, 0 };
+                yield return new object[] { engine, @"A", "a", 0, RegexOptions.IgnoreCase, 1 };
+                yield return new object[] { engine, @"A", "aAaA", 0, RegexOptions.IgnoreCase, 4 };
 
-                yield return new object[] { engine, @".", "\n\n\n", RegexOptions.None, 0 };
-                yield return new object[] { engine, @".", "\n\n\n", RegexOptions.Singleline, 3 };
+                yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.None, 0 };
+                yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.Singleline, 3 };
+
+                yield return new object[] { engine, @"[а-я-[аeиоуыэюя]]", "спокойной ночи", 0, RegexOptions.None, 8 };
+
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Lookbehinds
+                    yield return new object[] { engine, @"(?<=abc)\w", "abcxabcy", 7, RegexOptions.None, 1 };
+
+                    // Starting anchors
+                    yield return new object[] { engine, @"\Gdef", "abcdef", 0, RegexOptions.None, 0 };
+                    yield return new object[] { engine, @"\Gdef", "abcdef", 3, RegexOptions.None, 1 };
+
+                    // RightToLeft
+                    yield return new object[] { engine, @"\b\w+\b", "abc def ghi jkl", 15, RegexOptions.RightToLeft, 4 };
+                    yield return new object[] { RegexEngine.Interpreter, @"(?<=abc)\w", "abcxabcy", 8, RegexOptions.RightToLeft, 2 };
+                    yield return new object[] { engine, @"(?<=abc)\w", "abcxabcy", 7, RegexOptions.RightToLeft, 1 };
+                }
             }
         }
 
@@ -119,7 +150,7 @@ namespace System.Text.RegularExpressions.Tests
             Stopwatch sw = Stopwatch.StartNew();
             Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input));
             Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input.AsSpan()));
-            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 30); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
 
             switch (engine)
             {
@@ -128,7 +159,7 @@ namespace System.Text.RegularExpressions.Tests
                     sw = Stopwatch.StartNew();
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input, Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input.AsSpan(), Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
-                    Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+                    Assert.InRange(sw.Elapsed.TotalSeconds, 0, 30); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
                     break;
             }
         }

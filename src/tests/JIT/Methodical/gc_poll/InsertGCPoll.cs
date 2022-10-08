@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 static class GCPollNative
 {
@@ -19,7 +20,7 @@ static class GCPollNative
     public static extern ulong NextUInt64(ulong n);
 }
 
-class InsertGCPoll
+public class InsertGCPoll
 {
     private static int PropNextInt32 => (int)GCPollNative.NextUInt32(0);
     private static long PropNextInt64 => (long)GCPollNative.NextUInt64(0);
@@ -85,7 +86,8 @@ class InsertGCPoll
         }
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

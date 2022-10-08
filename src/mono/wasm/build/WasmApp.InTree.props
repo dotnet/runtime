@@ -5,17 +5,18 @@
   <PropertyGroup>
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
+    <TrimMode>partial</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <!-- This is temporary hack for https://github.com/dotnet/runtime/issues/61294 -->
   <ItemGroup>
     <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
-    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
+    <!-- FIXME: This will exclude the diagnostics component if tracing is not on and threads are not on.  Which means that if you turn on threading, you will get diagnostics.  Is this what we want? -->
+    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(FeatureWasmPerfTracing)' != 'true' and $(FeatureWasmThreads) != 'true'"/>
     <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
   </ItemGroup>
 </Project>

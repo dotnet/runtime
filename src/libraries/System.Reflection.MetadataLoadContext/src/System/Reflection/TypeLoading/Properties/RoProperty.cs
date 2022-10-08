@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type ReflectedType => _reflectedType;
 
-        public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
+        public sealed override string Name => _lazyName ??= ComputeName();
         protected abstract string ComputeName();
         private volatile string? _lazyName;
 
@@ -51,7 +51,7 @@ namespace System.Reflection.TypeLoading
         private const PropertyAttributes PropertyAttributesSentinel = (PropertyAttributes)(-1);
         private volatile PropertyAttributes _lazyPropertyAttributes = PropertyAttributesSentinel;
 
-        public sealed override Type PropertyType => _lazyPropertyType ?? (_lazyPropertyType = ComputePropertyType());
+        public sealed override Type PropertyType => _lazyPropertyType ??= ComputePropertyType();
         protected abstract Type ComputePropertyType();
         private volatile Type? _lazyPropertyType;
 
@@ -91,7 +91,7 @@ namespace System.Reflection.TypeLoading
             return accessors;
         }
 
-        public sealed override ParameterInfo[] GetIndexParameters() => (_lazyIndexedParameters ?? (_lazyIndexedParameters = ComputeIndexParameters())).CloneArray<ParameterInfo>();
+        public sealed override ParameterInfo[] GetIndexParameters() => (_lazyIndexedParameters ??= ComputeIndexParameters()).CloneArray<ParameterInfo>();
         private RoPropertyIndexParameter[] ComputeIndexParameters()
         {
             bool useGetter = CanRead;

@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 a.Mode = CipherMode.CBC;
                 a.Padding = PaddingMode.None;
 
-                ICryptoTransform encryptor = a.CreateEncryptor();
+                using ICryptoTransform encryptor = a.CreateEncryptor();
                 Assert.True(encryptor.CanReuseTransform);
 
                 for (int i = 0; i < 4; i++)
@@ -68,10 +68,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 MemoryStream cipher1 = new MemoryStream(cipher);
                 MemoryStream cipher2 = new MemoryStream(cipher);
 
-                ICryptoTransform encryptor1 = a.CreateEncryptor();
-                ICryptoTransform encryptor2 = a.CreateEncryptor();
-                ICryptoTransform decryptor1 = a.CreateDecryptor();
-                ICryptoTransform decryptor2 = a.CreateDecryptor();
+                using ICryptoTransform encryptor1 = a.CreateEncryptor();
+                using ICryptoTransform encryptor2 = a.CreateEncryptor();
+                using ICryptoTransform decryptor1 = a.CreateDecryptor();
+                using ICryptoTransform decryptor2 = a.CreateDecryptor();
 
                 List<byte> encryptionCollector1 = new List<byte>();
                 List<byte> encryptionCollector2 = new List<byte>();
@@ -141,14 +141,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 using (ICryptoTransform encryptor = a.CreateEncryptor())
                 {
                     Assert.True(encryptor.CanTransformMultipleBlocks);
-                    byte[] cipher = encryptor.Transform(plainText, blockSizeMultipler: 2);
+                    byte[] cipher = encryptor.Transform(plainText, blockSizeMultiplier: 2);
                     Assert.Equal<byte>(expectedCipher, cipher);
                 }
 
                 using (ICryptoTransform decryptor = a.CreateDecryptor())
                 {
                     Assert.True(decryptor.CanTransformMultipleBlocks);
-                    byte[] decrypted = decryptor.Transform(expectedCipher, blockSizeMultipler: 2);
+                    byte[] decrypted = decryptor.Transform(expectedCipher, blockSizeMultiplier: 2);
                     Assert.Equal<byte>(plainText, decrypted);
                 }
             }
@@ -176,14 +176,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 using (ICryptoTransform encryptor = a.CreateEncryptor())
                 {
                     Assert.True(encryptor.CanTransformMultipleBlocks);
-                    byte[] cipher = encryptor.Transform(plainText, blockSizeMultipler: 2);
+                    byte[] cipher = encryptor.Transform(plainText, blockSizeMultiplier: 2);
                     Assert.Equal<byte>(expectedCipher, cipher);
                 }
 
                 using (ICryptoTransform decryptor = a.CreateDecryptor())
                 {
                     Assert.True(decryptor.CanTransformMultipleBlocks);
-                    byte[] decrypted = decryptor.Transform(expectedCipher, blockSizeMultipler: 2);
+                    byte[] decrypted = decryptor.Transform(expectedCipher, blockSizeMultiplier: 2);
                     Assert.Equal<byte>(plainText, decrypted);
                 }
             }

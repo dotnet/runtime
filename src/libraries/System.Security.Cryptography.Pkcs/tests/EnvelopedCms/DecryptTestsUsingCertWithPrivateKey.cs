@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        public static void DecryptSuccesfullyWithWrongKeyProducesInvalidSymmetricKey()
+        public static void DecryptSuccessfullyWithWrongKeyProducesInvalidSymmetricKey()
         {
             using (X509Certificate2 wrongRecipient = Certificates.RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4.TryGetCertificateWithPrivateKey())
             {

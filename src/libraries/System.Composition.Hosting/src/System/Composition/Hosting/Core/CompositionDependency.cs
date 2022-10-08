@@ -37,8 +37,21 @@ namespace System.Composition.Hosting.Core
         /// <param name="site">A marker used to identify the individual dependency among
         /// those on the dependent part.</param>
         /// <param name="contract">The contract required by the dependency.</param>
-        public static CompositionDependency Satisfied(CompositionContract contract!!, ExportDescriptorPromise target!!, bool isPrerequisite, object site!!)
+        public static CompositionDependency Satisfied(CompositionContract contract, ExportDescriptorPromise target, bool isPrerequisite, object site)
         {
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (target is null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
+
             return new CompositionDependency(contract, target, isPrerequisite, site);
         }
 
@@ -49,8 +62,17 @@ namespace System.Composition.Hosting.Core
         /// <param name="site">A marker used to identify the individual dependency among
         /// those on the dependent part.</param>
         /// <param name="contract">The contract required by the dependency.</param>
-        public static CompositionDependency Missing(CompositionContract contract!!, object site!!)
+        public static CompositionDependency Missing(CompositionContract contract, object site)
         {
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
+
             return new CompositionDependency(contract, site);
         }
 
@@ -62,8 +84,21 @@ namespace System.Composition.Hosting.Core
         /// those on the dependent part.</param>
         /// <param name="targets">The targets found when expecting only one.</param>
         /// <param name="contract">The contract required by the dependency.</param>
-        public static CompositionDependency Oversupplied(CompositionContract contract!!, IEnumerable<ExportDescriptorPromise> targets!!, object site!!)
+        public static CompositionDependency Oversupplied(CompositionContract contract, IEnumerable<ExportDescriptorPromise> targets, object site)
         {
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (targets is null)
+            {
+                throw new ArgumentNullException(nameof(targets));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
+
             return new CompositionDependency(contract, targets, site);
         }
 

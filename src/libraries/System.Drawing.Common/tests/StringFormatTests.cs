@@ -135,7 +135,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => format.Clone());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, StringDigitSubstitute.None, 0)]
         [InlineData(EnglishLanguageCode, StringDigitSubstitute.Traditional, EnglishLanguageCode)]

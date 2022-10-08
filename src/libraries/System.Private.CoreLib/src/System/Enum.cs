@@ -116,12 +116,24 @@ namespace System
             return GetEnumName(GetEnumInfo(enumType), ulValue);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
-            int index = FindDefinedIndex(enumInfo.Values, ulValue);
-            if (index >= 0)
+            if (enumInfo.ValuesAreSequentialFromZero)
             {
-                return enumInfo.Names[index];
+                string[] names = enumInfo.Names;
+                if (ulValue < (ulong)names.Length)
+                {
+                    return names[(uint)ulValue];
+                }
+            }
+            else
+            {
+                int index = FindDefinedIndex(enumInfo.Values, ulValue);
+                if (index >= 0)
+                {
+                    return enumInfo.Names[index];
+                }
             }
 
             return null; // return null so the caller knows to .ToString() the input
@@ -285,34 +297,79 @@ namespace System
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum =>
             GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
 
-        public static string? GetName(Type enumType!!, object value) =>
-            enumType.GetEnumName(value);
+        public static string? GetName(Type enumType, object value)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumName(value);
+        }
 
         public static string[] GetNames<TEnum>() where TEnum : struct, Enum =>
             new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
 
-        public static string[] GetNames(Type enumType!!) =>
-            enumType.GetEnumNames();
+        public static string[] GetNames(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumNames();
+        }
 
         internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            GetEnumInfo(enumType, true).Names;
+            GetEnumInfo(enumType).Names;
 
-        public static Type GetUnderlyingType(Type enumType!!) =>
-            enumType.GetEnumUnderlyingType();
+        public static Type GetUnderlyingType(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumUnderlyingType();
+        }
 
-#if !CORERT
+#if !NATIVEAOT
         public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum =>
             (TEnum[])GetValues(typeof(TEnum));
 #endif
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
-        public static Array GetValues(Type enumType!!) =>
-            enumType.GetEnumValues();
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.")]
+        public static Array GetValues(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumValues();
+        }
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <typeparam name="TEnum">An enumeration type.</typeparam>
+        /// /// <remarks>
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in <typeparamref name="TEnum" />.</returns>
+        public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
+            typeof(TEnum).GetEnumValuesAsUnderlyingType();
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration.
+        /// </summary>
+        /// <param name="enumType">An enumeration type.</param>
+        /// <remarks>
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in  <paramref name="enumType" />.</returns>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// <paramref name="enumType" /> is null.</exception>
+        /// <exception cref="T:System.ArgumentException">
+        /// <paramref name="enumType" /> is not an enumeration type.</exception>
+        public static Array GetValuesAsUnderlyingType(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumValuesAsUnderlyingType();
+        }
 
         [Intrinsic]
-        public bool HasFlag(Enum flag!!)
+        public bool HasFlag(Enum flag)
         {
+            ArgumentNullException.ThrowIfNull(flag);
+
             if (GetType() != flag.GetType() && !GetType().IsEquivalentTo(flag.GetType()))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
 
@@ -366,16 +423,21 @@ namespace System
         internal static ulong[] InternalGetValues(RuntimeType enumType)
         {
             // Get all of the values
-            return GetEnumInfo(enumType, false).Values;
+            return GetEnumInfo(enumType, getNames: false).Values;
         }
 
         public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType enumType = (RuntimeType)typeof(TEnum);
-            ulong[] ulValues = Enum.InternalGetValues(enumType);
-            ulong ulValue = Enum.ToUInt64(value);
+            EnumInfo info = GetEnumInfo(enumType, getNames: false);
+            ulong ulValue = ToUInt64(value);
+            ulong[] ulValues = info.Values;
 
-            return FindDefinedIndex(ulValues, ulValue) >= 0;
+            // If the enum's values are all sequentially numbered starting from 0, then we can
+            // just return if the requested index is in range. Otherwise, search for the value.
+            return
+                info.ValuesAreSequentialFromZero ? ulValue < (ulong)ulValues.Length :
+                FindDefinedIndex(ulValues, ulValue) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -389,12 +451,14 @@ namespace System
             int ulValuesLength = ulValues.Length;
             ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
             return ulValuesLength <= NumberOfValuesThreshold ?
-                SpanHelpers.IndexOf(ref start, ulValue, ulValuesLength) :
+                SpanHelpers.IndexOfValueType(ref Unsafe.As<ulong, long>(ref start), (long)ulValue, ulValuesLength) :
                 SpanHelpers.BinarySearch(ref start, ulValuesLength, ulValue);
         }
 
-        public static bool IsDefined(Type enumType!!, object value)
+        public static bool IsDefined(Type enumType, object value)
         {
+            ArgumentNullException.ThrowIfNull(enumType);
+
             return enumType.IsEnumDefined(value);
         }
 
@@ -515,7 +579,7 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
                 }
                 result = null;
                 return false;
@@ -992,10 +1056,12 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool StartsNumber(char c) => char.IsInRange(c, '0', '9') || c == '-' || c == '+';
+        private static bool StartsNumber(char c) => char.IsAsciiDigit(c) || c == '-' || c == '+';
 
-        public static object ToObject(Type enumType, object value!!)
+        public static object ToObject(Type enumType, object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             // Delegate rest of error checking to the other functions
             TypeCode typeCode = Convert.GetTypeCode(value);
 
@@ -1015,8 +1081,11 @@ namespace System
             };
         }
 
-        public static string Format(Type enumType, object value!!, string format!!)
+        public static string Format(Type enumType, object value, [StringSyntax(StringSyntaxAttribute.EnumFormat)] string format)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(format);
+
             RuntimeType rtType = ValidateRuntimeType(enumType);
 
             // If the value is an Enum then we need to extract the underlying value from it
@@ -1282,14 +1351,14 @@ namespace System
 
         #region IFormattable
         [Obsolete("The provider argument is not used. Use ToString(String) instead.")]
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format, IFormatProvider? provider)
         {
             return ToString(format);
         }
         #endregion
 
         #region Public Methods
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -1461,13 +1530,15 @@ namespace System
 
         #endregion
 
-        private static RuntimeType ValidateRuntimeType(Type enumType!!)
+        private static RuntimeType ValidateRuntimeType(Type enumType)
         {
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            ArgumentNullException.ThrowIfNull(enumType);
+
             if (enumType is not RuntimeType rtType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-#if CORERT
+            if (!rtType.IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+#if NATIVEAOT
             // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
             // https://github.com/dotnet/runtime/issues/7976
             if (enumType.ContainsGenericParameters)

@@ -5,6 +5,7 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
+#include "pal_utilities.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -17,6 +18,8 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
+c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
 #define DOTNET_DEFAULT_CIPHERSTRING \
     "ECDHE-ECDSA-AES256-GCM-SHA384:" \
@@ -31,7 +34,7 @@ c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
-static void EnsureLibSsl10Initialized()
+static void EnsureLibSsl10Initialized(void)
 {
     SSL_library_init();
     SSL_load_error_strings();
@@ -88,7 +91,7 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 
-static void DetectCiphersuiteConfiguration()
+static void DetectCiphersuiteConfiguration(void)
 {
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 
@@ -170,7 +173,7 @@ static void DetectCiphersuiteConfiguration()
 #endif
 }
 
-void CryptoNative_EnsureLibSslInitialized()
+void CryptoNative_EnsureLibSslInitialized(void)
 {
     CryptoNative_EnsureOpenSslInitialized();
 
@@ -189,7 +192,7 @@ void CryptoNative_EnsureLibSslInitialized()
     DetectCiphersuiteConfiguration();
 }
 
-const SSL_METHOD* CryptoNative_SslV2_3Method()
+const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
@@ -356,7 +359,18 @@ void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     ERR_clear_error();
-    return SSL_new(ctx);
+    SSL* ret = SSL_new(ctx);
+
+    if (ret != NULL)
+    {
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_ctrl(ret, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
+        }
+    }
+
+    return ret;
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
@@ -559,8 +573,26 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    const uint8_t* data = NULL;
+    long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
+    X509* cert = SSL_get1_peer_certificate(ssl);
+
+    if (len > 0 && cert != NULL)
+    {
+        OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
+
+        if (ocspResp == NULL)
+        {
+            ERR_clear_error();
+        }
+        else
+        {
+            X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
+        }
+    }
+
     // No error queue impact.
-    return SSL_get1_peer_certificate(ssl);
+    return cert;
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -623,7 +655,7 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     int retValue = 1;
     if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
@@ -645,6 +677,15 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallba
     if (mode == 0)
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+    }
+    else if (cacheSize >= 0)
+    {
+        SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
+    }
+
+    if (contextIdLength > 0 && contextId != NULL)
+    {
+        SSL_CTX_set_session_id_context(ctx, contextId, contextIdLength <= SSL_MAX_SID_CTX_LENGTH ? (unsigned int)contextIdLength : SSL_MAX_SID_CTX_LENGTH);
     }
 
     if (newSessionCb != NULL)
@@ -719,6 +760,33 @@ int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy po
     }
 
     return false;
+}
+
+static int DefaultOcspCallback(SSL* ssl, void* args)
+{
+    (void)args;
+    int ret = SSL_TLSEXT_ERR_NOACK;
+
+    if (ssl != NULL)
+    {
+        uint8_t* resp;
+        long len = SSL_get_tlsext_status_ocsp_resp(ssl, &resp);
+
+        // If we've already provided the stapled data, say so.
+        if (len > 0 && resp != NULL)
+        {
+            ret = SSL_TLSEXT_ERR_OK;
+        }
+    }
+
+    return ret;
+}
+
+void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx)
+{
+    assert(ctx != NULL);
+
+    SSL_CTX_set_tlsext_status_cb(ctx, DefaultOcspCallback);
 }
 
 int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
@@ -841,7 +909,7 @@ const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite
 #endif
 }
 
-int32_t CryptoNative_Tls13Supported()
+int32_t CryptoNative_Tls13Supported(void)
 {
     // No error queue impact.
 
@@ -1187,4 +1255,23 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
     ERR_clear_error();
 
     return ret == 1;
+}
+
+void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
+{
+    assert(ssl != NULL);
+    assert(buf != NULL);
+    assert(len > 0);
+
+    // OpenSSL's cleanup of the SSL structure will always call OPENSSL_free on
+    // the pointer we provide for the OCSP response, so we need to freshly
+    // duplicate it here, using an OpenSSL allocator.
+    size_t size = Int32ToSizeT(len);
+    void* copy = OPENSSL_malloc(size);
+    memcpy(copy, buf, size);
+
+    if (SSL_set_tlsext_status_ocsp_resp(ssl, copy, len) != 1)
+    {
+        OPENSSL_free(copy);
+    }
 }

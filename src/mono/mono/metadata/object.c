@@ -879,16 +879,16 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_ARRAY:
 				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
-				g_assert (pos < size || pos <= max_size);
+				g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-				*max_set = MAX (*max_set, pos);
+				*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
 					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-					*max_set = MAX (*max_set, pos);
+					*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 					break;
 				} else {
 					/* fall through */
@@ -1462,10 +1462,9 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 			/* Collision, build the trampoline */
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
-			int i;
 			result = imt_trampoline_builder (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
-			for (i = 0; i < imt_ir->len; ++i)
+			for (guint i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
 			g_ptr_array_free (imt_ir, TRUE);
 			return result;
@@ -1528,8 +1527,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
-				if (m_method_is_static (method))
+				if (m_method_is_static (method)) {
+					if (m_method_is_virtual (method))
+						vt_slot ++;
 					continue;
+				}
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1542,8 +1544,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
-			if (m_method_is_static (method))
+			if (m_method_is_static (method)) {
+				if (m_method_is_virtual (method))
+					vt_slot ++;
 				continue;
+			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -1596,7 +1601,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 
 			if (has_generic_virtual || has_variant_iface) {
 				/*
-				 * There might be collisions later when the the trampoline is expanded.
+				 * There might be collisions later when the trampoline is expanded.
 				 */
 				imt_collisions_bitmap |= (1 << i);
 
@@ -1815,7 +1820,7 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 				entries = next;
 			}
 
-			for (int i = 0; i < sorted->len; ++i)
+			for (guint i = 0; i < sorted->len; ++i)
 				g_free (g_ptr_array_index (sorted, i));
 			g_ptr_array_free (sorted, TRUE);
 
@@ -1911,6 +1916,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	 * address bits.  The IMT has an odd number of entries, however, so on 32 bits the
 	 * alignment will be off.  In that case we allocate 4 more bytes and skip over them.
 	 */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (gpointer) == 4 && (imt_table_bytes & 7)) {
 		g_assert ((imt_table_bytes & 7) == 4);
 		vtable_size += 4;
@@ -1918,6 +1924,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	} else {
 		alloc_offset = 0;
 	}
+MONO_RESTORE_WARNING
 
 	return (gpointer*) ((char*)m_class_alloc0 (klass, (guint)vtable_size) + alloc_offset);
 }
@@ -3302,7 +3309,7 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
  * mono_property_set_value:
  * \param prop MonoProperty to set
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param exc optional exception
  * Invokes the property's set method with the given arguments on the
  * object instance obj (or NULL for static properties).
@@ -3331,7 +3338,7 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_property_set_value_handle:
  * \param prop \c MonoProperty to set
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param error set on error
  * Invokes the property's set method with the given arguments on the
  * object instance \p obj (or NULL for static properties).
@@ -3356,7 +3363,7 @@ mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void *
  * mono_property_get_value:
  * \param prop \c MonoProperty to fetch
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param exc optional exception
  * Invokes the property's \c get method with the given arguments on the
  * object instance \p obj (or NULL for static properties).
@@ -3389,7 +3396,7 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_property_get_value_checked:
  * \param prop \c MonoProperty to fetch
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param error set on error
  * Invokes the property's \c get method with the given arguments on the
  * object instance obj (or NULL for static properties).
@@ -4645,7 +4652,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 				if (arg == NULL) {
 					result = NULL;
 				} else {
-					g_assert (arg->vtable->klass == mono_defaults.int_class);
+					g_assert (arg->vtable->klass == mono_defaults.int_class || arg->vtable->klass == mono_defaults.uint_class);
 					result = ((MonoIntPtr*)arg)->m_value;
 				}
 				break;
@@ -4840,6 +4847,20 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
+		}
+
+		if (has_byref_nullables) {
+			/*
+			 * The runtime invoke wrapper already converted byref nullables back,
+			 * and stored them in pa, we just need to copy them back to the
+			 * managed array.
+			 */
+			for (i = 0; i < params_length; i++) {
+				MonoType *t = sig->params [i];
+
+				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+					mono_span_setref (params_span, i, pa [i]);
+			}
 		}
 	}
 	goto exit;
@@ -5726,7 +5747,7 @@ mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int i
 		// are also arrays and we allocate each one of them.
 		MonoClass *element_class = m_class_get_element_class (klass);
 		g_assert (m_class_get_rank (element_class) == 1);
-		for (int i = 0; i < lengths [index]; i++) {
+		for (uintptr_t i = 0; i < lengths [index]; i++) {
 			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
 			goto_if_nok (error, exit);
 			mono_array_setref_fast (ret, i, o);
@@ -6179,7 +6200,7 @@ mono_string_new_internal (const char *text)
 	MonoString *res = NULL;
 	res = mono_string_new_checked (text, error);
 	if (!is_ok (error)) {
-		/* Mono API compatability: assert on Out of Memory errors,
+		/* Mono API compatibility: assert on Out of Memory errors,
 		 * return NULL otherwise (most likely an invalid UTF-8 byte
 		 * sequence). */
 		if (mono_error_get_error_code (error) == MONO_ERROR_OUT_OF_MEMORY)
@@ -6969,7 +6990,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 		return NULL;
 	}
 	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
-	if (len2 > written) {
+	if (len2 > GLONG_TO_ULONG(written)) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (len2);
 		memcpy (as2, as, written);
@@ -7032,7 +7053,7 @@ mono_utf16_to_utf8len (const gunichar2 *s, gsize slength, gsize *utf8_length, Mo
 		return NULL;
 	}
 	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
-	if (slength > written) {
+	if (slength > GLONG_TO_ULONG(written)) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (slength);
 		memcpy (as2, as, written);

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void BuildExpectedRequest_FromData(bool viaSpan)
         {
             Rfc3161TimestampRequest request = Rfc3161TimestampRequest.CreateFromData(
-                System.Text.Encoding.ASCII.GetBytes("Hello, world!!"),
+                "Hello, world!!"u8,
                 HashAlgorithmName.SHA256,
                 requestSignerCertificates: true);
 
@@ -488,6 +488,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 hashAlgorithmName,
                 nonce: nonce,
                 requestSignerCertificates: expectedStatus != Rfc3161RequestResponseStatus.UnexpectedCertificates);
+
+            if (!SignatureSupport.SupportsRsaSha1Signatures &&
+                expectedStatus != Rfc3161RequestResponseStatus.RequestFailed)
+            {
+                expectedStatus = Rfc3161RequestResponseStatus.DoesNotParse;
+            }
 
             ProcessResponse(expectedStatus, request, inputBytes, Padding.Length / 2);
         }

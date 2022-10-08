@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDualComObjectEmpty(), typeof(AutoDualComObjectEmpty) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknown_ComObject_TestData))]
         public void GetTypedObjectForIUnknown_ComObject_ReturnsExpected(object o, Type type)
         {
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new IInspectableComObject(), typeof(IUnknownInterface) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknownTypeUncastableComObject_TestData))]
         public void GetTypedObjectForIUnknown_UncastableComObject_ThrowsInvalidCastException(object o, Type type)
         {

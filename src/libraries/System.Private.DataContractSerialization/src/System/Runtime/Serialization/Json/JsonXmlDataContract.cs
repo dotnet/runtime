@@ -4,26 +4,31 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonXmlDataContract : JsonDataContract
     {
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonXmlDataContract(XmlDataContract traditionalXmlDataContract)
             : base(traditionalXmlDataContract)
         {
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             string xmlContent = jsonReader.ReadElementContentAsString();
 
             DataContractSerializer dataContractSerializer = new DataContractSerializer(TraditionalDataContract.UnderlyingType,
-                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             object? xmlValue;
@@ -36,18 +41,16 @@ namespace System.Runtime.Serialization.Json
             {
                 xmlValue = dataContractSerializer.ReadObject(XmlDictionaryReader.CreateTextReader(memoryStream, quotas));
             }
-            if (context != null)
-            {
-                context.AddNewObject(xmlValue);
-            }
+            context?.AddNewObject(xmlValue);
             return xmlValue;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle)!,
-                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream();
             dataContractSerializer.WriteObject(memoryStream, obj);
@@ -61,20 +64,20 @@ namespace System.Runtime.Serialization.Json
             List<Type> knownTypesList = new List<Type>();
             if (context != null)
             {
-                List<XmlQualifiedName> stableNames = new List<XmlQualifiedName>();
-                Dictionary<XmlQualifiedName, DataContract>[] entries = context.scopedKnownTypes.dataContractDictionaries;
+                List<XmlQualifiedName> xmlNames = new List<XmlQualifiedName>();
+                DataContractDictionary[] entries = context.scopedKnownTypes.dataContractDictionaries;
                 if (entries != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
-                        Dictionary<XmlQualifiedName, DataContract> entry = entries[i];
+                        DataContractDictionary entry = entries[i];
                         if (entry != null)
                         {
                             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in entry)
                             {
-                                if (!stableNames.Contains(pair.Key))
+                                if (!xmlNames.Contains(pair.Key))
                                 {
-                                    stableNames.Add(pair.Key);
+                                    xmlNames.Add(pair.Key);
                                     knownTypesList.Add(pair.Value.UnderlyingType);
                                 }
                             }

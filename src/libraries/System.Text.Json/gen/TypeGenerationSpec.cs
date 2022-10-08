@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 namespace System.Text.Json.SourceGeneration
 {
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
-    internal class TypeGenerationSpec
+    internal sealed class TypeGenerationSpec
     {
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
@@ -31,6 +31,11 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
+        /// <summary>
+        /// Method used to generate JsonTypeInfo given options instance
+        /// </summary>
+        public string CreateTypeInfoMethodName => $"Create_{TypeInfoPropertyName}";
+
         public JsonSourceGenerationMode GenerationMode { get; set; }
 
         public bool GenerateMetadata => GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
@@ -44,6 +49,7 @@ namespace System.Text.Json.SourceGeneration
         public bool ImplementsIJsonOnSerialized { get; private set; }
         public bool ImplementsIJsonOnSerializing { get; private set; }
 
+        public bool IsPolymorphic { get; private set; }
         public bool IsValueType { get; private set; }
 
         public bool CanBeNull { get; private set; }
@@ -126,7 +132,8 @@ namespace System.Text.Json.SourceGeneration
             bool implementsIJsonOnSerializing,
             bool hasTypeFactoryConverter,
             bool canContainNullableReferenceAnnotations,
-            bool hasPropertyFactoryConverters)
+            bool hasPropertyFactoryConverters,
+            bool isPolymorphic)
         {
             GenerationMode = generationMode;
             TypeRef = type.GetCompilableName();
@@ -135,6 +142,7 @@ namespace System.Text.Json.SourceGeneration
             ClassType = classType;
             IsValueType = type.IsValueType;
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
+            IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
             PropertyGenSpecList = propertyGenSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
@@ -238,6 +246,11 @@ namespace System.Text.Json.SourceGeneration
 
         private bool FastPathIsSupported()
         {
+            if (IsPolymorphic)
+            {
+                return false;
+            }
+
             if (ClassType == ClassType.Object)
             {
                 if (ExtensionDataPropertyTypeSpec != null)
@@ -262,6 +275,7 @@ namespace System.Text.Json.SourceGeneration
             switch (CollectionType)
             {
                 case CollectionType.NotApplicable:
+                case CollectionType.IAsyncEnumerableOfT:
                     return false;
                 case CollectionType.IDictionary:
                 case CollectionType.Dictionary:

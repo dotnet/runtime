@@ -8,7 +8,7 @@
 #include "env/gcenv.ee.h"
 
 // The singular interface instance. All calls in GCToEEInterface
-// will be fowarded to this interface instance.
+// will be forwarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
 
 struct StressLogMsg;

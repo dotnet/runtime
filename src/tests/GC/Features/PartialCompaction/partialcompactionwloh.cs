@@ -15,11 +15,11 @@ using System.Runtime;
 //For testing the concurrent phase of partial compaction: update references between objects
 //This test also had LOH objects and creates fragmentation in LOH
 //What the test does:
-// 1.Allocating phase: 
+// 1.Allocating phase:
 //-Allocate n regions
 //-When objects get in Gen2 release the objects used to create spaces
 //-Create refs from objects in these regions to ephemeral objects
-// 2.Steady state 
+// 2.Steady state
 //- randomly change references between objects
 //- release some of the existing objects (to create fragmentation in the existing regions)
 // Repeat from 1.
@@ -27,7 +27,7 @@ namespace PartialCompactionTest
 {
     public class PartialCompactionTest
     {
-   
+
         //Define the size buckets:
         public struct SizeBucket
         {
@@ -56,17 +56,17 @@ namespace PartialCompactionTest
         private const int BUCKET4_MIN = 10000;
         private const int BUCKETS_MAX = 80000;
         //////
-    
+
         public const int DEFAULT_ITERATIONS = 100;
         public static int countIters = DEFAULT_ITERATIONS;
         public static long timeout = 600; //seconds
         public static SizeBucket[] sizeBuckets = new SizeBucket[SIZEBUCKET_COUNT];
         public static int randomSeed;
- 
+
         public static int pointerSize = 4;  //bytes
         [ThreadStatic]
         public static Random Rand;
-       
+
         //new
         public static bool timeBased = true;
         public static int maxHeapMB = 100;  //max heap in MB
@@ -133,7 +133,7 @@ namespace PartialCompactionTest
                 Object[] o = new Object[3];
                 staticArr.Add(o);
                 weakList.Add(GCHandle.Alloc(o, GCHandleType.Weak));
-               
+
             }
             AllocatingPhase(Arr, 50);
         }
@@ -222,7 +222,7 @@ namespace PartialCompactionTest
                 }
             }
         }
-    
+
         public static void SteadyState(List<Object> Arr)
         {
             Console.WriteLine("Heap size=" + GC.GetTotalMemory(false));
@@ -244,8 +244,8 @@ namespace PartialCompactionTest
             {
                 UpdateReferences();
             }
-               
-         
+
+
 
         }
 
@@ -343,7 +343,7 @@ namespace PartialCompactionTest
            {
                runningCount+= CountReferences(Arr[i]);
             }
-            
+
             for (int i = 0; i < staticArr.Count; i++)
             {
                 runningCount += CountReferences(staticArr[i]);
@@ -351,11 +351,11 @@ namespace PartialCompactionTest
             runningCount += gcHandleArr.Count;
 
             Console.WriteLine("Pinned GCHandles " + gcHandleArr.Count);
-            
+
             return runningCount;
         }
 
-        //counts the refernces of this objects
+        //counts the references of this objects
         public static int CountReferences( Object o)
         {
             if (Visited.Contains(o))
@@ -365,7 +365,7 @@ namespace PartialCompactionTest
             else
                 Visited.Add(o);
             int count = 1;
-           
+
             Object[] oArr = o as Object[];
             if (oArr == null)
                 return count;
@@ -376,7 +376,7 @@ namespace PartialCompactionTest
                     count += CountReferences(oArr[i]);
                 }
             }
-           
+
             return count;
         }
         public static void CleanupWeakReferenceArr()
@@ -400,7 +400,7 @@ namespace PartialCompactionTest
             double pinnedCount = 0;
             double objectCount = 0;
             Object o;
-            
+
             Region r = new Region();
             regionList.Add(r);
             while (sizeCounter < regionSize)
@@ -425,7 +425,7 @@ namespace PartialCompactionTest
                 objectCount++;
                 EstimatedObjectCount ++;
                 EstimatedHeapSize += objSize;
-                
+
             }
             //Console.WriteLine("Pinned objects in region: " + pinnedCount);
            // Console.WriteLine("Allocated {0} objects per this region", objectCount);
@@ -515,9 +515,9 @@ namespace PartialCompactionTest
             {
                 //add as reference to existing objects
                 AddRefTo(o);
-                
+
             }
-          
+
             //find an empty place in array
             found = false;
             for (int i = 0; i < weakList.Count; i++)
@@ -550,9 +550,9 @@ namespace PartialCompactionTest
         {
             System.Diagnostics.Stopwatch threadStopwatch = new System.Diagnostics.Stopwatch();
             threadStopwatch.Start();
-            
 
-           
+
+
             //Steady state: objects die and others are created
 
             int iter = 0;
@@ -617,7 +617,7 @@ namespace PartialCompactionTest
 
         }
 
-       
+
 
         public static void InitializeSizeBuckets()
         {
@@ -667,7 +667,7 @@ namespace PartialCompactionTest
                     {
                         currentArgValue = args[++i];
                         regionSizeMB = Int32.Parse(currentArgValue);
-                    }             
+                    }
                     else if (String.Compare(currentArg.ToLower(), "timeout") == 0) //seconds; if 0 run forever
                     {
                         currentArgValue = args[++i];
@@ -712,7 +712,7 @@ namespace PartialCompactionTest
             else
                 Console.WriteLine("-iter " + countIters);
             Console.WriteLine("-maxHeapMB " + maxHeapMB);
-            Console.WriteLine("-regionSizeMB " + regionSizeMB);        
+            Console.WriteLine("-regionSizeMB " + regionSizeMB);
             Console.WriteLine("-randomseed " + randomSeed);
             Console.WriteLine("==============================");
             return true;
@@ -729,7 +729,7 @@ namespace PartialCompactionTest
             Console.WriteLine("-timeout <seconds> : when to stop the test, default is " + timeout);
             Console.WriteLine("-maxHeapMB <MB> : max heap size in MB to allocate, default is " + maxHeapMB);
             Console.WriteLine("-regionSizeMB <MB> : regionSize, default is " + regionSizeMB);
-     
+
             Console.WriteLine("-randomseed <seed> : random seed(for repro)");
         }
 

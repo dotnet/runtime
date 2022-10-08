@@ -582,8 +582,10 @@ namespace System
         /// <summary>
         /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         /// </summary>
-        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone!!)
+        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
         {
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
+
             // calculate the destination time zone offset
             DateTime utcDateTime = dateTimeOffset.UtcDateTime;
             TimeSpan destinationOffset = GetUtcOffsetFromUtc(utcDateTime, destinationTimeZone);
@@ -600,8 +602,10 @@ namespace System
         /// <summary>
         /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         /// </summary>
-        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone!!)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
+
             // Special case to give a way clearing the cache without exposing ClearCachedData()
             if (dateTime.Ticks == 0)
             {
@@ -624,8 +628,11 @@ namespace System
         internal static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags) =>
             ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, flags, s_cachedData);
 
-        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone!!, TimeZoneInfo destinationTimeZone!!, TimeZoneInfoOptions flags, CachedData cachedData)
+        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
         {
+            ArgumentNullException.ThrowIfNull(sourceTimeZone);
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
+
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
             {
@@ -737,8 +744,10 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as TimeZoneInfo);
 
-        public static TimeZoneInfo FromSerializedString(string source!!)
+        public static TimeZoneInfo FromSerializedString(string source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (source.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSerializedString, source), nameof(source));
@@ -766,37 +775,39 @@ namespace System
                     PopulateAllSystemTimeZones(cachedData);
                     cachedData._allSystemTimeZonesRead = true;
 
-                    List<TimeZoneInfo> list;
                     if (cachedData._systemTimeZones != null)
                     {
                         // return a collection of the cached system time zones
-                        list = new List<TimeZoneInfo>(cachedData._systemTimeZones.Values);
+                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
+                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+
+                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                        Array.Sort(array, static (x, y) =>
+                        {
+                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                        });
+
+                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                     }
                     else
                     {
-                        // return an empty collection
-                        list = new List<TimeZoneInfo>();
+                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                     }
-
-                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort(static (x, y) =>
-                    {
-                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                    });
-
-                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(list);
                 }
             }
+
             return cachedData._readOnlySystemTimeZones;
         }
 
         /// <summary>
         /// Value equality on the "adjustmentRules" array
         /// </summary>
-        public bool HasSameRules(TimeZoneInfo other!!)
+        public bool HasSameRules(TimeZoneInfo other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             // check the utcOffset and supportsDaylightSavingTime members
             if (_baseUtcOffset != other._baseUtcOffset ||
                 _supportsDaylightSavingTime != other._supportsDaylightSavingTime)
@@ -990,8 +1001,10 @@ namespace System
             }
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("Id", _id); // Do not rename (binary serialization)
             info.AddValue("DisplayName", _displayName); // Do not rename (binary serialization)
             info.AddValue("StandardName", _standardDisplayName); // Do not rename (binary serialization)
@@ -1001,8 +1014,10 @@ namespace System
             info.AddValue("SupportsDaylightSavingTime", _supportsDaylightSavingTime); // Do not rename (binary serialization)
         }
 
-        private TimeZoneInfo(SerializationInfo info!!, StreamingContext context)
+        private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
             _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
             _standardDisplayName = (string?)info.GetValue("StandardName", typeof(string)); // Do not rename (binary serialization)

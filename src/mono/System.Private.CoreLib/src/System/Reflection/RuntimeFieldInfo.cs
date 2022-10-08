@@ -32,6 +32,7 @@ using System.Diagnostics;
 
 namespace System.Reflection
 {
+    // Note that in CoreCLR, RtFieldInfo derives from RuntimeFieldInfo.
     internal abstract class RtFieldInfo : FieldInfo
     {
         internal abstract object UnsafeGetValue(object obj);
@@ -92,16 +93,16 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             bool domainInitialized = false;
             RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             if (obj.IsNull)
@@ -114,8 +115,8 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
@@ -146,15 +147,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type ResolveType();
 
-        public override Type FieldType
-        {
-            get
-            {
-                if (type == null)
-                    type = ResolveType();
-                return type;
-            }
-        }
+        public override Type FieldType => type ??= ResolveType();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type GetParentType(bool declaring);
@@ -191,6 +184,7 @@ namespace System.Reflection
         {
             return CustomAttribute.GetCustomAttributes(this, inherit);
         }
+
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
@@ -217,6 +211,7 @@ namespace System.Reflection
 
             if (!IsLiteral)
                 CheckGeneric();
+
             return GetValueInternal(obj);
         }
 
@@ -242,14 +237,20 @@ namespace System.Reflection
             }
             if (IsLiteral)
                 throw new FieldAccessException("Cannot set a constant field");
-            if (binder == null)
-                binder = Type.DefaultBinder;
+
+            binder ??= Type.DefaultBinder;
             CheckGeneric();
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                val = fieldType.CheckValue(val, binder, culture, invokeAttr);
+                ParameterCopyBackAction _ = default;
+
+                if (!ReferenceEquals(val.GetType(), fieldType))
+                {
+                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                }
             }
+
             SetValueInternal(this, obj, val);
         }
 

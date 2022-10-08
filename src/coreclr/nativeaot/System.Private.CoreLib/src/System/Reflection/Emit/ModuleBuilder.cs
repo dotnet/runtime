@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    public class ModuleBuilder : Module
+    public partial class ModuleBuilder : Module
     {
         internal ModuleBuilder()
         {
@@ -48,17 +48,7 @@ namespace System.Reflection.Emit
             return default;
         }
 
-        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
-        {
-            return default;
-        }
-
         public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] requiredReturnTypeCustomModifiers, Type[] optionalReturnTypeCustomModifiers, Type[] parameterTypes, Type[][] requiredParameterTypeCustomModifiers, Type[][] optionalParameterTypeCustomModifiers)
-        {
-            return default;
-        }
-
-        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, Type returnType, Type[] parameterTypes)
         {
             return default;
         }
@@ -69,38 +59,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return default;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineType(string name)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, int typesize)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, PackingSize packsize)
         {
             return default;
         }

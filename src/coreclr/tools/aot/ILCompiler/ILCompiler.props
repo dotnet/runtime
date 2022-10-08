@@ -57,6 +57,11 @@
       <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
+    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
+    <PackageReference Include="NETStandard.Library">
+      <Version>$(NetStandardLibraryVersion)</Version>
+    </PackageReference>
+
     <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
@@ -77,28 +82,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLine\Argument.cs" />
-    <Compile Include="..\..\Common\CommandLine\Argument_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\..\Common\CommandLine\Enumerable.cs" />
-    <Compile Include="..\..\Common\CommandLine\HelpTextGenerator.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -120,16 +109,18 @@
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
+    <!-- This will be provided when using the liveBuild, and unset otherwise. -->
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(JitInterfaceLibraryName)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
       />
 
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"

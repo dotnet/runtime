@@ -443,7 +443,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(2)]
         [InlineData(3)]
-        public void InStr_WhenStartGreatherThanLength_ReturnsZero(int start)
+        public void InStr_WhenStartGreaterThanLength_ReturnsZero(int start)
         {
             Assert.Equal(0, Strings.InStr(start, "a", "a"));
         }
@@ -496,7 +496,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(2)]
         [InlineData(3)]
-        public void InStrRev_WhenStartGreatherThanLength_ReturnsZero(int start)
+        public void InStrRev_WhenStartGreaterThanLength_ReturnsZero(int start)
         {
             Assert.Equal(0, Strings.InStrRev("a", "a", start));
         }

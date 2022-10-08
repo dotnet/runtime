@@ -19,8 +19,7 @@ namespace System.Runtime.InteropServices.Tests
             GetNativeVariantForObject_ValidObject_Success(primitive, expectedVarType, expectedValue, primitive);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetNativeVariantForObject_TypeMissing_Success()
         {
             // This cannot be in the test data as XUnit uses MethodInfo.Invoke to call test methods and
@@ -106,9 +105,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { Color.FromArgb(10), VarEnum.VT_UI4, (IntPtr)655360, (uint)655360 };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();
@@ -138,10 +136,9 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData("")]
         [InlineData("99")]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariantForObject_String_Success(string obj)
         {
             var v = new Variant();
@@ -170,9 +167,8 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(3.14)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public unsafe void GetNativeVariantForObject_Double_Success(double obj)
         {
             var v = new Variant();
@@ -194,9 +190,8 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(3.14f)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public unsafe void GetNativeVariantForObject_Float_Success(float obj)
         {
             var v = new Variant();
@@ -226,8 +221,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetNativeVariantForObject(1, IntPtr.Zero));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetNativeVariantForObject_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pDstNativeVariant", () => Marshal.GetNativeVariantForObject(new object(), IntPtr.Zero));
@@ -240,17 +234,15 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new GenericStruct<string>() };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariantForObject_GenericObject_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariantForObject_GenericObject_ThrowsArgumentException(object obj)
         {
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.GetNativeVariantForObject(obj, (IntPtr)1));
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.GetNativeVariantForObject<object>(obj, (IntPtr)1));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetNativeVariant_InvalidArray_ThrowsSafeArrayTypeMismatchException()
         {
             var v = new Variant();
@@ -272,9 +264,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new VariantWrapper[] { new VariantWrapper(null) } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariant_VariantWrapper_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariant_VariantWrapper_ThrowsArgumentException(object obj)
         {
             var v = new Variant();
@@ -299,9 +290,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new FakeCriticalHandle[] { new FakeCriticalHandle() } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariant_HandleObject_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariant_HandleObject_ThrowsArgumentException(object obj)
         {
             var v = new Variant();
@@ -317,13 +307,11 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public static void GetNativeVariantForObject_CantCastToObject_ThrowsInvalidCastException()
         {
             // While GetNativeVariantForObject supports taking chars, GetObjectForNativeVariant will
-            // never return a char. The internal type is ushort, as mentioned above. This behavior
-            // is the same on ProjectN and Desktop CLR.
+            // never return a char. The internal type is ushort, as mentioned above.
             var v = new Variant();
             IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
             try

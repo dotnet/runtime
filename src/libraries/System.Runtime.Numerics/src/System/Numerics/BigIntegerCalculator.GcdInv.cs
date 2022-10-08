@@ -184,11 +184,17 @@ namespace System.Numerics
                 // Euclid's step
                 Reduce(left, right);
 
-                ulong x = ((ulong)right[1] << 32) | right[0];
-                ulong y = ((ulong)left[1] << 32) | left[0];
+                ulong x = right[0];
+                ulong y = left[0];
+
+                if (right.Length > 1)
+                {
+                    x |= (ulong)right[1] << 32;
+                    y |= (ulong)left[1] << 32;
+                }
 
                 left = left.Slice(0, Overwrite(left, Gcd(x, y)));
-                Overwrite(right, 0U);
+                right.Clear();
             }
 
             left.CopyTo(result);
@@ -210,20 +216,6 @@ namespace System.Numerics
             buffer[1] = hi;
             buffer[0] = lo;
             return hi != 0 ? 2 : lo != 0 ? 1 : 0;
-        }
-
-        private static int Overwrite(Span<uint> bits, uint value)
-        {
-            Debug.Assert(bits.Length >= 1);
-
-            if (bits.Length > 1)
-            {
-                // Ensure leading zeros in little-endian
-                bits.Slice(1).Clear();
-            }
-
-            bits[0] = value;
-            return value != 0 ? 1 : 0;
         }
 
         private static void ExtractDigits(ReadOnlySpan<uint> xBuffer,

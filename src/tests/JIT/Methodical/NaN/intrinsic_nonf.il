@@ -20,9 +20,9 @@
 
 .file alignment 512
 
-.namespace JitTest
+.namespace JitTest_intrinsic_nonf_NaN_il
 {
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -233,7 +233,7 @@
       IL_00c0:  ldarg.0
       IL_00c1:  ldarg.1
       IL_00c2:  ldloc.0
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -342,7 +342,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -451,7 +451,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -560,7 +560,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -669,7 +669,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -778,7 +778,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -887,7 +887,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -996,7 +996,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1105,7 +1105,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1214,7 +1214,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1323,7 +1323,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1432,7 +1432,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1542,7 +1542,7 @@
       IL_00c1:  ldloc.0
       IL_00c2:  ldarg.0
       IL_00c3:  ldarg.1
-      IL_00c4:  call       void JitTest.Test::Fail(string,
+      IL_00c4:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1651,7 +1651,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1760,7 +1760,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1869,7 +1869,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -1978,7 +1978,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -2087,7 +2087,7 @@
       IL_00c0:  ldloc.0
       IL_00c1:  ldarg.0
       IL_00c2:  ldarg.1
-      IL_00c3:  call       void JitTest.Test::Fail(string,
+      IL_00c3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail(string,
                                                    float64,
                                                    float64,
                                                    float64)
@@ -2218,7 +2218,7 @@
       IL_00e6:  ldarg.1
       IL_00e7:  ldarg.2
       IL_00e8:  ldloc.0
-      IL_00e9:  call       void JitTest.Test::Fail2(string,
+      IL_00e9:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail2(string,
                                                     float64,
                                                     float64,
                                                     float64,
@@ -2350,7 +2350,7 @@
       IL_00e6:  ldarg.1
       IL_00e7:  ldarg.2
       IL_00e8:  ldloc.0
-      IL_00e9:  call       void JitTest.Test::Fail2(string,
+      IL_00e9:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail2(string,
                                                     float64,
                                                     float64,
                                                     float64,
@@ -2482,7 +2482,7 @@
       IL_00e6:  ldarg.1
       IL_00e7:  ldarg.2
       IL_00e8:  ldloc.0
-      IL_00e9:  call       void JitTest.Test::Fail2(string,
+      IL_00e9:  call       void JitTest_intrinsic_nonf_NaN_il.Test::Fail2(string,
                                                     float64,
                                                     float64,
                                                     float64,
@@ -2490,7 +2490,7 @@
       IL_00ee:  ret
     } // end of method Test::TestAtan2
 
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -2504,376 +2504,376 @@
       {
         IL_0000:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0009:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0012:  call       void JitTest.Test::TestAbs(float64,
+        IL_0012:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAbs(float64,
                                                         float64)
         IL_0017:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0020:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0029:  call       void JitTest.Test::TestAbs(float64,
+        IL_0029:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAbs(float64,
                                                         float64)
         IL_002e:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0037:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0040:  call       void JitTest.Test::TestAbs(float64,
+        IL_0040:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAbs(float64,
                                                         float64)
         IL_0045:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_004e:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0057:  call       void JitTest.Test::TestAcos(float64,
+        IL_0057:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAcos(float64,
                                                          float64)
         IL_005c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0065:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_006e:  call       void JitTest.Test::TestAcos(float64,
+        IL_006e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAcos(float64,
                                                          float64)
         IL_0073:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_007c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0085:  call       void JitTest.Test::TestAcos(float64,
+        IL_0085:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAcos(float64,
                                                          float64)
         IL_008a:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0093:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_009c:  call       void JitTest.Test::TestAsin(float64,
+        IL_009c:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAsin(float64,
                                                          float64)
         IL_00a1:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_00aa:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_00b3:  call       void JitTest.Test::TestAsin(float64,
+        IL_00b3:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAsin(float64,
                                                          float64)
         IL_00b8:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_00c1:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_00ca:  call       void JitTest.Test::TestAsin(float64,
+        IL_00ca:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAsin(float64,
                                                          float64)
         IL_00cf:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_00d8:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_00e1:  call       void JitTest.Test::TestAtan(float64,
+        IL_00e1:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan(float64,
                                                          float64)
         IL_00e6:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_00ef:  ldc.r8     -1.5707963267948966
-        IL_00f8:  call       void JitTest.Test::TestAtan(float64,
+        IL_00f8:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan(float64,
                                                          float64)
         IL_00fd:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0106:  ldc.r8     1.5707963267948966
-        IL_010f:  call       void JitTest.Test::TestAtan(float64,
+        IL_010f:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan(float64,
                                                          float64)
         IL_0114:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_011d:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0126:  call       void JitTest.Test::TestCeiling(float64,
+        IL_0126:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCeiling(float64,
                                                             float64)
         IL_012b:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0134:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_013d:  call       void JitTest.Test::TestCeiling(float64,
+        IL_013d:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCeiling(float64,
                                                             float64)
         IL_0142:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_014b:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0154:  call       void JitTest.Test::TestCeiling(float64,
+        IL_0154:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCeiling(float64,
                                                             float64)
         IL_0159:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0162:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_016b:  call       void JitTest.Test::TestCos(float64,
+        IL_016b:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCos(float64,
                                                         float64)
         IL_0170:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0179:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0182:  call       void JitTest.Test::TestCos(float64,
+        IL_0182:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCos(float64,
                                                         float64)
         IL_0187:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0190:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0199:  call       void JitTest.Test::TestCos(float64,
+        IL_0199:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCos(float64,
                                                         float64)
         IL_019e:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_01a7:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_01b0:  call       void JitTest.Test::TestCosh(float64,
+        IL_01b0:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCosh(float64,
                                                          float64)
         IL_01b5:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_01be:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_01c7:  call       void JitTest.Test::TestCosh(float64,
+        IL_01c7:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCosh(float64,
                                                          float64)
         IL_01cc:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_01d5:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_01de:  call       void JitTest.Test::TestCosh(float64,
+        IL_01de:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestCosh(float64,
                                                          float64)
         IL_01e3:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_01ec:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_01f5:  call       void JitTest.Test::TestExp(float64,
+        IL_01f5:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestExp(float64,
                                                         float64)
         IL_01fa:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0203:  ldc.r8     0.
-        IL_020c:  call       void JitTest.Test::TestExp(float64,
+        IL_020c:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestExp(float64,
                                                         float64)
         IL_0211:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_021a:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0223:  call       void JitTest.Test::TestExp(float64,
+        IL_0223:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestExp(float64,
                                                         float64)
         IL_0228:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0231:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_023a:  call       void JitTest.Test::TestFloor(float64,
+        IL_023a:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestFloor(float64,
                                                           float64)
         IL_023f:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0248:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_0251:  call       void JitTest.Test::TestFloor(float64,
+        IL_0251:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestFloor(float64,
                                                           float64)
         IL_0256:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_025f:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0268:  call       void JitTest.Test::TestFloor(float64,
+        IL_0268:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestFloor(float64,
                                                           float64)
         IL_026d:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0276:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_027f:  call       void JitTest.Test::TestLog(float64,
+        IL_027f:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog(float64,
                                                         float64)
         IL_0284:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_028d:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0296:  call       void JitTest.Test::TestLog(float64,
+        IL_0296:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog(float64,
                                                         float64)
         IL_029b:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_02a4:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_02ad:  call       void JitTest.Test::TestLog(float64,
+        IL_02ad:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog(float64,
                                                         float64)
         IL_02b2:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_02bb:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_02c4:  call       void JitTest.Test::TestLog10(float64,
+        IL_02c4:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog10(float64,
                                                           float64)
         IL_02c9:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_02d2:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_02db:  call       void JitTest.Test::TestLog10(float64,
+        IL_02db:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog10(float64,
                                                           float64)
         IL_02e0:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_02e9:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_02f2:  call       void JitTest.Test::TestLog10(float64,
+        IL_02f2:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog10(float64,
                                                           float64)
         IL_02f7:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0300:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0309:  call       void JitTest.Test::TestRound(float64,
+        IL_0309:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestRound(float64,
                                                           float64)
         IL_030e:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0317:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_0320:  call       void JitTest.Test::TestRound(float64,
+        IL_0320:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestRound(float64,
                                                           float64)
         IL_0325:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_032e:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0337:  call       void JitTest.Test::TestRound(float64,
+        IL_0337:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestRound(float64,
                                                           float64)
         IL_033c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0345:  ldc.r8     -1.
-        IL_034e:  call       void JitTest.Test::TestSign(float64,
+        IL_034e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSign(float64,
                                                          float64)
         IL_0353:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_035c:  ldc.r8     1.
-        IL_0365:  call       void JitTest.Test::TestSign(float64,
+        IL_0365:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSign(float64,
                                                          float64)
         IL_036a:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0373:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_037c:  call       void JitTest.Test::TestSin(float64,
+        IL_037c:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSin(float64,
                                                         float64)
         IL_0381:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_038a:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0393:  call       void JitTest.Test::TestSin(float64,
+        IL_0393:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSin(float64,
                                                         float64)
         IL_0398:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_03a1:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_03aa:  call       void JitTest.Test::TestSin(float64,
+        IL_03aa:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSin(float64,
                                                         float64)
         IL_03af:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_03b8:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_03c1:  call       void JitTest.Test::TestSinh(float64,
+        IL_03c1:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSinh(float64,
                                                          float64)
         IL_03c6:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_03cf:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_03d8:  call       void JitTest.Test::TestSinh(float64,
+        IL_03d8:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSinh(float64,
                                                          float64)
         IL_03dd:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_03e6:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_03ef:  call       void JitTest.Test::TestSinh(float64,
+        IL_03ef:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSinh(float64,
                                                          float64)
         IL_03f4:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_03fd:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0406:  call       void JitTest.Test::TestSqrt(float64,
+        IL_0406:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSqrt(float64,
                                                          float64)
         IL_040b:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0414:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_041d:  call       void JitTest.Test::TestSqrt(float64,
+        IL_041d:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSqrt(float64,
                                                          float64)
         IL_0422:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_042b:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0434:  call       void JitTest.Test::TestSqrt(float64,
+        IL_0434:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestSqrt(float64,
                                                          float64)
         IL_0439:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0442:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_044b:  call       void JitTest.Test::TestTan(float64,
+        IL_044b:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTan(float64,
                                                         float64)
         IL_0450:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0459:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0462:  call       void JitTest.Test::TestTan(float64,
+        IL_0462:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTan(float64,
                                                         float64)
         IL_0467:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0470:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0479:  call       void JitTest.Test::TestTan(float64,
+        IL_0479:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTan(float64,
                                                         float64)
         IL_047e:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0487:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_0490:  call       void JitTest.Test::TestTanh(float64,
+        IL_0490:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTanh(float64,
                                                          float64)
         IL_0495:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_049e:  ldc.r8     -1.
-        IL_04a7:  call       void JitTest.Test::TestTanh(float64,
+        IL_04a7:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTanh(float64,
                                                          float64)
         IL_04ac:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_04b5:  ldc.r8     1.
-        IL_04be:  call       void JitTest.Test::TestTanh(float64,
+        IL_04be:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestTanh(float64,
                                                          float64)
         IL_04c3:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_04cc:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_04d5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_04de:  call       void JitTest.Test::TestLog2(float64,
+        IL_04de:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_04e3:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_04ec:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_04f5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_04fe:  call       void JitTest.Test::TestLog2(float64,
+        IL_04fe:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_0503:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_050c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0515:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_051e:  call       void JitTest.Test::TestLog2(float64,
+        IL_051e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_0523:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_052c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0535:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_053e:  call       void JitTest.Test::TestLog2(float64,
+        IL_053e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_0543:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_054c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0555:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_055e:  call       void JitTest.Test::TestLog2(float64,
+        IL_055e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_0563:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_056c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0575:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_057e:  call       void JitTest.Test::TestLog2(float64,
+        IL_057e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_0583:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_058c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0595:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_059e:  call       void JitTest.Test::TestLog2(float64,
+        IL_059e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_05a3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_05ac:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_05b5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_05be:  call       void JitTest.Test::TestLog2(float64,
+        IL_05be:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_05c3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_05cc:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_05d5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_05de:  call       void JitTest.Test::TestLog2(float64,
+        IL_05de:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestLog2(float64,
                                                          float64,
                                                          float64)
         IL_05e3:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_05ec:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_05f5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_05fe:  call       void JitTest.Test::TestPow(float64,
+        IL_05fe:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0603:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_060c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0615:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_061e:  call       void JitTest.Test::TestPow(float64,
+        IL_061e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0623:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_062c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0635:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_063e:  call       void JitTest.Test::TestPow(float64,
+        IL_063e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0643:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_064c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0655:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_065e:  call       void JitTest.Test::TestPow(float64,
+        IL_065e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0663:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_066c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0675:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_067e:  call       void JitTest.Test::TestPow(float64,
+        IL_067e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0683:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_068c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0695:  ldc.r8     0.
-        IL_069e:  call       void JitTest.Test::TestPow(float64,
+        IL_069e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_06a3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_06ac:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_06b5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_06be:  call       void JitTest.Test::TestPow(float64,
+        IL_06be:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_06c3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_06cc:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_06d5:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_06de:  call       void JitTest.Test::TestPow(float64,
+        IL_06de:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_06e3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_06ec:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_06f5:  ldc.r8     0.
-        IL_06fe:  call       void JitTest.Test::TestPow(float64,
+        IL_06fe:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestPow(float64,
                                                         float64,
                                                         float64)
         IL_0703:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_070c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0715:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_071e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_071e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0723:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_072c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0735:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_073e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_073e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0743:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_074c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0755:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_075e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_075e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0763:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_076c:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_0775:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_077e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_077e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0783:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_078c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_0795:  ldc.r8     0.78539816339744828
-        IL_079e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_079e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_07a3:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_07ac:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_07b5:  ldc.r8     2.3561944901923448
-        IL_07be:  call       void JitTest.Test::TestAtan2(float64,
+        IL_07be:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_07c3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_07cc:  ldc.r8     (FF FF FF FF FF FF FF 7F)
         IL_07d5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
-        IL_07de:  call       void JitTest.Test::TestAtan2(float64,
+        IL_07de:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_07e3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_07ec:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_07f5:  ldc.r8     -0.78539816339744828
-        IL_07fe:  call       void JitTest.Test::TestAtan2(float64,
+        IL_07fe:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0803:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_080c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_0815:  ldc.r8     -2.3561944901923448
-        IL_081e:  call       void JitTest.Test::TestAtan2(float64,
+        IL_081e:  call       void JitTest_intrinsic_nonf_NaN_il.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0823:  leave.s    IL_0840
@@ -2913,5 +2913,5 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_intrinsic_nonf_NaN_il
 

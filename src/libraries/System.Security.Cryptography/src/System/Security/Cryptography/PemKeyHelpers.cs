@@ -10,18 +10,18 @@ namespace System.Security.Cryptography
     internal static class PemKeyHelpers
     {
         public delegate bool TryExportKeyAction<T>(T arg, Span<byte> destination, out int bytesWritten);
-        public delegate bool TryExportEncryptedKeyAction<T>(
+        public delegate bool TryExportEncryptedKeyAction<T, TPassword>(
             T arg,
-            ReadOnlySpan<char> password,
+            ReadOnlySpan<TPassword> password,
             PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten);
 
-        public static unsafe bool TryExportToEncryptedPem<T>(
+        public static unsafe bool TryExportToEncryptedPem<T, TPassword>(
             T arg,
-            ReadOnlySpan<char> password,
+            ReadOnlySpan<TPassword> password,
             PbeParameters pbeParameters,
-            TryExportEncryptedKeyAction<T> exporter,
+            TryExportEncryptedKeyAction<T, TPassword> exporter,
             Span<char> destination,
             out int charsWritten)
         {
@@ -88,23 +88,6 @@ namespace System.Security.Cryptography
                     bufferSize = checked(bufferSize * 2);
                 }
             }
-        }
-
-        internal static string CreatePemFromData(string label, ReadOnlyMemory<byte> data)
-        {
-            int pemSize = PemEncoding.GetEncodedSize(label.Length, data.Length);
-
-            return string.Create(pemSize, (label, data), static (destination, args) =>
-            {
-                (string label, ReadOnlyMemory<byte> data) = args;
-
-                if (!PemEncoding.TryWrite(label, data.Span, destination, out int charsWritten) ||
-                    charsWritten != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
         }
 
         public delegate void ImportKeyAction(ReadOnlySpan<byte> source, out int bytesRead);

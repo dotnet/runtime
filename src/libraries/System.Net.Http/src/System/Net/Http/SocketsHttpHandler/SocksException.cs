@@ -5,7 +5,7 @@ using System.IO;
 
 namespace System.Net.Http
 {
-    internal class SocksException : IOException
+    internal sealed class SocksException : IOException
     {
         public SocksException(string message) : base(message) { }
 

@@ -360,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %d\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %Iu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -1179,7 +1179,9 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
                             &nameLen, &flags, &dwCPlusFlags, &pValue, &cbValue);
     if (FAILED(hr)) Error("GetParamProps failed.", hr);
 
+#ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
+#endif
 
     char sFlags[STRING_BUFFER_LEN];
     sFlags[0] = 0;
@@ -1379,7 +1381,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1451,7 +1453,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -1939,7 +1941,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
 
     VWrite("%s\tCustomAttributeName: %ls", preFix, rcName);
     if (pSig && pMethName)
-        VWrite(" :: %S", qSigName.Ptr());
+        VWrite(" :: %S", (LPWSTR)qSigName.Ptr());
 
     // Keep track of coff overhead.
     if (!wcscmp(W("__DecoratedName"), rcName))
@@ -2039,7 +2041,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
                 case ELEMENT_TYPE_U8:
                     CA.GetU8(&u8);
                     uI64 = u8;
-                    VWrite("%#lx", uI64);
+                    VWrite("%#I64x", uI64);
                     break;
                 case ELEMENT_TYPE_R4:
                     dblVal = CA.GetR4();
@@ -2171,7 +2173,7 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
 
 LPWSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen)
 {
-    StringFromGUID2(inGuid, guidString, bufLen);
+    GuidToLPWSTR(inGuid, guidString, bufLen);
     return guidString;
 } // LPWSTR MDInfo::GUIDAsString()
 
@@ -2527,7 +2529,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
 {
     ULONG       cbCur = 0;
     ULONG       cb;
-    // 428793: Prefix complained correctly about unitialized data.
+    // 428793: Prefix complained correctly about uninitialized data.
     ULONG       ulData = (ULONG) IMAGE_CEE_CS_CALLCONV_MAX;
     ULONG       ulArgs;
     HRESULT     hr = NOERROR;
@@ -2606,7 +2608,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
         {
             ULONG       ulDataTemp;
 
-            // Handle the sentinal for varargs because it isn't counted in the args.
+            // Handle the sentinel for varargs because it isn't counted in the args.
             CorSigUncompressData(&pbSigBlob[cbCur], &ulDataTemp);
             ++i;
 
@@ -2950,7 +2952,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
-
+#ifdef FEATURE_COMINTEROP
 HRESULT _FillVariant(
     BYTE        bCPlusTypeFlag,
     const void  *pValue,
@@ -3043,6 +3045,7 @@ HRESULT _FillVariant(
 
     return hr;
 } // HRESULT _FillVariant()
+#endif // FEATURE_COMINTEROP
 
 void MDInfo::DisplayAssembly()
 {

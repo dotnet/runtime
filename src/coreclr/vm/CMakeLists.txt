@@ -82,7 +82,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     genericdict.cpp
     generics.cpp
     hash.cpp
-    hillclimbing.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
     ilstubresolver.cpp
@@ -107,6 +106,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     pgo.cpp
     precode.cpp
     prestub.cpp
+    readytorunstandalonemethodmetadata.cpp
     rejit.cpp
     sigformat.cpp
     siginfo.cpp
@@ -115,7 +115,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stublink.cpp
     stubmgr.cpp
     syncblk.cpp
-    threadpoolrequest.cpp
     threads.cpp
     threadstatics.cpp
     tieredcompilation.cpp
@@ -129,7 +128,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     vars.cpp
     versionresilienthashcode.cpp
     virtualcallstub.cpp
-    win32threadpool.cpp
     zapsig.cpp
 )
 
@@ -179,7 +177,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     gcheaputilities.h
     generics.h
     hash.h
-    hillclimbing.h
     ilinstrumentation.h
     ilstubcache.h
     ilstubresolver.h
@@ -221,7 +218,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     stubmgr.h
     syncblk.h
     syncblk.inl
-    threadpoolrequest.h
     threads.h
     threads.inl
     threadstatics.h
@@ -238,7 +234,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     vars.hpp
     versionresilienthashcode.h
     virtualcallstub.h
-    win32threadpool.h
     zapsig.h
 )
 
@@ -318,7 +313,6 @@ set(VM_SOURCES_WKS
     dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
-    eemessagebox.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
@@ -326,6 +320,7 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
+    frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
@@ -334,7 +329,6 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
-    ibclogger.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
@@ -348,7 +342,6 @@ set(VM_SOURCES_WKS
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
-    nativeoverlapped.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
     objectlist.cpp
@@ -366,7 +359,6 @@ set(VM_SOURCES_WKS
     runtimehandles.cpp
     safehandle.cpp
     simplerwlock.cpp
-    sourceline.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
     stubcache.cpp
@@ -421,7 +413,6 @@ set(VM_HEADERS_WKS
     dllimportcallback.h
     eeconfig.h
     eecontract.h
-    eemessagebox.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
@@ -434,11 +425,11 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
+    frozenobjectheap.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    ibclogger.h
     ilmarshalers.h
     interopconverter.h
     interoputil.h
@@ -454,8 +445,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    nativeoverlapped.h
-    nativelibrarynative.h
     objectlist.h
     olevariant.h
     pendingload.h
@@ -469,7 +458,6 @@ set(VM_HEADERS_WKS
     reflectioninvocation.h
     runtimehandles.h
     simplerwlock.hpp
-    sourceline.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h
@@ -762,6 +750,14 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
+    elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmhelpers.S
+            ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
+            ${ARCH_SOURCES_DIR}/crthelpers.S
+            ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
+        )
     endif()
 
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -835,7 +831,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -861,9 +857,24 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
 
     if(CLR_CMAKE_HOST_UNIX)
         list(APPEND VM_SOURCES_WKS_ARCH
-            ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
+            ${ARCH_SOURCES_DIR}/singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/stubs.cpp
+        exceptionhandling.cpp
+    )
+
+    set(VM_HEADERS_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/virtualcallstubcpu.hpp
+        exceptionhandling.h
+    )
+
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        gcinfodecoder.cpp
+    )
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)

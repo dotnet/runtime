@@ -43,7 +43,6 @@ public:
     static FCDECL1(VOID,SetExitCode,INT32 exitcode);
     static FCDECL0(INT32, GetExitCode);
 
-    static FCDECL0(Object*, GetCommandLineArgs);
     static FCDECL1(VOID, FailFast, StringObject* refMessageUNSAFE);
     static FCDECL2(VOID, FailFastWithExitCode, StringObject* refMessageUNSAFE, UINT exitCode);
     static FCDECL2(VOID, FailFastWithException, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE);

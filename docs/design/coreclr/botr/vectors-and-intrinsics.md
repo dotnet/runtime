@@ -177,7 +177,7 @@ Code will be compiled using the optimistic instruction set to drive compilation,
 -  Any use of a platform intrinsic in the codebase SHOULD be wrapped with a call to the associated IsSupported property. This wrapping may be done within the same function that uses the hardware intrinsic, but this is not required as long as the programmer can control all entrypoints to a function that uses the hardware intrinsic.
 -  If an application developer is highly concerned about startup performance, developers should avoid use intrinsics beyond Sse42, or should use Crossgen with an updated baseline instruction set support.
 
-### Crossgen2 ajustment to rules for System.Private.CoreLib.dll
+### Crossgen2 adjustment to rules for System.Private.CoreLib.dll
 Since System.Private.CoreLib.dll is known to be code reviewed with the code review rules as written above for crossgen1 with System.Private.CoreLib.dll, it is possible to relax rule "Code which attempts to use instruction sets outside of the optimistic set will generate code that will not be used on machines with support for the instruction set." What this will do is allow the generation of non-optimal code for these situations, but through the magic of code review, the generated logic will still work correctly.
 
 

@@ -244,7 +244,7 @@ namespace Dynamo {
                         ChkRandomValues[ ChkRandomNum++ ] = Value;
                     break;
                 default:
-                    Console.WriteLine( "Test error has occured: Unknown Type - {0} given", Type );
+                    Console.WriteLine( "Test error has occurred: Unknown Type - {0} given", Type );
                 break;
             }
         }

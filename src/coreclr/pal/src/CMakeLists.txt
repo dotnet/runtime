@@ -52,10 +52,14 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
+elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+  set(PAL_ARCH_SOURCES_DIR riscv64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
+elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
+  set(PAL_ARCH_SOURCES_DIR ppc64le)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -162,7 +166,6 @@ set(SOURCES
   misc/fmtmessage.cpp
   misc/jitsupport.cpp
   misc/miscpalapi.cpp
-  misc/msgbox.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp

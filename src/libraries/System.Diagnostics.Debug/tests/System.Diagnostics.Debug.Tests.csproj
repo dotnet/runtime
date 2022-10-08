@@ -1,17 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
-    <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
-    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <!-- Some tests need types like System.Diagnostics.DebugProvider which are only exposed from System.Private.CoreLib -->
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
+    <DefaultReferenceExclusion Include="System.Collections" />
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugTests.cs" />

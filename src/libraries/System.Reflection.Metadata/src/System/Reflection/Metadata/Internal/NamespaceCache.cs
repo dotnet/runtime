@@ -178,10 +178,7 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(data.Namespaces!.Count == 0);
                     data.MergeInto(existingRecord);
 
-                    if (remaps == null)
-                    {
-                        remaps = new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
-                    }
+                    remaps ??= new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
                     remaps.Add(new KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>(group.Key, existingRecord));
                 }
                 else
@@ -211,12 +208,12 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(realChild.HasFullName);
 
             int numberOfSegments = 0;
-            foreach (char c in fullName)
+            ReadOnlySpan<char> span = fullName.AsSpan();
+            int dotPos;
+            while ((dotPos = span.IndexOf('.')) >= 0)
             {
-                if (c == '.')
-                {
-                    numberOfSegments++;
-                }
+                span = span.Slice(dotPos + 1);
+                numberOfSegments++;
             }
 
             StringHandle simpleName = GetSimpleName(realChild, numberOfSegments);

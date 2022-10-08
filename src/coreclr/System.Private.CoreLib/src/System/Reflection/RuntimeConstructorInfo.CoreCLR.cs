@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -28,19 +29,29 @@ namespace System.Reflection
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private InvocationFlags m_invocationFlags;
+        private ConstructorInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = m_invocationFlags;
+                InvocationFlags flags = Invoker._invocationFlags;
                 if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
+                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private ConstructorInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_invoker ??= new ConstructorInvoker(this);
+                return m_invoker;
             }
         }
         #endregion
@@ -62,9 +73,10 @@ namespace System.Reflection
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
 
         internal override bool CacheEquals(object? o) =>
-            o is RuntimeConstructorInfo m && m.m_handle == m_handle;
+            o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType);
 
-        private Signature Signature
+        internal Signature Signature
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -84,6 +96,7 @@ namespace System.Reflection
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
         internal BindingFlags BindingFlags => m_bindingFlags;
+
         #endregion
 
         #region Object Overrides
@@ -107,6 +120,13 @@ namespace System.Reflection
 
             return m_toString;
         }
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider
@@ -115,16 +135,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -186,7 +210,7 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
-        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+        internal RuntimeType[] ArgumentTypes => Signature.Arguments;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
             Justification = "This ConstructorInfo instance represents the static constructor itself, so if this object was created, the static constructor exists.")]
@@ -203,20 +227,6 @@ namespace System.Reflection
             {
                 RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(null, in arguments, Signature, true, wrapExceptions)!;
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -11,6 +12,12 @@ namespace System.Text.Json
     {
         // If the exception source is this value, the serializer will re-throw as JsonException.
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
+
+        [DoesNotReturn]
+        public static void ThrowArgumentNullException(string parameterName)
+        {
+            throw new ArgumentNullException(parameterName);
+        }
 
         [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
@@ -29,6 +36,18 @@ namespace System.Text.Json
             throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
         }
 
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_ArrayIndexNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArrayIndexNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_ArrayTooSmall(string paramName)
+        {
+            throw new ArgumentException(SR.ArrayTooSmall, paramName);
+        }
+
         private static ArgumentException GetArgumentException(string message)
         {
             return new ArgumentException(message);
@@ -43,6 +62,12 @@ namespace System.Text.Json
         public static InvalidOperationException GetInvalidOperationException_CallFlushFirst(int _buffered)
         {
             return GetInvalidOperationException(SR.Format(SR.CallFlushToAvoidDataLoss, _buffered));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_DestinationTooShort()
+        {
+            throw GetArgumentException(SR.DestinationTooShort);
         }
 
         [DoesNotReturn]
@@ -474,7 +499,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ReadInvalidUTF16()
+        public static void ThrowInvalidOperationException_ReadIncompleteUTF16()
         {
             throw GetInvalidOperationException(SR.CannotReadIncompleteUTF16);
         }
@@ -606,35 +631,27 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowFormatException(DataType dateType)
+        public static void ThrowFormatException(DataType dataType)
         {
             string message = "";
 
-            switch (dateType)
+            switch (dataType)
             {
                 case DataType.Boolean:
-                    message = SR.FormatBoolean;
-                    break;
+                case DataType.DateOnly:
                 case DataType.DateTime:
-                    message = SR.FormatDateTime;
-                    break;
                 case DataType.DateTimeOffset:
-                    message = SR.FormatDateTimeOffset;
-                    break;
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
-                    message = SR.FormatTimeSpan;
+                case DataType.Guid:
+                case DataType.Version:
+                    message = SR.Format(SR.UnsupportedFormat, dataType);
                     break;
                 case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
                     break;
-                case DataType.Guid:
-                    message = SR.FormatGuid;
-                    break;
-                case DataType.Version:
-                    message = SR.FormatVersion;
-                    break;
                 default:
-                    Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
+                    Debug.Fail($"The DataType enum value: {dataType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
             }
 
@@ -651,6 +668,12 @@ namespace System.Text.Json
         public static void ThrowObjectDisposedException_Utf8JsonWriter()
         {
             throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_JsonDocument()
+        {
+            throw new ObjectDisposedException(nameof(JsonDocument));
         }
     }
 
@@ -717,8 +740,10 @@ namespace System.Text.Json
     internal enum DataType
     {
         Boolean,
+        DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

@@ -6,8 +6,11 @@
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
+#if defined(__APPLE__)
+        .cfi_personality 0x9b, C_FUNC(\Handler) // 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#else
         .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4
-        // @TODO: Check if we have systems that use indirect personality 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#endif
         .endif
 .endm
 
@@ -22,42 +25,70 @@ C_FUNC(\Name):
 
 .macro ALTERNATE_ENTRY Name
         .global C_FUNC(\Name)
+#if !defined(__APPLE__)
         .hidden C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
 .macro LABELED_RETURN_ADDRESS Name
         .global C_FUNC(\Name)
+#if !defined(__APPLE__)
         .hidden C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
+#if defined(__APPLE__)
+        .text
+        .p2align        2
+#else
         .hidden C_FUNC(\Name)
         .type \Name, %function
+#endif
 C_FUNC(\Name):
         .cfi_startproc
 .endm
 
 .macro LEAF_END Name, Section
+#if !defined(__APPLE__)
         .size \Name, .-\Name
+#endif
         .cfi_endproc
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
+#if defined(__APPLE__)
+        adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
+        ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+#else
         adrp \HelperReg, C_FUNC(\Name)
         add  \HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+#endif
 .endm
 
 .macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+#if defined(__APPLE__)
+        adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
+        ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  \HelperReg, [\HelperReg]
+#else
         adrp \HelperReg, C_FUNC(\Name)
         ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
+#endif
 .endm
 
 .macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
+#if defined(__APPLE__)
+        adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
+        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  w\HelperReg, [x\HelperReg]
+#else
         adrp x\HelperReg, C_FUNC(\Name)
         ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
+#endif
 .endm
 
 
@@ -135,49 +166,6 @@ C_FUNC(\Name):
         brk #0
 .endm
 
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-.macro SAVE_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    x0, x1, [\reg, #(\ofs)]
-        stp                    x2, x3, [\reg, #(\ofs + 16)]
-        stp                    x4, x5, [\reg, #(\ofs + 32)]
-        stp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-.macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        stp                    d0, d1, [\reg, #(\ofs)]
-        stp                    d2, d3, [\reg, #(\ofs + 16)]
-        stp                    d4, d5, [\reg, #(\ofs + 32)]
-        stp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    x0, x1, [\reg, #(\ofs)]
-        ldp                    x2, x3, [\reg, #(\ofs + 16)]
-        ldp                    x4, x5, [\reg, #(\ofs + 32)]
-        ldp                    x6, x7, [\reg, #(\ofs + 48)]
-
-.endm
-
-.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        ldp                    d0, d1, [\reg, #(\ofs)]
-        ldp                    d2, d3, [\reg, #(\ofs + 16)]
-        ldp                    d4, d5, [\reg, #(\ofs + 32)]
-        ldp                    d6, d7, [\reg, #(\ofs + 48)]
-
-.endm
-
 .macro EPILOG_BRANCH_REG reg
 
         br \reg
@@ -196,24 +184,43 @@ C_FUNC(\Name):
     .endif
 
     stp     x0, lr, [sp,#-0x10]!
+#if defined(__APPLE__)
+    // Apple's tls_get_var trashes xip0 (and possibly xip1)
+    stp     xip0, xip1, [sp,#-0x10]!
+#endif
 
     // This sequence of instructions is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
+#if defined(__APPLE__)
+    adrp    x0, \var@TLVPPAGE
+    ldr     x0, [x0, \var@TLVPPAGEOFF]
+    ldr     \target, [x0]
+
+    blr     \target
+    // End of the sequence
+
+    mov     \target, x0
+#else
     adrp    x0, :tlsdesc:\var
     ldr     \target, [x0, #:tlsdesc_lo12:\var]
     add     x0, x0, :tlsdesc_lo12:\var
-.tlsdesccall \var
+    .tlsdesccall \var
     blr     \target
     // End of the sequence
 
     mrs     \target, tpidr_el0
     add     \target, \target, x0
+#endif
+
+#if defined(__APPLE__)
+    ldp     xip0, xip1, [sp],#0x10
+#endif
     ldp     x0, lr, [sp],#0x10
 .endm
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
-    INLINE_GET_TLS_VAR \target, tls_CurrentThread
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm
 
 // Do not use these ETLS macros in functions that already create a stack frame.
@@ -223,7 +230,7 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
     str         x0,  [sp, #0x10]
 
-    bl RhpGetThread
+    bl C_FUNC(RhpGetThread)
     mov x1, x0
 
     ldr         x0,  [sp, #0x10]
@@ -235,7 +242,7 @@ C_FUNC(\Name):
     stp         x0, x1, [sp, #0x10]
     str         x2,  [sp, #0x20]
 
-    bl RhpGetThread
+    bl C_FUNC(RhpGetThread)
     mov x3, x0
 
     ldp         x0, x1, [sp, #0x10]
@@ -262,7 +269,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 96
 .endm
 
-.macro  ArmInterlockedOperationBarrier
+.macro  InterlockedOperationBarrier
     dmb ish
 .endm
 
@@ -290,12 +297,16 @@ C_FUNC(\Name):
 C_FUNC(\Name):
         .quad       1b
         .global     C_FUNC(\Name)
+#if !defined(__APPLE__)
         .hidden     C_FUNC(\Name)
+#endif
         .text
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
+PTFF_SAVE_X0            = 0x00000800
+PTFF_SAVE_X1            = 0x00001000
 PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
 
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP

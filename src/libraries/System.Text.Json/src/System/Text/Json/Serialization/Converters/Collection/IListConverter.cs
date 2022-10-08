@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             base.CreateCollection(ref reader, ref state, options);
             TCollection returnValue = (TCollection)state.Current.ReturnValue!;
@@ -60,6 +60,8 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EnumeratorIndex = index;
                         return false;
                     }
+
+                    state.Current.EndCollectionElement();
 
                     if (ShouldFlush(writer, ref state))
                     {

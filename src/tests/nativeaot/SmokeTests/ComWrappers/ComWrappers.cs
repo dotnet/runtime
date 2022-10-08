@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -53,10 +52,10 @@ namespace ComWrappersTests
         static extern int CaptureComPointer(IComInterface foo);
 
         [DllImport("ComWrappersNative", CallingConvention = CallingConvention.StdCall)]
-        static extern int RetreiveCapturedComPointer(out IComInterface foo);
+        static extern int RetrieveCapturedComPointer(out IComInterface foo);
 
-        [DllImport("ComWrappersNative", EntryPoint="RetreiveCapturedComPointer", CallingConvention = CallingConvention.StdCall)]
-        static extern int RetreiveCapturedComPointerRaw(out IntPtr foo);
+        [DllImport("ComWrappersNative", EntryPoint="RetrieveCapturedComPointer", CallingConvention = CallingConvention.StdCall)]
+        static extern int RetrieveCapturedComPointerRaw(out IntPtr foo);
 
         [DllImport("ComWrappersNative", CallingConvention = CallingConvention.StdCall)]
         static extern void ReleaseComPointer();
@@ -84,7 +83,7 @@ namespace ComWrappersTests
                 CaptureComPointer(target);
                 throw new Exception("Cannot work without ComWrappers.RegisterForMarshalling called");
             }
-            catch (InvalidOperationException)
+            catch (NotSupportedException)
             {
             }
         }
@@ -109,7 +108,7 @@ namespace ComWrappersTests
             var target = new ComObject();
             int result = CaptureComPointer(target);
             ThrowIfNotEquals(0, result, "Seems to be COM marshalling behave strange.");
-            result = RetreiveCapturedComPointerRaw(out var comPtr);
+            result = RetrieveCapturedComPointerRaw(out var comPtr);
             var roundTripObject = GlobalComWrappers.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.Unwrap);
             ThrowIfNotEquals(0, result, "Seems to be COM marshalling behave strange.");
             if (roundTripObject != target)
@@ -123,7 +122,7 @@ namespace ComWrappersTests
             var target = new ComObject();
             int result = CaptureComPointer(target);
             ThrowIfNotEquals(0, result, "Seems to be COM marshalling behave strange.");
-            result = RetreiveCapturedComPointer(out var capturedObject);
+            result = RetrieveCapturedComPointer(out var capturedObject);
             ThrowIfNotEquals(0, result, "Seems to be COM marshalling behave strange.");
             if (capturedObject != target)
             {

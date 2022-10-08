@@ -130,6 +130,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
             (SslStream clientStream, SslStream serverStream) = TestHelper.GetConnectedSslStreams();
@@ -154,8 +155,7 @@ namespace System.Net.Security.Tests
                 if (BackendSupportsAlpn)
                 {
                     Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
-
-                    await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
+                    await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeout));
                     serverStream.Dispose();
 
                     await t1.WaitAsync(TestConfiguration.PassingTestTimeout);

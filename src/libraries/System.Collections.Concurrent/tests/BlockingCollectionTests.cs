@@ -170,7 +170,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(1, BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, -1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new BlockingCollection<int>());
@@ -181,7 +181,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(col, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(new BlockingCollection<int>());

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 
 using Internal.Text;
-using Internal.TypeSystem;
-using Internal.Runtime;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -93,6 +91,7 @@ namespace ILCompiler.DependencyAnalysis
             _insertedSymbolsDictionary = null;
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.SupportsRelativePointers ? 4 : factory.Target.PointerSize);
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
@@ -108,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);
-            
+
             builder.AddSymbol(this);
             builder.AddSymbol(_endSymbol);
 
@@ -122,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
             return string.Compare(_blobName, ((ExternalReferencesTableNode)other)._blobName);
         }
 
-        struct SymbolAndDelta : IEquatable<SymbolAndDelta>
+        private struct SymbolAndDelta : IEquatable<SymbolAndDelta>
         {
             public readonly ISymbolNode Symbol;
             public readonly int Delta;

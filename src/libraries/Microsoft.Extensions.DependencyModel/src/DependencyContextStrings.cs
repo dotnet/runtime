@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal const string ServiceablePropertyName = "serviceable";
 
-        internal const string CompilationOptionsPropertName = "compilationOptions";
+        internal const string CompilationOptionsPropertyName = "compilationOptions";
 
         internal const string DefinesPropertyName = "defines";
 

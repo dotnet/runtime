@@ -319,7 +319,7 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = mappings.ToArray();
 
                 bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+                outputDirectory ??= (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location));
 
                 if (!Directory.Exists(outputDirectory))
                 {
@@ -545,8 +545,13 @@ namespace Microsoft.XmlSerializer.Generator
             return GetXmlSerializerAssemblyName(type, null);
         }
 
-        private static string GetXmlSerializerAssemblyName(Type type!!, string defaultNamespace)
+        private static string GetXmlSerializerAssemblyName(Type type, string defaultNamespace)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             return GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 
@@ -613,10 +618,8 @@ namespace Microsoft.XmlSerializer.Generator
                     return null;
                 }
 
-                if (s_referencedic.ContainsKey(assemblyname))
+                if (s_referencedic.TryGetValue(assemblyname, out string reference))
                 {
-                    string reference = s_referencedic[assemblyname];
-
                     // For System.ServiceModel.Primitives, we need to load its runtime assembly rather than reference assembly
                     if (assemblyname.Equals("System.ServiceModel.Primitives"))
                     {

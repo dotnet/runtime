@@ -61,8 +61,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
         internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             attrs = attributes & ~FieldAttributes.ReservedMask;
             name = fieldName;
@@ -82,7 +81,12 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return typeb; }
+            get
+            {
+                if (typeb.is_hidden_global_type)
+                    return null;
+                return typeb;
+            }
         }
 
         public override RuntimeFieldHandle FieldHandle
@@ -149,7 +153,7 @@ namespace System.Reflection.Emit
 
         internal void SetRVAData(byte[] data)
         {
-            attrs = attrs | FieldAttributes.HasFieldRVA;
+            attrs |= FieldAttributes.HasFieldRVA;
             rva_data = (byte[])data.Clone();
         }
 
@@ -174,8 +178,7 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
 
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
@@ -218,7 +221,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             RejectIfCreated();

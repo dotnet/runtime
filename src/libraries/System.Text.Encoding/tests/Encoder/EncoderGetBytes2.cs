@@ -123,7 +123,7 @@ namespace System.Text.Tests
                 VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength);
             }
 
-            // Bytes does not have enough capacity to accomodate result
+            // Bytes does not have enough capacity to accommodate result
             string s = "T\uD83D\uDE01est";
             char[] c = s.ToCharArray();
 
@@ -138,7 +138,7 @@ namespace System.Text.Tests
         [MemberData(nameof(Encoders_MixedInput))]
         public void EncoderGetBytesMixedInputBufferTooSmall(Encoder encoder, int asciiSize, int unicodeSize0, int unicodeSize1)
         {
-            // Bytes does not have enough capacity to accomodate result
+            // Bytes does not have enough capacity to accommodate result
             string s = "T\uD83D\uDE01est";
             char[] c = s.ToCharArray();
 

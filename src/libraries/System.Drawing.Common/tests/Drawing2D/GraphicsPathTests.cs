@@ -41,7 +41,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gp = new GraphicsPath())
             {
                 Assert.Equal(FillMode.Alternate, gp.FillMode);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -52,9 +52,9 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gpw = new GraphicsPath(FillMode.Winding))
             {
                 Assert.Equal(FillMode.Alternate, gpa.FillMode);
-                AssertEmptyGrahicsPath(gpa);
+                AssertEmptyGraphicsPath(gpa);
                 Assert.Equal(FillMode.Winding, gpw.FillMode);
-                AssertEmptyGrahicsPath(gpw);
+                AssertEmptyGraphicsPath(gpw);
             }
         }
 
@@ -116,7 +116,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath clone = Assert.IsType<GraphicsPath>(gp.Clone()))
             {
                 Assert.Equal(FillMode.Alternate, clone.FillMode);
-                AssertEmptyGrahicsPath(clone);
+                AssertEmptyGraphicsPath(clone);
             }
         }
 
@@ -128,7 +128,7 @@ namespace System.Drawing.Drawing2D.Tests
                 gp.Reset();
 
                 Assert.Equal(FillMode.Alternate, gp.FillMode);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -374,7 +374,6 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>("points", null, () => new GraphicsPath().AddLines(new PointF[0]));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Values_Success()
         {
@@ -397,7 +396,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Rectangle_Success()
         {
@@ -527,7 +525,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_TwoPoints_Success()
         {
@@ -546,7 +543,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_TwoPointsWithTension_Success()
         {
@@ -723,7 +719,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Points_Success()
         {
@@ -763,7 +758,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Tension_Success()
         {
@@ -998,7 +992,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPie_Rectangle_Success()
         {
@@ -1011,7 +1004,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPie_Values_Success()
         {
@@ -1040,7 +1032,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPolygon_Points_Success()
         {
@@ -1056,7 +1047,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPolygon_SamePoints_Success()
         {
@@ -1199,20 +1189,19 @@ namespace System.Drawing.Drawing2D.Tests
                 gpi.AddString("mono", FontFamily.GenericMonospace, 0, -10, new Point(10, 10), StringFormat.GenericDefault);
                 AssertExtensions.GreaterThan(gpi.PointCount, 0);
 
-                int gpiLenghtOld = gpi.PathPoints.Length;
+                int gpiLengthOld = gpi.PathPoints.Length;
                 gpi.AddString("mono", FontFamily.GenericMonospace, 0, -10, new Rectangle(10, 10, 10, 10), StringFormat.GenericDefault);
-                AssertExtensions.GreaterThan(gpi.PointCount, gpiLenghtOld);
+                AssertExtensions.GreaterThan(gpi.PointCount, gpiLengthOld);
 
                 gpf.AddString("mono", FontFamily.GenericMonospace, 0, -10, new PointF(10f, 10f), StringFormat.GenericDefault);
                 AssertExtensions.GreaterThan(gpf.PointCount, 0);
 
-                int pgfLenghtOld = gpf.PathPoints.Length;
+                int pgfLengthOld = gpf.PathPoints.Length;
                 gpf.AddString("mono", FontFamily.GenericMonospace, 0, -10, new RectangleF(10f, 10f, 10f, 10f), StringFormat.GenericDefault);
-                AssertExtensions.GreaterThan(gpf.PointCount, pgfLenghtOld);
+                AssertExtensions.GreaterThan(gpf.PointCount, pgfLengthOld);
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_StringFormat_Success()
         {
@@ -1295,7 +1284,7 @@ namespace System.Drawing.Drawing2D.Tests
             {
                 gp.Transform(matrix);
                 Assert.Equal(new float[] { 1f, 1f, 2f, 2f, 3f, 3f }, matrix.Elements);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -1542,7 +1531,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_RectangleEmpty_Success()
         {
@@ -1910,7 +1898,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddString()
         {
@@ -1929,7 +1916,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_Pen_Success()
         {
@@ -1978,7 +1964,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_MatrixNull_Success()
         {
@@ -1992,7 +1977,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_MatrixEmpty_Success()
         {
@@ -2016,10 +2000,9 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new Rectangle(1, 1, 2, 2), 1.1f, new RectangleF(0.45f, 0.45f, 3.10f, 3.10f) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Widen_PenSmallWidth_TestData))]
-        public void Widen_Pen_SmallWidth_Succes(
+        public void Widen_Pen_SmallWidth_Success(
             Rectangle rectangle, float penWidth, RectangleF expectedBounds)
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2112,14 +2095,12 @@ namespace System.Drawing.Drawing2D.Tests
             AssertIsOutlineVisibleRectangle(null);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_RectangleWithoutGraphics_ReturnsExpected()
         {
             AssertIsVisibleRectangle(null);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_RectangleWithGraphics_ReturnsExpected()
         {
@@ -2147,7 +2128,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Arc_Succes()
+        public void Reverse_Arc_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2157,7 +2138,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Bezier_Succes()
+        public void Reverse_Bezier_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2180,7 +2161,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Beziers_Succes(Point[] points)
+        public void Reverse_Beziers_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2191,7 +2172,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_ClosedCurve_Succes(Point[] points)
+        public void Reverse_ClosedCurve_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2202,7 +2183,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Curve_Succes(Point[] points)
+        public void Reverse_Curve_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2212,7 +2193,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Ellipse_Succes()
+        public void Reverse_Ellipse_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2222,7 +2203,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Line_Succes()
+        public void Reverse_Line_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2232,7 +2213,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_LineClosed_Succes()
+        public void Reverse_LineClosed_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2244,7 +2225,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Lines_Succes(Point[] points)
+        public void Reverse_Lines_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2255,7 +2236,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
-        public void Reverse_Polygon_Succes(Point[] points)
+        public void Reverse_Polygon_Success(Point[] points)
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2265,7 +2246,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Rectangle_Succes()
+        public void Reverse_Rectangle_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2275,7 +2256,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Rectangles_Succes()
+        public void Reverse_Rectangles_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2285,9 +2266,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Pie_Succes()
+        public void Reverse_Pie_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2298,7 +2278,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_ArcLineInnerPath_Succes()
+        public void Reverse_ArcLineInnerPath_Success()
         {
             using (GraphicsPath inner = new GraphicsPath())
             using (GraphicsPath gp = new GraphicsPath())
@@ -2312,7 +2292,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_EllipseRectangle_Succes()
+        public void Reverse_EllipseRectangle_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2323,9 +2303,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_String_Succes()
+        public void Reverse_String_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2354,7 +2333,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_Marker_Succes()
+        public void Reverse_Marker_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2366,7 +2345,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Reverse_SubpathMarker_Succes()
+        public void Reverse_SubpathMarker_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -2392,7 +2371,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_PointsTypes_Succes()
+        public void Ctor_PointsTypes_Success()
         {
             int dX = 520;
             int dY = 320;
@@ -2418,7 +2397,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        private void AssertEmptyGrahicsPath(GraphicsPath gp)
+        private void AssertEmptyGraphicsPath(GraphicsPath gp)
         {
             Assert.Equal(0, gp.PathData.Points.Length);
             Assert.Equal(0, gp.PathData.Types.Length);

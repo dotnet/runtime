@@ -553,20 +553,8 @@ bool CallCountingManager::SetCodeEntryPoint(
     {
         THROWS;
         GC_NOTRIGGER;
-
-        // Backpatching entry point slots requires cooperative GC mode, see MethodDescBackpatchInfoTracker::Backpatch_Locked().
-        // The code version manager's table lock is an unsafe lock that may be taken in any GC mode. The lock is taken in
-        // cooperative GC mode on other paths, so the caller must use the same ordering to prevent deadlock (switch to
-        // cooperative GC mode before taking the lock).
         PRECONDITION(!activeCodeVersion.IsNull());
-        if (activeCodeVersion.GetMethodDesc()->MayHaveEntryPointSlotsToBackpatch())
-        {
-            MODE_COOPERATIVE;
-        }
-        else
-        {
-            MODE_ANY;
-        }
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -716,7 +704,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         //   may cause many methods that are currently fully interruptible to have to be partially interruptible and record
         //   extra GC info instead. This would be nontrivial and there would be tradeoffs.
         // - For any method that may have an entry point slot that would be backpatched with the call counting stub's entry
-        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and fowards to
+        //   point, a small forwarder stub (precode) is created. The forwarder stub has loader allocator lifetime and forwards to
         //   the larger call counting stub. This is a simple solution for now and seems to have negligible impact.
         // - Reusing FuncPtrStubs was considered. FuncPtrStubs are currently not used as a code entry point for a virtual or
         //   interface method and may be bypassed. For example, a call may call through the vtable slot, or a devirtualized call
@@ -874,13 +862,7 @@ void CallCountingManager::CompleteCallCounting()
     TieredCompilationManager *tieredCompilationManager = appDomain->GetTieredCompilationManager();
     CodeVersionManager *codeVersionManager = appDomain->GetCodeVersionManager();
 
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
-
-    // Backpatching entry point slots requires cooperative GC mode, see
-    // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-    // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-    // must be used here to prevent deadlock.
-    GCX_COOP();
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
     for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
@@ -1002,8 +984,6 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
 
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
 
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
-
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
     struct AutoRestartEE
     {
@@ -1014,11 +994,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
         }
     } autoRestartEE;
 
-    // Backpatching entry point slots requires cooperative GC mode, see
-    // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-    // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-    // must be used here to prevent deadlock.
-    GCX_COOP();
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
     // After the following, no method's entry point would be pointing to a call counting stub

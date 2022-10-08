@@ -64,7 +64,7 @@
 // For profitability we first try and avoid code growth. We do this
 // by only substituting in cases where lcl has exactly one def and one use.
 // This info is computed for us but the RCS_Early ref counting done during
-// the immediately preceeding fgMarkAddressExposedLocals phase.
+// the immediately preceding fgMarkAddressExposedLocals phase.
 //
 // Because of this, once we've substituted "tree" we know that lcl is dead
 // and we can remove the assignment statement.
@@ -187,7 +187,6 @@ class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
 public:
     enum
     {
-        ComputeStack      = true,
         DoPostOrder       = true,
         UseExecutionOrder = true
     };
@@ -197,7 +196,6 @@ public:
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
-        , m_callAncestor(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
@@ -209,7 +207,9 @@ public:
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         m_treeSize++;
-        GenTree* const node = *use;
+
+        GenTree* const node  = *use;
+        bool const     isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->gtGetOp1() == node);
 
         if (node->OperIs(GT_LCL_VAR))
         {
@@ -221,8 +221,7 @@ public:
 
                 // Screen out contextual "uses"
                 //
-                GenTree* const parent = m_ancestors.Top(1);
-                bool const     isDef  = parent->OperIs(GT_ASG) && (parent->gtGetOp1() == node);
+                GenTree* const parent = user;
                 bool const     isAddr = parent->OperIs(GT_ADDR);
 
                 bool isCallTarget = false;
@@ -243,63 +242,25 @@ public:
                     m_use        = use;
                     m_useFlags   = m_accumulatedFlags;
                     m_parentNode = parent;
-
-                    // If this use contributes to a call arg we need to
-                    // remember the call and handle it specially when we
-                    // see it later in the postorder walk.
-                    //
-                    for (int i = 1; i < m_ancestors.Height(); i++)
-                    {
-                        if (m_ancestors.Top(i)->IsCall())
-                        {
-                            m_callAncestor = m_ancestors.Top(i)->AsCall();
-                            break;
-                        }
-                    }
                 }
             }
         }
 
-        if (node->OperIsLocal())
+        // Stores to and uses of address-exposed locals are modelled as global refs.
+        //
+        GenTree* lclNode = nullptr;
+        if (node->OperIsLocal() && !isDef)
         {
-            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
-
-            // Uses of address-exposed locals are modelled as global refs.
-            //
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-            if (varDsc->IsAddressExposed())
-            {
-                m_accumulatedFlags |= GTF_GLOB_REF;
-            }
+            lclNode = node;
+        }
+        else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
+        {
+            lclNode = node->gtGetOp1();
         }
 
-        // Is this the use's call ancestor?
-        //
-        if ((m_callAncestor != nullptr) && (node == m_callAncestor))
+        if ((lclNode != nullptr) && m_compiler->lvaGetDesc(lclNode->AsLclVarCommon())->IsAddressExposed())
         {
-            // To be conservative and avoid issues with morph
-            // reordering call args, we merge in effects of all args
-            // to this call.
-            //
-            // Remove this if/when morph's arg sorting is fixed.
-            //
-            GenTreeFlags oldUseFlags = m_useFlags;
-
-            if (m_callAncestor->gtCallThisArg != nullptr)
-            {
-                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            for (GenTreeCall::Use& use : m_callAncestor->Args())
-            {
-                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            if (oldUseFlags != m_useFlags)
-            {
-                JITDUMP(" [added other call arg use flags: 0x%x]", m_useFlags & ~oldUseFlags);
-            }
+            m_accumulatedFlags |= GTF_GLOB_REF;
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
@@ -346,7 +307,6 @@ private:
     GenTree**    m_use;
     GenTree*     m_node;
     GenTree*     m_parentNode;
-    GenTreeCall* m_callAncestor;
     unsigned     m_lclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;
@@ -474,15 +434,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTree* const rhsNode    = rootNode->gtGetOp2();
     GenTree*       fwdSubNode = rhsNode;
 
-    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
     // Can't substitute GT_CATCH_ARG.
     // Can't substitute GT_LCLHEAP.
     //
     // Don't substitute a no return call (trips up morph in some cases).
-    //
-    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP))
     {
-        JITDUMP(" tree to sub is qmark, catch arg, or lcl heap\n");
+        JITDUMP(" tree to sub is catch arg, or lcl heap\n");
         return false;
     }
 
@@ -506,20 +464,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     if (lhsNode->TypeGet() != fwdSubNode->TypeGet())
     {
         JITDUMP(" mismatched types (assignment)\n");
-        return false;
-    }
-
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
-    {
-        JITDUMP(" would change struct handle (assignment)\n");
-        return false;
-    }
-
-    // If lhs is mulit-reg, rhs must be too.
-    //
-    if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (assignment)\n");
         return false;
     }
 
@@ -565,6 +509,45 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
 
+    // Qmarks must replace top-level uses. Also, restrict to GT_ASG.
+    // And also to where neither local is normalize on store, otherwise
+    // something downstream may add a cast over the qmark.
+    //
+    GenTree* const nextRootNode = nextStmt->GetRootNode();
+    if (fwdSubNode->OperIs(GT_QMARK))
+    {
+        if ((fsv.GetParentNode() != nextRootNode) || !nextRootNode->OperIs(GT_ASG))
+        {
+            JITDUMP(" can't fwd sub qmark as use is not top level ASG\n");
+            return false;
+        }
+
+        if (varDsc->lvNormalizeOnStore())
+        {
+            JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lclNum);
+            return false;
+        }
+
+        GenTree* const nextRootNodeLHS = nextRootNode->gtGetOp1();
+
+        if (!nextRootNodeLHS->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP(" can't fwd sub qmark for LCL_FLD assign\n");
+            return false;
+        }
+        else
+        {
+            const unsigned   lhsLclNum = nextRootNodeLHS->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const lhsVarDsc = lvaGetDesc(lhsLclNum);
+
+            if (lhsVarDsc->lvNormalizeOnStore())
+            {
+                JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lhsLclNum);
+                return false;
+            }
+        }
+    }
+
     // If next statement already has a large tree, hold off
     // on making it even larger.
     //
@@ -581,8 +564,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
-
     // Bail if types disagree.
     // Might be able to tolerate these by retyping.
     //
@@ -633,15 +614,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // These conditions can be checked earlier in the final version to save some throughput.
     // Perhaps allowing for bypass with jit stress.
     //
-    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
-    // (maybe similar for dner?)
+    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations due
+    // to GLOB_REF "poisoning" the tree. CQ analysis shows this to not be a problem with
+    // structs.
     //
     if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
-        if (fwdVarDsc->IsAddressExposed())
+        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
         {
             JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
@@ -669,38 +651,55 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Quirks:
     //
-    // We may sometimes lose or change a type handle. Avoid substituting if so.
+    // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
     //
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
+    if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
+        !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
-        JITDUMP(" would change struct handle (substitution)\n");
+        JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
     }
 
-#ifdef FEATURE_SIMD
-    // Don't forward sub a SIMD call under a HW intrinsic node.
-    // LowerCallStruct is not prepared for this.
+    // We may sometimes lose or change a type handle. Avoid substituting if so.
     //
-    if (fwdSubNode->IsCall() && varTypeIsSIMD(fwdSubNode->TypeGet()) && fsv.GetParentNode()->OperIs(GT_HWINTRINSIC))
+    // However, we allow free substitution of hardware SIMD types.
+    //
+    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
+    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
+    if (fwdHnd != useHnd)
     {
-        JITDUMP(" simd returning call; hw intrinsic\n");
-        return false;
+        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
+        {
+            JITDUMP(" would add/remove struct handle (substitution)\n");
+            return false;
+        }
+
+#ifdef FEATURE_SIMD
+        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
+#else
+        const bool bothHWSIMD = false;
+#endif
+
+        if (!bothHWSIMD)
+        {
+            JITDUMP(" would change struct handle (substitution)\n");
+            return false;
+        }
     }
-#endif // FEATURE_SIMD
 
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
-    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
-    // local being defined must be specially marked up.
+    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and
+    // the local being defined must be specially marked up.
     //
-    if (fwdSubNode->IsMultiRegCall())
+    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegNode())
     {
         GenTree* const parentNode = fsv.GetParentNode();
 
         if (!parentNode->OperIs(GT_ASG))
         {
-            JITDUMP(" multi-reg call, parent not asg\n");
+            JITDUMP(" multi-reg struct node, parent not asg\n");
             return false;
         }
 
@@ -708,17 +707,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         if (!parentNodeLHS->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" multi-reg call, parent not asg(lcl, ...)\n");
+            JITDUMP(" multi-reg struct node, parent not asg(lcl, ...)\n");
             return false;
         }
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        if (fwdSubNode->TypeGet() == TYP_LONG)
-        {
-            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
-            return false;
-        }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
 
@@ -727,50 +718,60 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", lhsLclNum);
         lhsVarDsc->lvIsMultiRegRet = true;
-        parentNodeLHSLocal->SetMultiReg();
     }
 
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
+    // (see eg impFixupStructReturnType).
     //
-    // (see eg impFixupStructReturnType)
+    // TODO-Cleanup: this constraint only exists for multi-reg **struct**
+    // returns, it does not exist for LONGs. However, enabling substitution
+    // for them on all 32 bit targets is a CQ regression due to some bad
+    // interaction between decomposition and RA.
     //
     if (compMethodReturnsMultiRegRetType() && fsv.GetParentNode()->OperIs(GT_RETURN))
     {
-        if (!fwdSubNode->OperIs(GT_LCL_VAR))
-        {
-            JITDUMP(" parent is return, fwd sub node is not lcl var\n");
-            return false;
-        }
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_X86)
         if (fwdSubNode->TypeGet() == TYP_LONG)
         {
-            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
+            JITDUMP(" TYP_LONG fwd sub node, target is x86\n");
             return false;
         }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+#endif // defined(TARGET_X86)
 
-        GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+        if (!fwdSubNode->OperIs(GT_LCL_VAR))
+        {
+#ifdef TARGET_ARM
+            if (!fwdSubNode->TypeIs(TYP_LONG))
+#endif // TARGET_ARM
+            {
+                JITDUMP(" parent is multi-reg struct return, fwd sub node is not lcl var\n");
+                return false;
+            }
+        }
+        else if (varTypeIsStruct(fwdSubNode))
+        {
+            GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+            unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-        unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
-        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+            // These may later turn into indirections and the backend does not support
+            // those as sources of multi-reg returns.
+            //
+            if (lvaIsImplicitByRefLocal(fwdLclNum))
+            {
+                JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
+                return false;
+            }
 
-        JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
-        fwdVarDsc->lvIsMultiRegRet = true;
-        fwdSubNodeLocal->SetMultiReg();
-        fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
+            LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+
+            JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
+            fwdVarDsc->lvIsMultiRegRet = true;
+            fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
+        }
     }
 
-    // If the use is a multi-reg arg, don't forward sub non-locals.
-    //
-    if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (substitution)\n");
-        return false;
-    }
-
-    // If the intial has truncate on store semantics, we need to replicate
+    // If the initial has truncate on store semantics, we need to replicate
     // that here with a cast.
     //
     if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))

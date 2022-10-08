@@ -4,29 +4,31 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 using MonoDelta;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
-	static DeltaHelper replacer = DeltaHelper.Make ();
+        static DeltaHelper replacer = DeltaHelper.Make ();
 
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [JSExport]
         public static int TestMeaning()
         {
             return 43;
         }
 
-	public static void Update()
-	{
-	    Assembly assm = typeof (Test).Assembly;
-	    replacer.Update (assm);
-	}
+        [JSExport]
+        public static void Update()
+        {
+            Assembly assm = typeof (Test).Assembly;
+            replacer.Update (assm);
+        }
     }
 }

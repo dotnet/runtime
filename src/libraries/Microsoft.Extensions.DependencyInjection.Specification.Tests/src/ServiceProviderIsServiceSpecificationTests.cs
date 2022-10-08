@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         public virtual bool SupportsIServiceProviderIsService => true;
 
         [Fact]
-        public void ExplictServiceRegisterationWithIsService()
+        public void ExplicitServiceRegisterationWithIsService()
         {
             if (!SupportsIServiceProviderIsService)
             {

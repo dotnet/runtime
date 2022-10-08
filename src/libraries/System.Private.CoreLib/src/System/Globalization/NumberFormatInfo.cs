@@ -80,8 +80,10 @@ namespace System.Globalization
         {
         }
 
-        private static void VerifyNativeDigits(string[] nativeDig!!, string propertyName)
+        private static void VerifyNativeDigits(string[] nativeDig, string propertyName)
         {
+            ArgumentNullException.ThrowIfNull(nativeDig);
+
             if (nativeDig.Length != 10)
             {
                 throw new ArgumentException(SR.Argument_InvalidNativeDigitCount, propertyName);
@@ -644,8 +646,10 @@ namespace System.Globalization
             return formatType == typeof(NumberFormatInfo) ? this : null;
         }
 
-        public static NumberFormatInfo ReadOnly(NumberFormatInfo nfi!!)
+        public static NumberFormatInfo ReadOnly(NumberFormatInfo nfi)
         {
+            ArgumentNullException.ThrowIfNull(nfi);
+
             if (nfi.IsReadOnly)
             {
                 return nfi;

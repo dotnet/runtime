@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathEmptyIterator : ResetableIterator
+    internal sealed class XPathEmptyIterator : ResettableIterator
     {
         private XPathEmptyIterator() { }
         public override XPathNodeIterator Clone() { return this; }

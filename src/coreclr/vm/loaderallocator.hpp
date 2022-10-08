@@ -240,7 +240,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-    VirtualCallStubManager *m_pVirtualCallStubManager;
+    PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -590,7 +590,7 @@ public:
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
-    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData);
+    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);
     void LazyInitStringLiteralMap();
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
@@ -599,7 +599,7 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-    inline VirtualCallStubManager *GetVirtualCallStubManager()
+    inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pVirtualCallStubManager;
@@ -673,6 +673,12 @@ public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void CleanupDependentHandlesToNativeObjects() {};
+#endif
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -765,6 +771,20 @@ private:
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
+#endif
+
+private:
+    class DependentHandleToNativeObjectHashTraits : public PtrSetSHashTraits<LADependentHandleToNativeObject *> {};
+    typedef SHash<DependentHandleToNativeObjectHashTraits> DependentHandleToNativeObjectSet;
+
+    CrstExplicitInit m_dependentHandleToNativeObjectSetCrst;
+    DependentHandleToNativeObjectSet m_dependentHandleToNativeObjectSet;
+
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void CleanupDependentHandlesToNativeObjects();
 #endif
 };
 

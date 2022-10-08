@@ -28,7 +28,5 @@
 /TAGS
 /mono-sgen
 /mono-boehm
-/buildver-sgen.h
-/buildver-boehm.h
 /regressiontests.out
 /test-mono-interp-whitebox

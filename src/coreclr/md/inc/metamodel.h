@@ -1487,7 +1487,7 @@ public:
             ulCount = getCountEvents();
             break;
         case mdtProperty:
-            ulCount = getCountPropertys();
+            ulCount = getCountProperties();
             break;
         case mdtModuleRef:
             ulCount = getCountModuleRefs();
@@ -2076,7 +2076,7 @@ public:
                 bRet = (rid <= getCountEvents());
                 break;
             case mdtProperty:
-                bRet = (rid <= getCountPropertys());
+                bRet = (rid <= getCountProperties());
                 break;
             case mdtModuleRef:
                 bRet = (rid <= getCountModuleRefs());

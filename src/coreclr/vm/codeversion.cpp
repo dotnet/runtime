@@ -110,7 +110,7 @@ NativeCodeVersionId NativeCodeVersionNode::GetVersionId() const
 BOOL NativeCodeVersionNode::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected)
 {
     LIMITED_METHOD_CONTRACT;
-    return FastInterlockCompareExchangePointer(&m_pNativeCode,
+    return InterlockedCompareExchangeT(&m_pNativeCode,
         (TADDR&)pCode, (TADDR&)pExpected) == (TADDR&)pExpected;
 }
 #endif
@@ -1475,7 +1475,7 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pActiveVersions));
@@ -1495,6 +1495,8 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
         }
     }
 #endif
+
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     // Assume that a new IL code version will be added for a method def, and that an instantiation may not yet have native code
     // for the default native code version
@@ -1544,11 +1546,6 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
 
     // step 3 - update each pre-existing method instantiation
     {
-        // Backpatching entry point slots requires cooperative GC mode, see
-        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-        // must be used here to prevent deadlock.
-        GCX_COOP();
         LockHolder codeVersioningLockHolder;
 
         for (DWORD i = 0; i < cActiveVersions; i++)
@@ -1758,10 +1755,6 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         NativeCodeVersion newActiveVersion;
         do
         {
-            bool mayHaveEntryPointSlotsToBackpatch = doPublish && pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
-            MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-                mayHaveEntryPointSlotsToBackpatch);
-
             // Try a faster check to see if we can avoid checking the currently active code version
             // - For the default code version, if a profiler is attached it may be notified of JIT events and may request rejit
             //   synchronously on the same thread. In that case, for back-compat as described below, the returned code must be for
@@ -1774,7 +1767,10 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             {
                 if (doPublish)
                 {
-                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch);
+                    bool mayHaveEntryPointSlotsToBackpatch2 = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
+                    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
+                        mayHaveEntryPointSlotsToBackpatch2);
+                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
                 }
                 else
                 {
@@ -1785,11 +1781,8 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                 break;
             }
 
-            // Backpatching entry point slots requires cooperative GC mode, see
-            // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-            // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-            // must be used here to prevent deadlock.
-            GCX_MAYBE_COOP(mayHaveEntryPointSlotsToBackpatch);
+            bool mayHaveEntryPointSlotsToBackpatch = doPublish && pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
+            MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
             LockHolder codeVersioningLockHolder;
 
             hr = GetActiveILCodeVersion(pMethodDesc).GetOrCreateActiveNativeCodeVersion(pMethodDesc, &newActiveVersion);
@@ -1880,21 +1873,9 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
-
-        // Backpatching entry point slots requires cooperative GC mode, see MethodDescBackpatchInfoTracker::Backpatch_Locked().
-        // The code version manager's table lock is an unsafe lock that may be taken in any GC mode. The lock is taken in
-        // cooperative GC mode on other paths, so the caller must use the same ordering to prevent deadlock (switch to
-        // cooperative GC mode before taking the lock).
-        if (pMethod->MayHaveEntryPointSlotsToBackpatch())
-        {
-            MODE_COOPERATIVE;
-        }
-        else
-        {
-            MODE_ANY;
-        }
         NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1941,7 +1922,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pMD, NULL_OK));

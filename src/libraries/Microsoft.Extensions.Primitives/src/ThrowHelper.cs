@@ -90,7 +90,11 @@ namespace Microsoft.Extensions.Primitives
         value,
         capacity,
         separators,
-        comparisonType
+        comparisonType,
+        changeTokens,
+        changeTokenProducer,
+        changeTokenConsumer,
+        array,
     }
 
     internal enum ExceptionResource

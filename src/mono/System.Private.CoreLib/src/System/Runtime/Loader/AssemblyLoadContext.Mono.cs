@@ -47,15 +47,14 @@ namespace System.Runtime.Loader
 #pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
+        internal Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             unsafe
             {
-                int symbolsLength = arrSymbols?.Length ?? 0;
                 fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
                 {
                     return InternalLoadFromStream(NativeALC, new IntPtr(ptrAssembly), arrAssembly.Length,
-                                       new IntPtr(ptrSymbols), symbolsLength);
+                                       new IntPtr(ptrSymbols), arrSymbols.Length);
                 }
             }
         }
@@ -71,8 +70,7 @@ namespace System.Runtime.Loader
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             AssemblyLoadContext? loadContextForAssembly = null;
 

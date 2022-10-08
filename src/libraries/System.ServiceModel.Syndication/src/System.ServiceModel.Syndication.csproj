@@ -1,15 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />
     <Compile Include="System\ServiceModel\Syndication\App10Constants.cs" />
@@ -54,16 +58,7 @@
     <Compile Include="System\ServiceModel\Syndication\XmlUriData.cs" />
     <Compile Include="System\ServiceModel\XmlBuffer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Serialization.Primitives" />
-    <Reference Include="System.Runtime.Serialization.Xml" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Xml.XmlSerializer" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>

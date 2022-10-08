@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace BoxTest
+namespace BoxTest_enum_cs
 {
     internal enum ToPrintOrNotToPrint
     {
@@ -11,7 +12,7 @@ namespace BoxTest
         DoNotPrint
     }
 
-    internal class Test
+    public class Test
     {
         protected object Fibonacci(object num, object flag)
         {
@@ -35,7 +36,8 @@ namespace BoxTest
             return N;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Test().Fibonacci(20, ToPrintOrNotToPrint.Print);
             Console.WriteLine();

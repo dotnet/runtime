@@ -260,7 +260,7 @@ namespace System.Diagnostics.Metrics
 
                         double defaultIntervalSecs = 1;
                         Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
-                        double refreshIntervalSecs = defaultIntervalSecs;
+                        double refreshIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
                             Log.Message($"RefreshInterval argument received: {refreshInterval}");
@@ -360,7 +360,7 @@ namespace System.Diagnostics.Metrics
                 return false;
             }
 
-            private static readonly char[] s_instrumentSeperators = new char[] { '\r', '\n', ',', ';' };
+            private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
             [UnsupportedOSPlatform("browser")]
             private void ParseSpecs(string? metricsSpecs)
@@ -369,7 +369,7 @@ namespace System.Diagnostics.Metrics
                 {
                     return;
                 }
-                string[] specStrings = metricsSpecs.Split(s_instrumentSeperators, StringSplitOptions.RemoveEmptyEntries);
+                string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
                     if (!MetricSpec.TryParse(specString, out MetricSpec spec))

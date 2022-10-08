@@ -288,6 +288,56 @@ ep_system_time_get (EventPipeSystemTime *system_time)
 void
 ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback);
 
+/*
+ * EventPipeWriteBuffer.
+ */
+
+static
+inline
+void
+ep_write_buffer_uint8_t (uint8_t **buffer, uint8_t value)
+{
+	memcpy (*buffer, &value, sizeof (value));
+	*buffer += sizeof (value);
+}
+
+#define EP_WRITE_BUFFER_INT(BITS, SIGNEDNESS) \
+static \
+inline \
+void \
+ep_write_buffer_##SIGNEDNESS##int##BITS##_t (uint8_t **buffer, SIGNEDNESS##int##BITS##_t value) \
+{ \
+	value = ep_rt_val_##SIGNEDNESS##int##BITS##_t (value); \
+	memcpy (*buffer, &value, sizeof (value)); \
+	*buffer += sizeof (value); \
+}
+
+EP_WRITE_BUFFER_INT (16, )
+EP_WRITE_BUFFER_INT (16, u)
+EP_WRITE_BUFFER_INT (32, )
+EP_WRITE_BUFFER_INT (32, u)
+EP_WRITE_BUFFER_INT (64, )
+EP_WRITE_BUFFER_INT (64, u)
+
+#undef EP_WRITE_BUFFER_INT
+
+static
+inline
+void
+ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, size_t len)
+{
+	memcpy (*buf, str, len);
+	*buf += len;
+}
+
+static
+inline
+void
+ep_write_buffer_timestamp (uint8_t **buffer, ep_timestamp_t value)
+{
+	ep_write_buffer_int64_t (buffer, value);
+}
+
 #else /* ENABLE_PERFTRACING */
 
 static

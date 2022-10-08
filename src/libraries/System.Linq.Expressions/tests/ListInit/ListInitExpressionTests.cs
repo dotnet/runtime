@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Tests
         {
             private List<int> _store;
 
-            private List<int> EnsureStore() => _store ?? (_store = new List<int>());
+            private List<int> EnsureStore() => _store ??= new List<int>();
 
             public int Add(int value)
             {

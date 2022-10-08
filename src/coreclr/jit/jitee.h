@@ -16,7 +16,7 @@ public:
         JIT_FLAG_DEBUG_CODE              = 2, // generate "debuggable" code (no code-mangling optimizations)
         JIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         JIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
-        JIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
+        JIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necessarily debuggable code)
         JIT_FLAG_ENABLE_CFG              = 6, // generate CFG enabled code
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
@@ -161,8 +161,8 @@ public:
     {
         // We don't want to have to check every one, so we assume it is exactly the same values as the JitFlag
         // values defined in this type.
-        m_jitFlags = flags.GetFlagsRaw();
-        m_instructionSetFlags.SetFromFlagsRaw(flags.GetInstructionSetFlagsRaw());
+        m_jitFlags            = flags.GetFlagsRaw();
+        m_instructionSetFlags = flags.GetInstructionSetFlags();
 
         C_ASSERT(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
 

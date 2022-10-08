@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -59,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     bool getUnboxingStub = _method.OwningType.IsValueType;
-                    dependencies = dependencies ?? new DependencyList();
+                    dependencies ??= new DependencyList();
                     dependencies.Add(context.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
 
                     if (_method.IsSharedByGenericInstantiations)
@@ -115,11 +113,6 @@ namespace ILCompiler.DependencyAnalysis
                 // we see the __Canon instantiation. If there isn't one, the canonical method wouldn't be useful anyway.
                 if (methodIsShared &&
                     potentialOverrideType.ConvertToCanonForm(CanonicalFormKind.Specific) != potentialOverrideType)
-                    continue;
-
-                // Similarly, if the type is canonical but this method instantiation isn't, don't mix them.
-                if (!methodIsShared &&
-                    potentialOverrideType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     continue;
 
                 // If this is an interface gvm, look for types that implement the interface

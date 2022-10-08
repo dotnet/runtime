@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
         // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
+        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
         private const string ValueSeparator = ", ";
 
@@ -23,9 +24,17 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly JsonNamingPolicy? _namingPolicy;
 
-        private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
+        /// <summary>
+        /// Holds a mapping from enum value to text that might be formatted with <see cref="_namingPolicy" />.
+        /// <see cref="ulong"/> is as the key used rather than <typeparamref name="T"/> given measurements that
+        /// show private memory savings when a single type is used https://github.com/dotnet/runtime/pull/36726#discussion_r428868336.
+        /// </summary>
+        private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCacheForWriting;
 
-        private ConcurrentDictionary<ulong, JsonEncodedText>? _dictionaryKeyPolicyCache;
+        /// <summary>
+        /// Holds a mapping from text that might be formatted with <see cref="_namingPolicy" /> to enum value.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, T>? _nameCacheForReading;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -45,9 +54,14 @@ namespace System.Text.Json.Serialization.Converters
         {
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
-            _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
+            _nameCacheForWriting = new ConcurrentDictionary<ulong, JsonEncodedText>();
 
-#if NET6_0_OR_GREATER
+            if (namingPolicy != null)
+            {
+                _nameCacheForReading = new ConcurrentDictionary<string, T>();
+            }
+
+#if NETCOREAPP
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
 #else
@@ -60,12 +74,7 @@ namespace System.Text.Json.Serialization.Converters
 
             for (int i = 0; i < names.Length; i++)
             {
-                if (_nameCache.Count >= NameCacheSizeSoftLimit)
-                {
-                    break;
-                }
-
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 T value = values[i];
 #else
                 T value = (T)values.GetValue(i)!;
@@ -73,11 +82,9 @@ namespace System.Text.Json.Serialization.Converters
                 ulong key = ConvertToUInt64(value);
                 string name = names[i];
 
-                _nameCache.TryAdd(
-                    key,
-                    namingPolicy == null
-                        ? JsonEncodedText.Encode(name, encoder)
-                        : FormatEnumValue(name, encoder));
+                string jsonName = FormatJsonName(name, namingPolicy);
+                _nameCacheForWriting.TryAdd(key, JsonEncodedText.Encode(jsonName, encoder));
+                _nameCacheForReading?.TryAdd(jsonName, value);
             }
         }
 
@@ -93,7 +100,20 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                return ReadAsPropertyNameCore(ref reader, typeToConvert, options);
+#if NETCOREAPP
+                if (TryParseEnumCore(ref reader, options, out T value))
+#else
+                string? enumString = reader.GetString();
+                if (TryParseEnumCore(enumString, options, out T value))
+#endif
+                {
+                    return value;
+                }
+#if NETCOREAPP
+                return ReadEnumUsingNamingPolicy(reader.GetString());
+#else
+                return ReadEnumUsingNamingPolicy(enumString);
+#endif
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -167,37 +187,33 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ulong key = ConvertToUInt64(value);
 
-                if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+                if (_nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
                 {
                     writer.WriteStringValue(formatted);
                     return;
                 }
 
                 string original = value.ToString();
+
                 if (IsValidIdentifier(original))
                 {
                     // We are dealing with a combination of flag constants since
                     // all constant values were cached during warm-up.
-                    JavaScriptEncoder? encoder = options.Encoder;
+                    Debug.Assert(original.Contains(ValueSeparator));
 
-                    if (_nameCache.Count < NameCacheSizeSoftLimit)
+                    original = FormatJsonName(original, _namingPolicy);
+
+                    if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                     {
-                        formatted = _namingPolicy == null
-                            ? JsonEncodedText.Encode(original, encoder)
-                            : FormatEnumValue(original, encoder);
-
+                        formatted = JsonEncodedText.Encode(original, options.Encoder);
                         writer.WriteStringValue(formatted);
-
-                        _nameCache.TryAdd(key, formatted);
+                        _nameCacheForWriting.TryAdd(key, formatted);
                     }
                     else
                     {
                         // We also do not create a JsonEncodedText instance here because passing the string
                         // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WriteStringValue(
-                            _namingPolicy == null
-                            ? original
-                            : FormatEnumValueToString(original, encoder));
+                        writer.WriteStringValue(original);
                     }
 
                     return;
@@ -241,85 +257,15 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        // This method is adapted from Enum.ToUInt64 (an internal method):
-        // https://github.com/dotnet/runtime/blob/bd6cbe3642f51d70839912a6a666e5de747ad581/src/libraries/System.Private.CoreLib/src/System/Enum.cs#L240-L260
-        private static ulong ConvertToUInt64(object value)
-        {
-            Debug.Assert(value is T);
-            ulong result = s_enumTypeCode switch
-            {
-                TypeCode.Int32 => (ulong)(int)value,
-                TypeCode.UInt32 => (uint)value,
-                TypeCode.UInt64 => (ulong)value,
-                TypeCode.Int64 => (ulong)(long)value,
-                TypeCode.SByte => (ulong)(sbyte)value,
-                TypeCode.Byte => (byte)value,
-                TypeCode.Int16 => (ulong)(short)value,
-                TypeCode.UInt16 => (ushort)value,
-                _ => throw new InvalidOperationException(),
-            };
-            return result;
-        }
-
-        private static bool IsValidIdentifier(string value)
-        {
-            // Trying to do this check efficiently. When an enum is converted to
-            // string the underlying value is given if it can't find a matching
-            // identifier (or identifiers in the case of flags).
-            //
-            // The underlying value will be given back with a digit (e.g. 0-9) possibly
-            // preceded by a negative sign. Identifiers have to start with a letter
-            // so we'll just pick the first valid one and check for a negative sign
-            // if needed.
-            return (value[0] >= 'A' &&
-                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
-        }
-
-        private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
-        {
-            Debug.Assert(_namingPolicy != null);
-            string formatted = FormatEnumValueToString(value, encoder);
-            return JsonEncodedText.Encode(formatted, encoder);
-        }
-
-        private string FormatEnumValueToString(string value, JavaScriptEncoder? encoder)
-        {
-            Debug.Assert(_namingPolicy != null);
-
-            string converted;
-            if (!value.Contains(ValueSeparator))
-            {
-                converted = _namingPolicy.ConvertName(value);
-            }
-            else
-            {
-                // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
-                string[] enumValues = value.Split(
-#if BUILDING_INBOX_LIBRARY
-                    ValueSeparator
-#else
-                    new string[] { ValueSeparator }, StringSplitOptions.None
-#endif
-                    );
-
-                for (int i = 0; i < enumValues.Length; i++)
-                {
-                    enumValues[i] = _namingPolicy.ConvertName(enumValues[i]);
-                }
-
-                converted = string.Join(ValueSeparator, enumValues);
-            }
-
-            return converted;
-        }
-
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string? enumString = reader.GetString();
+#if NETCOREAPP
+            bool success = TryParseEnumCore(ref reader, options, out T value);
+#else
+            bool success = TryParseEnumCore(reader.GetString(), options, out T value);
+#endif
 
-            // Try parsing case sensitive first
-            if (!Enum.TryParse(enumString, out T value)
-                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            if (!success)
             {
                 ThrowHelper.ThrowJsonException();
             }
@@ -329,88 +275,41 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            // An EnumConverter that invokes this method
-            // can only be created by JsonSerializerOptions.GetDictionaryKeyConverter
-            // hence no naming policy is expected.
-            Debug.Assert(_namingPolicy == null);
-
             ulong key = ConvertToUInt64(value);
 
-            // Try to obtain values from caches
-            if (options.DictionaryKeyPolicy != null)
-            {
-                Debug.Assert(!isWritingExtensionDataProperty);
-
-                if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
-                {
-                    writer.WritePropertyName(formatted);
-                    return;
-                }
-            }
-            else if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            if (options.DictionaryKeyPolicy == null && _nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
             {
                 writer.WritePropertyName(formatted);
                 return;
             }
 
-            // if there are not cached values
             string original = value.ToString();
+
             if (IsValidIdentifier(original))
             {
                 if (options.DictionaryKeyPolicy != null)
                 {
-                    original = options.DictionaryKeyPolicy.ConvertName(original);
-
-                    if (original == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
-                    }
-
-                    _dictionaryKeyPolicyCache ??= new ConcurrentDictionary<ulong, JsonEncodedText>();
-
-                    if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
-                    {
-                        JavaScriptEncoder? encoder = options.Encoder;
-
-                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
-
-                        writer.WritePropertyName(formatted);
-
-                        _dictionaryKeyPolicyCache.TryAdd(key, formatted);
-                    }
-                    else
-                    {
-                        // We also do not create a JsonEncodedText instance here because passing the string
-                        // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WritePropertyName(original);
-                    }
-
+                    original = FormatJsonName(original, options.DictionaryKeyPolicy);
+                    writer.WritePropertyName(original);
                     return;
+                }
+
+                original = FormatJsonName(original, _namingPolicy);
+
+                if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
+                {
+                    formatted = JsonEncodedText.Encode(original, options.Encoder);
+                    writer.WritePropertyName(formatted);
+                    _nameCacheForWriting.TryAdd(key, formatted);
                 }
                 else
                 {
-                    // We might be dealing with a combination of flag constants since all constant values were
-                    // likely cached during warm - up(assuming the number of constants <= NameCacheSizeSoftLimit).
-
-                    JavaScriptEncoder? encoder = options.Encoder;
-
-                    if (_nameCache.Count < NameCacheSizeSoftLimit)
-                    {
-                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
-
-                        writer.WritePropertyName(formatted);
-
-                        _nameCache.TryAdd(key, formatted);
-                    }
-                    else
-                    {
-                        // We also do not create a JsonEncodedText instance here because passing the string
-                        // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WritePropertyName(original);
-                    }
-
-                    return;
+                    // We also do not create a JsonEncodedText instance here because passing the string
+                    // directly to the writer is cheaper than creating one and not caching it for reuse.
+                    writer.WritePropertyName(original);
                 }
+
+                return;
             }
 
             switch (s_enumTypeCode)
@@ -443,6 +342,167 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                     break;
             }
+        }
+
+#if NETCOREAPP
+        private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
+        {
+            char[]? rentedBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int charsWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
+
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(source, out T result) || Enum.TryParse(source, ignoreCase: true, out result);
+
+            if (rentedBuffer != null)
+            {
+                charBuffer.Slice(0, charsWritten).Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            value = result;
+            return success;
+        }
+#else
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
+        {
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
+            value = result;
+            return success;
+        }
+#endif
+
+        private T ReadEnumUsingNamingPolicy(string? enumString)
+        {
+            if (_namingPolicy == null)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            if (enumString == null)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            Debug.Assert(_nameCacheForReading != null, "Enum value cache should be instantiated if a naming policy is specified.");
+
+            bool success;
+
+            if (!(success = _nameCacheForReading.TryGetValue(enumString, out T value)) && enumString.Contains(ValueSeparator))
+            {
+                string[] enumValues = SplitFlagsEnum(enumString);
+                ulong result = 0;
+
+                for (int i = 0; i < enumValues.Length; i++)
+                {
+                    success = _nameCacheForReading.TryGetValue(enumValues[i], out value);
+                    if (!success)
+                    {
+                        break;
+                    }
+
+                    result |= ConvertToUInt64(value);
+                }
+
+                value = (T)Enum.ToObject(typeof(T), result);
+
+                if (success && _nameCacheForReading.Count < NameCacheSizeSoftLimit)
+                {
+                    _nameCacheForReading[enumString] = value;
+                }
+            }
+
+            if (!success)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return value;
+        }
+
+        // This method is adapted from Enum.ToUInt64 (an internal method):
+        // https://github.com/dotnet/runtime/blob/bd6cbe3642f51d70839912a6a666e5de747ad581/src/libraries/System.Private.CoreLib/src/System/Enum.cs#L240-L260
+        private static ulong ConvertToUInt64(object value)
+        {
+            Debug.Assert(value is T);
+            ulong result = s_enumTypeCode switch
+            {
+                TypeCode.Int32 => (ulong)(int)value,
+                TypeCode.UInt32 => (uint)value,
+                TypeCode.UInt64 => (ulong)value,
+                TypeCode.Int64 => (ulong)(long)value,
+                TypeCode.SByte => (ulong)(sbyte)value,
+                TypeCode.Byte => (byte)value,
+                TypeCode.Int16 => (ulong)(short)value,
+                TypeCode.UInt16 => (ushort)value,
+                _ => throw new InvalidOperationException(),
+            };
+            return result;
+        }
+
+        private static bool IsValidIdentifier(string value)
+        {
+            // Trying to do this check efficiently. When an enum is converted to
+            // string the underlying value is given if it can't find a matching
+            // identifier (or identifiers in the case of flags).
+            //
+            // The underlying value will be given back with a digit (e.g. 0-9) possibly
+            // preceded by a negative sign. Identifiers have to start with a letter
+            // so we'll just pick the first valid one and check for a negative sign
+            // if needed.
+            return (value[0] >= 'A' &&
+                (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
+        }
+
+        private static string FormatJsonName(string value, JsonNamingPolicy? namingPolicy)
+        {
+            if (namingPolicy is null)
+            {
+                return value;
+            }
+
+            string converted;
+            if (!value.Contains(ValueSeparator))
+            {
+                converted = namingPolicy.ConvertName(value);
+            }
+            else
+            {
+                string[] enumValues = SplitFlagsEnum(value);
+
+                for (int i = 0; i < enumValues.Length; i++)
+                {
+                    string name = namingPolicy.ConvertName(enumValues[i]);
+                    if (name == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
+                    }
+                    enumValues[i] = name;
+                }
+
+                converted = string.Join(ValueSeparator, enumValues);
+            }
+
+            return converted;
+        }
+
+        private static string[] SplitFlagsEnum(string value)
+        {
+            // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
+            return value.Split(
+#if NETCOREAPP
+                ValueSeparator
+#else
+                new string[] { ValueSeparator }, StringSplitOptions.None
+#endif
+                );
         }
     }
 }

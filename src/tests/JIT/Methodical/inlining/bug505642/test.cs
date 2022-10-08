@@ -13,6 +13,7 @@
  */
 
 using System;
+using Xunit;
 
 public struct Tuple<T0, T1>
 {
@@ -25,9 +26,10 @@ public struct Tuple<T0, T1>
     }
 }
 
-internal static class M
+public static class M
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return meth<int>(8, 100);
         //Console.Write(meth<int>(8, 100));

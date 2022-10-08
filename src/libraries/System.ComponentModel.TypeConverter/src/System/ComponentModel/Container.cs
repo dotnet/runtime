@@ -217,8 +217,10 @@ namespace System.ComponentModel
         /// components in the container.
         /// </summary>
         [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered.")]
-        protected virtual void ValidateName(IComponent component!!, string? name)
+        protected virtual void ValidateName(IComponent component, string? name)
         {
+            ArgumentNullException.ThrowIfNull(component);
+
             if (name != null)
             {
                 for (int i = 0; i < Math.Min(_siteCount, _sites!.Length); i++)

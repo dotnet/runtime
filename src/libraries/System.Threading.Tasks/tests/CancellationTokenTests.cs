@@ -861,7 +861,7 @@ namespace System.Threading.Tasks.Tests
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!!): " + ex));
+                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!): " + ex));
                 }
             }
         }

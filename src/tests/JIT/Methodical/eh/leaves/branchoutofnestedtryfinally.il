@@ -32,9 +32,9 @@
 
 
 
-.namespace hello
+.namespace hello_branchoutofnestedtryfinally_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
 
@@ -122,13 +122,13 @@
       {
           ldstr      "In try 0"
           call       void [System.Console]System.Console::WriteLine(string)         
-          call       void hello.Class1::inTry0()
+          call       void hello_branchoutofnestedtryfinally_leaves_il.Class1::inTry0()
 
           .try
           {
                   ldstr      "In try"
                   call       void [System.Console]System.Console::WriteLine(string)
-                  call       void hello.Class1::inTry1()
+                  call       void hello_branchoutofnestedtryfinally_leaves_il.Class1::inTry1()
                   leave.s    done
 
           }  
@@ -136,19 +136,19 @@
           {
                   ldstr      "In finally"
                   call       void [System.Console]System.Console::WriteLine(string)
-                  call       void hello.Class1::inFinally1()
+                  call       void hello_branchoutofnestedtryfinally_leaves_il.Class1::inFinally1()
                   endfinally
           }  
        } finally {
           ldstr      "In finally 0"
           call       void [System.Console]System.Console::WriteLine(string)         
-          call       void hello.Class1::inFinally0()
+          call       void hello_branchoutofnestedtryfinally_leaves_il.Class1::inFinally0()
           endfinally
        }
 
        ldstr      "Unreached 2"
        call       void [System.Console]System.Console::WriteLine(string)
-       call       void hello.Class1::unreached1()
+       call       void hello_branchoutofnestedtryfinally_leaves_il.Class1::unreached1()
     done:  
 		ldstr      "After try"
 		call       void [System.Console]System.Console::WriteLine(string)

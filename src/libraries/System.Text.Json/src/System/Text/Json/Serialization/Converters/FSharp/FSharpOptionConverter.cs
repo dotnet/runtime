@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly ConverterStrategy _converterStrategy;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpOptionConverter(JsonConverter<TElement> elementConverter)
         {
             _elementConverter = elementConverter;
@@ -36,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TOption? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TOption? value)
         {
             // `null` values deserialize as `None`
             if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)

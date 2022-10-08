@@ -29,8 +29,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         {
         }
 
-        internal PackageCompilationAssemblyResolver(IFileSystem fileSystem!!, string[] nugetPackageDirectories!!)
+        internal PackageCompilationAssemblyResolver(IFileSystem fileSystem, string[] nugetPackageDirectories)
         {
+            ThrowHelper.ThrowIfNull(fileSystem);
+            ThrowHelper.ThrowIfNull(nugetPackageDirectories);
+
             _fileSystem = fileSystem;
             _nugetPackageDirectories = nugetPackageDirectories;
         }
@@ -71,8 +74,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return new string[] { Path.Combine(basePath, ".nuget", "packages") };
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library!!, List<string>? assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
+            ThrowHelper.ThrowIfNull(library);
+
             if (_nugetPackageDirectories == null || _nugetPackageDirectories.Length == 0 ||
                 !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))
             {

@@ -769,7 +769,7 @@ INST2(abs,         "abs",          0,      IF_EN2K,   0x0E20B800,  0x5E20B800)
 
 INST2(cmle,        "cmle",         0,      IF_EN2K,   0x2E209800,  0x7E209800)
                                    //  cmle    Vd,Vn,#0             DV_2M  0Q101110XX100000 100110nnnnnddddd   2E20 9800   Vd,Vn,#0 (vector - with zero)
-                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - wtih zero)
+                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - with zero)
 
 INST2(cmlt,        "cmlt",         0,      IF_EN2K,   0x0E20A800,  0x5E20A800)
                                    //  cmlt    Vd,Vn,#0             DV_2M  0Q101110XX100000 101010nnnnnddddd   0E20 A800   Vd,Vn,#0 (vector - with zero)
@@ -1052,6 +1052,17 @@ INST1(ldarb,       "ldarb",        LD,     IF_LS_2A,  0x08DFFC00)
 
 INST1(ldarh,       "ldarh",        LD,     IF_LS_2A,  0x48DFFC00)
                                    //  ldarh   Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00
+
+
+INST1(ldapr,        "ldapr",       LD,     IF_LS_2A,  0xB8BFC000)
+                                   //  ldapr   Rt,[Xn]              LS_2A  1X11100010111111 110000nnnnnttttt   B8BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
+INST1(ldaprb,       "ldaprb",      LD,     IF_LS_2A,  0x38BFC000)
+                                   //  ldaprb  Rt,[Xn]              LS_2A  0011100010111111 110000nnnnnttttt   38BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
+INST1(ldaprh,       "ldaprh",      LD,     IF_LS_2A,  0x78BFC000)
+                                   //  ldaprh  Rt,[Xn]              LS_2A  0111100010111111 110000nnnnnttttt   78BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
 
 INST1(ldxr,        "ldxr",         LD,     IF_LS_2A,  0x885F7C00)
                                    //  ldxr    Rt,[Xn]              LS_2A  1X00100001011111 011111nnnnnttttt   885F 7C00

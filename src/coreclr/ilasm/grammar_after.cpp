@@ -1232,7 +1232,7 @@ Its_An_Id:
             if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.')
             {
                 curPos = nextchar(nextchar(nextchar(curPos)));
-                tok = ELIPSIS;
+                tok = ELLIPSIS;
             }
             else
             {
@@ -1414,7 +1414,7 @@ AGAIN:
                             TyParFixupList.PEEK(n));
                         m = 0;
                     }
-                    *pb = (*pb == ELEMENT_TYPE_MVARFIXUP)? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR;
+                    *pb = (BYTE)((*pb == ELEMENT_TYPE_MVARFIXUP) ? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR);
                     int compressed_size_m = (int)CorSigCompressData(m,pb+1);
 
                     // Note that CorSigCompressData() (and hence, CorSigUncompressData()) store a number

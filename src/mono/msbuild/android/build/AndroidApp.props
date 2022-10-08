@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+
+    <AndroidBuildAppAfterThisTarget Condition="'$(AndroidBuildAppAfterThisTarget)' == ''">Publish</AndroidBuildAppAfterThisTarget>
+    <AndroidBuildAppDependsOn>
+        _InitializeCommonProperties;
+        _BeforeAndroidBuildApp;
+        _AndroidResolveReferences;
+        _AndroidPrepareProfiledAot;
+        _AndroidAotCompileApp;
+        _AndroidGenerateAppBundle;
+        _AfterAndroidBuildApp
+    </AndroidBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

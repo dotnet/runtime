@@ -367,7 +367,7 @@ namespace System.Configuration
                                 // remove the LocationSectionRecord from the list
                                 _parent._locationSections.RemoveAt(i);
 
-                                if (locationSubPathInputs == null) locationSubPathInputs = new ArrayList();
+                                locationSubPathInputs ??= new ArrayList();
 
                                 locationSubPathInputs.Add(locationSectionRecord);
                             }
@@ -408,8 +408,7 @@ namespace System.Configuration
 
                                         // First add all indirect inputs per configKey to a local list.
                                         // We will sort all lists after the while loop.
-                                        if (indirectLocationInputs == null)
-                                            indirectLocationInputs = new Dictionary<string, List<SectionInput>>(1);
+                                        indirectLocationInputs ??= new Dictionary<string, List<SectionInput>>(1);
 
                                         string configKey = locationSectionRecord.SectionXmlInfo.ConfigKey;
 
@@ -655,7 +654,7 @@ namespace System.Configuration
                         else
                         {
                             // Remove the entire section record
-                            if (removes == null) removes = new List<SectionRecord>();
+                            removes ??= new List<SectionRecord>();
 
                             removes.Add(sectionRecord);
                         }
@@ -717,12 +716,9 @@ namespace System.Configuration
                 }
 
                 // Add implicit sections to the factory list
-                if (factoryList == null)
-                {
-                    // But if factoryList isn't found in this config, we still try to
-                    // add implicit sections to an empty factoryList.
-                    factoryList = new Hashtable();
-                }
+                // But if factoryList isn't found in this config, we still try to
+                // add implicit sections to an empty factoryList.
+                factoryList ??= new Hashtable();
 
                 AddImplicitSections(factoryList);
                 factoryRecord = (FactoryRecord)factoryList[configKey];
@@ -803,7 +799,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -848,7 +844,7 @@ namespace System.Configuration
                     //
                     // It WILL be common in web scenarios for there to be
                     // deep hierarchies of config files, most of which have
-                    // sparse input. Therefore we do not want to retreive a
+                    // sparse input. Therefore we do not want to retrieve a
                     // factory record if it is not necessary to do so, as
                     // it would always lead to an order N-squared operation,
                     // where N is the depth of the config hierarchy.
@@ -946,7 +942,7 @@ namespace System.Configuration
                             // We don't need a factory record unless this is the root declaration.
                             // We know it is not the root declaration if there is no factory
                             // declared here. This is important to avoid a walk up the config
-                            // hierachy when there is no input in this record.
+                            // hierarchy when there is no input in this record.
                             factoryRecord = GetFactoryRecord(configKey, false);
                             if (factoryRecord == null) isRootDeclaration = false;
                             else
@@ -1062,7 +1058,7 @@ namespace System.Configuration
                         // Cache the results.
                         if (cacheResults)
                         {
-                            if (sectionRecord == null) sectionRecord = EnsureSectionRecord(configKey, true);
+                            sectionRecord ??= EnsureSectionRecord(configKey, true);
 
                             sectionRecord.Result = tmpResult;
                             if (getRuntimeObject) sectionRecord.ResultRuntimeObject = tmpResultRuntimeObject;
@@ -1075,7 +1071,7 @@ namespace System.Configuration
                 }
                 catch
                 {
-                    // Ignore the error if we are attempting to retreive
+                    // Ignore the error if we are attempting to retrieve
                     // the last known good configuration.
                     if (!getLkg) throw;
                 }
@@ -1189,7 +1185,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -1740,10 +1736,7 @@ namespace System.Configuration
                 }
             }
 
-            if (factoryRecord.Factory == null)
-            {
-                factoryRecord.Factory = rootFactoryRecord.Factory;
-            }
+            factoryRecord.Factory ??= rootFactoryRecord.Factory;
 
             isRootDeclaredHere = ReferenceEquals(this, rootConfigRecord);
 
@@ -1962,7 +1955,7 @@ namespace System.Configuration
                                             overrideModeDefault = OverrideModeSetting.CreateFromXmlReadValue(
                                                 OverrideModeSetting.ParseOverrideModeXmlValue(xmlUtil.Reader.Value, xmlUtil));
 
-                                            // Inherit means Allow when comming from the default value
+                                            // Inherit means Allow when coming from the default value
                                             if (overrideModeDefault.OverrideMode == OverrideMode.Inherit)
                                                 overrideModeDefault.ChangeModeInternal(OverrideMode.Allow);
                                         }
@@ -2173,12 +2166,12 @@ namespace System.Configuration
             }
         }
 
-        // Return the lock mode for a section as comming from parent config levels
+        // Return the lock mode for a section as coming from parent config levels
         private OverrideMode ResolveOverrideModeFromParent(string configKey, out OverrideMode childLockMode)
         {
             // When the current record is a location config level we are a direct child of the config level of the actual
             // config file inside which the location tag is. For example we have a file d:\inetpub\wwwroot\web.config which
-            // containts <location path="Sub"> then "this" will be the config level inside the location tag and this.Parent
+            // contains <location path="Sub"> then "this" will be the config level inside the location tag and this.Parent
             // is the config level of d:\inetpub\wwwroot\web.config.
 
             // What we will do to come up with the result is:
@@ -2199,7 +2192,7 @@ namespace System.Configuration
             // 2) If we can't find an existing section record we have two cases again:
             //      a)  We are at the section declaration level - at this level a section is always unlocked by definition
             //          If this wasnt so there would be no way to unlock a section that is locked by default
-            //          A Location config is a bit wierd again in a sence that a location config is unlocked if its in the config file where the section is declared
+            //          A Location config is a bit weird again in a sence that a location config is unlocked if its in the config file where the section is declared
             //          I.e. if "this" is a location record then a section is unconditionally unlocked if "this.Parent" is the section declaration level
             //      b) We are not at section declaration level - in this case the result is whatever the default lock mode for the section is ( remember
             //         that we fall back to the default since we couldn't find a section record with explicit lock mode nowhere above us)
@@ -2235,7 +2228,7 @@ namespace System.Configuration
                     {
                         mode = sectionRecord.LockChildren ? OverrideMode.Deny : OverrideMode.Allow;
 
-                        // When the lock mode is comming from a parent level the
+                        // When the lock mode is coming from a parent level the
                         // lock mode that applies to children of "this" is the same as what applies to "this"
                         childLockMode = mode;
                     }
@@ -2259,7 +2252,7 @@ namespace System.Configuration
                 {
                     // Case 2b
                     //
-                    // Lock mode for children and self is the same since the default value is comming
+                    // Lock mode for children and self is the same since the default value is coming
                     // from a parent level and hence - applies to both
                     childLockMode = mode = defaultMode;
 
@@ -2684,8 +2677,8 @@ namespace System.Configuration
                             // but we have it in sectionLockMode and childLockMode. Apply it now
                             sectionRecord.ChangeLockSettings(sectionLockMode, sectionChildLockMode);
 
-                            // Note that we first apply the lock mode comming from parent levels ( the line above ) and then
-                            // add the file input since the file input takes precedence over whats comming from parent
+                            // Note that we first apply the lock mode coming from parent levels ( the line above ) and then
+                            // add the file input since the file input takes precedence over whats coming from parent
                             SectionInput fileInput = new SectionInput(sectionXmlInfo, localErrors);
                             sectionRecord.AddFileInput(fileInput);
                         }
@@ -2917,8 +2910,7 @@ namespace System.Configuration
                             }
 
                             // Check if the definition is allowed
-                            if (factoryRecord == null)
-                                factoryRecord = FindFactoryRecord(locationSectionRecord.ConfigKey, true);
+                            factoryRecord ??= FindFactoryRecord(locationSectionRecord.ConfigKey, true);
 
                             if (factoryRecord.HasErrors) continue;
 
@@ -3143,8 +3135,14 @@ namespace System.Configuration
 
             lock (this)
             {
-                if (_sectionRecords == null) _sectionRecords = new Hashtable();
-                else sectionRecord = GetSectionRecord(configKey, permitErrors);
+                if (_sectionRecords == null)
+                {
+                    _sectionRecords = new Hashtable();
+                }
+                else
+                {
+                    sectionRecord = GetSectionRecord(configKey, permitErrors);
+                }
 
                 if (sectionRecord == null)
                 {
@@ -3181,12 +3179,12 @@ namespace System.Configuration
         // per record by creating the table on demand.
         protected Hashtable EnsureFactories()
         {
-            return _factoryRecords ?? (_factoryRecords = new Hashtable());
+            return _factoryRecords ??= new Hashtable();
         }
 
         private ArrayList EnsureLocationSections()
         {
-            return _locationSections ?? (_locationSections = new ArrayList());
+            return _locationSections ??= new ArrayList();
         }
 
         internal static string NormalizeConfigSource(string configSource, IConfigErrorInfo errorInfo)
@@ -3252,10 +3250,7 @@ namespace System.Configuration
 
                 if (_flags[SupportsChangeNotifications])
                 {
-                    if (ConfigStreamInfo.CallbackDelegate == null)
-                        ConfigStreamInfo.CallbackDelegate = OnStreamChanged;
-
-                    callbackDelegate = ConfigStreamInfo.CallbackDelegate;
+                    callbackDelegate = ConfigStreamInfo.CallbackDelegate ??= OnStreamChanged;
                 }
             }
 
@@ -3413,7 +3408,7 @@ namespace System.Configuration
         // Requires the hierarchy lock to be acquired (hl)
         internal void HlAddChild(string configName, BaseConfigurationRecord child)
         {
-            if (_children == null) _children = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            _children ??= new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _children.Add(configName, child);
         }
@@ -3654,7 +3649,7 @@ namespace System.Configuration
             // (e.g. if we're in machine.config)
             if (!_parent.IsRootConfig) return;
 
-            if (factoryList == null) factoryList = EnsureFactories();
+            factoryList ??= EnsureFactories();
 
             // Look to see if we already have a factory for "configProtectedData"
             FactoryRecord factoryRecord = (FactoryRecord)factoryList[ReservedSectionProtectedConfiguration];
@@ -3695,7 +3690,7 @@ namespace System.Configuration
                 StringUtil.StartsWithOrdinal(name, "lock");
         }
 
-        protected class ConfigRecordStreamInfo
+        protected sealed class ConfigRecordStreamInfo
         {
             private HybridDictionary _streamInfos;
 
@@ -3714,7 +3709,7 @@ namespace System.Configuration
 
             internal StreamChangeCallback CallbackDelegate { get; set; }
 
-            internal HybridDictionary StreamInfos => _streamInfos ?? (_streamInfos = new HybridDictionary(true));
+            internal HybridDictionary StreamInfos => _streamInfos ??= new HybridDictionary(true);
 
             internal bool HasStreamInfos => _streamInfos != null;
 

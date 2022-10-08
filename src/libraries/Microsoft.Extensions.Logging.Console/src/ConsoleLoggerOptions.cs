@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Name of the log message formatter to use. Defaults to "simple" />.
         /// </summary>
-        public string FormatterName { get; set; }
+        public string? FormatterName { get; set; }
 
         /// <summary>
         /// Includes scopes when <see langword="true" />.
@@ -56,12 +56,49 @@ namespace Microsoft.Extensions.Logging.Console
         /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
         /// </summary>
         [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Use ConsoleFormatterOptions.TimestampFormat instead.")]
-        public string TimestampFormat { get; set; }
+        public string? TimestampFormat { get; set; }
 
         /// <summary>
         /// Gets or sets indication whether or not UTC timezone should be used to format timestamps in logging messages. Defaults to <c>false</c>.
         /// </summary>
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.")]
         public bool UseUtcTimestamp { get; set; }
+
+        private ConsoleLoggerQueueFullMode _queueFullMode = ConsoleLoggerQueueFullMode.Wait;
+        /// <summary>
+        /// Gets or sets the desired console logger behavior when the queue becomes full. Defaults to <c>Wait</c>.
+        /// </summary>
+        public ConsoleLoggerQueueFullMode QueueFullMode
+        {
+            get => _queueFullMode;
+            set
+            {
+                if (value != ConsoleLoggerQueueFullMode.Wait && value != ConsoleLoggerQueueFullMode.DropWrite)
+                {
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.QueueModeNotSupported, nameof(value)));
+                }
+                _queueFullMode = value;
+            }
+        }
+
+        internal const int DefaultMaxQueueLengthValue = 2500;
+        private int _maxQueuedMessages = DefaultMaxQueueLengthValue;
+
+        /// <summary>
+        /// Gets or sets the maximum number of enqueued messages. Defaults to 2500.
+        /// </summary>
+        public int MaxQueueLength
+        {
+            get => _maxQueuedMessages;
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.MaxQueueLengthBadValue, nameof(value)));
+                }
+
+                _maxQueuedMessages = value;
+            }
+        }
     }
 }

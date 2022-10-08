@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             base.CreateCollection(ref reader, ref state);
             TDictionary returnValue = (TDictionary)state.Current.ReturnValue!;
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                state.Current.EndDictionaryElement();
+                state.Current.EndDictionaryEntry();
             } while (enumerator.MoveNext());
 
             return true;

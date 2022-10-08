@@ -16,7 +16,6 @@
 #if defined(FEATURE_SVR_GC)
 
 #include <sigformat.h>
-#include <win32threadpool.h>
 #include "request_common.h"
 
 int GCHeapCount()
@@ -47,6 +46,18 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->mem = (CLRDATA_ADDRESS)(ULONG_PTR) (pHeapSegment->mem);
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
+
+    TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+
+    if (pSegment->segmentAddr == heap.ephemeral_heap_segment.GetAddr())
+    {
+        pSegment->highAllocMark = (CLRDATA_ADDRESS)(ULONG_PTR)heap.alloc_allocated;
+    }
+    else
+    {
+        pSegment->highAllocMark = pSegment->allocated;
+    }
 
     return S_OK;
 }
@@ -134,17 +145,17 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     detailsData->card_table = (CLRDATA_ADDRESS)pHeap->card_table;
     detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
-    if (pHeap->saved_sweep_ephemeral_seg.IsValid())
-    {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
-    }
-    else
+    if (IsRegionGCEnabled())
     {
         // with regions, we don't have these variables anymore
         // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
         detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
         detailsData->saved_sweep_ephemeral_start = 0;
+    }
+    else
+    {
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
     }
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;

@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         private Timer? _timer;
-        private bool _timerInitialzed;
+        private bool _timerInitialized;
         private object _timerLock = new();
         private Func<Timer> _timerFactory;
         private bool _disposed;
@@ -131,8 +131,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="filter">A globbing pattern for files and directories to watch</param>
         /// <returns>A change token for all files that match the filter</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="filter" /> is null</exception>
-        public IChangeToken CreateFileChangeToken(string filter!!)
+        public IChangeToken CreateFileChangeToken(string filter)
         {
+            ThrowHelper.ThrowIfNull(filter);
+
             filter = NormalizePath(filter);
 
             // Absolute paths and paths traversing above root not permitted.
@@ -154,7 +156,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             if (UseActivePolling)
             {
-                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialzed, ref _timerLock, _timerFactory);
+                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
             IChangeToken changeToken;

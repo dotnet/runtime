@@ -78,6 +78,7 @@ namespace System.Net.Http
         {
             if (IsEnabled())
             {
+                ArgumentNullException.ThrowIfNull(request);
                 return SendAsyncCore(request, async, cancellationToken);
             }
             else
@@ -88,8 +89,7 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request!!, bool async,
-            CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)

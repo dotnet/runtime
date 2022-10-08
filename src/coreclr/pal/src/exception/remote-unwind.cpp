@@ -124,7 +124,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -143,7 +143,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #ifndef FEATURE_USE_SYSTEM_LIBUNWIND
 extern "C" int
-_OOP_find_proc_info(
+unw_get_proc_info_in_range(
     unw_word_t start_ip,
     unw_word_t end_ip,
     unw_word_t eh_frame_table,
@@ -169,7 +169,7 @@ typedef struct _libunwindInfo
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
-#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
+#ifdef HOST_UNIX
 
 #define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
 
@@ -526,6 +526,10 @@ ReadEncodedPointer(
     *valp = value;
     return true;
 }
+
+#endif // HOST_UNIX
+
+#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
 template<class T>
 static bool
@@ -1310,6 +1314,14 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
     return false;
 }
 
+//===-- CompactUnwindInfo.cpp ---------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #if defined(TARGET_AMD64)
 
 static bool
@@ -1377,6 +1389,163 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
     }
 
     TRACE("SUCCESS: compact step encoding %08x rip %p rsp %p rbp %p\n",
+        compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
+    return true;
+}
+
+static bool
+StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
+{
+    int mode = compactEncoding & UNWIND_X86_64_MODE_MASK;
+    CONTEXT* context = info->Context;
+
+    uint32_t stack_size = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_SIZE);
+    uint32_t register_count = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_REG_COUNT);
+    uint32_t permutation = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_REG_PERMUTATION);
+
+    if (mode == UNWIND_X86_64_MODE_STACK_IND)
+    {
+        _ASSERTE(functionStart != 0);
+        unw_word_t addr = functionStart + stack_size;
+        if (!ReadValue32(info, &addr, &stack_size)) {
+            return false;
+        }
+        uint32_t stack_adjust = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_ADJUST);
+        stack_size += stack_adjust * 8;
+    }
+    else
+    {
+        stack_size *= 8;
+    }
+
+    TRACE("Frameless function: encoding %08x stack size %d register count %d\n", compactEncoding, stack_size, register_count);
+
+    // We need to include (up to) 6 registers in 10 bits.
+    // That would be 18 bits if we just used 3 bits per reg to indicate
+    // the order they're saved on the stack.
+    //
+    // This is done with Lehmer code permutation, e.g. see
+    // http://stackoverflow.com/questions/1506078/fast-permutation-number-permutation-mapping-algorithms
+    int permunreg[6];
+
+    // This decodes the variable-base number in the 10 bits
+    // and gives us the Lehmer code sequence which can then
+    // be decoded.
+    switch (register_count) {
+        case 6:
+            permunreg[0] = permutation / 120; // 120 == 5!
+            permutation -= (permunreg[0] * 120);
+            permunreg[1] = permutation / 24; // 24 == 4!
+            permutation -= (permunreg[1] * 24);
+            permunreg[2] = permutation / 6; // 6 == 3!
+            permutation -= (permunreg[2] * 6);
+            permunreg[3] = permutation / 2; // 2 == 2!
+            permutation -= (permunreg[3] * 2);
+            permunreg[4] = permutation; // 1 == 1!
+            permunreg[5] = 0;
+            break;
+        case 5:
+            permunreg[0] = permutation / 120;
+            permutation -= (permunreg[0] * 120);
+            permunreg[1] = permutation / 24;
+            permutation -= (permunreg[1] * 24);
+            permunreg[2] = permutation / 6;
+            permutation -= (permunreg[2] * 6);
+            permunreg[3] = permutation / 2;
+            permutation -= (permunreg[3] * 2);
+            permunreg[4] = permutation;
+            break;
+        case 4:
+            permunreg[0] = permutation / 60;
+            permutation -= (permunreg[0] * 60);
+            permunreg[1] = permutation / 12;
+            permutation -= (permunreg[1] * 12);
+            permunreg[2] = permutation / 3;
+            permutation -= (permunreg[2] * 3);
+            permunreg[3] = permutation;
+            break;
+        case 3:
+            permunreg[0] = permutation / 20;
+            permutation -= (permunreg[0] * 20);
+            permunreg[1] = permutation / 4;
+            permutation -= (permunreg[1] * 4);
+            permunreg[2] = permutation;
+            break;
+        case 2:
+            permunreg[0] = permutation / 5;
+            permutation -= (permunreg[0] * 5);
+            permunreg[1] = permutation;
+            break;
+        case 1:
+            permunreg[0] = permutation;
+            break;
+    }
+
+    // Decode the Lehmer code for this permutation of
+    // the registers v. http://en.wikipedia.org/wiki/Lehmer_code
+    int registers[6] = {UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE,
+                        UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE,
+                        UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE};
+    bool used[7] = {false, false, false, false, false, false, false};
+    for (int i = 0; i < register_count; i++)
+    {
+        int renum = 0;
+        for (int j = 1; j < 7; j++)
+        {
+            if (!used[j])
+            {
+                if (renum == permunreg[i])
+                {
+                    registers[i] = j;
+                    used[j] = true;
+                    break;
+                }
+                renum++;
+            }
+        }
+    }
+
+    uint64_t savedRegisters = context->Rsp + stack_size - 8 - (8 * register_count);
+    for (int i = 0; i < register_count; i++)
+    {
+        uint64_t reg;
+        if (!ReadValue64(info, &savedRegisters, &reg)) {
+            return false;
+        }
+        switch (registers[i]) {
+            case UNWIND_X86_64_REG_RBX:
+                context->Rbx = reg;
+                break;
+            case UNWIND_X86_64_REG_R12:
+                context->R12 = reg;
+                break;
+            case UNWIND_X86_64_REG_R13:
+                context->R13 = reg;
+                break;
+            case UNWIND_X86_64_REG_R14:
+                context->R14 = reg;
+                break;
+            case UNWIND_X86_64_REG_R15:
+                context->R15 = reg;
+                break;
+            case UNWIND_X86_64_REG_RBP:
+                context->Rbp = reg;
+                break;
+            default:
+                ERROR("Bad register for frameless\n");
+                break;
+        }
+    }
+
+    // Now unwind the frame
+    uint64_t ip;
+    if (!ReadValue64(info, &savedRegisters, &ip)) {
+        return false;
+    }
+    context->Rip = ip;
+    context->Rsp = savedRegisters;
+
+    TRACE("SUCCESS: frameless encoding %08x rip %p rsp %p rbp %p\n",
         compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
@@ -1602,7 +1771,7 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 
         case UNWIND_X86_64_MODE_STACK_IMMD:
         case UNWIND_X86_64_MODE_STACK_IND:
-            break;
+            return StepWithCompactEncodingFrameless(info, compactEncoding, functionStart);
 
         case UNWIND_X86_64_MODE_DWARF:
             return false;
@@ -1707,6 +1876,25 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
+#elif defined(TARGET_POWERPC64)
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R14, &contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R15, &contextPointers->R15);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R16, &contextPointers->R16);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R17, &contextPointers->R17);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R18, &contextPointers->R18);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R19, &contextPointers->R19);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R20, &contextPointers->R20);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R21, &contextPointers->R21);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R22, &contextPointers->R22);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R23, &contextPointers->R23);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R24, &contextPointers->R24);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R25, &contextPointers->R25);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R26, &contextPointers->R26);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R27, &contextPointers->R27);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R28, &contextPointers->R28);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R29, &contextPointers->R29);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R30, &contextPointers->R30);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R31, &contextPointers->R31);
 #else
 #error unsupported architecture
 #endif
@@ -1794,6 +1982,27 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
     TRACE("sp %p pc %p lr %p\n", winContext->R15, winContext->PSWAddr, winContext->R14);
+#elif defined(TARGET_POWERPC64)
+    //TODO
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Nip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R31);
+    unw_get_reg(cursor, UNW_PPC64_R14, (unw_word_t *) &winContext->R14);
+    unw_get_reg(cursor, UNW_PPC64_R15, (unw_word_t *) &winContext->R15);
+    unw_get_reg(cursor, UNW_PPC64_R16, (unw_word_t *) &winContext->R16);
+    unw_get_reg(cursor, UNW_PPC64_R17, (unw_word_t *) &winContext->R17);
+    unw_get_reg(cursor, UNW_PPC64_R18, (unw_word_t *) &winContext->R18);
+    unw_get_reg(cursor, UNW_PPC64_R19, (unw_word_t *) &winContext->R19);
+    unw_get_reg(cursor, UNW_PPC64_R20, (unw_word_t *) &winContext->R20);
+    unw_get_reg(cursor, UNW_PPC64_R21, (unw_word_t *) &winContext->R21);
+    unw_get_reg(cursor, UNW_PPC64_R22, (unw_word_t *) &winContext->R22);
+    unw_get_reg(cursor, UNW_PPC64_R23, (unw_word_t *) &winContext->R23);
+    unw_get_reg(cursor, UNW_PPC64_R24, (unw_word_t *) &winContext->R24);
+    unw_get_reg(cursor, UNW_PPC64_R25, (unw_word_t *) &winContext->R25);
+    unw_get_reg(cursor, UNW_PPC64_R26, (unw_word_t *) &winContext->R26);
+    unw_get_reg(cursor, UNW_PPC64_R27, (unw_word_t *) &winContext->R27);
+    unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
+    unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
+    unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
 #else
 #error unsupported architecture
 #endif
@@ -1908,6 +2117,27 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_S390X_R14:    *valp = (unw_word_t)winContext->R14; break;
     case UNW_S390X_R15:    *valp = (unw_word_t)winContext->R15; break;
     case UNW_S390X_IP:     *valp = (unw_word_t)winContext->PSWAddr; break;
+#elif defined(TARGET_POWERPC64)
+    //TODO
+    case UNW_PPC64_R14:    *valp = (unw_word_t)winContext->R14; break;
+    case UNW_PPC64_R15:    *valp = (unw_word_t)winContext->R15; break;
+    case UNW_PPC64_R16:    *valp = (unw_word_t)winContext->R16; break;
+    case UNW_PPC64_R17:    *valp = (unw_word_t)winContext->R17; break;
+    case UNW_PPC64_R18:    *valp = (unw_word_t)winContext->R18; break;
+    case UNW_PPC64_R19:    *valp = (unw_word_t)winContext->R19; break;
+    case UNW_PPC64_R20:    *valp = (unw_word_t)winContext->R20; break;
+    case UNW_PPC64_R21:    *valp = (unw_word_t)winContext->R21; break;
+    case UNW_PPC64_R22:    *valp = (unw_word_t)winContext->R22; break;
+    case UNW_PPC64_R23:    *valp = (unw_word_t)winContext->R23; break;
+    case UNW_PPC64_R24:    *valp = (unw_word_t)winContext->R24; break;
+    case UNW_PPC64_R25:    *valp = (unw_word_t)winContext->R25; break;
+    case UNW_PPC64_R26:    *valp = (unw_word_t)winContext->R26; break;
+    case UNW_PPC64_R27:    *valp = (unw_word_t)winContext->R27; break;
+    case UNW_PPC64_R28:    *valp = (unw_word_t)winContext->R28; break;
+    case UNW_PPC64_R29:    *valp = (unw_word_t)winContext->R29; break;
+    case UNW_PPC64_R30:    *valp = (unw_word_t)winContext->R30; break;
+    case UNW_PPC64_R31:    *valp = (unw_word_t)winContext->R31; break;
+    case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
 #else
 #error unsupported architecture
 #endif
@@ -2056,7 +2286,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
 
 #ifdef FEATURE_USE_SYSTEM_LIBUNWIND
-    if (ehFrameHdrAddr  == 0) {
+    if (ehFrameHdrAddr == 0) {
         ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
         return -UNW_EINVAL;
     }
@@ -2128,7 +2358,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
 #else
-    return _OOP_find_proc_info(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
+    return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
 #endif // FEATURE_USE_SYSTEM_LIBUNWIND
 
 #endif // __APPLE__
@@ -2280,11 +2510,160 @@ exit:
     return result;
 }
 
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
+{
+    _ASSERTE(ehFrameStart != nullptr);
+    _ASSERTE(ehFrameSize != nullptr);
+    _ASSERTE(ehFrameHdrAddr != 0);
+    *ehFrameStart = 0;
+    *ehFrameSize = 0;
+
+#ifdef HOST_UNIX
+    libunwindInfo info;
+    info.BaseAddress = baseAddress;
+    info.Context = nullptr;
+    info.FunctionStart = 0;
+    info.ReadMemory = readMemoryCallback;
+
+    eh_frame_hdr ehFrameHdr;
+    if (!info.ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
+        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
+        return FALSE;
+    }
+    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
+        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
+
+    if (ehFrameHdr.version != DW_EH_VERSION) {
+        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        return FALSE;
+    }
+    unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
+    unw_word_t ehFramePtr;
+    unw_word_t fdeCount;
+
+    // Decode the eh_frame_hdr info
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
+        ERROR("decoding eh_frame_ptr\n");
+        return FALSE;
+    }
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
+        ERROR("decoding fde_count_enc\n");
+        return FALSE;
+    }
+    TRACE("ehFrameStart %p fdeCount %p\n", ehFrameStart, fdeCount);
+
+    // If there are no frame table entries
+    if (fdeCount == 0) {
+        TRACE("No frame table entries\n");
+        return FALSE;
+    }
+
+    uint64_t totalSize = 0;
+    uint64_t encounteredCieCount = 0;
+    uint64_t encounteredFdeCount = 0;
+    addr = ehFramePtr;
+
+    while (true)
+    {
+        bool is64BitEncoding = false;
+        uint64_t initialLength = 0;
+        uint32_t initialLength32;
+
+        if (!ReadValue32(&info, &addr, &initialLength32)) {
+            return FALSE;
+        }
+        totalSize += sizeof(initialLength32);
+
+        if (initialLength32 >= 0xfffffff0)
+        {
+            if (initialLength32 == 0xffffffff)
+            {
+                // 64 bit encoding
+                is64BitEncoding = true;
+                if (!ReadValue64(&info, &addr, &initialLength)) {
+                    return FALSE;
+                }
+                totalSize += sizeof(initialLength);
+            }
+            else
+            {
+                ASSERT("Length encoding not supported: %08x\n", initialLength32);
+                return FALSE;
+            }
+        }
+        else
+        {
+            // 32 bit encoding
+            initialLength = static_cast<uint64_t>(initialLength32);
+        }
+
+        if (initialLength == 0)
+        {
+            break;
+        }
+
+        // "addr" either points to a CIE_id in a CIE or CIE_ptr in a FDE. A value of zero indicates a CIE.
+        uint64_t ciePtr;
+        if (is64BitEncoding)
+        {
+            if (!ReadValue64(&info, &addr, &ciePtr)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr);
+        }
+        else
+        {
+            uint32_t ciePtr32;
+            if (!ReadValue32(&info, &addr, &ciePtr32)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr32);
+            ciePtr = static_cast<uint64_t>(ciePtr32);
+        }
+
+        if (ciePtr == 0)
+        {
+            encounteredCieCount++;
+        }
+        else
+        {
+            encounteredFdeCount++;
+        }
+
+        totalSize += initialLength;
+        addr += initialLength;
+
+        // If we've seen more FDEs than expected, somehow either the header is inconsistent or we overread the end of the table.
+        if (encounteredFdeCount >= fdeCount)
+        {
+            break;
+        }
+    }
+
+    _ASSERTE(encounteredFdeCount == fdeCount);
+
+    *ehFrameStart = ehFramePtr;
+    *ehFrameSize = totalSize;
+    return TRUE;
+#else
+    return FALSE;
+#endif // HOST_UNIX
+}
+
 #else
 
 BOOL
 PALAPI
 PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+{
+    return FALSE;
+}
+
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
 {
     return FALSE;
 }

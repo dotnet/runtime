@@ -298,22 +298,24 @@ struct DiffData
     CompileResult* cr2;
 
     // Details of the first block
-    size_t blocksize1;
-    size_t datablock1;
-    size_t datablockSize1;
-    size_t originalBlock1;
-    size_t originalDataBlock1;
-    size_t otherCodeBlock1;
-    size_t otherCodeBlockSize1;
+    unsigned char* block1;
+    size_t         blocksize1;
+    unsigned char* datablock1;
+    size_t         datablockSize1;
+    size_t         originalBlock1;
+    size_t         originalDataBlock1;
+    size_t         otherCodeBlock1;
+    size_t         otherCodeBlockSize1;
 
     // Details of the second block
-    size_t blocksize2;
-    size_t datablock2;
-    size_t datablockSize2;
-    size_t originalBlock2;
-    size_t originalDataBlock2;
-    size_t otherCodeBlock2;
-    size_t otherCodeBlockSize2;
+    unsigned char* block2;
+    size_t         blocksize2;
+    unsigned char* datablock2;
+    size_t         datablockSize2;
+    size_t         originalBlock2;
+    size_t         originalDataBlock2;
+    size_t         otherCodeBlock2;
+    size_t         otherCodeBlockSize2;
 };
 
 //
@@ -330,6 +332,7 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
+    const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
     const DiffData* data         = (const DiffData*)payload;
     size_t          ip1          = data->originalBlock1 + blockOffset;
     size_t          ip2          = data->originalBlock2 + blockOffset;
@@ -435,6 +438,140 @@ bool NearDiffer::compareOffsets(
     if ((mapped1 == mapped2) && (mapped1 != (size_t)-1))
         return true;
 
+    // There are some cases on arm64 where we generate multiple instruction register construction of addresses
+    // but we don't have a relocation for them (so they aren't handled by `applyRelocs`). One case is
+    // allocPgoInstrumentationBySchema(), which returns an address the JIT writes into the code stream
+    // (used to store dynamic PGO probe data).
+    //
+    // The instruction sequence is something like this:
+    //     mov     x0, #63408
+    //     movk    x0, #23602, lsl #16
+    //     movk    x0, #606, lsl #32
+    //
+    // Here, we try to match this sequence and look it up in the address map.
+    //
+    // Since the mov/movk sequence is specific to the replay address constant, we don't assume the baseline
+    // and diff have the same number of instructions (e.g., it's possible to skip a `movk` if it is zero).
+    // 
+    // Some version of this logic might apply to ARM as well.
+    //
+    if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
+    {
+        bool movk2_1 = false, movk3_1 = false;
+        bool movk2_2 = false, movk3_2 = false;
+
+        unsigned reg1_1 = 0, reg2_1, reg3_1, reg4_1;
+        unsigned reg1_2 = 0, reg2_2, reg3_2, reg4_2;
+        unsigned con1_1, con2_1, con3_1, con4_1;
+        unsigned con1_2, con2_2, con3_2, con4_2;
+        unsigned shift2_1, shift3_1, shift4_1;
+        unsigned shift2_2, shift3_2, shift4_2;
+
+        UINT32* iaddr1    = (UINT32*)(data->block1 + blockOffset);
+        UINT32* iaddr2    = (UINT32*)(data->block2 + blockOffset);
+        UINT32* iaddr1end = (UINT32*)(data->block1 + data->blocksize1);
+        UINT32* iaddr2end = (UINT32*)(data->block2 + data->blocksize2);
+
+        DWORDLONG addr1 = 0;
+        DWORDLONG addr2 = 0;
+
+        // Look for a mov/movk address pattern in code stream 1.
+
+        if ((iaddr1 < iaddr1end) &&
+            GetArm64MovConstant(iaddr1, &reg1_1, &con1_1))
+        {
+            // We assume the address requires at least 1 'movk' instruction.
+            if ((iaddr1 + 1 < iaddr1end) &&
+                GetArm64MovkConstant(iaddr1 + 1, &reg2_1, &con2_1, &shift2_1) &&
+                (reg1_1 == reg2_1))
+            {
+                addr1 = (DWORDLONG)con1_1 + ((DWORDLONG)con2_1 << shift2_1);
+
+                if ((iaddr1 + 2 < iaddr1end) &&
+                    GetArm64MovkConstant(iaddr1 + 2, &reg3_1, &con3_1, &shift3_1) &&
+                    (reg1_1 == reg3_1))
+                {
+                    movk2_1 = true;
+                    addr1 += (DWORDLONG)con3_1 << shift3_1;
+
+                    if ((iaddr1 + 3 < iaddr1end) &&
+                        GetArm64MovkConstant(iaddr1 + 3, &reg4_1, &con4_1, &shift4_1) &&
+                        (reg1_1 == reg4_1))
+                    {
+                        movk3_1 = true;
+                        addr1 += (DWORDLONG)con4_1 << shift4_1;
+                    }
+                }
+            }
+        }
+
+        // Look for a mov/movk address pattern in code stream 2.
+
+        if ((iaddr2 < iaddr2end) &&
+            GetArm64MovConstant(iaddr2, &reg1_2, &con1_2))
+        {
+            // We assume the address requires at least 1 'movk' instruction.
+            if ((iaddr2 + 1 < iaddr2end) &&
+                GetArm64MovkConstant(iaddr2 + 1, &reg2_2, &con2_2, &shift2_2) &&
+                (reg1_2 == reg2_2))
+            {
+                addr2 = (DWORDLONG)con1_2 + ((DWORDLONG)con2_2 << shift2_2);
+
+                if ((iaddr2 + 2 < iaddr2end) &&
+                    GetArm64MovkConstant(iaddr2 + 2, &reg3_2, &con3_2, &shift3_2) &&
+                    (reg1_2 == reg3_2))
+                {
+                    movk2_2 = true;
+                    addr2 += (DWORDLONG)con3_2 << shift3_2;
+
+                    if ((iaddr2 + 3 < iaddr2end) &&
+                        GetArm64MovkConstant(iaddr2 + 3, &reg4_2, &con4_2, &shift4_2) &&
+                        (reg1_2 == reg4_2))
+                    {
+                        movk3_2 = true;
+                        addr2 += (DWORDLONG)con4_2 << shift4_2;
+                    }
+                }
+            }
+        }
+
+        // Check the constants. We don't need to check 'addr1 == addr2' because if that were
+        // true we wouldn't have gotten here.
+        //
+        // Note: when replaying on a 32-bit platform, we must have
+        // movk2_1 == movk2_2 == movk3_1 == movk3_2 == false
+
+        if ((addr1 != 0) && (addr2 != 0) && (reg1_1 == reg1_2))
+        {
+            DWORDLONG mapped1 = (DWORDLONG)data->cr1->searchAddressMap((void*)addr1);
+            DWORDLONG mapped2 = (DWORDLONG)data->cr2->searchAddressMap((void*)addr2);
+            if ((mapped1 == mapped2) && (mapped1 != (DWORDLONG)-1))
+            {
+                // Now, zero out the constants in the `movk` instructions so when the disassembler
+                // gets to them, they compare equal.
+                PutArm64MovkConstant(iaddr1 + 1, 0);
+                PutArm64MovkConstant(iaddr2 + 1, 0);
+                if (movk2_1)
+                {
+                    PutArm64MovkConstant(iaddr1 + 2, 0);
+                }
+                if (movk2_2)
+                {
+                    PutArm64MovkConstant(iaddr2 + 2, 0);
+                }
+                if (movk3_1)
+                {
+                    PutArm64MovkConstant(iaddr1 + 3, 0);
+                }
+                if (movk3_2)
+                {
+                    PutArm64MovkConstant(iaddr2 + 3, 0);
+                }
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -513,11 +650,11 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
                      cr2,
 
                      // Details of the first block
-                     (size_t)blocksize1, (size_t)datablock1, (size_t)datablockSize1, (size_t)originalBlock1,
+                     block1, (size_t)blocksize1, datablock1, (size_t)datablockSize1, (size_t)originalBlock1,
                      (size_t)originalDataBlock1, (size_t)otherCodeBlock1, (size_t)otherCodeBlockSize1,
 
                      // Details of the second block
-                     (size_t)blocksize2, (size_t)datablock2, (size_t)datablockSize2, (size_t)originalBlock2,
+                     block2, (size_t)blocksize2, datablock2, (size_t)datablockSize2, (size_t)originalBlock2,
                      (size_t)originalDataBlock2, (size_t)otherCodeBlock2, (size_t)otherCodeBlockSize2};
 
 #ifdef USE_COREDISTOOLS
@@ -1141,12 +1278,36 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
              coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
              orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
 
-    cr1->applyRelocs(hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
-    cr2->applyRelocs(hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
-    cr1->applyRelocs(coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
-    cr2->applyRelocs(coldCodeBlock_2, coldCodeSize_2, orig_coldCodeBlock_2);
-    cr1->applyRelocs(roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
-    cr2->applyRelocs(roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
+    RelocContext rc;
+    rc.mc                      = mc;
+
+    rc.hotCodeAddress          = (size_t)hotCodeBlock_1;
+    rc.hotCodeSize             = hotCodeSize_1;
+    rc.coldCodeAddress         = (size_t)coldCodeBlock_1;
+    rc.coldCodeSize            = coldCodeSize_1;
+    rc.roDataAddress           = (size_t)roDataBlock_1;
+    rc.roDataSize              = roDataSize_1;
+    rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_1;
+    rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_1;
+    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_1;
+
+    cr1->applyRelocs(&rc, hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
+    cr1->applyRelocs(&rc, coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
+    cr1->applyRelocs(&rc, roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
+
+    rc.hotCodeAddress          = (size_t)hotCodeBlock_2;
+    rc.hotCodeSize             = hotCodeSize_2;
+    rc.coldCodeAddress         = (size_t)coldCodeBlock_2;
+    rc.coldCodeSize            = coldCodeSize_2;
+    rc.roDataAddress           = (size_t)roDataBlock_2;
+    rc.roDataSize              = roDataSize_2;
+    rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_2;
+    rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_2;
+    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_2;
+
+    cr2->applyRelocs(&rc, hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
+    cr2->applyRelocs(&rc, coldCodeBlock_2, coldCodeSize_2, orig_coldCodeBlock_2);
+    cr2->applyRelocs(&rc, roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
 
     if (!compareCodeSection(mc, cr1, cr2, hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1,
                             orig_hotCodeBlock_1, orig_roDataBlock_1, orig_coldCodeBlock_1, coldCodeSize_1,

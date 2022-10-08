@@ -127,14 +127,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string FrameworkTestPropertyValue => "VALUE_FROM_FRAMEWORK";
             public string HostFxrPathPropertyName => "HOSTFXR_PATH";
 
-            private readonly string copiedDotnet;
+            private readonly TestArtifact copiedDotnet;
 
             public SharedTestState()
             {
-                copiedDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "runtimeProperties");
-                SharedFramework.CopyDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), copiedDotnet);
+                copiedDotnet = new TestArtifact(Path.Combine(TestArtifact.TestArtifactsPath, "runtimeProperties"));
+                SharedFramework.CopyDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), copiedDotnet.Location);
 
-                MockSDK = new DotNetBuilder(copiedDotnet, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+                MockSDK = new DotNetBuilder(copiedDotnet.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr("9999.0.0")
                     .AddMockSDK("9999.0.0-dev", "9999.0.0")
                     .Build();
@@ -147,7 +147,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     }
 }");
 
-                RepoDirectories = new RepoDirectoriesProvider(builtDotnet: copiedDotnet);
+                RepoDirectories = new RepoDirectoriesProvider(builtDotnet: copiedDotnet.Location);
 
                 RuntimePropertiesFixture = new TestProjectFixture("RuntimeProperties", RepoDirectories)
                     .EnsureRestored()
@@ -165,10 +165,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public void Dispose()
             {
                 RuntimePropertiesFixture.Dispose();
-                if (!TestArtifact.PreserveTestRuns() && Directory.Exists(copiedDotnet))
-                {
-                    Directory.Delete(copiedDotnet, true);
-                }
+                copiedDotnet.Dispose();
             }
         }
     }

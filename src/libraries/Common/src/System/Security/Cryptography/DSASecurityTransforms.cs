@@ -66,8 +66,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] CreateSignature(byte[] rgbHash!!)
+            public override byte[] CreateSignature(byte[] rgbHash)
             {
+                ArgumentNullException.ThrowIfNull(rgbHash);
+
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -90,8 +92,11 @@ namespace System.Security.Cryptography
                 return ieeeFormatSignature;
             }
 
-            public override bool VerifySignature(byte[] hash!!, byte[] signature!!)
+            public override bool VerifySignature(byte[] hash, byte[] signature)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -158,7 +163,7 @@ namespace System.Security.Cryptography
                     return current;
                 }
 
-                // macOS 10.11 and macOS 10.12 declare DSA invalid for key generation.
+                // macOS declares DSA invalid for key generation.
                 // Rather than write code which might or might not work, returning
                 // (OSStatus)-4 (errSecUnimplemented), just make the exception occur here.
                 //

@@ -35,7 +35,7 @@ SigFormat::SigFormat(MethodDesc* pMeth, TypeHandle owner, BOOL fIgnoreMethodName
     }
     CONTRACTL_END
 
-    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can succesfully format
+    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can successfully format
     // non-typical generic method definitions.
     MetaSig sig(pMeth, pMeth->GetExactClassInstantiation(owner), pMeth->LoadMethodInstantiation());
 
@@ -561,11 +561,10 @@ void SigFormat::AddType(TypeHandle th)
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
         {
-            StackScratchBuffer scratch;
             StackSString name;
             th.GetName(name);
 
-            AddString(name.GetANSI(scratch));
+            AddString(name.GetUTF8());
 
             break;
         }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -29,10 +30,12 @@ namespace Microsoft.Interop
         /// The native type should match the managed type, including rehydrating marshalling attributes and by-ref syntax (pure forwarding).
         /// </summary>
         ManagedTypeAndAttributes,
+
         /// <summary>
         /// The native signature should be the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
         /// </summary>
         NativeType,
+
         /// <summary>
         /// The native signature should be a pointer to the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
         /// </summary>
@@ -48,14 +51,21 @@ namespace Microsoft.Interop
         /// The managed value should be passed as-is, including any managed by-ref syntax used in the managed declaration.
         /// </summary>
         ManagedIdentifier,
+
         /// <summary>
         /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
         NativeIdentifier,
+
         /// <summary>
         /// The address of the native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
-        AddressOfNativeIdentifier
+        AddressOfNativeIdentifier,
+
+        /// <summary>
+        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
+        /// </summary>
+        CastNativeIdentifier
     }
 
     /// <summary>
@@ -109,7 +119,7 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
-        /// to an identifer for the managed value.
+        /// to an identifier for the managed value.
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
@@ -160,5 +170,10 @@ namespace Microsoft.Interop
         /// [Optional] Specific reason marshalling of the supplied type isn't supported.
         /// </summary>
         public string? NotSupportedDetails { get; init; }
+
+        /// <summary>
+        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
+        /// </summary>
+        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
     }
 }

@@ -59,6 +59,7 @@ namespace System.Security.Cryptography.X509Certificates
         private const int EventId_RevocationCheckStart = 45;
         private const int EventId_RevocationCheckStop = 46;
         private const int EventId_CrlIdentifiersDetermined = 47;
+        private const int EventId_StapledOcspPresent = 48;
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
@@ -744,6 +745,18 @@ namespace System.Security.Cryptography.X509Certificates
         private void CrlIdentifiersDetermined(string subjectName, string crlDistributionPoint, string cacheFileName)
         {
             WriteEvent(EventId_CrlIdentifiersDetermined, subjectName, crlDistributionPoint, cacheFileName);
+        }
+
+        [Event(
+            EventId_StapledOcspPresent,
+            Level = EventLevel.Verbose,
+            Message = "The target certificate has a stapled OCSP request, skipping the CRL check.")]
+        internal void StapledOcspPresent()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_StapledOcspPresent);
+            }
         }
     }
 }

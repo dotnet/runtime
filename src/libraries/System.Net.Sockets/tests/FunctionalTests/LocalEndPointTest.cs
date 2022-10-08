@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnnect()
+        public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnect()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())
@@ -103,7 +103,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task TcpClientSocket_WhenNotBound_LocalEPChangeToSpecificOnConnnect()
+        public async Task TcpClientSocket_WhenNotBound_LocalEPChangeToSpecificOnConnect()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())

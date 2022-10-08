@@ -65,8 +65,10 @@ namespace System.Net
             m_version = m_list.Count;
         }
 
-        public void Add(Cookie cookie!!)
+        public void Add(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             int idx = IndexOf(cookie);
             if (idx == -1)
             {
@@ -78,8 +80,10 @@ namespace System.Net
             }
         }
 
-        public void Add(CookieCollection cookies!!)
+        public void Add(CookieCollection cookies)
         {
+            ArgumentNullException.ThrowIfNull(cookies);
+
             foreach (Cookie? cookie in cookies.m_list)
             {
                 Add(cookie!);

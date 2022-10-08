@@ -3,8 +3,6 @@
 
 using System;
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
 
@@ -19,7 +17,7 @@ namespace R2RTest
                 command.AddOption(option);
             foreach (var option in options)
                 command.AddOption(option);
-            command.SetHandler<InvocationContext>((InvocationContext context) =>
+            command.SetHandler(context =>
                 context.ExitCode = action(new BuildOptions(this, context.ParseResult)));
             AddCommand(command);
         }

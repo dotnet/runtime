@@ -244,7 +244,9 @@ namespace System.Xml {
             return Get( ref name );
         }
 
-        public override String Get( char[] key!!, int start, int len ) {
+        public override String Get( char[] key, int start, int len ) {
+            ArgumentNullException.ThrowIfNull(key);
+
             if ((start < 0) || (len < 0) || (start > key.Length - len))
                 throw new ArgumentOutOfRangeException();
 
@@ -294,12 +296,16 @@ namespace System.Xml {
 
         // Find the matching string atom given a string, or
         // insert a new one.
-        public override String Add(String value!!) {
+        public override String Add(String value) {
+            ArgumentNullException.ThrowIfNull(value);
+
             MTNameTableName name = new MTNameTableName( value );
             return Add( ref name, rwLock != null ).value;
         }
 
-        public override String Add(char[] key!!, int start, int len) {
+        public override String Add(char[] key, int start, int len) {
+            ArgumentNullException.ThrowIfNull(key);
+
             if ((start < 0) || (len < 0) || (start > key.Length - len))
                 throw new ArgumentOutOfRangeException();
 
@@ -438,7 +444,7 @@ namespace System.Xml {
         }
 
 
-        private const int threshhold = 20;
+        private const int threshold = 20;
 
         // Promote the node into the parent's position (1 ply closer to the rootNode)
         private void Promote( MTNameTableNode node ) {
@@ -446,14 +452,14 @@ namespace System.Xml {
             node.counter++;
 
             if (node != rootNode &&
-                node.counter > threshhold &&
+                node.counter > threshold &&
                 node.counter > node.parentNode.counter * 2) {
                 if (rwLock != null) {
                     LockCookie lc = rwLock.UpgradeToWriterLock(timeout);
 
                     // recheck for failsafe against race-condition
                     if (node != rootNode &&
-                        node.counter > threshhold &&
+                        node.counter > threshold &&
                         node.counter > node.parentNode.counter * 2) {
                         InternalPromote( node );
                     }

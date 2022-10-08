@@ -597,22 +597,12 @@ namespace System.Net.WebSockets
         {
             if (disposing && Interlocked.Exchange(ref _cleanedUp, 1) == 0)
             {
-                if (_readTaskCompletionSource != null)
-                {
-                    _readTaskCompletionSource.TrySetCanceled();
-                }
+                _readTaskCompletionSource?.TrySetCanceled();
 
                 _writeTaskCompletionSource?.TrySetCanceled();
 
-                if (_readEventArgs != null)
-                {
-                    _readEventArgs.Dispose();
-                }
-
-                if (_writeEventArgs != null)
-                {
-                    _writeEventArgs.Dispose();
-                }
+                _readEventArgs?.Dispose();
+                _writeEventArgs?.Dispose();
 
                 try
                 {

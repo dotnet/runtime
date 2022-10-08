@@ -165,7 +165,7 @@ namespace System.Xml
             : this(reader, xmlResolver, readerSettings, null)
         { }
 
-        [MemberNotNull("_validator")]
+        [MemberNotNull(nameof(_validator))]
         private void SetupValidator(XmlReaderSettings readerSettings, XmlReader reader, XmlSchemaObject? partialValidationType)
         {
             _validator = new XmlSchemaValidator(_coreReaderNameTable, readerSettings.Schemas, _thisNSResolver, readerSettings.ValidationFlags);
@@ -741,7 +741,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
+                    // special-case conversions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -1075,7 +1075,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
+                    // special-case conversions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -2305,7 +2305,7 @@ namespace System.Xml
 
         private AttributePSVIInfo AddAttributePSVI(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributePSVINodes.Length);
+            Debug.Assert(attIndex < _attributePSVINodes.Length);
             AttributePSVIInfo attInfo = _attributePSVINodes[attIndex];
             if (attInfo != null)
             {
@@ -2321,14 +2321,7 @@ namespace System.Xml
                 _attributePSVINodes = newPSVINodes;
             }
 
-            attInfo = _attributePSVINodes[attIndex];
-            if (attInfo == null)
-            {
-                attInfo = new AttributePSVIInfo();
-                _attributePSVINodes[attIndex] = attInfo;
-            }
-
-            return attInfo;
+            return _attributePSVINodes[attIndex] ??= new AttributePSVIInfo();
         }
 
         private bool IsXSDRoot(string localName, string ns)
@@ -2383,7 +2376,7 @@ namespace System.Xml
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
                         XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
-                        originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
+                        originalStringValue = schemaAttr.DefaultValue ?? schemaAttr.FixedValue!;
                     }
 
                     return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
@@ -2772,10 +2765,7 @@ namespace System.Xml
 
         internal ValidatingReaderNodeData CreateDummyTextNode(string attributeValue, int depth)
         {
-            if (_textNode == null)
-            {
-                _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
-            }
+            _textNode ??= new ValidatingReaderNodeData(XmlNodeType.Text);
 
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;
@@ -2796,7 +2786,7 @@ namespace System.Xml
                 XmlSchemaElement? schemaElem = _xmlSchemaInfo.SchemaElement;
                 if (schemaElem != null)
                 {
-                    return (schemaElem.DefaultValue != null) ? schemaElem.DefaultValue : schemaElem.FixedValue;
+                    return schemaElem.DefaultValue ?? schemaElem.FixedValue;
                 }
             }
             else

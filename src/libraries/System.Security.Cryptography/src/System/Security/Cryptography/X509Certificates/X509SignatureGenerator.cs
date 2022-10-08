@@ -7,30 +7,24 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private PublicKey? _publicKey;
 
-        public PublicKey PublicKey
-        {
-            get
-            {
-                if (_publicKey == null)
-                {
-                    _publicKey = BuildPublicKey();
-                }
-
-                return _publicKey;
-            }
-        }
+        public PublicKey PublicKey => _publicKey ??= BuildPublicKey();
 
         public abstract byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm);
         public abstract byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm);
         protected abstract PublicKey BuildPublicKey();
 
-        public static X509SignatureGenerator CreateForECDsa(ECDsa key!!)
+        public static X509SignatureGenerator CreateForECDsa(ECDsa key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return new ECDsaX509SignatureGenerator(key);
         }
 
-        public static X509SignatureGenerator CreateForRSA(RSA key!!, RSASignaturePadding signaturePadding!!)
+        public static X509SignatureGenerator CreateForRSA(RSA key, RSASignaturePadding signaturePadding)
         {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(signaturePadding);
+
             if (signaturePadding == RSASignaturePadding.Pkcs1)
                 return new RSAPkcs1X509SignatureGenerator(key);
             if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)

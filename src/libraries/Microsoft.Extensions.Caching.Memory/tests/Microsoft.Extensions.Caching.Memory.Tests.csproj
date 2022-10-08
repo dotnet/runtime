@@ -11,7 +11,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.Caching.Memory.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Caching.Abstractions\src\Microsoft.Extensions.Caching.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Caching.Memory\src\Microsoft.Extensions.Caching.Memory.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
   </ItemGroup>
 

@@ -10,7 +10,7 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
     const size_t EventNameMaxSize = 255;
 
     WCHAR wideEventName[EventNameMaxSize];
@@ -20,7 +20,7 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
     }
 
     FireEtwGCDynamicEvent(wideEventName, payloadSize, (const BYTE*)payload, GetClrInstanceId());
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 }
 
 void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t reason, uint32_t type)

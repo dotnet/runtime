@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
 
         public string Name { get; }
 
-        public string? Namespace { get; }
+        public string Namespace { get; }
 
         public IDataNode? Value
         {

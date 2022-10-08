@@ -27,7 +27,7 @@ public class AppleAppBuilderTask : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 
@@ -196,16 +196,24 @@ public class AppleAppBuilderTask : Task
         }
         Directory.CreateDirectory(binDir);
 
-        var assemblerFiles = new List<string>();
-        var assemblerFilesToLink = new List<string>();
+        List<string> assemblerFiles = new List<string>();
+        List<string> assemblerDataFiles = new List<string>();
+        List<string> assemblerFilesToLink = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
-            var obj = file.GetMetadata("AssemblerFile");
-            var llvmObj = file.GetMetadata("LlvmObjectFile");
+            string obj = file.GetMetadata("AssemblerFile");
+            string llvmObj = file.GetMetadata("LlvmObjectFile");
+            string dataFile = file.GetMetadata("AotDataFile");
+
             if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
+            }
+
+            if (!string.IsNullOrEmpty(dataFile))
+            {
+                assemblerDataFiles.Add(dataFile);
             }
 
             if (!string.IsNullOrEmpty(llvmObj))
@@ -243,7 +251,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
@@ -261,7 +269,7 @@ public class AppleAppBuilderTask : Task
         }
         else if (GenerateCMakeProject)
         {
-             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
         }
 

@@ -17,8 +17,10 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly CompositionContainer? _compositionContainer;
         private readonly INotifyComposablePartCatalogChanged? _notifyCatalog;
 
-        internal CompositionService(ComposablePartCatalog composablePartCatalog!!)
+        internal CompositionService(ComposablePartCatalog composablePartCatalog)
         {
+            ArgumentNullException.ThrowIfNull(composablePartCatalog);
+
             _notifyCatalog = composablePartCatalog as INotifyComposablePartCatalogChanged;
             try
             {

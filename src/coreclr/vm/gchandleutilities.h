@@ -399,7 +399,7 @@ inline void DestroyNativeComWeakHandle(OBJECTHANDLE handle)
 
 // Handle holders/wrappers
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle>                   OHWrapper;
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL>      PinningHandleHolder;
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
@@ -440,7 +440,7 @@ public:
     }
 };
 
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 #endif // !DACCESS_COMPILE
 

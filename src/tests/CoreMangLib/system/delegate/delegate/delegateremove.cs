@@ -66,14 +66,14 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("001", "remove failure  " );
                     retVal = false;
                 }
-                
+
             }
             catch (Exception e)
             {
                 TestLibrary.TestFramework.LogError("002", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
         // Returns true if the expected result is right
@@ -113,7 +113,7 @@ namespace DelegateTest
                 TestLibrary.TestFramework.LogError("005", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
         // Returns true if the expected result is right
@@ -155,7 +155,7 @@ namespace DelegateTest
                 TestLibrary.TestFramework.LogError("008", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
 
@@ -263,7 +263,7 @@ namespace DelegateTest
                 delctor.starkWork += bWorking_Bool;
                 delctor.starkWork += bCompleted_Bool;
                 delctor.starkWork = (booldelegate)Delegate.Remove(delctor.starkWork, new voiddelegate(tcInstance.StartWork_Void));
-                
+
                 TestLibrary.TestFramework.LogError("015", "delegate remove error ");
                 retVal = false;
             }
@@ -280,7 +280,7 @@ namespace DelegateTest
             return retVal;
         }
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         public bool StartWork_Bool()

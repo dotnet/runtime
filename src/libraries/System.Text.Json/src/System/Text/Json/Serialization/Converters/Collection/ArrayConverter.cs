@@ -11,14 +11,15 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class ArrayConverter<TCollection, TElement> : IEnumerableDefaultConverter<TElement[], TElement>
     {
-        internal override bool CanHaveIdMetadata => false;
+        internal override bool CanHaveMetadata => false;
 
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        internal override bool SupportsCreateObjectDelegate => false;
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
@@ -52,6 +53,8 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EnumeratorIndex = index;
                         return false;
                     }
+
+                    state.Current.EndCollectionElement();
 
                     if (ShouldFlush(writer, ref state))
                     {

@@ -150,5 +150,11 @@
         </Method>
       </Type>
     </Assembly>
+
+    <Assembly Name="System.Private.CoreLib">
+      <!-- Test doing things the static analysis cannot predict. Could also fix the test. -->
+      <Type Name="System.Collections.Generic.Dictionary`2" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.HashSet`1" Dynamic="Required All" />
+    </Assembly>
   </Application>
 </Directives>

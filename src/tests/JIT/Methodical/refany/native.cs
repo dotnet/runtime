@@ -2,13 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
+namespace Test_native
+{
 //THIS IS NOT A TEST
 
 namespace JitTest
 {
-    internal class Test
+    public class Test
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int N = 0x1492;
             TypedReference _ref = __makeref(N);
@@ -23,4 +27,5 @@ namespace JitTest
             return 100;
         }
     }
+}
 }

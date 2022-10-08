@@ -9,8 +9,6 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class WriteValueTests
     {
-        public static bool IsX64 { get; } = IntPtr.Size >= 8;
-
         [Fact]
         public static void NullWriterThrows()
         {
@@ -67,7 +65,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async static void NullValueWithNullableSuccess()
         {
-            byte[] nullUtf8Literal = Encoding.UTF8.GetBytes("null");
+            byte[] nullUtf8Literal = "null"u8.ToArray();
 
             var stream = new MemoryStream();
             Utf8JsonWriter writer = new Utf8JsonWriter(stream);
@@ -385,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the 
         //       time the memory is accessed which triggers the full memory allocation. 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void SerializeExceedMaximumBufferSize()
         {

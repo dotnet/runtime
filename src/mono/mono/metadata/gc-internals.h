@@ -115,7 +115,7 @@ gboolean mono_gc_user_markers_supported (void);
  */
 MonoObject* mono_gc_alloc_fixed      (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 
-// C++ callers outside of metadata (mini/tasklets.c) must use mono_gc_alloc_fixed_no_descriptor
+// C++ callers outside of metadata must use mono_gc_alloc_fixed_no_descriptor
 // instead of mono_gc_alloc_fixed, or else compile twice -- boehm and sgen.
 MonoObject*
 mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg);
@@ -272,7 +272,7 @@ typedef struct {
 	 */
 	gpointer (*get_provenance_func) (void);
 	/*
-	 * Same as thread_mark_func, mark the intepreter frames.
+	 * Same as thread_mark_func, mark the interpreter frames.
 	 */
 	void (*interp_mark_func) (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise);
 } MonoGCCallbacks;

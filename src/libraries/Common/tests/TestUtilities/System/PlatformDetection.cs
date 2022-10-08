@@ -3,12 +3,13 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Microsoft.Win32;
 using Xunit;
 
@@ -22,6 +23,9 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
+        private static readonly Lazy<bool> s_IsInHelix = new Lazy<bool>(() => Environment.GetEnvironmentVariables().Keys.Cast<string>().Any(key => key.StartsWith("HELIX")));
+        public static bool IsInHelix => s_IsInHelix.Value;
+
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
@@ -29,12 +33,17 @@ namespace System
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+        public static bool IsNotNativeAot => !IsNativeAot;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
+        public static bool IsNotAndroid => !IsAndroid;
+        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
+        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
+        public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
@@ -52,7 +61,9 @@ namespace System
         public static bool IsNotArm64Process => !IsArm64Process;
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
+        public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
+        public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
@@ -62,9 +73,11 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        private static Lazy<bool> s_isCheckedRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
-        private static Lazy<bool> s_isReleaseRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
-        private static Lazy<bool> s_isDebugRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
+        public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
+
+        private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
+        private static readonly Lazy<bool> s_isReleaseRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
+        private static readonly Lazy<bool> s_isDebugRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
 
         public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
@@ -75,27 +88,31 @@ namespace System
         public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
 #if NETCOREAPP
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                        && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 #else
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
-        public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
+
+        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
+        public static bool IsBrowserDomSupportedOrNodeJS => IsBrowserDomSupported || IsNodeJS;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -119,6 +136,21 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+
+#if NETCOREAPP
+        public static bool IsBuiltInComEnabled => SupportsComInterop
+                                            && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
+                                                ? isEnabled
+                                                : true);
+#else
+        public static bool IsBuiltInComEnabled => SupportsComInterop;
+#endif
+
+        // Automation refers to OLE Automation support. Automation support here means the OS
+        // and runtime provide support for the following: IDispatch, STA apartments, etc. This
+        // is typically available whenever COM support is enabled, but Windows Nano Server is an exception.
+        public static bool IsBuiltInComEnabledWithOSAutomationSupport => IsBuiltInComEnabled && IsNotWindowsNanoServer;
+
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -130,6 +162,7 @@ namespace System
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+        public static bool IsInvokingFinalizersSupported => !IsNativeAot;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
@@ -142,8 +175,11 @@ namespace System
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
+        public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
+        public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -197,15 +233,15 @@ namespace System
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
-        // Changed to `true` when linking
-        public static bool IsBuiltWithAggressiveTrimming => false;
+        // Changed to `true` when trimming
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         // Android - Platform supports alpn from API level 29 and higher
-        private static Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
+        private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
         {
             if (IsWindows && !IsWindows7 && !IsNetFramework)
@@ -233,12 +269,13 @@ namespace System
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
 
-        private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
-        private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
-        private static Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
-        private static Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
-        private static Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
+        private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
+        private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
+        private static readonly Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
+        private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
+        private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -247,7 +284,7 @@ namespace System
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
 
-        private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
+        private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
         private static bool IsLargeArrayNotSupported()
@@ -281,17 +318,8 @@ namespace System
             }
         }
 
-        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.Globalization.GlobalizationMode", "Invariant"));
-
-        private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
-        {
-            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
-            {
-                return (bool)mi.Invoke(null, null);
-            }
-
-            return false;
-        }
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(()
+            => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
         private static readonly Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
@@ -346,7 +374,8 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(()
+            => (bool?)Type.GetType("Microsoft.Win32.SafeHandles.SafeFileHandle")?.GetProperty("DisableFileLocking", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
         public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 
@@ -361,7 +390,7 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport, bool disabledByDefault = false)
         {
             string registryProtocolName = protocol switch
             {
@@ -381,13 +410,18 @@ namespace System
             string serverKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Server";
 
             object client, server;
+            object clientDefault, serverDefault;
             try
             {
                 client = Registry.GetValue(clientKey, "Enabled", defaultProtocolSupport ? 1 : 0);
                 server = Registry.GetValue(serverKey, "Enabled", defaultProtocolSupport ? 1 : 0);
-                if (client is int c && server is int s)
+
+                clientDefault = Registry.GetValue(clientKey, "DisabledByDefault", 1);
+                serverDefault = Registry.GetValue(serverKey, "DisabledByDefault", 1);
+
+                if (client is int c && server is int s && clientDefault is int cd && serverDefault is int sd)
                 {
-                    return c == 1 && s == 1;
+                    return (c == 1 && s == 1) && (!disabledByDefault || (cd == 0 && sd == 0));
                 }
             }
             catch (SecurityException)
@@ -436,14 +470,16 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            // on macOS and Android TLS 1.0 is supported.
             if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
+
+            // Windows depend on registry, enabled by default on all supported versions.
             if (IsWindows)
             {
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -451,13 +487,18 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-                bool defaultProtocolSupport = !IsWindows7;
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
+                // TLS 1.1 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
+            // on macOS and Android TLS 1.1 is supported.
             else if (IsOSXLike || IsAndroid)
             {
                 return true;
@@ -468,9 +509,19 @@ namespace System
 
         private static bool GetTls12Support()
         {
-            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            bool defaultProtocolSupport = !IsWindows7;
-            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
+            if (IsWindows)
+            {
+                // TLS 1.2 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
+            }
+
+            return true;
         }
 
         private static bool GetTls13Support()
@@ -547,6 +598,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static string GetNodeJSPlatform()
+        {
+            if (!IsNodeJS)
+                return null;
+
+            return Environment.GetEnvironmentVariable("NodeJSPlatform");
         }
 
         private static bool AssemblyConfigurationEquals(string configuration)

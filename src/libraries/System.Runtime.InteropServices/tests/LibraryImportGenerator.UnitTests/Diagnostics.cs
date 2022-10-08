@@ -10,63 +10,15 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
 using Xunit;
+
+using StringMarshalling = Microsoft.Interop.StringMarshalling;
 
 namespace LibraryImportGenerator.UnitTests
 {
     public class Diagnostics
     {
-        [Theory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = $@"
-using System.Runtime.InteropServices;
-{CodeSnippets.LibraryImportAttributeDeclaration}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method();
-}}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
-        [Theory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoLibraryImport_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [DllImport(""DoesNotExist"")]
-    public static extern void Method();
-}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
         [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
@@ -344,6 +296,7 @@ partial class Test
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -374,12 +327,6 @@ partial class Test
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
                     .WithSpan(6, 32, 6, 39)
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
-                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
-                    .WithSpan(9, 32, 9, 39)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
-                (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))
-                    .WithSpan(9, 32, 9, 39)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(LibraryImportAttribute.StringMarshallingCustomType)}", $"{nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
                 (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails))
                     .WithSpan(9, 47, 9, 48)
             };

@@ -19,6 +19,12 @@ namespace System.Security.Cryptography
             // ECDH and ECMQV are not valid in this context.
         };
 
+        private protected static readonly KeySizes[] s_defaultKeySizes =
+        {
+            new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
+            new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
+        };
+
         /// <summary>
         /// When overridden in a derived class, exports the named or explicit <see cref="ECParameters" /> for an ECCurve.
         /// If the curve has a name, the Curve property will contain named curve parameters otherwise it will contain explicit parameters.
@@ -121,10 +127,12 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -191,10 +199,12 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,
@@ -694,24 +704,14 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+            PemKeyHelpers.ImportPem(input, label =>
+                label switch
                 {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else if (label.SequenceEqual(PemLabels.EcPrivateKey))
-                {
-                    return ImportECPrivateKey;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    PemLabels.EcPrivateKey => ImportECPrivateKey,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -884,7 +884,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EcPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EcPrivateKey, exported);
                 }
                 finally
                 {

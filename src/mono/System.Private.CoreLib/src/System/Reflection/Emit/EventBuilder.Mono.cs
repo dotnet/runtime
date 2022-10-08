@@ -72,8 +72,7 @@ namespace System.Reflection.Emit
 
         public void AddOtherMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             if (other_methods != null)
             {
@@ -90,30 +89,26 @@ namespace System.Reflection.Emit
 
         public void SetAddOnMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             add_method = mdBuilder;
         }
         public void SetRaiseMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             raise_method = mdBuilder;
         }
         public void SetRemoveOnMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             remove_method = mdBuilder;
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
             RejectIfCreated();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
@@ -135,13 +130,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 

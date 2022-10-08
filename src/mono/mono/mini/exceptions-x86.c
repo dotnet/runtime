@@ -34,6 +34,8 @@
 #include "aot-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 static gpointer signal_exception_trampoline;
 
 gpointer
@@ -241,7 +243,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	return res;
 }
 
-void win32_seh_init()
+void win32_seh_init(void)
 {
 	/* install restore stack helper */
 	if (!restore_stack)
@@ -251,7 +253,7 @@ void win32_seh_init()
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
 }
 
-void win32_seh_cleanup()
+void win32_seh_cleanup(void)
 {
 	if (mono_old_win_toplevel_exception_filter)
 		SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
@@ -723,7 +725,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
  * \returns a function pointer which can be used to raise
  * corlib exceptions. The returned function has the following
  * signature: void (*func) (guint32 ex_token, guint32 offset);
- * Here, offset is the offset which needs to be substracted from the caller IP
+ * Here, offset is the offset which needs to be subtracted from the caller IP
  * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */

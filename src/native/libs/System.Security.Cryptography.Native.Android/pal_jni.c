@@ -88,9 +88,27 @@ jclass    g_sslCtxClass;
 jmethodID g_sslCtxGetDefaultMethod;
 jmethodID g_sslCtxGetDefaultSslParamsMethod;
 
+// javax/crypto/spec/AEADBadTagException
+jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/GCMParameterSpec
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
+
+// java/security/spec/MGF1ParameterSpec
+jclass    g_MGF1ParameterSpecClass;
+jfieldID  g_MGF1ParameterSpec_SHA1Field;
+jfieldID  g_MGF1ParameterSpec_SHA256Field;
+jfieldID  g_MGF1ParameterSpec_SHA384Field;
+jfieldID  g_MGF1ParameterSpec_SHA512Field;
+
+// javax/crypto/spec/OAEPParameterSpec
+jclass    g_OAEPParameterSpecClass;
+jmethodID g_OAEPParameterSpecCtor;
+
+// javax/crypto/spec/PSource$PSpecified
+jclass   g_PSourcePSpecifiedClass;
+jfieldID g_PSourcePSpecified_DefaultField;
 
 // java/security/interfaces/DSAKey
 jclass    g_DSAKeyClass;
@@ -590,7 +608,7 @@ jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, co
     return fid;
 }
 
-static void DetatchThreadFromJNI(void* unused)
+static void DetachThreadFromJNI(void* unused)
 {
     LOG_DEBUG("Detaching thread from JNI");
     (void)unused;
@@ -601,12 +619,12 @@ static pthread_key_t threadLocalEnvKey;
 static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
 
 static void
-make_key()
+make_key(void)
 {
-    (void) pthread_key_create(&threadLocalEnvKey, &DetatchThreadFromJNI);
+    (void) pthread_key_create(&threadLocalEnvKey, &DetachThreadFromJNI);
 }
 
-JNIEnv* GetJNIEnv()
+JNIEnv* GetJNIEnv(void)
 {
     JNIEnv *env = NULL;
     (*gJvm)->GetEnv(gJvm, (void**)&env, JNI_VERSION_1_6);
@@ -689,8 +707,22 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
 
+    g_AEADBadTagExceptionClass = GetClassGRef(env, "javax/crypto/AEADBadTagException");
+
     g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
     g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
+
+    g_MGF1ParameterSpecClass =        GetClassGRef(env, "java/security/spec/MGF1ParameterSpec");
+    g_MGF1ParameterSpec_SHA1Field   = GetField(env, true, g_MGF1ParameterSpecClass, "SHA1", "Ljava/security/spec/MGF1ParameterSpec;");
+    g_MGF1ParameterSpec_SHA256Field = GetField(env, true, g_MGF1ParameterSpecClass, "SHA256", "Ljava/security/spec/MGF1ParameterSpec;");
+    g_MGF1ParameterSpec_SHA384Field = GetField(env, true, g_MGF1ParameterSpecClass, "SHA384", "Ljava/security/spec/MGF1ParameterSpec;");
+    g_MGF1ParameterSpec_SHA512Field = GetField(env, true, g_MGF1ParameterSpecClass, "SHA512", "Ljava/security/spec/MGF1ParameterSpec;");
+
+    g_OAEPParameterSpecClass =  GetClassGRef(env, "javax/crypto/spec/OAEPParameterSpec");
+    g_OAEPParameterSpecCtor =   GetMethod(env, false, g_OAEPParameterSpecClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/security/spec/AlgorithmParameterSpec;Ljavax/crypto/spec/PSource;)V");
+
+    g_PSourcePSpecifiedClass =         GetClassGRef(env, "javax/crypto/spec/PSource$PSpecified");
+    g_PSourcePSpecified_DefaultField = GetField(env, true, g_PSourcePSpecifiedClass, "DEFAULT", "Ljavax/crypto/spec/PSource$PSpecified;");
 
     g_bigNumClass =             GetClassGRef(env, "java/math/BigInteger");
     g_bigNumCtor =              GetMethod(env, false, g_bigNumClass, "<init>", "([B)V");

@@ -24,9 +24,9 @@
   
 }
 .assembly extern xunit.core {}
-.namespace TestCase
+.namespace TestCase_i4i1_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static int8 compare(int8 arg1, int8 arg2) il managed
@@ -81,7 +81,7 @@
       IL_0019:  ret
     } // end of method 'Test::compare'
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -91,7 +91,7 @@
       .locals (int32 V_0)
       IL_0000:  ldc.i4 0xfffffff2
       IL_0001:  ldc.i4 0xfff2
-      IL_0002:  call       int8 TestCase.Test::compare(int8,
+      IL_0002:  call       int8 TestCase_i4i1_il.Test::compare(int8,
                                                         int8)
                 dup
                 ldc.i4.1
@@ -138,5 +138,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'TestCase'
+} // end of namespace 'TestCase_i4i1_il'
 

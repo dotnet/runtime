@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool _hasInvalidEntries;
 
         public ReadyToRunHelperId Id => _id;
-        public Object Target => _target;
+        public object Target => _target;
         public TypeSystemEntity DictionaryOwner => _dictionaryOwner;
         public GenericLookupResult LookupSignature => _lookupSignature;
 
@@ -215,6 +215,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                MethodDesc targetMethod = ((DelegateCreationInfo)_target).PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+            }
+
             return dependencies;
         }
 
@@ -252,10 +258,10 @@ namespace ILCompiler.DependencyAnalysis
                                                                 "Type loader template"));
                 }
             }
-            
+
             return conditionalDependencies;
         }
-        
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = _id.CompareTo(((ReadyToRunGenericHelperNode)other)._id);
@@ -298,6 +304,8 @@ namespace ILCompiler.DependencyAnalysis
                     return comparer.Compare((FieldDesc)_target, (FieldDesc)((ReadyToRunGenericHelperNode)other)._target);
                 case ReadyToRunHelperId.DelegateCtor:
                     return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunGenericHelperNode)other)._target, comparer);
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)_target).CompareTo((ConstrainedCallInfo)((ReadyToRunGenericHelperNode)other)._target, comparer);
                 default:
                     throw new NotImplementedException();
             }

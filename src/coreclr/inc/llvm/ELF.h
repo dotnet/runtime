@@ -343,6 +343,7 @@ enum {
   EM_NORC          = 218, // Nanoradio Optimized RISC
   EM_CSR_KALIMBA   = 219, // CSR Kalimba architecture family
   EM_AMDGPU        = 224, // AMD GPU architecture
+  EM_RISCV         = 243,
   EM_LOONGARCH     = 258, // LoongArch processor
 
   // A request has been made to the maintainer of the official registry for
@@ -829,7 +830,7 @@ struct Elf32_Sym {
   void setBinding(unsigned char b) { setBindingAndType(b, getType()); }
   void setType(unsigned char t) { setBindingAndType(getBinding(), t); }
   void setBindingAndType(unsigned char b, unsigned char t) {
-    st_info = (b << 4) + (t & 0x0f);
+    st_info = (unsigned char)((b << 4) + (t & 0x0f));
   }
 };
 
@@ -849,7 +850,7 @@ struct Elf64_Sym {
   void setBinding(unsigned char b) { setBindingAndType(b, getType()); }
   void setType(unsigned char t) { setBindingAndType(getBinding(), t); }
   void setBindingAndType(unsigned char b, unsigned char t) {
-    st_info = (b << 4) + (t & 0x0f);
+    st_info = (unsigned char)((b << 4) + (t & 0x0f));
   }
 };
 

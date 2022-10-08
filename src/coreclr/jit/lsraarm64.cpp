@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -121,7 +121,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
             srcCount = 0;
@@ -145,7 +144,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_DBL:
         {
             GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->AsDblCon()->gtDconVal;
+            double         constValue = dblConst->AsDblCon()->DconValue();
 
             if (emitter::emitIns_valid_imm_for_fmov(constValue))
             {
@@ -168,6 +167,29 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
 
         case GT_BOX:
         case GT_COMMA:
@@ -266,7 +288,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             FALLTHROUGH;
 
-        case GT_ADDEX:
         case GT_AND:
         case GT_AND_NOT:
         case GT_OR:
@@ -735,7 +756,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -762,26 +783,20 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT);
             break;
 
-        case GT_CLS_VAR:
-            srcCount = 0;
-            // GT_CLS_VAR, by the time we reach the backend, must always
-            // be a pure use.
-            // It will produce a result of the type of the
-            // node, and use an internal register for the address.
-
-            assert(dstCount == 1);
-            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == 0);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
-            break;
-
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalIntRegisterDefForNode(tree);
             buildInternalRegisterUses();
             BuildDef(tree);
+            break;
+
+        case GT_SELECT:
+            assert(dstCount == 1);
+            srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
+            srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
+            srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);
+            BuildDef(tree, dstCandidates);
             break;
 
     } // end switch (tree->OperGet())

@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Threading.Tasks.Dataflow.Internal
 {
     /// <summary>Provider of disposables that run actions.</summary>
-    internal sealed class Disposables
+    internal static class Disposables
     {
         /// <summary>An IDisposable that does nothing.</summary>
         internal static readonly IDisposable Nop = new NopDisposable();

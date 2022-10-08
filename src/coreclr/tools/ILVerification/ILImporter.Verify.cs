@@ -279,7 +279,7 @@ namespace Internal.IL
         }
 
         /// <summary>
-        /// Checks whether the metod's il modifies the this pointer and builds up the
+        /// Checks whether the method's il modifies the this pointer and builds up the
         /// array of valid target offsets.
         /// </summary>
         private void InitialPass()
@@ -2581,6 +2581,8 @@ namespace Internal.IL
             Unverifiable();
 
             var size = Pop();
+
+            Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
             CheckIsInteger(size);
 

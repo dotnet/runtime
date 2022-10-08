@@ -70,7 +70,7 @@
     }
 }
 
-// Interface defintion for overriding another interface's implementation
+// Interface definition for overriding another interface's implementation
 .class interface public abstract auto ansi Server.Contract.IDefaultInterfaceTesting2
 {
     .custom instance void [System.Runtime]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) =
@@ -89,7 +89,7 @@
        extends [System.Runtime]System.Object
        implements Server.Contract.IDefaultInterfaceTesting,
                   Server.Contract.IDefaultInterfaceTesting2
-{  
+{
     .custom instance void [System.Runtime]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = ( 01 00 01 00 00 )
     // GUID: FAEF42AE-C1A4-419F-A912-B768AC2679EA
     .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.GuidAttribute::.ctor(string) =
@@ -97,7 +97,7 @@
               2D 34 31 39 46 2D 41 39 31 32 2D 42 37 36 38 41
               43 32 36 37 39 45 41 00 00 )
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() cil managed
     {
         ldarg.0
@@ -105,7 +105,7 @@
         ret
     }
 
-    .method public hidebysig newslot virtual final 
+    .method public hidebysig newslot virtual final
           instance int32  DefOnClassRet3() cil managed
     {
         ldc.i4 3

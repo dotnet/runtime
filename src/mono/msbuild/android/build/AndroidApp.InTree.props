@@ -1,0 +1,13 @@
+<Project>
+  <!-- This depends on the root Directory.Build.props imported this file -->
+
+  <Import Project="$(MSBuildThisFileDirectory)AndroidApp.props" />
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>

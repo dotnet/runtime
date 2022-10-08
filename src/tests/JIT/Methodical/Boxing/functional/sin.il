@@ -13,9 +13,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace SinCalc
+.namespace SinCalc_sin_functional_il
 {
-  .class private auto ansi SinCalc
+  .class public auto ansi SinCalc_sin_functional_il
          extends [mscorlib]System.Object
   {
     .class auto ansi sealed nested family SinCalc$CalcCtx
@@ -30,7 +30,7 @@
       {
         .maxstack  8
         IL_0000:  ldarg.0
-        IL_0001:  ldfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::m_powX
+        IL_0001:  ldfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_powX
         IL_0006:  ret
       } 
 
@@ -40,7 +40,7 @@
         .maxstack  8
         IL_0000:  ldarg.0
         IL_0001:  ldarg.1
-        IL_0002:  stfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::m_powX
+        IL_0002:  stfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_powX
         IL_0007:  ret
       } 
 
@@ -49,7 +49,7 @@
       {
         .maxstack  8
         IL_0000:  ldarg.0
-        IL_0001:  ldfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::m_sumOfTerms
+        IL_0001:  ldfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_sumOfTerms
         IL_0006:  ret
       } 
 
@@ -59,7 +59,7 @@
         .maxstack  8
         IL_0000:  ldarg.0
         IL_0001:  ldarg.1
-        IL_0002:  stfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::m_sumOfTerms
+        IL_0002:  stfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_sumOfTerms
         IL_0007:  ret
       } 
 
@@ -68,7 +68,7 @@
       {
         .maxstack  8
         IL_0000:  ldarg.0
-        IL_0001:  ldfld      object SinCalc.SinCalc/SinCalc$CalcCtx::m_term
+        IL_0001:  ldfld      object SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_term
         IL_0006:  unbox      [mscorlib]System.Double
         IL_000b:  ldind.r8
         IL_000c:  ret
@@ -81,19 +81,19 @@
         IL_0000:  ldarg.0
         IL_0001:  ldarg.s    'value'
         IL_0003:  box        [mscorlib]System.Double
-        IL_0008:  stfld      object SinCalc.SinCalc/SinCalc$CalcCtx::m_term
+        IL_0008:  stfld      object SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::m_term
         IL_000d:  ret
       } 
 
       .property instance float64 sumOfTerms()
       {
-        .get instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_sumOfTerms()
-        .set instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_sumOfTerms(float64)
+        .get instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_sumOfTerms()
+        .set instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_sumOfTerms(float64)
       } 
       .property instance float64 term()
       {
-        .get instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_term()
-        .set instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_term(float64)
+        .get instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_term()
+        .set instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_term(float64)
       } 
     } 
 
@@ -102,37 +102,37 @@
             mySin(object Angle) cil managed
     {
       .maxstack  4
-      .locals (valuetype SinCalc.SinCalc/SinCalc$CalcCtx V_0,
+      .locals (valuetype SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx V_0,
                object V_1,
                object V_2,
                float64 V_3,
                int32 V_4)
       IL_0000:  ldloca.s   V_0
-      IL_0002:  initobj    SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_0002:  initobj    SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_0008:  ldloc.s    V_0
-      IL_000a:  box        SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_000a:  box        SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_000f:  stloc.1
       IL_0010:  ldloc      V_1
-      IL_0014:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_0014:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_0019:  ldc.r8     1.
-      IL_0022:  stfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::fact
+      IL_0022:  stfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::fact
       IL_0027:  ldloc      V_1
-      IL_002b:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_002b:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_0030:  ldloc      V_1
-      IL_0034:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_0034:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_0039:  ldarg.0
       IL_003a:  unbox      [mscorlib]System.Double
       IL_003f:  ldind.r8
       IL_0040:  dup
       IL_0041:  stloc.3
-      IL_0042:  call       instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_term(float64)
+      IL_0042:  call       instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_term(float64)
       IL_0047:  ldloc.3
-      IL_0048:  ldftn      instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_powX(float64)
+      IL_0048:  ldftn      instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_powX(float64)
       IL_004e:  calli      instance void(float64)
       IL_0053:  ldloc      V_1
-      IL_0057:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_0057:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_005c:  ldc.r8     0.0
-      IL_0065:  call       instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_sumOfTerms(float64)
+      IL_0065:  call       instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_sumOfTerms(float64)
       IL_006a:  ldc.i4.1
       IL_006b:  stloc.s    V_4
       IL_006d:  ldloc.s    V_4
@@ -141,20 +141,20 @@
       IL_0075:  br         IL_0142
 
       IL_007a:  ldloc      V_1
-      IL_007e:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_007e:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_0083:  ldloc      V_1
-      IL_0087:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_008c:  call       instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_sumOfTerms()
+      IL_0087:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_008c:  call       instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_sumOfTerms()
       IL_0091:  ldloc      V_1
-      IL_0095:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_009a:  call       instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_term()
+      IL_0095:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_009a:  call       instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_term()
       IL_009f:  add
-      IL_00a0:  call       instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_sumOfTerms(float64)
+      IL_00a0:  call       instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_sumOfTerms(float64)
       IL_00a5:  ldloc      V_1
-      IL_00a9:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_00a9:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_00ae:  ldloc      V_1
-      IL_00b2:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_00b7:  call       instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_powX()
+      IL_00b2:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_00b7:  call       instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_powX()
       IL_00bc:  ldarg.0
       IL_00bd:  unbox      [mscorlib]System.Double
       IL_00c2:  ldind.r8
@@ -164,12 +164,12 @@
       IL_00ca:  ldind.r8
       IL_00cb:  mul
       IL_00cc:  mul
-      IL_00cd:  call       instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_powX(float64)
+      IL_00cd:  call       instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_powX(float64)
       IL_00d2:  ldloc      V_1
-      IL_00d6:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_00d6:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_00db:  ldloc      V_1
-      IL_00df:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_00e4:  ldfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::fact
+      IL_00df:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_00e4:  ldfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::fact
       IL_00e9:  ldloc.2
       IL_00ea:  unbox      [mscorlib]System.Int32
       IL_00ef:  ldind.i4
@@ -184,17 +184,17 @@
       IL_00fc:  add
       IL_00fd:  conv.r8
       IL_00fe:  mul
-      IL_00ff:  stfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::fact
+      IL_00ff:  stfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::fact
       IL_0104:  ldloc      V_1
-      IL_0108:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
+      IL_0108:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
       IL_010d:  ldloc      V_1
-      IL_0111:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_0116:  call       instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_powX()
+      IL_0111:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_0116:  call       instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_powX()
       IL_011b:  ldloc      V_1
-      IL_011f:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_0124:  ldfld      float64 SinCalc.SinCalc/SinCalc$CalcCtx::fact
+      IL_011f:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_0124:  ldfld      float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::fact
       IL_0129:  div
-      IL_012a:  call       instance void SinCalc.SinCalc/SinCalc$CalcCtx::set_term(float64)
+      IL_012a:  call       instance void SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::set_term(float64)
       IL_012f:  ldloc.2
       IL_0130:  unbox      [mscorlib]System.Int32
       IL_0135:  ldind.i4
@@ -211,15 +211,15 @@
       IL_014e:  ble        IL_007a
 
       IL_0153:  ldloc      V_1
-      IL_0157:  unbox      SinCalc.SinCalc/SinCalc$CalcCtx
-      IL_015c:  call       instance float64 SinCalc.SinCalc/SinCalc$CalcCtx::get_sumOfTerms()
+      IL_0157:  unbox      SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx
+      IL_015c:  call       instance float64 SinCalc_sin_functional_il.SinCalc_sin_functional_il/SinCalc$CalcCtx::get_sumOfTerms()
       IL_0161:  stloc.3
       IL_0162:  ldloc.s    V_3
       IL_0164:  box        [mscorlib]System.Double
       IL_0169:  ret
     } 
 
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -320,7 +320,7 @@
       IL_0104:  stloc.0
       IL_0105:  br         IL_026a
 
-      IL_010a:  ldsfld     object SinCalc.SinCalc::PI
+      IL_010a:  ldsfld     object SinCalc_sin_functional_il.SinCalc_sin_functional_il::PI
       IL_010f:  unbox      [mscorlib]System.Double
       IL_0114:  ldind.r8
       IL_0115:  ldloc.0
@@ -357,7 +357,7 @@
       IL_0178:  ldstr      ")="
       IL_017d:  call       void [System.Console]System.Console::Write(string)
       IL_0182:  ldloc.1
-      IL_0183:  ldftn      object SinCalc.SinCalc::mySin(object)
+      IL_0183:  ldftn      object SinCalc_sin_functional_il.SinCalc_sin_functional_il::mySin(object)
       IL_0189:  calli      object(object)
       IL_018e:  unbox      [mscorlib]System.Double
       IL_0193:  ldind.r8
@@ -470,7 +470,7 @@
       IL_0009:  stloc.0
       IL_000a:  ldloc.s    V_0
       IL_000c:  box        [mscorlib]System.Double
-      IL_0011:  stsfld     object SinCalc.SinCalc::PI
+      IL_0011:  stsfld     object SinCalc_sin_functional_il.SinCalc_sin_functional_il::PI
       IL_0016:  ret
     } 
 

@@ -327,7 +327,7 @@ ep_block_fast_serialize (
 
 	uint32_t header_size =  ep_block_get_header_size_vcall (block);
 	uint32_t total_size = data_size + header_size;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&total_size, sizeof (total_size));
+	ep_fast_serializer_write_uint32_t (fast_serializer, total_size);
 
 	uint32_t required_padding = ep_fast_serializer_get_required_padding (fast_serializer);
 	if (required_padding != 0) {
@@ -495,16 +495,16 @@ ep_event_block_base_serialize_header (
 	ep_return_void_if_nok (((EventPipeBlock *)event_block_base)->format != EP_SERIALIZATION_FORMAT_NETPERF_V3);
 
 	const uint16_t header_size = (uint16_t)ep_block_get_header_size_vcall ((EventPipeBlock *)event_block_base);
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&header_size, sizeof (header_size));
+	ep_fast_serializer_write_uint16_t (fast_serializer, header_size);
 
 	const uint16_t flags = event_block_base->use_header_compression ? 1 : 0;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&flags, sizeof (flags));
+	ep_fast_serializer_write_uint16_t (fast_serializer, flags);
 
 	ep_timestamp_t min_timestamp = event_block_base->min_timestamp;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&min_timestamp, sizeof (min_timestamp));
+	ep_fast_serializer_write_int64_t (fast_serializer, min_timestamp);
 
 	ep_timestamp_t max_timestamp = event_block_base->max_timestamp;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&max_timestamp, sizeof (max_timestamp));
+	ep_fast_serializer_write_int64_t (fast_serializer, max_timestamp);
 }
 
 bool
@@ -536,41 +536,32 @@ ep_event_block_base_write_event (
 
 		aligned_end = write_pointer + total_size + sizeof (total_size);
 
-		memcpy (write_pointer, &total_size, sizeof (total_size));
-		write_pointer += sizeof (total_size);
+		ep_write_buffer_uint32_t (&write_pointer, total_size);
 
 		uint32_t metadata_id = ep_event_instance_get_metadata_id (event_instance);
 		EP_ASSERT ((metadata_id & (1 << 31)) == 0);
 
 		metadata_id |= (!is_sorted_event ? 1 << 31 : 0);
-		memcpy (write_pointer, &metadata_id, sizeof (metadata_id));
-		write_pointer += sizeof (metadata_id);
+		ep_write_buffer_uint32_t (&write_pointer, metadata_id);
 
 		if (block->format == EP_SERIALIZATION_FORMAT_NETPERF_V3) {
 			uint32_t thread_id = (uint32_t)ep_event_instance_get_thread_id (event_instance);
-			memcpy (write_pointer, &thread_id, sizeof (thread_id));
-			write_pointer += sizeof (thread_id);
+			ep_write_buffer_uint32_t (&write_pointer, thread_id);
 		} else if (block->format == EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
-			memcpy (write_pointer, &sequence_number, sizeof (sequence_number));
-			write_pointer += sizeof (sequence_number);
+			ep_write_buffer_uint32_t (&write_pointer, sequence_number);
 
 			uint64_t thread_id = ep_event_instance_get_thread_id (event_instance);
-			memcpy (write_pointer, &thread_id, sizeof (thread_id));
-			write_pointer += sizeof (thread_id);
+			ep_write_buffer_uint64_t (&write_pointer, thread_id);
 
-			memcpy (write_pointer, &capture_thread_id, sizeof (capture_thread_id));
-			write_pointer += sizeof (capture_thread_id);
+			ep_write_buffer_uint64_t (&write_pointer, capture_thread_id);
 
-			memcpy (write_pointer, &capture_proc_number, sizeof (capture_proc_number));
-			write_pointer += sizeof (capture_proc_number);
+			ep_write_buffer_uint32_t (&write_pointer, capture_proc_number);
 
-			memcpy (write_pointer, &stack_id, sizeof (stack_id));
-			write_pointer += sizeof (stack_id);
+			ep_write_buffer_uint32_t (&write_pointer, stack_id);
 		}
 
 		ep_timestamp_t timestamp = ep_event_instance_get_timestamp (event_instance);
-		memcpy (write_pointer, &timestamp, sizeof (timestamp));
-		write_pointer += sizeof (timestamp);
+		ep_write_buffer_int64_t (&write_pointer, timestamp);
 
 		const uint8_t *activity_id = ep_event_instance_get_activity_id_cref (event_instance);
 		memcpy (write_pointer, activity_id, EP_ACTIVITY_ID_SIZE);
@@ -581,8 +572,7 @@ ep_event_block_base_write_event (
 		write_pointer += EP_ACTIVITY_ID_SIZE;
 
 		data_len = ep_event_instance_get_data_len (event_instance);
-		memcpy (write_pointer, &data_len, sizeof (data_len));
-		write_pointer += sizeof (data_len);
+		ep_write_buffer_uint32_t (&write_pointer, data_len);
 	} else { // using header compression
 		uint8_t flags = 0;
 		uint8_t *header_write_pointer = &event_block_base->compressed_header[0];
@@ -640,7 +630,7 @@ ep_event_block_base_write_event (
 		uint32_t total_size = 1 + bytes_written + data_len;
 
 		if (write_pointer + total_size >= block->end_of_the_buffer) {
-			// TODO: Orignal EP updates blocks write pointer continiously, doing the same here before
+			// TODO: Original EP updates blocks write pointer continuously, doing the same here before
 			//bailing out. Question is if that is intentional or just a side effect of directly updating
 			//the member.
 			block->write_pointer = write_pointer;
@@ -671,12 +661,11 @@ ep_event_block_base_write_event (
 	}
 
 	if (block->format == EP_SERIALIZATION_FORMAT_NETPERF_V3) {
-		uint32_t stack_size = ep_stack_contents_get_size (ep_event_instance_get_stack_contents_ref (event_instance));
-		memcpy (write_pointer, &stack_size, sizeof (stack_size));
-		write_pointer += sizeof (stack_size);
+		uint32_t stack_size = ep_stack_contents_instance_get_size (ep_event_instance_get_stack_contents_instance_ref (event_instance));
+		ep_write_buffer_uint32_t (&write_pointer, stack_size);
 
 		if (stack_size > 0) {
-			memcpy (write_pointer, ep_stack_contents_get_pointer (ep_event_instance_get_stack_contents_ref (event_instance)), stack_size);
+			memcpy (write_pointer, ep_stack_contents_instance_get_pointer (ep_event_instance_get_stack_contents_instance_ref (event_instance)), stack_size);
 			write_pointer += stack_size;
 		}
 	}
@@ -909,12 +898,10 @@ ep_sequence_point_block_init (
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	const ep_timestamp_t timestamp = ep_sequence_point_get_timestamp (sequence_point);
-	memcpy (sequence_point_block->block.write_pointer, &timestamp, sizeof (timestamp));
-	sequence_point_block->block.write_pointer += sizeof (timestamp);
+	ep_write_buffer_timestamp (&sequence_point_block->block.write_pointer, timestamp);
 
 	const uint32_t thread_count = ep_rt_thread_sequence_number_map_count (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
-	memcpy (sequence_point_block->block.write_pointer, &thread_count, sizeof (thread_count));
-	sequence_point_block->block.write_pointer += sizeof (thread_count);
+	ep_write_buffer_uint32_t (&sequence_point_block->block.write_pointer, thread_count);
 
 	for (ep_rt_thread_sequence_number_hash_map_iterator_t iterator = ep_rt_thread_sequence_number_map_iterator_begin (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
 		!ep_rt_thread_sequence_number_map_iterator_end (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator);
@@ -923,12 +910,10 @@ ep_sequence_point_block_init (
 		const EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
 
 		const uint64_t thread_id = ep_thread_get_os_thread_id (ep_thread_session_state_get_thread (key));
-		memcpy (sequence_point_block->block.write_pointer, &thread_id, sizeof (thread_id));
-		sequence_point_block->block.write_pointer += sizeof (thread_id);
+		ep_write_buffer_uint64_t (&sequence_point_block->block.write_pointer, thread_id);
 
 		const uint32_t sequence_number = ep_rt_thread_sequence_number_map_iterator_value (&iterator);
-		memcpy (sequence_point_block->block.write_pointer, &sequence_number, sizeof (sequence_number));
-		sequence_point_block->block.write_pointer += sizeof (sequence_number);
+		ep_write_buffer_uint32_t (&sequence_point_block->block.write_pointer, sequence_number);
 	}
 
 	return sequence_point_block;
@@ -1003,8 +988,8 @@ stack_block_serialize_header_func (
 	EP_ASSERT (fast_serializer != NULL);
 
 	EventPipeStackBlock *stack_block = (EventPipeStackBlock *)object;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&stack_block->initial_index, sizeof (stack_block->initial_index));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&stack_block->count, sizeof (stack_block->count));
+	ep_fast_serializer_write_uint32_t (fast_serializer, stack_block->initial_index);
+	ep_fast_serializer_write_uint32_t (fast_serializer, stack_block->count);
 }
 
 static EventPipeBlockVtable stack_block_vtable = {
@@ -1052,13 +1037,13 @@ bool
 ep_stack_block_write_stack (
 	EventPipeStackBlock *stack_block,
 	uint32_t stack_id,
-	EventPipeStackContents *stack)
+	EventPipeStackContentsInstance *stack)
 {
 	bool result = true;
 
 	EP_ASSERT (stack_block != NULL);
 
-	uint32_t stack_size = ep_stack_contents_get_size (stack);
+	uint32_t stack_size = ep_stack_contents_instance_get_size (stack);
 	uint32_t total_size = sizeof (stack_size) + stack_size;
 	EventPipeBlock *block = &stack_block->block;
 	uint8_t *write_pointer = block->write_pointer;
@@ -1072,11 +1057,10 @@ ep_stack_block_write_stack (
 
 	stack_block->count++;
 
-	memcpy (write_pointer, &stack_size, sizeof (stack_size));
-	write_pointer += sizeof (stack_size);
+	ep_write_buffer_uint32_t (&write_pointer, stack_size);
 
 	if (stack_size > 0) {
-		memcpy (write_pointer, ep_stack_contents_get_pointer (stack), stack_size);
+		memcpy (write_pointer, ep_stack_contents_instance_get_pointer (stack), stack_size);
 		write_pointer += stack_size;
 	}
 
@@ -1095,7 +1079,7 @@ ep_on_error:
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_block;
 const char quiet_linker_empty_file_warning_eventpipe_block = 0;
 #endif

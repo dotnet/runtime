@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -102,20 +103,22 @@ namespace System.Tests
             emptyDelegate.DynamicInvoke(null);
         }
 
-        private class SomeCustomConstantAttribute : CustomConstantAttribute
-        {
-            public static object Do(object o) => o;
-          
-            public override object Value => "SomeValue";
-        }
-
-        private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
-
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
         public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
         {
-            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithStringCustomConstantAttribute(ObjectMethod).DynamicInvoke(Type.Missing)));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_MissingTypeForCustomConstantAttributeWithDefault_Succeeds()
+        {
+            Assert.Equal("DefaultValue", new StringDelegateWithStringCustomConstantAttributeWithDefault(StringMethod).DynamicInvoke(Type.Missing));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_MissingTypeForTwoCustomConstantAttributes_Succeeds()
+        {
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithTwoCustomConstantAttributes(ObjectMethod).DynamicInvoke(Type.Missing)));
         }
 
         [Fact]
@@ -163,7 +166,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(7, (short)7)] // uint -> int
+        [InlineData(7, (short)7)] // short -> int
         [InlineData(7, IntEnum.Seven)] // Enum (int) -> int
         [InlineData(7, ShortEnum.Seven)] // Enum (short) -> int
         public static void DynamicInvoke_ValuePreservingPrimitiveWidening_Succeeds(object o1, object o2)
@@ -328,6 +331,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(42),
+                (DateTime)(new DateTimeDelegateWithDateTimeAndCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(43),
+                (DateTime)(new DateTimeDelegateWithCustomConstantAndDateTimeAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(43),
+                (DateTime)(new DateTimeDelegateWithCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -341,6 +368,30 @@ namespace System.Tests
             Assert.Equal(
                 new decimal(4, 3, 2, true, 1),
                 (decimal)(new DecimalWithDefaultValueAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithDecimalAndCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithCustomConstantAndDecimalAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
         [Fact]
@@ -434,6 +485,50 @@ namespace System.Tests
         {
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
+            var m2 = new Action(new Class().M).Method;
+            Assert.True(m1.Equals(m2));
+        }
+
+        [Fact]
+        public static void SameMethodObtainedViaDelegateAndReflectionAreSameForStruct()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Struct().M())).Body).Method;
+            var m2 = new Action(new Struct().M).Method;
+            Assert.True(m1.Equals(m2));
+        }
+
+        [Fact]
+        public static void SameGenericMethodObtainedViaDelegateAndReflectionAreSameForClass()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new ClassG().M<string, object>())).Body).Method;
+            var m2 = new Action(new ClassG().M<string, object>).Method;
+            Assert.True(m1.Equals(m2));
+            Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
+            Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
+        }
+
+        [Fact]
+        public static void SameGenericMethodObtainedViaDelegateAndReflectionAreSameForStruct()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new StructG().M<string, object>())).Body).Method;
+            var m2 = new Action(new StructG().M<string, object>).Method;
+            Assert.True(m1.Equals(m2));
+            Assert.Equal(m1.GetHashCode(), m2.GetHashCode());
+            Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
+        }
+
+        class Class { internal void M() { } }
+
+        struct Struct { internal void M() { } }
+
+        class ClassG { internal void M<Key, Value>() { } }
+
+        struct StructG { internal void M<Key, Value>() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);
@@ -585,6 +680,36 @@ namespace System.Tests
         }
 
         private delegate string OptionalStringParameter([Optional] string parameter);
+
+        private class StringCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => "SomeValue";
+        }
+
+        private class AnotherStringCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => "SomeOtherValue";
+        }
+
+        private class AnotherDateTimeCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => new DateTime(43);
+        }
+
+        private class AnotherDecimalCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => new decimal(12, 13, 14, true, 1);
+        }
+
+        private delegate object ObjectDelegateWithStringCustomConstantAttribute([StringCustomConstant] object o);
+        private delegate object ObjectDelegateWithTwoCustomConstantAttributes([StringCustomConstant][AnotherStringCustomConstant] object o);
+        private delegate DateTime DateTimeDelegateWithDateTimeAndCustomConstantAttribute([DateTimeConstant(42)][AnotherDateTimeCustomConstant] DateTime parameter);
+        private delegate DateTime DateTimeDelegateWithCustomConstantAndDateTimeAttribute([AnotherDateTimeCustomConstant][DateTimeConstant(42)] DateTime parameter);
+        private delegate DateTime DateTimeDelegateWithCustomConstantAttribute([AnotherDateTimeCustomConstant] DateTime parameter);
+        private delegate decimal DecimalDelegateWithDecimalAndCustomConstantAttribute([DecimalConstant(1, 1, 2, 3, 4)][AnotherDecimalCustomConstant] decimal parameter);
+        private delegate decimal DecimalDelegateWithCustomConstantAndDecimalAttribute([AnotherDecimalCustomConstant][DecimalConstant(1, 1, 2, 3, 4)] decimal parameter);
+        private delegate decimal DecimalDelegateWithCustomConstantAttribute([AnotherDecimalCustomConstant] decimal parameter);
+        private delegate string StringDelegateWithStringCustomConstantAttributeWithDefault([StringCustomConstant] string o = "DefaultValue");
     }
 
     public static class CreateDelegateTests
@@ -868,7 +993,7 @@ namespace System.Tests
         [Fact]
         public static void CreateDelegate4_Method_CaseMismatch()
         {
-            // instance method, case mismatch, do not igore case
+            // instance method, case mismatch, do not ignore case
             ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => Delegate.CreateDelegate(typeof(E), new B(), "ExecutE", false));
             // Error binding to target method
             Assert.Null(ex.InnerException);

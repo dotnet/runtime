@@ -79,7 +79,7 @@ namespace System.DirectoryServices.Interop
 
         private AdsType GetAdsTypeForManagedType(Type type)
         {
-            // Consider this code is only excercised by DirectorySearcher
+            // Consider this code is only exercised by DirectorySearcher
             // it just translates the types needed by such a component, if more managed
             // types are to be used in the future, this function needs to be expanded.
             if (type == typeof(int))
@@ -165,15 +165,7 @@ namespace System.DirectoryServices.Interop
                         Marshal.PtrToStructure(adsvalue.pointer.value, dns);
                         string strValue = Marshal.PtrToStringUni(dns.pszStringValue) ?? string.Empty;
 
-                        var strb = new StringBuilder();
-                        strb.Append("S:");
-                        strb.Append(strValue.Length);
-                        strb.Append(':');
-                        strb.Append(strValue);
-                        strb.Append(':');
-                        strb.Append(Marshal.PtrToStringUni(dns.pszDNString));
-
-                        return strb.ToString();
+                        return $"S:{strValue.Length}:{strValue}:{Marshal.PtrToStringUni(dns.pszDNString)}";
                     }
 
                 case AdsType.ADSTYPE_DN_STRING:

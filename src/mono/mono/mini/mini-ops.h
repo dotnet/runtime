@@ -93,7 +93,7 @@ MINI_OP(OP_RETHROW,	"rethrow", NONE, IREG, NONE)
 /*
  * Vararg calls are implemented as follows:
  * - the caller emits a hidden argument just before the varargs argument. this
- *   'signature cookie' argument contains the signature describing the the call.
+ *   'signature cookie' argument contains the signature describing the call.
  * - all implicit arguments are passed in memory right after the signature cookie, i.e.
  *   the stack will look like this:
  *   <argn>
@@ -764,7 +764,7 @@ MINI_OP(OP_BOUNDS_CHECK, "bounds_check", NONE, IREG, IREG)
 /* type checks */
 MINI_OP(OP_ISINST, "isinst", IREG, IREG, NONE)
 MINI_OP(OP_CASTCLASS, "castclass", IREG, IREG, NONE)
-/* get adress of element in a 2D array */
+/* get address of element in a 2D array */
 MINI_OP(OP_LDELEMA2D, "ldelema2d", NONE, NONE, NONE)
 /* inlined small memcpy with constant length */
 MINI_OP(OP_MEMCPY, "memcpy", NONE, NONE, NONE)
@@ -844,6 +844,14 @@ MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
+#endif
+
+// wasm specific SIMD v128
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", VREG, XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", VREG, XREG, XREG)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1343,6 +1351,8 @@ MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
 MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
+MINI_OP(OP_X86_MOVE_R8_TO_FPSTACK,    "x86_move_r8_to_fpstack", NONE, FREG, NONE)
+MINI_OP(OP_X86_MOVE_R4_TO_FPSTACK,    "x86_move_r4_to_fpstack", NONE, FREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
@@ -1382,7 +1392,7 @@ MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IR
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
 #endif
 
-#if  defined(TARGET_POWERPC)
+#if  defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic", IREG, IREG, NONE)
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
 MINI_OP(OP_PPC_CHECK_FINITE,       "ppc_check_finite", NONE, IREG, NONE)
@@ -1396,21 +1406,6 @@ MINI_OP(OP_ARM_RSBS_IMM,            "arm_rsbs_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
 /* Set dreg to an r4 value */
 MINI_OP(OP_ARM_SETFREG_R4,             "arm_setfreg_r4", FREG, FREG, NONE)
-#endif
-
-#if defined(TARGET_SPARC)
-MINI_OP(OP_SPARC_BRZ,              "sparc_brz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLEZ,            "sparc_brlez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLZ,             "sparc_brlz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRNZ,             "sparc_brnz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGZ,             "sparc_brgz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGEZ,            "sparc_brgez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_EQZ,     "sparc_cond_exc_eqz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GEZ,     "sparc_cond_exc_gez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GTZ,     "sparc_cond_exc_gtz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LEZ,     "sparc_cond_exc_lez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LTZ,     "sparc_cond_exc_ltz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_NEZ,     "sparc_cond_exc_nez", NONE, NONE, NONE)
 #endif
 
 #if defined(TARGET_S390X)
@@ -1440,72 +1435,6 @@ MINI_OP(OP_S390_CIJ,            "s390_cij", IREG, NONE, NONE)
 MINI_OP(OP_S390_CLIJ,           "s390_cij_un", IREG, IREG, NONE)
 MINI_OP(OP_S390_CGIJ,           "s390_cgij", LREG, NONE, NONE)
 MINI_OP(OP_S390_CLGIJ,          "s390_cgij_un", LREG, NONE, NONE)
-#endif
-
-#if defined(TARGET_MIPS)
-MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BGTZ,  "mips_bgtz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLEZ,  "mips_blez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLTZ,  "mips_bltz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BNE,   "mips_bne", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_CVTSD, "mips_cvtsd", FREG, FREG, NONE)
-MINI_OP(OP_MIPS_FBEQ,  "mips_fbeq", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE,  "mips_fbge", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE_UN,  "mips_fbge_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT,  "mips_fbgt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT_UN,  "mips_fbgt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE,  "mips_fble", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE_UN,  "mips_fble_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT,  "mips_fblt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT_UN,  "mips_fblt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBNE,  "mips_fbne", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBFALSE, "mips_fbfalse", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_FBTRUE, "mips_fbtrue", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_LWC1,  "mips_lwc1", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_MTC1S, "mips_mtc1_s", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MTC1S_2, "mips_mtc1_s2", FREG, IREG, IREG)
-MINI_OP(OP_MIPS_MFC1S, "mips_mfc1_s", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_MTC1D, "mips_mtc1_d", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MFC1D, "mips_mfc1_d", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_NOP,   "mips_nop", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_SLTI,  "mips_slti", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLT,   "mips_slt", IREG, IREG, IREG)
-MINI_OP(OP_MIPS_SLTIU, "mips_sltiu", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLTU,  "mips_sltu", IREG, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_EQ, "mips_cond_exc_eq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE, "mips_cond_exc_ge", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT, "mips_cond_exc_gt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE, "mips_cond_exc_le", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT, "mips_cond_exc_lt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NE_UN, "mips_cond_exc_ne_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE_UN, "mips_cond_exc_ge_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT_UN, "mips_cond_exc_gt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE_UN, "mips_cond_exc_le_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT_UN, "mips_cond_exc_lt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_OV, "mips_cond_exc_ov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NO, "mips_cond_exc_no", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_C, "mips_cond_exc_c", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NC, "mips_cond_exc_nc", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IEQ, "mips_cond_exc_ieq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE, "mips_cond_exc_ige", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT, "mips_cond_exc_igt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE, "mips_cond_exc_ile", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT, "mips_cond_exc_ilt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INE_UN, "mips_cond_exc_ine_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE_UN, "mips_cond_exc_ige_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT_UN, "mips_cond_exc_igt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE_UN, "mips_cond_exc_ile_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT_UN, "mips_cond_exc_ilt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IOV, "mips_cond_exc_iov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INO, "mips_cond_exc_ino", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IC, "mips_cond_exc_ic", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
-
 #endif
 
 #if defined(TARGET_ARM64)
@@ -1698,9 +1627,6 @@ MINI_OP(OP_ARM64_REVN, "arm64_revn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_PMULL, "arm64_pmull", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_PMULL2, "arm64_pmull2", XREG, XREG, XREG)
 
-MINI_OP(OP_ARM64_XNEG, "arm64_xneg", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_XNEG_SCALAR, "arm64_xneg_scalar", XREG, XREG, NONE)
-
 MINI_OP(OP_ARM64_SMULL, "arm64_smull", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SMULL_SCALAR, "arm64_smull_scalar", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SMULL2, "arm64_smull2", XREG, XREG, XREG)
@@ -1790,10 +1716,7 @@ MINI_OP(OP_ARM64_FCVTL2, "arm64_fcvtl2", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_CMTST, "arm64_cmtst", XREG, XREG, XREG)
 
-MINI_OP3(OP_ARM64_BSL, "arm64_bsl", XREG, XREG, XREG, XREG)
 MINI_OP(OP_ARM64_BIC, "arm64_bic", XREG, XREG, XREG)
-
-MINI_OP(OP_ARM64_MVN, "arm64_mvn", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_SADD, "arm64_sadd", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SADD2, "arm64_sadd2", XREG, XREG, XREG)
@@ -1844,3 +1767,14 @@ MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
 #endif // TARGET_ARM64
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
+#endif
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
+MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
+MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
+MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
+#endif // TARGET_ARM64 || TARGET_AMD64

@@ -223,6 +223,22 @@ namespace System
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
+            {
+                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= (uint)LongLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
@@ -252,8 +268,47 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern unsafe object? InternalGetValue(nint flattenedIndex);
+        internal unsafe object? InternalGetValue(nint flattenedIndex)
+        {
+            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
+
+            TypeHandle arrayElementTypeHandle = pMethodTable->GetArrayElementTypeHandle();
+
+            // Legacy behavior (none of the cases where the element type is a type descriptor are supported).
+            // That is, this happens when the element type is either a pointer or a function pointer type.
+            if (arrayElementTypeHandle.IsTypeDesc)
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+
+            Debug.Assert((nuint)flattenedIndex < NativeLength);
+
+            ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(this);
+            object? result;
+
+            MethodTable* pElementMethodTable = arrayElementTypeHandle.AsMethodTable();
+
+            if (pElementMethodTable->IsValueType)
+            {
+                // If the element is a value type, shift to the right offset using the component size, then box
+                ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+
+                result = RuntimeHelpers.Box(pElementMethodTable, ref offsetDataRef);
+            }
+            else
+            {
+                // The element is a reference type, so no need to retrieve the component size.
+                // Just offset with object size as element type, since it's the same regardless of T.
+                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
+                ref object offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
+
+                result = offsetElementRef;
+            }
+
+            GC.KeepAlive(this); // Keep the method table alive
+
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalSetValue(object? value, nint flattenedIndex);
@@ -394,7 +449,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             return _this[index];
@@ -407,7 +462,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             _this[index] = value;

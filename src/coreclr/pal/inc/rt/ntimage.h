@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+// This file is a verbatim copy of the Windows OS header with PE file structure definitions.
+
+
 //
 // ===========================================================================
 // File: ntimage.h
@@ -403,7 +406,7 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 
 #define IMAGE_FIRST_SECTION( ntheader ) ((PIMAGE_SECTION_HEADER)        \
     ((ULONG_PTR)ntheader +                                              \
-     FIELD_OFFSET( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
+     offsetof( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
      VAL16(((PIMAGE_NT_HEADERS)(ntheader))->FileHeader.SizeOfOptionalHeader)  \
     ))
 

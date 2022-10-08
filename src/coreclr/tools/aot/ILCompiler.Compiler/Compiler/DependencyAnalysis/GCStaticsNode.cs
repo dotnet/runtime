@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -19,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         public GCStaticsNode(MetadataType type, PreinitializationManager preinitManager)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
 
             if (preinitManager.IsPreinitialized(type))
@@ -61,10 +60,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
 
@@ -91,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             bool isPreinitialized = _preinitializationInfo != null && _preinitializationInfo.IsPreinitialized;
             if (isPreinitialized)
                 delta |= GCStaticRegionConstants.HasPreInitializedData;
-                
+
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
             if (isPreinitialized)

@@ -39,6 +39,11 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       3
 
+#elif defined(HOST_LOONGARCH64)
+
+#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
+#define OFFSETOF_PRECODE_TYPE       0
+
 #endif // HOST_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -56,6 +61,8 @@ struct InvalidPrecode
     static const int Type = 0xCC;
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     static const int Type = 0;
+#elif defined(HOST_LOONGARCH64)
+    static const int Type = 0xff;
 #endif
 };
 
@@ -88,6 +95,9 @@ struct StubPrecode
 #elif defined(HOST_ARM)
     static const int Type = 0xCF;
     static const int CodeSize = 12;
+#elif defined(HOST_LOONGARCH64)
+    static const int Type = 0x4;
+    static const int CodeSize = 24;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -220,6 +230,10 @@ struct FixupPrecode
     static const int Type = 0xFF;
     static const int CodeSize = 12;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
+#elif defined(HOST_LOONGARCH64)
+    static const int Type = 0x3;
+    static const int CodeSize = 32;
+    static const int FixupCodeOffset = 12;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -273,7 +287,7 @@ struct FixupPrecode
 
         PCODE target = (PCODE)this + FixupCodeOffset;
 
-        _ASSERTE(IS_ALIGNED(&GetData()->Target, sizeof(SIZE_T))); 
+        _ASSERTE(IS_ALIGNED(&GetData()->Target, sizeof(SIZE_T)));
         InterlockedExchangeT<PCODE>(&GetData()->Target, target);
     }
 
@@ -285,9 +299,6 @@ struct FixupPrecode
             GC_NOTRIGGER;
         }
         CONTRACTL_END;
-
-        MethodDesc * pMD = (MethodDesc*)GetMethodDesc();
-        g_IBCLogger.LogMethodPrecodeWriteAccess(pMD);
 
         PCODE oldTarget = (PCODE)GetData()->Target;
         if (oldTarget != ((PCODE)this + FixupCodeOffset))
@@ -411,7 +422,14 @@ public:
 
 #ifdef OFFSETOF_PRECODE_TYPE
 
+#ifdef TARGET_LOONGARCH64
+        assert(0 == OFFSETOF_PRECODE_TYPE);
+        short type = *((short*)m_data);
+        type >>= 5;
+#else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
+#endif
+
         if (type == StubPrecode::Type)
         {
             // StubPrecode code is used for both StubPrecode and NDirectImportPrecode,
@@ -495,7 +513,7 @@ public:
     }
 
     PTR_PCODE GetTargetSlot();
-    
+
     MethodDesc *  GetMethodDesc(BOOL fSpeculative = FALSE);
     BOOL          IsCorrectMethodDesc(MethodDesc *  pMD);
 
@@ -533,12 +551,6 @@ public:
         }
 
         PTR_Precode pPrecode = PTR_Precode(pInstr);
-
-        if (!fSpeculative)
-        {
-            g_IBCLogger.LogMethodPrecodeAccess(pPrecode->GetMethodDesc());
-        }
-
         return pPrecode;
     }
 
@@ -564,10 +576,12 @@ public:
     static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static SIZE_T GetMaxTemporaryEntryPointsCount()
+    static DWORD GetMaxTemporaryEntryPointsCount()
     {
         SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        return GetOsPageSize() / maxPrecodeCodeSize;
+        SIZE_T count = GetOsPageSize() / maxPrecodeCodeSize;
+        _ASSERTE(count < MAXDWORD);
+        return (DWORD)count;
     }
 
 #ifdef DACCESS_COMPILE

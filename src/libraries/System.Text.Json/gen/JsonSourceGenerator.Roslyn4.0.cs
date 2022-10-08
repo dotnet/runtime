@@ -8,10 +8,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+#if !ROSLYN4_4_OR_GREATER
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+#endif
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -24,8 +28,13 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
-                .Where(static c => c is not null);
+                .ForAttributeWithMetadataName(
+#if !ROSLYN4_4_OR_GREATER
+                    context,
+#endif
+                    Parser.JsonSerializableAttributeFullName,
+                    (node, _) => node is ClassDeclarationSyntax,
+                    (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
                 context.CompilationProvider.Combine(classDeclarations.Collect());
@@ -48,7 +57,7 @@ namespace System.Text.Json.SourceGeneration
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
             Parser parser = new(compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses, sourceProductionContext.CancellationToken);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;

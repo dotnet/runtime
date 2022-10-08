@@ -87,6 +87,7 @@ DECL_OFFSET(MonoDelegate, invoke_impl)
 DECL_OFFSET(MonoDelegate, method)
 DECL_OFFSET(MonoDelegate, method_code)
 DECL_OFFSET(MonoDelegate, method_is_virtual)
+DECL_OFFSET(MonoDelegate, bound)
 DECL_OFFSET(MonoDelegate, extra_arg)
 
 DECL_OFFSET(MonoInternalThread, tid)

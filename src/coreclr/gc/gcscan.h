@@ -70,7 +70,7 @@ class GCScan
     // scan.
     static bool GcDhUnpromotedHandlesExist(ScanContext* sc);
 
-    // Rescan the handles for additonal primaries that have been promoted since the last scan. Return true if
+    // Rescan the handles for additional primaries that have been promoted since the last scan. Return true if
     // any objects were promoted as a result.
     static bool GcDhReScan(ScanContext* sc);
 

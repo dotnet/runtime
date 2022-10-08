@@ -50,6 +50,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputNOP(BYTE* dst, size_t nBytes);
 BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -219,16 +220,12 @@ bool isPrefetch(instruction ins)
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-#ifdef DEBUG
-
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
-
-#endif
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -301,6 +298,12 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 }
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+
+/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -321,7 +324,12 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir);
+
+void emitIns_R_I(instruction ins,
+                 emitAttr    attr,
+                 regNumber   reg,
+                 ssize_t val DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
@@ -367,8 +375,9 @@ void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
 void emitIns_R_R_AR_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, int ival);
-void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival);
 
+void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival);
+void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival);
 void emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm);
 
 void emitIns_R_R_C_I(
@@ -547,7 +556,7 @@ void emitIns_Call(EmitCallType          callType,
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
 
-// Insert a NOP at the end of the the current instruction group if the last emitted instruction was a 'call',
+// Insert a NOP at the end of the current instruction group if the last emitted instruction was a 'call',
 // because the next instruction group will be an epilog.
 void emitOutputPreEpilogNOP();
 #endif // TARGET_AMD64

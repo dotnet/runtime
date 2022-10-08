@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -14,7 +15,7 @@ namespace System.Security.Cryptography
         // secp521r1 maxes out at 139 bytes, so 256 should always be enough
         private const int SignatureStackBufSize = 256;
 
-        private ECOpenSsl _key;
+        private ECOpenSsl? _key;
 
         /// <summary>
         /// Create an ECDsaOpenSsl algorithm with a named curve.
@@ -77,20 +78,13 @@ namespace System.Security.Cryptography
             KeySizeValue = newKeySize;
         }
 
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // Return the three sizes that can be explicitly set (for backwards compatibility)
-                return new[] {
-                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                };
-            }
-        }
+        // Return the three sizes that can be explicitly set (for backwards compatibility)
+        public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
-        public override byte[] SignHash(byte[] hash!!)
+        public override byte[] SignHash(byte[] hash)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+
             ThrowIfDisposed();
             SafeEcKeyHandle key = _key.Value;
             int signatureLength = Interop.Crypto.EcDsaSize(key);
@@ -194,8 +188,11 @@ namespace System.Security.Cryptography
             return destination.Slice(0, actualLength);
         }
 
-        public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+        public override bool VerifyHash(byte[] hash, byte[] signature)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
         }
 
@@ -255,7 +252,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 _key?.Dispose();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -328,6 +325,7 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
             if (_key == null)

@@ -21,15 +21,24 @@ namespace System.Xml.Schema
 
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
+        internal abstract Type ListValueType { get; }
+
         internal XmlSchemaDatatype() { }
 
-        public virtual object ChangeType(object value!!, Type targetType!!)
+        public virtual object ChangeType(object value, Type targetType)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(targetType);
+
             return ValueConverter.ChangeType(value, targetType);
         }
 
-        public virtual object ChangeType(object value!!, Type targetType!!, IXmlNamespaceResolver namespaceResolver!!)
+        public virtual object ChangeType(object value, Type targetType, IXmlNamespaceResolver namespaceResolver)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(targetType);
+            ArgumentNullException.ThrowIfNull(namespaceResolver);
+
             return ValueConverter.ChangeType(value, targetType, namespaceResolver);
         }
 
@@ -246,7 +255,7 @@ namespace System.Xml.Schema
 
             if (convert)
             {
-                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), uri.Substring(offset, uri.Length - offset).ToUpperInvariant()));
+                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), uri.Substring(offset).ToUpperInvariant()));
             }
             else
             {

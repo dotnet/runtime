@@ -3,11 +3,16 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
     <!-- SYSLIB0036 is about obsoletion of regex members -->
-    <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036</NoWarn>
+    <!-- SYSLIB1045 is for switching to GeneratedRegex -->
+    <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036;SYSLIB1045</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
+
+    <!-- Remove once the repo moves to a sufficiently high-enough version for file-scoped types -->
+    <MicrosoftCodeAnalysisVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisVersion>
+
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
@@ -32,6 +37,8 @@
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
+    <Compile Include="RegexPcreTests.cs" />
+    <Compile Include="RegexRustTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
@@ -43,26 +50,36 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="CustomDerivedRegexScenarioTest.cs" />
+    <Compile Include="CSharpCodeFixVerifier`2.cs" />
+    <Compile Include="UpgradeToGeneratedRegexAnalyzerTests.cs" />
     <Compile Include="RegexRunnerTests.cs" />
     <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />
+    <Compile Include="Regex.EnumerateMatches.Tests.cs" />
+    <Compile Include="RegexIgnoreCaseTests.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />
     <Compile Include="MatchCollectionTests2.cs" />
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
-    <Compile Include="RegexGeneratorAttributeTests.cs" />
+    <Compile Include="GeneratedRegexAttributeTests.cs" />
     <Compile Include="RegexGeneratorParserTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="RegexExperiment.cs" />
     <Compile Include="RegexGeneratorHelper.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
   </ItemGroup>
 </Project>

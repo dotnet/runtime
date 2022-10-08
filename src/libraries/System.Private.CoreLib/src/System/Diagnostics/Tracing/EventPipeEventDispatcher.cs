@@ -32,7 +32,6 @@ namespace System.Diagnostics.Tracing
         private long m_timeQPCFrequency;
 
         private bool m_stopDispatchTask;
-        private readonly EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
         private Task? m_dispatchTask;
         private readonly object m_dispatchControlLock = new object();
         private readonly Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
@@ -43,7 +42,6 @@ namespace System.Diagnostics.Tracing
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
             m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName);
-            m_dispatchTaskWaitHandle.SafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, false);
         }
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
@@ -70,10 +68,7 @@ namespace System.Diagnostics.Tracing
             lock (m_dispatchControlLock)
             {
                 // Remove the event listener from the list of subscribers.
-                if (m_subscriptions.ContainsKey(listener))
-                {
-                    m_subscriptions.Remove(listener);
-                }
+                m_subscriptions.Remove(listener);
 
                 // Commit the configuration change.
                 CommitDispatchConfiguration();
@@ -142,9 +137,6 @@ namespace System.Diagnostics.Tracing
             if (m_dispatchTask == null)
             {
                 m_stopDispatchTask = false;
-                // Create a SafeWaitHandle that won't release the handle when done
-                m_dispatchTaskWaitHandle.SafeWaitHandle = new SafeWaitHandle(EventPipeInternal.GetWaitHandle(m_sessionID), false);
-
                 m_dispatchTask = Task.Factory.StartNew(DispatchEventsToEventListeners, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
@@ -156,8 +148,7 @@ namespace System.Diagnostics.Tracing
             if (m_dispatchTask != null)
             {
                 m_stopDispatchTask = true;
-                Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
-                EventWaitHandle.Set(m_dispatchTaskWaitHandle.SafeWaitHandle);
+                EventPipeInternal.SignalSession(m_sessionID);
                 m_dispatchTask.Wait();
                 m_dispatchTask = null;
             }
@@ -191,9 +182,7 @@ namespace System.Diagnostics.Tracing
                 {
                     if (!eventsReceived)
                     {
-                        // Future TODO: this would make more sense to handle in EventPipeSession/EventPipe native code.
-                        Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
-                        m_dispatchTaskWaitHandle.WaitOne();
+                        EventPipeInternal.WaitForSessionSignal(m_sessionID, Timeout.Infinite);
                     }
 
                     Thread.Sleep(10);

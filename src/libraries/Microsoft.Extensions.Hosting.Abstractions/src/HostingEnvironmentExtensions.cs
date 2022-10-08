@@ -16,8 +16,10 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostingEnvironment">An instance of <see cref="IHostingEnvironment"/>.</param>
         /// <returns>True if the environment name is <see cref="EnvironmentName.Development"/>, otherwise false.</returns>
-        public static bool IsDevelopment(this IHostingEnvironment hostingEnvironment!!)
+        public static bool IsDevelopment(this IHostingEnvironment hostingEnvironment)
         {
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
+
             return hostingEnvironment.IsEnvironment(EnvironmentName.Development);
         }
 
@@ -26,8 +28,10 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostingEnvironment">An instance of <see cref="IHostingEnvironment"/>.</param>
         /// <returns>True if the environment name is <see cref="EnvironmentName.Staging"/>, otherwise false.</returns>
-        public static bool IsStaging(this IHostingEnvironment hostingEnvironment!!)
+        public static bool IsStaging(this IHostingEnvironment hostingEnvironment)
         {
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
+
             return hostingEnvironment.IsEnvironment(EnvironmentName.Staging);
         }
 
@@ -36,8 +40,10 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostingEnvironment">An instance of <see cref="IHostingEnvironment"/>.</param>
         /// <returns>True if the environment name is <see cref="EnvironmentName.Production"/>, otherwise false.</returns>
-        public static bool IsProduction(this IHostingEnvironment hostingEnvironment!!)
+        public static bool IsProduction(this IHostingEnvironment hostingEnvironment)
         {
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
+
             return hostingEnvironment.IsEnvironment(EnvironmentName.Production);
         }
 
@@ -48,9 +54,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="environmentName">Environment name to validate against.</param>
         /// <returns>True if the specified name is the same as the current environment, otherwise false.</returns>
         public static bool IsEnvironment(
-            this IHostingEnvironment hostingEnvironment!!,
+            this IHostingEnvironment hostingEnvironment,
             string environmentName)
         {
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
+
             return string.Equals(
                 hostingEnvironment.EnvironmentName,
                 environmentName,

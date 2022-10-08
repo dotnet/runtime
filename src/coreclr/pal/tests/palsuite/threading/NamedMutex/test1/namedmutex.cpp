@@ -353,7 +353,7 @@ bool UninitializeChild(
     AutoCloseMutexHandle childEvents[2])
 {
     // Release and close 'parentEvents' and 'childEvents' before releasing 'childRunningEvent' to avoid races, see
-    // UnitializeParent() for more info
+    // UninitializeParent() for more info
     TestAssert(childEvents[0].Release());
     TestAssert(childEvents[1].Release());
     childEvents[0].Close();

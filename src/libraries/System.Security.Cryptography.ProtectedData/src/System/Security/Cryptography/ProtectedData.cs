@@ -14,13 +14,17 @@ namespace System.Security.Cryptography
     {
         private static readonly byte[] s_nonEmpty = new byte[1];
 
-        public static byte[] Protect(byte[] userData!!, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
+            ArgumentNullException.ThrowIfNull(userData);
+
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
-        public static byte[] Unprotect(byte[] encryptedData!!, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
+            ArgumentNullException.ThrowIfNull(encryptedData);
+
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
 
@@ -57,7 +61,7 @@ namespace System.Security.Cryptography
                             Interop.Crypt32.CryptUnprotectData(in userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
                         if (!success)
                         {
-                            int lastWin32Error = Marshal.GetLastWin32Error();
+                            int lastWin32Error = Marshal.GetLastPInvokeError();
                             if (protect && ErrorMayBeCausedByUnloadedProfile(lastWin32Error))
                                 throw new CryptographicException(SR.Cryptography_DpApi_ProfileMayNotBeLoaded);
                             else

@@ -31,6 +31,7 @@ namespace System
         {
             ClassName = className;
             MemberName = fieldName;
+            HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         protected MissingFieldException(SerializationInfo info, StreamingContext context)
@@ -49,7 +50,7 @@ namespace System
                 else
                 {
                     // do any desired fixups to classname here.
-                    return SR.Format(SR.MissingField_Name, (Signature != null ? FormatSignature(Signature) + " " : "") + ClassName + "." + MemberName);
+                    return SR.Format(SR.MissingField_Name, ClassName, MemberName);
                 }
             }
         }

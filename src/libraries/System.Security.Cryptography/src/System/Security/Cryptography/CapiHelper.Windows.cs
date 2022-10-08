@@ -109,9 +109,7 @@ namespace System.Security.Cryptography
                 wszUpgrade = UpgradeDSS(dwType, providerNameString);
             }
 
-            return wszUpgrade != null ?
-                wszUpgrade : // Overwrite the provider name with the upgraded provider name
-                providerNameString;
+            return wszUpgrade ?? providerNameString;
         }
 
         /// <summary>
@@ -206,7 +204,7 @@ namespace System.Security.Cryptography
             //look for provider type in the cspParameters
             int providerType = cspParameters.ProviderType;
 
-            //look for provider name in the cspParamters
+            //look for provider name in the cspParameters
             //if CSP provider is not null then use the provider name from cspParameters
             if (null != cspParameters.ProviderName)
             {
@@ -276,6 +274,7 @@ namespace System.Security.Cryptography
             if (hr != S_OK)
             {
                 safeProvHandle.Dispose();
+
                 // If UseExistingKey flag is used and the key container does not exist
                 // throw an exception without attempting to create the container.
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
@@ -296,6 +295,7 @@ namespace System.Security.Cryptography
 
                 if (!Interop.Advapi32.CryptSetProvParam(safeProvHandle, CryptProvParam.PP_CLIENT_HWND, ref parentWindowHandle, 0))
                 {
+                    safeProvHandle.Dispose();
                     throw GetErrorCode().ToCryptographicException();
                 }
             }
@@ -311,6 +311,7 @@ namespace System.Security.Cryptography
                             CryptProvParam.PP_KEYEXCHANGE_PIN;
                     if (!Interop.Advapi32.CryptSetProvParam(safeProvHandle, param, password, 0))
                     {
+                        safeProvHandle.Dispose();
                         throw GetErrorCode().ToCryptographicException();
                     }
                 }
@@ -1034,9 +1035,7 @@ namespace System.Security.Cryptography
             if (nameOrOid == null)
                 return CapiHelper.CALG_SHA1;
 
-            string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
-            if (oidValue == null)
-                oidValue = nameOrOid; // we were probably passed an OID value directly
+            string oidValue = CryptoConfig.MapNameToOID(nameOrOid) ?? nameOrOid; // we were probably passed an OID value directly
 
             int algId = GetAlgIdFromOid(oidValue, oidGroup);
             if (algId == 0 || algId == -1)
@@ -1048,8 +1047,10 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Helper for signing and verifications that accept a string/Type/HashAlgorithm to specify a hashing algorithm.
         /// </summary>
-        public static int ObjToHashAlgId(object hashAlg!!)
+        public static int ObjToHashAlgId(object hashAlg)
         {
+            ArgumentNullException.ThrowIfNull(hashAlg);
+
             string? hashAlgString = hashAlg as string;
             if (hashAlgString != null)
             {
@@ -1416,10 +1417,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (hHash != null)
-                {
-                    hHash.Dispose();
-                }
+                hHash?.Dispose();
             }
         }
 

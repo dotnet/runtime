@@ -216,7 +216,7 @@ LAgain:
                 return pta;
             }
 
-            CType type = pTypeThrough != null ? pTypeThrough : mpwi.GetType();
+            CType type = pTypeThrough ?? mpwi.GetType();
             CType[] typeList = new CType[pta.Count];
             MethodOrPropertySymbol methProp = GroupToArgsBinder.FindMostDerivedMethod(mpwi.MethProp(), type);
 

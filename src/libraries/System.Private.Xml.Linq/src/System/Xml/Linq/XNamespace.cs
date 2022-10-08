@@ -53,8 +53,10 @@ namespace System.Xml.Linq
         /// The returned <see cref="XName"/> object is guaranteed to be atomic (i.e. the only one in the system for this
         /// particular expanded name).
         /// </remarks>
-        public XName GetName(string localName!!)
+        public XName GetName(string localName)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+
             return GetName(localName, 0, localName.Length);
         }
 
@@ -111,8 +113,10 @@ namespace System.Xml.Linq
         /// The returned <see cref="XNamespace"/> object is guaranteed to be atomic
         /// (i.e. the only one in the system for that particular namespace name).
         /// </remarks>
-        public static XNamespace Get(string namespaceName!!)
+        public static XNamespace Get(string namespaceName)
         {
+            ArgumentNullException.ThrowIfNull(namespaceName);
+
             return Get(namespaceName, 0, namespaceName.Length);
         }
 
@@ -122,7 +126,7 @@ namespace System.Xml.Linq
         /// <param name="namespaceName">A string containing the namespace name.</param>
         /// <returns>An <see cref="XNamespace"/> constructed from the namespace name string.</returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("namespaceName")]
+        [return: NotNullIfNotNull(nameof(namespaceName))]
         public static implicit operator XNamespace?(string? namespaceName)
         {
             return namespaceName != null ? Get(namespaceName) : null;
@@ -134,8 +138,10 @@ namespace System.Xml.Linq
         /// <param name="ns">The namespace for the expanded name.</param>
         /// <param name="localName">The local name for the expanded name.</param>
         /// <returns>The new XName constructed from the namespace and local name.</returns>
-        public static XName operator +(XNamespace ns!!, string localName)
+        public static XName operator +(XNamespace ns, string localName)
         {
+            ArgumentNullException.ThrowIfNull(ns);
+
             return ns.GetName(localName);
         }
 

@@ -1,0 +1,49 @@
+# This contains only Android-specific jobs
+# These are run as part of runtime-extra-platforms by default.
+# But can also be triggered manually via `runtime-android` name
+#   /azp run runtime-android
+
+parameters:
+  isExtraPlatformsBuild: false
+  isAndroidOnlyBuild: false
+  isRollingBuild: false
+
+jobs:
+
+#
+# Build the whole product using Mono for Android and run runtime tests with Android devices
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isAndroidOnlyBuild: ${{ parameters.isAndroidOnlyBuild }}
+    platforms:
+      - Android_arm64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      # don't run tests on PRs until we can get significantly more devices
+      # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
+      # ${{ if eq(variables['isRollingBuild'], true) }}:
+      #   # extra steps, run tests
+      #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      #   extraStepsParameters:
+      #     creator: dotnet-bot
+      #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)

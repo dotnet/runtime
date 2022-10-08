@@ -33,9 +33,9 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 //    str  - (out parameter) If the method returns true, contains the file path for this deps entry
 //    search_options - Flags to instruct where to look for this deps entry
 //    found_in_bundle - (out parameter) True if the candidate is located within the single-file bundle.
-//    
+//
 // Returns:
-//    If the file exists in the path relative to the "base" directory within the 
+//    If the file exists in the path relative to the "base" directory within the
 //    single-file or on disk.
 
 bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, pal::string_t* str, uint32_t search_options, bool &found_in_bundle) const
@@ -113,7 +113,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     }
 
     // If a file is resolved to the servicing directory, mark it as disabled in the bundle.
-    // This step is necessary because runtime will try to resolve assemblies from the bundle 
+    // This step is necessary because runtime will try to resolve assemblies from the bundle
     // before it uses the TPA. So putting the servicing entry into TPA is not enough, since runtime would
     // resolve it from the bundle first anyway. Disabling the file's entry in the bundle
     // ensures that the servicing entry in the TPA gets priority.
@@ -137,7 +137,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
-//    str  - If the method returns true, contains the file path for this deps entry 
+//    str  - If the method returns true, contains the file path for this deps entry
 //    search_options - Flags to instruct where to look for this deps entry
 //    look_in_bundle - Whether to look within the single-file bundle
 //
@@ -157,7 +157,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
         ietf_dir = get_directory(pal_relative_path);
 
         // get_directory returns with DIR_SEPARATOR appended that we need to remove.
-        remove_trailing_dir_seperator(&ietf_dir);
+        remove_trailing_dir_separator(&ietf_dir);
 
         // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
         ietf_dir = get_filename(ietf_dir);
@@ -178,7 +178,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
-//    str  - If the method returns true, contains the file path for this deps entry 
+//    str  - If the method returns true, contains the file path for this deps entry
 //    search_options - Flags to instruct where to look for this deps entry
 //
 // Returns:
@@ -199,7 +199,7 @@ bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str, ui
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
-//    str  - If the method returns true, contains the file path for this deps entry 
+//    str  - If the method returns true, contains the file path for this deps entry
 //    search_options - Flags to instruct where to look for this deps entry
 //
 // Returns:

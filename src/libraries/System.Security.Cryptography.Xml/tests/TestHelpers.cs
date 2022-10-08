@@ -225,6 +225,38 @@ namespace System.Security.Cryptography.Xml.Tests
             "v02cMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
             "BgUrDgMCGgUABBS0CMJuJYzpHkxOFI+r0PA67eJbzQQI4yGr4jgshqECAggA");
 
+        internal static DSA GetWorkingDSA()
+        {
+            DSA dsa = DSA.Create();
+
+#if NETCOREAPP
+            if (OperatingSystem.IsMacOS())
+            {
+                // macOS cannot generate DSA keys, so for this platform we will use a fixed key.
+                // Other platforms will use a generated DSA key.
+                dsa.ImportParameters(new DSAParameters
+                {
+                    P = Convert.FromBase64String(@"
+                        nEx7rLmUg+FLq23XB/8rVFU3Txktd4NYVppGrJMdRKi0FktEj39g7vM33rA0g8Xf
+                        BurQu9HkcblSR25E5beYrMbU8pJD1ZqmrltbnnlB+PHX5Pgbu91BCr2d5UjAIfiA
+                        qIlnySMuV0XSqbb1A3qyWGIx3ATXBaXN9mm+paF2itE="),
+                    Q = Convert.FromBase64String("vV0TbUwrTOkOoiyTJDxsaKWqWjE="),
+                    G = Convert.FromBase64String(@"
+                        XZESzrsgUFaS697sgeQEnFKrhh3S6C+gfVG2wL9JBv636QsEq2uxpOMl/1VQxjqx
+                        Cys3x9YFOkdY1xYdk4ayhco6LYVr81X/lRUtx0YZxpaTt10XgcnlLwx772pYCcOH
+                        UlyyGxq3GYCA1cglXtS80gPHIYieOqmUhvBHXMYBCAg="),
+                    Y = Convert.FromBase64String(@"
+                        e7NMNCxX/44GS2gUH+JyReWzdCUXcp6ax0PcF/XvIZ1mak74P8o8yqWseGa/10hR
+                        CT92or4YBROsGtKqD/wqN0yJvVMkpPHHsWU9zs1Zt4CsQaZgUTw+vyjkw674OuyN
+                        933pL+qQNvPuJcb/HK9ME2vSN/3Ki1lAqqKWuzcvggY="),
+                    X = Convert.FromBase64String(@"DQrQZHBuIxyLlLqtNqOULp/tlH0="),
+                });
+            }
+#endif
+
+            return dsa;
+        }
+
         public static X509Certificate2 GetSampleX509Certificate()
         {
             return new X509Certificate2(SamplePfx, "mono");

@@ -56,7 +56,7 @@ namespace System.Threading.Channels
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            Capacity = capacity;
+            _capacity = capacity;
         }
 
         /// <summary>Gets or sets the maximum number of items the bounded channel may store.</summary>

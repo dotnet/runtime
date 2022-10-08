@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 using (RSA rsa2 = RSA.Create())
                 {
                     rsa2.ImportEncryptedPkcs8PrivateKey(
-                        nameof(rsa),
+                        (ReadOnlySpan<char>)nameof(rsa),
                         keyBag.EncryptedPkcs8PrivateKey.Span,
                         out _);
 

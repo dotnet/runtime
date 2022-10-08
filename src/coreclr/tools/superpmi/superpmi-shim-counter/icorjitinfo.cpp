@@ -59,6 +59,14 @@ CorInfoInline interceptor_ICJI::canInline(
     return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
+void interceptor_ICJI::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mcs->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 void interceptor_ICJI::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -296,13 +304,24 @@ bool interceptor_ICJI::isValidStringRef(
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
-const char16_t* interceptor_ICJI::getStringLiteral(
+int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     mcs->AddCall("getStringLiteral");
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
+}
+
+size_t interceptor_ICJI::printObjectDescription(
+          void* handle,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
+{
+    mcs->AddCall("printObjectDescription");
+    return original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(
@@ -526,6 +545,13 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(
     return original_ICorJitInfo->getUnBoxHelper(cls);
 }
 
+void* interceptor_ICJI::getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getRuntimeTypePointer");
+    return original_ICorJitInfo->getRuntimeTypePointer(cls);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -538,11 +564,12 @@ bool interceptor_ICJI::getReadyToRunHelper(
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     mcs->AddCall("getReadyToRunDelegateCtorHelper");
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 const char* interceptor_ICJI::getHelperName(
@@ -783,6 +810,16 @@ void interceptor_ICJI::setVars(
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+void interceptor_ICJI::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    mcs->AddCall("reportRichMappings");
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
 void* interceptor_ICJI::allocateArray(
           size_t cBytes)
 {
@@ -811,6 +848,15 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(
 {
     mcs->AddCall("getArgType");
     return original_ICorJitInfo->getArgType(sig, args, vcTypeRet);
+}
+
+int interceptor_ICJI::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    mcs->AddCall("getExactClasses");
+    return original_ICorJitInfo->getExactClasses(baseType, maxExactClasses, exactClsRet);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(
@@ -1385,13 +1431,5 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("doesFieldBelongToClass");
-    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 

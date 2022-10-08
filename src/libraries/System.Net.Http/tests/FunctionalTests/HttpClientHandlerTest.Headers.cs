@@ -269,18 +269,18 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
-             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-             {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Null(response.Content.Headers.Expires);
                 }
             },
-            async server =>
-            {
-                await server.HandleRequestAsync(HttpStatusCode.OK);
-            });
+           async server =>
+           {
+               await server.HandleRequestAsync(HttpStatusCode.OK);
+           });
         }
 
         [Theory]
@@ -382,7 +382,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -395,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = "hostheaderthatdoesnotmatch";
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient(CreateHttpClientHandler(allowAllCertificates: false)))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, m));
             }
@@ -423,26 +423,25 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
-                    catch (QuicConnectionAbortedException) { }
                 });
         }
 
-        private static readonly (string Name, Encoding ValueEncoding, string[] Values)[] s_nonAsciiHeaders = new[]
+        private static readonly (string Name, Encoding ValueEncoding, string Separator, string[] Values)[] s_nonAsciiHeaders = new[]
         {
-            ("foo",             Encoding.ASCII,     new[] { "bar" }),
-            ("header-0",        Encoding.UTF8,      new[] { "\uD83D\uDE03", "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" }),
-            ("Cache-Control",   Encoding.UTF8,      new[] { "no-cache" }),
-            ("header-1",        Encoding.UTF8,      new[] { "\uD83D\uDE03" }),
-            ("Some-Header1",    Encoding.Latin1,    new[] { "\uD83D\uDE03", "UTF8-best-fit-to-latin1" }),
-            ("Some-Header2",    Encoding.Latin1,    new[] { "\u00FF", "\u00C4nd", "Ascii\u00A9" }),
-            ("Some-Header3",    Encoding.ASCII,     new[] { "\u00FF", "\u00C4nd", "Ascii\u00A9", "Latin1-best-fit-to-ascii" }),
-            ("header-2",        Encoding.UTF8,      new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" }),
-            ("header-3",        Encoding.UTF8,      new[] { "\uFFFD" }),
-            ("header-4",        Encoding.UTF8,      new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "\uD83D\uDE03" }),
-            ("Cookie",          Encoding.UTF8,      new[] { "Cookies", "\uD83C\uDF6A", "everywhere" }),
-            ("Set-Cookie",      Encoding.UTF8,      new[] { "\uD83C\uDDF8\uD83C\uDDEE" }),
-            ("header-5",        Encoding.UTF8,      new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "foo", "\uD83D\uDE03", "bar" }),
-            ("bar",             Encoding.UTF8,      new[] { "foo" })
+            ("foo",             Encoding.ASCII,     ", ", new[] { "bar" }),
+            ("header-0",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE03", "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" }),
+            ("Cache-Control",   Encoding.UTF8,      ", ", new[] { "no-cache" }),
+            ("header-1",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE03" }),
+            ("Some-Header1",    Encoding.Latin1,    ", ", new[] { "\uD83D\uDE03", "UTF8-best-fit-to-latin1" }),
+            ("Some-Header2",    Encoding.Latin1,    ", ", new[] { "\u00FF", "\u00C4nd", "Ascii\u00A9" }),
+            ("Some-Header3",    Encoding.ASCII,     ", ", new[] { "\u00FF", "\u00C4nd", "Ascii\u00A9", "Latin1-best-fit-to-ascii" }),
+            ("header-2",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A" }),
+            ("header-3",        Encoding.UTF8,      ", ", new[] { "\uFFFD" }),
+            ("header-4",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "\uD83D\uDE03" }),
+            ("Cookie",          Encoding.UTF8,      "; ", new[] { "Cookies", "\uD83C\uDF6A", "everywhere" }),
+            ("Set-Cookie",      Encoding.UTF8,      ", ", new[] { "\uD83C\uDDF8\uD83C\uDDEE" }),
+            ("header-5",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "foo", "\uD83D\uDE03", "bar" }),
+            ("bar",             Encoding.UTF8,      ", ", new[] { "foo" })
         };
 
         [Fact]
@@ -457,7 +456,7 @@ namespace System.Net.Http.Functional.Tests
                         Version = UseVersion
                     };
 
-                    foreach ((string name, _, string[] values) in s_nonAsciiHeaders)
+                    foreach ((string name, _, _, string[] values) in s_nonAsciiHeaders)
                     {
                         requestMessage.Headers.Add(name, values);
                     }
@@ -479,7 +478,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await client.SendAsync(TestAsync, requestMessage);
 
-                    foreach ((string name, _, _) in s_nonAsciiHeaders)
+                    foreach ((string name, _, _, _) in s_nonAsciiHeaders)
                     {
                         Assert.Contains(name, seenHeaderNames);
                     }
@@ -491,9 +490,9 @@ namespace System.Net.Http.Functional.Tests
                     Assert.All(requestData.Headers,
                         h => Assert.False(h.HuffmanEncoded, "Expose raw decoded bytes once HuffmanEncoding is supported"));
 
-                    foreach ((string name, Encoding valueEncoding, string[] values) in s_nonAsciiHeaders)
+                    foreach ((string name, Encoding valueEncoding, string separator, string[] values) in s_nonAsciiHeaders)
                     {
-                        byte[] valueBytes = valueEncoding.GetBytes(string.Join(", ", values));
+                        byte[] valueBytes = valueEncoding.GetBytes(string.Join(separator, values));
                         Assert.Single(requestData.Headers,
                             h => h.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && h.Raw.AsSpan().IndexOf(valueBytes) != -1);
                     }
@@ -536,24 +535,59 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpResponseMessage response = await client.SendAsync(TestAsync, requestMessage);
 
-                    foreach ((string name, Encoding valueEncoding, string[] values) in s_nonAsciiHeaders)
+                    foreach ((string name, Encoding valueEncoding, string separator, string[] values) in s_nonAsciiHeaders)
                     {
                         Assert.Contains(name, seenHeaderNames);
                         IEnumerable<string> receivedValues = Assert.Single(response.Headers, h => h.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
                         string value = Assert.Single(receivedValues);
 
-                        string expected = valueEncoding.GetString(valueEncoding.GetBytes(string.Join(", ", values)));
+                        string expected = valueEncoding.GetString(valueEncoding.GetBytes(string.Join(separator, values)));
                         Assert.Equal(expected, value, StringComparer.OrdinalIgnoreCase);
                     }
                 },
                 async server =>
                 {
                     List<HttpHeaderData> headerData = s_nonAsciiHeaders
-                        .Select(h => new HttpHeaderData(h.Name, string.Join(", ", h.Values), valueEncoding: h.ValueEncoding))
+                        .Select(h => new HttpHeaderData(h.Name, string.Join(h.Separator, h.Values), valueEncoding: h.ValueEncoding))
                         .ToList();
 
                     await server.HandleRequestAsync(headers: headerData);
                 });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        public async Task SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion
+                };
+                using HttpClient client = new HttpClient();
+                Task<HttpResponseMessage> getResponse = client.SendAsync(requestMessage);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.SendResponseAsync(HttpStatusCode.OK,
+                        new List<HttpHeaderData>
+                        {
+                            new HttpHeaderData("Content-Length", "33"),
+                            new HttpHeaderData("Transfer-Encoding", "chunked")
+                        }, "5\r\nhello\r\n5\r\nworld\r\n3\r\nyay\r\n0\r\n\r\n");
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                        Assert.True(response.Headers.Contains("Transfer-Encoding"));
+                        Assert.Equal("chunked", Assert.Single(response.Headers.GetValues("Transfer-Encoding")));
+                        Assert.Equal(33, response.Content.Headers.ContentLength);
+
+                        string content = await response.Content.ReadAsStringAsync();
+                        Assert.Equal("helloworldyay", content);
+                    }
+                });
+            });
         }
     }
 }

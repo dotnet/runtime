@@ -10,14 +10,15 @@ namespace System.DirectoryServices.Protocols
 {
     public static partial class BerConverter
     {
-        public static byte[] Encode(string format!!, params object[] value)
+        public static byte[] Encode(string format, params object[] value)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
             byte[] encodingResult = null;
             // value is allowed to be null in certain scenario, so if it is null, just set it to empty array.
-            if (value == null)
-                value = Array.Empty<object>();
+            value ??= Array.Empty<object>();
 
             Debug.WriteLine("Begin encoding\n");
 
@@ -298,8 +299,10 @@ namespace System.DirectoryServices.Protocols
                 throw new BerConversionException();
         }
 
-        internal static object[] TryDecode(string format!!, byte[] value, out bool decodeSucceeded)
+        internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             Debug.WriteLine("Begin decoding");
 
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
@@ -512,10 +515,9 @@ namespace System.DirectoryServices.Protocols
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
+        private static unsafe int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
-            IntPtr tempPtr;
             BerVal[] managedBervalArray = null;
             int error = 0;
 
@@ -527,6 +529,7 @@ namespace System.DirectoryServices.Protocols
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
                     int structSize = Marshal.SizeOf(typeof(BerVal));
                     managedBervalArray = new BerVal[tempValue.Length];
+                    void** pBerValArray = (void**)berValArray;
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
@@ -546,12 +549,10 @@ namespace System.DirectoryServices.Protocols
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
-                        tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, valPtr);
+                        pBerValArray[i] = (void*)valPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pBerValArray[i] = null;
                 }
 
                 error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray, tag);

@@ -4,7 +4,7 @@
 // File: gdbjithelpers.h
 //
 //
-// Helper file with managed delegate for GDB JIT interface implemenation.
+// Helper file with managed delegate for GDB JIT interface implementation.
 //
 //*****************************************************************************
 

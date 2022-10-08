@@ -20,19 +20,34 @@ namespace System.Reflection.Context
 
         protected CustomReflectionContext() : this(new IdentityReflectionContext()) { }
 
-        protected CustomReflectionContext(ReflectionContext source!!)
+        protected CustomReflectionContext(ReflectionContext source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             SourceContext = source;
             _projector = new ReflectionContextProjector(this);
         }
 
-        public override Assembly MapAssembly(Assembly assembly!!)
+        public override Assembly MapAssembly(Assembly assembly)
         {
+            if (assembly is null)
+            {
+                throw new ArgumentNullException(nameof(assembly));
+            }
+
             return _projector.ProjectAssemblyIfNeeded(assembly);
         }
 
-        public override TypeInfo MapType(TypeInfo type!!)
+        public override TypeInfo MapType(TypeInfo type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             return _projector.ProjectTypeIfNeeded(type);
         }
 

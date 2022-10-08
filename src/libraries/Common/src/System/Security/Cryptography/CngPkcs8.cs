@@ -34,8 +34,10 @@ namespace System.Security.Cryptography
         internal static byte[] ExportEncryptedPkcs8PrivateKey(
             AsymmetricAlgorithm key,
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,

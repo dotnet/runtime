@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_superlong_cs
 {
-    internal struct superlong
+    public struct superlong
     {
         private ulong _lo,_hi;
 
@@ -30,7 +31,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             superlong v1;
             superlong v2;

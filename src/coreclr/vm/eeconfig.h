@@ -90,6 +90,14 @@ public:
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
+#if defined(FEATURE_PGO)
+    bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fReadyToRun; }
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     // OSR Config
     DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
@@ -137,7 +145,6 @@ public:
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
-    bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
 
     static bool RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input);
 
@@ -647,6 +654,14 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_BackgroundWorkerTimeoutMs;
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
+#endif
+
+#if defined(FEATURE_PGO)
+    bool fTieredPGO;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    bool fReadyToRun;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

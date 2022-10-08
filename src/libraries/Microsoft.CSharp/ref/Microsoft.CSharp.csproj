@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Microsoft.CSharp.cs" />
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Linq\ref\System.Linq.csproj" />
     <ProjectReference Include="..\..\System.Linq.Expressions\ref\System.Linq.Expressions.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>

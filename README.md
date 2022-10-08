@@ -1,6 +1,6 @@
 # .NET Runtime
 [![Build Status](https://dnceng.visualstudio.com/public/_apis/build/status/dotnet/runtime/runtime?branchName=main)](https://dnceng.visualstudio.com/public/_build/latest?definitionId=686&branchName=main)
-[![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/up-for-grabs?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3A%22up-for-grabs%22)
+[![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/help%20wanted?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/labels/help%20wanted)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 [![Discord](https://img.shields.io/discord/732297728826277939?style=flat-square&label=Discord&logo=discord&logoColor=white&color=7289DA)](https://aka.ms/dotnet-discord)
 
@@ -16,9 +16,9 @@ Official Starting Page: https://dotnet.microsoft.com
   * [Install daily builds](docs/project/dogfooding.md)
   * [Documentation](https://docs.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://docs.microsoft.com/dotnet/core/deploying)
-  * [Supported OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md)
-* [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
-* [Releases](https://github.com/dotnet/core/tree/master/release-notes)
+  * [Supported OS versions](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
+* [Roadmap](https://github.com/dotnet/core/blob/main/roadmap.md)
+* [Releases](https://github.com/dotnet/core/tree/main/release-notes)
 
 ## How can I contribute?
 
@@ -49,7 +49,7 @@ For other issues, please use the following repos:
 * [API Reference docs](https://docs.microsoft.com/dotnet/api)
 * [.NET API Catalog](https://apisof.net) (incl. APIs from daily builds and API usage info)
 * [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
-* [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to talk and hang out with .NET community
+* [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to discuss the development of .NET and its ecosystem
 
 ## .NET Foundation
 

@@ -18,17 +18,21 @@ namespace System.IO
         {
         }
 
-        internal FileInfo(string originalPath!!, string? fullPath = null, string? fileName = null, bool isNormalized = false)
+        internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
+            ArgumentNullException.ThrowIfNull(originalPath);
+
             // Want to throw the original argument name
             OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
-            _name = fileName ?? Path.GetFileName(originalPath);
+            _name = fileName;
         }
+
+        public override string Name => _name ??= Path.GetFileName(OriginalPath);
 
         public long Length
         {
@@ -109,6 +113,21 @@ namespace System.IO
             Invalidate();
         }
 
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public FileStream Open(FileMode mode)
             => Open(mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
 
@@ -163,8 +182,10 @@ namespace System.IO
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName)
             => Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public FileInfo Replace(string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
+            ArgumentNullException.ThrowIfNull(destinationFileName);
+
             FileSystem.ReplaceFile(
                 FullPath,
                 Path.GetFullPath(destinationFileName),

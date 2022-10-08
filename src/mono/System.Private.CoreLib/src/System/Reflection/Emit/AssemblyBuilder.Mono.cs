@@ -33,13 +33,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace System.Reflection.Emit
 {
@@ -153,7 +154,7 @@ namespace System.Reflection.Emit
                 Type a = args[i];
                 Type b = other.args[i];
                 /*
-                We must cannonicalize as much as we can. Using equals means that some resulting types
+                We must canonicalize as much as we can. Using equals means that some resulting types
                 won't have the exact same types as the argument ones.
                 For example, flyweight types used array, pointer and byref will should this behavior.
                 MCS seens to be resilient to this problem so hopefully this won't show up.
@@ -239,8 +240,7 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return new AssemblyBuilder(name, access);
         }
@@ -270,6 +270,17 @@ namespace System.Reflection.Emit
             return manifest_module;
         }
 
+        internal static AssemblyBuilder InternalDefineDynamicAssembly(
+            AssemblyName name,
+            AssemblyBuilderAccess access,
+            Assembly? callingAssembly,
+            AssemblyLoadContext? assemblyLoadContext,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        {
+            Debug.Assert(assemblyLoadContext is null);
+            return DefineDynamicAssembly(name, access, assemblyAttributes);
+        }
+
         public ModuleBuilder? GetDynamicModule(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -286,8 +297,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             if (cattrs != null)
             {
@@ -305,13 +315,10 @@ namespace System.Reflection.Emit
             UpdateNativeCustomAttributes(this);
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
@@ -365,11 +372,11 @@ namespace System.Reflection.Emit
 
         public override Module[] GetLoadedModules(bool getResourceModules) => GetModules(getResourceModules);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture) => GetSatelliteAssembly(culture, null);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) =>
             RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
@@ -392,4 +399,3 @@ namespace System.Reflection.Emit
         public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
-#endif

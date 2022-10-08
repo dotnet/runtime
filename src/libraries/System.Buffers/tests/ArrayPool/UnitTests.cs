@@ -345,7 +345,9 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public static bool Is64BitProcessAndRemoteExecutorSupported => PlatformDetection.Is64BitProcess && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(Is64BitProcessAndRemoteExecutorSupported))]
         [InlineData(1024 * 1024 * 1024 - 1, true)]
         [InlineData(1024 * 1024 * 1024, true)]
         [InlineData(1024 * 1024 * 1024 + 1, false)]

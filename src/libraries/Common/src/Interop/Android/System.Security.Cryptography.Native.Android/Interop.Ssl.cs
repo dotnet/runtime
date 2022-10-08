@@ -19,9 +19,6 @@ internal static partial class Interop
     {
         private const int UNSUPPORTED_API_LEVEL = 2;
 
-        internal unsafe delegate PAL_SSLStreamStatus SSLReadCallback(byte* data, int* length);
-        internal unsafe delegate void SSLWriteCallback(byte* data, int length);
-
         internal enum PAL_SSLStreamStatus
         {
             OK = 0,
@@ -52,20 +49,22 @@ internal static partial class Interop
         }
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]
-        private static partial int SSLStreamInitializeImpl(
+        private static unsafe partial int SSLStreamInitializeImpl(
             SafeSslHandle sslHandle,
             [MarshalAs(UnmanagedType.U1)] bool isServer,
-            SSLReadCallback streamRead,
-            SSLWriteCallback streamWrite,
+            IntPtr managedContextHandle,
+            delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
+            delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
             int appBufferSize);
-        internal static void SSLStreamInitialize(
+        internal static unsafe void SSLStreamInitialize(
             SafeSslHandle sslHandle,
             bool isServer,
-            SSLReadCallback streamRead,
-            SSLWriteCallback streamWrite,
+            IntPtr managedContextHandle,
+            delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
+            delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
             int appBufferSize)
         {
-            int ret = SSLStreamInitializeImpl(sslHandle, isServer, streamRead, streamWrite, appBufferSize);
+            int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, appBufferSize);
             if (ret != SUCCESS)
                 throw new SslException();
         }

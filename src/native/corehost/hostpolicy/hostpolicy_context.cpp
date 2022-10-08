@@ -15,7 +15,7 @@ namespace
     void log_duplicate_property_error(const pal::char_t *property_key)
     {
         trace::error(_X("Duplicate runtime property found: %s"), property_key);
-        trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+        trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the application's .runtimeconfig.json"));
     }
 
     // bundle_probe:
@@ -36,7 +36,7 @@ namespace
         if (!pal::clr_palstring(path, &file_path))
         {
             trace::warning(_X("Failure probing contents of the application bundle."));
-            trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+            trace::warning(_X("Failed to convert path [%hs] to UTF8"), path);
 
             return false;
         }
@@ -53,56 +53,50 @@ namespace
 
     // pinvoke_override:
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
-    const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
+    const void* STDMETHODCALLTYPE pinvoke_override(const char* library_name, const char* entry_point_name)
     {
-#if defined(_WIN32)
-        const char* hostPolicyLib = "hostpolicy.dll";
-
-        if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
+        // This function is only called with the library name specified for a p/invoke, not any variations.
+        // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
+#if !defined(_WIN32)
+        if (strcmp(library_name, LIB_NAME("System.Net.Security.Native")) == 0)
         {
-            return CompressionResolveDllImport(entrypointName);
-        }
-#else
-        const char* hostPolicyLib = "libhostpolicy";
-
-        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
-        {
-            return CompressionResolveDllImport(entrypointName);
+            return SecurityResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Native")) == 0)
         {
-            return SecurityResolveDllImport(entrypointName);
+            return SystemResolveDllImport(entry_point_name);
         }
 
-        if (strcmp(libraryName, "libSystem.Native") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
-            return SystemResolveDllImport(entrypointName);
-        }
-
-        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
-        {
-            return CryptoResolveDllImport(entrypointName);
+            return CryptoResolveDllImport(entry_point_name);
         }
 #endif
-        // there are two PInvokes in the hostpolicy itself, redirect them here.
-        if (strcmp(libraryName, hostPolicyLib) == 0)
+
+        if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
-            if (strcmp(entrypointName, "corehost_resolve_component_dependencies") == 0)
+            return CompressionResolveDllImport(entry_point_name);
+        }
+
+        // there are two PInvokes in the hostpolicy itself, redirect them here.
+        if (strcmp(library_name, LIB_NAME("hostpolicy")) == 0)
+        {
+            if (strcmp(entry_point_name, "corehost_resolve_component_dependencies") == 0)
             {
                 return (void*)corehost_resolve_component_dependencies;
             }
 
-            if (strcmp(entrypointName, "corehost_set_error_writer") == 0)
+            if (strcmp(entry_point_name, "corehost_set_error_writer") == 0)
             {
                 return (void*)corehost_set_error_writer;
             }
         }
 
 #if defined(TARGET_OSX)
-        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
+        if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.Apple")) == 0)
         {
-            return CryptoAppleResolveDllImport(entrypointName);
+            return CryptoAppleResolveDllImport(entry_point_name);
         }
 #endif
 
@@ -180,7 +174,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
-    // In all other cases, 
+    // In all other cases,
     // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
     if (!bundle::info_t::is_single_file_bundle() ||
         bundle::runner_t::app()->probe(CORELIB_NAME) == nullptr)
@@ -289,7 +283,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             startup_hooks.push_back(PATH_SEPARATOR);
             startup_hooks.append(config_startup_hooks);
         }
-        
+
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 

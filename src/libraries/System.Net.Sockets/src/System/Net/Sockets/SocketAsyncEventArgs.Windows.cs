@@ -203,7 +203,7 @@ namespace System.Net.Sockets
                                 {
                                     NetEventSource.Info(thisRef, canceled ?
                                         "Socket operation canceled." :
-                                        $"CancelIoEx failed with error '{Marshal.GetLastWin32Error()}'.");
+                                        $"CancelIoEx failed with error '{Marshal.GetLastPInvokeError()}'.");
                                 }
                             }
                             catch (ObjectDisposedException)
@@ -493,10 +493,7 @@ namespace System.Net.Sockets
             PinSocketAddressBuffer();
 
             // Create a WSAMessageBuffer if none exists yet.
-            if (_wsaMessageBufferPinned == null)
-            {
-                _wsaMessageBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
-            }
+            _wsaMessageBufferPinned ??= GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
 
             // Create and pin an appropriately sized control buffer if none already
             IPAddress? ipAddress = (_socketAddress!.Family == AddressFamily.InterNetworkV6 ? _socketAddress.GetIPAddress() : null);
@@ -517,10 +514,7 @@ namespace System.Net.Sockets
             uint wsaRecvMsgWSABufferCount;
             if (_bufferList == null)
             {
-                if (_wsaRecvMsgWSABufferArrayPinned == null)
-                {
-                    _wsaRecvMsgWSABufferArrayPinned = GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
-                }
+                _wsaRecvMsgWSABufferArrayPinned ??= GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
 
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
@@ -1032,7 +1026,7 @@ namespace System.Net.Sockets
             return sendPacketsDescriptorPinned;
         }
 
-        internal void LogBuffer(int size)
+        internal unsafe void LogBuffer(int size)
         {
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
@@ -1044,7 +1038,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < _bufferListInternal!.Count; i++)
                 {
                     WSABuffer wsaBuffer = _wsaBufferArrayPinned![i];
-                    NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                    NetEventSource.DumpBuffer(this, new ReadOnlySpan<byte>((byte*)wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size)));
                     if ((size -= wsaBuffer.Length) <= 0)
                     {
                         break;
@@ -1186,6 +1180,7 @@ namespace System.Net.Sockets
         private unsafe void FinishOperationReceiveMessageFrom()
         {
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned!, 0);
+            _socketFlags = PtrMessage->flags;
 
             if (_controlBufferPinned!.Length == sizeof(Interop.Winsock.ControlData))
             {

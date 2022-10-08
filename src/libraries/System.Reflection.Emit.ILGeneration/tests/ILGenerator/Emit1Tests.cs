@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
             ilgen.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType1 = type.CreateTypeInfo().AsType();
+            Type createdType1 = type.CreateType();
             MethodInfo createdMethod1 = createdType1.GetMethod("meth1");
 
             TypeBuilder type2 = module.DefineType("C2", TypeAttributes.Public);
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
             ilgen2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod2 = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value from meth1
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator1.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType1 = type1.CreateTypeInfo().AsType();
+            Type createdType1 = type1.CreateType();
             MethodInfo createdMethod1 = createdType1.GetMethod("meth1");
 
             TypeBuilder type2 = module.DefineType("C2", TypeAttributes.Public);
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod2 = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value 'methodRet'
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType1 = type1.CreateTypeInfo().AsType();
+            Type createdType1 = type1.CreateType();
             MethodInfo createdMethod1 = createdType1.GetMethod("meth1");
             MethodInfo genericMethod = createdMethod1.MakeGenericMethod(typeof(int));
 
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod2 = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value 'methodRet'
@@ -131,7 +131,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator1.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType1 = type1.CreateTypeInfo().AsType();
+            Type createdType1 = type1.CreateType();
             Type genericType = createdType1.MakeGenericType(typeof(int));
             MethodInfo genericMethod = genericType.GetMethod("meth1");
 
@@ -145,7 +145,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod2 = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value 'methodRet'
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator1.Emit(OpCodes.Ret);
 
             // create the type where this method is in
-            Type createdType1 = type1.CreateTypeInfo().AsType();
+            Type createdType1 = type1.CreateType();
             Type genericType = createdType1.MakeGenericType(typeof(int));
             MethodInfo createdMethod1 = genericType.GetMethod("meth1");
             MethodInfo genericMethod = createdMethod1.MakeGenericMethod(typeof(string));
@@ -185,7 +185,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             // Create the type whose method will be invoking the MethodInfo method
-            Type createdType2 = type2.CreateTypeInfo().AsType();
+            Type createdType2 = type2.CreateType();
             MethodInfo createdMethod2 = createdType2.GetMethod("meth2");
 
             // meth2 should invoke meth1 which should return value 'methodRet'

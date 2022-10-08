@@ -8,8 +8,9 @@
 
 #include <pal_ssl_types.h>
 
-typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
-typedef int32_t (*STREAM_READER)(uint8_t*, int32_t*);
+typedef intptr_t ManagedContextHandle;
+typedef void (*STREAM_WRITER)(ManagedContextHandle, uint8_t*, int32_t);
+typedef int32_t (*STREAM_READER)(ManagedContextHandle, uint8_t*, int32_t*);
 
 typedef struct SSLStream
 {
@@ -20,6 +21,7 @@ typedef struct SSLStream
     jobject netOutBuffer;
     jobject appInBuffer;
     jobject netInBuffer;
+    ManagedContextHandle managedContextHandle;
     STREAM_READER streamReader;
     STREAM_WRITER streamWriter;
 } SSLStream;
@@ -60,12 +62,12 @@ Initialize an SSL context
   - isServer      : true if the context should be created in server mode
   - streamReader  : callback for reading data from the connection
   - streamWriter  : callback for writing data to the connection
-  - appBufferSize : initial buffer size for applicaiton data
+  - appBufferSize : initial buffer size for application data
 
 Returns 1 on success, 0 otherwise
 */
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
-    SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
+    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
 
 /*
 Set target host

@@ -37,7 +37,7 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
     const char* p = pattern;
     if (*p == '|')
     {
-        fprintf(stderr, "Pipe syntax in dump name not supported\n");
+        printf_error("Pipe syntax in dump name not supported\n");
         return false;
     }
 
@@ -81,7 +81,7 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                     ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
                     if (gethostname(buffer, MAX_LONGPATH) != 0)
                     {
-                        fprintf(stderr, "Could not get the host name for dump name: %d\n",
+                        printf_error("Could not get the host name for dump name: %d\n",
 #ifdef HOST_WINDOWS
                             WSAGetLastError());
 #else
@@ -114,7 +114,7 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                 // pid of dumped process
                 case 'P':
                 default:
-                    fprintf(stderr, "Invalid dump name format char '%c'\n", *p);
+                    printf_error("Invalid dump name format char '%c'\n", *p);
                     return false;
             }
         }

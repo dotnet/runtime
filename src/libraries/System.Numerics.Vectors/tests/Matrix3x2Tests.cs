@@ -983,7 +983,7 @@ namespace System.Numerics.Tests
 
         // A test for Matrix3x2 comparison involving NaN values
         [Fact]
-        public void Matrix3x2EqualsNanTest()
+        public void Matrix3x2EqualsNaNTest()
         {
             Matrix3x2 a = new Matrix3x2(float.NaN, 0, 0, 0, 0, 0);
             Matrix3x2 b = new Matrix3x2(0, float.NaN, 0, 0, 0, 0);
@@ -1020,13 +1020,12 @@ namespace System.Numerics.Tests
             Assert.False(e.IsIdentity);
             Assert.False(f.IsIdentity);
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
-            Assert.False(e.Equals(e));
-            Assert.False(f.Equals(f));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
+            Assert.True(e.Equals(e));
+            Assert.True(f.Equals(f));
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

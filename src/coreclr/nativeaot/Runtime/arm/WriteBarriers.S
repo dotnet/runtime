@@ -38,7 +38,7 @@
           ldr          r12, =C_FUNC(g_GCShadowEnd)
           ldr          r12, [r12]
           cmp          \DESTREG, r12
-          jhi          LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
+          bhs          LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
 
           // Update the shadow heap.
           str          \REFREG, [\DESTREG]
@@ -105,15 +105,15 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 
           // If the reference is to an object that's not in an ephemeral generation we have no need to track it
           // (since the object won't be collected or moved by an ephemeral collection).
-          ldr	         r12, =C_FUNC(g_ephemeral_low)
+          ldr          r12, =C_FUNC(g_ephemeral_low)
           ldr          r12, [r12]
           cmp          \REFREG, r12
           blo          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
-          ldr	         r12, =C_FUNC(g_ephemeral_high)
+          ldr          r12, =C_FUNC(g_ephemeral_high)
           ldr          r12, [r12]
-          cmp	         \REFREG, r12
-          bhi          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
+          cmp          \REFREG, r12
+          bhs          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -167,11 +167,11 @@ ALTERNATE_ENTRY RhpAssignRef
           //
           // Note that none of this is relevant for single cpu machines. We may choose to implement a
           // uniprocessor specific version of this barrier if uni-proc becomes a significant scenario again.
-	        dmb
+          dmb
 
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-ALTERNATE_ENTRY	"RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
+ALTERNATE_ENTRY "RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
 ALTERNATE_ENTRY RhpAssignRefAVLocation
 .endif
@@ -198,14 +198,14 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1
 
           // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
           // in which case no write barrier is required.
-          ldr	         r12, =C_FUNC(g_lowest_address)
+          ldr          r12, =C_FUNC(g_lowest_address)
           ldr          r12, [r12]
           cmp          r0, r12
           blo          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
-          ldr	         r12, =C_FUNC(g_highest_address)
+          ldr          r12, =C_FUNC(g_highest_address)
           ldr          r12, [r12]
           cmp          r0, r12
-          bhi          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
+          bhs          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
           DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
 
@@ -270,7 +270,7 @@ LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
           // barrier must occur before the object reference update, so we have to do it unconditionally even
           // though the update may fail below.
           dmb
-ALTERNATE_ENTRY 	RhpCheckedLockCmpXchgAVLocation
+ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
 LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           ldrex        r3, [r0]
           cmp          r2, r3
@@ -323,6 +323,9 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      r2, r3: trashed
 //
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
+          // See comment in RhpAssignRef
+          dmb
+
           ldr          r2, [r1]
           str          r2, [r0]
 
@@ -334,7 +337,7 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
           ldr          r3, =C_FUNC(g_highest_address)
           ldr          r3, [r3]
           cmp          r0, r3
-          bhi          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          bhs          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
@@ -349,7 +352,7 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
           ldr          r3, =C_FUNC(g_ephemeral_high)
           ldr          r3, [r3]
           cmp          r2, r3
-          bhi          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          bhs          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
 
           // move current r0 value into r2 and then increment the pointers
           mov          r2, r0

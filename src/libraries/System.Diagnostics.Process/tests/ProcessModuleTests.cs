@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -37,7 +38,8 @@ namespace System.Diagnostics.Tests
             Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains(RemoteExecutor.HostRunnerName));
         }
 
-        [Fact]
+        // Single-file executables don't have libcoreclr or libSystem.Native
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [PlatformSpecific(TestPlatforms.Linux)] // OSX only includes the main module
         public void TestModulesContainsUnixNativeLibs()
         {
@@ -76,7 +78,15 @@ namespace System.Diagnostics.Tests
         {
             Process process = CreateDefaultProcess();
 
-            ProcessModuleCollection modulesCollection = process.Modules;
+            // Very rarely, this call will fail with ERROR_PARTIAL_COPY; it only happened
+            // so far on this particular test, the only one that creates a new process.
+            // Assumption is that we need to give a little extra time.
+            ProcessModuleCollection modulesCollection = null;
+            RetryHelper.Execute(() =>
+            {
+                modulesCollection = process.Modules;
+            }, maxAttempts: 5, backoffFunc: null, retryWhen: e => e.GetType() == typeof(Win32Exception));
+
             int expectedCount = 0;
             int disposedCount = 0;
             foreach (ProcessModule processModule in modulesCollection)

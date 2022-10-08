@@ -28,27 +28,18 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            if (processName == null)
+            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
+
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
+            Process[] processes = new Process[processInfos.Length];
+
+            for (int i = 0; i < processInfos.Length; i++)
             {
-                processName = string.Empty;
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
             }
 
-            Process[] procs = GetProcesses(machineName);
-            var list = new List<Process>();
-
-            for (int i = 0; i < procs.Length; i++)
-            {
-                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(procs[i]);
-                }
-                else
-                {
-                    procs[i].Dispose();
-                }
-            }
-
-            return list.ToArray();
+            return processes;
         }
 
         [CLSCompliant(false)]
@@ -235,6 +226,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { return GetProcessTimes().PrivilegedProcessorTime; }
@@ -251,6 +245,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { return GetProcessTimes().TotalProcessorTime; }
@@ -260,6 +257,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { return GetProcessTimes().UserProcessorTime; }
@@ -597,6 +597,14 @@ namespace System.Diagnostics
                         throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                     }
                 }
+                catch
+                {
+                    parentInputPipeHandle?.Dispose();
+                    parentOutputPipeHandle?.Dispose();
+                    parentErrorPipeHandle?.Dispose();
+                    procSH.Dispose();
+                    throw;
+                }
                 finally
                 {
                     childInputPipeHandle?.Dispose();
@@ -625,7 +633,10 @@ namespace System.Diagnostics
             commandLine.Dispose();
 
             if (procSH.IsInvalid)
+            {
+                procSH.Dispose();
                 return false;
+            }
 
             SetProcessHandle(procSH);
             SetProcessId((int)processInfo.dwProcessId);
@@ -721,10 +732,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (hToken != null)
-                {
-                    hToken.Dispose();
-                }
+                hToken?.Dispose();
             }
         }
 
@@ -865,7 +873,6 @@ namespace System.Diagnostics
             {
                 if (_processName == null)
                 {
-                    EnsureState(State.HaveNonExitedId);
                     // If we already have the name via a populated ProcessInfo
                     // then use that one.
                     if (_processInfo?.ProcessName != null)
@@ -874,12 +881,16 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // If we don't have a populated ProcessInfo, then get and cache the process name.
+                        // Ensure that the process is not yet exited
+                        EnsureState(State.HaveNonExitedId);
                         _processName = ProcessManager.GetProcessName(_processId, _machineName);
 
+                        // Fallback to slower ProcessInfo implementation if optimized way did not return a
+                        // process name (e.g. in case of missing permissions for Non-Admin users)
                         if (_processName == null)
                         {
-                            throw new InvalidOperationException(SR.NoProcessInfo);
+                            EnsureState(State.HaveProcessInfo);
+                            _processName = _processInfo!.ProcessName;
                         }
                     }
                 }

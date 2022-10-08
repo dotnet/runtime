@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
     {
         private const TypeAttributes TypeAttributesSentinel = (TypeAttributes)(-1);
 
-        protected private RoType()
+        private protected RoType()
             : base()
         {
         }
@@ -67,19 +67,19 @@ namespace System.Reflection.TypeLoading
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 
         // Naming
-        public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
+        public sealed override string Name => _lazyName ??= ComputeName();
         protected abstract string ComputeName();
         private volatile string? _lazyName;
 
-        public sealed override string? Namespace => _lazyNamespace ?? (_lazyNamespace = ComputeNamespace());
+        public sealed override string? Namespace => _lazyNamespace ??= ComputeNamespace();
         protected abstract string? ComputeNamespace();
         private volatile string? _lazyNamespace;
 
-        public sealed override string? FullName => _lazyFullName ?? (_lazyFullName = ComputeFullName());
+        public sealed override string? FullName => _lazyFullName ??= ComputeFullName();
         protected abstract string? ComputeFullName();
         private volatile string? _lazyFullName;
 
-        public sealed override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ?? (_lazyAssemblyQualifiedFullName = ComputeAssemblyQualifiedName());
+        public sealed override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ??= ComputeAssemblyQualifiedName();
         private string? ComputeAssemblyQualifiedName()
         {
             string? fullName = FullName;
@@ -98,7 +98,7 @@ namespace System.Reflection.TypeLoading
         // Nesting
         public sealed override Type? DeclaringType => GetRoDeclaringType();
         protected abstract RoType? ComputeDeclaringType();
-        internal RoType? GetRoDeclaringType() => _lazyDeclaringType ?? (_lazyDeclaringType = ComputeDeclaringType());
+        internal RoType? GetRoDeclaringType() => _lazyDeclaringType ??= ComputeDeclaringType();
         private volatile RoType? _lazyDeclaringType;
 
         public abstract override MethodBase? DeclaringMethod { get; }
@@ -166,7 +166,7 @@ namespace System.Reflection.TypeLoading
 
         protected abstract IEnumerable<RoType> ComputeDirectlyImplementedInterfaces();
 
-        internal RoType[] GetInterfacesNoCopy() => _lazyInterfaces ?? (_lazyInterfaces = ComputeInterfaceClosure());
+        internal RoType[] GetInterfacesNoCopy() => _lazyInterfaces ??= ComputeInterfaceClosure();
         private RoType[] ComputeInterfaceClosure()
         {
             HashSet<RoType> ifcs = new HashSet<RoType>();
@@ -283,10 +283,42 @@ namespace System.Reflection.TypeLoading
         public abstract override Type MakeGenericType(params Type[] typeArguments);
 
         // Enum methods
-        public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ?? (_lazyUnderlyingEnumType = ComputeEnumUnderlyingType());
+        public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ??= ComputeEnumUnderlyingType();
         protected internal abstract RoType ComputeEnumUnderlyingType();
         private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+
+#if NET7_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Enum Types are not trimmed.")]
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            FieldInfo[] enumFields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            int numValues = enumFields.Length;
+            Array ret = Type.GetTypeCode(GetEnumUnderlyingType()) switch
+            {
+                TypeCode.Byte => new byte[numValues],
+                TypeCode.SByte => new sbyte[numValues],
+                TypeCode.UInt16 => new ushort[numValues],
+                TypeCode.Int16 => new short[numValues],
+                TypeCode.UInt32 => new uint[numValues],
+                TypeCode.Int32 => new int[numValues],
+                TypeCode.UInt64 => new ulong[numValues],
+                TypeCode.Int64 => new long[numValues],
+                _ => throw new NotSupportedException(),
+            };
+
+            for (int i = 0; i < numValues; i++)
+            {
+                ret.SetValue(enumFields[i].GetRawConstantValue(), i);
+            }
+
+            return ret;
+        }
+#endif
 
         // No trust environment to apply these to.
         public sealed override bool IsSecurityCritical => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);

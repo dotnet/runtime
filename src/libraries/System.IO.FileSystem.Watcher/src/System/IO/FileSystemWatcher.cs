@@ -250,7 +250,7 @@ namespace System.IO
             }
             set
             {
-                value = (value == null) ? string.Empty : value;
+                value ??= string.Empty;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (value.Length == 0)
@@ -370,8 +370,10 @@ namespace System.IO
             }
         }
 
-        private static void CheckPathValidity(string path!!)
+        private static void CheckPathValidity(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));

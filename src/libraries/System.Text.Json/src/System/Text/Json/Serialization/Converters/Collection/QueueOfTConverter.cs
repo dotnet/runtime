@@ -9,16 +9,12 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : Queue<TElement>
     {
-        /// <summary>Lazily initialized singleton for hardcoding by the IAsyncEnumerable streaming deserializer.</summary>
-        internal static QueueOfTConverter<TCollection, TElement> Instance => _instance ??= new();
-        private static QueueOfTConverter<TCollection, TElement>? _instance;
-
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Enqueue(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonTypeInfo.CreateObject == null)
             {

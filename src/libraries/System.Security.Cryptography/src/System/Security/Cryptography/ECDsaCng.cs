@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -38,12 +39,33 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an ECDsa key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SupportedOSPlatform("windows")]
-        public ECDsaCng(CngKey key!!)
+        public ECDsaCng(CngKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
                 throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        /// <summary>
+        ///     Creates a new ECDsaCng object that will use the specified key. Unlike the public
+        ///     constructor, this does not copy the key and ownership is transferred. The
+        ///     <paramref name="transferOwnership"/> parameter must be true.
+        /// </summary>
+        /// <param name="key">Key to use for ECDsa operations</param>
+        /// <param name="transferOwnership">
+        /// Must be true. Signals that ownership of <paramref name="key"/> will be transferred to the new instance.
+        /// </param>
+        [SupportedOSPlatform("windows")]
+        internal ECDsaCng(CngKey key, bool transferOwnership)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(IsEccAlgorithmGroup(key.AlgorithmGroup));
+            Debug.Assert(transferOwnership);
+
+            Key = key;
         }
 
         protected override void Dispose(bool disposing)
@@ -78,12 +100,30 @@ namespace System.Security.Cryptography
 
         private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
         {
-            Key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            CngKey key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            try
+            {
+                Key = key;
+            }
+            catch
+            {
+                key.Dispose();
+                throw;
+            }
         }
 
         private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
         {
-            Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            CngKey key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            try
+            {
+                Key = key;
+            }
+            catch
+            {
+                key.Dispose();
+                throw;
+            }
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)
@@ -98,7 +138,15 @@ namespace System.Security.Cryptography
 
         private void AcceptImport(CngPkcs8.Pkcs8Response response)
         {
-            Key = response.Key;
+            try
+            {
+                Key = response.Key;
+            }
+            catch
+            {
+                response.FreeKey();
+                throw;
+            }
         }
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
@@ -127,6 +175,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void FromXmlString(string xml, ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 
@@ -139,6 +188,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(Stream data)
             => SignData(data, new HashAlgorithmName(HashAlgorithm.Algorithm));
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string ToXmlString(ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 

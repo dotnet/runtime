@@ -267,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
         /// </param>
         public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
-            // TODO: implement for CoreRT
+            // TODO: implement
             throw new NotImplementedException();
         }
 
@@ -467,7 +467,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     {
                         Environment.FailFast(
-                            "Failed to locate statics table entry for for field '" +
+                            "Failed to locate statics table entry for field '" +
                             fieldName +
                             "' on type " +
                             type.ToString());

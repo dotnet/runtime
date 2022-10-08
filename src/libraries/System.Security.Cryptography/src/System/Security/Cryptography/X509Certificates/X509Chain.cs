@@ -37,24 +37,11 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Chain();
         }
 
-        public X509ChainElementCollection ChainElements
-        {
-            get
-            {
-                if (_chainElements == null)
-                    _chainElements = new X509ChainElementCollection();
-                return _chainElements;
-            }
-        }
+        public X509ChainElementCollection ChainElements => _chainElements ??= new X509ChainElementCollection();
 
         public X509ChainPolicy ChainPolicy
         {
-            get
-            {
-                if (_chainPolicy == null)
-                    _chainPolicy = new X509ChainPolicy();
-                return _chainPolicy;
-            }
+            get => _chainPolicy ??= new X509ChainPolicy();
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -67,10 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 // We give the user a reference to the array since we'll never access it.
-                X509ChainStatus[]? chainStatus = _lazyChainStatus;
-                if (chainStatus == null)
-                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
-                return chainStatus;
+                return _lazyChainStatus ??= (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
             }
         }
 
@@ -114,17 +98,25 @@ namespace System.Security.Cryptography.X509Certificates
                 if (certificate == null || certificate.Pal == null)
                     throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
-                if (_chainPolicy != null && _chainPolicy.CustomTrustStore != null)
+                if (_chainPolicy != null)
                 {
-                    if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
-                        throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
-
-                    foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
+                    if (_chainPolicy._customTrustStore != null)
                     {
-                        if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
+                        if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
+                            throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
+
+                        foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
                         {
-                            throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate);
+                            if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
+                            {
+                                throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate);
+                            }
                         }
+                    }
+
+                    if (_chainPolicy.TrustMode == X509ChainTrustMode.CustomRootTrust && _chainPolicy._customTrustStore == null)
+                    {
+                        _chainPolicy._customTrustStore = new X509Certificate2Collection();
                     }
                 }
 
@@ -141,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.RevocationFlag,
                     chainPolicy._customTrustStore,
                     chainPolicy.TrustMode,
-                    chainPolicy.VerificationTime,
+                    chainPolicy.VerificationTimeIgnored ? DateTime.Now : chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout,
                     chainPolicy.DisableCertificateDownloads);
 
@@ -190,9 +182,11 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = false;
 
             IChainPal? pal = _pal;
-            _pal = null;
             if (pal != null)
+            {
+                _pal = null;
                 pal.Dispose();
+            }
         }
     }
 }

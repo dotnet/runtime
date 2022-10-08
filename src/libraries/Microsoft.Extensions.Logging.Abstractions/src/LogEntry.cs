@@ -57,6 +57,6 @@ namespace Microsoft.Extensions.Logging.Abstractions
         /// <summary>
         /// Gets the formatter
         /// </summary>
-        public Func<TState, Exception?, string>? Formatter { get; }
+        public Func<TState, Exception?, string> Formatter { get; }
     }
 }

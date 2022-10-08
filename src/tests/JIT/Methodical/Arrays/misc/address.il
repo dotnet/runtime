@@ -20,9 +20,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_address_misc_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -99,7 +99,7 @@
       ret
     } // end of method 'Test::try_index'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -148,43 +148,43 @@
       			ldloc.0
       			ldc.i4		-10000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.m1
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.0
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.1
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		9999
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		10000
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		10006
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
@@ -192,7 +192,7 @@
       			stloc.0
       			ldc.i4		10005
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[10000...10005], int32, int32)
+      			call		int32 JitTest_address_misc_il.Test::try_index(int32[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldc.i4    0x64
@@ -218,5 +218,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_address_misc_il'
 

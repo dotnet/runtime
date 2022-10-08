@@ -11,107 +11,107 @@
 // Types that will be used as return types on the various methods
 // ========================================================================================
 
-.class public auto ansi beforefieldinit A 
+.class public auto ansi beforefieldinit A
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit B extends A 
+.class public auto ansi beforefieldinit B extends A
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit C extends B 
+.class public auto ansi beforefieldinit C extends B
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-
-.class public auto ansi beforefieldinit GenRetType<X,Y> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit Dictionary<KEY,VAL> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> 
+.class public auto ansi beforefieldinit GenRetType<X,Y>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit Dictionary<KEY,VAL>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> 
+.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> 
+.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> 
+.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit NonGenericDerived5<T> extends class NonGenericDerived1<int32,!T> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C 
+.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> 
+.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived5<T> extends class NonGenericDerived1<int32,!T>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 
-.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C 
+.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> 
+.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 
+.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen5<T> extends class NonGenThroughGen2<object,int32,!T> 
+.class public auto ansi beforefieldinit NonGenThroughGen5<T> extends class NonGenThroughGen2<object,int32,!T>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 
 // ========================================================================================
-// Main base type with various virtual methods that will be overriden later
+// Main base type with various virtual methods that will be overridden later
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-  .method public hidebysig newslot virtual instance object MyFunc<Z>(string& res) 
+  .method public hidebysig newslot virtual instance object MyFunc<Z>(string& res)
   {
     ldarg.1
     ldstr "object GenBaseType.MyFunc()"
@@ -119,7 +119,7 @@
     newobj instance void A::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B MyFunc<Z>(string& res) 
+  .method public hidebysig newslot virtual instance class B MyFunc<Z>(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.MyFunc()"
@@ -127,7 +127,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B GenToNonGen<Z>(string& res) 
+  .method public hidebysig newslot virtual instance class B GenToNonGen<Z>(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.GenToNonGen()"
@@ -135,7 +135,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B NonGenThroughGenFunc<Z>(string& res) 
+  .method public hidebysig newslot virtual instance class B NonGenThroughGenFunc<Z>(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.NonGenThroughGenFunc()"
@@ -143,7 +143,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<int32,!!Z> MyGenFunc<Z>(string& res) 
+  .method public hidebysig newslot virtual instance class GenRetType<int32,!!Z> MyGenFunc<Z>(string& res)
   {
     ldarg.1
     ldstr "GenRetType<int32,!!Y> GenBaseType.MyGenFunc()"
@@ -151,7 +151,7 @@
     newobj instance void class GenRetType<int32,!!Z>::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<!A, class Dictionary<!!Z,!B>> MyGenFunc<Z>(string& res) 
+  .method public hidebysig newslot virtual instance class GenRetType<!A, class Dictionary<!!Z,!B>> MyGenFunc<Z>(string& res)
   {
     ldarg.1
     ldstr "GenRetType<!A, class Dictionary<!!Y,!B>> GenBaseType.MyGenFunc()"
@@ -163,7 +163,7 @@
 
 
 // ========================================================================================
-// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with 
+// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with
 // covariant return types (more derived return types)
 // ========================================================================================
 
@@ -213,11 +213,11 @@
     stind.ref
     ldnull
     ret
-  } 
+  }
 }
 
 // ========================================================================================
-// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with 
+// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with
 // covariant return types (more derived return types than the ones used in GenMiddleType)
 // ========================================================================================
 
@@ -262,7 +262,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class GenRetType<!U,!V> MyFunc<Y>(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -273,7 +273,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class C MyFunc<Y>(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -303,7 +303,7 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 .class public auto ansi beforefieldinit Invalid2<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -314,7 +314,7 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 .class public auto ansi beforefieldinit Invalid3<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -325,7 +325,7 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 .class public auto ansi beforefieldinit Invalid4<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -336,7 +336,7 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 // ========================================================================================
@@ -348,7 +348,7 @@
         string a,
         [opt] string b,
         [opt] string c,
-        [opt] string d) cil managed 
+        [opt] string d) cil managed
   {
     .param [3] = nullref
     .param [4] = nullref
@@ -440,14 +440,14 @@
   // ============== Test using GenTestType ============== //
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
-  //    2) The signature from GenMiddleType with covariant returns (when applicable)    
+  //    2) The signature from GenMiddleType with covariant returns (when applicable)
   //    3) The signature from GenTestType with covariant returns
   // And verify that the override on GetTestType is the one that executes
-  
-  .method public static bool RunTest1() noinlining 
+
+  .method public static bool RunTest1() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance object class GenBaseType<int32,object>::MyFunc<class CMain>(string&)
@@ -467,10 +467,10 @@
     ret
   }
 
-  .method public static bool RunTest2() noinlining 
+  .method public static bool RunTest2() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::MyFunc<class CMain>(string&)
@@ -489,11 +489,11 @@
     call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
-  
-  .method public static bool RunTest3() noinlining 
+
+  .method public static bool RunTest3() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
@@ -518,10 +518,10 @@
     ret
   }
 
-  .method public static bool RunTest4() noinlining 
+  .method public static bool RunTest4() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<int32,!!0> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
@@ -546,10 +546,10 @@
     ret
   }
 
-  .method public static bool RunTest5() noinlining 
+  .method public static bool RunTest5() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen<class CMain>(string&)
@@ -574,10 +574,10 @@
     ret
   }
 
-  .method public static bool RunTest6() noinlining 
+  .method public static bool RunTest6() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
@@ -606,12 +606,12 @@
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
   //    2) The signature from GenMiddleType with covariant returns
-  // And verify that the override on GenMiddleType is the one that executes  
-  
-  .method public static bool RunTest_Middle1() noinlining 
+  // And verify that the override on GenMiddleType is the one that executes
+
+  .method public static bool RunTest_Middle1() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
@@ -631,10 +631,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle2() noinlining 
+  .method public static bool RunTest_Middle2() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<int32,!!0> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
@@ -654,10 +654,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle3() noinlining 
+  .method public static bool RunTest_Middle3() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen<class CMain>(string&)
@@ -677,10 +677,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle4() noinlining 
+  .method public static bool RunTest_Middle4() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
@@ -699,33 +699,33 @@
     call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
-  
+
   // ============== Test using GenMiddleType ============== //
   // These test methods attempt to load the invalid types, and are
   // expected to throw a TypeLoadException (caught by Main())
-  
-  .method public static void RunInvalidTest1() noinlining 
+
+  .method public static void RunInvalidTest1() noinlining
   {
     newobj     instance void class Invalid1<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunInvalidTest2() noinlining 
+  .method public static void RunInvalidTest2() noinlining
   {
     newobj     instance void class Invalid2<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunInvalidTest3() noinlining 
+  .method public static void RunInvalidTest3() noinlining
   {
     newobj     instance void class Invalid3<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunInvalidTest4() noinlining 
+  .method public static void RunInvalidTest4() noinlining
   {
     newobj     instance void class Invalid4<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
@@ -741,70 +741,70 @@
     .entrypoint
     .maxstack  2
     .locals init ( bool result )
-    
+
     ldc.i4.1
     stloc.0
-    
+
     T1:
     call bool CMain::RunTest1()
     brtrue.s T2
     ldc.i4.0
     stloc.0
-    
+
     T2:
     call bool CMain::RunTest2()
     brtrue.s T3
     ldc.i4.0
     stloc.0
-    
+
     T3:
     call bool CMain::RunTest3()
     brtrue.s T4
     ldc.i4.0
     stloc.0
-    
+
     T4:
     call bool CMain::RunTest4()
     brtrue.s T5
     ldc.i4.0
     stloc.0
-    
+
     T5:
     call bool CMain::RunTest5()
     brtrue.s T6
     ldc.i4.0
     stloc.0
-    
+
     T6:
     call bool CMain::RunTest6()
     brtrue.s M1
     ldc.i4.0
     stloc.0
-    
+
     M1:
     call bool CMain::RunTest_Middle1()
     brtrue.s M2
     ldc.i4.0
     stloc.0
-    
+
     M2:
     call bool CMain::RunTest_Middle2()
     brtrue.s M3
     ldc.i4.0
     stloc.0
-    
+
     M3:
     call bool CMain::RunTest_Middle3()
     brtrue.s M4
     ldc.i4.0
     stloc.0
-    
+
     M4:
     call bool CMain::RunTest_Middle4()
     brtrue.s INVALID1
     ldc.i4.0
     stloc.0
-    
+
     INVALID1:
     .try
     {
@@ -816,13 +816,13 @@
         leave.s INVALID2
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s INVALID2
     }
-    
+
     INVALID2:
     .try
     {
@@ -834,10 +834,10 @@
         leave.s INVALID3
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s INVALID3
     }
 
@@ -852,10 +852,10 @@
         leave.s INVALID4
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s INVALID4
     }
 
@@ -870,10 +870,10 @@
         leave.s DONE
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s DONE
     }
 
@@ -885,7 +885,7 @@
     call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.s   101
     ret
-    
+
     PASS:
     ldstr      "Test PASSED"
     call       void [System.Console]System.Console::WriteLine(string)

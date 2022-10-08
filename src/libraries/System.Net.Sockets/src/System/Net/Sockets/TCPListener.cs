@@ -134,7 +134,7 @@ namespace System.Net.Sockets
 
         public void Start(int backlog)
         {
-            if (backlog > (int)SocketOptionName.MaxConnections || backlog < 0)
+            if (backlog < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(backlog));
             }

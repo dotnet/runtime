@@ -5,7 +5,7 @@
 **
 ** Source:  _vsnwprintf_s.h
 **
-** Purpose: Containts common testing functions for _vsnwprintf_s
+** Purpose: Contains common testing functions for _vsnwprintf_s
 **
 **
 **==========================================================================*/
@@ -35,7 +35,7 @@ inline void DoWStrTest_vsnwprintf_s(const WCHAR *formatstr, WCHAR *param, const 
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
+            "Expected \"%s\", got \"%s\".\n",
             convertC(param), convertC(formatstr),
             convertC(checkstr), convertC(buf));
     }
@@ -51,7 +51,7 @@ inline void DoStrTest_vsnwprintf_s(const WCHAR *formatstr, char *param, const WC
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
+            "Expected \"%s\", got \"%s\".\n",
             param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
     }
@@ -66,7 +66,7 @@ inline void DoCharTest_vsnwprintf_s(const WCHAR *formatstr, char param, const WC
     if (memcmp(buf, checkstr, wcslen(buf)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             param, param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
     }
@@ -84,7 +84,7 @@ inline void DoWCharTest_vsnwprintf_s(const WCHAR *formatstr, WCHAR param, const 
             "Expected \"%s\" got \"%s\".\n",
             (char) param, param, convertC(formatstr),
             convertC(checkstr), convertC(buf));
-    }    
+    }
 }
 #define DoWCharTest DoWCharTest_vsnwprintf_s
 
@@ -98,7 +98,7 @@ inline void DoNumTest_vsnwprintf_s(const WCHAR *formatstr, int value, const WCHA
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
             "Expected \"%s\" got \"%s\".\n", value, convertC(formatstr),
             convertC(checkstr), convertC(buf));
-    }    
+    }
 }
 #define DoNumTest DoNumTest_vsnwprintf_s
 
@@ -112,7 +112,7 @@ inline void DoI64NumTest_vsnwprintf_s(const WCHAR *formatstr, INT64 value, char 
         Fail("ERROR: failed to insert %s into \"%s\"\n"
             "Expected \"%s\" got \"%s\".\n", valuestr, convertC(formatstr),
             convertC(checkstr), convertC(buf));
-    }    
+    }
 }
 #define DoI64NumTest DoI64NumTest_vsnwprintf_s
 

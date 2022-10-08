@@ -19,6 +19,12 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-debug.h>
 
 #include <mono/metadata/mono-private-unstable.h>
 
@@ -29,6 +35,10 @@
 
 #include "wasm/runtime/pinvoke.h"
 
+#ifdef GEN_PINVOKE
+#include "wasm_m2n_invoke.g.h"
+#endif
+
 void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
@@ -36,6 +46,7 @@ void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
+void mono_marshal_lightweight_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
 void mono_icall_table_init (void);
@@ -240,6 +251,14 @@ int32_t SystemNative_Stat2(const char* path, FileStatus* output)
 		? 0x4000  // Dir
 		: 0x8000; // File
 
+	// Never fail when looking for the root directory. Even if the WASI host isn't giving us filesystem access
+	// (which is the default), we need the root directory to appear to exist, otherwise things like ASP.NET Core
+	// will fail by default, whether or not it needs to read anything from the filesystem.
+	if (ret != 0 && path[0] == '/' && path[1] == 0) {
+		output->Mode = 0x4000; // Dir
+		return 0;
+	}
+
 	//printf("SystemNative_Stat2 for %s has ISDIR=%i and will return mode %i; ret=%i\n", path, S_ISDIR (stat_result.st_mode), output->Mode, ret);
 
 	return ret;
@@ -312,6 +331,7 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
 		return SystemGlobalizationNativeImports;
+
 	//printf("In wasm_dl_load for name %s but treating as NOT FOUND\n", name);
     return 0;
 }
@@ -366,7 +386,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 }
 
 void
-mono_wasm_register_bundled_satellite_assemblies ()
+mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
@@ -390,7 +410,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (const char *argv, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -408,6 +428,18 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
+	if (debugger_fd != 0)
+	{
+		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%-2s,loglevel=0";
+		char *debugger_str_with_fd = (char *)malloc (sizeof (char) * (strlen(debugger_str) + strlen(debugger_fd) + 1));
+		snprintf (debugger_str_with_fd, strlen(debugger_str) + strlen(debugger_fd) + 1, debugger_str, debugger_fd);
+		mono_jit_parse_options (1, &debugger_str_with_fd);
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		// Disable optimizations which interfere with debugging
+		interp_opts = "-all";
+		free (debugger_str_with_fd);
+	}
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
 	const char *appctx_keys[2];
@@ -441,23 +473,15 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+	
+#ifdef GEN_PINVOKE
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
+#endif
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
-	/*
-	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
-	 * debug_level == 0 disables debugging and enables interpreter optimizations
-	 * debug_level < 0 enabled debugging and disables debug logging.
-	 *
-	 * Note: when debugging is enabled interpreter optimizations are disabled.
-	 */
-	if (debug_level) {
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		mono_wasm_enable_debugging (debug_level);
-	}
-
 	mono_ee_interp_init (interp_opts);
+	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
@@ -478,7 +502,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 
-	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
+	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
 }
 
@@ -496,7 +520,7 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-MonoClass* 
+MonoClass*
 mono_wasm_find_corlib_class (const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_get_corlib (), namespace, name);
@@ -535,25 +559,37 @@ mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 	return mono_value_box (root_domain, klass, value);
 }
 
+void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+{
+	MonoObject* temp_exc = NULL;
+	if (out_exc)
+		*out_exc = NULL;
+	else
+		out_exc = &temp_exc;
+
+	if (out_result) {
+		*out_result = NULL;
+		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	}
+
+	if (*out_exc && out_result) {
+		MonoObject *exc2 = NULL;
+		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		if (exc2)
+			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return;
+	}
+}
+
+// deprecated
 MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
-	if (out_exc)
-		*out_exc = NULL;
-	res = mono_runtime_invoke (method, this_arg, params, &exc);
-	if (exc) {
-		if (out_exc)
-			*out_exc = exc;
-
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
-		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
-	}
+	MonoObject* result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoType *type = mono_signature_get_return_type (sig);
@@ -563,7 +599,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	if (mono_type_get_type (type) == MONO_TYPE_VOID)
 		return NULL;
 
-	return res;
+	return result;
 }
 
 MonoMethod*
@@ -576,7 +612,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
-	
+
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
 
@@ -623,6 +659,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+MonoString *
 mono_wasm_string_from_js (const char *str)
 {
 	if (str)
@@ -696,10 +733,10 @@ mono_wasm_string_array_new (int size)
 }
 
 void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+mono_wasm_string_get_data_ref (
+	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
-	if (!string) {
+	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
 		if (outLengthBytes)
@@ -710,12 +747,19 @@ mono_wasm_string_get_data (
 	}
 
 	if (outChars)
-		*outChars = mono_string_chars (string);
+		*outChars = mono_string_chars (*string);
 	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (string) * 2;
+		*outLengthBytes = mono_string_length (*string) * 2;
 	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (string);
+		*outIsInterned = mono_string_instance_is_interned (*string);
 	return;
+}
+
+void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 void add_assembly(const char* base_dir, const char *name) {

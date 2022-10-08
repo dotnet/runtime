@@ -134,7 +134,7 @@ namespace System
                 // If bytesConsumed is 2:
                 // a) We had 4 bytes in the buffer and now only have 2 => Shift by 2 bytes
                 // b) We read 1 more byte, leaving us with 3 bytes in the buffer => Shift by 1 byte
-                // The case for bytesConsumed == 2 is handeled by the else block as the offsets are the same as for valid input described above
+                // The case for bytesConsumed == 2 is handled by the else block as the offsets are the same as for valid input described above
 
                 if (bytesConsumed == 1)
                 {

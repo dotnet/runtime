@@ -256,6 +256,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_LOONGARCH64
+    // TODO-LOONGARCH64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary LOONGARCH64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_LOONGARCH64
+
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))
     {
@@ -417,7 +427,7 @@ void Compiler::raMarkStkVars()
         // pointer). and the return buffer argument (if we are returning a
         // struct).
         // This is important because we don't want to try to report them
-        // to the GC, as the frame offsets in these local varables would
+        // to the GC, as the frame offsets in these local variables would
         // not be correct.
 
         if (varDsc->lvIsParam && raIsVarargsStackArg(lclNum))

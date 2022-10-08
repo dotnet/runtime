@@ -13,7 +13,9 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-    [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly Lock _lock;
@@ -59,7 +61,7 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             GCHandle handle = (GCHandle)context;
-            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target;
+            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
@@ -138,7 +140,7 @@ namespace System.Threading
                     Interop.Kernel32.SetThreadpoolWait(_tpWait, IntPtr.Zero, IntPtr.Zero);
 
                     // Should we wait for callbacks synchronously? Note that we treat the zero handle as the asynchronous case.
-                    SafeWaitHandle safeWaitHandle = waitObject?.SafeWaitHandle;
+                    SafeWaitHandle? safeWaitHandle = waitObject?.SafeWaitHandle;
                     bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == new IntPtr(-1)));
 
                     if (blocking)
@@ -413,7 +415,7 @@ namespace System.Threading
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
@@ -424,7 +426,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
             }
 
-            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            // OS doesn't signal handle, so do it here
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
             return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);

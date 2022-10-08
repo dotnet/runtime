@@ -424,14 +424,14 @@ mono_global_codeman_foreach (MonoCodeManagerFunc func, void *user_data)
  *   Create an unwind op with the given parameters.
  */
 MonoUnwindOp*
-mono_create_unwind_op (int when, int tag, int reg, int val)
+mono_create_unwind_op (gsize when, guint8 tag, guint16 reg, int val)
 {
 	MonoUnwindOp *op = g_new0 (MonoUnwindOp, 1);
 
 	op->op = tag;
 	op->reg = reg;
 	op->val = val;
-	op->when = when;
+	op->when = GSIZE_TO_UINT32 (when);
 
 	return op;
 }
@@ -1230,17 +1230,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
-		return hash | (gssize)ji->data.target;
+		return hash | GPOINTER_TO_UINT (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
-		return hash | (gssize)ji->data.gsharedvt->method;
+		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt->method);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *e = ji->data.rgctx_entry;
 		hash |= e->in_mrgctx | e->info_type | mono_patch_info_hash (e->data);
 		if (e->in_mrgctx)
-			return hash | (gssize)e->d.method;
+			return hash | GPOINTER_TO_UINT (e->d.method);
 		else
-			return hash | (gssize)e->d.klass;
+			return hash | GPOINTER_TO_UINT (e->d.klass);
 	}
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
@@ -1261,17 +1261,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
-		return hash | ji->data.index;
+		return hash | GSIZE_TO_UINT (ji->data.index);
 	case MONO_PATCH_INFO_SWITCH:
 		return hash | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-		return hash | (gssize)ji->data.gsharedvt_method->method;
+		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt_method->method);
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		return (guint)(hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
 
-		return hash | (gssize)info->klass | (gssize)info->method;
+		return hash | GPOINTER_TO_UINT (info->klass) | GPOINTER_TO_UINT (info->method);
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return hash | mono_signature_hash (ji->data.sig);
@@ -1548,7 +1548,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 		mono_class_init_internal (patch_info->data.klass);
-		target = GUINT_TO_POINTER ((guint32)(-((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
+		target = GUINT_TO_POINTER ((guint32)(-(gint32)((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
@@ -1867,13 +1867,12 @@ void
 mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
-	int i;
 
 	memset (gsctx, 0, sizeof (MonoGenericSharingContext));
 
 	if (context && context->class_inst) {
 		inst = context->class_inst;
-		for (i = 0; i < inst->type_argc; ++i) {
+		for (guint i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -1883,7 +1882,7 @@ mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharin
 	if (context && context->method_inst) {
 		inst = context->method_inst;
 
-		for (i = 0; i < inst->type_argc; ++i) {
+		for (guint i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -2038,8 +2037,6 @@ enum {
 	ELF_MACHINE = EM_S390,
 #elif HOST_RISCV
 	ELF_MACHINE = EM_RISCV,
-#elif HOST_MIPS
-	ELF_MACHINE = EM_MIPS,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -2255,8 +2252,7 @@ unlock_compilation_data (void)
 static JitCompilationEntry*
 find_method (MonoMethod *method)
 {
-	int i;
-	for (i = 0; i < compilation_data.in_flight_methods->len; ++i){
+	for (guint i = 0; i < compilation_data.in_flight_methods->len; ++i){
 		JitCompilationEntry *e = (JitCompilationEntry*)compilation_data.in_flight_methods->pdata [i];
 		if (e->method == method)
 			return e;
@@ -2537,7 +2533,6 @@ compile_special (MonoMethod *method, MonoError *error)
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
 			static MonoTrampInfo *in_tinfo, *out_tinfo;
 			MonoTrampInfo *tinfo;
-			MonoJitInfo *jinfo;
 			gboolean is_in = info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN;
 
 			if (is_in && in_tinfo)
@@ -2607,14 +2602,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		callinfo = mono_find_jit_icall_info (winfo->d.icall.jit_icall_id);
 
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
-		g_assert (info);
-		if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+		g_assert (wrapper_info );
+		if (wrapper_info ->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
 			MonoGenericContext *ctx = NULL;
 			if (method->is_inflated)
 				ctx = mono_method_get_context (method);
-			method = info->d.synchronized_inner.method;
+			method = wrapper_info ->d.synchronized_inner.method;
 			if (ctx) {
 				method = mono_class_inflate_generic_method_checked (method, ctx, error);
 				g_assert (is_ok (error)); /* FIXME don't swallow the error */
@@ -3873,7 +3868,7 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 	}
 
 	if (!vtable_trampolines [index])
-		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
+		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
 	return vtable_trampolines [index];
 }
 
@@ -4191,7 +4186,7 @@ mini_create_ftnptr (gpointer addr)
 	mono_jit_unlock ();
 	if (desc)
 		return desc;
-#if defined(__mono_ppc64__)
+#if defined(TARGET_POWERPC64)
 	desc = mono_mem_manager_alloc0 (jit_mm->mem_manager, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
@@ -4348,6 +4343,37 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mem_manager->runtime_info = NULL;
 }
 
+static void
+init_class (MonoClass *klass)
+{
+	if (!mono_is_corlib_image (m_class_get_image (klass)))
+		return;
+
+	const char *name = m_class_get_name (klass);
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+	/*
+	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
+	 * The JIT can't handle SIMD types with != 16 size yet.
+	 */
+	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
+		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
+		if (!strcmp (name, "Vector4"))
+			mono_class_set_is_simd_type (klass, TRUE);
+	}
+#endif
+
+	if (m_class_is_ginst (klass)) {
+		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {
+			MonoGenericClass *gclass = mono_class_try_get_generic_class (klass);
+			g_assert (gclass);
+			MonoType *etype = gclass->context.class_inst->type_argv [0];
+			if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
+				mono_class_set_is_simd_type (klass, TRUE);
+		}
+	}
+}
+
 #ifdef ENABLE_LLVM
 static gboolean
 llvm_init_inner (void)
@@ -4428,7 +4454,7 @@ static const char*
 mono_get_runtime_build_version (void);
 
 MonoDomain *
-mini_init (const char *filename, const char *runtime_version)
+mini_init (const char *filename)
 {
 	ERROR_DECL (error);
 	MonoDomain *domain;
@@ -4453,13 +4479,15 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_interp_stub_init ();
+
+	mono_components_init ();
+
+	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
+
 #ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
-	mono_components_init ();
-
-	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
@@ -4529,6 +4557,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
+	callbacks.init_class = init_class;
 
 	mono_install_callbacks (&callbacks);
 
@@ -4628,10 +4657,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_runtime_set_no_exec (TRUE);
 	}
 
-	if (runtime_version)
-		domain = mono_init_version (filename, runtime_version);
-	else
-		domain = mono_init_from_assembly (filename, filename);
+	domain = mono_init (filename);
 
 	if (mono_compile_aot)
 		mono_component_diagnostics_server ()->disable ();
@@ -4915,7 +4941,7 @@ register_icalls (void)
 	register_icall (mono_helper_newobj_mscorlib, mono_icall_sig_object_int, FALSE);
 	register_icall (mono_value_copy_internal, mono_icall_sig_void_ptr_ptr_ptr, FALSE);
 	register_icall (mono_object_castclass_unbox, mono_icall_sig_object_object_ptr, FALSE);
-	register_icall (mono_break, NULL, TRUE);
+	register_icall (mono_break, mono_icall_sig_void, TRUE);
 	register_icall (mono_create_corlib_exception_0, mono_icall_sig_object_int, TRUE);
 	register_icall (mono_create_corlib_exception_1, mono_icall_sig_object_int_object, TRUE);
 	register_icall (mono_create_corlib_exception_2, mono_icall_sig_object_int_object_object, TRUE);
@@ -4958,6 +4984,7 @@ register_icalls (void)
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_throw_method_access, mono_icall_sig_void_ptr_ptr, FALSE);
+	register_icall (mono_throw_ambiguous_implementation, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_bad_image, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
@@ -5115,16 +5142,13 @@ mono_get_runtime_build_version (void)
 /**
  * mono_get_runtime_build_info:
  * The returned string is owned by the caller. The returned string
- * format is <code>VERSION (FULL_VERSION BUILD_DATE)</code> and build date is optional.
- * \returns the runtime version + build date in string format.
+ * format is <code>VERSION (FULL_VERSION)</code>.
+ * \returns the runtime version in string format.
  */
 char*
 mono_get_runtime_build_info (void)
 {
-	if (mono_build_date)
-		return g_strdup_printf ("%s (%s %s)", VERSION, FULL_VERSION, mono_build_date);
-	else
-		return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
+	return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
 }
 
 static void
@@ -5133,7 +5157,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	GHashTable *assemblies = (GHashTable*)user_data;
 	MonoImage *image = mono_assembly_get_image_internal (ass);
 	MonoMethod *method, *invoke;
-	int i, count = 0;
+	int count = 0;
 
 	if (g_hash_table_lookup (assemblies, ass))
 		return;
@@ -5143,7 +5167,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	if (mini_verbose > 0)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
@@ -5175,14 +5199,14 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 
 	/* Load and precompile referenced assemblies as well */
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_ASSEMBLYREF); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLYREF]); ++i) {
 		mono_assembly_load_reference (image, i);
 		if (image->references [i])
 			mono_precompile_assembly (image->references [i], assemblies);
 	}
 }
 
-void mono_precompile_assemblies ()
+void mono_precompile_assemblies (void)
 {
 	GHashTable *assemblies = g_hash_table_new (NULL, NULL);
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
@@ -249,6 +250,8 @@ namespace System.Diagnostics.Metrics
             return instrumentState;
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is creating instances over reference types that works fine in AOT.")]
         internal InstrumentState? BuildInstrumentState(Instrument instrument)
         {
             Func<Aggregator?>? createAggregatorFunc = GetAggregatorFactory(instrument);

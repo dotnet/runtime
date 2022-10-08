@@ -30,6 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    ignoreStoredConfig = false;
     isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
@@ -1241,7 +1242,14 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, jitflags->GetFlagsRaw());
+
+    uint64_t *raw = jitflags->GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = jitflags->GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        printf("%016llX", raw[i]);
+    }
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -1252,6 +1260,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     DEBUG_REP(dmpGetJitFlags(0, value));
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
+    Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
     InitReadyToRunFlag(resultFlags);
     return value.B;
@@ -2179,6 +2188,29 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
+{
+    if (GetRuntimeTypePointer == nullptr)
+        GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = (DWORDLONG)result;
+    GetRuntimeTypePointer->Add(key, value);
+    DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
+}
+void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
+}
+void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
+    DWORDLONG value = GetRuntimeTypePointer->Get(key);
+    DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
+    return (void*)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
@@ -2233,6 +2265,7 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 }
 
 void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2244,6 +2277,7 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
+    key.targetConstraint          = targetConstraint;
     key.delegateType              = CastHandle(delegateType);
     Agnostic_CORINFO_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(pLookup);
     GetReadyToRunDelegateCtorHelper->Add(key, value);
@@ -2253,12 +2287,13 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
 void MethodContext::dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                                        Agnostic_CORINFO_LOOKUP                 value)
 {
-    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType);
+    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX constraint-%08X",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType, key.targetConstraint);
     printf(", value: %s", SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value).c_str());
 }
 
 void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2268,7 +2303,8 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
-    key.delegateType = CastHandle(delegateType);
+    key.targetConstraint = targetConstraint;
+    key.delegateType     = CastHandle(delegateType);
 
     AssertKeyExistsNoMessage(GetReadyToRunDelegateCtorHelper, key);
 
@@ -2339,13 +2375,9 @@ void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirectio
 // Return Value:
 //    True if there is a helper function associated with the given target address; false otherwise.
 //
-// Assumptions:
-//    Only the lower 32 bits of the method address are necessary to identify the method.
-//
 // Notes:
-//    - See notes for fndGetFunctionEntryPoint for a more in-depth discussion of why we only match on the
-//      lower 32 bits of the target address.
-//    - This might not work correctly with method contexts recorded via NGen compilation.
+//    - This might not work correctly with method contexts recorded via NGen compilation; it doesn't compare
+//      the ppIndirection value.
 //
 bool MethodContext::fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult)
 {
@@ -2483,7 +2515,7 @@ void MethodContext::repGetFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,
 //                    handle associated with the given target address, it will be written to here.
 //
 // Return Value:
-//    True if there is a helper function associated with the given target address; false otherwise.
+//    True if there is a function associated with the given target address; false otherwise.
 //
 // Assumptions:
 //    - The given method address does not point to a jump stub.
@@ -2703,6 +2735,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
+}
+
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)
@@ -2773,7 +2841,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);
@@ -4765,20 +4833,23 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value != 0;
 }
 
-
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length)
 {
     if (GetStringLiteral == nullptr)
-        GetStringLiteral = new LightWeightMap<DLD, DD>();
+        GetStringLiteral = new LightWeightMap<DLDD, DD>();
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (result != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
+    if (buffer != nullptr && length != -1)
+    {
+        int bufferRealSize = min(length, bufferSize) * sizeof(char16_t);
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+    }
 
     DD value;
     value.A = (DWORD)length;
@@ -4788,39 +4859,113 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     DEBUG_REC(dmpGetStringLiteral(key, value));
 }
 
-void MethodContext::dmpGetStringLiteral(DLD key, DD value)
+void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
-        GetStringLiteral->GetBuffer(value.B), value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
     GetStringLiteral->Unlock();
 }
 
-const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
 {
     if (GetStringLiteral == nullptr)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     int itemIndex = GetStringLiteral->GetIndex(key);
     if (itemIndex < 0)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
     else
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
+        int srcBufferLength = (int)value.A;
+        if (buffer != nullptr && srcBufferLength > 0)
+        {
+            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
+        }
+        return srcBufferLength;
+    }
+}
 
-        *length = (int)value.A;
-        return (const char16_t*)GetStringLiteral->GetBuffer(value.B);
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    if (PrintObjectDescription == nullptr)
+        PrintObjectDescription = new LightWeightMap<DLDL, Agnostic_PrintObjectDescriptionResult>();
+
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    DWORD strBuf = (DWORD)-1;
+    if (buffer != nullptr && bytesWritten > 0)
+    {
+        size_t bufferRealSize = min(bytesWritten, bufferSize - 1);
+        strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
+    }
+
+    Agnostic_PrintObjectDescriptionResult value;
+    value.bytesWritten = (DWORDLONG)bytesWritten;
+    value.requiredBufferSize = (DWORDLONG)(pRequiredBufferSize == nullptr ? 0 : *pRequiredBufferSize);
+    value.buffer = (DWORD)strBuf;
+
+    PrintObjectDescription->Add(key, value);
+    DEBUG_REC(dmpPrintObjectDescription(key, value));
+}
+void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value)
+{
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, bytesWritten-%u, pRequiredBufferSize-%u", key.A, (unsigned)key.B, (unsigned)value.bytesWritten, (unsigned)value.requiredBufferSize);
+    PrintObjectDescription->Unlock();
+}
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    if (PrintObjectDescription == nullptr)
+    {
+        return 0;
+    }
+
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    int itemIndex = PrintObjectDescription->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
+        DEBUG_REP(dmpPrintObjectDescription(key, value));
+        if (pRequiredBufferSize != nullptr)
+        {
+            *pRequiredBufferSize = (size_t)value.requiredBufferSize;
+        }
+
+        size_t bytesWritten = 0;
+
+        BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+        Assert(srcBuffer != nullptr);
+
+        if (bufferSize > 0)
+        {
+            bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+            memcpy(buffer, srcBuffer, bytesWritten);
+
+            // Always null-terminate
+            buffer[bytesWritten] = 0;
+        }
+        return bytesWritten;
     }
 }
 
@@ -5587,22 +5732,24 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
                     printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
                         printf("[%u] %016llX ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
+                case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
-                        // (N)umber, (L)ikelihood, (C)lass
-                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        // (N)umber, (L)ikelihood, (H)andle
+                        printf("N %u L %u H %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
@@ -6410,27 +6557,33 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 }
 
 void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
-                                                    CORINFO_CLASS_HANDLE result,
-                                                    unsigned             index)
+                                                    unsigned             index,
+                                                    CORINFO_CLASS_HANDLE result)
 {
     if (GetTypeInstantiationArgument == nullptr)
-        GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetTypeInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
     DWORDLONG value = CastHandle(result);
     GetTypeInstantiationArgument->Add(key, value);
     DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
 }
-void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
     GetTypeInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
 
     int itemIndex = -1;
     if (GetTypeInstantiationArgument != nullptr)
@@ -6446,58 +6599,116 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
 }
 
 void MethodContext::recAppendClassName(
-    CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result)
+    int nBufLenIn,
+    CORINFO_CLASS_HANDLE cls,
+    bool fNamespace,
+    bool fFullInst,
+    bool fAssembly,
+    int nLenOut,
+    const char16_t* result)
 {
     if (AppendClassName == nullptr)
-        AppendClassName = new LightWeightMap<Agnostic_AppendClassName, DWORD>();
+        AppendClassName = new LightWeightMap<Agnostic_AppendClassNameIn, Agnostic_AppendClassNameOut>();
 
-    Agnostic_AppendClassName key;
+    // The API has two different behaviors depending on whether the input specified length is zero or non-zero:
+    // (1) zero: returns the length of the string (which the caller can use to allocate a buffer)
+    // (2) non-zero: fill as much of the buffer with the name as there is space available.
+    // We don't want the input length to be part of the key, since the caller could potentially pass in a smaller
+    // or larger buffer, and we'll fill in as much of the buffer as possible. We do need to handle both the zero
+    // and non-zero cases, though, so we'll get one record for first call using zero (with the correct buffer size result),
+    // and another for the second call with a big-enough buffer. We could presumably just store the second case
+    // (and overwrite the first record), since it contains the same output length, but it is useful to store
+    // (and see) all the JIT-EE interface calls.
+
+    Agnostic_AppendClassNameIn key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.classHandle = CastHandle(cls);
-    key.fNamespace  = fNamespace;
-    key.fFullInst   = fFullInst;
-    key.fAssembly   = fAssembly;
+    key.nBufLenIsZero = (nBufLenIn == 0) ? 1 : 0;
+    key.classHandle   = CastHandle(cls);
+    key.fNamespace    = fNamespace;
+    key.fFullInst     = fFullInst;
+    key.fAssembly     = fAssembly;
 
-    DWORD value = (DWORD)-1;
-    if (result != nullptr)
-        value = (DWORD)AppendClassName->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
+    Agnostic_AppendClassNameOut value;
+    value.nLen       = nLenOut;
+    value.name_index = (DWORD)-1;
+
+    // Don't save the string buffer if the incoming buffer length is zero, even if the string buffer is non-null.
+    // In that case, the EE/crossgen2 don't zero-terminate the buffer (since they assume it is zero sized).
+    if ((result != nullptr) && (nBufLenIn > 0))
+    {
+        value.name_index = (DWORD)AppendClassName->AddBuffer(
+            (unsigned char*)result,
+            (unsigned int)((wcslen((LPCWSTR)result) + 1) * sizeof(char16_t)));
+    }
 
     AppendClassName->Add(key, value);
     DEBUG_REC(dmpAppendClassName(key, value));
 }
 
-void MethodContext::dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value)
+void MethodContext::dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value)
 {
-    printf("AppendClassName key cls-%016llX ns-%u fi-%u as-%u, value %s", key.classHandle, key.fNamespace,
-           key.fFullInst, key.fAssembly, AppendClassName->GetBuffer(value));
+    const char16_t* name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
+    printf("AppendClassName key lenzero-%s cls-%016llX ns-%u fi-%u as-%u, value len-%u ni-%u name-%S",
+        key.nBufLenIsZero ? "true" : "false", key.classHandle, key.fNamespace, key.fFullInst, key.fAssembly,
+        value.nLen, value.name_index, (const WCHAR*)name);
     AppendClassName->Unlock();
 }
 
-const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
-                                               bool                 fNamespace,
-                                               bool                 fFullInst,
-                                               bool                 fAssembly)
+int MethodContext::repAppendClassName(char16_t**           ppBuf,
+                                      int*                 pnBufLen,
+                                      CORINFO_CLASS_HANDLE cls,
+                                      bool                 fNamespace,
+                                      bool                 fFullInst,
+                                      bool                 fAssembly)
 {
-    if (AppendClassName == nullptr)
-        return W("hackishClassName");
+    static const char16_t unknownClass[]     = u"hackishClassName";
+    static const int      unknownClassLength = (int)(ArrLen(unknownClass) - 1); // Don't include null terminator in length.
 
-    Agnostic_AppendClassName key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.classHandle = CastHandle(cls);
-    key.fNamespace  = fNamespace;
-    key.fFullInst   = fFullInst;
-    key.fAssembly   = fAssembly;
+    // By default, at least return something.
+    const char16_t* name = unknownClass;
+    int             nLen = unknownClassLength;
 
-    int index = AppendClassName->GetIndex(key);
-    if (index == -1)
-        return W("hackishClassName");
+    if (AppendClassName != nullptr)
+    {
+        Agnostic_AppendClassNameIn key;
+        ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+        key.nBufLenIsZero = (*pnBufLen == 0) ? 1 : 0;
+        key.classHandle   = CastHandle(cls);
+        key.fNamespace    = fNamespace;
+        key.fFullInst     = fFullInst;
+        key.fAssembly     = fAssembly;
 
-    DWORD value = AppendClassName->Get(key);
-    DEBUG_REP(dmpAppendClassName(key, value));
+        // First, see if we have an entry for this query.
+        int index = AppendClassName->GetIndex(key);
+        if (index != -1)
+        {
+            // Then, actually get the value.
+            Agnostic_AppendClassNameOut value = AppendClassName->Get(key);
+            DEBUG_REP(dmpAppendClassName(key, value));
 
-    int offset = (int)value;
-    const WCHAR* name = (const WCHAR*)AppendClassName->GetBuffer(offset);
-    return name;
+            nLen = value.nLen;
+            name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
+        }
+    }
+
+    if ((ppBuf != nullptr) && (*ppBuf != nullptr) && (*pnBufLen > 0) && (name != nullptr))
+    {
+        // Copy as much as will fit.
+        char16_t* pBuf = *ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy - 1; i++)
+        {
+            pBuf[i] = name[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
+    }
+
+    return nLen;
 }
 
 void MethodContext::recGetTailCallHelpers(
@@ -6787,6 +6998,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -6839,6 +7053,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 
@@ -6892,16 +7109,32 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
     char* obuff = buff;
 
-    // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
+    // Add the Method Signature. Be careful about potentially huge method signatures; truncate if necessary.
+    const char* methodFullName = CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName);
+    int t = _snprintf_s(buff, len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE, _TRUNCATE, "%s -- ", methodFullName);
+    if (t == -1)
+    {
+        // We truncated the name string, meaning we wrote exactly `len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE` characters
+        // (including the terminating null). We advance the buffer pointer by this amount, not including that terminating null.
+        t = len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE - 1;
+    }
     buff += t;
     len -= t;
 
     // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw());
     buff += t;
     len -= t;
+
+    uint64_t *raw = corJitFlags.GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = corJitFlags.GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        t = sprintf_s(buff, len, " %016llX", raw[i]);
+        buff += t;
+        len -= t;
+    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
@@ -7007,11 +7240,13 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
+    hasMethodProfile = false;
     hasLikelyClass = false;
+    hasLikelyMethod = false;
 
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
@@ -7033,11 +7268,12 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes);
+                hasMethodProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
+                hasLikelyMethod |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod);
 
-                if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
+                if (hasEdgeProfile && hasClassProfile && hasLikelyClass && hasLikelyMethod)
                 {
                     break;
                 }
@@ -7064,7 +7300,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     return env;
 }
 
-// Check that there is a difference between the current enviroment variables maps and the prevEnv.
+// Check that there is a difference between the current environment variables maps and the prevEnv.
 bool MethodContext::WasEnvironmentChanged(const Environment& prevEnv)
 {
     if (!IsEnvironmentHeaderEqual(prevEnv))

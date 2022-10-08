@@ -27,16 +27,26 @@ namespace System.CodeDom
 
         public int Add(CodeCatchClause value) => List.Add(value);
 
-        public void AddRange(CodeCatchClause[] value!!)
+        public void AddRange(CodeCatchClause[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CodeCatchClauseCollection value!!)
+        public void AddRange(CodeCatchClauseCollection value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
-  crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   helixQueues: ''
   stagedBuild: false
@@ -13,7 +12,6 @@ parameters:
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
   condition: always()
@@ -23,8 +21,8 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
-  
-  
+
+
 steps:
   - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
     displayName: Build Tests
@@ -38,8 +36,8 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -68,4 +66,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal 
+        scenarios: normal

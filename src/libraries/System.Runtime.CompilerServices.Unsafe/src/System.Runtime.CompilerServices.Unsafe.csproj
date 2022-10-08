@@ -4,7 +4,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

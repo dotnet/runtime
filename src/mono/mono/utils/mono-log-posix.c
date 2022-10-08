@@ -92,10 +92,17 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
  * Close the log file
  */
 void
-mono_log_close_syslog()
+mono_log_close_syslog(void)
 {
 #ifdef HAVE_CLOSELOG
 	closelog();
 #endif
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_posix);
+
 #endif

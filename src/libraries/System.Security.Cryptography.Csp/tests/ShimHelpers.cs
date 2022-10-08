@@ -95,9 +95,9 @@ namespace System.Security.Cryptography.Csp.Tests
             foreach (MethodInfo info in baseMethods)
             {
                 // Ensure the override is on the shim; ignore virtual methods on System.Object
-                bool methodOverriden = info.DeclaringType == shimType || info.DeclaringType == typeof(object);
+                bool methodOverridden = info.DeclaringType == shimType || info.DeclaringType == typeof(object);
 
-                Assert.True(methodOverriden, $"Member overriden: {info.Name}");
+                Assert.True(methodOverridden, $"Member overridden: {info.Name}");
             }
         }
     }

@@ -1052,7 +1052,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
 //-----------------------------------------------------------------------------
 // Common helper to dereferefence.
 // Parameters:
-//     pAppDomain, pType, pInfo - necessary paramters to create the value
+//     pAppDomain, pType, pInfo - necessary parameters to create the value
 //     pRealTypeOfTypedByref - type for a potential TypedByRef. Can be NULL if we know
 //        that we're not a typed-byref (this is true if we're definitely an object handle)
 //     ppValue - outparameter for newly created value. This will get an Ext AddRef.
@@ -3529,7 +3529,7 @@ HRESULT CordbBoxValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnu
     #define ARRAY_CACHE_SIZE (1000)
 #else
 // For release, guess 4 pages should be enough. Subtract some bytes to store
-// the header so that that doesn't push us onto another page. (We guess a reasonable
+// the header so that it doesn't push us onto another page. (We guess a reasonable
 // header size, but it's ok if it's larger).
     #define ARRAY_CACHE_SIZE (4 * 4096 - 24)
 #endif
@@ -3709,7 +3709,7 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 // Arguments:
 //     output: pbHasBaseIndices - true iff the array has more than one dimension and pbHasBaseIndices is not null
 // Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndices is null
-HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
+HRESULT CordbArrayValue::HasBaseIndices(BOOL *pbHasBaseIndices)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -3717,7 +3717,7 @@ HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 
     *pbHasBaseIndices = m_info.arrayInfo.offsetToLowerBounds != 0;
     return S_OK;
-} // CordbArrayValue::HasBaseIndicies
+} // CordbArrayValue::HasBaseIndices
 
 // gets the base indices for a multidimensional array
 // Arguments:
@@ -3725,7 +3725,7 @@ HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 //            indices - an array to hold the base indices for the array dimensions (allocated and managed
 //                      by the caller, it must have space for cdim elements)
 // Return Value: S_OK on success or E_INVALIDARG if cdim is not equal to the array rank or indices is null
-HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
+HRESULT CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -3743,7 +3743,7 @@ HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
         indices[i] = m_arrayLowerBase[i];
 
     return S_OK;
-} // CordbArrayValue::GetBaseIndicies
+} // CordbArrayValue::GetBaseIndices
 
 // Get an element at the position indicated by the values in indices (one index for each dimension)
 // Arguments:

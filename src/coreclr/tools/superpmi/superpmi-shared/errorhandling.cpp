@@ -59,7 +59,7 @@ void SpmiException::ShowAndDeleteMessage()
     }
     else
     {
-        LogError("Unexpected exception was thrown.");
+        LogError("Unexpected exception %x was thrown.", exCode);
     }
 
     DeleteMessage();

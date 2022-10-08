@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     {
         internal readonly EventLogSettings _settings;
 
-        private IExternalScopeProvider _scopeProvider;
+        private IExternalScopeProvider? _scopeProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventLogLoggerProvider"/> class.
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// Initializes a new instance of the <see cref="EventLogLoggerProvider"/> class.
         /// </summary>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
-        public EventLogLoggerProvider(EventLogSettings settings)
+        public EventLogLoggerProvider(EventLogSettings? settings)
         {
             _settings = settings ?? new EventLogSettings();
         }

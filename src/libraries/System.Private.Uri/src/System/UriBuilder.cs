@@ -25,7 +25,7 @@ namespace System
         {
         }
 
-        public UriBuilder(string uri)
+        public UriBuilder([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             // setting allowRelative=true for a string like www.acme.org
             _uri = new Uri(uri, UriKind.RelativeOrAbsolute);
@@ -38,8 +38,10 @@ namespace System
             SetFieldsFromUri();
         }
 
-        public UriBuilder(Uri uri!!)
+        public UriBuilder(Uri uri)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             _uri = uri;
             SetFieldsFromUri();
         }
@@ -253,6 +255,24 @@ namespace System
 
         public override int GetHashCode() => Uri.GetHashCode();
 
+        private static string EncodeUserInfo(string input)
+        {
+            // The following characters ("/" / "\" / "?" / "#" / "@") are from the gen-delims group.
+            // We have to escape them to avoid corrupting the rest of the Uri string.
+            // Other characters like spaces or non-ASCII will be escaped by Uri, we can ignore them here.
+            if (input.AsSpan().IndexOfAny(@"/\?#@") < 0)
+            {
+                return input;
+            }
+
+            return input
+                .Replace("/", "%2F", StringComparison.Ordinal)
+                .Replace(@"\", "%5C", StringComparison.Ordinal)
+                .Replace("?", "%3F", StringComparison.Ordinal)
+                .Replace("#", "%23", StringComparison.Ordinal)
+                .Replace("@", "%40", StringComparison.Ordinal);
+        }
+
         private void SetFieldsFromUri()
         {
             Debug.Assert(_uri is not null);
@@ -313,12 +333,12 @@ namespace System
                 vsb.Append(schemeDelimiter);
             }
 
-            string username = UserName;
+            string username = EncodeUserInfo(UserName);
             if (username.Length != 0)
             {
                 vsb.Append(username);
 
-                string password = Password;
+                string password = EncodeUserInfo(Password);
                 if (password.Length != 0)
                 {
                     vsb.Append(':');

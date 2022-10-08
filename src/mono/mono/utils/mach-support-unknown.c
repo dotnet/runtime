@@ -18,7 +18,7 @@
 #include "mach-support.h"
 
 int
-mono_mach_arch_get_mcontext_size ()
+mono_mach_arch_get_mcontext_size (void)
 {
 	g_assert_not_reached ();
 }
@@ -42,13 +42,13 @@ mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state
 }
 
 int
-mono_mach_arch_get_thread_state_size ()
+mono_mach_arch_get_thread_state_size (void)
 {
 	g_assert_not_reached ();
 }
 
 int
-mono_mach_arch_get_thread_fpstate_size ()
+mono_mach_arch_get_thread_fpstate_size (void)
 {
 	g_assert_not_reached ();
 }
@@ -64,5 +64,10 @@ mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, ma
 {
        g_assert_not_reached ();
 }
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mach_support_unknown);
 
 #endif

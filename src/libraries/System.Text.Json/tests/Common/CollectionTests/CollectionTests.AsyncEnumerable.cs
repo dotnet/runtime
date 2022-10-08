@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-#if !BUILDING_SOURCE_GENERATOR_TESTS
     public abstract partial class CollectionTests
     {
         [Theory]
@@ -57,7 +56,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
-            await StreamingSerializer.SerializeWrapper(stream, new { Data = asyncEnumerable }, options);
+            await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<TElement> { Data = asyncEnumerable }, options);
 
             JsonTestHelper.AssertJsonEqual(expectedJson, stream.AsString());
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
@@ -147,6 +146,12 @@ namespace System.Text.Json.Serialization.Tests
             public IAsyncEnumerable<TElement> Data { get; set; }
         }
 
+        public class AsyncEnumerableDtoWithTwoProperties<TElement>
+        {
+            public IAsyncEnumerable<TElement> Data1 { get; set; }
+            public IAsyncEnumerable<TElement> Data2 { get; set; }
+        }
+
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteSequentialNestedAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
@@ -165,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
-            await StreamingSerializer.SerializeWrapper(stream, new { Data1 = asyncEnumerable, Data2 = asyncEnumerable }, options);
+            await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDtoWithTwoProperties<TElement> { Data1 = asyncEnumerable, Data2 = asyncEnumerable }, options);
 
             JsonTestHelper.AssertJsonEqual(expectedJson, stream.AsString());
             Assert.Equal(2, asyncEnumerable.TotalCreatedEnumerators);
@@ -231,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<IEnumerable<int>>(Enumerable.Repeat(ThrowingEnumerable(), 2));
 
-            await Assert.ThrowsAsync<DivideByZeroException>(async () => await StreamingSerializer.SerializeWrapper(stream, new { Data = asyncEnumerable }));
+            await Assert.ThrowsAsync<DivideByZeroException>(async () => await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<IEnumerable<int>> { Data = asyncEnumerable }));
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
 
@@ -307,11 +312,13 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(Enumerable.Range(0, 100), 20, 20);
             yield return WrapArgs(Enumerable.Range(0, 1000), 20, 20);
             yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 20, 100);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 3, 100);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 20, 100);
+            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new AsyncEnumerableElement(i, $"lorem ipsum dolor: {i}", (i % 2 == 0))), 3, 100);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new AsyncEnumerableElement(i, $"lorem ipsum dolor: {i}", (i % 2 == 0))), 20, 100);
 
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int delayInterval, int bufferSize) => new object[] { source, delayInterval, bufferSize };
         }
+
+        public record AsyncEnumerableElement(int Field1, string Field2, bool Field3);
 
         [Fact]
         public async Task RegressionTest_DisposingEnumeratorOnPendingMoveNextAsyncOperation()
@@ -347,7 +354,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Regression test for https://github.com/dotnet/aspnetcore/issues/36977
             using var stream = new MemoryStream();
-            await Assert.ThrowsAsync<NotImplementedException>(async () => await StreamingSerializer.SerializeWrapper(stream, new { Data = GetFailingAsyncEnumerable() }));
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<int> { Data = GetFailingAsyncEnumerable() }));
             Assert.Equal(0, stream.Length);
 
             static async IAsyncEnumerable<int> GetFailingAsyncEnumerable()
@@ -432,5 +439,4 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
-#endif
 }
