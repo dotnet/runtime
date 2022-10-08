@@ -1372,3 +1372,16 @@ public class ReadOnlySpanTest
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public class ToStringOverwritten
+{
+    public override string ToString()
+    {
+        return "hithays";
+    }
+    public static void Run()
+    {
+        var a = new ToStringOverwritten();
+        System.Diagnostics.Debugger.Break();
+    }
+}

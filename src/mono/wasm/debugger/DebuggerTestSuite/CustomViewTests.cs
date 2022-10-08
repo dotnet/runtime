@@ -106,5 +106,24 @@ namespace DebuggerTests
                 Assert.True(task.Result);
             }
         }
+        
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task InspectObjectOfTypeWithToStringOverwritten()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] ToStringOverwritten:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1384, 8,
+                "ToStringOverwritten.Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("a", TObject("ToStringOverwritten", description:"hithays"))
+                    );
+                }
+            );
+        }
     }
 }
