@@ -192,10 +192,11 @@ CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
           unsigned index) override;
 
-int appendClassName(
-          char** ppBuf,
-          int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls) override;
+size_t printClassName(
+          CORINFO_CLASS_HANDLE cls,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;

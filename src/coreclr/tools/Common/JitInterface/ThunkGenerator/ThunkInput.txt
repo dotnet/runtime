@@ -62,7 +62,6 @@ void **,ref void*
 VOIDSTARSTAR,void **,void **,void **
 int32_t*,int*
 char*,byte*
-char**,byte**
 const char**,byte**
 char16_t**,char**
 char16_t *,char*
@@ -197,7 +196,7 @@ FUNCTIONS
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
-    int appendClassName(char** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls)
+    size_t printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     bool isValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls)

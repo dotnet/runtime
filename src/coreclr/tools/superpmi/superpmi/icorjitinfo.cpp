@@ -426,37 +426,10 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
     return result;
 }
 
-// Append a (possibly truncated) textual representation of the type `cls` to a preallocated buffer.
-// Includes enclosing classes and namespaces.
-//
-// Arguments:
-//    ppBuf      - Pointer to buffer pointer. See below for details.
-//    pnBufLen   - Pointer to buffer length. Must not be nullptr. See below for details.
-//
-// Returns the length of the representation, as a count of characters (but not including a terminating null character).
-// Note that this will always be the actual number of characters required by the representation, even if the string
-// was truncated when copied to the buffer.
-//
-// Operation:
-//
-// On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
-// There are two cases:
-// 1. If the size is zero, the function computes the length of the representation and returns that.
-//    `ppBuf` is ignored (and may be nullptr) and `*ppBuf` and `*pnBufLen` are not updated.
-// 2. If the size is non-zero, the buffer pointed to by `*ppBuf` is (at least) that size. The class name
-//    representation is copied to the buffer pointed to by `*ppBuf`. As many characters of the name as will fit in the
-//    buffer are copied. Thus, if the name is larger than the size of the buffer, the name will be truncated in the buffer.
-//    The buffer is guaranteed to be null terminated. Thus, the size must be large enough to include a terminating null
-//    character, or the string will be truncated to include one. On exit, `*pnBufLen` is updated by subtracting the
-//    number of characters that were actually copied to the buffer. Also, `*ppBuf` is updated to point at the null
-//    character that was added to the end of the name.
-//
-int MyICJI::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char** ppBuf,
-                            int*                                         pnBufLen,
-                            CORINFO_CLASS_HANDLE                         cls)
+size_t MyICJI::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("appendClassName");
-    return jitInstance->mc->repAppendClassName(ppBuf, pnBufLen, cls);
+    jitInstance->mc->cr->AddCall("printClassName");
+    return jitInstance->mc->repPrintClassName(cls, buffer, bufferSize, pRequiredBufferSize);
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &

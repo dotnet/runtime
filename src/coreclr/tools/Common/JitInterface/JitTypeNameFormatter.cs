@@ -10,10 +10,10 @@ namespace Internal.JitInterface
 {
     // This is a very rough equivalent of typestring.cpp in the CLR used with
     // FormatNamespace|FormatNoInst. This is currently only used for
-    // appendClassName in the JIT-EE interface, which is used to print class
-    // names to use for the various method set JIT variables (JitDisasm for
-    // example). The JIT handles formatting of most type names on its own so we
-    // only need the basics here.
+    // printClassName in the JIT-EE interface that is used for the various
+    // method set JIT variables (JitDisasm for example). The JIT handles
+    // formatting of most type names on its own so we only need the basics
+    // here.
     internal sealed class JitTypeNameFormatter : TypeNameFormatter
     {
         public static JitTypeNameFormatter Instance { get; } = new JitTypeNameFormatter();

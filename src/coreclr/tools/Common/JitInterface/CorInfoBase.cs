@@ -614,12 +614,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, byte** ppBuf, int* pnBufLen, CORINFO_CLASS_STRUCT_* cls)
+        private static UIntPtr _printClassName(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte* buffer, UIntPtr bufferSize, UIntPtr* pRequiredBufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.appendClassName(ppBuf, ref *pnBufLen, cls);
+                return _this.printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
             }
             catch (Exception ex)
             {
@@ -2653,7 +2653,7 @@ namespace Internal.JitInterface
             callbacks[38] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_asCorInfoType;
             callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;
             callbacks[40] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*>)&_getTypeInstantiationArgument;
-            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, byte**, int*, CORINFO_CLASS_STRUCT_*, int>)&_appendClassName;
+            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printClassName;
             callbacks[42] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isValueClass;
             callbacks[43] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoInlineTypeCheckSource, CorInfoInlineTypeCheck>)&_canInlineTypeCheck;
             callbacks[44] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassAttribs;
@@ -2793,4 +2793,3 @@ namespace Internal.JitInterface
         }
     }
 }
-

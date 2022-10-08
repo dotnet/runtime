@@ -622,8 +622,29 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
+    void recPrintEntity(
+        const char* name,
+        LightWeightMap<DWORDLONG, Agnostic_PrintEntityResult>*& map,
+        DWORDLONG handle,
+        char* buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize,
+        size_t bytesWritten);
+    void dmpPrintEntity(
+        const char* name,
+        LightWeightMapBuffer* buffer,
+        DWORDLONG key,
+        const Agnostic_PrintEntityResult& value);
+    size_t repPrintEntity(
+        const char* name,
+        LightWeightMap<DWORDLONG, Agnostic_PrintEntityResult>*& map,
+        DWORDLONG handle,
+        char* buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize);
+
     void recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
-    void dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value);
+    void dmpPrintObjectDescription(DWORDLONG key, const Agnostic_PrintEntityResult& value);
     size_t repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
@@ -805,14 +826,9 @@ public:
     void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
-    void recAppendClassName(int                  nBufLenIn,
-                            CORINFO_CLASS_HANDLE cls,
-                            int                  nLenOut,
-                            const char*          result);
-    void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
-    int repAppendClassName(char**               ppBuf,
-                           int*                 pnBufLen,
-                           CORINFO_CLASS_HANDLE cls);
+    void recPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintClassName(DWORDLONG cls, const Agnostic_PrintEntityResult& value);
+    size_t repPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
@@ -1081,7 +1097,7 @@ enum mcPackets
     //PacketCR_RecordCallSite = 146,
     Packet_GetLazyStringLiteralHelper = 147,
     Packet_IsIntrinsicType = 148,
-    Packet_AppendClassName = 149,
+    Packet_PrintClassName = 149,
     Packet_GetReadyToRunHelper = 150,
     Packet_GetIntConfigValue = 151,
     Packet_GetStringConfigValue = 152,

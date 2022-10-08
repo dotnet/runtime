@@ -1559,8 +1559,7 @@ unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 //------------------------------------------------------------------------
-// eeGetShortClassName: wraps appendClassName to provide functionality
-// similar to eeGetClassName(), but returns a class name without any instantiation.
+// eeGetShortClassName: Returns class name with no instantiation.
 //
 // Arguments:
 //   clsHnd - the class handle to get the type name of

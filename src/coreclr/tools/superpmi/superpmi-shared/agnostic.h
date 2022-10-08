@@ -766,11 +766,13 @@ struct Agnostic_RecordCallSite
     DWORDLONG                 methodHandle;
 };
 
-struct Agnostic_PrintObjectDescriptionResult
+struct Agnostic_PrintEntityResult
 {
-    DWORDLONG bytesWritten;
-    DWORDLONG requiredBufferSize;
+    // Required size of a buffer to contain everything including null terminator.
+    // UINT_MAX if it was not determined during recording.
+    DWORD requiredBufferSize;
     DWORD buffer;
+    DWORD bufferSize;
 };
 
 #pragma pack(pop)

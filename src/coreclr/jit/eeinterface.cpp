@@ -133,25 +133,21 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
         return;
     }
 
-    char  buffer[256];
-    char* pBufferMut = buffer;
-    int   size       = sizeof(buffer);
-    int   actualLen  = info.compCompHnd->appendClassName(&pBufferMut, &size, clsHnd);
-    if (actualLen <= 0)
+    size_t requiredBufferSize;
+    char   buffer[256];
+    size_t writtenBytes = info.compCompHnd->printClassName(clsHnd, buffer, sizeof(buffer), &requiredBufferSize);
+    if (writtenBytes <= 0)
     {
         printer->Append("<unnamed>");
     }
-    else if (static_cast<unsigned>(actualLen) < sizeof(buffer))
+    else if (requiredBufferSize <= sizeof(buffer))
     {
         printer->Append(buffer);
     }
     else
     {
-        char* pBuffer = new (this, CMK_DebugOnly) char[actualLen + 1];
-        pBufferMut    = pBuffer;
-        size          = actualLen + 1;
-        info.compCompHnd->appendClassName(&pBufferMut, &size, clsHnd);
-
+        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
+        info.compCompHnd->printClassName(clsHnd, pBuffer, requiredBufferSize);
         printer->Append(pBuffer);
     }
 

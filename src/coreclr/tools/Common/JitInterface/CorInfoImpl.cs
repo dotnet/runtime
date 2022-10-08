@@ -1882,35 +1882,26 @@ namespace Internal.JitInterface
         }
 
 
-        private int appendClassName(byte** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls)
+        private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             var type = HandleToObject(cls);
             string name = JitTypeNameFormatter.Instance.FormatName(type);
-
             byte[] utf8 = Encoding.UTF8.GetBytes(name);
-            int length = utf8.Length;
-            if (pnBufLen > 0)
+
+            if (pRequiredBufferSize != null)
             {
-                byte* buffer = *ppBuf;
-                int lengthToCopy = Math.Min(utf8.Length, pnBufLen);
-                for (int i = 0; i < lengthToCopy; i++)
-                    buffer[i] = utf8[i];
-
-                if (utf8.Length < pnBufLen)
-                {
-                    buffer[utf8.Length] = 0;
-                }
-                else
-                {
-                    buffer[pnBufLen - 1] = 0;
-                    lengthToCopy -= 1;
-                }
-
-                pnBufLen -= lengthToCopy;
-                *ppBuf = buffer + lengthToCopy;
+                *pRequiredBufferSize = (nuint)utf8.Length + 1;
             }
 
-            return length;
+            nuint writtenBytes = 0;
+            if (buffer != null && bufferSize > 0)
+            {
+                writtenBytes = Math.Min(bufferSize - 1, (nuint)utf8.Length);
+                utf8.AsSpan()[..(int)writtenBytes].CopyTo(new Span<byte>(buffer, (int)writtenBytes));
+                buffer[writtenBytes] = 0;
+            }
+
+            return writtenBytes;
         }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)

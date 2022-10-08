@@ -3398,45 +3398,42 @@ static void AppendTypeNameEscaped(const char* str, TAppend append)
 }
 
 /*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBuf,
-                             int*                                           pnBufLen,
-                             CORINFO_CLASS_HANDLE                           clsHnd) {
+size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
     CONTRACTL {
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    int nLen = 0;
+    size_t bytesWritten = 0;
 
     JIT_TO_EE_TRANSITION();
 
-    TypeHandle th(clsHnd);
+    size_t requiredBufferSize = 0;
+
+    TypeHandle th(cls);
     IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
 
-    auto append = [ppBuf, pnBufLen, &nLen](const char* str)
+    auto append = [buffer, bufferSize, &bytesWritten, &requiredBufferSize](const char* str)
     {
         size_t strLen = strlen(str);
 
-        if ((ppBuf != nullptr) && (pnBufLen != nullptr))
+        if ((buffer != nullptr) && (bytesWritten + 1 < bufferSize))
         {
-            if (strLen >= static_cast<size_t>(*pnBufLen))
+            if (bytesWritten + strLen >= bufferSize)
             {
-                if (*pnBufLen > 1)
-                {
-                    memcpy(*ppBuf, str, *pnBufLen - 1);
-                    *ppBuf += *pnBufLen - 1;
-                    *pnBufLen = 1;
-                }
+                memcpy(buffer + bytesWritten, str, bufferSize - bytesWritten - 1);
+                bytesWritten = bufferSize - 1;
             }
             else
             {
-                memcpy(*ppBuf, str, strLen);
-                *ppBuf += strLen;
+                memcpy(buffer + bytesWritten, str, strLen);
+                bytesWritten += strLen;
             }
         }
 
-        nLen = nLen + static_cast<int>(strLen);
+        requiredBufferSize += strLen;
     };
 
     // Subset of TypeString that does just what we need while staying in UTF8
@@ -3482,15 +3479,20 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBu
         }
     }
 
-    if (*pnBufLen > 0)
+    if (bufferSize > 0)
     {
-        **ppBuf = '\0';
+        _ASSERTE(bytesWritten < bufferSize);
+        buffer[bytesWritten] = '\0';
+    }
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = requiredBufferSize;
     }
 
     EE_TO_JIT_TRANSITION();
 
-    // Return the actual length of the string, not including the null terminator.
-    return nLen;
+    return bytesWritten;
 }
 
 /*********************************************************************/

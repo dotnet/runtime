@@ -306,12 +306,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
 }
 
-int interceptor_ICJI::appendClassName(
-          char** ppBuf,
-          int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls)
+size_t interceptor_ICJI::printClassName(
+          CORINFO_CLASS_HANDLE cls,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    return original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls);
+    return original_ICorJitInfo->printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
 }
 
 bool interceptor_ICJI::isValueClass(

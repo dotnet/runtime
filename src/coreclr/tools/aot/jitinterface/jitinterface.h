@@ -52,7 +52,7 @@ struct JitInterfaceCallbacks
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
     CORINFO_CLASS_HANDLE (* getTypeInstantiationArgument)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, unsigned index);
-    int (* appendClassName)(void * thisHandle, CorInfoExceptionClass** ppException, char** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls);
+    size_t (* printClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoInlineTypeCheck (* canInlineTypeCheck)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -605,13 +605,14 @@ public:
     return temp;
 }
 
-    virtual int appendClassName(
-          char** ppBuf,
-          int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls)
+    virtual size_t printClassName(
+          CORINFO_CLASS_HANDLE cls,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->appendClassName(_thisHandle, &pException, ppBuf, pnBufLen, cls);
+    size_t temp = _callbacks->printClassName(_thisHandle, &pException, cls, buffer, bufferSize, pRequiredBufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }
