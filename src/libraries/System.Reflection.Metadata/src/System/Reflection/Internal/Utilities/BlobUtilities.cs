@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
@@ -19,20 +20,12 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
-#if NETCOREAPP
-            BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(start), value);
-#else
             WriteUInt64(buffer, start, *(ulong*)&value);
-#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
-#if NETCOREAPP
-            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(start), value);
-#else
             WriteUInt32(buffer, start, *(uint*)&value);
-#endif
         }
 
         public static void WriteByte(this byte[] buffer, int start, byte value)
@@ -43,27 +36,47 @@ namespace System.Reflection
 
         public static void WriteUInt16(this byte[] buffer, int start, ushort value)
         {
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(start), value);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(ref buffer[start], value);
         }
 
         public static void WriteUInt16BE(this byte[] buffer, int start, ushort value)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(start), value);
+            if (BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(ref buffer[start], value);
         }
 
         public static void WriteUInt32BE(this byte[] buffer, int start, uint value)
         {
-            BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(start), value);
+            if (BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(ref buffer[start], value);
         }
 
         public static void WriteUInt32(this byte[] buffer, int start, uint value)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(start), value);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(ref buffer[start], value);
         }
 
         public static void WriteUInt64(this byte[] buffer, int start, ulong value)
         {
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer.AsSpan(start), value);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(ref buffer[start], value);
         }
 
         public const int SizeOfSerializedDecimal = sizeof(byte) + 3 * sizeof(uint);
