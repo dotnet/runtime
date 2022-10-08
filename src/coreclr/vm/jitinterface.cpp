@@ -11902,9 +11902,9 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
     pLocalModule->PopulateClass(pEnclosingMT);
 
-    GCX_COOP();
     if (pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
+        GCX_COOP();
         if (field->IsObjRef())
         {
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
