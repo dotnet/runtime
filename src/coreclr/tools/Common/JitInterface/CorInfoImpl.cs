@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -1863,22 +1864,36 @@ namespace Internal.JitInterface
 
         private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
-            Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
+            Debug.Assert(handle != null);
 
-            int bufferSize32 = checked((int)bufferSize);
-            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+            return PrintFromUtf16(HandleToObject(handle).ToString(), buffer, bufferSize, pRequiredBufferSize);
+        }
 
+        private nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        {
             int written = 0;
             if (bufferSize > 0)
             {
-                Utf8.FromUtf16(objStr, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
+                OperationStatus status = Utf8.FromUtf16(utf16, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
                 // Always null-terminate
                 buffer[written] = 0;
+
+                if (status == OperationStatus.Done)
+                {
+                    if (pRequiredBufferSize != null)
+                    {
+                        *pRequiredBufferSize = (nuint)written + 1;
+                    }
+
+                    return (nuint)written;
+                }
             }
+
             if (pRequiredBufferSize != null)
             {
-                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr) + 1;
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(utf16) + 1;
             }
+
             return (nuint)written;
         }
 
@@ -1916,22 +1931,7 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
             string name = JitTypeNameFormatter.Instance.FormatName(type);
-            byte[] utf8 = Encoding.UTF8.GetBytes(name);
-
-            if (pRequiredBufferSize != null)
-            {
-                *pRequiredBufferSize = (nuint)utf8.Length + 1;
-            }
-
-            nuint writtenBytes = 0;
-            if (buffer != null && bufferSize > 0)
-            {
-                writtenBytes = Math.Min(bufferSize - 1, (nuint)utf8.Length);
-                utf8.AsSpan()[..(int)writtenBytes].CopyTo(new Span<byte>(buffer, (int)writtenBytes));
-                buffer[writtenBytes] = 0;
-            }
-
-            return writtenBytes;
+            return PrintFromUtf16(name, buffer, bufferSize, pRequiredBufferSize);
         }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
