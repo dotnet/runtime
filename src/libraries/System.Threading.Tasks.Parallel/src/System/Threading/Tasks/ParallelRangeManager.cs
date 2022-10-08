@@ -200,10 +200,8 @@ namespace System.Threading.Tasks
         internal bool FindNewWork<TIndex>(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) where TIndex : INumber<TIndex>
         {
             Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long));
-            long nFromInclusiveLocal64;
-            long nToExclusiveLocal64;
 
-            bool bRetVal = FindNewWork(out nFromInclusiveLocal64, out nToExclusiveLocal64);
+            bool bRetVal = FindNewWork(out long nFromInclusiveLocal64, out long nToExclusiveLocal64);
 
             // convert before returning
             nFromInclusiveLocal = TIndex.CreateChecked(nFromInclusiveLocal64);
