@@ -184,6 +184,7 @@ namespace System.Threading.RateLimiting
                             {
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
