@@ -11890,7 +11890,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
-    _ASSERTE(field->IsStatic() && !field->IsThreadStatic());
+    _ASSERTE(field->IsStatic());
     _ASSERTE((unsigned)bufferSize == field->GetSize());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
@@ -11902,7 +11902,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
     pLocalModule->PopulateClass(pEnclosingMT);
 
-    if (pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
         GCX_COOP();
         if (field->IsObjRef())

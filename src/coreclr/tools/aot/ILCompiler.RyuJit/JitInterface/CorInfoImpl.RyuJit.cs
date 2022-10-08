@@ -2211,9 +2211,9 @@ namespace Internal.JitInterface
             Debug.Assert(bufferSize > 0);
 
             FieldDesc field = HandleToObject(fieldHandle);
-            Debug.Assert(field.IsStatic && !field.IsThreadStatic);
+            Debug.Assert(field.IsStatic);
 
-            if (field.IsInitOnly && field.OwningType is MetadataType owningType)
+            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
