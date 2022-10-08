@@ -384,7 +384,6 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int> body)
         {
             ArgumentNullException.ThrowIfNull(body);
-
             return ForWorker<int, object>(fromInclusive, toExclusive, s_defaultParallelOptions, body, null, null, null, null);
         }
 
@@ -407,7 +406,6 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long> body)
         {
             ArgumentNullException.ThrowIfNull(body);
-
             return ForWorker<long, object>(fromInclusive, toExclusive, s_defaultParallelOptions, body, null, null, null, null);
         }
 
@@ -442,8 +440,8 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
-
-            return ForWorker<int, object>(fromInclusive, toExclusive, parallelOptions, body, null, null, null, null);
+            return ForWorker<int, object>(fromInclusive, toExclusive, parallelOptions, body,
+                null, null, null, null);
         }
 
         /// <summary>
@@ -477,8 +475,8 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
-
-            return ForWorker<long, object>(fromInclusive, toExclusive, parallelOptions, body, null, null, null, null);
+            return ForWorker<long, object>(fromInclusive, toExclusive, parallelOptions, body,
+                null, null, null, null);
         }
 
         /// <summary>
@@ -524,8 +522,8 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int, ParallelLoopState> body)
         {
             ArgumentNullException.ThrowIfNull(body);
-
-            return ForWorker<int, object>(fromInclusive, toExclusive, s_defaultParallelOptions, null, body, null, null, null);
+            return ForWorker<int, object>(fromInclusive, toExclusive, s_defaultParallelOptions,
+                null, body, null, null, null);
         }
 
         /// <summary>
@@ -549,9 +547,7 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long, ParallelLoopState> body)
         {
             ArgumentNullException.ThrowIfNull(body);
-
-            return ForWorker<long, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
+            return ForWorker<long, object>(fromInclusive, toExclusive, s_defaultParallelOptions,
                 null, body, null, null, null);
         }
 
@@ -944,15 +940,7 @@ namespace System.Threading.Tasks
 
                     if (bodyWithState != null || bodyWithLocal != null)
                     {
-                        Debug.Assert(sharedPStateFlags != null);
-                        if (typeof(TIndex) == typeof(long))
-                        {
-                            state = new ParallelLoopState64((ParallelLoopStateFlags64)sharedPStateFlags);
-                        }
-                        else if (typeof(TIndex) == typeof(int))
-                        {
-                            state = new ParallelLoopState32((ParallelLoopStateFlags32)sharedPStateFlags);
-                        }
+                        state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
                     }
                     // If a thread-local selector was supplied, invoke it. Otherwise, use the default.
                     if (localInit != null)
@@ -992,7 +980,7 @@ namespace System.Threading.Tasks
                         {
                             for (TIndex j = nFromInclusiveLocal;
                                     j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
-                                                            || !sharedPStateFlags.ShouldExitLoop(long.CreateChecked(j)));
+                                                            || !sharedPStateFlags.ShouldExitLoop(j));
                                     j += TIndex.One)
                             {
                                 state!.SetCurrentIteration(j);
@@ -1585,27 +1573,35 @@ namespace System.Threading.Tasks
             if (body != null)
             {
                 return ForWorker<int, object>(
-                    from, to, parallelOptions, (i) => body(array[i]), null, null, null, null);
+                    from, to, parallelOptions, (i) => body(array[i]),
+                    null, null, null, null);
             }
             else if (bodyWithState != null)
             {
                 return ForWorker<int, object>(
-                    from, to, parallelOptions, null, (i, state) => bodyWithState(array[i], state), null, null, null);
+                    from, to, parallelOptions, null, (i, state) => bodyWithState(array[i], state),
+                    null, null, null);
             }
             else if (bodyWithStateAndIndex != null)
             {
                 return ForWorker<int, object>(
-                    from, to, parallelOptions, null, (i, state) => bodyWithStateAndIndex(array[i], state, i), null, null, null);
+                    from, to, parallelOptions, null,
+                    (i, state) => bodyWithStateAndIndex(array[i], state, i),
+                    null, null, null);
             }
             else if (bodyWithStateAndLocal != null)
             {
                 return ForWorker(
-                    from, to, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(array[i], state, local), localInit, localFinally);
+                    from, to, parallelOptions, null, null,
+                    (i, state, local) => bodyWithStateAndLocal(array[i], state, local),
+                    localInit, localFinally);
             }
             else
             {
                 return ForWorker(
-                    from, to, parallelOptions, null, null, (i, state, local) => bodyWithEverything!(array[i], state, i, local), localInit, localFinally);
+                    from, to, parallelOptions, null, null,
+                    (i, state, local) => bodyWithEverything!(array[i], state, i, local),
+                    localInit, localFinally);
             }
         }
 
@@ -1641,31 +1637,39 @@ namespace System.Threading.Tasks
             if (body != null)
             {
                 return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, (i) => body(list[i]), null, null, null, null);
+                    0, list.Count, parallelOptions,
+                    (i) => body(list[i]),
+                    null, null, null, null);
             }
             else if (bodyWithState != null)
             {
                 return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, null, (i, state) => bodyWithState(list[i], state), null, null, null);
+                    0, list.Count, parallelOptions, null,
+                    (i, state) => bodyWithState(list[i], state),
+                    null, null, null);
             }
             else if (bodyWithStateAndIndex != null)
             {
                 return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, null, (i, state) => bodyWithStateAndIndex(list[i], state, i), null, null, null);
+                    0, list.Count, parallelOptions, null,
+                    (i, state) => bodyWithStateAndIndex(list[i], state, i),
+                    null, null, null);
             }
             else if (bodyWithStateAndLocal != null)
             {
                 return ForWorker(
-                    0, list.Count, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(list[i], state, local), localInit, localFinally);
+                    0, list.Count, parallelOptions, null, null,
+                    (i, state, local) => bodyWithStateAndLocal(list[i], state, local),
+                    localInit, localFinally);
             }
             else
             {
                 return ForWorker(
-                    0, list.Count, parallelOptions, null, null, (i, state, local) => bodyWithEverything!(list[i], state, i, local), localInit, localFinally);
+                    0, list.Count, parallelOptions, null, null,
+                    (i, state, local) => bodyWithEverything!(list[i], state, i, local),
+                    localInit, localFinally);
             }
         }
-
-
 
         /// <summary>
         /// Executes a for each operation on a <see cref="System.Collections.Concurrent.Partitioner{TSource}">
@@ -1715,7 +1719,9 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, body, null, null, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, body,
+                null, null, null, null,
+                null, null);
         }
 
         /// <summary>
@@ -1768,7 +1774,8 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(body);
 
-            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, null, body, null, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, null, body,
+                null, null, null, null, null);
         }
 
         /// <summary>
@@ -1829,7 +1836,8 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, null, null, body, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, s_defaultParallelOptions, null,
+                null, body, null, null, null, null);
         }
 
         /// <summary>
@@ -1904,7 +1912,8 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null, null, null, body, null, localInit, localFinally);
+            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null,
+                null, null, body, null, localInit, localFinally);
         }
 
         /// <summary>
@@ -1987,7 +1996,8 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null, null, null, null, body, localInit, localFinally);
+            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null,
+                null, null, null, body, localInit, localFinally);
         }
 
         /// <summary>
@@ -2051,7 +2061,8 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, body, null, null, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, body, null,
+                null, null, null, null, null);
         }
 
         /// <summary>
@@ -2117,7 +2128,8 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, null, body, null, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, null, body,
+                null, null, null, null, null);
         }
 
         /// <summary>
@@ -2191,7 +2203,8 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, null, null, body, null, null, null, null);
+            return PartitionerForEachWorker<TSource, object>(source, parallelOptions, null, null,
+                body, null, null, null, null);
         }
 
         /// <summary>
@@ -2279,7 +2292,8 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null, null, body, null, localInit, localFinally);
+            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null,
+                null, body, null, localInit, localFinally);
         }
 
         /// <summary>
@@ -2375,7 +2389,8 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null, null, null, body, localInit, localFinally);
+            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null,
+                null, null, body, localInit, localFinally);
         }
 
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
@@ -2775,7 +2790,7 @@ namespace System.Threading.Tasks
                 parallelOptions.EffectiveMaxConcurrencyLevel;
             RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive), long.CreateChecked(toExclusive), 1, numExpectedWorkers);
 
-            ParallelLoopStateFlags sharedPStateFlags = typeof(TIndex) == typeof(int) ? new ParallelLoopStateFlags32() : new ParallelLoopStateFlags64();
+            ParallelLoopStateFlags sharedPStateFlags = ParallelLoopStateFlags.Create<TIndex>();
 
             // ETW event for Parallel For begin
             int forkJoinContextID = 0;
@@ -2784,8 +2799,7 @@ namespace System.Threading.Tasks
                 forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
                 ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
                                                           forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelFor,
-                                                          //TODO: without long.CreateChecked
-                                                          long.CreateChecked(fromInclusive), long.CreateChecked(toExclusive));
+                                                          fromInclusive, toExclusive);
             }
 
             // Keep track of any cancellations

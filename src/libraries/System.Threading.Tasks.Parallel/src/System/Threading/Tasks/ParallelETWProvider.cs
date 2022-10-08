@@ -13,6 +13,7 @@ using System.Text;
 using System.Security;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Numerics;
 
 namespace System.Threading.Tasks
 {
@@ -102,12 +103,14 @@ namespace System.Threading.Tasks
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(PARALLELLOOPBEGIN_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Start)]
-        public void ParallelLoopBegin(int OriginatingTaskSchedulerID, int OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
+        public void ParallelLoopBegin<TIndex>(int OriginatingTaskSchedulerID, int OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
                                       int ForkJoinContextID, ForkJoinOperationType OperationType, // PFX_FORKJOIN_COMMON_EVENT_HEADER
-                                      long InclusiveFrom, long ExclusiveTo)
+                                      TIndex InclusiveFrom, TIndex ExclusiveTo) where TIndex: INumber<TIndex>
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
+                long inclusiveFrom = long.CreateChecked(InclusiveFrom);
+                long exclusiveTo = long.CreateChecked(ExclusiveTo);
                 // There is no explicit WriteEvent() overload matching this event's fields. Therefore calling
                 // WriteEvent() would hit the "params" overload, which leads to an object allocation every time
                 // this event is fired. To prevent that problem we will call WriteEventCore(), which works with
@@ -139,12 +142,12 @@ namespace System.Threading.Tasks
                     eventPayload[4] = new EventData
                     {
                         Size = sizeof(long),
-                        DataPointer = ((IntPtr)(&InclusiveFrom))
+                        DataPointer = ((IntPtr)(&inclusiveFrom))
                     };
                     eventPayload[5] = new EventData
                     {
                         Size = sizeof(long),
-                        DataPointer = ((IntPtr)(&ExclusiveTo))
+                        DataPointer = ((IntPtr)(&exclusiveTo))
                     };
 
                     WriteEventCore(PARALLELLOOPBEGIN_ID, 6, eventPayload);
@@ -164,14 +167,15 @@ namespace System.Threading.Tasks
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(PARALLELLOOPEND_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Stop)]
-        public void ParallelLoopEnd(int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
-                                    int ForkJoinContextID, long TotalIterations)
+        public void ParallelLoopEnd<TIndex>(int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
+                                    int ForkJoinContextID, TIndex TotalIterations) where TIndex: INumber<TIndex>
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
                 // There is no explicit WriteEvent() overload matching this event's fields.
                 // Therefore calling WriteEvent() would hit the "params" overload, which leads to an object allocation every time this event is fired.
                 // To prevent that problem we will call WriteEventCore(), which works with a stack based EventData array populated with the event fields
+                long totalIterations = long.CreateChecked(TotalIterations);
                 unsafe
                 {
                     EventData* eventPayload = stackalloc EventData[4];
@@ -194,7 +198,7 @@ namespace System.Threading.Tasks
                     eventPayload[3] = new EventData
                     {
                         Size = sizeof(long),
-                        DataPointer = ((IntPtr)(&TotalIterations))
+                        DataPointer = ((IntPtr)(&totalIterations))
                     };
 
                     WriteEventCore(PARALLELLOOPEND_ID, 4, eventPayload);

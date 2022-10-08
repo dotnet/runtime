@@ -262,7 +262,23 @@ namespace System.Threading.Tasks
             }
         }
 
-        internal virtual void SetCurrentIteration<TIndex>(TIndex CurrentIteration) where TIndex : INumber<TIndex> => throw new NotImplementedException("Shoul not call this");
+        internal virtual void SetCurrentIteration<TIndex>(TIndex CurrentIteration)
+            where TIndex : INumber<TIndex> => throw new NotImplementedException("Should not call this");
+
+        internal static ParallelLoopState Create<TIndex>(ParallelLoopStateFlags flags)
+        {
+            if (typeof(TIndex) == typeof(int))
+            {
+                return new ParallelLoopState32((ParallelLoopStateFlags32)flags);
+            }
+
+            if (typeof(TIndex) == typeof(long))
+            {
+                return new ParallelLoopState64((ParallelLoopStateFlags64)flags);
+            }
+
+            throw new InvalidOperationException("Only int and long supported in ParallelLoopState.Create");
+        }
     }
 
     internal sealed class ParallelLoopState32 : ParallelLoopState
@@ -472,6 +488,11 @@ namespace System.Threading.Tasks
         }
 
         internal abstract long LowestBreakIteration { get; }
+
+        internal static ParallelLoopStateFlags Create<TIndex>() where TIndex : INumber<TIndex>
+        {
+            return typeof(TIndex) == typeof(int) ? new ParallelLoopStateFlags32() : new ParallelLoopStateFlags64();
+        }
     }
 
     /// <summary>
