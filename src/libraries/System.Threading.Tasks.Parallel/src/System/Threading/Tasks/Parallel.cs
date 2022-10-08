@@ -988,7 +988,7 @@ namespace System.Threading.Tasks
             {
                 try
                 {
-                    TaskReplicator.ReplicatableUserAction<RangeWorker> worker = CreateWorkers(
+                    TaskReplicator.ReplicatableUserAction<RangeWorker> worker = CreateForWorker(
                         sharedPStateFlags, rangeManager, forkJoinContextID, body, bodyWithState, bodyWithLocal,
                         localInit, localFinally
                     );
@@ -1039,7 +1039,7 @@ namespace System.Threading.Tasks
             return result;
         }
 
-        private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateWorkers<TIndex, TLocal>(
+        private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateForWorker<TIndex, TLocal>(
             ParallelLoopStateFlags sharedPStateFlags,
             RangeManager rangeManager,
             int forkJoinContextID,
@@ -1062,10 +1062,7 @@ namespace System.Threading.Tasks
                 // We need to call FindNewWork() on it to see whether there's a chunk available.
                 // These are the local index values to be used in the sequential loop.
                 // Their values filled in by FindNewWork
-                TIndex nFromInclusiveLocal;
-                TIndex nToExclusiveLocal;
-
-                if (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) == false ||
+                if (currentWorker.FindNewWork(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) == false ||
                     sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
                 {
                     return; // no need to run
@@ -1688,6 +1685,7 @@ namespace System.Threading.Tasks
                 bodyWithStateAndIndex, bodyWithStateAndLocal, bodyWithEverything, localInit, localFinally);
         }
 
+
         /// <summary>
         /// A fast path for the more general ForEachWorker method above. This uses ldelem instructions to
         /// access the individual elements of the array, which will be faster.
@@ -1719,32 +1717,32 @@ namespace System.Threading.Tasks
 
             int from = array.GetLowerBound(0);
             int to = array.GetUpperBound(0) + 1;
+            Action<int>? newBody = null;
+            Action<int, ParallelLoopState>? newBodyWithState = null;
+            Func<int, ParallelLoopState, TLocal, TLocal>? newBodyWithLocal = null;
 
-            if (body != null)
+            if (body is not null)
             {
-                return ForWorker<int, object>(
-                    from, to, parallelOptions, (i) => body(array[i]), null, null, null, null);
+                newBody = (i) => body(array[i]);
             }
-            else if (bodyWithState != null)
+            else if (bodyWithState is not null)
             {
-                return ForWorker<int, object>(
-                    from, to, parallelOptions, null, (i, state) => bodyWithState(array[i], state), null, null, null);
+                newBodyWithState = (i, state) => bodyWithState(array[i], state);
             }
-            else if (bodyWithStateAndIndex != null)
+            else if (bodyWithStateAndIndex is not null)
             {
-                return ForWorker<int, object>(
-                    from, to, parallelOptions, null, (i, state) => bodyWithStateAndIndex(array[i], state, i), null, null, null);
+                newBodyWithState = (i, state) => bodyWithStateAndIndex(array[i], state, i);
             }
-            else if (bodyWithStateAndLocal != null)
+            else if (bodyWithStateAndLocal is not null)
             {
-                return ForWorker(
-                    from, to, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(array[i], state, local), localInit, localFinally);
+                newBodyWithLocal = (i, state, local) => bodyWithStateAndLocal(array[i], state, local);
             }
             else
             {
-                return ForWorker(
-                    from, to, parallelOptions, null, null, (i, state, local) => bodyWithEverything!(array[i], state, i, local), localInit, localFinally);
+                newBodyWithLocal = (i, state, local) => bodyWithEverything!(array[i], state, i, local);
             }
+
+            return ForWorker(from, to, parallelOptions, newBody, newBodyWithState, newBodyWithLocal, localInit, localFinally);
         }
 
         /// <summary>
@@ -1776,33 +1774,36 @@ namespace System.Threading.Tasks
             Debug.Assert(list != null);
             Debug.Assert(parallelOptions != null, "ForEachWorker(list): parallelOptions is null");
 
-            if (body != null)
+            int from = 0;
+            int to = list.Count;
+
+            Action<int>? newBody = null;
+            Action<int, ParallelLoopState>? newBodyWithState = null;
+            Func<int, ParallelLoopState, TLocal, TLocal>? newBodyWithLocal = null;
+
+            if (body is not null)
             {
-                return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, (i) => body(list[i]), null, null, null, null);
+                newBody = (i) => body(list[i]);
             }
-            else if (bodyWithState != null)
+            else if (bodyWithState is not null)
             {
-                return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, null, (i, state) => bodyWithState(list[i], state), null, null, null);
+                newBodyWithState = (i, state) => bodyWithState(list[i], state);
             }
-            else if (bodyWithStateAndIndex != null)
+            else if (bodyWithStateAndIndex is not null)
             {
-                return ForWorker<int, object>(
-                    0, list.Count, parallelOptions, null, (i, state) => bodyWithStateAndIndex(list[i], state, i), null, null, null);
+                newBodyWithState = (i, state) => bodyWithStateAndIndex(list[i], state, i);
             }
-            else if (bodyWithStateAndLocal != null)
+            else if (bodyWithStateAndLocal is not null)
             {
-                return ForWorker(
-                    0, list.Count, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(list[i], state, local), localInit, localFinally);
+                newBodyWithLocal = (i, state, local) => bodyWithStateAndLocal(list[i], state, local);
             }
             else
             {
-                return ForWorker(
-                    0, list.Count, parallelOptions, null, null, (i, state, local) => bodyWithEverything!(list[i], state, i, local), localInit, localFinally);
+                newBodyWithLocal = (i, state, local) => bodyWithEverything!(list[i], state, i, local);
             }
-        }
 
+            return ForWorker(from, to, parallelOptions, newBody, newBodyWithState, newBodyWithLocal, localInit, localFinally);
+        }
 
 
         /// <summary>
@@ -2603,167 +2604,11 @@ namespace System.Threading.Tasks
             {
                 try
                 {
-                    TaskReplicator.Run(
-                        (ref IEnumerator partitionState, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
-                        {
-                            // We will need to reset this to true if we exit due to a timeout:
-                            replicationDelegateYieldedBeforeCompletion = false;
-
-                            // ETW event for ParallelForEach Worker Fork
-                            if (ParallelEtwProvider.Log.IsEnabled())
-                            {
-                                ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                            }
-
-                            TLocal localValue = default!;
-                            bool bLocalValueInitialized = false; // Tracks whether localInit ran without exceptions, so that we can skip localFinally if it wasn't
-
-                            try
-                            {
-                                // Create a new state object that references the shared "stopped" and "exceptional" flags.
-                                // If needed, it will contain a new instance of thread-local state by invoking the selector.
-                                ParallelLoopState64? state = null;
-
-                                if (bodyWithState != null || bodyWithStateAndIndex != null)
-                                {
-                                    state = new ParallelLoopState64(sharedPStateFlags);
-                                }
-                                else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
-                                {
-                                    state = new ParallelLoopState64(sharedPStateFlags);
-                                    // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
-                                    if (localInit != null)
-                                    {
-                                        localValue = localInit();
-                                        bLocalValueInitialized = true;
-                                    }
-                                }
-
-                                // initialize a loop timer which will help us decide whether we should exit early
-                                int loopTimeout = ComputeTimeoutPoint(timeout);
-
-                                if (orderedSource != null)  // Use this path for OrderablePartitioner:
-                                {
-                                    // first check if there's saved state from a previous replica that we might be replacing.
-                                    // the only state to be passed down in such a transition is the enumerator
-                                    IEnumerator<KeyValuePair<long, TSource>>? myPartition = partitionState as IEnumerator<KeyValuePair<long, TSource>>;
-                                    if (myPartition == null)
-                                    {
-                                        myPartition = orderablePartitionerSource!.GetEnumerator();
-                                        partitionState = myPartition;
-                                    }
-
-                                    if (myPartition == null)
-                                        throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
-
-                                    while (myPartition.MoveNext())
-                                    {
-                                        KeyValuePair<long, TSource> kvp = myPartition.Current;
-                                        long index = kvp.Key;
-                                        TSource value = kvp.Value;
-
-                                        // Update our iteration index
-                                        if (state != null) state.CurrentIteration = index;
-
-                                        if (simpleBody != null)
-                                            simpleBody(value);
-                                        else if (bodyWithState != null)
-                                            bodyWithState(value, state!);
-                                        else if (bodyWithStateAndIndex != null)
-                                            bodyWithStateAndIndex(value, state!, index);
-                                        else if (bodyWithStateAndLocal != null)
-                                            localValue = bodyWithStateAndLocal(value, state!, localValue);
-                                        else
-                                            localValue = bodyWithEverything!(value, state!, index, localValue);
-
-                                        if (sharedPStateFlags.ShouldExitLoop(index)) break;
-
-                                        // Cooperative multitasking:
-                                        // Check if allowed loop time is exceeded, if so save current state and return.
-                                        // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
-                                        if (CheckTimeoutReached(loopTimeout))
-                                        {
-                                            replicationDelegateYieldedBeforeCompletion = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                else  // Use this path for Partitioner that is not OrderablePartitioner:
-                                {
-                                    // first check if there's saved state from a previous replica that we might be replacing.
-                                    // the only state to be passed down in such a transition is the enumerator
-                                    IEnumerator<TSource>? myPartition = partitionState as IEnumerator<TSource>;
-                                    if (myPartition == null)
-                                    {
-                                        myPartition = partitionerSource!.GetEnumerator();
-                                        partitionState = myPartition;
-                                    }
-
-                                    if (myPartition == null)
-                                        throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
-
-                                    // I'm not going to try to maintain this
-                                    if (state != null)
-                                        state.CurrentIteration = 0;
-
-                                    while (myPartition.MoveNext())
-                                    {
-                                        TSource t = myPartition.Current;
-
-                                        if (simpleBody != null)
-                                            simpleBody(t);
-                                        else if (bodyWithState != null)
-                                            bodyWithState(t, state!);
-                                        else if (bodyWithStateAndLocal != null)
-                                            localValue = bodyWithStateAndLocal(t, state!, localValue);
-                                        else
-                                            Debug.Fail("PartitionerForEach: illegal body type in Partitioner handler");
-
-                                        // Any break, stop or exception causes us to halt
-                                        // We don't have the global indexing information to discriminate whether or not
-                                        // we are before or after a break point.
-                                        if (sharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone)
-                                            break;
-
-                                        // Cooperative multitasking:
-                                        // Check if allowed loop time is exceeded, if so save current state and return.
-                                        // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
-                                        if (CheckTimeoutReached(loopTimeout))
-                                        {
-                                            replicationDelegateYieldedBeforeCompletion = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                // Inform other tasks of the exception, then rethrow
-                                sharedPStateFlags.SetExceptional();
-                                ExceptionDispatchInfo.Throw(ex);
-                            }
-                            finally
-                            {
-                                if (localFinally != null && bLocalValueInitialized)
-                                {
-                                    localFinally(localValue);
-                                }
-
-                                if (!replicationDelegateYieldedBeforeCompletion)
-                                {
-                                    if (partitionState is IDisposable partitionToDispose)
-                                        partitionToDispose.Dispose();
-                                }
-
-                                // ETW event for ParallelFor Worker Join
-                                if (ParallelEtwProvider.Log.IsEnabled())
-                                {
-                                    ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                                }
-                            }
-                        },
-                        parallelOptions,
-                        stopOnFirstFailure: true);
+                    TaskReplicator.ReplicatableUserAction<IEnumerator> worker = CreatePartitionerForEachWorker(
+                        simpleBody, bodyWithState, bodyWithStateAndIndex,
+                        bodyWithStateAndLocal, bodyWithEverything, localInit, localFinally, forkJoinContextID,
+                        sharedPStateFlags, orderedSource, orderablePartitionerSource, partitionerSource);
+                    TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
                 }
                 finally
                 {
@@ -2812,6 +2657,166 @@ namespace System.Threading.Tasks
 
             return result;
         }
+
+        private static TaskReplicator.ReplicatableUserAction<IEnumerator> CreatePartitionerForEachWorker<TSource, TLocal>(Action<TSource>? simpleBody, Action<TSource, ParallelLoopState>? bodyWithState, Action<TSource, ParallelLoopState, long>? bodyWithStateAndIndex, Func<TSource, ParallelLoopState, TLocal, TLocal>? bodyWithStateAndLocal, Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything, Func<TLocal>? localInit, Action<TLocal>? localFinally, int forkJoinContextID, ParallelLoopStateFlags64 sharedPStateFlags, OrderablePartitioner<TSource>? orderedSource, IEnumerable<KeyValuePair<long, TSource>>? orderablePartitionerSource, IEnumerable<TSource>? partitionerSource) =>
+            (ref IEnumerator partitionState, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
+            {
+                // We will need to reset this to true if we exit due to a timeout:
+                replicationDelegateYieldedBeforeCompletion = false;
+
+                // ETW event for ParallelForEach Worker Fork
+                if (ParallelEtwProvider.Log.IsEnabled())
+                {
+                    ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+                }
+
+                TLocal localValue = default!;
+                bool bLocalValueInitialized = false; // Tracks whether localInit ran without exceptions, so that we can skip localFinally if it wasn't
+
+                try
+                {
+                    // Create a new state object that references the shared "stopped" and "exceptional" flags.
+                    // If needed, it will contain a new instance of thread-local state by invoking the selector.
+                    ParallelLoopState64? state = null;
+
+                    if (bodyWithState != null || bodyWithStateAndIndex != null)
+                    {
+                        state = new ParallelLoopState64(sharedPStateFlags);
+                    }
+                    else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
+                    {
+                        state = new ParallelLoopState64(sharedPStateFlags);
+                        // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
+                        if (localInit != null)
+                        {
+                            localValue = localInit();
+                            bLocalValueInitialized = true;
+                        }
+                    }
+
+                    // initialize a loop timer which will help us decide whether we should exit early
+                    int loopTimeout = ComputeTimeoutPoint(timeout);
+
+                    if (orderedSource != null)  // Use this path for OrderablePartitioner:
+                    {
+                        // first check if there's saved state from a previous replica that we might be replacing.
+                        // the only state to be passed down in such a transition is the enumerator
+                        IEnumerator<KeyValuePair<long, TSource>>? myPartition = partitionState as IEnumerator<KeyValuePair<long, TSource>>;
+                        if (myPartition == null)
+                        {
+                            myPartition = orderablePartitionerSource!.GetEnumerator();
+                            partitionState = myPartition;
+                        }
+
+                        if (myPartition == null)
+                            throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
+
+                        while (myPartition.MoveNext())
+                        {
+                            KeyValuePair<long, TSource> kvp = myPartition.Current;
+                            long index = kvp.Key;
+                            TSource value = kvp.Value;
+
+                            // Update our iteration index
+                            if (state != null) state.CurrentIteration = index;
+
+                            if (simpleBody != null)
+                                simpleBody(value);
+                            else if (bodyWithState != null)
+                                bodyWithState(value, state!);
+                            else if (bodyWithStateAndIndex != null)
+                                bodyWithStateAndIndex(value, state!, index);
+                            else if (bodyWithStateAndLocal != null)
+                                localValue = bodyWithStateAndLocal(value, state!, localValue);
+                            else
+                                localValue = bodyWithEverything!(value, state!, index, localValue);
+
+                            if (sharedPStateFlags.ShouldExitLoop(index)) break;
+
+                            // Cooperative multitasking:
+                            // Check if allowed loop time is exceeded, if so save current state and return.
+                            // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
+                            if (CheckTimeoutReached(loopTimeout))
+                            {
+                                replicationDelegateYieldedBeforeCompletion = true;
+                                break;
+                            }
+                        }
+                    }
+                    else  // Use this path for Partitioner that is not OrderablePartitioner:
+                    {
+                        // first check if there's saved state from a previous replica that we might be replacing.
+                        // the only state to be passed down in such a transition is the enumerator
+                        IEnumerator<TSource>? myPartition = partitionState as IEnumerator<TSource>;
+                        if (myPartition == null)
+                        {
+                            myPartition = partitionerSource!.GetEnumerator();
+                            partitionState = myPartition;
+                        }
+
+                        if (myPartition == null)
+                            throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
+
+                        // I'm not going to try to maintain this
+                        if (state != null)
+                            state.CurrentIteration = 0;
+
+                        while (myPartition.MoveNext())
+                        {
+                            TSource t = myPartition.Current;
+
+                            if (simpleBody != null)
+                                simpleBody(t);
+                            else if (bodyWithState != null)
+                                bodyWithState(t, state!);
+                            else if (bodyWithStateAndLocal != null)
+                                localValue = bodyWithStateAndLocal(t, state!, localValue);
+                            else
+                                Debug.Fail("PartitionerForEach: illegal body type in Partitioner handler");
+
+                            // Any break, stop or exception causes us to halt
+                            // We don't have the global indexing information to discriminate whether or not
+                            // we are before or after a break point.
+                            if (sharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone)
+                                break;
+
+                            // Cooperative multitasking:
+                            // Check if allowed loop time is exceeded, if so save current state and return.
+                            // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
+                            if (CheckTimeoutReached(loopTimeout))
+                            {
+                                replicationDelegateYieldedBeforeCompletion = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Inform other tasks of the exception, then rethrow
+                    sharedPStateFlags.SetExceptional();
+                    ExceptionDispatchInfo.Throw(ex);
+                }
+                finally
+                {
+                    if (localFinally != null && bLocalValueInitialized)
+                    {
+                        localFinally(localValue);
+                    }
+
+                    if (!replicationDelegateYieldedBeforeCompletion)
+                    {
+                        if (partitionState is IDisposable partitionToDispose)
+                            partitionToDispose.Dispose();
+                    }
+
+                    // ETW event for ParallelFor Worker Join
+                    if (ParallelEtwProvider.Log.IsEnabled())
+                    {
+                        ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+                    }
+                }
+            };
 
         /// <summary>
         /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
