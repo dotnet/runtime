@@ -2212,7 +2212,6 @@ namespace Internal.JitInterface
 
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic && !field.IsThreadStatic);
-            Debug.Assert(field.FieldType.GetElementSize().AsInt == bufferSize);
 
             if (field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
