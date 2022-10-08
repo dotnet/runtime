@@ -5612,7 +5612,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     HRESULT result = (HRESULT)value.result;
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
-    size_t maxOffset = 0;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.countSchemaItems; iSchema++)
     {
         // Everything but `Offset` field is an IN argument, so verify it against what we stored (since we didn't use these
@@ -5640,9 +5639,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
         }
 
         pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
-
-        if (pSchema[iSchema].Offset > maxOffset)
-            maxOffset = pSchema[iSchema].Offset;
     }
 
     // We assume JIT does not write or read from this buffer, only generate
