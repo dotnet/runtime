@@ -2334,7 +2334,7 @@ public:
     //    This function will always null terminate the buffer.
     //  
     virtual size_t printClassName (
-            CORINFO_CLASS_HANDLE cls,     /* IN  */
+            CORINFO_CLASS_HANDLE cls,                          /* IN  */
             char*                buffer,                       /* OUT */
             size_t               bufferSize,                   /* IN  */
             size_t*              pRequiredBufferSize = nullptr /* OUT */
