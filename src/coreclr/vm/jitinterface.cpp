@@ -11890,7 +11890,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
-    if (field->IsStatic() && !field->IsThreadStatic() && ((unsigned)bufferSize == field->GetSize()))
+    _ASSERTE(field->IsStatic() && !field->IsThreadStatic());
+    _ASSERTE((unsigned)bufferSize == field->GetSize());
     {
         MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
         if (!pEnclosingMT->IsSharedByGenericInstantiations())
@@ -11924,9 +11925,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 }
                 else
                 {
-                    // GetStaticAddressHandle doesn't work for structs
-                    _ASSERT(field->GetFieldType() != ELEMENT_TYPE_VALUETYPE);
-                    void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
+                    void* fldAddr = field->GetCurrentStaticAddress();
                     _ASSERTE(fldAddr != nullptr);
                     _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
                     memcpy(buffer, fldAddr, bufferSize);
