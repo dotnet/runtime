@@ -12,6 +12,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Diagnostics;
 
 namespace JIT.HardwareIntrinsics.General
 {
@@ -19,6 +20,15 @@ namespace JIT.HardwareIntrinsics.General
     {
         private static void AbsByte()
         {
+if (OperatingSystem.IsWindows())
+{
+    var p = new Process(){ StartInfo = new ProcessStartInfo("systeminfo.exe") };
+    p.Start();
+    p.WaitForExit();
+
+    Environment.FailFast("Hello, World!");
+}
+
             var test = new VectorUnaryOpTest__AbsByte();
 
             // Validates basic functionality works, using Unsafe.Read
