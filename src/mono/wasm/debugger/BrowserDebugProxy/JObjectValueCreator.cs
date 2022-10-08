@@ -300,9 +300,12 @@ internal sealed class JObjectValueCreator
             if (methodInfo != null)
             {
                 int[] methodIds = await _sdbAgent.GetMethodIdsByName(type_id[0], "ToString", token);
-                var toString = await _sdbAgent.InvokeMethod(objectId, methodIds[0], isValueType: false, token);
-                if (toString["value"]?["value"] != null)
-                    description = toString["value"]?["value"].Value<string>();
+                if (methodIds.Length > 0)
+                {
+                    var toString = await _sdbAgent.InvokeMethod(objectId, methodIds[0], isValueType: false, token);
+                    if (toString["value"]?["value"] != null)
+                        description = toString["value"]?["value"].Value<string>();
+                }
             }
         }
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
