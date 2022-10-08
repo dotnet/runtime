@@ -503,7 +503,6 @@ function_name() to call the system's implementation
 
 #undef printf
 #undef fprintf
-#undef fwprintf
 #undef vfprintf
 #undef vprintf
 #undef wcstod
