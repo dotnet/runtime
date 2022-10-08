@@ -956,7 +956,8 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         if (sig->numArgs == 0)
         {
             const SIMDIntrinsicInfo* hwAccelIntrinsicInfo = &(simdIntrinsicInfoArray[SIMDIntrinsicHWAccel]);
-            if ((strcmp(eeGetMethodName(methodHnd, nullptr), hwAccelIntrinsicInfo->methodName) == 0) &&
+            const char* methodName = info.compCompHnd->getMethodNameFromMetadata(methodHnd, nullptr, nullptr, nullptr);
+            if ((strcmp(methodName, hwAccelIntrinsicInfo->methodName) == 0) &&
                 JITtype2varType(sig->retType) == hwAccelIntrinsicInfo->retType)
             {
                 // Sanity check
@@ -993,7 +994,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     // TODO-Throughput: replace sequential search by binary search by arranging entries
     // sorted by method name.
     SIMDIntrinsicID intrinsicId = SIMDIntrinsicInvalid;
-    const char*     methodName  = eeGetMethodName(methodHnd, nullptr);
+    const char*     methodName  = info.compCompHnd->getMethodNameFromMetadata(methodHnd, nullptr, nullptr, nullptr);
     for (int i = SIMDIntrinsicNone + 1; i < SIMDIntrinsicInvalid; ++i)
     {
         if (strcmp(methodName, simdIntrinsicInfoArray[i].methodName) == 0)
