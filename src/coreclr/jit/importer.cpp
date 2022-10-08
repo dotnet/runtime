@@ -16581,11 +16581,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= GTF_BLK_VOLATILE;
                     }
                 }
-
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:
-
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -16605,10 +16604,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND;
                 }
 
-                op2 = impPopStack().val; // Src
-                op1 = impPopStack().val; // Dest
-                op1 = gtNewCpObjNode(op1, op2, resolvedToken.hClass, ((prefixFlags & PREFIX_VOLATILE) != 0));
+                op2 = impPopStack().val; // Src addr
+                op1 = impPopStack().val; // Dest addr
+
+                ClassLayout* layout = typGetObjLayout(resolvedToken.hClass);
+                op1                 = gtNewStructVal(layout, op1);
+                op2                 = gtNewStructVal(layout, op2);
+                if (op1->OperIs(GT_OBJ))
+                {
+                    gtSetObjGcInfo(op1->AsObj());
+                }
+                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0), /* isCopyBlock */ true);
                 goto SPILL_APPEND;
+            }
 
             case CEE_STOBJ:
             {
