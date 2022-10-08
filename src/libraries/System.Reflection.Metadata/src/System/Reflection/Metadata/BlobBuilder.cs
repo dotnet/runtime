@@ -656,11 +656,6 @@ namespace System.Reflection.Metadata
 
         private void WriteBytesUnchecked(ReadOnlySpan<byte> buffer)
         {
-            if (buffer.IsEmpty)
-            {
-                return;
-            }
-
             int bytesToCurrent = Math.Min(FreeBytes, buffer.Length);
 
             buffer.Slice(0, bytesToCurrent).CopyTo(_buffer.AsSpan(Length));
