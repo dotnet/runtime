@@ -1377,7 +1377,7 @@ public class ToStringOverwritten
 {
     public override string ToString()
     {
-        return "hithays";
+        return "hello";
     }
     public static void Run()
     {

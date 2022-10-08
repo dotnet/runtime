@@ -120,7 +120,7 @@ namespace DebuggerTests
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     await EvaluateOnCallFrameAndCheck(id,
-                        ("a", TObject("ToStringOverwritten", description:"hithays"))
+                        ("a", TObject("ToStringOverwritten", description:"hello"))
                     );
                 }
             );
