@@ -2248,14 +2248,14 @@ namespace Internal.JitInterface
                         switch (data)
                         {
                             case byte[] bytes:
-                                Debug.Assert(bufferSize >= bytes.Length);
+                                Debug.Assert(bufferSize == bytes.Length);
 
                                 // Ensure we have enough room in the buffer, it can be a large struct
                                 bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
                                 return true;
 
                             case FrozenObjectNode or FrozenStringNode:
-                                Debug.Assert(bufferSize >= targetPtrSize);
+                                Debug.Assert(bufferSize == targetPtrSize);
 
                                 // save handle's value to buffer
                                 nint handle = ObjectToHandle(data);

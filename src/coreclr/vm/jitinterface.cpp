@@ -11894,7 +11894,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     _ASSERTE((unsigned)bufferSize == field->GetSize());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
-    if (!pEnclosingMT->IsSharedByGenericInstantiations())
+    _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
+    _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
     {
         // Allocate space for the local class if necessary, but don't trigger
         // class construction.
@@ -11927,7 +11928,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             {
                 void* fldAddr = field->GetCurrentStaticAddress();
                 _ASSERTE(fldAddr != nullptr);
-                _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
                 memcpy(buffer, fldAddr, bufferSize);
                 result = true;
             }
