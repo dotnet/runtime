@@ -20,11 +20,11 @@ namespace System.CommandLine
     //
     // Helpers for command line processing
     //
-    internal static class Helpers
+    internal static partial class Helpers
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static Dictionary<string, string> BuildPathDictionay(IReadOnlyList<Token> tokens, bool strict)
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
@@ -34,6 +34,24 @@ namespace System.CommandLine
             }
 
             return dictionary;
+        }
+
+        public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
+        {
+            List<string> paths = new();
+            Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
+            foreach (Token token in tokens)
+            {
+                AppendExpandedPaths(dictionary, token.Value, false);
+                foreach (string file in dictionary.Values)
+                {
+                    paths.Add(file);
+                }
+
+                dictionary.Clear();
+            }
+
+            return paths;
         }
 
         public static TargetOS GetTargetOS(string token)
@@ -171,7 +189,7 @@ namespace System.CommandLine
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    Helpers.AppendExpandedPaths(dictionary, optInList, false);
+                                    AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {

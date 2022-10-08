@@ -18,28 +18,31 @@ schedules:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-#
-# Android emulators
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Android_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_gRPC
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
-      timeoutInMinutes: 180
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        extraHelixArguments: /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+    jobs:
+
+    #
+    # Android emulators
+    # Build the whole product using Mono and run libraries tests
+    #
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+        buildConfig: Release
+        runtimeFlavor: mono
+        platforms:
+        - Android_x64
+        jobParameters:
+          testGroup: innerloop
+          nameSuffix: AllSubsets_Mono_gRPC
+          buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
+          timeoutInMinutes: 180
+          # extra steps, run tests
+          extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+          extraStepsParameters:
+            creator: dotnet-bot
+            extraHelixArguments: /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)

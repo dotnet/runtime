@@ -15,6 +15,7 @@
 #include "classloadlevel.h"
 #include "array.h"
 #include "castcache.h"
+#include "frozenobjectheap.h"
 
 #ifdef _DEBUG_IMPL
 
@@ -342,6 +343,63 @@ BOOL TypeHandle::IsCanonicalSubtype() const
 
     return (*this == TypeHandle(g_pCanonMethodTableClass)) || IsSharedByGenericInstantiations();
 }
+
+#ifndef DACCESS_COMPILE
+bool TypeHandle::IsManagedClassObjectPinned() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Function pointers are always mapped to typeof(IntPtr)
+    return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
+}
+
+void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
+{
+    REFLECTCLASSBASEREF refClass = NULL;
+
+    PTR_LoaderAllocator allocator = GetLoaderAllocator();
+
+    if (!allocator->CanUnload())
+    {
+        // Allocate RuntimeType on a frozen segment
+        // Take a lock here since we don't want to allocate redundant objects which won't be collected
+        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
+        if (*pDest == NULL)
+        {
+            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
+            _ASSERTE(obj != NULL);
+            // Since objects are aligned we can use the lowest bit as a storage for "is pinned object" flag
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(*this);
+            RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
+            // Set the bit to 1 (we'll have to reset it before use)
+            handle |= 1;
+            *pDest = handle;
+        }
+    }
+    else
+    {
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+        refClass->SetKeepAlive(allocator->GetExposedObject());
+        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
+        _ASSERTE((exposedClassObjectHandle & 1) == 0);
+        refClass->SetType(*this);
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_ExposedClassObject from NULL.
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        {
+            // GC will collect unused instance
+            allocator->FreeHandle(exposedClassObjectHandle);
+        }
+        GCPROTECT_END();
+    }
+}
+#endif
 
 /* static */ BOOL TypeHandle::IsCanonicalSubtypeInstantiation(Instantiation inst)
 {
