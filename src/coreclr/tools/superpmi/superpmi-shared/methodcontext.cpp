@@ -4986,6 +4986,7 @@ void MethodContext::recPrintEntity(
         {
             // Always stored without null terminator.
             res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
+            res.bufferSize = bytesWritten;
         }
 
         map->Update(index, res);
