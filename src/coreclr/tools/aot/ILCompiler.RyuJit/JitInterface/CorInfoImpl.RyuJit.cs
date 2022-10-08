@@ -2211,23 +2211,13 @@ namespace Internal.JitInterface
             Debug.Assert(bufferSize > 0);
 
             FieldDesc field = HandleToObject(fieldHandle);
-            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            Debug.Assert(field.IsStatic && !field.IsThreadStatic);
+            Debug.Assert(field.FieldType.GetElementSize().AsInt == bufferSize);
+
+            if (field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
-                bool supportedType = field.FieldType.Category switch
-                {
-                    TypeFlags.Enum or
-                    TypeFlags.Class or
-                    TypeFlags.Interface or
-                    TypeFlags.Array or
-                    TypeFlags.SzArray or
-                    TypeFlags.Pointer or
-                    TypeFlags.FunctionPointer => true,
-
-                    _ => field.FieldType.IsPrimitive
-                };
-
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
-                if (supportedType && preinitManager.IsPreinitialized(owningType))
+                if (preinitManager.IsPreinitialized(owningType))
                 {
                     TypePreinit.ISerializableValue value = preinitManager
                         .GetPreinitializationInfo(owningType).GetFieldValue(field);
@@ -2236,7 +2226,7 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
-                        Debug.Assert(bufferSize >= targetPtrSize);
+                        Debug.Assert(bufferSize == targetPtrSize);
 
                         // Write "null" to buffer
                         new Span<byte>(buffer, targetPtrSize).Clear();

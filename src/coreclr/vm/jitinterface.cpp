@@ -11896,41 +11896,40 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
     _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
     _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
-    {
-        // Allocate space for the local class if necessary, but don't trigger
-        // class construction.
-        DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
-        pLocalModule->PopulateClass(pEnclosingMT);
 
-        GCX_COOP();
-        if (pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    // Allocate space for the local class if necessary, but don't trigger
+    // class construction.
+    DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
+    pLocalModule->PopulateClass(pEnclosingMT);
+
+    GCX_COOP();
+    if (pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    {
+        if (field->IsObjRef())
         {
-            if (field->IsObjRef())
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            if (fieldObj != NULL)
             {
-                OBJECTREF fieldObj = field->GetStaticOBJECTREF();
-                if (fieldObj != NULL)
+                Object* obj = OBJECTREFToObject(fieldObj);
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
-                    Object* obj = OBJECTREFToObject(fieldObj);
-                    if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
-                    {
-                        intptr_t ptr = (intptr_t)obj;
-                        memcpy(buffer, &ptr, sizeof(intptr_t));
-                        result = true;
-                    }
-                }
-                else
-                {
-                    memset(buffer, 0, sizeof(intptr_t));
+                    intptr_t ptr = (intptr_t)obj;
+                    memcpy(buffer, &ptr, sizeof(intptr_t));
                     result = true;
                 }
             }
             else
             {
-                void* fldAddr = field->GetCurrentStaticAddress();
-                _ASSERTE(fldAddr != nullptr);
-                memcpy(buffer, fldAddr, bufferSize);
+                memset(buffer, 0, sizeof(intptr_t));
                 result = true;
             }
+        }
+        else
+        {
+            void* fldAddr = field->GetCurrentStaticAddress();
+            _ASSERTE(fldAddr != nullptr);
+            memcpy(buffer, fldAddr, bufferSize);
+            result = true;
         }
     }
 
