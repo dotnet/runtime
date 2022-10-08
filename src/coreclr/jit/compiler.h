@@ -7602,7 +7602,7 @@ public:
                        bool                  includeThisSpecifier);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
-    const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
+    const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd);
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
                                     bool                  includeReturnType    = true,
                                     bool                  includeThisSpecifier = true);
@@ -7841,7 +7841,7 @@ public:
 
     // Utility functions
 
-    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
+    const char* eePrintFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size_t bufferSize);
 
 #if defined(DEBUG)
     void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);

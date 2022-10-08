@@ -232,8 +232,19 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         printer->Append(':');
     }
 
-    const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
-    printer->Append(methName);
+    size_t requiredBufferSize;
+    char buffer[256];
+    info.compCompHnd->printMethodName(methHnd, buffer, sizeof(buffer), &requiredBufferSize);
+    if (sizeof(buffer) <= requiredBufferSize)
+    {
+        printer->Append(buffer);
+    }
+    else
+    {
+        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
+        info.compCompHnd->printMethodName(methHnd, pBuffer, requiredBufferSize);
+        printer->Append(pBuffer);
+    }
 
     if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
     {

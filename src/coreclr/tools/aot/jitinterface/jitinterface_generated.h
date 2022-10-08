@@ -103,7 +103,7 @@ struct JitInterfaceCallbacks
     CorInfoArrayIntrinsic (* getArrayIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     void* (* getArrayInitializationData)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint32_t size);
     CorInfoIsAccessAllowedResult (* canAccessClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper);
-    const char* (* getFieldName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE ftn, const char** moduleName);
+    size_t (* printFieldName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CORINFO_CLASS_HANDLE (* getFieldClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
@@ -132,7 +132,7 @@ struct JitInterfaceCallbacks
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     const char16_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoExceptionClass** ppException);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
-    const char* (* getMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** moduleName);
+    size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassName);
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     size_t (* findNameOfToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
@@ -1100,12 +1100,14 @@ public:
     return temp;
 }
 
-    virtual const char* getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName)
+    virtual size_t printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    const char* temp = _callbacks->getFieldName(_thisHandle, &pException, ftn, moduleName);
+    size_t temp = _callbacks->printFieldName(_thisHandle, &pException, field, buffer, bufferSize, pRequiredBufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1359,12 +1361,14 @@ public:
     return temp;
 }
 
-    virtual const char* getMethodName(
+    virtual size_t printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    const char* temp = _callbacks->getMethodName(_thisHandle, &pException, ftn, moduleName);
+    size_t temp = _callbacks->printMethodName(_thisHandle, &pException, ftn, buffer, bufferSize, pRequiredBufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }

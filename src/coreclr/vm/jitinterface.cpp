@@ -6363,7 +6363,7 @@ unsigned CEEInfo::getMethodHash (CORINFO_METHOD_HANDLE ftnHnd)
 }
 
 /***********************************************************************/
-const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName)
+size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     CONTRACTL {
         THROWS;
@@ -6371,75 +6371,29 @@ const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** s
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char* result = NULL;
+    size_t bytesWritten = 0;
 
     JIT_TO_EE_TRANSITION();
 
-    MethodDesc *ftn;
+    MethodDesc* ftn = GetMethod(ftnHnd);
+    char* ftnName = ftn->GetName();
 
-    ftn = GetMethod(ftnHnd);
-
-    if (scopeName != 0)
+    size_t len = strlen(ftnName);
+    if (bufferSize > 0)
     {
-        if (ftn->IsLCGMethod())
-        {
-            *scopeName = "DynamicClass";
-        }
-        else if (ftn->IsILStub())
-        {
-            *scopeName = ILStubResolver::GetStubClassName(ftn);
-        }
-        else
-        {
-            MethodTable * pMT = ftn->GetMethodTable();
-#if defined(_DEBUG)
-#ifdef FEATURE_SYMDIFF
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SymDiffDump))
-            {
-                if (pMT->IsArray())
-                {
-                    ssClsNameBuff.Clear();
-                    ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
-                }
-                else
-                    pMT->_GetFullyQualifiedNameForClassNestedAware(ssClsNameBuff);
-            }
-            else
-            {
-#endif
-                // Calling _GetFullyQualifiedNameForClass in chk build is very expensive
-                // since it construct the class name everytime we call this method. In chk
-                // builds we already have a cheaper way to get the class name -
-                // GetDebugClassName - which doesn't calculate the class name everytime.
-                // This results in huge saving in Ngen time for checked builds.
-                ssClsNameBuff.Clear();
-                ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
-
-#ifdef FEATURE_SYMDIFF
-            }
-#endif
-            // Append generic instantiation at the end
-            Instantiation inst = pMT->GetInstantiation();
-            if (!inst.IsEmpty())
-                TypeString::AppendInst(ssClsNameBuff, inst);
-
-            ssClsNameBuffUTF8.SetAndConvertToUTF8(ssClsNameBuff.GetUnicode());
-            *scopeName = ssClsNameBuffUTF8.GetUTF8();
-#else // !_DEBUG
-            // since this is for diagnostic purposes only,
-            // give up on the namespace, as we don't have a buffer to concat it
-            // also note this won't show array class names.
-            LPCUTF8 nameSpace;
-            *scopeName= pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
-        }
+        bytesWritten = min(len, bufferSize - 1);
+        memcpy(buffer, ftnName, bytesWritten);
+        buffer[bytesWritten] = '\0';
     }
 
-    result = ftn->GetName();
+    if (pRequiredBufferSize != NULL)
+    {
+        *pRequiredBufferSize = len + 1;
+    }
 
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return bytesWritten;
 }
 
 const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char **enclosingClassName)
@@ -9312,44 +9266,36 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 }
 
 /*********************************************************************/
-const char* CEEInfo::getFieldName (CORINFO_FIELD_HANDLE fieldHnd, const char** scopeName)
+size_t CEEInfo::printFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char* result = NULL;
-
+    size_t bytesWritten = 0;
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
-    if (scopeName != 0)
+    char* fieldName = field->GetName();
+
+    size_t len = strlen(fieldName);
+    if (bufferSize > 0)
     {
-        TypeHandle t = TypeHandle(field->GetApproxEnclosingMethodTable());
-        *scopeName = "";
-        if (!t.IsNull())
-        {
-#ifdef _DEBUG
-            t.GetName(ssClsNameBuff);
-            ssClsNameBuffUTF8.SetAndConvertToUTF8(ssClsNameBuff.GetUnicode());
-            *scopeName = ssClsNameBuffUTF8.GetUTF8();
-#else // !_DEBUG
-            // since this is for diagnostic purposes only,
-            // give up on the namespace, as we don't have a buffer to concat it
-            // also note this won't show array class names.
-            LPCUTF8 nameSpace;
-            *scopeName= t.GetMethodTable()->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
-        }
+        bytesWritten = min(len, bufferSize - 1);
+        memcpy(buffer, fieldName, len);
+        buffer[bytesWritten] = '\0';
     }
 
-    result = field->GetName();
+    if (pRequiredBufferSize != NULL)
+    {
+        *pRequiredBufferSize = len + 1;
+    }
 
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return bytesWritten;
 }
 
 /*********************************************************************/

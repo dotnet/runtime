@@ -905,13 +905,15 @@ CorInfoIsAccessAllowedResult WrapICorJitInfo::canAccessClass(
     return temp;
 }
 
-const char* WrapICorJitInfo::getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName)
+size_t WrapICorJitInfo::printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    API_ENTER(getFieldName);
-    const char* temp = wrapHnd->getFieldName(ftn, moduleName);
-    API_LEAVE(getFieldName);
+    API_ENTER(printFieldName);
+    size_t temp = wrapHnd->printFieldName(field, buffer, bufferSize, pRequiredBufferSize);
+    API_LEAVE(printFieldName);
     return temp;
 }
 
@@ -1182,13 +1184,15 @@ mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
     return temp;
 }
 
-const char* WrapICorJitInfo::getMethodName(
+size_t WrapICorJitInfo::printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    API_ENTER(getMethodName);
-    const char* temp = wrapHnd->getMethodName(ftn, moduleName);
-    API_LEAVE(getMethodName);
+    API_ENTER(printMethodName);
+    size_t temp = wrapHnd->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
+    API_LEAVE(printMethodName);
     return temp;
 }
 

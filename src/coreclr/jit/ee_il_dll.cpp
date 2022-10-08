@@ -1437,14 +1437,16 @@ struct FilterSuperPMIExceptionsParam_ee_il
     EXCEPTION_POINTERS    exceptionPointers;
 };
 
-const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
+template<typename THandle, size_t (ICorJitInfo::*print)(THandle, char*, size_t, size_t*)>
+static const char* PrintEntityToAllocatedBuffer(Compiler* comp, THandle handle, char* failureName)
+{
+
+}
+
+const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method)
 {
     if (eeGetHelperNum(method) != CORINFO_HELP_UNDEF)
     {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "HELPER";
-        }
         CorInfoHelpFunc ftnNum = eeGetHelperNum(method);
         const char*     name   = info.compCompHnd->getHelperName(ftnNum);
 
@@ -1461,12 +1463,14 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
 
     if (eeIsNativeMethod(method))
     {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "NATIVE";
-        }
         method = eeGetMethodHandleForNative(method);
     }
+
+    char buffer[256];
+    size_t written = 0;
+    bool success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        written = info.compCompHnd->printMethodName(method, buffer, sizeof(buffer));
+        });
 
     FilterSuperPMIExceptionsParam_ee_il param;
 
@@ -1495,28 +1499,34 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     return param.fieldOrMethodOrClassNamePtr;
 }
 
-const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** classNamePtr)
+const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis        = this;
-    param.pJitInfo     = &info;
-    param.field        = field;
-    param.classNamePtr = classNamePtr;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr =
-                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-        },
-        &param);
+    char buffer[256];
+    size_t written = 0;
+    size_t requiredBufferSize = 0;
+    bool success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        written = info.compCompHnd->printFieldName(field, buffer, sizeof(buffer), &requiredBufferSize);
+        });
 
     if (!success)
     {
-        param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
+        return "hackishFieldName";
     }
 
-    return param.fieldOrMethodOrClassNamePtr;
+    char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
+    if (requiredBufferSize <= sizeof(buffer))
+    {
+        memcpy(pBuffer, buffer, written + 1);
+    }
+    else
+    {
+        success = eeRunFunctorWithSPMIErrorTrap([&]() {
+
+            });
+        info.compCompHnd->
+    }
+
+    char* pBuffer = 
 }
 
 //------------------------------------------------------------------------

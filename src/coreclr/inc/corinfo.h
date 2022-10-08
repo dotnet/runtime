@@ -2282,7 +2282,7 @@ public:
     //                          from that first attempt was not big enough.
     //
     // Return Value:
-    //    Bytes written to the given buffer, the range is [0..bufferSize)
+    //    Bytes written to the given buffer excluding the null terminator. The range is [0..bufferSize).
     //
     virtual size_t printObjectDescription (
             CORINFO_OBJECT_HANDLE       handle,                       /* IN  */
@@ -2317,23 +2317,10 @@ public:
             unsigned             index
             ) = 0;
 
-    // printClassName: Prints the name for a specified class, taking namespaces
-    // and nested classes into account.
-    //
-    // Arguments:
-    //    cls                 - Class handle
-    //    buffer              - Buffer to print chars into
-    //    bufferSize          - Buffer size
-    //    pRequiredBufferSize - Required length of a buffer to fit the full
-    //                          name, including null terminator.
-    //
-    // Return Value:
-    //    Number of bytes written in the buffer excluding the null terminator.
-    //
-    // Notes:
-    //    This function will always null terminate the buffer.
-    //  
-    virtual size_t printClassName (
+    // Prints the name for a specified class including namespaces and enclosing
+    // classes.
+    // See printObjectDescription for documentation for the parameters.
+    virtual size_t printClassName(
             CORINFO_CLASS_HANDLE cls,                          /* IN  */
             char*                buffer,                       /* OUT */
             size_t               bufferSize,                   /* IN  */
@@ -2683,12 +2670,12 @@ public:
     //
     /**********************************************************************************/
 
-    // this function is for debugging only.  It returns the field name
-    // and if 'moduleName' is non-null, it sets it to something that will
-    // says which method (a class name, or a module name)
-    virtual const char* getFieldName (
-                        CORINFO_FIELD_HANDLE        ftn,        /* IN */
-                        const char                **moduleName  /* OUT */
+    // Prints the name of a field into a buffer. See printObjectDescription for more documentation.
+    virtual size_t printFieldName(
+                        CORINFO_FIELD_HANDLE field,
+                        char* buffer,
+                        size_t bufferSize,
+                        size_t* pRequiredBufferSize = nullptr
                         ) = 0;
 
     // return class it belongs to
@@ -2944,19 +2931,14 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
-    // This function returns the method name and if 'moduleName' is non-null,
-    // it sets it to something that contains the method (a class
-    // name, or a module name). Note that the moduleName parameter is for
-    // diagnostics only.
-    //
-    // The method name returned is the same as getMethodNameFromMetadata except
-    // in the case of functions without metadata (e.g. IL stubs), where this
-    // function still returns a reasonable name while getMethodNameFromMetadata
-    // returns null.
-    virtual const char* getMethodName (
-            CORINFO_METHOD_HANDLE       ftn,        /* IN */
-            const char                **moduleName  /* OUT */
-            ) = 0;
+    // This is similar to getMethodNameFromMetadata except that it also returns
+    // reasonable names for functions without metadata.
+    // See printObjectDescription for documentation of parameters.
+    virtual size_t printMethodName(
+            CORINFO_METHOD_HANDLE ftn,
+            char*                 buffer,
+            size_t                bufferSize,
+            size_t*               pRequiredBufferSize = nullptr) = 0;
 
     // Return method name as in metadata, or nullptr if there is none,
     // and optionally return the class, enclosing class, and namespace names

@@ -863,15 +863,10 @@ CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pRes
 //
 /**********************************************************************************/
 
-// this function is for debugging only.  It returns the field name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* MyICJI::getFieldName(CORINFO_FIELD_HANDLE ftn,       /* IN */
-                                 const char**         moduleName /* OUT */
-                                 )
+size_t MyICJI::printFieldName(CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("getFieldName");
-    return jitInstance->mc->repGetFieldName(ftn, moduleName);
+    jitInstance->mc->cr->AddCall("printFieldName");
+    return jitInstance->mc->repPrintFieldName(field, buffer, bufferSize, pRequiredBufferSize);
 }
 
 // return class it belongs to
@@ -1225,15 +1220,10 @@ mdMethodDef MyICJI::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     return result;
 }
 
-// this function is for debugging only.  It returns the method name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* MyICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
-                                  const char**          moduleName /* OUT */
-                                  )
+size_t MyICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("getMethodName");
-    return jitInstance->mc->repGetMethodName(ftn, moduleName);
+    jitInstance->mc->cr->AddCall("printMethodName");
+    return jitInstance->mc->repPrintMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
 }
 
 const char* MyICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                /* IN */

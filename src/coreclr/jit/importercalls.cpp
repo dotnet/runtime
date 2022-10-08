@@ -209,12 +209,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
         // These should be in corelib.h, and available through a JIT/EE interface call.
-        const char* modName;
+        const char* namespaceName;
         const char* className;
-        const char* methodName;
-        if ((className = eeGetClassName(clsHnd)) != nullptr &&
-            strcmp(className, "System.Runtime.CompilerServices.JitTestLabel") == 0 &&
-            (methodName = eeGetMethodName(methHnd, &modName)) != nullptr && strcmp(methodName, "Mark") == 0)
+        const char* methodName = info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+        if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
+            (strcmp(className, "JitTestLabel") == 0) &&
+            (strcmp(methodName, "Mark") == 0))
         {
             return impImportJitTestLabelMark(sig->numArgs);
         }

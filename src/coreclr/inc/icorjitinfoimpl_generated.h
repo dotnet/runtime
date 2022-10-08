@@ -379,9 +379,11 @@ CorInfoIsAccessAllowedResult canAccessClass(
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_HELPER_DESC* pAccessHelper) override;
 
-const char* getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName) override;
+size_t printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 CORINFO_CLASS_HANDLE getFieldClass(
           CORINFO_FIELD_HANDLE field) override;
@@ -492,9 +494,11 @@ const char16_t* getJitTimeLogFilename() override;
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
-const char* getMethodName(
+size_t printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName) override;
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 const char* getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,

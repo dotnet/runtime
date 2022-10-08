@@ -1031,16 +1031,12 @@ CorInfoIsAccessAllowedResult interceptor_ICJI::canAccessClass(
 // ICorFieldInfo
 //
 /**********************************************************************************/
-// this function is for debugging only.  It returns the field name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* interceptor_ICJI::getFieldName(CORINFO_FIELD_HANDLE ftn,       /* IN */
-                                           const char**         moduleName /* OUT */
-                                           )
+
+size_t interceptor_ICJI::printFieldName(CORINFO_FIELD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    mc->cr->AddCall("getFieldName");
-    const char* temp = original_ICorJitInfo->getFieldName(ftn, moduleName);
-    mc->recGetFieldName(ftn, moduleName, temp);
+    mc->cr->AddCall("printFieldName");
+    size_t temp = original_ICorJitInfo->printFieldName(ftn, buffer, bufferSize, pRequiredBufferSize);
+    mc->recPrintFieldName(ftn, buffer, bufferSize, pRequiredBufferSize, temp);
     return temp;
 }
 
@@ -1394,16 +1390,11 @@ mdMethodDef interceptor_ICJI::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMeth
     return result;
 }
 
-// this function is for debugging only.  It returns the method name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
-                                            const char**          moduleName /* OUT */
-                                            )
+size_t interceptor_ICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    mc->cr->AddCall("getMethodName");
-    const char* temp = original_ICorJitInfo->getMethodName(ftn, moduleName);
-    mc->recGetMethodName(ftn, (char*)temp, moduleName);
+    mc->cr->AddCall("printMethodName");
+    size_t temp = original_ICorJitInfo->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
+    mc->recPrintMethodName(ftn, buffer, bufferSize, pRequiredBufferSize, temp);
     return temp;
 }
 
