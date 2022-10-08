@@ -848,7 +848,7 @@ public:
 
     void recPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
     void dmpPrintClassName(DWORDLONG cls, const Agnostic_PrintEntityResult& value);
-    size_t repPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
+    size_t repPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize = nullptr);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,

@@ -68,7 +68,7 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
         case CORINFO_TYPE_CLASS:
         {
             char className[256];
-            PrintClassName(mc, className, (CORINFO_CLASS_HANDLE)classHandle);
+            mc->repPrintClassName((CORINFO_CLASS_HANDLE)classHandle, className, sizeof(className));
 
             printf(
                 "%s %s",
@@ -941,7 +941,7 @@ void DumpIL(MethodContext* mc)
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
 
     char className[256];
-    PrintClassName(mc, className, mc->repGetMethodClass(cmi.ftn));
+    mc->repPrintClassName(mc->repGetMethodClass(cmi.ftn), className, sizeof(className));
 
     printf("// ProcessName - '%s'\n", mc->cr->repProcessName());
     printf(".assembly extern mscorlib{}\n");

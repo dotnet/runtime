@@ -19,10 +19,4 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
 void DumpSigToConsoleBare(MethodContext* mc, CORINFO_SIG_INFO* pSig);
 char* DumpAttributeToConsoleBare(DWORD attribute);
 
-template<size_t size>
-static void PrintClassName(MethodContext* mc, char (&buffer)[size], CORINFO_CLASS_HANDLE clsHnd)
-{
-    mc->repPrintClassName(clsHnd, buffer, size, nullptr);
-}
-
 #endif
