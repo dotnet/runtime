@@ -407,6 +407,10 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
         // TODO-Cleanup: this block is not needed for not struct nodes, but
         // fgMorphOneAsgBlockOp works wrong without this transformation.
         tree = MorphCommaBlock(comp, tree->AsOp());
+        if (isDest)
+        {
+            tree->SetDoNotCSE();
+        }
     }
 
     if (!tree->OperIsBlk())
