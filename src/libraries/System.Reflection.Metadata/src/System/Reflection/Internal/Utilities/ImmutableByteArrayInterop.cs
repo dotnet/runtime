@@ -49,9 +49,9 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>An immutable array.</returns>
-        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray([DisallowNull] ref byte[]? array)
+        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[]? array)
         {
-            byte[] givenArray = array;
+            byte[] givenArray = array!;
             array = null;
 
             return Unsafe.As<byte[], ImmutableArray<byte>>(ref givenArray);
