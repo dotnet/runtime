@@ -253,14 +253,14 @@ namespace System.Linq
         public override TElement[] ToArray()
         {
             TElement[] array = _source.ToArray();
-            Sort(array, _comparer, _descending);
+            Sort(array, _descending);
             return array;
         }
 
         public override List<TElement> ToList()
         {
             List<TElement> list = _source.ToList();
-            Sort(CollectionsMarshal.AsSpan(list), _comparer, _descending);
+            Sort(CollectionsMarshal.AsSpan(list), _descending);
             return list;
         }
     }

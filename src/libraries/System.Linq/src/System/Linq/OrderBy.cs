@@ -43,8 +43,8 @@ namespace System.Linq
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
-            TypeIsImplicitlyStable<T>() ?
-                new OrderedImplicitlyStableEnumerable<T>(source, comparer, descending: false) :
+            TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
+                new OrderedImplicitlyStableEnumerable<T>(source, descending: false) :
                 OrderBy(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
@@ -88,8 +88,8 @@ namespace System.Linq
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
-            TypeIsImplicitlyStable<T>()?
-                new OrderedImplicitlyStableEnumerable<T>(source, comparer, descending: true) :
+            TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
+                new OrderedImplicitlyStableEnumerable<T>(source, descending: true) :
                 OrderByDescending(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>

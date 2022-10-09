@@ -160,10 +160,9 @@ namespace System.Linq
     /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
     internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
     {
-        private readonly IComparer<TElement> _comparer;
         private readonly bool _descending;
 
-        public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, IComparer<TElement>? comparer, bool descending) : base(source)
+        public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, bool descending) : base(source)
         {
             Debug.Assert(Enumerable.TypeIsImplicitlyStable<TElement>());
 
@@ -172,24 +171,23 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            _comparer = comparer ?? Comparer<TElement>.Default;
             _descending = descending;
         }
 
         internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
             childComparer == null ?
-                new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, _comparer, _descending) :
-                new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, _comparer, _descending, childComparer);
+                new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
+                new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, childComparer);
 
         internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next) =>
-            new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, _comparer, _descending, next);
+            new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, next);
 
         public override IEnumerator<TElement> GetEnumerator()
         {
             var buffer = new Buffer<TElement>(_source);
             if (buffer._count > 0)
             {
-                Sort(buffer._items.AsSpan(0, buffer._count), _comparer, _descending);
+                Sort(buffer._items.AsSpan(0, buffer._count), _descending);
                 for (int i = 0; i < buffer._count; i++)
                 {
                     yield return buffer._items[i];
@@ -197,20 +195,15 @@ namespace System.Linq
             }
         }
 
-        private static void Sort(Span<TElement> span, IComparer<TElement> comparer, bool descending)
+        private static void Sort(Span<TElement> span, bool descending)
         {
-            if (!descending)
-            {
-                span.Sort(comparer);
-            }
-            else if (comparer == Comparer<TElement>.Default)
+            if (descending)
             {
                 span.Sort(static (a, b) => Comparer<TElement>.Default.Compare(b, a));
             }
             else
             {
-                IComparer<TElement> capturedComparer = comparer;
-                span.Sort((a, b) => capturedComparer.Compare(b, a));
+                span.Sort();
             }
         }
     }
