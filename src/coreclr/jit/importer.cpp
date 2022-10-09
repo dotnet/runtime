@@ -8967,11 +8967,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
 #ifdef FEATURE_SIMD
-        call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
-        if (call != nullptr)
+        if (isIntrinsic)
         {
-            bIntrinsicImported = true;
-            goto DONE_CALL;
+            call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
+            if (call != nullptr)
+            {
+                bIntrinsicImported = true;
+                goto DONE_CALL;
+            }
         }
 #endif // FEATURE_SIMD
 
