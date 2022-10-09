@@ -76,7 +76,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     }
 }
 
-inline void Compiler::impPushNullObjRefOnStack()
+void Compiler::impPushNullObjRefOnStack()
 {
     impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TI_NULL));
 }
@@ -84,8 +84,8 @@ inline void Compiler::impPushNullObjRefOnStack()
 // This method gets called when we run into unverifiable code
 // (and we are verifying the method)
 
-inline void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) DEBUGARG(const char* file)
-                                                          DEBUGARG(unsigned line))
+void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) DEBUGARG(const char* file)
+                                                   DEBUGARG(unsigned line))
 {
 #ifdef DEBUG
     const char* tail = strrchr(file, '\\');
@@ -111,8 +111,8 @@ inline void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) D
     }
 }
 
-inline void DECLSPEC_NORETURN Compiler::verRaiseVerifyException(INDEBUG(const char* msg) DEBUGARG(const char* file)
-                                                                    DEBUGARG(unsigned line))
+void DECLSPEC_NORETURN Compiler::verRaiseVerifyException(INDEBUG(const char* msg) DEBUGARG(const char* file)
+                                                             DEBUGARG(unsigned line))
 {
     JITLOG((LL_ERROR, "Verification failure:  %s:%d : %s, while compiling %s opcode %s, IL offset %x\n", file, line,
             msg, info.compFullName, impCurOpcName, impCurOpcOffs));
@@ -336,7 +336,7 @@ void Compiler::impRestoreStackState(SavedStack* savePtr)
 //------------------------------------------------------------------------
 // impBeginTreeList: Get the tree list started for a new basic block.
 //
-inline void Compiler::impBeginTreeList()
+void Compiler::impBeginTreeList()
 {
     assert(impStmtList == nullptr && impLastStmt == nullptr);
 }
@@ -348,7 +348,7 @@ inline void Compiler::impBeginTreeList()
  *  directly only for handling CEE_LEAVEs out of finally-protected try's.
  */
 
-inline void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt)
+void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt)
 {
     /* Make the list circular, so that we can easily walk it backwards */
 
@@ -364,7 +364,7 @@ inline void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, St
     block->bbFlags |= BBF_IMPORTED;
 }
 
-inline void Compiler::impEndTreeList(BasicBlock* block)
+void Compiler::impEndTreeList(BasicBlock* block)
 {
     if (impStmtList == nullptr)
     {
@@ -395,7 +395,7 @@ inline void Compiler::impEndTreeList(BasicBlock* block)
  *  that this has only limited value as we can only check [0..chkLevel).
  */
 
-inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
+void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 {
 #ifndef DEBUG
     return;
@@ -596,7 +596,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 // Arguments:
 //    stmt - the statement to add.
 //
-inline void Compiler::impAppendStmt(Statement* stmt)
+void Compiler::impAppendStmt(Statement* stmt)
 {
     if (impStmtList == nullptr)
     {
@@ -641,7 +641,7 @@ Statement* Compiler::impExtractLastStmt()
 //    stmt       - a statement to insert;
 //    stmtBefore - an insertion point to insert "stmt" before.
 //
-inline void Compiler::impInsertStmtBefore(Statement* stmt, Statement* stmtBefore)
+void Compiler::impInsertStmtBefore(Statement* stmt, Statement* stmtBefore)
 {
     assert(stmt != nullptr);
     assert(stmtBefore != nullptr);
@@ -2456,7 +2456,7 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
  *  On return the stack is guaranteed to be empty.
  */
 
-inline void Compiler::impEvalSideEffects()
+void Compiler::impEvalSideEffects()
 {
     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("impEvalSideEffects"));
     verCurrentState.esStackDepth = 0;
@@ -2493,7 +2493,7 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
  *  [0..chkLevel) is the portion of the stack which will be checked and spilled.
  */
 
-inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason))
+void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason))
 {
     assert(chkLevel != CHECK_SPILL_NONE);
 
@@ -2521,7 +2521,7 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
  *  those trees to temps and replace them on the stack with refs to their temps.
  */
 
-inline void Compiler::impSpillSpecialSideEff()
+void Compiler::impSpillSpecialSideEff()
 {
     // Only exception objects need to be carefully handled
 
@@ -2760,7 +2760,7 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 //    statements to report debug info for to the EE: for other statements, they
 //    will have no debug information attached.
 //
-inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
+void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
 {
     if (offs == BAD_IL_OFFSET)
     {
@@ -2938,7 +2938,7 @@ bool Compiler::impOpcodeIsCallOpcode(OPCODE opcode)
 
 /*****************************************************************************/
 
-static inline bool impOpcodeIsCallSiteBoundary(OPCODE opcode)
+static bool impOpcodeIsCallSiteBoundary(OPCODE opcode)
 {
     switch (opcode)
     {
