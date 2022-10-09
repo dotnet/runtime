@@ -8830,17 +8830,17 @@ void Compiler::fgAssignSetVarDef(GenTree* tree)
 GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 {
     // This must be a block assignment.
-    assert(tree->OperIsBlkOp());
+    assert(tree->OperIsCopyBlkOp());
 
-    if (tree->OperIsInitBlkOp() || !tree->TypeIs(TYP_STRUCT))
+    if (!tree->TypeIs(TYP_STRUCT))
     {
         return nullptr;
     }
 
-    var_types  asgType = TYP_UNDEF;
-    GenTree*   asg     = tree;
-    GenTree*   dest    = asg->gtGetOp1();
-    GenTree*   src     = asg->gtGetOp2();
+    var_types asgType = TYP_UNDEF;
+    GenTree*  asg     = tree;
+    GenTree*  dest    = asg->gtGetOp1();
+    GenTree*  src     = asg->gtGetOp2();
     assert((src == src->gtEffectiveVal()) && (dest == dest->gtEffectiveVal()));
 
     GenTree* destLclVarTree = nullptr;

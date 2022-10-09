@@ -135,7 +135,7 @@ GenTree* MorphInitBlockHelper::Morph()
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
         GenTree* oneAsgTree = nullptr;
-        if (m_dst != m_dstLclNode)
+        if (!m_initBlock && (m_dst != m_dstLclNode))
         {
             oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
         }
