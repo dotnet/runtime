@@ -8640,26 +8640,23 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         return nullptr;
     }
 
-    var_types asgType = TYP_UNDEF;
-    GenTree*  asg     = tree;
-    GenTree*  dest    = asg->gtGetOp1();
-    GenTree*  src     = asg->gtGetOp2();
+    var_types  asgType    = TYP_UNDEF;
+    GenTree*   asg        = tree;
+    GenTree*   dest       = asg->gtGetOp1();
+    GenTree*   src        = asg->gtGetOp2();
+    LclVarDsc* destVarDsc = nullptr;
     assert((src == src->gtEffectiveVal()) && (dest == dest->gtEffectiveVal()));
 
-    GenTree* destLclVarTree = nullptr;
-    if (dest->OperIsBlk() && impIsAddressInLocal(dest->AsBlk()->Addr(), &destLclVarTree))
+    if (dest->OperIs(GT_LCL_FLD))
     {
-        unsigned   destLclNum = destLclVarTree->AsLclVar()->GetLclNum();
-        LclVarDsc* destVarDsc = lvaGetDesc(destLclNum);
-        asgType               = destVarDsc->TypeGet();
+        destVarDsc = lvaGetDesc(dest->AsLclFld());
+        asgType    = destVarDsc->TypeGet();
 
         // We will use the dest local directly.
-        if (!varTypeIsIntegralOrI(asgType) || (dest->AsBlk()->Size() != genTypeSize(asgType)))
+        if (!varTypeIsIntegralOrI(asgType) || (dest->AsLclFld()->GetSize() != genTypeSize(asgType)))
         {
             return nullptr;
         }
-
-        dest = destLclVarTree;
     }
     else
     {
@@ -8672,14 +8669,12 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         return nullptr;
     }
 
-    GenTree* srcLclVarTree = nullptr;
-    if (src->OperIsIndir() && impIsAddressInLocal(src->AsIndir()->Addr(), &srcLclVarTree) &&
-        srcLclVarTree->TypeIs(asgType))
+    if (src->OperIs(GT_LCL_FLD) && (lvaGetDesc(src->AsLclFld())->TypeGet() == asgType))
     {
-        assert(srcLclVarTree->OperIs(GT_LCL_VAR));
-        src = srcLclVarTree;
+        src->SetOper(GT_LCL_VAR);
+        src->ChangeType(asgType);
     }
-    if (src->OperIs(GT_LCL_VAR) && lvaGetDesc(src->AsLclVar())->lvPromoted)
+    else if (src->OperIs(GT_LCL_VAR) && lvaGetDesc(src->AsLclVar())->lvPromoted)
     {
         // Leave handling these to block morphing.
         return nullptr;
@@ -8690,7 +8685,8 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     // we would have labeled it GTF_VAR_USEASG, because the block operation wouldn't
     // have done that normalization.  If we're now making it into an assignment,
     // the NormalizeOnStore will work, and it can be a full def.
-    assert(dest->OperIs(GT_LCL_VAR));
+    dest->SetOper(GT_LCL_VAR);
+    dest->ChangeType(destVarDsc->lvNormalizeOnLoad() ? asgType : genActualType(asgType));
     dest->gtFlags &= ~GTF_VAR_USEASG;
 
     // Retype the RHS.
