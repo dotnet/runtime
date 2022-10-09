@@ -6281,7 +6281,7 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         }
         // Query enclosingClassName when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if (enclosingClassName != NULL && pMT->GetClass()->IsNested())
+        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
         {
             IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
         }
