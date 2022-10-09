@@ -201,34 +201,19 @@ namespace System.Threading.Tasks
             // Quit early if we're already canceled -- avoid a bunch of work.
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
+            // If we have no work to do, we are done.
+            if (actions.Length < 1) return;
+
             // We must validate that the actions array contains no null elements, and also
             // make a defensive copy of the actions array.
-            Action[] actionsCopy = new Action[actions.Length];
-            for (int i = 0; i < actionsCopy.Length; i++)
-            {
-                actionsCopy[i] = actions[i];
-                if (actionsCopy[i] == null)
-                {
-                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
-                }
-            }
+            Action[] actionsCopy = CopyActionArray(actions);
 
             // ETW event for Parallel Invoke Begin
-            int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                                                            forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
-                                                            actionsCopy.Length);
-            }
+            int forkJoinContextID = LogEtwEventInvokeBegin(actionsCopy);
 
 #if DEBUG
             actions = null!; // Ensure we don't accidentally use this below.
 #endif
-
-            // If we have no work to do, we are done.
-            if (actionsCopy.Length < 1) return;
 
             // In the algorithm below, if the number of actions is greater than this, we automatically
             // use Parallel.For() to handle the actions, rather than the Task-per-Action strategy.
@@ -275,7 +260,7 @@ namespace System.Threading.Tasks
                                     }
                                     catch (Exception e)
                                     {
-                                        LazyInitializer.EnsureInitialized<ConcurrentQueue<Exception>>(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
+                                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
                                         exceptionQ.Enqueue(e);
                                     }
 
@@ -291,7 +276,7 @@ namespace System.Threading.Tasks
                     }
                     catch (Exception e)
                     {
-                        LazyInitializer.EnsureInitialized<ConcurrentQueue<Exception>>(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
+                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
 
                         // Since we're consuming all action exceptions, there are very few reasons that
                         // we would see an exception here.  Two that come to mind:
@@ -358,12 +343,10 @@ namespace System.Threading.Tasks
             finally
             {
                 // ETW event for Parallel Invoke End
-                if (ParallelEtwProvider.Log.IsEnabled())
-                {
-                    ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                }
+                LogEtwEventForParallelInvokeEnd(forkJoinContextID);
             }
         }
+
 
         /// <summary>
         /// Executes a for loop in which iterations may run in parallel.
@@ -1381,7 +1364,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return ForEachWorker<TSource, TLocal>(
+            return ForEachWorker(
                 source, s_defaultParallelOptions, null, null, null, body, null, localInit, localFinally);
         }
 
@@ -1447,7 +1430,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return ForEachWorker<TSource, TLocal>(
+            return ForEachWorker(
                 source, parallelOptions, null, null, null, body, null, localInit, localFinally);
         }
 
@@ -1500,7 +1483,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return ForEachWorker<TSource, TLocal>(
+            return ForEachWorker(
                 source, s_defaultParallelOptions, null, null, null, null, body, localInit, localFinally);
         }
 
@@ -1565,7 +1548,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return ForEachWorker<TSource, TLocal>(
+            return ForEachWorker(
                 source, parallelOptions, null, null, null, null, body, localInit, localFinally);
         }
 
@@ -1614,7 +1597,7 @@ namespace System.Threading.Tasks
             // If it's an array, we can use a fast-path that uses ldelems in the IL.
             if (source is TSource[] sourceAsArray)
             {
-                return ForEachWorker<TSource, TLocal>(
+                return ForEachWorker(
                     sourceAsArray, parallelOptions, body, bodyWithState, bodyWithStateAndIndex, bodyWithStateAndLocal,
                     bodyWithEverything, localInit, localFinally);
             }
@@ -1623,14 +1606,14 @@ namespace System.Threading.Tasks
             // contention for the single, shared enumerator object.
             if (source is IList<TSource> sourceAsList)
             {
-                return ForEachWorker<TSource, TLocal>(
+                return ForEachWorker(
                     sourceAsList, parallelOptions, body, bodyWithState, bodyWithStateAndIndex, bodyWithStateAndLocal,
                     bodyWithEverything, localInit, localFinally);
             }
 
             // This is an honest-to-goodness IEnumerable.  Wrap it in a Partitioner and defer to our
             // ForEach(Partitioner) logic.
-            return PartitionerForEachWorker<TSource, TLocal>(Partitioner.Create(source), parallelOptions, body, bodyWithState,
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, body, bodyWithState,
                 bodyWithStateAndIndex, bodyWithStateAndLocal, bodyWithEverything, localInit, localFinally);
         }
 
@@ -1992,7 +1975,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null, null, null, body, null, localInit, localFinally);
+            return PartitionerForEachWorker(source, s_defaultParallelOptions, null, null, null, body, null, localInit, localFinally);
         }
 
         /// <summary>
@@ -2075,7 +2058,7 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, s_defaultParallelOptions, null, null, null, null, body, localInit, localFinally);
+            return PartitionerForEachWorker(source, s_defaultParallelOptions, null, null, null, null, body, localInit, localFinally);
         }
 
         /// <summary>
@@ -2367,7 +2350,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
             ArgumentNullException.ThrowIfNull(localFinally);
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null, null, body, null, localInit, localFinally);
+            return PartitionerForEachWorker(source, parallelOptions, null, null, null, body, null, localInit, localFinally);
         }
 
         /// <summary>
@@ -2463,7 +2446,7 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_OrderedPartitionerKeysNotNormalized);
             }
 
-            return PartitionerForEachWorker<TSource, TLocal>(source, parallelOptions, null, null, null, null, body, localInit, localFinally);
+            return PartitionerForEachWorker(source, parallelOptions, null, null, null, null, body, localInit, localFinally);
         }
 
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
@@ -2747,7 +2730,7 @@ namespace System.Threading.Tasks
                     }
 
                     // ETW event for ParallelFor Worker Join
-                    LogEtwEventParallelJoin<TSource, TLocal>(forkJoinContextID);
+                    LogEtwEventParallelJoin(forkJoinContextID);
                 }
             };
 
@@ -2826,18 +2809,30 @@ namespace System.Threading.Tasks
             ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
         }
 
+        private static int LogEtwEventInvokeBegin(Action[] actions)
+        {
+            int forkJoinContextID = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+
+            forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
+                actions.Length);
+
+            return forkJoinContextID;
+        }
+
         private static int LogEtwEventParallelLoopBegin<TIndex>(ParallelEtwProvider.ForkJoinOperationType OperationType, TIndex fromInclusive,
             TIndex toExclusive) where TIndex : INumber<TIndex>
         {
             // ETW event for Parallel For begin
             int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                    forkJoinContextID, OperationType,
-                    fromInclusive, toExclusive);
-            }
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+
+            forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextID, OperationType,
+                fromInclusive, toExclusive);
 
             return forkJoinContextID;
         }
@@ -2850,7 +2845,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static void LogEtwEventParallelJoin<TSource, TLocal>(int forkJoinContextID)
+        private static void LogEtwEventParallelJoin(int forkJoinContextID)
         {
             if (ParallelEtwProvider.Log.IsEnabled())
             {
@@ -2862,6 +2857,31 @@ namespace System.Threading.Tasks
             where TIndex : INumber<TIndex>
         {
             ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
+        }
+
+
+        private static void LogEtwEventForParallelInvokeEnd(int forkJoinContextID)
+        {
+            if (ParallelEtwProvider.Log.IsEnabled())
+            {
+                ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            }
+        }
+
+        private static Action[] CopyActionArray(Action[] actions)
+        {
+            Action[] actionsCopy = new Action[actions.Length];
+            for (int i = 0; i < actionsCopy.Length; i++)
+            {
+                if (actions[i] == null)
+                {
+                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
+                }
+
+                actionsCopy[i] = actions[i];
+            }
+
+            return actionsCopy;
         }
 
         private static (OperationCanceledException? oce, CancellationTokenRegistration ctr) RegisterCallbackForLoopTermination(
