@@ -9670,7 +9670,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_RETURN:
             if (!tree->TypeIs(TYP_VOID))
             {
-                if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
+                if (op1->OperIs(GT_LCL_FLD))
                 {
                     op1 = fgMorphRetInd(tree->AsUnOp());
                 }
@@ -12382,10 +12382,10 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
 }
 
 //----------------------------------------------------------------------------------------------
-// fgMorphRetInd: Try to get rid of extra IND(ADDR()) pairs in a return tree.
+// fgMorphRetInd: Try to get rid of extra local indirections in a return tree.
 //
 // Arguments:
-//    node - The return node that uses an indirection.
+//    node - The return node that uses an local field.
 //
 // Return Value:
 //    the original op1 of the ret if there was no optimization or an optimized new op1.
@@ -12393,61 +12393,45 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
 GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN));
-    assert(ret->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ));
-    GenTreeIndir* ind  = ret->gtGetOp1()->AsIndir();
-    GenTree*      addr = ind->Addr();
+    assert(ret->gtGetOp1()->OperIs(GT_LCL_FLD));
+    GenTreeLclFld* lclFld = ret->gtGetOp1()->AsLclFld();
+    unsigned       lclNum = lclFld->GetLclNum();
 
-    if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
+    if (fgGlobalMorph && varTypeIsStruct(lclFld) && !lvaIsImplicitByRefLocal(lclNum))
     {
-        // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
-        // LclVar.
-        // Example: in `Vector128:AsVector2` we have RETURN SIMD8(OBJ SIMD8(ADDR byref(LCL_VAR SIMD16))).
-        GenTreeLclVar* lclVar = addr->gtGetOp1()->AsLclVar();
+        LclVarDsc* varDsc     = lvaGetDesc(lclNum);
+        unsigned   indSize    = lclFld->GetSize();
+        unsigned   lclVarSize = lvaLclExactSize(lclNum);
 
-        if (!lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
-        {
-            assert(!gtIsActiveCSE_Candidate(addr) && !gtIsActiveCSE_Candidate(ind));
-
-            LclVarDsc* varDsc     = lvaGetDesc(lclVar);
-            unsigned   indSize    = ind->Size();
-            unsigned   lclVarSize = lvaLclExactSize(lclVar->GetLclNum());
-
-            // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST
-            // int<-SIMD16` etc.
-            assert((indSize <= lclVarSize) || varDsc->lvDoNotEnregister);
+        // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST
+        // int<-SIMD16` etc. Note this will also require the offset of the field to be zero.
+        assert(indSize <= lclVarSize);
 
 #if defined(TARGET_64BIT)
-            bool canFold = (indSize == lclVarSize);
+        bool canFold = (indSize == lclVarSize);
 #else // !TARGET_64BIT
-            // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
-            // long<->double` there.
-            bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
+        // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
+        // long<->double` there.
+        bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
 #endif
-            // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
-            // gtNewTempAssign`.
-            if (canFold && (genReturnBB == nullptr))
-            {
-                // Fold (TYPE1)*(&(TYPE2)x) even if types do not match, lowering will handle it.
-                // Getting rid of this IND(ADDR()) pair allows to keep lclVar as not address taken
-                // and enregister it.
-                DEBUG_DESTROY_NODE(ind);
-                DEBUG_DESTROY_NODE(addr);
-                ret->gtOp1 = lclVar;
-                // We use GTF_DONT_CSE as an "is under GT_ADDR" check. We can
-                // get rid of it now since the GT_RETURN node should never have
-                // its address taken.
-                assert((ret->gtFlags & GTF_DONT_CSE) == 0);
-                lclVar->gtFlags &= ~GTF_DONT_CSE;
-                return lclVar;
-            }
-            else if (!varDsc->lvDoNotEnregister)
-            {
-                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOpRet));
-            }
+
+        // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
+        // gtNewTempAssign`.
+        if (canFold && (genReturnBB == nullptr))
+        {
+            // Fold even if types do not match, lowering will handle it. This allows the local
+            // to remain DNER-free and be enregistered.
+            assert(lclFld->GetLclOffs() == 0);
+            lclFld->ChangeType(varDsc->TypeGet());
+            lclFld->SetOper(GT_LCL_VAR);
+        }
+        else if (!varDsc->lvDoNotEnregister)
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
         }
     }
 
-    return ind;
+    return lclFld;
 }
 
 #ifdef _PREFAST_
