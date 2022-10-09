@@ -280,23 +280,6 @@ add_executable_clr(paltests
   c_runtime/swprintf/test7/test7.cpp
   c_runtime/swprintf/test8/test8.cpp
   c_runtime/swprintf/test9/test9.cpp
-  c_runtime/swscanf/test1/test1.cpp
-  c_runtime/swscanf/test10/test10.cpp
-  c_runtime/swscanf/test11/test11.cpp
-  c_runtime/swscanf/test12/test12.cpp
-  c_runtime/swscanf/test13/test13.cpp
-  c_runtime/swscanf/test14/test14.cpp
-  c_runtime/swscanf/test15/test15.cpp
-  c_runtime/swscanf/test16/test16.cpp
-  c_runtime/swscanf/test17/test17.cpp
-  c_runtime/swscanf/test2/test2.cpp
-  c_runtime/swscanf/test3/test3.cpp
-  c_runtime/swscanf/test4/test4.cpp
-  c_runtime/swscanf/test5/test5.cpp
-  c_runtime/swscanf/test6/test6.cpp
-  c_runtime/swscanf/test7/test7.cpp
-  c_runtime/swscanf/test8/test8.cpp
-  c_runtime/swscanf/test9/test9.cpp
   c_runtime/tan/test1/test1.cpp
   c_runtime/tanf/test1/test1.cpp
   c_runtime/tanh/test1/test1.cpp
