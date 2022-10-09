@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using LibraryImportGenerator.UnitTests;
+using Microsoft.Interop.UnitTests;
 using System.Linq;
 
 namespace JSImportGenerator.Unit.Tests

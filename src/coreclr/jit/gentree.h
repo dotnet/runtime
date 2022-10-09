@@ -4114,6 +4114,12 @@ public:
     // Only needed for X86 and arm32.
     void InitializeLongReturnType();
 
+    // Initialize the Return Type Descriptor.
+    void InitializeReturnType(Compiler*                comp,
+                              var_types                type,
+                              CORINFO_CLASS_HANDLE     retClsHnd,
+                              CorInfoCallConvExtension callConv);
+
     // Reset type descriptor to defaults
     void Reset()
     {
@@ -4144,6 +4150,7 @@ public:
     // Return Value:
     //   Count of return registers.
     //   Returns 0 if the return type is not returned in registers.
+    //
     unsigned GetReturnRegCount() const
     {
         assert(m_inited);
