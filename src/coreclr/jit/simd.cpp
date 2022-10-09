@@ -1856,14 +1856,14 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                     unsigned              methodFlags,
                                     int                   memberRef)
 {
-    // Exit early if we are not in one of the SIMD types.
-    if (!isSIMDClass(clsHnd))
+    // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) == 0)
     {
         return nullptr;
     }
 
-    // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
-    if ((methodFlags & CORINFO_FLG_INTRINSIC) == 0)
+    // Exit early if we are not in one of the SIMD types.
+    if (!isSIMDClass(clsHnd))
     {
         return nullptr;
     }
