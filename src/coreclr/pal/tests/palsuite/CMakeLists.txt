@@ -381,8 +381,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test4/test4.cpp
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
-  c_runtime/wprintf/test1/test1.cpp
-  c_runtime/wprintf/test2/test2.cpp
   c_runtime/_alloca/test1/test1.cpp
   c_runtime/_fdopen/test1/test1.cpp
   c_runtime/_finite/test1/test1.cpp
