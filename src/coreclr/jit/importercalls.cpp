@@ -4069,3 +4069,150 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 }
+
+//------------------------------------------------------------------------
+// impPopCallArgs:
+//   Pop the given number of values from the stack and return a list node with
+//   their values.
+//
+// Parameters:
+//   sig     - Signature used to figure out classes the runtime must load, and
+//             also to record exact receiving argument types that may be needed for ABI
+//             purposes later.
+//   call    - The call to pop arguments into.
+//
+void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
+{
+    assert(call->gtArgs.IsEmpty());
+
+    if (impStackHeight() < sig->numArgs)
+    {
+        BADCODE("not enough arguments for call");
+    }
+
+    struct SigParamInfo
+    {
+        CorInfoType          CorType;
+        CORINFO_CLASS_HANDLE ClassHandle;
+    };
+
+    SigParamInfo  inlineParams[16];
+    SigParamInfo* params = sig->numArgs <= 16 ? inlineParams : new (this, CMK_CallArgs) SigParamInfo[sig->numArgs];
+
+    // We will iterate and pop the args in reverse order as we sometimes need
+    // to spill some args. However, we need signature information and the
+    // JIT-EE interface only allows us to iterate the signature forwards. We
+    // will collect the needed information here and at the same time notify the
+    // EE that the signature types need to be loaded.
+    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+    for (unsigned i = 0; i < sig->numArgs; i++)
+    {
+        params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
+
+        if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
+            params[i].CorType != CORINFO_TYPE_PTR && params[i].CorType != CORINFO_TYPE_VAR)
+        {
+            CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
+            if (argRealClass != nullptr)
+            {
+                // Make sure that all valuetypes (including enums) that we push are loaded.
+                // This is to guarantee that if a GC is triggered from the prestub of this methods,
+                // all valuetypes in the method signature are already loaded.
+                // We need to be able to find the size of the valuetypes, but we cannot
+                // do a class-load from within GC.
+                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
+            }
+        }
+
+        sigArg = info.compCompHnd->getArgNext(sigArg);
+    }
+
+    if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
+        (sig->retType != CORINFO_TYPE_VAR))
+    {
+        // Make sure that all valuetypes (including enums) that we push are loaded.
+        // This is to guarantee that if a GC is triggered from the prestub of this methods,
+        // all valuetypes in the method signature are already loaded.
+        // We need to be able to find the size of the valuetypes, but we cannot
+        // do a class-load from within GC.
+        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sig->retTypeSigClass);
+    }
+
+    // Now create the arguments in reverse.
+    for (unsigned i = sig->numArgs; i > 0; i--)
+    {
+        StackEntry se      = impPopStack();
+        typeInfo   ti      = se.seTypeInfo;
+        GenTree*   argNode = se.val;
+
+        var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
+        CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
+
+        if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
+        {
+            BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
+        }
+
+        if (varTypeIsStruct(argNode))
+        {
+            // Morph trees that aren't already OBJs or MKREFANY to be OBJs
+            assert(ti.IsType(TI_STRUCT));
+
+            JITDUMP("Calling impNormStructVal on:\n");
+            DISPTREE(argNode);
+
+            argNode = impNormStructVal(argNode, classHnd, CHECK_SPILL_ALL);
+            // For SIMD types the normalization can normalize TYP_STRUCT to
+            // e.g. TYP_SIMD16 which we keep (along with the class handle) in
+            // the CallArgs.
+            jitSigType = argNode->TypeGet();
+
+            JITDUMP("resulting tree:\n");
+            DISPTREE(argNode);
+        }
+        else
+        {
+            // insert implied casts (from float to double or double to float)
+            if ((jitSigType == TYP_DOUBLE) && argNode->TypeIs(TYP_FLOAT))
+            {
+                argNode = gtNewCastNode(TYP_DOUBLE, argNode, false, TYP_DOUBLE);
+            }
+            else if ((jitSigType == TYP_FLOAT) && argNode->TypeIs(TYP_DOUBLE))
+            {
+                argNode = gtNewCastNode(TYP_FLOAT, argNode, false, TYP_FLOAT);
+            }
+
+            // insert any widening or narrowing casts for backwards compatibility
+            argNode = impImplicitIorI4Cast(argNode, jitSigType);
+        }
+
+        NewCallArg arg;
+        if (varTypeIsStruct(jitSigType))
+        {
+            arg = NewCallArg::Struct(argNode, jitSigType, classHnd);
+        }
+        else
+        {
+            arg = NewCallArg::Primitive(argNode, jitSigType);
+        }
+
+        call->gtArgs.PushFront(this, arg);
+        call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Pop the given number of values from the stack in reverse order (STDCALL/CDECL etc.)
+ *  The first "skipReverseCount" items are not reversed.
+ */
+
+void Compiler::impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount)
+{
+    assert(skipReverseCount <= sig->numArgs);
+
+    impPopCallArgs(sig, call);
+
+    call->gtArgs.Reverse(skipReverseCount, sig->numArgs - skipReverseCount);
+}
