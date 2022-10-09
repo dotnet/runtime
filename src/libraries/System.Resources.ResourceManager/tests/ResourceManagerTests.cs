@@ -207,8 +207,16 @@ namespace System.Resources.Tests
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).Assembly);
             Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
 
-            manager = new(typeof(System.Resources.Tests.Resources.TestResx));
+            manager = new ResourceManager(typeof(System.Resources.Tests.Resources.TestResx));
             Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
+
+            Type typeWithoutNamespace = new { }.GetType();
+            Assert.Null(typeWithoutNamespace.Namespace);
+            manager = new ResourceManager(typeWithoutNamespace);
+            Assert.Equal(typeWithoutNamespace.Name, manager.BaseName);
+
+            manager = new ResourceManager(typeof(List<string>));
+            Assert.Equal("System.Collections.Generic.List`1", manager.BaseName);
         }
 
         [Theory]
