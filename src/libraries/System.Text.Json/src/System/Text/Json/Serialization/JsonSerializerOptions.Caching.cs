@@ -285,6 +285,7 @@ namespace System.Text.Json
                     CompareLists(left._converters, right._converters);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
+                    where TValue : class?
                 {
                     int n;
                     if ((n = left.Count) != right.Count)
@@ -294,10 +295,7 @@ namespace System.Text.Json
 
                     for (int i = 0; i < n; i++)
                     {
-                        TValue? leftElem = left[i];
-                        TValue? rightElem = right[i];
-                        bool areEqual = leftElem is null ? rightElem is null : leftElem.Equals(rightElem);
-                        if (!areEqual)
+                        if (left[i] != right[i])
                         {
                             return false;
                         }
@@ -311,35 +309,49 @@ namespace System.Text.Json
             {
                 HashCode hc = default;
 
-                hc.Add(options._dictionaryKeyPolicy);
-                hc.Add(options._jsonPropertyNamingPolicy);
-                hc.Add(options._readCommentHandling);
-                hc.Add(options._referenceHandler);
-                hc.Add(options._encoder);
-                hc.Add(options._defaultIgnoreCondition);
-                hc.Add(options._numberHandling);
-                hc.Add(options._unknownTypeHandling);
-                hc.Add(options._defaultBufferSize);
-                hc.Add(options._maxDepth);
-                hc.Add(options._allowTrailingCommas);
-                hc.Add(options._ignoreNullValues);
-                hc.Add(options._ignoreReadOnlyProperties);
-                hc.Add(options._ignoreReadonlyFields);
-                hc.Add(options._includeFields);
-                hc.Add(options._propertyNameCaseInsensitive);
-                hc.Add(options._writeIndented);
-                hc.Add(options._typeInfoResolver);
-                GetHashCode(ref hc, options._converters);
+                AddHashCode(ref hc, options._dictionaryKeyPolicy);
+                AddHashCode(ref hc, options._jsonPropertyNamingPolicy);
+                AddHashCode(ref hc, options._readCommentHandling);
+                AddHashCode(ref hc, options._referenceHandler);
+                AddHashCode(ref hc, options._encoder);
+                AddHashCode(ref hc, options._defaultIgnoreCondition);
+                AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._unknownTypeHandling);
+                AddHashCode(ref hc, options._defaultBufferSize);
+                AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options._allowTrailingCommas);
+                AddHashCode(ref hc, options._ignoreNullValues);
+                AddHashCode(ref hc, options._ignoreReadOnlyProperties);
+                AddHashCode(ref hc, options._ignoreReadonlyFields);
+                AddHashCode(ref hc, options._includeFields);
+                AddHashCode(ref hc, options._propertyNameCaseInsensitive);
+                AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._typeInfoResolver);
+                AddListHashCode(ref hc, options._converters);
 
-                static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
+                return hc.ToHashCode();
+
+                static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
                 {
-                    for (int i = 0; i < list.Count; i++)
+                    int n = list.Count;
+                    for (int i = 0; i < n; i++)
                     {
-                        hc.Add(list[i]);
+                        AddHashCode(ref hc, list[i]);
                     }
                 }
 
-                return hc.ToHashCode();
+                static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
+                {
+                    if (typeof(TValue).IsValueType)
+                    {
+                        hc.Add(value);
+                    }
+                    else
+                    {
+                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        hc.Add(RuntimeHelpers.GetHashCode(value));
+                    }
+                }
             }
 
 #if !NETCOREAPP
