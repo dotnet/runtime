@@ -6,7 +6,7 @@
 #pragma hdrstop
 #endif
 
-#include "register_arg_convention.h"
+#include "registerargconvention.h"
 
 unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
 {

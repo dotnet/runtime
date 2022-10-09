@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "emit.h"
-#include "register_arg_convention.h"
+#include "registerargconvention.h"
 #include "jitstd/algorithm.h"
 #include "patchpointinfo.h"
 
