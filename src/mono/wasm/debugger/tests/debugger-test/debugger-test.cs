@@ -1373,15 +1373,43 @@ public class ReadOnlySpanTest
     }
 }
 
-public class ToStringOverwritten
+public class ToStringOverriden
 {
+    class ToStringOverridenA {
+        public override string ToString()
+        {
+            return "helloToStringOverridenA";
+        }
+    }
+    class ToStringOverridenB: ToStringOverridenA {}
+
+    class ToStringOverridenC {}
+    class ToStringOverridenD: ToStringOverridenC
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenD";
+        }
+    }
+
+    struct ToStringOverridenE 
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenE";
+        }
+    }
+
     public override string ToString()
     {
-        return "hello";
+        return "helloToStringOverriden";
     }
     public static void Run()
     {
-        var a = new ToStringOverwritten();
+        var a = new ToStringOverriden();
+        var b = new ToStringOverridenB();
+        var c = new ToStringOverridenD();
+        var d = new ToStringOverridenE();
         System.Diagnostics.Debugger.Break();
     }
 }

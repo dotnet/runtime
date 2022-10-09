@@ -108,19 +108,22 @@ namespace DebuggerTests
         }
         
         [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task InspectObjectOfTypeWithToStringOverwritten()
+        public async Task InspectObjectOfTypeWithToStringOverriden()
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] ToStringOverwritten:Run'); }}";
+            var expression = $"{{ invoke_static_method('[debugger-test] ToStringOverriden:Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1384, 8,
-                "ToStringOverwritten.Run",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1412, 8,
+                "ToStringOverriden.Run",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     await EvaluateOnCallFrameAndCheck(id,
-                        ("a", TObject("ToStringOverwritten", description:"hello"))
+                        ("a", TObject("ToStringOverriden", description:"helloToStringOverriden")),
+                        ("b", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("c", TObject("ToStringOverriden.ToStringOverridenD", description:"helloToStringOverridenD")),
+                        ("d", TObject("ToStringOverriden.ToStringOverridenE", description:"helloToStringOverridenE"))
                     );
                 }
             );

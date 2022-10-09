@@ -110,17 +110,32 @@ namespace BrowserDebugProxy
                 return fieldValue;
             }
         }
+        public async Task<string> ToString(MonoSDBHelper sdbAgent, CancellationToken token)
+        {
+            var typeInfo = await sdbAgent.GetTypeInfo(TypeId, token);
+            if (typeInfo == null)
+                return null;
+            if (typeInfo.Name == "object")
+                return null;
+            Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
+            if (!IsEnum && methodInfo == null)
+                return null;
+            int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
+            if (methodIds == null)
+                return null;
+            var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
+            return retMethod["value"]?["value"].Value<string>();
+        }
 
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
-                if (methodIds == null)
+                var toString = await ToString(sdbAgent, token);
+                if (toString == null)
                     throw new InternalErrorException($"Cannot find method 'ToString' on typeId = {TypeId}");
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
-                description = retMethod["value"]?["value"].Value<string>();
+                description = toString;
                 if (className.Equals("System.Guid"))
                     description = description.ToUpperInvariant(); //to keep the old behavior
             }
@@ -129,6 +144,12 @@ namespace BrowserDebugProxy
                 string displayString = await sdbAgent.GetValueFromDebuggerDisplayAttribute(Id, TypeId, token);
                 if (displayString != null)
                     description = displayString;
+                else
+                {
+                    var toString = await ToString(sdbAgent, token);
+                    if (toString != null)
+                        description = toString;
+                }
             }
             return JObjectValueCreator.Create(
                 IsEnum ? fields[0]["value"] : null,
