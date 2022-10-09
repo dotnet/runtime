@@ -265,7 +265,36 @@ internal sealed class JObjectValueCreator
             return className;
         }
     }
-
+    private async Task<string> ToString(List<int> typeIds, int objectId, CancellationToken token)
+    {
+        string description = "";
+        try {
+            foreach (var typeId in typeIds)
+            {
+                var typeInfo = await _sdbAgent.GetTypeInfo(typeId, token);
+                if (typeInfo != null && typeInfo.Name != "object")
+                {
+                    MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
+                    if (methodInfo != null)
+                    {
+                        int[] methodIds = await _sdbAgent.GetMethodIdsByName(typeId, "ToString", token);
+                        if (methodIds != null && methodIds.Length > 0)
+                        {
+                            var toString = await _sdbAgent.InvokeMethod(objectId, methodIds[0], isValueType: false, token);
+                            if (toString["value"]?["value"] != null)
+                                description = toString["value"]?["value"].Value<string>();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogDebug($"Error while evaluating ToString method: {e}");
+        }
+        return description;
+    }
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
@@ -295,25 +324,9 @@ internal sealed class JObjectValueCreator
         }
         else
         {
-            foreach (var typeId in typeIds)
-            {
-                var typeInfo = await _sdbAgent.GetTypeInfo(typeId, token);
-                if (typeInfo != null && typeInfo.Name != "object")
-                {
-                    MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
-                    if (methodInfo != null)
-                    {
-                        int[] methodIds = await _sdbAgent.GetMethodIdsByName(typeId, "ToString", token);
-                        if (methodIds != null && methodIds.Length > 0)
-                        {
-                            var toString = await _sdbAgent.InvokeMethod(objectId, methodIds[0], isValueType: false, token);
-                            if (toString["value"]?["value"] != null)
-                                description = toString["value"]?["value"].Value<string>();
-                        }
-                        break;
-                    }
-                }
-            }
+            var toString = await ToString(typeIds, objectId, token);
+            if (toString != "")
+                description = toString;
         }
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
     }

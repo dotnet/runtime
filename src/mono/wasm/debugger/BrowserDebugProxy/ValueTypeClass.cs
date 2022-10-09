@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace BrowserDebugProxy
 {
@@ -123,8 +124,15 @@ namespace BrowserDebugProxy
             int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
             if (methodIds == null)
                 return null;
-            var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
-            return retMethod["value"]?["value"].Value<string>();
+            try {
+                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
+                return retMethod["value"]?["value"].Value<string>();
+            }
+            catch (Exception e)
+            {
+                sdbAgent.logger.LogDebug($"Error while evaluating ToString method: {e}");
+            }
+            return null;
         }
 
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)

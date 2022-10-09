@@ -787,7 +787,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private DebugStore store;
         private SessionId sessionId;
 
-        private readonly ILogger logger;
+        internal readonly ILogger logger;
         private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
