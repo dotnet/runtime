@@ -875,33 +875,6 @@ namespace System.Threading.Tasks
                 null, null, body, localInit, localFinally);
         }
 
-
-        private static bool CheckTimeoutReached(int timeoutOccursAt)
-        {
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < timeoutOccursAt)
-                return false;
-
-            if (0 > timeoutOccursAt && 0 < currentMillis)
-                return false;
-
-            return true;
-        }
-
-
-        private static int ComputeTimeoutPoint(int timeoutLength)
-        {
-            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
-            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
-            // in CheckTimeoutReached(..):
-            unchecked
-            {
-                return Environment.TickCount + timeoutLength;
-            }
-        }
-
         /// <summary>
         /// Performs the major work of the parallel for loop. It assumes that argument validation has already
         /// been performed by the caller. This function's whole purpose in life is to enable as much reuse of
@@ -954,35 +927,18 @@ namespace System.Threading.Tasks
             // Before getting started, do a quick peek to see if we have been canceled already
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
+            // Keep track of any cancellations
+            (OperationCanceledException? oce, CancellationTokenRegistration ctr) = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags);
+
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
+
+            int forkJoinContextID = LogEtwEventParallelLoopBegin(OperationType, fromInclusive, toExclusive);
+
             // initialize ranges with passed in loop arguments and expected number of workers
             int numExpectedWorkers = (parallelOptions.EffectiveMaxConcurrencyLevel == -1) ?
                 Environment.ProcessorCount :
                 parallelOptions.EffectiveMaxConcurrencyLevel;
             RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive), long.CreateChecked(toExclusive), 1, numExpectedWorkers);
-
-            // Keep track of any cancellations
-            OperationCanceledException? oce = null;
-
-            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
-            CancellationTokenRegistration ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
-                            ? default(CancellationTokenRegistration)
-                            : parallelOptions.CancellationToken.UnsafeRegister((o) =>
-                            {
-                                // Record our cancellation before stopping processing
-                                oce = new OperationCanceledException(parallelOptions.CancellationToken);
-                                // Cause processing to stop
-                                sharedPStateFlags.Cancel();
-                            }, state: null);
-
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                                                          forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelFor,
-                                                          fromInclusive, toExclusive);
-            }
 
             try
             {
@@ -1013,11 +969,7 @@ namespace System.Threading.Tasks
             finally
             {
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
-                if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
-                {
-                    result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
-                }
+                SetLoopResultEndState(sharedPStateFlags, ref result);
 
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())
@@ -1032,12 +984,13 @@ namespace System.Threading.Tasks
                     else
                         nTotalIterations = TIndex.CreateChecked(-1); //ParallelLoopStateStopped! We can't determine this if we were stopped..
 
-                    ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
+                    LogEtwEventParallelLoopEnd(forkJoinContextID, nTotalIterations);
                 }
             }
 
             return result;
         }
+
 
         private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateForWorker<TIndex, TLocal>(
             ParallelLoopStateFlags sharedPStateFlags,
@@ -1068,11 +1021,7 @@ namespace System.Threading.Tasks
                     return; // no need to run
                 }
 
-                // ETW event for ParallelFor Worker Fork
-                if (ParallelEtwProvider.Log.IsEnabled())
-                {
-                    ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                }
+                LogEtwEventParallelFork(forkJoinContextID);
 
                 TLocal localValue = default!;
                 bool bLocalValueInitialized = false; // Tracks whether localInit ran without exceptions, so that we can skip localFinally if it wasn't
@@ -2544,40 +2493,24 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
             }
 
-            // Before getting started, do a quick peek to see if we have been canceled already
-            parallelOptions.CancellationToken.ThrowIfCancellationRequested();
-
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (ParallelEtwProvider.Log.IsEnabled())
-            {
-                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                                                          forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelForEach,
-                                                          0, 0);
-            }
+            // Instantiate our result.  Specifics will be filled in later.
+            ParallelLoopResult result = default;
 
             // For all loops we need a shared flag even though we don't have a body with state,
             // because the shared flag contains the exceptional bool, which triggers other workers
             // to exit their loops if one worker catches an exception
-            ParallelLoopStateFlags64 sharedPStateFlags = new ParallelLoopStateFlags64();
+            ParallelLoopStateFlags sharedPStateFlags = new ParallelLoopStateFlags64();
 
-            // Instantiate our result.  Specifics will be filled in later.
-            ParallelLoopResult result = default;
+            // Before getting started, do a quick peek to see if we have been canceled already
+            parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            OperationCanceledException? oce = null;
+            (OperationCanceledException? oce, CancellationTokenRegistration ctr) = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags);
 
-            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
-            CancellationTokenRegistration ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
-                            ? default(CancellationTokenRegistration)
-                            : parallelOptions.CancellationToken.UnsafeRegister((o) =>
-                            {
-                                // Record our cancellation before stopping processing
-                                oce = new OperationCanceledException(parallelOptions.CancellationToken);
-                                // Cause processing to stop
-                                sharedPStateFlags.Cancel();
-                            }, state: null);
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
+
+
+            int forkJoinContextID = LogEtwEventParallelLoopBegin(OperationType, 0, 0);
 
             // Get our dynamic partitioner -- depends on whether source is castable to OrderablePartitioner
             // Also, do some error checking.
@@ -2629,11 +2562,7 @@ namespace System.Threading.Tasks
             finally
             {
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
-                if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
-                {
-                    result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
-                }
+                SetLoopResultEndState(sharedPStateFlags, ref result);
 
                 //dispose the partitioner source if it implements IDisposable
                 IDisposable? d = null;
@@ -2651,24 +2580,32 @@ namespace System.Threading.Tasks
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())
                 {
-                    ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, 0);
+                    LogEtwEventParallelLoopEnd(forkJoinContextID, 0);
                 }
             }
 
             return result;
         }
 
-        private static TaskReplicator.ReplicatableUserAction<IEnumerator> CreatePartitionerForEachWorker<TSource, TLocal>(Action<TSource>? simpleBody, Action<TSource, ParallelLoopState>? bodyWithState, Action<TSource, ParallelLoopState, long>? bodyWithStateAndIndex, Func<TSource, ParallelLoopState, TLocal, TLocal>? bodyWithStateAndLocal, Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything, Func<TLocal>? localInit, Action<TLocal>? localFinally, int forkJoinContextID, ParallelLoopStateFlags64 sharedPStateFlags, OrderablePartitioner<TSource>? orderedSource, IEnumerable<KeyValuePair<long, TSource>>? orderablePartitionerSource, IEnumerable<TSource>? partitionerSource) =>
+        private static TaskReplicator.ReplicatableUserAction<IEnumerator> CreatePartitionerForEachWorker<TSource, TLocal>(
+            Action<TSource>? simpleBody,
+            Action<TSource, ParallelLoopState>? bodyWithState,
+            Action<TSource, ParallelLoopState, long>? bodyWithStateAndIndex,
+            Func<TSource, ParallelLoopState, TLocal, TLocal>? bodyWithStateAndLocal,
+            Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything,
+            Func<TLocal>? localInit,
+            Action<TLocal>? localFinally,
+            int forkJoinContextID,
+            ParallelLoopStateFlags sharedPStateFlags,
+            OrderablePartitioner<TSource>? orderedSource,
+            IEnumerable<KeyValuePair<long, TSource>>? orderablePartitionerSource,
+            IEnumerable<TSource>? partitionerSource) =>
             (ref IEnumerator partitionState, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
             {
                 // We will need to reset this to true if we exit due to a timeout:
                 replicationDelegateYieldedBeforeCompletion = false;
 
-                // ETW event for ParallelForEach Worker Fork
-                if (ParallelEtwProvider.Log.IsEnabled())
-                {
-                    ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                }
+                LogEtwEventParallelFork(forkJoinContextID);
 
                 TLocal localValue = default!;
                 bool bLocalValueInitialized = false; // Tracks whether localInit ran without exceptions, so that we can skip localFinally if it wasn't
@@ -2677,15 +2614,15 @@ namespace System.Threading.Tasks
                 {
                     // Create a new state object that references the shared "stopped" and "exceptional" flags.
                     // If needed, it will contain a new instance of thread-local state by invoking the selector.
-                    ParallelLoopState64? state = null;
+                    ParallelLoopState? state = null;
 
                     if (bodyWithState != null || bodyWithStateAndIndex != null)
                     {
-                        state = new ParallelLoopState64(sharedPStateFlags);
+                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
                     }
                     else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
                     {
-                        state = new ParallelLoopState64(sharedPStateFlags);
+                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
                         // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
                         if (localInit != null)
                         {
@@ -2718,7 +2655,7 @@ namespace System.Threading.Tasks
                             TSource value = kvp.Value;
 
                             // Update our iteration index
-                            if (state != null) state.CurrentIteration = index;
+                            if (state != null) state.SetCurrentIteration(index);
 
                             if (simpleBody != null)
                                 simpleBody(value);
@@ -2758,8 +2695,7 @@ namespace System.Threading.Tasks
                             throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                         // I'm not going to try to maintain this
-                        if (state != null)
-                            state.CurrentIteration = 0;
+                        state?.SetCurrentIteration(0);
 
                         while (myPartition.MoveNext())
                         {
@@ -2811,12 +2747,35 @@ namespace System.Threading.Tasks
                     }
 
                     // ETW event for ParallelFor Worker Join
-                    if (ParallelEtwProvider.Log.IsEnabled())
-                    {
-                        ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-                    }
+                    LogEtwEventParallelJoin<TSource, TLocal>(forkJoinContextID);
                 }
             };
+
+        private static bool CheckTimeoutReached(int timeoutOccursAt)
+        {
+            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
+            int currentMillis = Environment.TickCount;
+
+            if (currentMillis < timeoutOccursAt)
+                return false;
+
+            if (0 > timeoutOccursAt && 0 < currentMillis)
+                return false;
+
+            return true;
+        }
+
+
+        private static int ComputeTimeoutPoint(int timeoutLength)
+        {
+            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
+            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
+            // in CheckTimeoutReached(..):
+            unchecked
+            {
+                return Environment.TickCount + timeoutLength;
+            }
+        }
 
         /// <summary>
         /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
@@ -2865,6 +2824,73 @@ namespace System.Threading.Tasks
         {
             OperationCanceledException? reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
             ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
+        }
+
+        private static int LogEtwEventParallelLoopBegin<TIndex>(ParallelEtwProvider.ForkJoinOperationType OperationType, TIndex fromInclusive,
+            TIndex toExclusive) where TIndex : INumber<TIndex>
+        {
+            // ETW event for Parallel For begin
+            int forkJoinContextID = 0;
+            if (ParallelEtwProvider.Log.IsEnabled())
+            {
+                forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
+                ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                    forkJoinContextID, OperationType,
+                    fromInclusive, toExclusive);
+            }
+
+            return forkJoinContextID;
+        }
+
+        private static void LogEtwEventParallelFork(int forkJoinContextID)
+        {
+            if (ParallelEtwProvider.Log.IsEnabled())
+            {
+                ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            }
+        }
+
+        private static void LogEtwEventParallelJoin<TSource, TLocal>(int forkJoinContextID)
+        {
+            if (ParallelEtwProvider.Log.IsEnabled())
+            {
+                ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            }
+        }
+
+        private static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
+            where TIndex : INumber<TIndex>
+        {
+            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
+        }
+
+        private static (OperationCanceledException? oce, CancellationTokenRegistration ctr) RegisterCallbackForLoopTermination(
+            ParallelOptions parallelOptions,
+            ParallelLoopStateFlags sharedPStateFlags)
+        {
+            OperationCanceledException? oce = null;
+
+            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
+            CancellationTokenRegistration ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
+                ? default
+                : parallelOptions.CancellationToken.UnsafeRegister((o) =>
+                {
+                    // Record our cancellation before stopping processing
+                    oce = new OperationCanceledException(parallelOptions.CancellationToken);
+                    // Cause processing to stop
+                    sharedPStateFlags.Cancel();
+                }, state: null);
+            return (oce, ctr);
+        }
+
+        private static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
+        {
+            int sb_status = sharedPStateFlags.LoopStateFlags;
+            result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
+            if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
+            {
+                result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+            }
         }
     }  // class Parallel
 }  // namespace
