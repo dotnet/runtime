@@ -3293,125 +3293,85 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     }
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
                 }
-                else
+                else if (argObj->TypeGet() != structBaseType)
                 {
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
                     assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
 
-                    if (argObj->OperIs(GT_OBJ))
+                    if (argObj->OperIsIndir())
                     {
-                        argObj->ChangeOper(GT_IND);
-
-                        // Now see if we can fold *(&X) into X
-                        if (argObj->AsOp()->gtOp1->gtOper == GT_ADDR)
-                        {
-                            GenTree* temp = argObj->AsOp()->gtOp1->AsOp()->gtOp1;
-
-                            // Keep the DONT_CSE flag in sync
-                            // (as the addr always marks it for its op1)
-                            temp->gtFlags &= ~GTF_DONT_CSE;
-                            temp->gtFlags |= (argObj->gtFlags & GTF_DONT_CSE);
-                            DEBUG_DESTROY_NODE(argObj->AsOp()->gtOp1); // GT_ADDR
-                            DEBUG_DESTROY_NODE(argObj);                // GT_IND
-
-                            argObj      = temp;
-                            *parentArgx = temp;
-                            argx        = temp;
-                        }
+                        assert(argObj->AsIndir()->Size() == genTypeSize(structBaseType));
+                        argObj->ChangeType(structBaseType);
+                        argObj->SetOper(GT_IND);
                     }
-                    if (argObj->gtOper == GT_LCL_VAR)
+                    else if (argObj->OperIsLocalRead())
                     {
-                        unsigned   lclNum = argObj->AsLclVarCommon()->GetLclNum();
-                        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+                        unsigned   lclNum    = argObj->AsLclVarCommon()->GetLclNum();
+                        LclVarDsc* varDsc    = lvaGetDesc(lclNum);
+                        unsigned   lclOffset = argObj->AsLclVarCommon()->GetLclOffs();
+                        unsigned   argLclNum = BAD_VAR_NUM;
+                        LclVarDsc* argVarDsc = nullptr;
 
                         if (varDsc->lvPromoted)
                         {
-                            if (varDsc->lvFieldCnt == 1)
-                            {
-                                // get the first and only promoted field
-                                LclVarDsc* fieldVarDsc = lvaGetDesc(varDsc->lvFieldLclStart);
-                                if (genTypeSize(fieldVarDsc->TypeGet()) >= originalSize)
-                                {
-                                    // we will use the first and only promoted field
-                                    argObj->AsLclVarCommon()->SetLclNum(varDsc->lvFieldLclStart);
+                            argLclNum = lvaGetFieldLocal(varDsc, lclOffset);
+                        }
+                        else if (lclOffset == 0)
+                        {
+                            argLclNum = lclNum;
+                        }
 
-                                    if (varTypeIsEnregisterable(fieldVarDsc->TypeGet()) &&
-                                        (genTypeSize(fieldVarDsc->TypeGet()) == originalSize))
-                                    {
-                                        // Just use the existing field's type
-                                        argObj->gtType = fieldVarDsc->TypeGet();
-                                    }
-                                    else
-                                    {
-                                        // Can't use the existing field's type, so use GT_LCL_FLD to swizzle
-                                        // to a new type
-                                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-                                        argObj->ChangeOper(GT_LCL_FLD);
-                                        argObj->gtType = structBaseType;
-                                    }
-                                    assert(varTypeIsEnregisterable(argObj->TypeGet()));
-                                    assert(!makeOutArgCopy);
-                                }
-                                else
-                                {
-                                    // use GT_LCL_FLD to swizzle the single field struct to a new type
-                                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-                                    argObj->ChangeOper(GT_LCL_FLD);
-                                    argObj->gtType = structBaseType;
-                                }
-                            }
-                            else
+                        // See if this local goes into the right register file.
+                        // TODO-CQ: we could use a bitcast here, if it does not.
+                        if (argLclNum != BAD_VAR_NUM)
+                        {
+                            argVarDsc = lvaGetDesc(argLclNum);
+                            if ((genTypeSize(argVarDsc) != originalSize) ||
+                                (varTypeUsesFloatReg(argVarDsc) != varTypeUsesFloatReg(structBaseType)))
                             {
-                                // The struct fits into a single register, but it has been promoted into its
-                                // constituent fields, and so we have to re-assemble it
-                                makeOutArgCopy = true;
+                                argLclNum = BAD_VAR_NUM;
                             }
                         }
-                        else if (genTypeSize(varDsc) != genTypeSize(structBaseType))
+
+                        if (argLclNum != BAD_VAR_NUM)
                         {
-                            // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
-                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-                            argObj->ChangeOper(GT_LCL_FLD);
-                            argObj->gtType = structBaseType;
+                            argObj->ChangeType(argVarDsc->TypeGet());
+                            argObj->SetOper(GT_LCL_VAR);
+                            argObj->AsLclVar()->SetLclNum(argLclNum);
                         }
-                        else if (varTypeUsesFloatReg(varDsc) != varTypeUsesFloatReg(structBaseType))
+                        else if (varDsc->lvPromoted)
                         {
-                            // Here we can see int <-> float, long <-> double, long <-> simd8 mismatches, due
-                            // to the "OBJ(ADDR(LCL))" => "LCL" folding above. The latter case is handled in
-                            // lowering, others we will handle here via swizzling.
-                            CLANG_FORMAT_COMMENT_ANCHOR;
+                            // Preserve independent promotion of "argObj" by decomposing the copy.
+                            // TODO-CQ: condition this on the promotion actually being independent.
+                            makeOutArgCopy = true;
+                        }
 #ifdef TARGET_AMD64
-                            if (varDsc->TypeGet() != TYP_SIMD8)
-#endif // TARGET_AMD64
+                        else if (!argObj->OperIs(GT_LCL_VAR) || !argObj->TypeIs(TYP_SIMD8)) // Handled by lowering.
+#else  // !TARGET_ARM64
+                        else
+#endif // !TARGET_ARM64
+                        {
+                            // TODO-CQ: perform this transformation in lowering instead of here and
+                            // avoid marking enregisterable structs DNER.
+                            argObj->ChangeType(structBaseType);
+                            if (argObj->OperIs(GT_LCL_VAR))
                             {
-                                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-                                argObj->ChangeOper(GT_LCL_FLD);
-                                argObj->gtType = structBaseType;
+                                argObj->SetOper(GT_LCL_FLD);
                             }
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
                         }
                     }
-                    else if (argObj->OperIs(GT_LCL_FLD, GT_IND))
-                    {
-                        // We can just change the type on the node
-                        argObj->gtType = structBaseType;
-                    }
-                    else
-                    {
-#ifdef FEATURE_SIMD
-                        // We leave the SIMD8 <-> LONG (Windows x64) case to lowering. For SIMD8 <-> DOUBLE (Unix x64),
-                        // we do not need to do anything as both types already use floating-point registers.
-                        assert((argObj->TypeIs(TYP_SIMD8) &&
-                                ((structBaseType == TYP_LONG) || (structBaseType == TYP_DOUBLE))) ||
-                               argObj->TypeIs(structBaseType));
-#else  // !FEATURE_SIMD
-                        unreached();
-#endif // !FEATURE_SIMD
-                    }
 
-                    assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
+                    assert(varTypeIsEnregisterable(argObj) ||
                            (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
+                }
+                else if (argObj->OperIs(GT_LCL_VAR) && lvaGetDesc(argObj->AsLclVar())->lvPromoted)
+                {
+                    // Set DNER to block independent promotion.
+                    lvaSetVarDoNotEnregister(argObj->AsLclVar()->GetLclNum()
+                                                 DEBUGARG(DoNotEnregisterReason::IsStructArg));
                 }
             }
         }
@@ -3477,33 +3437,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #if defined(TARGET_X86)
         if (isStructArg)
         {
-            GenTreeLclVar* lcl = nullptr;
-
-            // TODO-ADDR: always perform "OBJ(ADDR(LCL)) => LCL" transformation in local morph and delete this code.
-            if (argx->OperGet() == GT_OBJ)
+            if (argx->OperIs(GT_LCL_VAR) &&
+                (lvaGetPromotionType(argx->AsLclVar()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
             {
-                if (argx->gtGetOp1()->OperIs(GT_ADDR) && argx->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
-                {
-                    lcl = argx->gtGetOp1()->gtGetOp1()->AsLclVar();
-                }
+                argx = fgMorphLclArgToFieldlist(argx->AsLclVar());
+                arg.SetEarlyNode(argx);
             }
-            else if (argx->OperGet() == GT_LCL_VAR)
+            else if (argx->OperIs(GT_LCL_FLD))
             {
-                lcl = argx->AsLclVar();
-            }
-            if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
-            {
-                if (argx->OperIs(GT_LCL_VAR) ||
-                    ClassLayout::AreCompatible(argx->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
-                {
-                    argx = fgMorphLclArgToFieldlist(lcl);
-                    arg.SetEarlyNode(argx);
-                }
-                else
-                {
-                    // Set DNER to block independent promotion.
-                    lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
+                lvaSetVarDoNotEnregister(argx->AsLclFld()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             }
         }
 #endif // TARGET_X86
@@ -3660,35 +3602,23 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     if (arg->AbiInfo.GetRegNum() == REG_STK)
 #endif
     {
-        GenTreeLclVar* lcl       = nullptr;
-        GenTree*       actualArg = argNode->gtEffectiveVal();
-
-        // TODO-ADDR: always perform "OBJ(ADDR(LCL)) => LCL" transformation in local morph and delete this code.
-        if (actualArg->OperGet() == GT_OBJ)
-        {
-            if (actualArg->gtGetOp1()->OperIs(GT_ADDR) && actualArg->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
-            {
-                lcl = actualArg->gtGetOp1()->gtGetOp1()->AsLclVar();
-            }
-        }
-        else if (actualArg->OperGet() == GT_LCL_VAR)
-        {
-            lcl = actualArg->AsLclVar();
-        }
-        if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
+        if (argNode->OperIs(GT_LCL_VAR) &&
+            (lvaGetPromotionType(argNode->AsLclVar()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
         {
             // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
-            if (!arg->AbiInfo.IsSplit() &&
-                (argNode->OperIs(GT_LCL_VAR) ||
-                 ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout())))
+            if (!arg->AbiInfo.IsSplit())
             {
-                argNode = fgMorphLclArgToFieldlist(lcl);
+                argNode = fgMorphLclArgToFieldlist(argNode->AsLclVar());
             }
             else
             {
                 // Set DNER to block independent promotion.
-                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                lvaSetVarDoNotEnregister(argNode->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
             }
+        }
+        else if (argNode->OperIs(GT_LCL_FLD))
+        {
+            lvaSetVarDoNotEnregister(argNode->AsLclFld()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
         }
 
         return argNode;
@@ -3907,7 +3837,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 newArg->AddField(this, lclFld, offset, lclFld->TypeGet());
             }
 
-            // Set DNER to block independent promotion.
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else
@@ -3916,16 +3845,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             GenTree*  baseAddr = argNode->AsIndir()->Addr();
             var_types addrType = baseAddr->TypeGet();
+            newArg             = new (this, GT_FIELD_LIST) GenTreeFieldList();
 
-            // TODO-ADDR: make sure all such OBJs are transformed into TYP_STRUCT LCL_FLDs and delete this condition.
-            GenTreeLclVarCommon* lclSrcNode = baseAddr->IsLocalAddrExpr();
-            if (lclSrcNode != nullptr)
-            {
-                // Set DNER to block independent promotion.
-                lvaSetVarDoNotEnregister(lclSrcNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
-            }
-
-            newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
                 unsigned offset  = elems[inx].Offset;
