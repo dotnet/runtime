@@ -1640,10 +1640,10 @@ namespace System.Numerics
                     exponent++;
                 }
 
-                string signStr = _sign < 0 ? "-" : "";
+                string signStr = _sign < 0 ? NumberFormatInfo.CurrentInfo.NegativeSign : "";
 
                 // Use about a half of the precision of double
-                return string.Create(CultureInfo.InvariantCulture, $"{signStr}{significand:F8}e+{exponent}");
+                return $"{signStr}{significand:F8}e+{exponent}";
             }
         }
 

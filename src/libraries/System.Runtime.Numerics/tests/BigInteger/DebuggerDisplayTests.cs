@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Tests;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -15,11 +17,14 @@ namespace System.Numerics.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "DebuggerDisplayAttribute is stripped on wasm")]
         public void TestDebuggerDisplay(uint[] bits, string displayString)
         {
-            BigInteger positiveValue = new BigInteger(1, bits);
-            Assert.Equal(displayString, DebuggerAttributes.ValidateDebuggerDisplayReferences(positiveValue));
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                BigInteger positiveValue = new BigInteger(1, bits);
+                Assert.Equal(displayString, DebuggerAttributes.ValidateDebuggerDisplayReferences(positiveValue));
 
-            BigInteger negativeValue = new BigInteger(-1, bits);
-            Assert.Equal("-" + displayString, DebuggerAttributes.ValidateDebuggerDisplayReferences(negativeValue));
+                BigInteger negativeValue = new BigInteger(-1, bits);
+                Assert.Equal("-" + displayString, DebuggerAttributes.ValidateDebuggerDisplayReferences(negativeValue));
+            }
         }
     }
 }
