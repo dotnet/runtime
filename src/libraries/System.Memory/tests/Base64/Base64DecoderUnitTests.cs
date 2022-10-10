@@ -286,7 +286,7 @@ namespace System.Buffers.Text.Tests
 
             Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
             Assert.Equal(expectedConsumed, consumed);
-            Assert.Equal(expectedWritten, decodedByteCount); // expectedWritten == decodedBytes.Length
+            Assert.Equal(expectedWritten, decodedByteCount);
         }
 
         [Theory]
