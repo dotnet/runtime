@@ -111,6 +111,7 @@ namespace BrowserDebugProxy
                 return fieldValue;
             }
         }
+
         public async Task<string> ToString(MonoSDBHelper sdbAgent, CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(TypeId, token);

@@ -272,7 +272,8 @@ internal sealed class JObjectValueCreator
             foreach (var typeId in typeIds)
             {
                 var typeInfo = await _sdbAgent.GetTypeInfo(typeId, token);
-                if (typeInfo != null && typeInfo.Name != "object")
+                if (typeInfo == null || typeInfo.Name == "object")
+                    continue;
                 {
                     MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (methodInfo != null)

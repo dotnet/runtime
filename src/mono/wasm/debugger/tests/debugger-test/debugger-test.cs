@@ -1392,7 +1392,7 @@ public class ToStringOverriden
         }
     }
 
-    struct ToStringOverridenE 
+    struct ToStringOverridenE
     {
         public override string ToString()
         {
