@@ -177,7 +177,7 @@ namespace System.Reflection
                 // This prevents unnecessary overhead revalidating cached proxy types.
 
                 // The interface type must be an interface, not a class
-                if (!interfaceType.IsInterface || interfaceType.Assembly.ReflectionOnly)
+                if (!interfaceType.IsInterface)
                 {
                     throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), interfaceParameter);
                 }

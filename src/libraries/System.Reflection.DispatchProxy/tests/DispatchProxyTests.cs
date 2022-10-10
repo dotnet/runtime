@@ -194,32 +194,6 @@ namespace DispatchProxyTests
             AssertExtensions.Throws<ArgumentException>("proxyType", () => DispatchProxy.Create(typeof(TestType_IHelloService), typeof(object)));
         }
 
-
-        [Fact]
-        public static void Test_Type_LoadedBy_MetadataLoadContext_Throws_ArgumentException()
-        {
-            if (Assembly.GetExecutingAssembly().Location == "")
-            {
-                return;
-            }
-
-            string assemblyName = $"{Assembly.GetExecutingAssembly().GetName().Name}.dll";
-            var resolver = new PathAssemblyResolver(new string[] { assemblyName, typeof(object).Assembly.Location });
-            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().ToString());
-
-            Assembly assembly = mlc.LoadFromAssemblyPath(assemblyName);
-
-            Type interfaceType = assembly.GetType(nameof(TestType_IHelloService));
-            Type proxyType = assembly.GetType(nameof(TestDispatchProxy));
-
-            Assert.NotNull(interfaceType);
-            Assert.NotNull(proxyType);
-
-            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(typeof(TestType_IHelloService), proxyType));
-            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy)));
-            AssertExtensions.Throws<ArgumentException>(() => DispatchProxy.Create(interfaceType, proxyType));
-        }
-
         [Fact]
         public static void Create_Using_PrivateProxy()
         {
