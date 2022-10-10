@@ -238,7 +238,7 @@
     <value>The size field is negative in a tar entry.</value>
   </data>
   <data name="TarSizeFieldTooLargeForEntryType" xml:space="preserve">
-    <value>The value of the size field for the current entry of type '{0}' is beyond the expected length.</value>
+    <value>The value of the size field for the current entry of type '{0}' is greater than the expected length.</value>
   </data>
   <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
     <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
@@ -263,5 +263,8 @@
   </data>
   <data name="TarEntryFieldExceedsMaxLength" xml:space="preserve">
     <value>The field '{0}' exceeds the maximum allowed length for this format.</value>
+  </data>
+  <data name="TarSizeFieldTooLargeForEntryFormat" xml:space="preserve">
+    <value>The value of the size field for the current entry of format '{0}' is greater than the format allows.</value>
   </data>
 </root>
