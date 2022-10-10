@@ -807,14 +807,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             ValueCreator = new(this, logger);
             ResetStore(null);
         }
+
         public MonoSDBHelper Clone(SessionId sessionId)
-        {
-            var ret = new MonoSDBHelper(this.proxy, this.logger, sessionId);
-            ret.VmMajorVersion = this.VmMajorVersion;
-            ret.VmMinorVersion = this.VmMinorVersion;
-            ret.store = this.store;
-            return ret;
-        }
+            => new MonoSDBHelper(proxy, logger, sessionId)
+            {
+                VmMajorVersion = VmMajorVersion,
+                VmMinorVersion = VmMinorVersion,
+                store = store,
+            };
 
         public void ResetStore(DebugStore store)
         {
