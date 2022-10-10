@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
-    /// <summary>Provides a collection of static convenience methods for creating, manipulating, combining, and converting generic 64-bit vectors.</summary>
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
     public static class Vector64
     {
         internal const int Size = 8;

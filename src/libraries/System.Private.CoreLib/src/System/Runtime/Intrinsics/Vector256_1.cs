@@ -22,7 +22,7 @@ namespace System.Runtime.Intrinsics
     // determine inline profitability of the other paths as it would normally.
 
     /// <summary>Represents a 256-bit vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
-    /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
+    /// <typeparam name="T">The type of the elements in the vector.</typeparam>
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector256DebugView<>))]

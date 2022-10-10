@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
 {
-    /// <summary>Provides a collection of static convenience methods for creating, manipulating, combining, and converting generic vectors.</summary>
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on generic vectors.</summary>
     [Intrinsic]
     public static partial class Vector
     {
