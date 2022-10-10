@@ -107,7 +107,14 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
+                LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            else if (NodeFactory.Target.OperatingSystem == TargetOS.OSX)
+                MachObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            else if (NodeFactory.Target.OperatingSystem == TargetOS.Linux)
+                ElfObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            else
+                LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
