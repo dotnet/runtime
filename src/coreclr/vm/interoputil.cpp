@@ -3967,7 +3967,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
     int                 cch         = 0;
-    WCHAR               wszIID[64];
+    CHAR                szIID[64];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 
@@ -3975,22 +3975,22 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     {
         pCurrCtx = GetCurrentCtxCookie();
 
-        cch = StringFromGUID2(iid, wszIID, sizeof(wszIID) / sizeof(WCHAR));
+        cch = GuidToLPSTR(iid, szIID);
         _ASSERTE(cch > 0);
 
         if (SUCCEEDED(hrArg))
         {
             LOG((LF_INTEROP,
                 LL_EVERYTHING,
-                "Succeeded QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %S, Msg: %s\n",
-                (IUnknown*)pUnk, pItf, pCurrCtx, wszIID, szMsg));
+                "Succeeded QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %s, Msg: %s\n",
+                (IUnknown*)pUnk, pItf, pCurrCtx, szIID, szMsg));
         }
         else
         {
             LOG((LF_INTEROP,
                 LL_EVERYTHING,
-                "Failed QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %S, HR = %p, Msg: %s\n",
-                (IUnknown*)pUnk, pItf, pCurrCtx, wszIID, hrArg, szMsg));
+                "Failed QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %s, HR = %p, Msg: %s\n",
+                (IUnknown*)pUnk, pItf, pCurrCtx, szIID, hrArg, szMsg));
         }
     }
 }

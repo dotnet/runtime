@@ -32,7 +32,7 @@ namespace System.Runtime.Intrinsics
         internal readonly Vector128<T> _upper;
 
         /// <summary>Gets a new <see cref="Vector256{T}" /> with all bits set to 1.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector256<T> AllBitsSet
         {
             [Intrinsic]
@@ -45,7 +45,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector256{T}" />.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
             [Intrinsic]
@@ -63,23 +63,23 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return (typeof(T) == typeof(byte)) ||
-                       (typeof(T) == typeof(double)) ||
-                       (typeof(T) == typeof(short)) ||
-                       (typeof(T) == typeof(int)) ||
-                       (typeof(T) == typeof(long)) ||
-                       (typeof(T) == typeof(nint)) ||
-                       (typeof(T) == typeof(nuint)) ||
-                       (typeof(T) == typeof(sbyte)) ||
-                       (typeof(T) == typeof(float)) ||
-                       (typeof(T) == typeof(ushort)) ||
-                       (typeof(T) == typeof(uint)) ||
-                       (typeof(T) == typeof(ulong));
+                return (typeof(T) == typeof(byte))
+                    || (typeof(T) == typeof(double))
+                    || (typeof(T) == typeof(short))
+                    || (typeof(T) == typeof(int))
+                    || (typeof(T) == typeof(long))
+                    || (typeof(T) == typeof(nint))
+                    || (typeof(T) == typeof(sbyte))
+                    || (typeof(T) == typeof(float))
+                    || (typeof(T) == typeof(ushort))
+                    || (typeof(T) == typeof(uint))
+                    || (typeof(T) == typeof(ulong))
+                    || (typeof(T) == typeof(nuint));
             }
         }
 
         /// <summary>Gets a new <see cref="Vector256{T}" /> with all elements initialized to zero.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector256<T> Zero
         {
             [Intrinsic]
@@ -91,21 +91,19 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal unsafe string DisplayString
+        internal string DisplayString
         {
             get
             {
-                if (IsSupported)
-                {
-                    return ToString();
-                }
-                else
-                {
-                    return SR.NotSupported_Type;
-                }
+                return IsSupported ? ToString() : SR.NotSupported_Type;
             }
         }
 
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -119,13 +117,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator +(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator +(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() + right.GetLower(),
-                left.GetUpper() + right.GetUpper()
+                left._lower + right._lower,
+                left._upper + right._upper
             );
         }
 
@@ -133,13 +132,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
         /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator &(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator &(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() & right.GetLower(),
-                left.GetUpper() & right.GetUpper()
+                left._lower & right._lower,
+                left._upper & right._upper
             );
         }
 
@@ -147,13 +147,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator |(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator |(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() | right.GetLower(),
-                left.GetUpper() | right.GetUpper()
+                left._lower | right._lower,
+                left._upper | right._upper
             );
         }
 
@@ -161,13 +162,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
         /// <param name="right">The vector that will divide <paramref name="left" />.</param>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator /(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator /(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() / right.GetLower(),
-                left.GetUpper() / right.GetUpper()
+                left._lower / right._lower,
+                left._upper / right._upper
             );
         }
 
@@ -175,25 +177,27 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector256<T> left, Vector256<T> right)
         {
-            return (left.GetLower() == right.GetLower())
-                && (left.GetUpper() == right.GetUpper());
+            return (left._lower == right._lower)
+                && (left._upper == right._upper);
         }
 
         /// <summary>Computes the exclusive-or of two vectors.</summary>
         /// <param name="left">The vector to exclusive-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to exclusive-or with <paramref name="left" />.</param>
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator ^(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator ^(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() ^ right.GetLower(),
-                left.GetUpper() ^ right.GetUpper()
+                left._lower ^ right._lower,
+                left._upper ^ right._upper
             );
         }
 
@@ -201,25 +205,27 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector256<T> left, Vector256<T> right)
         {
-            return (left.GetLower() != right.GetLower())
-                || (left.GetUpper() != right.GetUpper());
+            return (left._lower != right._lower)
+                || (left._upper != right._upper);
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator *(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator *(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() * right.GetLower(),
-                left.GetUpper() * right.GetUpper()
+                left._lower * right._lower,
+                left._upper * right._upper
             );
         }
 
@@ -227,13 +233,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The scalar to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(Vector256<T> left, T right)
         {
             return Vector256.Create(
-                left.GetLower() * right,
-                left.GetUpper() * right
+                left._lower * right,
+                left._upper * right
             );
         }
 
@@ -241,26 +248,22 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator *(T left, Vector256<T> right)
-        {
-            return Vector256.Create(
-                left * right.GetLower(),
-                left * right.GetUpper()
-            );
-        }
+        public static Vector256<T> operator *(T left, Vector256<T> right) => right * left;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator ~(Vector256<T> vector)
         {
             return Vector256.Create(
-                ~vector.GetLower(),
-                ~vector.GetUpper()
+                ~vector._lower,
+                ~vector._upper
             );
         }
 
@@ -268,47 +271,53 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector256<T> operator -(Vector256<T> left, Vector256<T> right)
+        public static Vector256<T> operator -(Vector256<T> left, Vector256<T> right)
         {
             return Vector256.Create(
-                left.GetLower() - right.GetLower(),
-                left.GetUpper() - right.GetUpper()
+                left._lower - right._lower,
+                left._upper - right._upper
             );
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
         /// <param name="vector">The vector to negate.</param>
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator -(Vector256<T> vector)
         {
             return Vector256.Create(
-                -vector.GetLower(),
-                -vector.GetUpper()
+                -vector._lower,
+                -vector._upper
             );
         }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
         /// <returns><paramref name="value" /></returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator +(Vector256<T> value) => value;
+        public static Vector256<T> operator +(Vector256<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            return value;
+        }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector256{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector256<T> other) && Equals(other);
 
         /// <summary>Determines whether the specified <see cref="Vector256{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector256{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector256<T> other)
         {
@@ -329,21 +338,21 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                return this.GetLower().Equals(other.GetLower())
-                    && this.GetUpper().Equals(other.GetUpper());
+                return _lower.Equals(other._lower)
+                    && _upper.Equals(other._upper);
             }
         }
 
         /// <summary>Gets the hash code for the instance.</summary>
         /// <returns>The hash code for the instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
             HashCode hashCode = default;
 
             for (int i = 0; i < Count; i++)
             {
-                T value = this.GetElement(i);
+                T value = this.GetElementUnsafe(i);
                 hashCode.Add(value);
             }
 
@@ -352,7 +361,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
         /// <returns>An equivalent string representation of the current instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
@@ -364,13 +373,13 @@ namespace System.Runtime.Intrinsics
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
 
             sb.Append('<');
-            sb.Append(((IFormattable)this.GetElement(0)).ToString(format, formatProvider));
+            sb.Append(((IFormattable)this.GetElementUnsafe(0)).ToString(format, formatProvider));
 
             for (int i = 1; i < Count; i++)
             {
                 sb.Append(separator);
                 sb.Append(' ');
-                sb.Append(((IFormattable)this.GetElement(i)).ToString(format, formatProvider));
+                sb.Append(((IFormattable)this.GetElementUnsafe(i)).ToString(format, formatProvider));
             }
             sb.Append('>');
 

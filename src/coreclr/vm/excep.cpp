@@ -11635,30 +11635,27 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    StackSString sFormat;
-    StackSString sAlcName;
+    SString detailsUtf8;
 
+    SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-
     if (pPEAssembly->GetPath().IsEmpty())
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_BYTE);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8());
     }
     else
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_PATH);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode(),
-                                   pPEAssembly->GetPath().GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8(),
+                                   pPEAssembly->GetPath().GetUTF8());
     }
+
+    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
 }
 
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,

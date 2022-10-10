@@ -1078,6 +1078,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
@@ -1191,6 +1193,7 @@
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.Unix.cs" />
@@ -1261,8 +1264,6 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
@@ -1297,7 +1298,6 @@
     <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.macOS.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
@@ -1326,7 +1326,6 @@
     <Compile Include="System\Security\Cryptography\DSA.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificateExporter.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.iOS.cs" />

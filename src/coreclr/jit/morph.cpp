@@ -7389,14 +7389,14 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         lvaSetVarAddrExposed(newRetLcl DEBUGARG(AddressExposedReason::DISPATCH_RET_BUF));
 
+        if (varTypeIsStruct(origCall) && compMethodReturnsMultiRegRetType())
+        {
+            lvaGetDesc(newRetLcl)->lvIsMultiRegRet = true;
+        }
+
         retValArg =
             gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
         retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
-
-        if (varTypeIsStruct(origCall->gtType))
-        {
-            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->GetUnmanagedCallConv());
-        }
     }
     else
     {
@@ -8312,6 +8312,26 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // Process the "normal" argument list
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
+
+    // Try to replace CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE with a constant gc handle
+    // pointing to a frozen segment
+    if (!gtIsActiveCSE_Candidate(call) && gtIsTypeHandleToRuntimeTypeHelper(call))
+    {
+        GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
+        if ((hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
+        {
+            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
+            if (ptr != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                retNode->gtType  = TYP_REF;
+                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                return fgMorphTree(retNode);
+            }
+        }
+    }
 
     // Assign DEF flags if it produces a definition from "return buffer".
     fgAssignSetVarDef(call);
@@ -11155,7 +11175,7 @@ DONE_MORPHING_CHILDREN:
             //
             if (!tree->AsIndir()->IsVolatile())
             {
-                if (op1->IsIconHandle(GTF_ICON_STR_HDL))
+                if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                 }
