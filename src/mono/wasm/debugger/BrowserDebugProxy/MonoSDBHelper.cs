@@ -1839,7 +1839,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        public async Task<string> InvokeToStringAsync(List<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
         {
             try
             {
