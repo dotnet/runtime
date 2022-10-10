@@ -3622,8 +3622,6 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             info.compCompHnd->getFieldInClass(nullableCls, 0);
 
                                         assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
-                                        assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
-                                                       "hasValue"));
 
                                         GenTree* objToBox = impPopStack().val;
 

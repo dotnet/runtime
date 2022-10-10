@@ -7602,7 +7602,6 @@ public:
                        bool                  includeThisSpecifier);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
-    const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd);
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
                                     bool                  includeReturnType    = true,
                                     bool                  includeThisSpecifier = true);
@@ -7841,7 +7840,6 @@ public:
 
     // Utility functions
 
-    const char* eePrintFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size_t bufferSize);
 
 #if defined(DEBUG)
     void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
@@ -7849,7 +7847,9 @@ public:
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
-    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);
+    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer = nullptr, size_t bufferSize = 0);
+    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, bool includeClass, char* buffer = nullptr, size_t bufferSize = 0);
+    const char* eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer = nullptr, size_t bufferSize = 0);
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);

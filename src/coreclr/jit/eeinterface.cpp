@@ -349,9 +349,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
 {
     if ((eeGetHelperNum(hnd) != CORINFO_HELP_UNDEF) || eeIsNativeMethod(hnd))
     {
-        const char* className;
-        const char* methodName = eeGetMethodName(hnd, &className);
-        return methodName;
+        return eeGetMethodName(hnd);;
     }
 
     StringPrinter        p(getAllocator(CMK_DebugOnly));

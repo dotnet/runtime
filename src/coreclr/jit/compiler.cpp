@@ -1789,7 +1789,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = nullptr;
     info.compFullName   = nullptr;
 
-    info.compMethodName = eeGetMethodName(methodHnd, nullptr);
+    info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
     info.compPerfScore  = 0.0;

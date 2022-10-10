@@ -2974,9 +2974,10 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        const char* modName;
-        const char* fldName = m_pComp->eeGetFieldName(fieldHnd, &modName);
-        printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
+        printf("    VNForHandle(");
+        m_pComp->eePrintFieldName(fieldHnd);
+        printf(") is " FMT_VN ", fieldType is %s", fldHndVN, varTypeName(fieldType));
+
         if (size != 0)
         {
             printf(", size = %u", size);
@@ -8041,9 +8042,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
 #ifdef DEBUG
                 if (verbose)
                 {
-                    const char* modName;
-                    const char* fldName = eeGetFieldName(fldHnd, &modName);
-                    printf("     VNForHandle(%s) is " FMT_VN "\n", fldName, fldHndVN);
+                    printf("     VNForHandle(");
+                    eePrintFieldName(fldHnd);
+                    printf(") is " FMT_VN "\n", fldHndVN);
                 }
 #endif // DEBUG
 

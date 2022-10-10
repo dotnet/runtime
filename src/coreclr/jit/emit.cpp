@@ -3355,48 +3355,6 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     }
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************
- *
- *  Return a string with the name of the given class field (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFldName(CORINFO_FIELD_HANDLE fieldVal)
-{
-    if (emitComp->opts.varNames)
-    {
-        const char* memberName;
-        const char* className;
-
-        const int   TEMP_BUFFER_LEN = 1024;
-        static char buff[TEMP_BUFFER_LEN];
-
-        memberName = emitComp->eeGetFieldName(fieldVal, &className);
-
-        sprintf_s(buff, TEMP_BUFFER_LEN, "'<%s>.%s'", className, memberName);
-        return buff;
-    }
-    else
-    {
-        return "";
-    }
-}
-
-/*****************************************************************************
- *
- *  Return a string with the name of the given function (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFncName(CORINFO_METHOD_HANDLE methHnd)
-{
-    return emitComp->eeGetMethodFullName(methHnd);
-}
-
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Be very careful, some instruction descriptors are allocated as "tiny" and
@@ -4104,20 +4062,15 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     {
         if (flag == GTF_ICON_FTN_ADDR)
         {
-            const char* className = nullptr;
-            const char* methName =
-                emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
-            printf("%s code for %s:%s", commentPrefix, className, methName);
+            printf("%s code for ", commentPrefix);
+            emitComp->eePrintMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), true);
             return;
         }
 
         if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
         {
-            const char* className = nullptr;
-            const char* fieldName =
-                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), &className);
-            printf("%s %s for %s%s%s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", className,
-                   className != nullptr ? ":" : "", fieldName);
+            printf("%s %s for ", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box");
+            emitComp->eePrintFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true);
             return;
         }
     }
@@ -4154,7 +4107,8 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
+        printf("%s ", commentPrefix);
+        emitComp->eePrintFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle), true);
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {

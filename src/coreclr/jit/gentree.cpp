@@ -11501,8 +11501,8 @@ void Compiler::gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset)
         return;
     }
 
-    printf(" Fseq[");
-    printf("%s", eeGetFieldName(fieldSeq->GetFieldHandle()));
+    char buffer[128];
+    printf(" Fseq[%s", eeGetFieldName(fieldSeq->GetFieldHandle(), buffer, sizeof(buffer)));
     if (offset != 0)
     {
         printf(", %zd", offset);
@@ -11583,11 +11583,11 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     {
                         unsigned    fieldLclNum = varDsc->lvFieldLclStart + index;
                         LclVarDsc*  fieldVarDsc = lvaGetDesc(fieldLclNum);
-                        const char* fieldName;
+                        char fieldName[64];
 #if !defined(TARGET_64BIT)
                         if (varTypeIsLong(varDsc))
                         {
-                            fieldName = (index == 0) ? "lo" : "hi";
+                            strcpy_s(fieldName, sizeof(fieldName), (index == 0) ? "lo" : "hi");
                         }
                         else
 #endif // !defined(TARGET_64BIT)
@@ -11595,7 +11595,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
                             CORINFO_FIELD_HANDLE fldHnd =
                                 info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
-                            fieldName = eeGetFieldName(fldHnd);
+                            eePrintFieldNameToBuffer(fldHnd, fieldName, sizeof(fieldName));
                         }
 
                         printf("\n");
@@ -11635,8 +11635,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             const char* methodName;
             const char* className;
 
-            methodName = eeGetMethodName((CORINFO_METHOD_HANDLE)tree->AsVal()->gtVal1, &className);
-            printf(" %s.%s\n", className, methodName);
+            printf(" ");
+            eePrintMethodName((CORINFO_METHOD_HANDLE)tree->AsVal()->gtVal1, true);
         }
         break;
 
@@ -11942,7 +11942,8 @@ void Compiler::gtDispTree(GenTree*     tree,
 
         if (tree->OperIs(GT_FIELD, GT_FIELD_ADDR))
         {
-            printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
+            char buffer[128];
+            printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd, buffer, sizeof(buffer)));
         }
 
         if (tree->gtOper == GT_INTRINSIC)
@@ -18303,12 +18304,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 
         if (queryForCurrentClass)
         {
-
 #if DEBUG
-            const char* fieldClassName = nullptr;
-            const char* fieldName      = eeGetFieldName(fieldHnd, &fieldClassName);
-            JITDUMP("Querying runtime about current class of field %s.%s (declared as %s)\n", fieldClassName, fieldName,
-                    eeGetClassName(fieldClass));
+            JITDUMP("Querying runtime about current class of field ");
+            eePrintFieldName(fieldHnd, true);
+            printf(" (declared as %s)\n", eeGetClassName(fieldClass));
 #endif // DEBUG
 
             // Is this a fully initialized init-only static field?

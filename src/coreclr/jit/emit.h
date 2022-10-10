@@ -1729,9 +1729,6 @@ protected:
     const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
 
-    const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
-    const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
-
     // GC Info changes are not readily available at each instruction.
     // We use debug-only sets to track the per-instruction state, and to remember
     // what the state was at the last time it was output (instruction or label).

@@ -6376,7 +6376,7 @@ size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    char* ftnName = ftn->GetName();
+    const char* ftnName = ftn->GetName();
 
     size_t len = strlen(ftnName);
     if (bufferSize > 0)
@@ -9278,7 +9278,7 @@ size_t CEEInfo::printFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
-    char* fieldName = field->GetName();
+    const char* fieldName = field->GetName();
 
     size_t len = strlen(fieldName);
     if (bufferSize > 0)
