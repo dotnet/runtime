@@ -40,19 +40,12 @@ namespace Microsoft.Interop
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.VirtualMethodIndexAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
+                .ForAttributeWithMetadataName(
+                    TypeNames.VirtualMethodIndexAttribute,
+                    static (node, ct) => node is MethodDeclarationSyntax,
+                    static (context, ct) => context.TargetSymbol is IMethodSymbol methodSymbol
+                        ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
+                        : null)
                 .Where(
                     static modelData => modelData is not null);
 
