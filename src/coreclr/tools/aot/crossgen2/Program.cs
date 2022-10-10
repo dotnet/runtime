@@ -793,8 +793,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, singleMethodName, singleMethodTypeName));
 
-            if (method.HasInstantiation != (singleMethodGenericArgs.Length != 0) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, singleMethodName, singleMethodTypeName));
