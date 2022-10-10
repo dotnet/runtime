@@ -97,11 +97,6 @@ jobs:
         - name: logRootNameArg
           value: '-log:'
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
-        # This is only required for cross builds.
-        - name: ROOTFS_DIR
-          value: ${{ parameters.jobParameters.crossrootfsDir }}
-
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           value: Mono
@@ -128,8 +123,10 @@ jobs:
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
         container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
-      ${{ if ne(parameters.container.registry, 'mcr') }}:
+      ${{ if and(ne(parameters.container.image, ''), ne(parameters.container.registry, 'mcr')) }}:
         container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
+      ${{ if eq(parameters.container.image, '') }}:
+        container: ${{ parameters.container }}
 
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:

@@ -3467,27 +3467,46 @@ private:
 };
 
 //*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int GuidToLPSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPSTR szGuid,   // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in chars of szGuid
+
+template<DWORD N>
+int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
+{
+    return GuidToLPSTR(guid, s, N);
+}
+
+//*****************************************************************************
 // Convert a pointer to a string into a GUID.
 //*****************************************************************************
-HRESULT LPCSTRToGuid(                   // Return status.
-    LPCSTR      szGuid,                 // String to convert.
-    GUID        *psGuid);               // Buffer for converted GUID.
+BOOL LPCSTRToGuid(
+    LPCSTR szGuid,  // [IN] String to convert.
+    GUID* pGuid);  // [OUT] Buffer for converted GUID.
 
 //*****************************************************************************
 // Convert a GUID into a pointer to a string
 //*****************************************************************************
-int GuidToLPWSTR(                  // Return status.
-    GUID        Guid,                  // [IN] The GUID to convert.
-    _Out_writes_ (cchGuid) LPWSTR szGuid, // [OUT] String into which the GUID is stored
-    DWORD       cchGuid);              // [IN] Size in wide chars of szGuid
+int GuidToLPWSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPWSTR szGuid,  // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in wide chars of szGuid
+
+template<DWORD N>
+int GuidToLPWSTR(REFGUID guid, WCHAR (&s)[N])
+{
+    return GuidToLPWSTR(guid, s, N);
+}
 
 //*****************************************************************************
 // Parse a Wide char string into a GUID
 //*****************************************************************************
-BOOL LPWSTRToGuid(
-    GUID      * Guid,                         // [OUT] The GUID to fill in
-    _In_reads_(cchGuid)   LPCWSTR szGuid,    // [IN] String to parse
-    DWORD       cchGuid);                     // [IN] Count in wchars in string
+BOOL LPCWSTRToGuid(
+    LPCWSTR szGuid, // [IN] String to convert.
+    GUID* pGuid);   // [OUT] Buffer for converted GUID.
 
 typedef VPTR(class RangeList) PTR_RangeList;
 

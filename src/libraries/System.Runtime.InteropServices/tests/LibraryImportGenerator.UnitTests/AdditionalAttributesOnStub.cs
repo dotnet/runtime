@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop.UnitTests;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;

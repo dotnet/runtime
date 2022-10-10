@@ -2188,6 +2188,29 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
+{
+    if (GetRuntimeTypePointer == nullptr)
+        GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = (DWORDLONG)result;
+    GetRuntimeTypePointer->Add(key, value);
+    DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
+}
+void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
+}
+void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
+    DWORDLONG value = GetRuntimeTypePointer->Get(key);
+    DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
+    return (void*)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
@@ -4875,6 +4898,77 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    if (PrintObjectDescription == nullptr)
+        PrintObjectDescription = new LightWeightMap<DLDL, Agnostic_PrintObjectDescriptionResult>();
+
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    DWORD strBuf = (DWORD)-1;
+    if (buffer != nullptr && bytesWritten > 0)
+    {
+        size_t bufferRealSize = min(bytesWritten, bufferSize - 1);
+        strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
+    }
+
+    Agnostic_PrintObjectDescriptionResult value;
+    value.bytesWritten = (DWORDLONG)bytesWritten;
+    value.requiredBufferSize = (DWORDLONG)(pRequiredBufferSize == nullptr ? 0 : *pRequiredBufferSize);
+    value.buffer = (DWORD)strBuf;
+
+    PrintObjectDescription->Add(key, value);
+    DEBUG_REC(dmpPrintObjectDescription(key, value));
+}
+void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value)
+{
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, bytesWritten-%u, pRequiredBufferSize-%u", key.A, (unsigned)key.B, (unsigned)value.bytesWritten, (unsigned)value.requiredBufferSize);
+    PrintObjectDescription->Unlock();
+}
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    if (PrintObjectDescription == nullptr)
+    {
+        return 0;
+    }
+
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    int itemIndex = PrintObjectDescription->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
+        DEBUG_REP(dmpPrintObjectDescription(key, value));
+        if (pRequiredBufferSize != nullptr)
+        {
+            *pRequiredBufferSize = (size_t)value.requiredBufferSize;
+        }
+
+        size_t bytesWritten = 0;
+
+        BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+        Assert(srcBuffer != nullptr);
+
+        if (bufferSize > 0)
+        {
+            bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+            memcpy(buffer, srcBuffer, bytesWritten);
+
+            // Always null-terminate
+            buffer[bytesWritten] = 0;
+        }
+        return bytesWritten;
+    }
+}
+
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
 {
     if (GetHelperName == nullptr)
@@ -5518,7 +5612,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     HRESULT result = (HRESULT)value.result;
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
-    size_t maxOffset = 0;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.countSchemaItems; iSchema++)
     {
         // Everything but `Offset` field is an IN argument, so verify it against what we stored (since we didn't use these
@@ -5546,24 +5639,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
         }
 
         pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
-
-        if (pSchema[iSchema].Offset > maxOffset)
-            maxOffset = pSchema[iSchema].Offset;
     }
 
-    // Allocate a scratch buffer, linked to method context via AllocPgoInstrumentationBySchema, so it gets
-    // cleaned up when the method context does.
-    //
-    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
-    // But we need a writeable buffer because the jit will store IL offsets inside.
-    //
-    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
-    // jit completion so we can snapshot the offsets the jit writes.
-    //
-    // Add 16 bytes of represent writeable space
-    size_t bufSize = maxOffset + 16;
-    *pInstrumentationData = (BYTE*)AllocJitTempBuffer(bufSize);
-    cr->recAddressMap((void*)value.instrumentationDataAddress, (void*)*pInstrumentationData, (unsigned)bufSize);
+    // We assume JIT does not write or read from this buffer, only generate
+    // code that uses it.
+    *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
     return result;
 }
 

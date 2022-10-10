@@ -7,26 +7,23 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Reflection.PortableExecutable;
 using System.Text;
-
 using ILCompiler.Reflection.ReadyToRun;
-using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 
 namespace R2RDump
 {
-    class TextDumper : Dumper
+    internal sealed class TextDumper : Dumper
     {
-        public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
-            : base(r2r, writer, disassembler, options)
+        public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
+            : base(r2r, writer, disassembler, model)
         {
         }
 
-        internal override void Begin()
+        public override void Begin()
         {
-            if (!_options.Normalize)
+            if (!_model.Normalize)
             {
                 _writer.WriteLine($"Filename: {_r2r.Filename}");
                 _writer.WriteLine($"OS: {_r2r.OperatingSystem}");
@@ -36,26 +33,26 @@ namespace R2RDump
             }
         }
 
-        internal override void End()
+        public override void End()
         {
             _writer.WriteLine("=============================================================");
             SkipLine();
         }
 
-        internal override void WriteDivider(string title)
+        public override void WriteDivider(string title)
         {
             int len = Math.Max(61 - title.Length - 2, 2);
             _writer.WriteLine(new String('=', len / 2) + " " + title + " " + new String('=', (len + 1) / 2));
             SkipLine();
         }
 
-        internal override void WriteSubDivider()
+        public override void WriteSubDivider()
         {
             _writer.WriteLine("_______________________________________________");
             SkipLine();
         }
 
-        internal override void SkipLine()
+        public override void SkipLine()
         {
             _writer.WriteLine();
         }
@@ -63,11 +60,11 @@ namespace R2RDump
         /// <summary>
         /// Dumps the R2RHeader and all the sections in the header
         /// </summary>
-        internal override void DumpHeader(bool dumpSections)
+        public override void DumpHeader(bool dumpSections)
         {
             _writer.WriteLine(_r2r.ReadyToRunHeader.ToString());
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 DumpBytes(_r2r.ReadyToRunHeader.RelativeVirtualAddress, (uint)_r2r.ReadyToRunHeader.Size);
             }
@@ -107,24 +104,24 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RSection
         /// </summary>
-        internal override void DumpSection(ReadyToRunSection section)
+        public override void DumpSection(ReadyToRunSection section)
         {
             WriteSubDivider();
-            section.WriteTo(_writer, _options);
+            section.WriteTo(_writer, _model);
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 DumpBytes(section.RelativeVirtualAddress, (uint)section.Size);
                 SkipLine();
             }
-            if (_options.SectionContents)
+            if (_model.SectionContents)
             {
                 DumpSectionContents(section);
                 SkipLine();
             }
         }
 
-        internal override void DumpEntryPoints()
+        public override void DumpEntryPoints()
         {
             WriteDivider($@"R2R Entry Points");
             foreach (ReadyToRunMethod method in NormalizedMethods())
@@ -133,7 +130,7 @@ namespace R2RDump
             }
         }
 
-        internal override void DumpAllMethods()
+        public override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
             _writer.WriteLine($"{_r2r.Methods.Count()} methods");
@@ -141,7 +138,7 @@ namespace R2RDump
 
             HashSet<PgoInfoKey> pgoEntriesNotDumped = new HashSet<PgoInfoKey>();
 
-            if (_options.Pgo)
+            if (_model.Pgo)
             {
                 if (_r2r != null)
                 {
@@ -156,7 +153,7 @@ namespace R2RDump
                 TextWriter temp = _writer;
                 _writer = new StringWriter();
                 DumpMethod(method);
-                if (_options.Pgo && method.PgoInfo != null)
+                if (_model.Pgo && method.PgoInfo != null)
                 {
                     pgoEntriesNotDumped.Remove(method.PgoInfo.Key);
                 }
@@ -169,7 +166,7 @@ namespace R2RDump
                 WriteDivider("Pgo entries without code");
                 _writer.WriteLine($"{pgoEntriesNotDumped.Count()} Pgo blobs");
                 IEnumerable<PgoInfoKey> pgoEntriesToDump = pgoEntriesNotDumped;
-                if (_options.Normalize)
+                if (_model.Normalize)
                 {
                     pgoEntriesToDump = pgoEntriesToDump.OrderBy((p) => p.SignatureString);
                 }
@@ -186,30 +183,30 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RMethod.
         /// </summary>
-        internal override void DumpMethod(ReadyToRunMethod method)
+        public override void DumpMethod(ReadyToRunMethod method)
         {
             WriteSubDivider();
-            method.WriteTo(_writer, _options);
+            method.WriteTo(_writer, _model);
 
-            if (_options.GC && method.GcInfo != null)
+            if (_model.GC && method.GcInfo != null)
             {
                 BaseGcInfo gcInfo = method.GcInfo;
                 _writer.WriteLine("GC info:");
                 _writer.Write(gcInfo);
 
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(method.GcInfoRva, (uint)gcInfo.Size);
                 }
             }
             SkipLine();
 
-            if (_options.Pgo && method.PgoInfo != null)
+            if (_model.Pgo && method.PgoInfo != null)
             {
                 _writer.WriteLine("PGO info:");
                 _writer.Write(method.PgoInfo);
 
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(method.PgoInfo.Offset, (uint)method.PgoInfo.Size, convertToOffset: false);
                 }
@@ -225,26 +222,26 @@ namespace R2RDump
         /// <summary>
         /// Dumps one runtime function.
         /// </summary>
-        internal override void DumpRuntimeFunction(RuntimeFunction rtf)
+        public override void DumpRuntimeFunction(RuntimeFunction rtf)
         {
             _writer.WriteLine(rtf.Method.SignatureString);
-            rtf.WriteTo(_writer, _options);
+            rtf.WriteTo(_writer, _model);
 
-            if (_options.Disasm)
+            if (_model.Disasm)
             {
                 DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
             }
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 _writer.WriteLine("Raw Bytes:");
                 DumpBytes(rtf.StartAddress, (uint)rtf.Size);
             }
-            if (_options.Unwind)
+            if (_model.Unwind)
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
@@ -255,7 +252,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps disassembly and register liveness
         /// </summary>
-        internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
+        public override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
             string indentString = new string(' ', _disassembler.MnemonicIndentation);
             int codeOffset = rtf.CodeOffset;
@@ -276,7 +273,7 @@ namespace R2RDump
                     }
                     _writer.WriteLine();
                 }
-                BaseGcInfo gcInfo = (_options.HideTransitions ? null : rtf.Method?.GcInfo);
+                BaseGcInfo gcInfo = (_model.HideTransitions ? null : rtf.Method?.GcInfo);
                 if (gcInfo != null && gcInfo.Transitions != null && gcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
                 {
                     string[] formattedTransitions = new string[transitionsForOffset.Count];
@@ -284,7 +281,7 @@ namespace R2RDump
                     {
                         formattedTransitions[transitionIndex] = transitionsForOffset[transitionIndex].ToString();
                     }
-                    if (_options.Normalize)
+                    if (_model.Normalize)
                     {
                         Array.Sort(formattedTransitions);
                     }
@@ -307,7 +304,7 @@ namespace R2RDump
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        internal override void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true)
+        public override void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true)
         {
             int start = rva;
             if (convertToOffset)
@@ -340,12 +337,12 @@ namespace R2RDump
             SkipLine();
         }
 
-        internal override void DumpSectionContents(ReadyToRunSection section)
+        public override void DumpSectionContents(ReadyToRunSection section)
         {
             switch (section.Type)
             {
                 case ReadyToRunSectionType.AvailableTypes:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         uint availableTypesSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
                         NativeParser availableTypesParser = new NativeParser(_r2r.Image, availableTypesSectionOffset);
@@ -364,7 +361,7 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.MethodDefEntryPoints:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
                         _writer.Write(methodEntryPoints.ToString());
@@ -381,7 +378,7 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.InstanceMethodEntryPoints:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         uint instanceSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
                         NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
@@ -418,16 +415,26 @@ namespace R2RDump
                     _writer.WriteLine(_r2r.CompilerIdentifier);
                     break;
                 case ReadyToRunSectionType.ImportSections:
-                    if (_options.Naked)
+                    if (_model.Naked)
                     {
-                        DumpNakedImportSections();
+                        List<ReadyToRunImportSection.ImportSectionEntry> entries = new();
+                        foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
+                        {
+                            entries.AddRange(importSection.Entries);
+                        }
+                        entries.Sort((e1, e2) => e1.Signature.ToString(_model.SignatureFormattingOptions).CompareTo(e2.Signature.ToString(_model.SignatureFormattingOptions)));
+                        foreach (ReadyToRunImportSection.ImportSectionEntry entry in entries)
+                        {
+                            entry.WriteTo(_writer, _model);
+                            _writer.WriteLine();
+                        }
                     }
                     else
                     {
                         foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
                         {
                             importSection.WriteTo(_writer);
-                            if (_options.Raw && importSection.Entries.Count != 0)
+                            if (_model.Raw && importSection.Entries.Count != 0)
                             {
                                 if (importSection.SectionRVA != 0)
                                 {
@@ -447,7 +454,7 @@ namespace R2RDump
                             }
                             foreach (ReadyToRunImportSection.ImportSectionEntry entry in importSection.Entries)
                             {
-                                entry.WriteTo(_writer, _options);
+                                entry.WriteTo(_writer, _model);
                                 _writer.WriteLine();
                             }
                             _writer.WriteLine();
@@ -500,7 +507,7 @@ namespace R2RDump
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     if (_r2r.Image[oceOffset + section.Size - 1] != 0)
                     {
-                        R2RDump.WriteWarning("String is not zero-terminated");
+                        Program.WriteWarning("String is not zero-terminated");
                     }
                     string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
                     _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
@@ -518,28 +525,13 @@ namespace R2RDump
             }
         }
 
-        private void DumpNakedImportSections()
-        {
-            List<ReadyToRunImportSection.ImportSectionEntry> entries = new List<ReadyToRunImportSection.ImportSectionEntry>();
-            foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
-            {
-                entries.AddRange(importSection.Entries);
-            }
-            entries.Sort((e1, e2) => e1.Signature.ToString(_options.GetSignatureFormattingOptions()).CompareTo(e2.Signature.ToString(_options.GetSignatureFormattingOptions())));
-            foreach (ReadyToRunImportSection.ImportSectionEntry entry in entries)
-            {
-                entry.WriteTo(_writer, _options);
-                _writer.WriteLine();
-            }
-        }
-
-        internal override void DumpQueryCount(string q, string title, int count)
+        public override void DumpQueryCount(string q, string title, int count)
         {
             _writer.WriteLine(count + " result(s) for \"" + q + "\"");
             SkipLine();
         }
 
-        internal override void DumpFixupStats()
+        public override void DumpFixupStats()
         {
             WriteDivider("Eager fixup counts across all methods");
 
