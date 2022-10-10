@@ -550,11 +550,12 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	return ins;
 }
 #endif
+#ifdef TARGET_WASM
+static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg);
+#endif
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 static int type_to_extract_op (MonoTypeEnum type);
-static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
-
 static MonoInst*
 extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
 {
@@ -565,6 +566,10 @@ extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_
 
 	return ins;
 }
+#endif
+
+#ifdef TARGET_AMD64
+static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
 
 static MonoInst*
 emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
@@ -1296,7 +1301,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Dot: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
@@ -1562,7 +1567,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Sum: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);
 #else
 		return NULL;
@@ -4235,15 +4240,29 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 
 #ifdef TARGET_WASM
 
+static MonoInst*
+emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
+{
+	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
+	MonoInst* vsum = emit_simd_ins (cfg, vector_class, OP_WASM_SIMD_SUM, arg->dreg, -1);
+
+	return extract_first_element (cfg, vector_class, element_type, vsum->dreg);
+}
+
 static SimdIntrinsic packedsimd_methods [] = {
+	{SN_Add},
 	{SN_And},
 	{SN_Bitmask},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
+	{SN_Dot},
 	{SN_ExtractLane},
+	{SN_Multiply},
+	{SN_Negate},
 	{SN_ReplaceLane},
 	{SN_Shuffle},
 	{SN_Splat},
+	{SN_Subtract},
 	{SN_Swizzle},
 	{SN_get_IsSupported},
 };
@@ -4263,6 +4282,12 @@ emit_packedsimd_intrinsics (
 		return NULL;
 
 	switch (id) {
+		case SN_Add:
+		case SN_Subtract:
+		case SN_Multiply:
+			return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+		case SN_Negate:
+			return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 		case SN_And:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND, arg0_type, fsig, args);
 		case SN_Bitmask:
@@ -4287,6 +4312,8 @@ emit_packedsimd_intrinsics (
 			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		}
+		case SN_Dot:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_WASM_DOT, -1, fsig, args);
 		case SN_Shuffle:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
 		case SN_Swizzle:

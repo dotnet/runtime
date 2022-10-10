@@ -289,6 +289,12 @@ CorInfoHelpFunc getUnBoxHelper(
 void* getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls) override;
 
+bool isObjectImmutable(
+          void* objPtr) override;
+
+CORINFO_CLASS_HANDLE getObjectType(
+          void* objPtr) override;
+
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -605,6 +611,11 @@ unsigned getClassDomainID(
 void* getFieldAddress(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
+
+bool getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint8_t* buffer,
+          int bufferSize) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

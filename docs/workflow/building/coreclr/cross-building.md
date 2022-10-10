@@ -1,184 +1,163 @@
-Cross Compilation for ARM on Windows
-==================================
+# Cross-Building for Different Architectures and Operating Systems
 
-Building ARM for Windows can be done using cross compilation.
+* [Windows Cross-Building](#windows-cross-building)
+  * [Cross-Compiling for ARM32 and ARM64 on Windows](#cross-compiling-for-arm32-and-arm64-on-windows)
+  * [Cross-Compiling for x86 on Windows](#cross-compiling-for-x86-on-windows)
+* [MacOS Cross-Building](#macos-cross-building)
+* [Linux Cross-Building](#linux-cross-building)
+  * [Generating the ROOTFS](#generating-the-rootfs)
+    * [ROOTFS for FreeBSD](#rootfs-for-freebsd)
+  * [Cross-Compiling CoreCLR](#cross-compiling-coreclr)
+    * [CoreCLR for FreeBSD](#coreclr-for-freebsd)
+    * [Cross-Compiling CoreCLR for other VFP Configurations](#cross-compiling-coreclr-for-other-vfp-configurations)
+  * [Building the Cross-Targeting Tools](#building-the-cross-targeting-tools)
+* [Cross-Building using Docker](#cross-building-using-docker)
+  * [Cross-Compiling for ARM32 and ARM64 with Docker](#cross-compiling-for-arm32-and-arm64-with-docker)
+  * [Cross-Compiling for FreeBSD with Docker](#cross-compiling-for-freebsd-with-docker)
 
-Requirements
-------------
+This guide will go more in-depth on how to do cross-building across multiple operating systems and architectures. It's worth mentioning this is not an any-to-any scenario. Only the combinations explained here are possible/supported. If/When any other combinations get supported/discovered, this document will get updated accordingly.
 
-Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md).
+## Windows Cross-Building
 
-Cross compiling CoreCLR
------------------------
+This section will go over cross-compiling on Windows. Currently, Windows allows you to cross-compile from x64 to basically any other architecture.
 
-Build using "arm" as the architecture. For example:
+### Cross-Compiling for ARM32 and ARM64 on Windows
 
-    C:\runtime> build.cmd -subset clr.runtime -arch arm -c debug
+To do cross-compilation for ARM32/ARM64 on Windows, first make sure you have the appropriate tools and Windows SDK installed. This is described in detail in the [Windows requirements doc](/docs/workflow/requirements/windows-requirements.md#visual-studio).
 
--or-
+Once you have all the required dependencies, it is a straightforward process. Windows knows how to cross-build behind curtains, so all you have to do is specify which architecture you want to build for:
 
-    C:\runtime> src\coreclr\build-runtime.cmd -arm -debug
+```cmd
+.\build.cmd -s clr -c Release -arch arm64
+```
 
-Cross Compilation for ARM64 on macOS
-================================================
+### Cross-Compiling for x86 on Windows
 
-The toolset required to do native compilation described in [macOS requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md) has cross compilation capabilities with no additional installs required. The only needed change is to use the `-cross` flag in the build scripts. For example, a release CoreCLR runtime that targets ARM64 can be built using the following commandline from the root of the repo:
+Building for x86 doesn't require any additional software installed or configured, since all the x64 build tools also have the capability of building for x86. Just specify it when calling the build script:
 
-    ./build.sh -subset clr.runtime -c release -cross -arch arm64 /p:CrossBuild=true
+```cmd
+.\build.cmd -s clr -c Release -arch x86
+```
 
-Cross Compilation for ARM, ARM64 or x86 on Linux
-================================================
+## MacOS Cross-Building
 
-Through cross compilation, on Linux it is possible to build CoreCLR for arm or arm64. Note that this documentation exists to explain using `runtime/eng/common/build-rootfs.sh`. This will build a rootfs and then use it to cross build. Newer documentation [linux-instructions.md](linux-instructions.md) exists which leverages docker to use a prebuilt environment to cross build.
+This section will go over cross-compiling on MacOS. Currently, MacOS allows you to cross-compile between x64 and ARM64.
 
-Requirements for targeting Debian based distros
-------------------------------------------------
+Similarly to targeting Windows x86, the native tooling you installed back in the [MacOS requirements doc](/docs/workflow/requirements/macos-requirements.md) has the capabilities to effectuate the cross-compilation. You have simply to pass the `-cross` flag, along with the designated architecture. For example, for an arm64 build on an Intel x64 Mac:
 
-You need a Debian based host and the following packages need to be installed:
+```bash
+./build.sh -s clr -c Release --cross -a arm64
+```
 
-    ~/runtime/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
+## Linux Cross-Building
 
-In addition, to cross compile CoreCLR the binutils for the target are required. So for arm you need:
+This section will go over cross-compiling on Linux. Currently, Linux allows you to cross-compile from x64 to ARM32 and ARM64, as well as to other Unix-based operating systems, like FreeBSD and Alpine.
 
-    ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabihf
+### Generating the ROOTFS
 
-and conversely for arm64:
+Before you can attempt to do any Linux cross-building, you will need to generate the _ROOTFS_ corresponding to the platform you want to target. The script located in `eng/common/cross/build-rootfs.sh` is in charge of effectuating this task. Note that this script must be run with `sudo`, as it needs to make some symlinks to the system that would not be allowed otherwise.
 
-    ~/runtime/ $ sudo apt-get install binutils-aarch64-linux-gnu
+For example, let's try generating a _ROOTFS_ targeting Ubuntu 18 (Bionic) for ARM64:
 
-and for armel (ARM softfp):
+```bash
+sudo ./eng/common/cross/build-rootfs.sh arm64 bionic
+```
 
-    ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabi
+The _rootfs_ binaries will be placed in `.tools/rootfs/<arch>`. So, for this example, it would be `.tools/rootfs/arm64`. Note that the Linux codename argument is optional, and if you omit it, the script will pick its default one.
 
+It is also possible to have `build-rootfs.sh` generate its output elsewhere. For that, you have to set the environment variable `ROOTFS_DIR` to the path where you want your _rootfs_ binaries to be placed in.
 
-Requirements for targeting ARM or ARM64 Alpine Linux
------------------------------------------------------
+#### ROOTFS for FreeBSD
 
-You can use any Linux distro as a host. The qemu, qemu-user-static and binfmt-support packages need to be installed (the names may be different for some distros).
+Generating the _ROOTFS_ for FreeBSD cross-compiling is virtually the same as for other Linux distributions in other architectures. The only difference is you have to specify it so. For example, for an x64 cross-compilation for FreeBSD 13:
 
-In addition, to cross compile CoreCLR, the binutils for Alpine need to be built from the https://github.com/richfelker/musl-cross-make repo, since they are not available as packages.
+```bash
+sudo ./eng/common/cross/build-rootfs.sh x64 freebsd13
+```
 
-To build them, use the following steps:
-* Clone the repo
-* Create a new config.mak file in the root directory of the repo and add the following lines into it:
-  * `TARGET = armv6-alpine-linux-musleabihf` for ARM or `TARGET = aarch64-alpine-linux-musl` for ARM64
-  * `OUTPUT = /usr`
-  * `BINUTILS_CONFIG=--enable-gold=yes`
-* Run `make` with current directory set to the root of the repo
-* Run `sudo make install`
+### Cross-Compiling CoreCLR
 
-Generating the rootfs
----------------------
-The `eng/common/cross/build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate a rootfs as this is what CoreCLR targets.
+Once you have your _ROOTFS_ generated, make sure to set the environment variable `ROOTFS_DIR` to where your binaries are located if you didn't do so in the previous step. Then, build normally and pass the `--cross` flag to the build script:
 
-    Usage: ./eng/common/cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]
-    BuildArch can be: arm(default), armel, arm64, x86
-    LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial or alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen.
-    lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8. This is ignored when building rootfs for Alpine Linux.
+```bash
+export ROOTFS_DIR=/path/to/runtime/.tools/rootfs/arm64
+./build.sh --subset clr --configuration Release --arch arm64 --cross
+```
 
-The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system, it will by default generate the rootfs in `eng/common/cross/rootfs/<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
+Like with any other build, you'll find the built binaries at `artifacts/bin/coreclr/Linux.<arch>.<configuration>`. For our example, it would be `artifacts/bin/coreclr/Linux.arm64.Release`.
 
-For example, to generate an arm rootfs:
+#### CoreCLR for FreeBSD
 
-    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh arm
+Very similarly to generating the _ROOTFS_, cross-building for FreeBSD follows the same process as for other architectures, which is described above. The only difference is that, in addition to the `--cross` flag, you also have to specify it is for FreeBSD by means of the `--os` flag:
 
-You can choose Linux code name to match your target, give `vivid` for `Ubuntu 15.04`, `wily` for `Ubuntu 15.10`. The default is `trusty`, version `Ubuntu 14.04`.
+```bash
+export ROOTFS_DIR=/path/to/runtime/.tools/rootfs/x64
+./build.sh --subset clr --configuration Release --cross --os FreeBSD
+```
 
-    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh arm wily
+#### Cross-Compiling CoreCLR for other VFP Configurations
 
-and if you wanted to generate the rootfs elsewhere:
-
-    ~/runtime/ $ sudo ROOTFS_DIR=/home/cross/arm ./eng/common/cross/build-rootfs.sh arm
-
-For example, to generate an armel rootfs:
-
-    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh armel
-
-You can choose code name to match your target, give `jessie` for `Debian`, `tizen` for `Tizen`. The default is `jessie`.
-
-    ~/runtime/ $ sudo ./eng/common/cross/build-rootfs.sh armel tizen
-
-and if you wanted to generate the rootfs elsewhere:
-
-    ~/runtime/ $ sudo ROOTFS_DIR=/home/armel ./eng/common/cross/build-rootfs.sh armel tizen
-
-
-Cross compiling CoreCLR
------------------------
-`ROOTFS_DIR` must be set when running `build-runtime.sh`.
-
-    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh --subset clr.runtime --arch arm -c debug -v verbose --cross
-
--or-
-
-    ~/runtime/ $ ROOTFS_DIR=/home/arm ./src/coreclr/build-runtime.sh -arm -debug -verbose -cross
-
-As usual, the resulting binaries will be found in `artifacts/bin/coreclr/TargetOS.BuildArch.BuildType/`
-
-Cross compiling CoreCLR for Other VFP configurations
-----------------------------------------------------------
-The default arm compilation configuration for CoreCLR is armv7-a with thumb-2 instruction set and
-VFPv3 floating point with 32 64-bit FPU registers.
+The default ARM compilation configuration for CoreCLR is armv7-a with thumb-2 instruction set, and VFPv3 floating point with 32 64-bit FPU registers.
 
 CoreCLR JIT requires 16 64-bit or 32 32-bit FPU registers.
 
-A set of FPU configuration options have been provided via build-runtime.sh to accommodate different CPU types.
-These FPU configuration options are: CLR_ARM_FPU_CAPABILITY and CLR_ARM_FPU_TYPE.
+A set of FPU configuration options have been provided in the build scripts to accommodate different CPU types. These FPU configuration options are:
 
-CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refer to
-your compiler documentation for possible options.
+* _CLR\_ARM\_FPU\_TYPE_: Translates to a value given to the `-mfpu` compiler option. Please refer to your compiler documentation for possible options.
+* _CLR\_ARM\_FPU\_CAPABILITY_: Used by the PAL code to decide which FPU registers should be saved and restored during context switches (the supported options are 0x3 and 0x7):
+  * Bit 0 unused always set to 1.
+  * Bit 1 corresponds to 16 64-bit FPU registers.
+  * Bit 2 corresponds to 32 64-bit FPU registers.
 
-CLR_ARM_FPU_CAPABILITY is used by the PAL code to decide which FPU registers should be saved and
-restored during context switches.
+For example, if you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compile options:
 
-Bit 0 unused always set to 1.
-Bit 1 corresponds to 16 64-bit FPU registers.
-Bit 2 corresponds to 32 64-bit FPU registers.
-
-Supported options are 0x3 and 0x7.
-
-If you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compile options:
-
-```
-./src/coreclr/build-runtime.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
+```bash
+./build.sh --subset clr --configuration Release --cross --arch arm --cmakeargs "-DCLR_ARM_FPU_CAPABILITY=0x3" --cmakeargs "-DCLR_ARM_FPU_TYPE=vfpv3-d16"
 ```
 
-Building the Cross-Targeting Tools
-------------------------------------
+### Building the Cross-Targeting Tools
 
-Some parts of our build process need some native components that are built for the current machine architecture, even when you are building for a different target architecture. These tools are referred to as cross-targeting tools or "cross tools". There are two categories of these tools today:
+Certain parts of the build process need some native components that are built for the current machine architecture, regardless of whichever you are targeting. These tools are referred to as cross-targeting tools or "cross tools". There are two categories of these tools today:
 
-- Crossgen2 JIT tools
-- Diagnostic libraries
+* Crossgen2 JIT Tools
+* Diagnostic Libraries
 
-The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the current build, such as during the clr.nativecorelib stage. These tools are automatically built when using the `./build.cmd` or `./build.sh` scripts at the root of the repo to build any of the CoreCLR native files, but they are not automatically built when using the `build-runtime.cmd/sh` scripts. To build these tools, you need to pass the `-hostarch` flag with the architecture of the host machine and the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. For example:
+The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the current build, such as during the `clr.nativecorelib` stage. Under normal circumstances, you should have no need to worry about this, since these tools are automatically built when using the `.\build.cmd` or `./build.sh` scripts at the root of the repo to build any of the CoreCLR native files.
 
+However, you might find yourself needing to (re)build them because either you made changes to them, or you built CoreCLR in a different way using `build-runtime.sh` instead of the usual default script at the root of the repo. To build these tools, you need to run the `src/coreclr/build-runtime.sh` script, and pass the `-hostarch` flag with the architecture of the host machine, alongside the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. Retaking our previous example of building for ARM64 using an x64 Linux machine:
+
+```bash
+./src/coreclr/build-runtime.sh -arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
-./src/coreclr/build-runtime.sh -arm -hostarch x64 -component crosscomponents -cmakeargs  -DCLR_CROSS_COMPONENTS_BUILD=1
-```
 
-On Windows, the cross-targeting diagnostic libraries are built with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script, but they can also be built manually with the `build-runtime.cmd` scripts. These builds also require you to pass the `-os` flag to specify the target OS. For example:
+The output of running this command is placed in `artifacts/bin/coreclr/Linux.<target_arch>.<configuration>/<host_arch>`. For our example, it would be `artifacts/bin/coreclr/Linux.arm64.Release/x64`.
 
-```
-src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os Linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+On Windows, you can build these cross-targeting diagnostic libraries with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script. That said, you can also use the `build-runtime.cmd` script, like with Linux. These builds also require you to pass the `-os` flag to specify the target OS. For example:
+
+```cmd
+.\src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os Linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 If you're building the cross-components in powershell, you'll need to wrap `"-DCLR_CROSS_COMPONENTS_BUILD=1"` with single quotes (`'`) to ensure things are escaped correctly for CMD.
 
-Build System.Private.CoreLib on Ubuntu
---------------------------------------
-The following instructions assume you are on a Linux machine such as Ubuntu 14.04 x86 64bit.
+## Cross-Building using Docker
 
-To build System.Private.CoreLib for Linux, run the following command:
+When it comes to building, Docker offers the most flexibility when it comes to targeting different Linux platforms and other similar Unix-based ones, like FreeBSD. This is thanks to the multiple existing Docker images already configured for doing such cross-platform building, and Docker's ease of use of running out of the box on Windows machines with [WSL](https://docs.microsoft.com/windows/wsl/about) enabled, installed, and up and running, as well as Linux machines.
 
+### Cross-Compiling for ARM32 and ARM64 with Docker
+
+As mentioned in the [Linux Cross-Building section](#linux-cross-building), the _ROOTFS\_DIR_ environment variable has to be set to the _crossrootfs_ location. The prereqs Docker images already have _crossrootfs_ built, so you only need to specify it when creating the Docker container by means of the `-e` flag. These locations are specified in the [Docker Images table](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
+
+In addition, you also have to specify the `--cross` flag with the target architecture. For example, the following command would create a container to build CoreCLR for Linux ARM64:
+
+```bash
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220427171722-6e40d49 ./build.sh --subset clr --cross --arch arm64 --clang9
 ```
-    lgs@ubuntu ~/git/runtime/ $ ./build.sh --subset clr.corelib+clr.nativecorelib --arch arm -c debug -v verbose
-```
 
-The output is at `artifacts/bin/coreclr/<TargetOS>.arm.Debug/IL/System.Private.CoreLib.dll`.
+### Cross-Compiling for FreeBSD with Docker
 
-```
-    lgs@ubuntu ~/git/runtime/ $ file ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll
-    ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll: PE32 executable (DLL)
-    (console) ARMv7 Thumb Mono/.NET assembly, for MS Windows
+Using Docker to cross-build for FreeBSD is very similar to any other Docker Linux build. You only need to use the appropriate image and pass `--os` as well to specify this is not an architecture(-only) build. For example, to make a FreeBSD x64 build:
+
+```bash
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/x64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e ./build.sh --subset clr --cross --os FreeBSD
 ```

@@ -673,6 +673,24 @@ void* WrapICorJitInfo::getRuntimeTypePointer(
     return temp;
 }
 
+bool WrapICorJitInfo::isObjectImmutable(
+          void* objPtr)
+{
+    API_ENTER(isObjectImmutable);
+    bool temp = wrapHnd->isObjectImmutable(objPtr);
+    API_LEAVE(isObjectImmutable);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
+          void* objPtr)
+{
+    API_ENTER(getObjectType);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getObjectType(objPtr);
+    API_LEAVE(getObjectType);
+    return temp;
+}
+
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -1448,6 +1466,17 @@ void* WrapICorJitInfo::getFieldAddress(
     API_ENTER(getFieldAddress);
     void* temp = wrapHnd->getFieldAddress(field, ppIndirection);
     API_LEAVE(getFieldAddress);
+    return temp;
+}
+
+bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint8_t* buffer,
+          int bufferSize)
+{
+    API_ENTER(getReadonlyStaticFieldValue);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize);
+    API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }
 

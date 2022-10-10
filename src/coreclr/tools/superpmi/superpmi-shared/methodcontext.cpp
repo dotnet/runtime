@@ -31,7 +31,6 @@ MethodContext::MethodContext()
     cr    = new CompileResult();
     index = -1;
     ignoreStoredConfig = false;
-    isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
 MethodContext::~MethodContext()
@@ -1234,7 +1233,6 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     //       zero.
     GetJitFlags->Add(0, value);
     DEBUG_REC(dmpGetJitFlags(0, value));
-    InitReadyToRunFlag(jitFlags);
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
@@ -1259,7 +1257,6 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
-    InitReadyToRunFlag(resultFlags);
     return value.B;
 }
 
@@ -2206,6 +2203,52 @@ void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     DWORDLONG value = GetRuntimeTypePointer->Get(key);
     DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
     return (void*)value;
+}
+
+void MethodContext::recIsObjectImmutable(void* objPtr, bool result)
+{
+    if (IsObjectImmutable == nullptr)
+        IsObjectImmutable = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORD value = (DWORD)result;
+    IsObjectImmutable->Add(key, value);
+    DEBUG_REC(dmpIsObjectImmutable(key, value));
+}
+void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
+{
+    printf("IsObjectImmutable key obj-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsObjectImmutable(void* objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    AssertMapAndKeyExist(IsObjectImmutable, key, ": key %016llX", key);
+    DWORD value = IsObjectImmutable->Get(key);
+    DEBUG_REP(dmpIsObjectImmutable(key, value));
+    return (bool)value;
+}
+
+void MethodContext::recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result)
+{
+    if (GetObjectType == nullptr)
+        GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG value = (DWORDLONG)result;
+    GetObjectType->Add(key, value);
+    DEBUG_REC(dmpGetObjectType(key, value));
+}
+void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetObjectType key obj-%016llX, value res-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);
+    DWORDLONG value = GetObjectType->Get(key);
+    DEBUG_REP(dmpGetObjectType(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
 }
 
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -3556,70 +3599,13 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
         value.ppIndirection = CastPointer(*ppIndirection);
     value.fieldAddress      = CastPointer(result);
 
-    value.fieldValue = (DWORD)-1;
-
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized, EXCEPTIONCODE_MC,
-                  "ReadyToRun flag should be initialized");
-
-    // Make an attempt at stashing a copy of the value, Jit can try to access
-    // a static readonly field value.
-    if (isReadyToRunCompilation == ReadyToRunCompilation::NotReadyToRun &&
-        result > (void*)0xffff)
-    {
-        DWORDLONG scratch = 0x4242424242424242;
-        switch (cit)
-        {
-            case CORINFO_TYPE_BOOL:
-            case CORINFO_TYPE_BYTE:
-            case CORINFO_TYPE_UBYTE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(BYTE),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_CHAR:
-            case CORINFO_TYPE_SHORT:
-            case CORINFO_TYPE_USHORT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(WORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_INT:
-            case CORINFO_TYPE_UINT:
-            case CORINFO_TYPE_FLOAT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_LONG:
-            case CORINFO_TYPE_ULONG:
-            case CORINFO_TYPE_DOUBLE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORDLONG),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_NATIVEINT:
-            case CORINFO_TYPE_NATIVEUINT:
-            case CORINFO_TYPE_PTR:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(size_t),
-                                                      true); // important to not merge two fields into one address
-                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we
-                                                                                     // can read it back "safetly"
-                                                                                     // on x64
-                break;
-            default:
-                break;
-        }
-    }
-
     DWORDLONG key = CastHandle(field);
     GetFieldAddress->Add(key, value);
     DEBUG_REC(dmpGetFieldAddress(key, value));
 }
 void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value)
 {
-    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX val-%u", key, value.ppIndirection,
-           value.fieldAddress, value.fieldValue);
+    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX", key, value.ppIndirection, value.fieldAddress);
 }
 void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -3629,26 +3615,57 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     Agnostic_GetFieldAddress value = GetFieldAddress->Get(key);
     DEBUG_REP(dmpGetFieldAddress(key, value));
 
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized,
-        EXCEPTIONCODE_MC, "isReadyToRunCompilation should be initialized");
-
     if (ppIndirection != nullptr)
     {
         *ppIndirection = (void*)value.ppIndirection;
     }
-    void* temp;
+    return (void*)value.fieldAddress;
+}
 
-    if (value.fieldValue != (DWORD)-1)
-    {
-        temp = (void*)GetFieldAddress->GetBuffer(value.fieldValue);
-        cr->recAddressMap((void*)value.fieldAddress, temp, toCorInfoSize(repGetFieldType(field, nullptr, nullptr)));
-    }
-    else
-    {
-        temp = (void*)value.fieldAddress;
-    }
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result)
+{
+    if (GetReadonlyStaticFieldValue == nullptr)
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLD, DD>();
 
-    return temp;
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
+
+    DWORD tmpBuf = (DWORD)-1;
+    if (buffer != nullptr && result)
+        tmpBuf = (DWORD)GetReadonlyStaticFieldValue->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)tmpBuf;
+
+    GetReadonlyStaticFieldValue->Add(key, value);
+    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
+}
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLD key, DD value)
+{
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, result-%u", key.A, key.B, value.A);
+    GetReadonlyStaticFieldValue->Unlock();
+}
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
+
+    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
+
+    DD value = GetReadonlyStaticFieldValue->Get(key);
+    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
+    if (buffer != nullptr && (bool)value.A)
+    {
+        uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, bufferSize);
+    }
+    return (bool)value.A;
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
@@ -5609,7 +5626,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     HRESULT result = (HRESULT)value.result;
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
-    size_t maxOffset = 0;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.countSchemaItems; iSchema++)
     {
         // Everything but `Offset` field is an IN argument, so verify it against what we stored (since we didn't use these
@@ -5637,24 +5653,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
         }
 
         pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
-
-        if (pSchema[iSchema].Offset > maxOffset)
-            maxOffset = pSchema[iSchema].Offset;
     }
 
-    // Allocate a scratch buffer, linked to method context via AllocPgoInstrumentationBySchema, so it gets
-    // cleaned up when the method context does.
-    //
-    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
-    // But we need a writeable buffer because the jit will store IL offsets inside.
-    //
-    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
-    // jit completion so we can snapshot the offsets the jit writes.
-    //
-    // Add 16 bytes of represent writeable space
-    size_t bufSize = maxOffset + 16;
-    *pInstrumentationData = (BYTE*)AllocJitTempBuffer(bufSize);
-    cr->recAddressMap((void*)value.instrumentationDataAddress, (void*)*pInstrumentationData, (unsigned)bufSize);
+    // We assume JIT does not write or read from this buffer, only generate
+    // code that uses it.
+    *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
     return result;
 }
 
@@ -7437,20 +7440,6 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
         return (prev == curr);
     }
 }
-
-void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
-{
-    if (jitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN))
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::ReadyToRun;
-    }
-    else
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
-    }
-
-}
-
 
 bool g_debugRec = false;
 bool g_debugRep = false;
