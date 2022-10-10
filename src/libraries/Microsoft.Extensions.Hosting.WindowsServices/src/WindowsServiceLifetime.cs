@@ -102,8 +102,9 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             return Task.CompletedTask;
         }
 
+        // Called by base.Run when the service is ready to start.
         /// <summary>
-        /// Called by base.Run when the service is ready to start.
+        /// Raises the Start event when the servuce is ready to start.
         /// </summary>
         /// <param name="args">The command line arguments passed to the service.</param>
         protected override void OnStart(string[] args)
@@ -113,7 +114,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Called by base.Stop to stop the <see cref="WindowsServiceLifetime"/>.
+        /// Raises the Stop event to stop the <see cref="WindowsServiceLifetime"/>.
         /// </summary>
         /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
@@ -125,7 +126,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Executes when the service starts shutdown.
+        /// Raise the Shutdown event.
         /// </summary>
         protected override void OnShutdown()
         {
@@ -138,8 +139,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <summary>
         /// Releases the resources used by the <see cref="WindowsServiceLifetime"/>.
         /// </summary>
-        /// <param name="disposing">
-               <see langword="true /> only when called from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false" />.</param>
+        /// <param name="disposing"><see langword="true" /> only when called from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false" />.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
