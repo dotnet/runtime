@@ -151,24 +151,16 @@ namespace System.Buffers.Binary
                 {
                     while (i <= source.Length - Vector256<T>.Count)
                     {
-                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                         i += Vector256<T>.Count;
                     }
-
-                    if (Vector128.IsHardwareAccelerated)
-                    {
-                        if (i <= source.Length - Vector128<T>.Count)
-                        {
-                            Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
-                            i += Vector128<T>.Count;
-                        }
-                    }
                 }
-                else if (Vector128.IsHardwareAccelerated)
+
+                if (Vector128.IsHardwareAccelerated)
                 {
                     while (i <= source.Length - Vector128<T>.Count)
                     {
-                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                         i += Vector128<T>.Count;
                     }
                 }
@@ -192,24 +184,16 @@ namespace System.Buffers.Binary
                     while (i >= Vector256<T>.Count)
                     {
                         i -= Vector256<T>.Count;
-                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
-                    }
-
-                    if (Vector128.IsHardwareAccelerated)
-                    {
-                        if (i >= Vector128<T>.Count)
-                        {
-                            i -= Vector128<T>.Count;
-                            Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
-                        }
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                     }
                 }
-                else if (Vector128.IsHardwareAccelerated)
+
+                if (Vector128.IsHardwareAccelerated)
                 {
                     while (i >= Vector128<T>.Count)
                     {
                         i -= Vector128<T>.Count;
-                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                     }
                 }
 
