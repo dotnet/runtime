@@ -4812,7 +4812,10 @@ bool Compiler::optIfConvert(BasicBlock* block)
         newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
         falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
 
-        fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
+        if (newSsaDef->m_vnPair.BothDefined())
+        {
+            fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
+        }
     }
 
     // Invert the condition.
