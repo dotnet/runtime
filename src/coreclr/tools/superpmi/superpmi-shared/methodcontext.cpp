@@ -1181,46 +1181,43 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
                                                         const char**          namespaceName,
                                                         const char**          enclosingClassName)
 {
-    const char* result = nullptr;
-    Agnostic_CORINFO_METHODNAME_TOKENout value;
     Agnostic_CORINFO_METHODNAME_TOKENin key;
+
     key.ftn = CastHandle(ftn);
     key.className = (moduleName != nullptr);
     key.namespaceName = (namespaceName != nullptr);
     key.enclosingClassName = (enclosingClassName != nullptr);
 
-    int itemIndex = -1;
-    if (GetMethodNameFromMetadata != nullptr)
-        itemIndex = GetMethodNameFromMetadata->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapAndKeyExist(
+        GetMethodNameFromMetadata,
+        key,
+        ": ftn-%016llX className-%u namespaceName-%u enclosingClassName-%u",
+        key.ftn,
+        key.className,
+        key.namespaceName,
+        key.enclosingClassName);
+
+    Agnostic_CORINFO_METHODNAME_TOKENout value = GetMethodNameFromMetadata->Get(key);
+
+    DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
+
+    const char* result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+
+    if (moduleName != nullptr)
     {
-        if (moduleName != nullptr)
-        {
-            *moduleName = nullptr;
-        }
+        *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.className);
     }
-    else
+
+    if (namespaceName != nullptr)
     {
-        value  = GetMethodNameFromMetadata->Get(key);
-        DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
-
-        result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
-
-        if (moduleName != nullptr)
-        {
-            *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.className);
-        }
-
-        if (namespaceName != nullptr)
-        {
-            *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
-        }
-
-        if (enclosingClassName != nullptr)
-        {
-            *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
-        }
+        *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
     }
+
+    if (enclosingClassName != nullptr)
+    {
+        *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    }
+
     return result;
 }
 
