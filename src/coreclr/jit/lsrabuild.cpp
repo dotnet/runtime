@@ -2965,12 +2965,12 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
     assert(!VarSetOps::IsMember(compiler, currentLiveVars, interval->getVarIndex(compiler)));
 
     // If we see a use of a local between placing a register and a call then we
-    // want to update that local's preferences to exclude that register.
-    // Picking that register is otherwise going to force a spill.
+    // want to update that local's preferences to exclude the "placed" register.
+    // Picking the "placed" register is otherwise going to force a spill.
     //
     // We only need to do this on liveness updates because if the local is live
     // _after_ the call, then we are going to prefer callee-saved registers for
-    // it anyway, so there is no need to look at such local uses.
+    // such local anyway, so there is no need to look at such local uses.
     //
     if (placedArgRegs == RBM_NONE)
     {
