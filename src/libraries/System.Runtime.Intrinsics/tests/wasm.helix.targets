@@ -14,10 +14,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD>$(_AOTBuildArgsSIMD) &quot;AOT_BUILD_ARGS=-p:WasmEnableSIMD=true&quot;</_AOTBuildArgsSIMD>
 
-      <_AOTBuildArgsSIMD Condition="'$(OS)' != 'Windows_NT'">export $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
-      <_AOTBuildArgsSIMD Condition="'$(OS)' == 'Windows_NT'">set $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(_AOTBuildArgsSIMD)' != '' and '$(OS)' != 'Windows_NT'">export $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
+      <_AOTBuildArgsSIMD Condition="'$(_AOTBuildArgsSIMD)' != '' and '$(OS)' == 'Windows_NT'">set $(_AOTBuildArgsSIMD)</_AOTBuildArgsSIMD>
     </PropertyGroup>
 
     <ItemGroup>
