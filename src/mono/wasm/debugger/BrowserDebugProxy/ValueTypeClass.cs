@@ -112,42 +112,12 @@ namespace BrowserDebugProxy
             }
         }
 
-        public async Task<string> InvokeToStringAsync(MonoSDBHelper sdbAgent, CancellationToken token)
-        {
-            var typeInfo = await sdbAgent.GetTypeInfo(TypeId, token);
-            if (typeInfo == null)
-                return null;
-            if (typeInfo.Name == "object")
-                return null;
-            Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
-            if (!IsEnum && methodInfo == null)
-                return null;
-            int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
-            if (methodIds == null)
-                return null;
-            try {
-                foreach (var methodId in methodIds)
-                {
-                    var methodInfoFromRuntime = await sdbAgent.GetMethodInfo(methodId, token);
-                    if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
-                        continue;
-                    var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
-                    return retMethod["value"]?["value"].Value<string>();
-                }
-            }
-            catch (Exception e)
-            {
-                sdbAgent.logger.LogDebug($"Error while evaluating ToString method: {e}");
-            }
-            return null;
-        }
-
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                var toString = await InvokeToStringAsync(sdbAgent, token);
+                var toString = await sdbAgent.InvokeToStringAsync(new List<int>(){TypeId}, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
                 if (toString == null)
                     sdbAgent.logger.LogDebug($"Error while evaluating ToString method on typeId = {TypeId}");
                 else
@@ -162,7 +132,7 @@ namespace BrowserDebugProxy
                     description = displayString;
                 else
                 {
-                    var toString = await InvokeToStringAsync(sdbAgent, token);
+                    var toString = await sdbAgent.InvokeToStringAsync(new List<int>(){TypeId}, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
                     if (toString != null)
                         description = toString;
                 }

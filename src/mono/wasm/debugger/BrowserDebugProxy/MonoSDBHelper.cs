@@ -1839,6 +1839,43 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
+        public async Task<string> InvokeToStringAsync(List<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        {
+            try
+            {
+                foreach (var typeId in typeIds)
+                {
+                    var typeInfo = await GetTypeInfo(typeId, token);
+                    if (typeInfo == null)
+                        continue;
+                    if (typeInfo.Name == "object")
+                        continue;
+                    Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
+                    if (isEnum != true && methodInfo == null)
+                        continue;
+                    int[] methodIds = await GetMethodIdsByName(typeId, "ToString", extraFlags, token);
+                    if (methodIds == null)
+                        continue;
+                    foreach (var methodId in methodIds)
+                    {
+                        var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
+                        if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                            continue;
+                        var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
+                        return retMethod["value"]?["value"].Value<string>();
+                    }
+                }
+                return null;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Error while evaluating ToString method: {e}");
+            }
+            return null;
+        }
+
+
+
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
         {
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);

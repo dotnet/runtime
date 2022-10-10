@@ -266,45 +266,7 @@ internal sealed class JObjectValueCreator
             return className;
         }
     }
-    private async Task<string> InvokeToStringAsync(List<int> typeIds, int objectId, CancellationToken token)
-    {
-        string description = "";
-        try {
-            foreach (var typeId in typeIds)
-            {
-                var typeInfo = await _sdbAgent.GetTypeInfo(typeId, token);
-                if (typeInfo == null || typeInfo.Name == "object")
-                    continue;
-                {
-                    MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
-                    if (methodInfo != null)
-                    {
-                        int[] methodIds = await _sdbAgent.GetMethodIdsByName(typeId, "ToString", BindingFlags.DeclaredOnly, token);
-                        if (methodIds != null)
-                        {
-                            foreach (var methodId in methodIds)
-                            {
-                                var methodInfoFromRuntime = await _sdbAgent.GetMethodInfo(methodId, token);
-                                if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
-                                    continue;
-                                var toString = await _sdbAgent.InvokeMethod(objectId, methodId, isValueType: false, token);
-                                if (toString["value"]?["value"] != null)
-                                {
-                                    description = toString["value"]?["value"].Value<string>();
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogDebug($"Error while evaluating ToString method: {e}");
-        }
-        return description;
-    }
+
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
@@ -334,8 +296,8 @@ internal sealed class JObjectValueCreator
         }
         else
         {
-            var toString = await InvokeToStringAsync(typeIds, objectId, token);
-            if (toString != "")
+            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, false, false, objectId, BindingFlags.DeclaredOnly, token);
+            if (toString != null)
                 description = toString;
         }
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
