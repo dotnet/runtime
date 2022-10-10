@@ -5612,7 +5612,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     HRESULT result = (HRESULT)value.result;
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
-    size_t maxOffset = 0;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.countSchemaItems; iSchema++)
     {
         // Everything but `Offset` field is an IN argument, so verify it against what we stored (since we didn't use these
@@ -5640,24 +5639,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
         }
 
         pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
-
-        if (pSchema[iSchema].Offset > maxOffset)
-            maxOffset = pSchema[iSchema].Offset;
     }
 
-    // Allocate a scratch buffer, linked to method context via AllocPgoInstrumentationBySchema, so it gets
-    // cleaned up when the method context does.
-    //
-    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
-    // But we need a writeable buffer because the jit will store IL offsets inside.
-    //
-    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
-    // jit completion so we can snapshot the offsets the jit writes.
-    //
-    // Add 16 bytes of represent writeable space
-    size_t bufSize = maxOffset + 16;
-    *pInstrumentationData = (BYTE*)AllocJitTempBuffer(bufSize);
-    cr->recAddressMap((void*)value.instrumentationDataAddress, (void*)*pInstrumentationData, (unsigned)bufSize);
+    // We assume JIT does not write or read from this buffer, only generate
+    // code that uses it.
+    *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
     return result;
 }
 
