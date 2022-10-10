@@ -484,6 +484,18 @@ void* interceptor_ICJI::getRuntimeTypePointer(
     return original_ICorJitInfo->getRuntimeTypePointer(cls);
 }
 
+bool interceptor_ICJI::isObjectImmutable(
+          void* objPtr)
+{
+    return original_ICorJitInfo->isObjectImmutable(objPtr);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
+          void* objPtr)
+{
+    return original_ICorJitInfo->getObjectType(objPtr);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -1039,6 +1051,14 @@ void* interceptor_ICJI::getFieldAddress(
           void** ppIndirection)
 {
     return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
+}
+
+bool interceptor_ICJI::getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint8_t* buffer,
+          int bufferSize)
+{
+    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

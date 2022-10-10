@@ -314,6 +314,14 @@ public:
     void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
     void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
 
+    void recIsObjectImmutable(void* objPtr, bool result);
+    void dmpIsObjectImmutable(DWORDLONG key, DWORD value);
+    bool repIsObjectImmutable(void* objPtr);
+
+    void recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result);
+    void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetObjectType(void* objPtr);
+
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
@@ -479,6 +487,10 @@ public:
     void recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection, void* result, CorInfoType cit);
     void dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value);
     void* repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection);
+
+    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result);
+    void dmpGetReadonlyStaticFieldValue(DLD key, DD value);
+    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool isSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value);
@@ -893,17 +905,6 @@ private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
     bool IsEnvironmentContentEqual(const Environment& prevEnv);
 
-    enum class ReadyToRunCompilation
-    {
-        Uninitialized,
-        ReadyToRun,
-        NotReadyToRun
-    };
-
-    ReadyToRunCompilation isReadyToRunCompilation;
-
-    void InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags);
-
     template <typename key, typename value>
     static bool AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr);
     static bool IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
@@ -1140,6 +1141,9 @@ enum mcPackets
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
+    Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetObjectType = 199,
+    Packet_IsObjectImmutable = 200,
 };
 
 void SetDebugDumpVariables();

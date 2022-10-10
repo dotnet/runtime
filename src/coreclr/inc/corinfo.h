@@ -2503,6 +2503,32 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    //------------------------------------------------------------------------------
+    // isObjectImmutable: checks whether given object is known to be immutable or not
+    //
+    // Arguments:
+    //    objPtr - Direct object handle
+    //
+    // Return Value:
+    //    Returns true if object is known to be immutable
+    //
+    virtual bool isObjectImmutable(
+            void*                       objPtr
+            ) = 0;
+
+    //------------------------------------------------------------------------------
+    // getObjectType: obtains type handle for given object
+    //
+    // Arguments:
+    //    objPtr - Direct object handle
+    //
+    // Return Value:
+    //    Returns CORINFO_CLASS_HANDLE handle that represents given object's type
+    //
+    virtual CORINFO_CLASS_HANDLE getObjectType(
+            void*                       objPtr
+            ) = 0;
+
     virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             CORINFO_LOOKUP_KIND *           pGenericLookupKind,
@@ -3165,6 +3191,27 @@ public:
     virtual void* getFieldAddress(
                     CORINFO_FIELD_HANDLE    field,
                     void                  **ppIndirection = NULL
+                    ) = 0;
+
+    //------------------------------------------------------------------------------
+    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    //    field represents a statically initialized readonly field of any type, it might be:
+    //    * integer/floating point primitive
+    //    * null
+    //    * frozen object reference (string, array or object)
+    //
+    // Arguments:
+    //    field      - field handle
+    //    buffer     - buffer field's value will be stored to
+    //    bufferSize - size of buffer
+    //
+    // Return Value:
+    //    Returns true if field's constant value was available and successfully copied to buffer
+    //
+    virtual bool getReadonlyStaticFieldValue(
+                    CORINFO_FIELD_HANDLE    field,
+                    uint8_t                *buffer,
+                    int                     bufferSize
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
