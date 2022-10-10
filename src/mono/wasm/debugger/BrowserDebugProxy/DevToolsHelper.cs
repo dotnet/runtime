@@ -409,13 +409,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             PauseOnExceptions = pauseOnExceptions;
         }
         public ExecutionContext Clone(SessionId sessionId)
-        {
-            var ret = new ExecutionContext(SdbAgent.Clone(sessionId), Id, AuxData, PauseOnExceptions);
-            ret.ready = ready;
-            ret.store = store;
-            ret.Source = Source;
-            return ret;
-        }
+           => new ExecutionContext(SdbAgent.Clone(sessionId), Id, AuxData, PauseOnExceptions)
+            {
+                ready = ready,
+                store = store,
+                Source = Source
+            };
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
         public int breakpointId;
