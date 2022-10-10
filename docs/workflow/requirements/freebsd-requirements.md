@@ -1,81 +1,78 @@
-Requirements to build and run dotnet/runtime on FreeBSD
-=====================
+# Requirements to build dotnet/runtime on FreeBSD
 
-This guide will walk you through the requirements needed to build and run dotnet/runtime on FreeBSD. We'll start by showing how to set up your environment from scratch.
+* [Docker](#docker)
+* [Linux Environment](#linux-environment)
+* [FreeBSD Environment](#freebsd-environment)
+* [Old Documentation](#old-documentation)
+  * [Toolchain Setup](#toolchain-setup)
+  * [Running on FreeBSD](#running-on-freebsd)
+
+This guide will walk you through the requirements needed to build and run _dotnet/runtime_ on FreeBSD. We'll start by showing how to set up your environment from scratch.
+
 Since there is no official build and FreeBSD package, native build on FreeBSD is not trivial. There are generally three options, sorted by ease of use:
-- cross-compile on Linux using Docker
-- cross-compile on Linux using Toolchain
-- build on FreeBSD
 
-Environment
-===========
+* Cross-compile using prebuilt Docker Images
+* Cross-compile on Linux using your environment
+* Build directly on FreeBSD
 
-These instructions were validated for and on FreeBSD 12.2.
+## Docker
 
-Build using Docker on Linux
----------------------------
+Install Docker. For further instructions on installation, see [here](https://docs.docker.com/install/). You can find the official .NET images in [their Docker hub](https://hub.docker.com/_/microsoft-dotnet).
 
-This is similar to [Linux](linux-requirements.md) instructions. https://github.com/dotnet/dotnet-buildtools-prereqs-docker repro provides images
-with all needed prerequisites to build. As the example bellow may become stale, https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json offers list of latest Docker tags.
+All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
 
-```sh
-TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
-docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -os FreeBSD
-```
+## Linux Environment
 
-Build using Toolchain Setup
----------------------------
-To build FreeBSD images, prerequisites described in [Linux](linux-requirements.md) are needed. Additionally, crossrootfs  for FreeBSD needs to be constructed.
-In order to successfully build FreeBSD crossrootfs, few more packages needs to be installed. Following example is for Ubuntu 18:
-```sh
-apt-get install -y libbz2-dev libz-dev liblzma-dev libarchive-dev libbsd-dev
-```
-With prerequisites for crossrootfs one can run:
-```sh
-./eng/common/cross/build-rootfs.sh freebsd11 $(pwd)/rootfs/freebsd
-```
-After that, FreeBSD build can be started by running
-```
-ROOTFS_DIR=$(pwd)/rootfs/freebsd ./build.sh -cross -os FreeBSD
-```
+To cross-build FreeBSD on your Linux environment, first make sure you have all the [normal Linux prerequisites](/docs/workflow/requirements/linux-requirements.md) fulfilled. Then, the _crossrootfs_ for FreeBSD has to be constructed, and this requires a few more packages to be installed:
 
+* libbz2-dev
+* liblzma-dev
+* libarchive-dev
+* libbsd-dev
 
-Building on FreeBSD
--------------------
+## FreeBSD Environment
 
-Building dotnet/runtime depends on several tools to be installed.
+These instructions assume you use FreeBSD's default binary package tool `pkg` (analog to `apt`, `apt-get`, or `yum` on Linux) to install the environment. Compiling the dependencies from source using the ports tree might work too, but is untested.
+
+FreeBSD Prerequisites Coming Soon!
+
+Meanwhile here are the old instructions.
+
+## Old Documentation
+
+These instructions were written quite a while ago, and they may or may not work today. Updated instructions coming soon.
+
+### Toolchain Setup
+
+Building the _dotnet/runtime_ repo requires several tools to be installed.
 
 Install the following packages:
 
-- cmake
-- icu
-- libunwind
-- lttng-ust
-- krb5
-- openssl (optional)
-- ninja (optional, enables building native code with ninja instead of make)
-
-The lines to install all the packages above using package manager.
+* Bash
+* CMake
+* icu
+* libunwind
+* krb5
+* openssl (optional)
+* python39
+* libinotify
+* ninja (optional, enables building native code with ninja instead of make)
 
 ```sh
 sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake openssl ninja
 ```
 
-Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.
-It needs to be built once on supported platform or obtained via community resources.
+### Running on FreeBSD
 
-Running on FreeBSD
--------------------
 Install the following packages:
-- icu
-- libunwind
-- lttng-ust (optional, debug support)
-- krb5
-- openssl (optional, SSL support)
-- libinotify
-- terminfo-db (optional, terminal colors)
 
-The lines to install all the packages above using package manager.
+* icu
+* libunwind
+* lttng-ust (optional, debug support)
+* krb5
+* openssl (optional, SSL support)
+* libinotify
+* terminfo-db (optional, terminal colors)
 
 ```sh
 sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 openssl terminfo-db
@@ -96,9 +93,9 @@ The canonical location for the NuGet packages is `/var/cache/nuget`
 
 "VERSION" is the same version as the SDK from above.
 
-- Microsoft.NETCore.App.Host.freebsd-x64.VERSION.nupkg
-- Microsoft.NETCore.App.Runtime.freebsd-x64.VERSION.nupkg
-- Microsoft.AspNetCore.App.Runtime.freebsd-x64.VERSION.nupkg
+* Microsoft.NETCore.App.Host.freebsd-x64.VERSION.nupkg
+* Microsoft.NETCore.App.Runtime.freebsd-x64.VERSION.nupkg
+* Microsoft.AspNetCore.App.Runtime.freebsd-x64.VERSION.nupkg
 
 Add the following line to any `NuGet.config` you are using under the `<packageSources>` section:
 
