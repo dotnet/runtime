@@ -114,7 +114,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1412, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1474, 8,
                 "ToStringOverriden.Run",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -123,7 +123,14 @@ namespace DebuggerTests
                         ("a", TObject("ToStringOverriden", description:"helloToStringOverriden")),
                         ("b", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
                         ("c", TObject("ToStringOverriden.ToStringOverridenD", description:"helloToStringOverridenD")),
-                        ("d", TObject("ToStringOverriden.ToStringOverridenE", description:"helloToStringOverridenE"))
+                        ("d", TObject("ToStringOverriden.ToStringOverridenE", description:"helloToStringOverridenE")),
+                        ("e", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("f", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("g", TObject("ToStringOverriden.ToStringOverridenG", description:"helloToStringOverridenG")),
+                        ("h", TObject("ToStringOverriden.ToStringOverridenH", description:"helloToStringOverridenH")),
+                        ("i", TObject("ToStringOverriden.ToStringOverridenI", description:"ToStringOverriden.ToStringOverridenI")),
+                        ("j", TObject("ToStringOverriden.ToStringOverridenJ", description:"helloToStringOverridenJ")),
+                        ("k", TObject("ToStringOverriden.ToStringOverridenK", description:"ToStringOverriden.ToStringOverridenK"))
                     );
                 }
             );

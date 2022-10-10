@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -265,7 +266,7 @@ internal sealed class JObjectValueCreator
             return className;
         }
     }
-    private async Task<string> ToString(List<int> typeIds, int objectId, CancellationToken token)
+    private async Task<string> InvokeToStringAsync(List<int> typeIds, int objectId, CancellationToken token)
     {
         string description = "";
         try {
@@ -278,12 +279,20 @@ internal sealed class JObjectValueCreator
                     MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (methodInfo != null)
                     {
-                        int[] methodIds = await _sdbAgent.GetMethodIdsByName(typeId, "ToString", token);
-                        if (methodIds != null && methodIds.Length > 0)
+                        int[] methodIds = await _sdbAgent.GetMethodIdsByName(typeId, "ToString", BindingFlags.DeclaredOnly, token);
+                        if (methodIds != null)
                         {
-                            var toString = await _sdbAgent.InvokeMethod(objectId, methodIds[0], isValueType: false, token);
-                            if (toString["value"]?["value"] != null)
-                                description = toString["value"]?["value"].Value<string>();
+                            foreach (var methodId in methodIds)
+                            {
+                                var methodInfoFromRuntime = await _sdbAgent.GetMethodInfo(methodId, token);
+                                if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                                    continue;
+                                var toString = await _sdbAgent.InvokeMethod(objectId, methodId, isValueType: false, token);
+                                if (toString["value"]?["value"] != null)
+                                {
+                                    description = toString["value"]?["value"].Value<string>();
+                                }
+                            }
                         }
                         break;
                     }
@@ -299,7 +308,7 @@ internal sealed class JObjectValueCreator
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
-        var typeIds = await _sdbAgent.GetTypeIdsForObject(objectId, true, token);
+        var typeIds = await _sdbAgent.GetTypeIdsForObject(objectId, withParents: true, token);
         string className = await _sdbAgent.GetTypeName(typeIds[0], token);
         string debuggerDisplayAttribute = null;
         if (!forDebuggerDisplayAttribute)
@@ -325,7 +334,7 @@ internal sealed class JObjectValueCreator
         }
         else
         {
-            var toString = await ToString(typeIds, objectId, token);
+            var toString = await InvokeToStringAsync(typeIds, objectId, token);
             if (toString != "")
                 description = toString;
         }

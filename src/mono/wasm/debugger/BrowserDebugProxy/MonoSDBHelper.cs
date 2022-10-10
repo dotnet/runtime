@@ -1737,7 +1737,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, CancellationToken token)
+        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, BindingFlags extraFlags, CancellationToken token)
         {
             if (type_id <= 0)
                 throw new DebuggerAgentException($"Invalid type_id {type_id} (method_name: {method_name}");
@@ -1745,7 +1745,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.Write(method_name);
-            commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | extraFlags));
             commandParamsWriter.Write((int)1); //case sensitive
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetMethodsByNameFlags, commandParamsWriter, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
@@ -2169,7 +2169,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         cAttrTypeId = genericTypeId;
                     }
-                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", token);
+                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", BindingFlags.Default, token);
                     if (methodIds != null)
                         methodId = methodIds[0];
                     break;

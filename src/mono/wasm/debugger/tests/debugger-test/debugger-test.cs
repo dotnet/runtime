@@ -1400,6 +1400,61 @@ public class ToStringOverriden
         }
     }
 
+    class ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenF";
+        }
+    }
+    class ToStringOverridenG: ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenG";
+        }
+    }
+
+    class ToStringOverridenH
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenH";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenHWrong";
+        }
+    }
+
+    class ToStringOverridenI
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenIWrong";
+        }
+    }
+
+    struct ToStringOverridenJ
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenJ";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenJWrong";
+        }
+    }
+
+    struct ToStringOverridenK
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenKWrong";
+        }
+    }
+
     public override string ToString()
     {
         return "helloToStringOverriden";
@@ -1410,6 +1465,13 @@ public class ToStringOverriden
         var b = new ToStringOverridenB();
         var c = new ToStringOverridenD();
         var d = new ToStringOverridenE();
+        ToStringOverridenA e = new ToStringOverridenB();
+        object f = new ToStringOverridenB();
+        var g = new ToStringOverridenG();
+        var h = new ToStringOverridenH();
+        var i = new ToStringOverridenI();
+        var j = new ToStringOverridenJ();
+        var k = new ToStringOverridenK();
         System.Diagnostics.Debugger.Break();
     }
 }
