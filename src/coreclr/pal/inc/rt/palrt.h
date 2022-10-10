@@ -591,9 +591,6 @@ STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface ISt
 
 #define STGM_NOSNAPSHOT         0x00200000L
 
-STDAPI IIDFromString(LPOLESTR lpsz, IID* lpiid);
-STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lpsz, int cchMax);
-
 /******************* CRYPT **************************************/
 
 #define PUBLICKEYBLOB           0x6
