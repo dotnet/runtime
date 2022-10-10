@@ -1455,6 +1455,34 @@ public class ToStringOverriden
         }
     }
 
+    record ToStringOverridenL
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenL";
+        }
+    }
+
+    record ToStringOverridenM
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenMWrong";
+        }
+    }
+
+    record ToStringOverridenN
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenN";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenNWrong";
+        }
+    }
+
     public override string ToString()
     {
         return "helloToStringOverriden";
@@ -1472,6 +1500,9 @@ public class ToStringOverriden
         var i = new ToStringOverridenI();
         var j = new ToStringOverridenJ();
         var k = new ToStringOverridenK();
+        var l = new ToStringOverridenL();
+        var m = new ToStringOverridenM();
+        var n = new ToStringOverridenN();
         System.Diagnostics.Debugger.Break();
     }
 }

@@ -114,7 +114,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1474, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1505, 8,
                 "ToStringOverriden.Run",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -130,7 +130,10 @@ namespace DebuggerTests
                         ("h", TObject("ToStringOverriden.ToStringOverridenH", description:"helloToStringOverridenH")),
                         ("i", TObject("ToStringOverriden.ToStringOverridenI", description:"ToStringOverriden.ToStringOverridenI")),
                         ("j", TObject("ToStringOverriden.ToStringOverridenJ", description:"helloToStringOverridenJ")),
-                        ("k", TObject("ToStringOverriden.ToStringOverridenK", description:"ToStringOverriden.ToStringOverridenK"))
+                        ("k", TObject("ToStringOverriden.ToStringOverridenK", description:"ToStringOverriden.ToStringOverridenK")),
+                        ("l", TObject("ToStringOverriden.ToStringOverridenL", description:"helloToStringOverridenL")),
+                        ("m", TObject("ToStringOverriden.ToStringOverridenM", description:"ToStringOverridenM { }")),
+                        ("n", TObject("ToStringOverriden.ToStringOverridenN", description:"helloToStringOverridenN"))
                     );
                 }
             );
