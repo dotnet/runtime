@@ -127,6 +127,9 @@ public class AndroidAppBuilderTask : Task
         return true;
     }
 
+    public static AndroidAppBuilderTask Create()
+        => new AndroidAppBuilderTask();
+
     private string DetermineAbi() =>
         RuntimeIdentifier switch
         {

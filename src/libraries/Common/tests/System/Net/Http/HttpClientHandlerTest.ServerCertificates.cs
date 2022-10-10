@@ -319,7 +319,6 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
                     callbackCalled = true;
-                    // the request is null the _second_ time the callback is called because of ConnectHelper.SetUpRemoteCertificateValidationCallback line 49 (localRequest = null!;)
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);

@@ -182,7 +182,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -247,7 +247,7 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libmonodroid.so` via cmake
+        // 1. Build libmonodroid.so via cmake
 
         string nativeLibraries = "";
         string monoRuntimeLib = "";
@@ -386,8 +386,6 @@ public class ApkBuilder
 
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
-        // TODO move this build somewhere else
-        string remoteCertificateValidationCallbackProxyPath = "/Users/simonrozsival/Projects/dotnet/runtime/src/native/libs/System.Security.Cryptography.Native.Android/DotnetProxyTrustManager.java";
 
         Regex checkNumerics = new Regex(@"\.(\d)");
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
@@ -429,7 +427,6 @@ public class ApkBuilder
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, javac, javaCompilerArgs + remoteCertificateValidationCallbackProxyPath, workingDir: OutputDir);
 
         if (File.Exists(d8))
         {
@@ -509,6 +506,17 @@ public class ApkBuilder
             Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+
+        // Include prebuilt .dex files
+        int sequence = 2;
+        var dexFiles = Directory.GetFiles(AppDir, "*.dex");
+        foreach (var dexFile in dexFiles)
+        {
+            var classesFileName = $"classes{sequence++}.dex";
+            File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
+            logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+        }
 
         // 4. Align APK
 
