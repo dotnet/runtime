@@ -362,7 +362,7 @@ init_passes_and_options ()
 }
 
 void
-mono_llvm_jit_init ()
+mono_llvm_jit_init (void)
 {
 	if (jit != nullptr) return;
 
@@ -466,7 +466,7 @@ mono_llvm_set_unhandled_exception_handler (void)
 }
 
 void
-mono_llvm_jit_init ()
+mono_llvm_jit_init (void)
 {
 }
 

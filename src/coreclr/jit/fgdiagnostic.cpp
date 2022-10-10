@@ -480,7 +480,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         return nullptr;
     }
 
-    LPCWSTR phaseName = PhaseShortNames[phase];
+    LPCWSTR phaseName = PhaseEnumsW[phase] + strlen("PHASE_");
 
     if (pos == PhasePosition::PrePhase)
     {
@@ -3030,10 +3030,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
         case GT_MEMORYBARRIER:
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
-            break;
-
-        case GT_LCL_VAR:
-            assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
             break;
 
         case GT_QMARK:

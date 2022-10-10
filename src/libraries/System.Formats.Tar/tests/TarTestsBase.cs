@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -89,6 +89,12 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaSize = "size";
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
+        internal const char OneByteCharacter = 'a';
+        internal const char TwoBytesCharacter = '\u00F6';
+        internal const string FourBytesCharacter = "\uD83D\uDE12";
+        internal const char Separator = '/';
+        internal const int MaxPathComponent = 255;
+        internal const long LegacyMaxFileSize = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         private static readonly string[] V7TestCaseNames = new[]
         {
@@ -476,7 +482,7 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
-        protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
+        protected static TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
             => targetFormat switch
             {
                 TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
@@ -621,6 +627,188 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { name };
             }
+        }
+
+        private static List<string> GetPrefixes()
+        {
+            List<string> prefixes = new() { "", "/a/", "./", "../" };
+
+            if (OperatingSystem.IsWindows())
+                prefixes.Add("C:/");
+
+            return prefixes;
+        }
+
+        internal static IEnumerable<string> GetNamesPrefixedTestData(NameCapabilities max)
+        {
+            Assert.True(Enum.IsDefined(max));
+            List<string> prefixes = GetPrefixes();
+
+            foreach (string prefix in prefixes)
+            {
+                // prefix + name of length 100
+                int nameLength = 100 - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, nameLength);
+                yield return prefix + Repeat(OneByteCharacter, nameLength - 2) + TwoBytesCharacter;
+                yield return prefix + Repeat(OneByteCharacter, nameLength - 4) + FourBytesCharacter;
+
+                // prefix alone
+                if (prefix != string.Empty)
+                    yield return prefix;
+            }
+
+            if (max == NameCapabilities.Name)
+                yield break;
+
+            // maxed out name.
+            foreach (string prefix in prefixes)
+            {
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + TwoBytesCharacter;
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + FourBytesCharacter;
+            }
+
+            // maxed out prefix and name.
+            foreach (string prefix in prefixes)
+            {
+                int directoryLength = 155 - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, directoryLength) + Separator + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 2) + TwoBytesCharacter + Separator + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 4) + FourBytesCharacter + Separator + Repeat(OneByteCharacter, 100);
+            }
+
+            if (max == NameCapabilities.NameAndPrefix)
+                yield break;
+
+            foreach (string prefix in prefixes)
+            {
+                int directoryLength = MaxPathComponent - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, directoryLength) + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 2) + TwoBytesCharacter + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 4) + FourBytesCharacter + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+            }
+        }
+
+        internal static IEnumerable<string> GetNamesNonAsciiTestData(NameCapabilities max)
+        {
+            Assert.True(Enum.IsDefined(max));
+
+            yield return Repeat(OneByteCharacter, 100);
+            yield return Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(OneByteCharacter, 2) + Repeat(TwoBytesCharacter, 49);
+
+            yield return Repeat(FourBytesCharacter, 100 / 4);
+            yield return Repeat(OneByteCharacter, 4) + Repeat(FourBytesCharacter, 24);
+
+            if (max == NameCapabilities.Name)
+                yield break;
+
+            // prefix + name
+            // this is 256 but is supported because prefix is not required to end in separator.
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(OneByteCharacter, 100);
+
+            // non-ascii prefix + name 
+            yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(OneByteCharacter, 100);
+            yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(OneByteCharacter, 100);
+
+            // prefix + non-ascii name
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(FourBytesCharacter, 100 / 4);
+
+            // non-ascii prefix + non-ascii name
+            yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(FourBytesCharacter, 100 / 4);
+
+            if (max == NameCapabilities.NameAndPrefix)
+                yield break;
+
+            // Pax and Gnu support unlimited paths.
+            yield return Repeat(OneByteCharacter, MaxPathComponent);
+            yield return Repeat(TwoBytesCharacter, MaxPathComponent / 2);
+            yield return Repeat(FourBytesCharacter, MaxPathComponent / 4);
+
+            yield return Repeat(OneByteCharacter, MaxPathComponent) + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+            yield return Repeat(TwoBytesCharacter, MaxPathComponent / 2) + Separator + Repeat(TwoBytesCharacter, MaxPathComponent / 2);
+            yield return Repeat(FourBytesCharacter, MaxPathComponent / 4) + Separator + Repeat(FourBytesCharacter, MaxPathComponent / 4);
+        }
+
+        internal static IEnumerable<string> GetTooLongNamesTestData(NameCapabilities max)
+        {
+            Assert.True(max is NameCapabilities.Name or NameCapabilities.NameAndPrefix);
+
+            // root directory can't be saved as prefix
+            yield return "/" + Repeat(OneByteCharacter, 100);
+
+            List<string> prefixes = GetPrefixes();
+
+            // 1. non-ascii last character doesn't fit in name.
+            foreach (string prefix in prefixes)
+            {
+                // 1.1. last character doesn't fit fully.
+                yield return prefix + Repeat(OneByteCharacter, 100 + 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + Repeat(TwoBytesCharacter, 2);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + Repeat(FourBytesCharacter, 2);
+
+                // 1.2. last character doesn't fit by one byte.
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2 + 1) + Repeat(TwoBytesCharacter, 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4 + 1) + Repeat(FourBytesCharacter, 1);
+            }
+
+            // 2. non-ascii last character doesn't fit in prefix.
+            string maxedOutName = Repeat(OneByteCharacter, 100);
+
+            // 2.1. last char doesn't fit fully.
+            yield return Repeat(OneByteCharacter, 155 + 1) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 2) + Repeat(TwoBytesCharacter, 2) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4) + Repeat(FourBytesCharacter, 2) + Separator + maxedOutName;
+
+            // 2.2 last char doesn't fit by one byte.
+            yield return Repeat(OneByteCharacter, 155 - 2 + 1) + TwoBytesCharacter + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4 + 1) + FourBytesCharacter + Separator + maxedOutName;
+
+            if (max is NameCapabilities.NameAndPrefix)
+                yield break;
+
+            // Next cases only apply for V7 which only allows 100 length names.
+            foreach (string prefix in prefixes)
+            {
+                if (prefix.Length == 0)
+                    continue;
+
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(TwoBytesCharacter, 100 / 2);
+                yield return prefix + Repeat(FourBytesCharacter, 100 / 4);
+            }
+        }
+
+        internal static string Repeat(char c, int count)
+        {
+            return new string(c, count);
+        }
+
+        internal static string Repeat(string c, int count)
+        {
+            return string.Concat(Enumerable.Repeat(c, count));
+        }
+
+        internal enum NameCapabilities
+        {
+            Name,
+            NameAndPrefix,
+            Unlimited
+        }
+
+        internal static void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)
+        {
+            using TarWriter writer = new(s, leaveOpen: true);
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            if (entryType == TarEntryType.SymbolicLink)
+            {
+                entry.LinkName = "bar";
+            }
+
+            writer.WriteEntry(entry);
         }
     }
 }

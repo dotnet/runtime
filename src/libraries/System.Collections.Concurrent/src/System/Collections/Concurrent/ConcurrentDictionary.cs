@@ -2097,15 +2097,23 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var keys = new List<TKey>(count);
+                if (count == 0)
+                {
+                    // TODO https://github.com/dotnet/runtime/issues/76028: Replace with ReadOnlyCollection<TKey>.Empty.
+                    return Array.Empty<TKey>().AsReadOnly();
+                }
+
+                var keys = new TKey[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        keys.Add(current._key);
+                        keys[n++] = current._key;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TKey>(keys);
             }
@@ -2131,15 +2139,23 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var values = new List<TValue>(count);
+                if (count == 0)
+                {
+                    // TODO https://github.com/dotnet/runtime/pull/76097:  Replace with ReadOnlyCollection<TValue>.Empty.
+                    return Array.Empty<TValue>().AsReadOnly();
+                }
+
+                var values = new TValue[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        values.Add(current._value);
+                        values[n++] = current._value;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TValue>(values);
             }
