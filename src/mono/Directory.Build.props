@@ -73,6 +73,7 @@
     <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
     <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidDexBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidDexBuilder'))</AndroidDexBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
     <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>

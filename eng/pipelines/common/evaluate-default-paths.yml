@@ -252,6 +252,7 @@ jobs:
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
+      - src/tasks/AndroidDexBuilder/*
       - src/tasks/AotCompilerTask/*
       - src/tasks/AppleAppBuilder/*
       - src/tasks/MonoTargetsTasks/*
