@@ -7925,18 +7925,12 @@ bool gc_heap::is_in_condemned_gc (uint8_t* o)
     return true;
 }
 
-// REGIONS TODO -
-// This method can be called by GCHeap::Promote/Relocate which means
-// it could be in the heap range but not actually in a valid region.
-// This would return true but find_object will return 0. But this
-// seems counter-intuitive so we should consider a better implementation.
+// This needs to check the range that's covered by bookkeeping because find_object will
+// need to look at the brick table.
 inline
-bool gc_heap::is_in_condemned (uint8_t* o)
+bool gc_heap::is_in_bookkeeping_range (uint8_t* o)
 {
-    if ((o >= g_gc_lowest_address) && (o < g_gc_highest_address))
-        return is_in_condemned_gc (o);
-    else
-        return false;
+    return ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
 }
 
 inline
@@ -45898,7 +45892,7 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
     gc_heap* hp = gc_heap::heap_of (o);
 
 #ifdef USE_REGIONS
-    if (!gc_heap::is_in_condemned (o))
+    if (!gc_heap::is_in_bookkeeping_range (o) || !gc_heap::is_in_condemned_gc (o))
 #else //USE_REGIONS
     if ((o < hp->gc_low) || (o >= hp->gc_high))
 #endif //USE_REGIONS
@@ -45957,7 +45951,12 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
     //dprintf (3, ("Relocate location %Ix\n", (size_t)ppObject));
     dprintf (3, ("R: %Ix", (size_t)ppObject));
 
-    if (!object || !((object >= g_gc_lowest_address) && (object < g_gc_highest_address)))
+    if (!object 
+#ifdef USE_REGIONS
+        || !gc_heap::is_in_bookkeeping_range (object))
+#else //USE_REGIONS
+        || !((object >= g_gc_lowest_address) && (object < g_gc_highest_address)))
+#endif //USE_REGIONS
         return;
 
     gc_heap* hp = gc_heap::heap_of (object);
@@ -46412,17 +46411,16 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
     gc_heap* hp = gc_heap::heap_of (o);
 
 #ifdef USE_REGIONS
-    if (fCollectedGenOnly)
+    if (gc_heap::is_in_bookkeeping_range (o))
     {
-        if (!gc_heap::is_in_condemned (o))
+        if (fCollectedGenOnly && !gc_heap::is_in_condemned_gc (o))
         {
             return NULL;
         }
     }
     else
     {
-        if (!((o >= g_gc_lowest_address) && (o < g_gc_highest_address)))
-            return NULL;
+        return NULL;
     }
 #else //USE_REGIONS
 

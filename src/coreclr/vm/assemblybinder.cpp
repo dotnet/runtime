@@ -46,10 +46,10 @@ static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 s
 {
     static const size_t MVID_TEXT_LENGTH = 39;
     CHAR assemblyMvidText[MVID_TEXT_LENGTH];
-    GuidToLPSTR(mvidActual, assemblyMvidText, MVID_TEXT_LENGTH);
+    GuidToLPSTR(mvidActual, assemblyMvidText);
 
     CHAR componentMvidText[MVID_TEXT_LENGTH];
-    GuidToLPSTR(mvidExpected, componentMvidText, MVID_TEXT_LENGTH);
+    GuidToLPSTR(mvidExpected, componentMvidText);
 
     SString message;
     if (compositeComponent)

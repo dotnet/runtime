@@ -8485,13 +8485,18 @@ private:
         return CORINFO_TYPE_UNDEF;
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Numerics") == 0;
+            return isNumericsNamespace(namespaceName);
         }
         return false;
     }
