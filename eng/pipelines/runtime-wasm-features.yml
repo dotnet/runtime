@@ -9,7 +9,7 @@ variables:
 jobs:
 
 # Evaluate paths
-- template: /eng/pipelines/common/evaluate-default-paths.yml
+#- template: /eng/pipelines/common/evaluate-default-paths.yml
 
 # Run AOT tests with SIMD enabled
 - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -25,3 +25,4 @@ jobs:
     alwaysRun: true
     scenarios:
       - WasmTestOnNodeJS
+      - WasmTestOnBrowser
