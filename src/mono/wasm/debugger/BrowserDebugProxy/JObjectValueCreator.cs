@@ -279,8 +279,9 @@ internal sealed class JObjectValueCreator
         var description = className.ToString();
 
         if (debuggerDisplayAttribute != null)
+        {
             description = debuggerDisplayAttribute;
-
+        }
         else if (await _sdbAgent.IsDelegate(objectId, token))
         {
             if (typeIdFromAttribute != -1)

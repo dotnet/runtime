@@ -117,7 +117,7 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                var toString = await sdbAgent.InvokeToStringAsync(new List<int>(){TypeId}, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
                 if (toString == null)
                     sdbAgent.logger.LogDebug($"Error while evaluating ToString method on typeId = {TypeId}");
                 else
@@ -129,10 +129,12 @@ namespace BrowserDebugProxy
             {
                 string displayString = await sdbAgent.GetValueFromDebuggerDisplayAttribute(Id, TypeId, token);
                 if (displayString != null)
+                {
                     description = displayString;
+                }
                 else
                 {
-                    var toString = await sdbAgent.InvokeToStringAsync(new List<int>(){TypeId}, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                    var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
                     if (toString != null)
                         description = toString;
                 }

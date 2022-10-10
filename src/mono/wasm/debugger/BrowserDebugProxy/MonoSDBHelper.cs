@@ -1846,9 +1846,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 foreach (var typeId in typeIds)
                 {
                     var typeInfo = await GetTypeInfo(typeId, token);
-                    if (typeInfo == null)
-                        continue;
-                    if (typeInfo.Name == "object")
+                    if (typeInfo == null || typeInfo.Name == "object")
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (isEnum != true && methodInfo == null)
@@ -1865,7 +1863,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return retMethod["value"]?["value"].Value<string>();
                     }
                 }
-                return null;
             }
             catch (Exception e)
             {
@@ -1873,8 +1870,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return null;
         }
-
-
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
         {
