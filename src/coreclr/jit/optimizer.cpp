@@ -4667,6 +4667,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
+    // Skip compares against zero as they will be optimized via cbz etc.
+    if (cond->gtGetOp2()->IsIntegralConst(0) || cond->gtGetOp1()->IsIntegralConst(0))
+    {
+        return false;
+    }
+
     BasicBlock* middleBlock = nullptr;
     BasicBlock* middleNext  = block->bbNext;
     GenTree*    asgNode     = nullptr;
