@@ -261,6 +261,7 @@ INTRINS_OVR(WASM_BITMASK_V16, wasm_bitmask, Wasm, sse_i1_t)
 INTRINS_OVR(WASM_BITMASK_V8, wasm_bitmask, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_BITMASK_V4, wasm_bitmask, Wasm, sse_i4_t)
 INTRINS_OVR(WASM_BITMASK_V2, wasm_bitmask, Wasm, sse_i8_t)
+INTRINS(WASM_DOT, wasm_dot, Wasm)
 INTRINS(WASM_SHUFFLE, wasm_shuffle, Wasm)
 INTRINS(WASM_SWIZZLE, wasm_swizzle, Wasm)
 #endif
