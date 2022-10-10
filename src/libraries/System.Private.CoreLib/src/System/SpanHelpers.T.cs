@@ -1382,7 +1382,7 @@ namespace System
             {
                 Vector256<T> equals, values = Vector256.Create(value);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -1412,7 +1412,7 @@ namespace System
             {
                 Vector128<T> equals, values = Vector128.Create(value);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2032,7 +2032,7 @@ namespace System
                 Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1),
                     values2 = Vector256.Create(value2), values3 = Vector256.Create(value3), values4 = Vector256.Create(value4);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2067,7 +2067,7 @@ namespace System
                 Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1),
                     values2 = Vector128.Create(value2), values3 = Vector128.Create(value3), values4 = Vector128.Create(value4);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2729,14 +2729,17 @@ namespace System
             }
             else if (!Vector256.IsHardwareAccelerated || length < Vector256<T>.Count)
             {
-                Vector128<T> inRangeVector, lowVector = Vector128.Create(lowInclusive), rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> lowVector = Vector128.Create(lowInclusive);
+                Vector128<T> rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> inRangeVector;
+
                 ref T current = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.Subtract(Vector128.LoadUnsafe(ref current), lowVector), rangeVector));
+                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref current) - lowVector, rangeVector));
                     if (inRangeVector != Vector128<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
@@ -2747,7 +2750,7 @@ namespace System
                 while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
 
                 // Process the last vector in the search space (which might overlap with already processed elements).
-                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.Subtract(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), lowVector), rangeVector));
+                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
                 if (inRangeVector != Vector128<T>.Zero)
                 {
                     return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
@@ -2755,14 +2758,17 @@ namespace System
             }
             else
             {
-                Vector256<T> inRangeVector, lowVector = Vector256.Create(lowInclusive), rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> lowVector = Vector256.Create(lowInclusive);
+                Vector256<T> rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> inRangeVector;
+
                 ref T current = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.Subtract(Vector256.LoadUnsafe(ref current), lowVector), rangeVector));
+                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref current) - lowVector, rangeVector));
                     if (inRangeVector != Vector256<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
@@ -2773,7 +2779,7 @@ namespace System
                 while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
 
                 // Process the last vector in the search space (which might overlap with already processed elements).
-                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.Subtract(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), lowVector), rangeVector));
+                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
                 if (inRangeVector != Vector256<T>.Zero)
                 {
                     return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
@@ -2841,13 +2847,16 @@ namespace System
             }
             else if (!Vector256.IsHardwareAccelerated || length < Vector256<T>.Count)
             {
-                Vector128<T> inRangeVector, lowVector = Vector128.Create(lowInclusive), rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> lowVector = Vector128.Create(lowInclusive);
+                Vector128<T> rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> inRangeVector;
+
                 nint offset = length - Vector128<T>.Count;
 
                 // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
                 while (offset > 0)
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.Subtract(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset), lowVector), rangeVector));
+                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
                     if (inRangeVector != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(offset, inRangeVector);
@@ -2857,7 +2866,7 @@ namespace System
                 }
 
                 // Process the first vector in the search space.
-                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.Subtract(Vector128.LoadUnsafe(ref searchSpace), lowVector), rangeVector));
+                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
                 if (inRangeVector != Vector128<T>.Zero)
                 {
                     return ComputeLastIndex(offset: 0, inRangeVector);
@@ -2865,13 +2874,16 @@ namespace System
             }
             else
             {
-                Vector256<T> inRangeVector, lowVector = Vector256.Create(lowInclusive), rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> lowVector = Vector256.Create(lowInclusive);
+                Vector256<T> rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> inRangeVector;
+
                 nint offset = length - Vector256<T>.Count;
 
                 // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
                 while (offset > 0)
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.Subtract(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset), lowVector), rangeVector));
+                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
                     if (inRangeVector != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(offset, inRangeVector);
@@ -2881,7 +2893,7 @@ namespace System
                 }
 
                 // Process the first vector in the search space.
-                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.Subtract(Vector256.LoadUnsafe(ref searchSpace), lowVector), rangeVector));
+                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
                 if (inRangeVector != Vector256<T>.Zero)
                 {
                     return ComputeLastIndex(offset: 0, inRangeVector);
