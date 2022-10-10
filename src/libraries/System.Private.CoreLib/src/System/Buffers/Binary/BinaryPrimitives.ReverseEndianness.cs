@@ -135,7 +135,6 @@ namespace System.Buffers.Binary
 
             ref T sourceRef = ref MemoryMarshal.GetReference(source);
             ref T destRef = ref MemoryMarshal.GetReference(destination);
-            ref T end = ref Unsafe.Add(ref sourceRef, source.Length);
 
             if (Unsafe.AreSame(ref sourceRef, ref destRef) ||
                 !source.Overlaps(destination, out int elementOffset) ||
@@ -146,36 +145,38 @@ namespace System.Buffers.Binary
                 // to end of the source and not have to worry about writing into the destination and clobbering
                 // source data we haven't yet read.
 
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<T>.Count)
+                int i = 0;
+
+                if (Vector256.IsHardwareAccelerated)
                 {
-                    if (Vector256.IsHardwareAccelerated && source.Length >= Vector256<T>.Count)
+                    while (i <= source.Length - Vector256<T>.Count)
                     {
-                        ref T end256 = ref Unsafe.Add(ref sourceRef, source.Length - Vector256<T>.Count + 1);
-                        do
-                        {
-                            Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef)), ref destRef);
-                            sourceRef = ref Unsafe.Add(ref sourceRef, Vector256<T>.Count);
-                            destRef = ref Unsafe.Add(ref destRef, Vector256<T>.Count);
-                        }
-                        while (Unsafe.IsAddressLessThan(ref sourceRef, ref end256));
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        i += Vector256<T>.Count;
                     }
-                    else
+
+                    if (Vector128.IsHardwareAccelerated)
                     {
-                        ref T end128 = ref Unsafe.Add(ref sourceRef, source.Length - (Vector128<T>.Count - 1));
-                        while (Unsafe.IsAddressLessThan(ref sourceRef, ref end128))
+                        if (i <= source.Length - Vector128<T>.Count)
                         {
-                            Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef)), ref destRef);
-                            sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<T>.Count);
-                            destRef = ref Unsafe.Add(ref destRef, Vector128<T>.Count);
+                            Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                            i += Vector128<T>.Count;
                         }
                     }
                 }
-
-                while (Unsafe.IsAddressLessThan(ref sourceRef, ref end))
+                else if (Vector128.IsHardwareAccelerated)
                 {
-                    destRef = TReverser.Reverse(sourceRef);
-                    sourceRef = ref Unsafe.Add(ref sourceRef, 1);
-                    destRef = ref Unsafe.Add(ref destRef, 1);
+                    while (i <= source.Length - Vector128<T>.Count)
+                    {
+                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        i += Vector128<T>.Count;
+                    }
+                }
+
+                while (i < source.Length)
+                {
+                    Unsafe.Add(ref destRef, i) = TReverser.Reverse(Unsafe.Add(ref sourceRef, i));
+                    i++;
                 }
             }
             else
@@ -186,17 +187,25 @@ namespace System.Buffers.Binary
 
                 int i = source.Length;
 
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<T>.Count)
+                if (Vector256.IsHardwareAccelerated)
                 {
-                    if (Vector256.IsHardwareAccelerated)
+                    while (i >= Vector256<T>.Count)
                     {
-                        while (i >= Vector256<T>.Count)
-                        {
-                            i -= Vector256<T>.Count;
-                            Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
-                        }
+                        i -= Vector256<T>.Count;
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
                     }
 
+                    if (Vector128.IsHardwareAccelerated)
+                    {
+                        if (i >= Vector128<T>.Count)
+                        {
+                            i -= Vector128<T>.Count;
+                            Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (nuint)i)), ref destRef, (nuint)i);
+                        }
+                    }
+                }
+                else if (Vector128.IsHardwareAccelerated)
+                {
                     while (i >= Vector128<T>.Count)
                     {
                         i -= Vector128<T>.Count;
@@ -204,11 +213,10 @@ namespace System.Buffers.Binary
                     }
                 }
 
-                i--;
-                while (i >= 0)
+                while (i > 0)
                 {
-                    Unsafe.Add(ref destRef, i) = TReverser.Reverse(Unsafe.Add(ref sourceRef, i));
                     i--;
+                    Unsafe.Add(ref destRef, i) = TReverser.Reverse(Unsafe.Add(ref sourceRef, i));
                 }
             }
         }
