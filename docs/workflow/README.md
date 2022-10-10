@@ -59,7 +59,7 @@ When we talk about mixing configurations, we're discussing the following sub-com
 * **Libraries** is the bulk of the dlls that are oblivious to the configuration that runtimes and CoreLib were built in. They are most debuggable when built in a Debug configuration, and happily, they still run sufficiently fast in that configuration that it's acceptable for development work. The code lives under [src/libraries](/src/libraries).
 
 <!-- TODO: Provide a list of the possible subsets, since right now it's all up to one's own knowledge and guessing. -->
-To build just one part of the repo, you add the `-subset` flag with the subset you wish to build to the root build script _(build.cmd/sh)_. Note that you can specify more than one by linking them with the `+` operator (e.g. `-subset clr+libs` would build CoreCLR and the libraries).
+To build just one part of the repo, you add the `-subset` flag with the subset you wish to build to the root build script _(build.cmd/sh)_. You can specify more than one by linking them with the `+` operator (e.g. `-subset clr+libs` would build CoreCLR and the libraries). Note that if the subset is the first argument you pass to the script, you can omit the `--subset` flag altogether.
 
 ### What does this mean for me?
 

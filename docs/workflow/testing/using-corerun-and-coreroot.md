@@ -25,7 +25,7 @@ This guide focuses on the third of the bullet points described above. For the ot
 
 ## The CoreRun
 
-The `corerun` binary is designed to be a platform agnostic tool for quick testing of a locally built .NET runtime. In other words, this means it's able to feasibly exercise any scenario the official `dotnet` binary is capable of. It consequently helps facilitate .NET runtime development and investigation of test failures. This method is the most recommended one when you are making lots of changes that you want to keep continually testing and debugging, since it's the fastest way to apply them.
+The `corerun` binary is designed to be a platform agnostic tool for quick testing of a locally built .NET runtime. It helps facilitate .NET runtime development and investigation of test failures. This method is the most recommended one when you are making lots of changes that you want to keep continually testing and debugging, since it's the fastest way to apply them.
 
 `Corerun` does not know about NuGet at all. It just needs to find the .NET runtime, `coreclr.dll`, `libcoreclr.dylib`, or `libcoreclr.so` depending on your platform, and any class library assemblies like for example, `System.Runtime.dll`, `System.IO.dll`, and so on.
 

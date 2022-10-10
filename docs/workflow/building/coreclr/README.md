@@ -12,7 +12,7 @@
 
 Here is a brief overview on how to build the common form of CoreCLR in general. For further specific instructions on each platform, we have links to instructions later on in [Platform-Specific Instructions](#platform-specific-instructions).
 
-To build just CoreCLR, use the `subset` flag to the `build.sh` or `build.cmd` script at the repo root:
+To build just CoreCLR, use the `subset` flag to the `build.sh` or `build.cmd` script at the repo root. Note that specifying `-subset` explicitly is not necessary if it is the first argument (i.e. `./build.sh --subset clr` and `./build.sh clr` are equivalent). However, if you specify any other argument beforehand, then you must specify the `-subset` flag.
 
 For Linux and MacOS:
 
@@ -25,8 +25,6 @@ For Windows:
 ```cmd
 .\build.cmd -subset clr
 ```
-
-Specifying `-subset` explicitly is not necessary if it is the first argument: `./build.sh --subset clr` and `./build.sh clr` are equivalent. However, if you specify any other argument beforehand, then you must specify the `-subset` flag.
 
 ## Common Building Options
 
@@ -44,7 +42,7 @@ Now, it is also possible to select a different configuration for each subset whe
 * `--librariesConfiguration (-lc)`: Flag for the libraries build configuration.
 * `--hostConfiguration (-hc)`: Flag for the host build configuration.
 
-For example, a very common scenario used by developers is to build the _clr_ in _Debug_ mode, and the _libraries_ in _Release_ mode. To achieve this, the command-line would look like the following:
+For example, a very common scenario used by developers and the repo's test scripts with default options, is to build the _clr_ in _Debug_ mode, and the _libraries_ in _Release_ mode. To achieve this, the command-line would look like the following:
 
 ```bash
 ./build.sh --subset clr+libs --configuration Release --runtimeConfiguration Debug
@@ -82,7 +80,9 @@ Once the build has concluded, it will have produced its output artifacts in the 
 * A NuGet package, _Microsoft.Dotnet.CoreCLR_, will be created under `artifacts\bin\coreclr\<OS>.<arch>.<configuration>\.nuget` folder.
 * Test binaries (if built) will be dropped under `artifacts\tests\coreclr\<OS>.<arch>.<configuration>` folder. However, remember the root build script will not build the tests. The instructions for working with tests (building and running) are [in the testing doc](/docs/workflow/testing/coreclr/testing.md).
 * The build places logs in `artifacts\log` and these are useful when the build fails.
-* The build places all of its intermediate output in the `artifacts\obj\coreclr` directory, so if you remove that directory you can force a full rebuild.
+* The build places all of its intermediate output in the `artifacts\obj\coreclr` directory.
+
+If you want to force a full rebuild of the subsets you specified when calling the build script, pass the `-rebuild` flag to it, in addition to any other arguments you might require.
 
 ## Platform-Specific Instructions
 
