@@ -8890,12 +8890,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     assert(dest->OperIs(GT_LCL_VAR));
     dest->gtFlags &= ~GTF_VAR_USEASG;
 
-    // Kill everything about dest.
-    if (optLocalAssertionProp && (optAssertionCount > 0))
-    {
-        fgKillDependentAssertions(dest->AsLclVar()->GetLclNum() DEBUGARG(tree));
-    }
-
     // Retype the RHS.
     assert(varTypeIsIntegralOrI(asgType));
     if (src->OperIsBlk())
