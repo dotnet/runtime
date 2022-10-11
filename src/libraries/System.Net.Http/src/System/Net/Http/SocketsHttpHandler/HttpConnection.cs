@@ -976,7 +976,7 @@ namespace System.Net.Http
 
         private bool ParseStatusLine(HttpResponseMessage response)
         {
-            Span<byte> buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
+            Span<byte> buffer = new Span<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
 
             int lineFeedIndex = buffer.IndexOf((byte)'\n');
             if (lineFeedIndex >= 0)
@@ -1122,48 +1122,50 @@ namespace System.Net.Http
                     return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
                 }
 
-                Span<byte> valueIter = buffer.Slice(valueStartIdx);
+                // Iterate over the value and handle any line folds (new lines followed by SP/HTAB).
+                // valueIterator refers to the remainder of the buffer that we can still scan for new lines.
+                Span<byte> valueIterator = buffer.Slice(valueStartIdx);
 
                 while (true)
                 {
-                    int lfIdx = valueIter.IndexOf((byte)'\n');
-                    if ((uint)lfIdx >= (uint)valueIter.Length)
+                    int lfIdx = valueIterator.IndexOf((byte)'\n');
+                    if ((uint)lfIdx >= (uint)valueIterator.Length)
                     {
                         return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
                     }
 
                     int crIdx = lfIdx - 1;
-                    int crOrLfIdx = (uint)crIdx < (uint)valueIter.Length && valueIter[crIdx] == '\r'
+                    int crOrLfIdx = (uint)crIdx < (uint)valueIterator.Length && valueIterator[crIdx] == '\r'
                         ? crIdx
                         : lfIdx;
 
                     int spIdx = lfIdx + 1;
-                    if ((uint)spIdx >= (uint)valueIter.Length)
+                    if ((uint)spIdx >= (uint)valueIterator.Length)
                     {
                         return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
                     }
 
-                    if (valueIter[spIdx] is not (byte)'\t' and not (byte)' ')
+                    if (valueIterator[spIdx] is not (byte)'\t' and not (byte)' ')
                     {
                         // Found the end of the header value.
 
                         if (response is not null)
                         {
                             ReadOnlySpan<byte> headerName = buffer.Slice(0, valueStartIdx - 1);
-                            ReadOnlySpan<byte> headerValue = buffer.Slice(valueStartIdx, buffer.Length - valueIter.Length + crOrLfIdx - valueStartIdx);
+                            ReadOnlySpan<byte> headerValue = buffer.Slice(valueStartIdx, buffer.Length - valueIterator.Length + crOrLfIdx - valueStartIdx);
                             AddResponseHeader(headerName, headerValue, response, isFromTrailer);
                         }
 
-                        buffer = buffer.Slice(buffer.Length - valueIter.Length + spIdx);
+                        buffer = buffer.Slice(buffer.Length - valueIterator.Length + spIdx);
                         break;
                     }
 
                     // Found an obs-fold (CRLFHT/CRLFSP).
                     // Replace the CRLF with SPSP and keep looking for the final newline.
-                    valueIter[crOrLfIdx] = (byte)' ';
-                    valueIter[lfIdx] = (byte)' ';
+                    valueIterator[crOrLfIdx] = (byte)' ';
+                    valueIterator[lfIdx] = (byte)' ';
 
-                    valueIter = valueIter.Slice(spIdx + 1);
+                    valueIterator = valueIterator.Slice(spIdx + 1);
                 }
             }
 
