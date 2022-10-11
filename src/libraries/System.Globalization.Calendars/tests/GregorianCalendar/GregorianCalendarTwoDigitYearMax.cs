@@ -22,7 +22,7 @@ namespace System.Globalization.Tests
         public void TwoDigitYearMax(GregorianCalendarTypes calendarType)
         {
             Calendar calendar = new GregorianCalendar(calendarType);
-            Assert.True(calendar.TwoDigitYearMax == 2029 || calendar.TwoDigitYearMax == 2049, $"Unexpected calendar.TwoDigitYearMax {calendar.TwoDigitYearMax}");
+            Assert.True(calendar.TwoDigitYearMax == 2049 || calendar.TwoDigitYearMax == 2069, $"Unexpected calendar.TwoDigitYearMax {calendar.TwoDigitYearMax}");
 
             int randomTwoDigitYearMax = MinTwoDigitYear + s_randomDataGenerator.GetInt32(-55) % (MaxYear - MinTwoDigitYear + 1);
             calendar.TwoDigitYearMax = randomTwoDigitYearMax;

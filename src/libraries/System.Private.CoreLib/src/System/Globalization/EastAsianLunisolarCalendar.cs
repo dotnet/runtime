@@ -654,7 +654,7 @@ namespace System.Globalization
             {
                 if (_twoDigitYearMax == -1)
                 {
-                    _twoDigitYearMax = GetSystemTwoDigitYearSetting(BaseCalendarID, GetYear(new DateTime(DefaultGregorianTwoDigitYearMax, 1, 1)));
+                    _twoDigitYearMax = GetSystemTwoDigitYearSetting(BaseCalendarID, DefaultGregorianTwoDigitYearMax);
                 }
 
                 return _twoDigitYearMax;
