@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -711,7 +712,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
+            int twoDigitYearMax = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }
