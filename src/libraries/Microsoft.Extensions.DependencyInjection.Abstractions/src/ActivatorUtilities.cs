@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var argumentTypes = new Type[parameters.Length];
             for (int i = 0; i < argumentTypes.Length; i++)
             {
-                argumentTypes[i] = parameters[i].GetType();
+                argumentTypes[i] = parameters[i]?.GetType();
             }
 
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructorInfo, out int?[] parameterMap);

@@ -3,7 +3,6 @@
 
 using System;
 using Xunit;
-using Moq;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -39,28 +38,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void CreateInstance_OneCtorUnambiguoslyRegistered_CreatesInstanceSuccessfully(bool isService)
-        {
-            bool callbackCalled = false;
-            var mockedService = new Mock<IServiceProviderIsService>();
-            var mockedServiceProvider = new Mock<IServiceProvider>();
-
-            mockedServiceProvider.Setup(r => r.GetService(It.IsAny<IServiceProviderIsService>()))
-                .Returns(mockedService.Object)
-                .Callback(() => callbackCalled = true);
-            mockedServiceProvider.Setup(r => r.GetService(typeof(A)))
-                .Returns(new A());
-            mockedService.Setup(r => r.IsService(It.IsAny<Type>()))
-                .Returns(isService);
-
-            var instance = ActivatorUtilities.CreateInstance<ClassWithA>(mockedServiceProvider.Object);
-            Assert.NotNull(instance.A);
-            Assert.True(callbackCalled);
-        }
-
-        [Theory]
         [InlineData(typeof(ABCS1))]
         [InlineData(typeof(ABCS2))]
         [InlineData(typeof(ABCS3))]
@@ -77,6 +54,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(b, instance.B);
             Assert.Same(c, instance.C);
             Assert.NotNull(instance.S);
+        }
+
+        [Fact]
+        public void CreateInstance_NullInstance_HandlesBadInputWithInvalidOperationException()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<B>();
+            services.AddScoped<S>();
+            using var provider = services.BuildServiceProvider();
+            B? b = null;
+            C c = new C();
+
+            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithABCS>(provider, c, b!));
         }
 
         [Fact]
