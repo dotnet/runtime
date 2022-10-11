@@ -94,20 +94,5 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo<T> info = new SourceGenJsonTypeInfo<T>(converter, options);
             return info;
         }
-
-        /// <summary>
-        /// Marks the provided <see cref="JsonTypeInfo"/> instance as locked for further modification.
-        /// </summary>
-        /// <param name="jsonTypeInfo">The metadata instance to lock for modification.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="jsonTypeInfo"/> is null.</exception>
-        public static void MakeReadOnly(JsonTypeInfo jsonTypeInfo)
-        {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            jsonTypeInfo.IsReadOnly = true;
-        }
     }
 }

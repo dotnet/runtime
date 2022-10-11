@@ -1077,7 +1077,6 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonNode> JsonNodeConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonObject> JsonObjectConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonValue> JsonValueConverter { get { throw null; } }
-        public static void MakeReadOnly(System.Text.Json.Serialization.Metadata.JsonTypeInfo jsonTypeInfo) { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<object?> ObjectConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
@@ -1191,7 +1190,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo() { }
         public System.Text.Json.Serialization.JsonConverter Converter { get { throw null; } }
         public System.Func<object>? CreateObject { get { throw null; } set { } }
+        public bool IsReadOnly { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
+        public void MakeReadOnly() { throw null; }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Action<object>? OnDeserialized { get { throw null; } set { } }
         public System.Action<object>? OnDeserializing { get { throw null; } set { } }

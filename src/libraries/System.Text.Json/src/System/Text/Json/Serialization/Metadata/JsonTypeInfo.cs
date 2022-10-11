@@ -256,6 +256,23 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        /// <summary>
+        /// Specifies whether the current instance has been locked for modification.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="JsonTypeInfo"/> instance can be locked either if
+        /// it has been passed to one of the <see cref="JsonSerializer"/> methods,
+        /// has been associated with a <see cref="JsonSerializerContext"/> instance,
+        /// or a user explicitly called the <see cref="MakeReadOnly"/> method on the instance.
+        /// </remarks>
+        public bool IsReadOnly { get; private set; }
+
+        /// <summary>
+        /// Locks the current instance for further modification.
+        /// </summary>
+        /// <remarks>This method is idempotent.</remarks>
+        public void MakeReadOnly() => IsReadOnly = true;
+
         private protected JsonPolymorphismOptions? _polymorphismOptions;
 
         internal object? CreateObjectWithArgs { get; set; }
@@ -493,8 +510,6 @@ namespace System.Text.Json.Serialization.Metadata
         private ExceptionDispatchInfo? _cachedConfigureError;
 
         internal bool IsConfigured => _isConfigured;
-
-        internal bool IsReadOnly { get; set; }
 
         internal void EnsureConfigured()
         {
