@@ -167,7 +167,6 @@ internal sealed class WebServerStartup
             });
         });
 
-
         applicationLifetime.ApplicationStarted.Register(() =>
         {
             TaskCompletionSource<ServerURLs> tcs = realUrlsAvailableTcs;
