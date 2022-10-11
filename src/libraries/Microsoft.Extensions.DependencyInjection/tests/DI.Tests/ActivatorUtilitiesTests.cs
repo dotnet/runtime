@@ -41,18 +41,23 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void CreateInstance_OneCtorRegistered_IncorrectIServiceProviderIsService_CreatesInstanceSuccessfully(bool isService)
+        public void CreateInstance_OneCtorUnambiguoslyRegistered_CreatesInstanceSuccessfully(bool isService)
         {
+            bool callbackCalled = false;
             var mockedService = new Mock<IServiceProviderIsService>();
+            var mockedServiceProvider = new Mock<IServiceProvider>();
+
+            mockedServiceProvider.Setup(r => r.GetService(It.IsAny<IServiceProviderIsService>()))
+                .Returns(mockedService.Object)
+                .Callback(() => callbackCalled = true);
+            mockedServiceProvider.Setup(r => r.GetService(typeof(A)))
+                .Returns(new A());
             mockedService.Setup(r => r.IsService(It.IsAny<Type>()))
                 .Returns(isService);
-            var services = new ServiceCollection();
-            services.AddScoped<IServiceProviderIsService>(p => mockedService.Object);
-            services.AddScoped<A>();
-            using var provider = services.BuildServiceProvider();
 
-            var instance = ActivatorUtilities.CreateInstance<ClassWithA>(provider);
+            var instance = ActivatorUtilities.CreateInstance<ClassWithA>(mockedServiceProvider.Object);
             Assert.NotNull(instance.A);
+            Assert.True(callbackCalled);
         }
 
         [Theory]
