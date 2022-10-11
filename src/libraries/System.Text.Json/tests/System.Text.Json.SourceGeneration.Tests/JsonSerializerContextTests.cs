@@ -26,6 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
 
+            Assert.True(typeInfo.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
@@ -42,6 +43,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)PersonJsonContext.Default.GetTypeInfo(typeof(Person));
 
+            Assert.True(typeInfo.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
@@ -60,9 +62,11 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
 
             Assert.NotSame(typeInfo, PersonJsonContext.Default.Person);
+            Assert.False(typeInfo.IsReadOnly);
 
             JsonTypeInfo<Person> typeInfo2 = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
             Assert.NotSame(typeInfo, typeInfo2);
+            Assert.False(typeInfo.IsReadOnly);
 
             typeInfo.CreateObject = null;
             typeInfo.OnDeserializing = obj => { };

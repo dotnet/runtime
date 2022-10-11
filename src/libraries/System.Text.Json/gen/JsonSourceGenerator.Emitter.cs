@@ -3,11 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Text.Json;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
@@ -28,6 +25,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
+            private const string MakeReadOnlyMethodName = "MakeReadOnly";
             private const string InfoVarName = "info";
             private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
@@ -1097,7 +1095,7 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
 
     if (makeReadOnly)
     {{
-        {JsonMetadataServicesTypeRef}.MakeReadOnly({JsonTypeInfoReturnValueLocalVariableName});
+        {JsonTypeInfoReturnValueLocalVariableName}.{MakeReadOnlyMethodName}();
     }}
 
     return {JsonTypeInfoReturnValueLocalVariableName};
