@@ -1,6 +1,12 @@
 # Workflow Guide
 
-The repo can be built for the following platforms, using the provided setup and the following instructions. Before attempting to clone or build, please check these requirements.
+* [Build Requirements](#build-requirements)
+* [Getting Yourself Started](#getting-yourself-started)
+* [Configurations and Subsets](#configurations-and-subsets)
+  * [What does this mean for me?](#what-does-this-mean-for-me)
+* [Full Instructions on Building and Testing the Runtime Repo](#full-instructions-on-building-and-testing-the-runtime-repo)
+
+The repo can be built for the following platforms, using the provided setup and the following instructions. Before attempting to clone or build, please check the requirements that match your machine, and ensure you install and prepare all as necessary.
 
 ## Build Requirements
 
@@ -12,81 +18,72 @@ The repo can be built for the following platforms, using the provided setup and 
 | ARM64 | &#x2714; | &#x2714; | &#x2714; |          |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
 
-Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
-
 Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
 
-## Concepts
+## Getting Yourself Started
 
-The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo, as follows:
+The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo.
 
-For Linux and macOS
-```bash
-./build.sh
-```
+The repository currently consists of three different major parts:
 
-For Windows:
-```cmd
-build.cmd
-```
+* The Runtimes
+* The Libraries
+* The Installer
 
-This builds the product (in the default debug configuration), but not the tests.
+More info on this, as well as the different build configurations in the [Configurations and Subsets section](#configurations-and-subsets).
 
-For information about the different options available, supply the argument `--help|-h` when invoking the build script:
-```
-build -h
-```
+This was a concise introduction and now it's time to show the specifics of building specific subsets in any given supported platform, since most likely you will want to customize your builds according to what component(s) you're working on, as well as how you configured your build environment. We have links to instructions depending on your needs [in this section](#full-instructions-on-building-and-testing-the-runtime-repo).
 
-On Unix like systems, arguments can be passed in with a single `-` or double hyphen `--`.
+* For instructions on how to edit code and make changes, see [Editing and Debugging](editing-and-debugging.md).
+* For instructions on how to debug CoreCLR, see [Debugging CoreCLR](/docs/workflow/debugging/coreclr/debugging-coreclr.md).
+* For instructions on using GitHub Codespaces, see [Codespaces](/docs/workflow/Codespaces.md).
 
-The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
-To build just one part you use the root build script (build.cmd/sh), and you add the `-subset` flag.
-
-## Editing and Debugging
-
-For instructions on how to edit code and debug your changes, see [Editing and Debugging](editing-and-debugging.md).
-
-For instructions on using GitHub Codespaces, see [Codespaces](Codespaces.md).
-
-## Configurations
+## Configurations and Subsets
 
 You may need to build the tree in a combination of configurations. This section explains why.
 
-A quick reminder of some concepts -- see the [glossary](../project/glossary.md) for more on these:
+<!-- LINK-UPDATES -->
+A quick reminder of some concepts -- see the [glossary](/docs/project/glossary.md) for more on these:
 
 * **Debug Configuration** -- Non-optimized code.  Asserts are enabled.
-* **Checked Configuration** -- Optimized code. Asserts are enabled.  Only relevant to CoreCLR runtime.
-* **Release Configuration** -- Optimized code. Asserts are disabled. Runs at the best speed, and suitable for performance profiling. You will have limited debugging experience.
+* **Checked Configuration** -- Optimized code. Asserts are enabled.  _Only relevant to CoreCLR runtime._
+* **Release Configuration** -- Optimized code. Asserts are disabled. Runs at the best speed, and suitable for performance profiling. This will impact the debugging experience due to compiler optimizations that make understanding what the debugging is showing difficult to reason about, relative to the source code.
 
 When we talk about mixing configurations, we're discussing the following sub-components:
 
+<!-- LINK-UPDATES -->
 * **Runtime** is the execution engine for managed code and there are two different implementations available. Both are written in C/C++, therefore, easier to debug when built in a Debug configuration.
-    * CoreCLR is the comprehensive execution engine which, if built in Debug Configuration, executes managed code very slowly. For example, it will take a long time to run the managed code unit tests. The code lives under [src/coreclr](../../src/coreclr).
-    * Mono is portable and also slimmer runtime and it's not that sensitive to Debug Configuration for running managed code. You will still need to build it without optimizations to have good runtime debugging experience though. The code lives under [src/mono](../../src/mono).
-* **CoreLib** (also known as System.Private.CoreLib) is the lowest level managed library. It has a special relationship to the runtimes and therefore it must be built in the matching configuration, e.g., if the runtime you are using was built in a Debug configuration, this must be in a Debug configuration. The runtime agnostic code for this library can be found at [src/libraries/System.Private.CoreLib/src](../../src/libraries/System.Private.CoreLib/src/README.md).
-* **Libraries** is the bulk of the dlls that are oblivious to the configuration that runtimes and CoreLib were built in. They are most debuggable when built in a Debug configuration, and, happily, they still run sufficiently fast in that configuration that it's acceptable for development work. The code lives under [src/libraries](../../src/libraries).
+  * CoreCLR is the comprehensive execution engine which, if built in Debug Configuration, executes managed code very slowly. For example, it will take a long time to run the managed code unit tests. The code lives under [src/coreclr](/src/coreclr).
+  * Mono is a portable and also slimmer runtime and it's not that sensitive to Debug Configuration for running managed code. You will still need to build it without optimizations to have good runtime debugging experience though. The code lives under [src/mono](/src/mono).
+* **CoreLib** (also known as System.Private.CoreLib) is the lowest level managed library. It has a special relationship to the runtimes and therefore it must be built in the matching configuration, e.g., if the runtime you are using was built in a Debug configuration, this must be in a Debug configuration. The runtime agnostic code for this library can be found at [src/libraries/System.Private.CoreLib/src](/src/libraries/System.Private.CoreLib/src/README.md).
+* **Libraries** is the bulk of the dlls that are oblivious to the configuration that runtimes and CoreLib were built in. They are most debuggable when built in a Debug configuration, and happily, they still run sufficiently fast in that configuration that it's acceptable for development work. The code lives under [src/libraries](/src/libraries).
+
+<!-- TODO: Provide a list of the possible subsets, since right now it's all up to one's own knowledge and guessing. -->
+To build just one part of the repo, you add the `-subset` flag with the subset you wish to build to the root build script _(build.cmd/sh)_. You can specify more than one by linking them with the `+` operator (e.g. `-subset clr+libs` would build CoreCLR and the libraries). Note that if the subset is the first argument you pass to the script, you can omit the `--subset` flag altogether.
 
 ### What does this mean for me?
 
-At this point you probably know what you are planning to work on primarily: the runtimes or libraries.
+At this point you probably know what you are planning to work on primarily: the runtimes or libraries. As general suggestions on how to proceed, here are some ideas:
 
-* if you're working in runtimes, you may want to build everything in the Debug configuration, depending on how comfortable you are debugging optimized native code.
-* if you're working in libraries, you will want to use debug libraries with a release version of runtime and CoreLib, because the tests will run faster.
-* if you're working in CoreLib - you probably want to try to get the job done with release runtime and CoreLib, and fall back to debug if you need to. The [Building Libraries](building/libraries/README.md) document explains how you'll do this.
+* If you're working in runtimes, you may want to build everything in the Debug configuration, depending on how comfortable you are debugging optimized native code.
+* If you're working in libraries, you will want to use debug libraries with a release version of runtime and CoreLib, because the tests will run faster.
+* If you're working in CoreLib - you probably want to try to get the job done with release runtime and CoreLib, and fall back to debug if you need to. The [Building Libraries](/docs/workflow/building/libraries/README.md) document explains how you'll do this.
 
-Now you know about configurations and how we use them, you will want to read how to build what you plan to work on. Pick one of these:
+## Full Instructions on Building and Testing the Runtime Repo
 
-- [Building CoreCLR runtime](building/coreclr/README.md)
-- [Building Mono runtime](building/mono/README.md)
-- [Building Libraries](building/libraries/README.md)
+Now you know about configurations and how we use them, so now you will want to read how to build what you plan to work on. Each of these will have further specific instructions or links for whichever platform you are developing on.
+
+* [Building CoreCLR runtime](/docs/workflow/building/coreclr/README.md)
+* [Building Mono runtime](/docs/workflow/building/mono/README.md)
+* [Building Libraries](/docs/workflow/building/libraries/README.md)
 
 After that, here's information about how to run tests:
 
-- [Testing CoreCLR runtime](testing/coreclr/testing.md)
-- [Testing Mono runtime](testing/mono/testing.md)
-- [Testing Libraries](testing/libraries/testing.md)
+* [Testing CoreCLR runtime](/docs/workflow/testing/coreclr/testing.md)
+* [Testing Mono runtime](/docs/workflow/testing/mono/testing.md)
+* [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 
 And how to measure performance:
 
-- [Benchmarking workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md)
-- [Profiling workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md)
+* [Benchmarking workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md)
+* [Profiling workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md)

@@ -63,8 +63,17 @@ internal static partial class Interop
         /// </summary>
         internal static byte[] Consume(byte[] blob, ref int offset, int count)
         {
-            byte[] value = new byte[count];
-            Buffer.BlockCopy(blob, offset, value, 0, count);
+            byte[] value = new ReadOnlySpan<byte>(blob, offset, count).ToArray();
+            offset += count;
+            return value;
+        }
+
+        /// <summary>
+        ///     Peel off the next "count" bytes in blob and return them in a byte array.
+        /// </summary>
+        internal static byte[] Consume(ReadOnlySpan<byte> blob, ref int offset, int count)
+        {
+            byte[] value = blob.Slice(offset, count).ToArray();
             offset += count;
             return value;
         }

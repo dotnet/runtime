@@ -22,6 +22,7 @@ public:
             , breakOnError(false)
             , breakOnAssert(false)
             , breakOnException(false)
+            , ignoreStoredConfig(false)
             , applyDiff(false)
             , parallel(false)
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
@@ -59,6 +60,7 @@ public:
         bool  breakOnError;
         bool  breakOnAssert;
         bool  breakOnException;
+        bool  ignoreStoredConfig;
         bool  applyDiff;
         bool  parallel;        // User specified to use /parallel mode.
         bool  useCoreDisTools; // Use CoreDisTools library instead of Msvcdis
