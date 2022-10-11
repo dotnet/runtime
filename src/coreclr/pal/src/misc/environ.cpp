@@ -981,6 +981,38 @@ EnvironInitialize(void)
 
 /*++
 
+Function : _putenv.
+
+See MSDN for more details.
+
+Note:   The BSD implementation can cause
+        memory leaks. See man pages for more details.
+--*/
+int
+__cdecl
+_putenv( const char * envstring )
+{
+    int ret = -1;
+
+    PERF_ENTRY(_putenv);
+    ENTRY( "_putenv( %p (%s) )\n", envstring ? envstring : "NULL", envstring ? envstring : "NULL") ;
+
+    if (envstring != nullptr)
+    {
+        ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
+    }
+    else
+    {
+        ERROR( "_putenv() called with NULL envstring!\n");
+    }
+
+    LOGEXIT( "_putenv returning %d\n", ret);
+    PERF_EXIT(_putenv);
+    return ret;
+}
+
+/*++
+
 Function : PAL_getenv
 
 See MSDN for more details.

@@ -288,6 +288,48 @@ PALTEST(file_io_SetFilePointer_test2_paltest_setfilepointer_test2, "file_io/SetF
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
+    else
+    {
+        /* verify */
+        bRc = SetEndOfFile(hFile);
+        if (bRc != TRUE)
+        {
+            bRc = CloseHandle(hFile);
+            if (bRc != TRUE)
+            {
+                Trace("SetFilePointer: ERROR -> Unable to close file"
+                      " \"%s\".\n", szTextFile);
+            }
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file"
+                      " \"%s\".\n", szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
+        }
+
+        if (GetFileSize(hFile, NULL) != strlen(szText)+20)
+        {
+            Trace("SetFilePointer: ERROR -> Failed to move pointer past"
+                  " EOF.\n");
+            bRc = CloseHandle(hFile);
+            if (bRc != TRUE)
+            {
+                Trace("SetFilePointer: ERROR -> Unable to close file"
+                      " \"%s\".\n", szTextFile);
+            }
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file"
+                      " \"%s\".\n", szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
+        }
+    }
+
+
 
     bRc = CloseHandle(hFile);
     if (bRc != TRUE)

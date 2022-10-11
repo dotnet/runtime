@@ -30,6 +30,50 @@ void CleanUp_GetFileSizeEx_test1(HANDLE hFile)
     }
 }
 
+void CheckFileSize_GetFileSizeEx_test1(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
+{
+    DWORD dwRc = 0;
+    DWORD dwError = 0;
+    LARGE_INTEGER qwFileSize;
+
+    dwRc = SetFilePointer(hFile, dwOffset, (PLONG)&dwHighOrder, FILE_BEGIN);
+    if (dwRc == INVALID_SET_FILE_POINTER)
+    {
+        Trace("GetFileSizeEx: ERROR -> Call to SetFilePointer failed with %ld.\n", 
+            GetLastError());
+        CleanUp_GetFileSizeEx_test1(hFile);
+        Fail("");
+    }
+    else
+    {
+        if (!SetEndOfFile(hFile))
+        {
+            dwError = GetLastError();
+            CleanUp_GetFileSizeEx_test1(hFile);
+            if (dwError == 112)
+            {
+                Fail("GetFileSizeEx: ERROR -> SetEndOfFile failed due to lack of "
+                    "disk space\n");
+            }
+            else
+            {
+                Fail("GetFileSizeEx: ERROR -> SetEndOfFile call failed "
+                    "with error %ld\n", dwError);
+            }
+        }
+        else
+        {
+            GetFileSizeEx(hFile, &qwFileSize);
+            if ((qwFileSize.u.LowPart != dwOffset) || 
+                (qwFileSize.u.HighPart != dwHighOrder))
+            {
+                CleanUp_GetFileSizeEx_test1(hFile);
+                Fail("GetFileSizeEx: ERROR -> File sizes do not match up.\n");
+            }
+        }
+    }
+}
+
 PALTEST(file_io_GetFileSizeEx_test1_paltest_getfilesizeex_test1, "file_io/GetFileSizeEx/test1/paltest_getfilesizeex_test1")
 {
     HANDLE hFile = NULL;
@@ -80,6 +124,16 @@ PALTEST(file_io_GetFileSizeEx_test1_paltest_getfilesizeex_test1, "file_io/GetFil
         Fail("GetFileSizeEx: ERROR -> Unable to create file \"%s\".\n", 
             szTextFile);
     }
+
+    /* give the file a size */
+    CheckFileSize_GetFileSizeEx_test1(hFile, 256, 0);
+
+    /* make the file large using the high order option */
+    CheckFileSize_GetFileSizeEx_test1(hFile, 256, 1);
+
+
+    /* set the file size to zero */
+    CheckFileSize_GetFileSizeEx_test1(hFile, 0, 0);
 
     /*  test if file size changes by writing to it. */
     /* get file size */

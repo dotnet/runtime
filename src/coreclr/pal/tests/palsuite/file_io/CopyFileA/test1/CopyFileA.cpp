@@ -149,7 +149,7 @@ PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test
             }
         }
         /* delete file file but don't worry if it fails */
-        remove(szDstNonExistent);
+        DeleteFileA(szDstNonExistent);
     }
 
     int exitCode = bSuccess ? PASS : FAIL;

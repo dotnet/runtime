@@ -208,19 +208,3 @@ mkAbsoluteFilenameA (
     return (sizeAPN);
   
 } 
-
-BOOL
-DeleteFileW(
-        IN LPCWSTR lpFileName)
-{
-    _ASSERTE(lpFileName != NULL);
-
-    CHAR mbFileName[ _MAX_PATH ];
-
-    if (WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, mbFileName, sizeof(mbFileName), NULL, NULL ) != 0 )
-    {
-        return remove(mbFileName) == 0;
-    }
-
-    return FALSE;
-}

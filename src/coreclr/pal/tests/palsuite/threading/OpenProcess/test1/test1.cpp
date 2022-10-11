@@ -73,8 +73,21 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
     rgchAbsPathName = &absPathBuf[0];
     dwFileLength = strlen( rgchChildFile );
 
-    strcpy(rgchDirName, ".\\");
-    dwDirLength = strlen(rgchDirName);
+    dwDirLength = GetCurrentDirectory( _MAX_PATH, rgchDirName );
+    if( dwDirLength == 0 )
+    {
+        dwError = GetLastError();
+        if( ReleaseMutex( hMutex ) == 0 )
+        {
+            Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
+        }
+        if( CloseHandle( hMutex ) == 0 )
+        {
+            Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
+        }
+        Fail( "GetCurrentDirectory call failed with error code %d\n",
+              dwError );
+    }
 
     dwSize = mkAbsoluteFilename(   rgchDirName,
                                    dwDirLength,

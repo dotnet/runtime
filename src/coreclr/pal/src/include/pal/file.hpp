@@ -77,6 +77,12 @@ namespace CorUnix
         );
 
     PAL_ERROR
+    InternalSetEndOfFile(
+        CPalThread *pThread,
+        HANDLE hFile
+        );
+
+    PAL_ERROR
     InternalGetFileSize(
         CPalThread *pThread,
         HANDLE hFile,
