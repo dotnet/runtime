@@ -5,7 +5,6 @@
 #include "verbmerge.h"
 #include "simpletimer.h"
 #include "logging.h"
-#include <stdio.h>
 
 // Do reads/writes in large 256MB chunks.
 #define BUFFER_SIZE 0x10000000
@@ -571,8 +570,8 @@ CLEAN_UP:
     if (result != 0)
     {
         // There was a failure. Delete the output file, to avoid leaving some half-created file.
-        int st = remove(nameOfOutputFile);
-        if (st != 0)
+        BOOL ok = DeleteFileW(nameOfOutputFileAsWchar);
+        if (!ok)
         {
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
         }

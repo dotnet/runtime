@@ -80,8 +80,49 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test5_paltest_mapviewoffile_test5, "fil
         Fail("");
     }
 
+    /* Setup SECURITY_ATTRIBUTES structure for CreatePipe.
+     */
+    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes); 
+    lpPipeAttributes.lpSecurityDescriptor = NULL; 
+    lpPipeAttributes.bInheritHandle       = TRUE; 
+
+    /* Create a Pipe.
+     */
+    bRetVal = CreatePipe(&hReadPipe,       /* read handle*/
+                         &hWritePipe,      /* write handle */
+                         &lpPipeAttributes,/* security attributes*/
+                         0);               /* pipe size*/
+    if (bRetVal == FALSE)
+    {
+        Fail("ERROR: %ld :Unable to create pipe\n", 
+             GetLastError());
+    }
+
+    /* Attempt creating a MapViewOfFile with a Pipe Handle.
+     */
+    lpMapViewAddress = MapViewOfFile(
+                            hReadPipe,
+                            FILE_MAP_WRITE, /* access code */
+                            0,              /* high order offset */
+                            0,              /* low order offset */
+                            MAPPINGSIZE);   /* number of bytes for map */
+
+    if((NULL != lpMapViewAddress) && 
+       (GetLastError() != ERROR_INVALID_HANDLE))
+    {
+        Trace("ERROR:%u: Able to create a MapViewOfFile with "
+              "hFileMapping=0x%lx.\n",
+              GetLastError());
+        CloseHandle(hReadPipe);
+        CloseHandle(hWritePipe);
+        UnmapViewOfFile(lpMapViewAddress);
+        Fail("");
+    }
+
     /* Clean-up and Terminate the PAL.
     */
+    CloseHandle(hReadPipe);
+    CloseHandle(hWritePipe);
     PAL_Terminate();
     return PASS;
 }

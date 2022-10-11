@@ -98,6 +98,46 @@ PALTEST(file_io_SetFilePointer_test6_paltest_setfilepointer_test6, "file_io/SetF
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
+    else
+    {
+        /* verify results */
+        if (SetEndOfFile(hFile) != TRUE)
+        {
+            Trace("SetFilePointer: ERROR -> Call to SetEndOfFile failed with "
+                "error code: %d\n", GetLastError());
+            if (CloseHandle(hFile) != TRUE)
+            {
+                Trace("SetFilePointer: ERROR -> Unable to close file"
+                      " \"%s\".\n", szTextFile);
+            }
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file"
+                      " \"%s\".\n", szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
+        }
+        dwReturnedOffset = GetFileSize(hFile, (DWORD*)&dwReturnedHighOrder);
+        if ((dwReturnedOffset != dwOffset) ||
+            (dwReturnedHighOrder != dwHighOrder))
+        {
+            Trace("SetFilePointer: ERROR -> Asked to move far past the "
+                "current file pointer. "
+                "low order sent: %ld  low order returned: %ld "
+                "high order sent: %ld  high order returned: %ld",
+                dwOffset, dwReturnedOffset,
+                dwHighOrder, dwReturnedHighOrder);
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file"
+                      " \"%s\".\n", szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
+        }
+    }
+
 
     /*
      * move the pointer backwards in the file and verify

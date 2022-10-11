@@ -71,6 +71,7 @@
 #undef OpenSemaphore
 #undef CreateWaitableTimer
 #undef CreateFileMapping
+#undef OpenFileMapping
 #undef LoadLibrary
 #undef LoadLibraryEx
 #undef GetModuleFileName
@@ -91,16 +92,19 @@
 #undef GetSystemDirectory
 #undef GetTempPath
 #undef GetTempFileName
+#undef GetCurrentDirectory
 #undef GetFullPathName
 #undef CreateFile
 #undef GetFileAttributes
 #undef GetFileAttributesEx
+#undef DeleteFile
 #undef FindFirstFileEx
 #undef FindFirstFile
 #undef FindNextFile
 #undef CopyFile
 #undef CopyFileEx
 #undef MoveFile
+#undef MoveFileEx
 #undef CreateHardLink
 #undef CreateNamedPipe
 #undef WaitNamedPipe
@@ -139,6 +143,7 @@
 #define WszOpenEvent OpenEventW
 #define WszCreateWaitableTimer CreateWaitableTimerW
 #define WszCreateFileMapping CreateFileMappingW
+#define WszOpenFileMapping OpenFileMappingW
 #define WszGetModuleHandle GetModuleHandleW
 #define WszGetModuleHandleEx GetModuleHandleExW
 #define WszGetCommandLine GetCommandLineW
@@ -196,11 +201,13 @@
 #define WszCreateFile          CreateFileWrapper
 #define WszGetFileAttributes   GetFileAttributesWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
+#define WszDeleteFile          DeleteFileWrapper
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
 //Long Files will not work on these till redstone
+#define WszGetCurrentDirectory GetCurrentDirectoryWrapper
 #define WszGetTempPath         GetTempPathWrapper
 
 //APIS which have a buffer as an out parameter

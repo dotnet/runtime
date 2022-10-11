@@ -215,6 +215,25 @@ void InitializeCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 
 /*++
 Function:
+  InitializeCriticalSectionEx - Flags is ignored.
+
+See MSDN doc.
+--*/
+BOOL InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCriticalSection, DWORD dwSpinCount, DWORD Flags)
+{
+    PERF_ENTRY(InitializeCriticalSection);
+    ENTRY("InitializeCriticalSectionEx(lpCriticalSection=%p, dwSpinCount=%d, Flags=%d)\n",
+          lpCriticalSection, dwSpinCount, Flags);
+
+    InternalInitializeCriticalSectionAndSpinCount(lpCriticalSection, dwSpinCount, false);
+
+    LOGEXIT("InitializeCriticalSectionEx returns TRUE\n");
+    PERF_EXIT(InitializeCriticalSection);
+    return true;
+}
+
+/*++
+Function:
   InitializeCriticalSectionAndSpinCount
 
 See MSDN doc.
@@ -270,6 +289,28 @@ void EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 
     LOGEXIT("EnterCriticalSection returns void\n");
     PERF_EXIT(EnterCriticalSection);
+}
+
+/*++
+Function:
+  TryEnterCriticalSection
+
+See MSDN doc.
+--*/
+BOOL TryEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
+{
+    PERF_ENTRY(TryEnterCriticalSection);
+    ENTRY("TryEnterCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
+
+    CPalThread * pThread = InternalGetCurrentThread();
+
+    bool fRet = InternalTryEnterCriticalSection(pThread,
+        lpCriticalSection);
+
+    LOGEXIT("TryEnterCriticalSection returns bool %d\n", (int)fRet);
+    PERF_EXIT(TryEnterCriticalSection);
+
+    return (BOOL)fRet;
 }
 
 /*++
@@ -941,6 +982,68 @@ namespace CorUnix
         return;
     }
 
+    /*++
+    Function:
+      CorUnix::InternalTryEnterCriticalSection
+
+    Tries to acquire a CS. It returns true on success, false if the CS is
+    locked by another thread
+    --*/
+    bool InternalTryEnterCriticalSection(
+        CPalThread * pThread,
+        PCRITICAL_SECTION pCriticalSection)
+    {
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
+            reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
+
+        LONG lNewVal;
+        SIZE_T threadId;
+        bool fRet = true;
+
+        _ASSERTE(PalCsNotInitialized != pPalCriticalSection->cisInitState);
+
+        threadId = ObtainCurrentThreadId(pThread);
+
+        lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount,
+                                             (LONG)PALCS_LOCK_BIT,
+                                             (LONG)PALCS_LOCK_INIT);
+        if (lNewVal == PALCS_LOCK_INIT)
+        {
+            // CS successfully acquired: setting ownership data
+            pPalCriticalSection->OwningThread = threadId;
+            pPalCriticalSection->RecursionCount = 1;
+#ifdef _DEBUG
+            if (NULL != pPalCriticalSection->DebugInfo)
+            {
+                pPalCriticalSection->DebugInfo->lAcquireCount += 1;
+                pPalCriticalSection->DebugInfo->lEnterCount += 1;
+            }
+#endif // _DEBUG
+
+            goto ITECS_exit;
+        }
+
+        // check if the current thread already owns the criticalSection
+        if ((lNewVal & PALCS_LOCK_BIT) &&
+            (pPalCriticalSection->OwningThread == threadId))
+        {
+            pPalCriticalSection->RecursionCount += 1;
+#ifdef _DEBUG
+            if (NULL != pPalCriticalSection->DebugInfo)
+            {
+                pPalCriticalSection->DebugInfo->lEnterCount += 1;
+            }
+#endif // _DEBUG
+
+            goto ITECS_exit;
+        }
+
+        // Failed to acquire the CS
+        fRet = false;
+
+    ITECS_exit:
+        return fRet;
+    }
 #endif // MUTEX_BASED_CSS
 
     /*++
@@ -1454,5 +1557,50 @@ namespace CorUnix
         _ASSERTE(0 == iRet);
     }
 
+    /*++
+    Function:
+      CorUnix::InternalTryEnterCriticalSection
+
+    Tries to acquire a CS. It returns true on success, false if the CS is
+    locked by another thread
+    --*/
+#ifdef MUTEX_BASED_CSS
+    bool InternalTryEnterCriticalSection(
+        CPalThread * pThread,
+        PCRITICAL_SECTION pCriticalSection)
+#else // MUTEX_BASED_CSS
+    bool MTX_InternalTryEnterCriticalSection(
+        CPalThread * pThread,
+        PCRITICAL_SECTION pCriticalSection)
+#endif // MUTEX_BASED_CSS
+    {
+        PAL_CRITICAL_SECTION * pPalCriticalSection =
+            reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
+        bool fRet;
+        SIZE_T threadId;
+
+        _ASSERTE(PalCsNotInitialized != pPalCriticalSection->cisInitState);
+
+        threadId = ObtainCurrentThreadId(pThread);
+
+        /* check if the current thread already owns the criticalSection */
+        if (pPalCriticalSection->OwningThread == threadId)
+        {
+            pPalCriticalSection->RecursionCount += 1;
+            fRet = true;
+            goto ITECS_exit;
+        }
+
+        fRet = (0 == pthread_mutex_trylock(&pPalCriticalSection->csndNativeData.mutex));
+
+        if (fRet)
+        {
+            pPalCriticalSection->OwningThread = threadId;
+            pPalCriticalSection->RecursionCount = 1;
+        }
+
+    ITECS_exit:
+        return fRet;
+    }
 #endif // MUTEX_BASED_CSS || _DEBUG
 }

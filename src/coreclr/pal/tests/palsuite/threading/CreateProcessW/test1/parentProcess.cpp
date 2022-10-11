@@ -10,7 +10,7 @@
 ** This process (the parent process) reads the file created by the child and 
 ** compares the value the child wrote to the file.  (a const char *)
 **
-** Dependencies: GetTempPath
+** Dependencies: GetCurrentDirectory
 **               MultiByteToWideChar
 **               wcslen
 **               strlen
@@ -68,12 +68,12 @@ PALTEST(threading_CreateProcessW_test1_paltest_createprocessw_test1, "threading/
     
     szAbsPathNameW=&absPathBuf[0];
 
-    dwDirLength = GetTempPath(_MAX_PATH, szDirNameW);
+    dwDirLength = GetCurrentDirectory(_MAX_PATH, szDirNameW);
 
     if (0 == dwDirLength) 
     {
-	Fail ("GetTempPath call failed.  Could not get "
-		"temp directory\n.  Exiting.\n");
+	Fail ("GetCurrentDirectory call failed.  Could not get "
+		"current working directory\n.  Exiting.\n");
     }
 
     int mbwcResult = MultiByteToWideChar(CP_ACP, 0, argv[0], -1, szAbsPathNameW, sizeof(absPathBuf));

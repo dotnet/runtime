@@ -111,11 +111,11 @@ PALTEST(file_io_CopyFileA_test3_paltest_copyfilea_test3, "file_io/CopyFileA/test
     }
 
     /* delete the newly copied file */
-    int st = remove(szDest);
-    if(st != 0)
+    bRc = DeleteFile(szDest);
+    if(!bRc)
     {
-        Fail("CopyFileA: remove failed to delete the"
-            "file correctly with error,%u.\n",errno);
+        Fail("CopyFileA: DeleteFile failed to delete the"
+            "file correctly with error,%u.\n",GetLastError());
     }
 
     /* set the attributes of the source file to normal again */
@@ -127,11 +127,11 @@ PALTEST(file_io_CopyFileA_test3_paltest_copyfilea_test3, "file_io/CopyFileA/test
     }    
     
     /* delete the original file */
-    st = remove(szSrcExisting);
-    if(st != 0)
+    bRc = DeleteFile(szSrcExisting);
+    if(!bRc)
     {
-        Fail("CopyFileA: remove failed to delete the"
-            "file correctly with error,%u.\n",errno);
+        Fail("CopyFileA: DeleteFile failed to delete the"
+            "file correctly with error,%u.\n",GetLastError());
     }
  
     PAL_Terminate();

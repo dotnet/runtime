@@ -231,7 +231,6 @@ function_name() to call the system's implementation
 #define tanf DUMMY_tanf
 #define tanhf DUMMY_tanhf
 #define truncf DUMMY_truncf
-#define remove DUMMY_remove
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -495,7 +494,7 @@ function_name() to call the system's implementation
 #undef getenv
 #undef open
 #undef glob
-#undef remove
+
 #undef ptrdiff_t
 #undef intptr_t
 #undef uintptr_t
@@ -725,7 +724,5 @@ const char StackOverflowMessage[] = "Stack overflow.\n";
 #else
 #define FALLTHROUGH
 #endif
-
-DWORD PALAPI GetCurrentSessionId();
 
 #endif /* _PAL_INTERNAL_H_ */

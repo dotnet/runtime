@@ -165,6 +165,32 @@ PALTEST(file_io_SetFilePointer_test4_paltest_setfilepointer_test4, "file_io/SetF
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
+    else
+    {
+        /* verify results */
+        bRc = SetEndOfFile(hFile);
+        if ((dwRc = GetFileSize(hFile, NULL)) != strlen(szText)+20)
+        {
+            Trace("SetFilePointer: ERROR -> Asked to move back 20 bytes past"
+                " theend of the file. GetFileSize returned %ld whereas it "
+                "should have been %d.\n",
+                dwRc,
+                strlen(szText)+20);
+            if (CloseHandle(hFile) != TRUE)
+            {
+                Trace("SetFilePointer: ERROR -> Unable to close file"
+                      " \"%s\".\n", szTextFile);
+            }
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file"
+                      " \"%s\".\n", szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
+        }
+    }
+
 
     /*
      * move the pointer backwards to before the start of the file and verify

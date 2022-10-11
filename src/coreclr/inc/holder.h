@@ -1144,6 +1144,14 @@ typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidFindClose, (UINT_PTR) -1> FindHan
 
 typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
+#ifdef WszDeleteFile
+// Deletes a file with the specified path.  Do not use if you care about failures
+// deleting the file, as failures are ignored by VoidDeleteFile.
+FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath); }
+typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
+#endif // WszDeleteFile
+
+
 //-----------------------------------------------------------------------------
 // Misc holders
 //-----------------------------------------------------------------------------

@@ -34,6 +34,10 @@ GetFileAttributesExWrapper(
     _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
     _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
     );
+BOOL
+DeleteFileWrapper(
+    _In_ LPCWSTR lpFileName
+    );
 
 #ifndef HOST_UNIX
 BOOL
@@ -60,6 +64,10 @@ SearchPathWrapper(
 
 DWORD WINAPI GetTempPathWrapper(
     SString& lpBuffer
+    );
+
+DWORD WINAPI GetCurrentDirectoryWrapper(
+    SString&  lpBuffer
     );
 
 DWORD

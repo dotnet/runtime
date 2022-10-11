@@ -9,7 +9,6 @@
 #include "logging.h"
 #include "errorhandling.h"
 #include <time.h>
-#include <stdio.h>
 
 //
 // NOTE: Since the logging system is at the core of the error handling infrastructure, any errors
@@ -84,10 +83,10 @@ void Logger::CloseLogFile()
         // Avoid polluting the file system with empty log files
         if (GetFileSize(s_logFile, nullptr) == 0 && s_logFilePath != nullptr)
         {
-            // We can call this before closing the handle because remove just marks the file
+            // We can call this before closing the handle because DeleteFile just marks the file
             // for deletion, i.e. it does not actually get deleted until its last handle is closed.
-            if (remove(s_logFilePath) == -1)
-                fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. GetLastError()=%u\n",
+            if (!DeleteFileA(s_logFilePath))
+                fprintf(stderr, "WARNING: [Logger::CloseLogFile] DeleteFile failed. GetLastError()=%u\n",
                         GetLastError());
         }
 

@@ -28,6 +28,40 @@ void CleanUp_GetFileSize_test1(HANDLE hFile)
     }
 }
 
+void CheckFileSize_GetFileSize_test1(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
+{
+    DWORD dwRc = 0;
+    DWORD dwReturnedHighOrder = 0;
+    DWORD dwReturnedOffset = 0;
+
+    dwRc = SetFilePointer(hFile, dwOffset, (PLONG)&dwHighOrder, FILE_BEGIN);
+    if (dwRc == INVALID_SET_FILE_POINTER)
+    {
+        Trace("GetFileSize: ERROR -> Call to SetFilePointer failed with %ld.\n", 
+            GetLastError());
+        CleanUp_GetFileSize_test1(hFile);
+        Fail("");
+    }
+    else
+    {
+        if (!SetEndOfFile(hFile))
+        {
+            Trace("GetFileSize: ERROR -> Call to SetEndOfFile failed with %ld.\n", 
+                GetLastError());
+            CleanUp_GetFileSize_test1(hFile);
+            Fail("");
+        }
+        dwReturnedOffset = GetFileSize(hFile, &dwReturnedHighOrder);
+        if ((dwReturnedOffset != dwOffset) || 
+            (dwReturnedHighOrder != dwHighOrder))
+        {
+            CleanUp_GetFileSize_test1(hFile);
+            Fail("GetFileSize: ERROR -> File sizes do not match up.\n");
+        }
+    }
+}
+
+
 PALTEST(file_io_GetFileSize_test1_paltest_getfilesize_test1, "file_io/GetFileSize/test1/paltest_getfilesize_test1")
 {
     HANDLE hFile = NULL;
@@ -90,6 +124,16 @@ PALTEST(file_io_GetFileSize_test1_paltest_getfilesize_test1, "file_io/GetFileSiz
         Fail("GetFileSize: ERROR -> Unable to create file \"%s\".\n", 
             szTextFile);
     }
+
+    /* give the file a size */
+    CheckFileSize_GetFileSize_test1(hFile, 256, 0);
+
+    /* make the file large using the high order option */
+    CheckFileSize_GetFileSize_test1(hFile, 256, 1);
+
+
+    /* set the file size to zero */
+    CheckFileSize_GetFileSize_test1(hFile, 0, 0);
 
     /*  test if file size changes by writing to it. */
     /* get file size */
