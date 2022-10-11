@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
+    <AssemblyName>Microsoft.Interop.ComInterfaceGenerator</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Microsoft.Interop</RootNamespace>
@@ -18,15 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
+    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
+    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
-    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
   </ItemGroup>
 
 </Project>
