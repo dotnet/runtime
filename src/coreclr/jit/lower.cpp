@@ -1744,7 +1744,6 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
     size_t numMarkedNodes = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree* earlyNode = arg.GetEarlyNode();
         if (arg.GetEarlyNode() != nullptr)
         {
             numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
