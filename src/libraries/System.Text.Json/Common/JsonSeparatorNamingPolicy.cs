@@ -16,36 +16,56 @@ namespace System.Text.Json
 
         public override string ConvertName(string name)
         {
-            int bufferLength = name.Length * 2;
-            char[]? buffer = bufferLength > 512
+            // Rented buffer 20% longer that the input.
+            int bufferLength = (12 * name.Length) / 10;
+            char[]? buffer = bufferLength > JsonConstants.StackallocCharThreshold
                 ? ArrayPool<char>.Shared.Rent(bufferLength)
                 : null;
 
             int resultLength = 0;
             Span<char> result = buffer is null
-                ? stackalloc char[512]
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
                 : buffer;
 
-            void WriteWord(ref Span<char> result, ReadOnlySpan<char> word)
+            void ExpandBuffer(ref Span<char> result)
+            {
+                var bufferNew = ArrayPool<char>.Shared.Rent(bufferLength *= 2);
+
+                result.CopyTo(bufferNew);
+
+                if (buffer is not null)
+                {
+                    ArrayPool<char>.Shared.Return(buffer, clearArray: true);
+                }
+
+                buffer = bufferNew;
+                result = buffer;
+            }
+
+            void WriteWord(ReadOnlySpan<char> word, ref Span<char> result)
             {
                 if (word.IsEmpty)
-                    return;
-
-                int required = result.IsEmpty
-                    ? word.Length
-                    : word.Length + 1;
-
-                if (required >= result.Length)
                 {
-                    int bufferLength = result.Length * 2;
-                    char[] bufferNew = ArrayPool<char>.Shared.Rent(bufferLength);
+                    return;
+                }
 
-                    result.CopyTo(bufferNew);
+                Span<char> destination = result.Slice(resultLength != 0
+                    ? resultLength + 1
+                    : resultLength);
 
-                    if (buffer is not null)
-                        ArrayPool<char>.Shared.Return(buffer);
+                int written;
+                while (true)
+                {
+                    written = _lowercase
+                        ? word.ToLowerInvariant(destination)
+                        : word.ToUpperInvariant(destination);
 
-                    buffer = bufferNew;
+                    if (written > 0)
+                    {
+                        break;
+                    }
+
+                    ExpandBuffer(ref result);
                 }
 
                 if (resultLength != 0)
@@ -54,18 +74,7 @@ namespace System.Text.Json
                     resultLength += 1;
                 }
 
-                Span<char> destination = result.Slice(resultLength);
-
-                if (_lowercase)
-                {
-                    word.ToLowerInvariant(destination);
-                }
-                else
-                {
-                    word.ToUpperInvariant(destination);
-                }
-
-                resultLength += word.Length;
+                resultLength += written;
             }
 
             int first = 0;
@@ -81,7 +90,7 @@ namespace System.Text.Json
                     currentCategoryUnicode >= UnicodeCategory.ConnectorPunctuation &&
                     currentCategoryUnicode <= UnicodeCategory.OtherPunctuation)
                 {
-                    WriteWord(ref result, chars.Slice(first, index - first));
+                    WriteWord(chars.Slice(first, index - first), ref result);
 
                     previousCategory = CharCategory.Boundary;
                     first = index + 1;
@@ -102,7 +111,7 @@ namespace System.Text.Json
                     if (currentCategory == CharCategory.Lowercase && char.IsUpper(next) ||
                         next == '_')
                     {
-                        WriteWord(ref result, chars.Slice(first, index - first + 1));
+                        WriteWord(chars.Slice(first, index - first + 1), ref result);
 
                         previousCategory = CharCategory.Boundary;
                         first = index + 1;
@@ -114,7 +123,7 @@ namespace System.Text.Json
                         currentCategoryUnicode == UnicodeCategory.UppercaseLetter &&
                         char.IsLower(next))
                     {
-                        WriteWord(ref result, chars.Slice(first, index - first));
+                        WriteWord(chars.Slice(first, index - first), ref result);
 
                         previousCategory = CharCategory.Boundary;
                         first = index;
@@ -126,14 +135,14 @@ namespace System.Text.Json
                 }
             }
 
-            WriteWord(ref result, chars.Slice(first));
+            WriteWord(chars.Slice(first), ref result);
 
-            name = result
-                .Slice(0, resultLength)
-                .ToString();
+            name = result.Slice(0, resultLength).ToString();
 
             if (buffer is not null)
-                ArrayPool<char>.Shared.Return(buffer);
+            {
+                ArrayPool<char>.Shared.Return(buffer, clearArray: true);
+            }
 
             return name;
         }
