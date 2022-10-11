@@ -2859,15 +2859,29 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
-        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // Optimizes (X & 1) != 0 to (X & 1)
+        // Optimizes (X & 1) == 0 to ((NOT X) & 1)
+        // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
         // The compiler requires jumps to have relop operands, so we do not fold that case.
-        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
+
+        const bool optimizeToAnd    = (op2Value == 0) && cmp->OperIs(GT_NE);
+        const bool optimizeToNotAnd = (op2Value == 0) && cmp->OperIs(GT_EQ);
+
+        if ((andOp2->IsIntegralConst(1)) && (genActualType(op1) == cmp->TypeGet()) &&
+            (optimizeToAnd || optimizeToNotAnd))
         {
             LIR::Use cmpUse;
-            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
+            if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
+                !cmpUse.User()->OperIsConditional())
             {
                 GenTree* next = cmp->gtNext;
+
+                if (optimizeToNotAnd)
+                {
+                    GenTree* notNode   = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+                    op1->AsOp()->gtOp1 = notNode;
+                    BlockRange().InsertBefore(andOp2, notNode);
+                }
 
                 cmpUse.ReplaceWith(op1);
 
