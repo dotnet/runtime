@@ -4,6 +4,8 @@ parameters:
   isWasmOnlyBuild: false
   browser: 'chrome'
   shouldContinueOnError: false
+  extraBuildArgs: ''
+  nameSuffix: ''
   platforms: []
 
 jobs:
@@ -30,7 +32,10 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      ${{ if eq(nameSuffix, '') }}:
+        nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      ${{ else }}:
+        nameSuffix: ${{ parameters.nameSuffix }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
       timeoutInMinutes: 180
       # if !alwaysRun, then:
