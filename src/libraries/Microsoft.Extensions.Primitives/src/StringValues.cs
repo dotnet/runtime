@@ -78,9 +78,9 @@ namespace Microsoft.Extensions.Primitives
         /// Defines an implicit conversion of a given <see cref="StringValues"/> to a string array.
         /// </summary>
         /// <param name="value">A <see cref="StringValues"/> to implicitly convert.</param>
-        public static implicit operator string?[]? (StringValues value)
+        public static implicit operator string?[] (StringValues value)
         {
-            return value.GetArrayValue();
+            return value.ToArray();
         }
 
         /// <summary>
