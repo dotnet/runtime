@@ -17,7 +17,7 @@ Since there is no official build and FreeBSD package, native build on FreeBSD is
 
 ## Docker
 
-Install Docker. For further instructions on installation, see [here](https://docs.docker.com/install/). You can find the official .NET images in [their Docker hub](https://hub.docker.com/_/microsoft-dotnet).
+Install Docker. For further instructions on installation, see [here](https://docs.docker.com/install/).
 
 All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
 

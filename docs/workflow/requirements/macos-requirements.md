@@ -1,10 +1,10 @@
-# Requirements to build dotnet/runtime on MacOS
+# Requirements to build dotnet/runtime on macOS
 
 * [Environment](#environment)
   * [Xcode](#xcode)
   * [Toolchain Setup](#toolchain-setup)
 
-This guide will walk you through the requirements needed to build _dotnet/runtime_ on MacOS. We'll start by showing how to set up your environment from scratch.
+This guide will walk you through the requirements needed to build _dotnet/runtime_ on macOS. We'll start by showing how to set up your environment from scratch.
 
 ## Environment
 

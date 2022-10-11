@@ -17,17 +17,15 @@ Install Docker. For further installation instructions, see [here](https://docs.d
 
 ## Environment
 
-These instructions are written assuming the current Ubuntu LTS, since that's the officially used distribution. Pull Requests are welcome to address other environments as long as they don't break the ability to use Ubuntu LTS.
+These instructions are written assuming the current Ubuntu LTS. Pull Requests are welcome to address other environments.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
 ### Toolchain Setup
 
-Building the repo requires CMake 3.14.5 or newer on Linux. Add Kitware's APT feed to your configuration for a newer version of CMake (optional). See their instructions at their [website](https://apt.kitware.com/).
-
 Install the following packages for the toolchain:
 
-* CMake
+* CMake 3.14.5 or newer
 * llvm
 * lld
 * clang

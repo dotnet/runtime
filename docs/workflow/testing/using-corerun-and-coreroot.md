@@ -69,7 +69,7 @@ set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\7.0.0
 corerun HelloWorld.dll
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
 # Change osx to linux if you're on a Linux machine.
@@ -82,7 +82,7 @@ On Powershell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
-# Also, replace the ';' with ':' if on Linux or MacOS.
+# Also, replace the ';' with ':' if on Linux or macOS.
 $Env:PATH += ';<repo_root>\artifacts\bin\coreclr\windows.x64.Debug'
 $Env:CORE_LIBRARIES = %ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\7.0.0
 corerun HelloWorld.dll
@@ -109,10 +109,10 @@ set PATH=%PATH%;<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core
 corerun HelloWorld.dll
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
-# Change linux to osx if you're on a MacOS machine.
+# Change linux to osx if you're on a macOS machine.
 export PATH="$PATH:<repo_root>/artifacts/tests/coreclr/linux.x64.Debug/Tests/Core_Root"
 corerun HelloWorld.dll
 ```
@@ -121,7 +121,7 @@ On Powershell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
-# Also, replace the ';' with ':' if on Linux or MacOS.
+# Also, replace the ';' with ':' if on Linux or macOS.
 $Env:PATH += ';<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root'
 .\corerun HelloWorld.dll
 ```

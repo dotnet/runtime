@@ -1,4 +1,4 @@
-# Build CoreCLR on MacOS
+# Build CoreCLR on macOS
 
 * [Environment](#environment)
 * [Build the Runtime](#build-the-runtime)
@@ -9,11 +9,11 @@ This guide will walk you through building CoreCLR on macOS.
 
 ## Environment
 
-Ensure you have all of the prerequisites installed from the [MacOS Requirements](/docs/workflow/requirements/macos-requirements.md).
+Ensure you have all of the prerequisites installed from the [macOS Requirements](/docs/workflow/requirements/macos-requirements.md).
 
 ## Build the Runtime
 
-To build CoreCLR on MacOS, run `build.sh` while specifying the `clr` subset:
+To build CoreCLR on macOS, run `build.sh` while specifying the `clr` subset:
 
 ```bash
 ./build.sh --subset clr <other args>
@@ -27,7 +27,7 @@ After the build has completed, there should be some files placed in `artifacts/b
 
 ### Cross-Compilation
 
-It is possible to get a MacOS ARM64 build using an Intel x64 Mac and vice versa, an x64 one using an M1 Mac. Instructions on how to do this are in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#macos-cross-building).
+It is possible to get a macOS ARM64 build using an Intel x64 Mac and vice versa, an x64 one using an M1 Mac. Instructions on how to do this are in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#macos-cross-building).
 
 ## Create the Core_Root
 
