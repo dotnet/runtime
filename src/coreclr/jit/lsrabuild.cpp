@@ -2669,6 +2669,7 @@ void LinearScan::buildIntervals()
 
                             if (newPreferences != RBM_NONE)
                             {
+#ifdef DEBUG
                                 if (VERBOSE)
                                 {
                                     printf("Interval %2u: Update preferences (callee-save) from ",
@@ -2678,6 +2679,7 @@ void LinearScan::buildIntervals()
                                     dumpRegMask(newPreferences);
                                     printf("\n");
                                 }
+#endif
                                 interval.updateRegisterPreferences(newPreferences);
                             }
                         }
