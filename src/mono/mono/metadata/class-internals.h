@@ -921,8 +921,6 @@ typedef struct {
 	MonoClass *generic_ienumerator_class;
 	MonoClass *alc_class;
 	MonoClass *appcontext_class;
-	MonoClass *weakreference_class;
-	MonoClass *generic_weakreference_class;
 } MonoDefaults;
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
