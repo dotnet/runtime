@@ -1593,7 +1593,7 @@ private:
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
-    regMaskTP availableRegs[TYP_COUNT];
+    PhasedVar<regMaskTP> availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
