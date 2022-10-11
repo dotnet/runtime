@@ -799,6 +799,22 @@ void* interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+bool interceptor_ICJI::isObjectImmutable(void* typeObj)
+{
+    mc->cr->AddCall("isObjectImmutable");
+    bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
+    mc->recIsObjectImmutable(typeObj, temp);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(void* typeObj)
+{
+    mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getObjectType(typeObj);
+    mc->recGetObjectType(typeObj, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
@@ -1722,6 +1738,14 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     CorInfoType          cit = getFieldType(field, &cch, NULL);
     mc->recGetFieldAddress(field, ppIndirection, temp, cit);
     return temp;
+}
+
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+{
+    mc->cr->AddCall("getReadonlyStaticFieldValue");
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize);
+    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, result);
+    return result;
 }
 
 // return the class handle for the current value of a static field

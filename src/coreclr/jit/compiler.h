@@ -78,7 +78,7 @@ struct InfoHdr;              // defined in GCInfo.h
 struct escapeMapping_t;      // defined in fgdiagnostic.cpp
 class emitter;               // defined in emit.h
 struct ShadowParamVarInfo;   // defined in GSChecks.cpp
-struct InitVarDscInfo;       // defined in register_arg_convention.h
+struct InitVarDscInfo;       // defined in registerargconvention.h
 class FgStack;               // defined in fgbasic.cpp
 class Instrumentor;          // defined in fgprofile.cpp
 class SpanningTreeVisitor;   // defined in fgprofile.cpp
@@ -3631,7 +3631,7 @@ protected:
 
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
-    GenTree* impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp);
+    GenTree* impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType);
 
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
@@ -8819,12 +8819,6 @@ private:
     bool lclVarIsSIMDType(unsigned varNum)
     {
         return lvaGetDesc(varNum)->lvIsSIMDType();
-    }
-
-    // Is this Local node a SIMD local?
-    bool lclVarIsSIMDType(GenTreeLclVarCommon* lclVarTree)
-    {
-        return lclVarIsSIMDType(lclVarTree->GetLclNum());
     }
 
     // Returns true if the TYP_SIMD locals on stack are aligned at their

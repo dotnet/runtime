@@ -2859,15 +2859,29 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
-        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // Optimizes (X & 1) != 0 to (X & 1)
+        // Optimizes (X & 1) == 0 to ((NOT X) & 1)
+        // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
         // The compiler requires jumps to have relop operands, so we do not fold that case.
-        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
+
+        const bool optimizeToAnd    = (op2Value == 0) && cmp->OperIs(GT_NE);
+        const bool optimizeToNotAnd = (op2Value == 0) && cmp->OperIs(GT_EQ);
+
+        if ((andOp2->IsIntegralConst(1)) && (genActualType(op1) == cmp->TypeGet()) &&
+            (optimizeToAnd || optimizeToNotAnd))
         {
             LIR::Use cmpUse;
-            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
+            if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
+                !cmpUse.User()->OperIsConditional())
             {
                 GenTree* next = cmp->gtNext;
+
+                if (optimizeToNotAnd)
+                {
+                    GenTree* notNode   = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+                    op1->AsOp()->gtOp1 = notNode;
+                    BlockRange().InsertBefore(andOp2, notNode);
+                }
 
                 cmpUse.ReplaceWith(op1);
 
@@ -7101,6 +7115,23 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#ifndef TARGET_XARCH
+        if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
+            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
+            {
+                // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+                // when we publish a potentially mutable object
+                // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+                // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+                // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
+                ind->gtFlags |= GTF_IND_VOLATILE;
+            }
+        }
+#endif
+
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
             // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.

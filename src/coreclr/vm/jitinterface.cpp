@@ -6028,6 +6028,57 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
     return pointer;
 }
 
+
+/***********************************************************************/
+bool CEEInfo::isObjectImmutable(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+#ifdef DEBUG
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    MethodTable* type = obj->GetMethodTable();
+
+    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
+
+    EE_TO_JIT_TRANSITION();
+#endif
+
+     // All currently allocated frozen objects can be treated as immutable
+    return true;
+}
+
+/***********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(objPtr != nullptr);
+
+    CORINFO_CLASS_HANDLE handle = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    VALIDATEOBJECT(obj);
+    handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
+
+    EE_TO_JIT_TRANSITION();
+
+    return handle;
+}
+
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
@@ -11816,6 +11867,71 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     }
 
     result = field->GetStaticAddressHandle(base);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(fieldHnd != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+    _ASSERTE(field->IsStatic());
+    _ASSERTE((unsigned)bufferSize == field->GetSize());
+
+    MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
+    _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
+    _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+
+    // Allocate space for the local class if necessary, but don't trigger
+    // class construction.
+    DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
+    pLocalModule->PopulateClass(pEnclosingMT);
+
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    {
+        GCX_COOP();
+        if (field->IsObjRef())
+        {
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            if (fieldObj != NULL)
+            {
+                Object* obj = OBJECTREFToObject(fieldObj);
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                {
+                    intptr_t ptr = (intptr_t)obj;
+                    memcpy(buffer, &ptr, sizeof(intptr_t));
+                    result = true;
+                }
+            }
+            else
+            {
+                memset(buffer, 0, sizeof(intptr_t));
+                result = true;
+            }
+        }
+        else
+        {
+            void* fldAddr = field->GetCurrentStaticAddress();
+            _ASSERTE(fldAddr != nullptr);
+            memcpy(buffer, fldAddr, bufferSize);
+            result = true;
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 
