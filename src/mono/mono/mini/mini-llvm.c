@@ -4131,7 +4131,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		 */
 		this_alloc = mono_llvm_build_alloca (builder, ThisType (), const_int32 (1), 0, "");
 		/* This volatile store will keep the alloca alive */
-		emit_store (builder, ctx->values [cfg->args [0]->dreg], this_alloc, TRUE);
+		emit_store (builder, convert (ctx, ctx->values [cfg->args [0]->dreg], ThisType ()), this_alloc, TRUE);
 
 		set_metadata_flag (this_alloc, "mono.this");
 	}
@@ -8506,6 +8506,21 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_XOP_X_I:
+		case OP_XOP_X_X:
+		case OP_XOP_I4_X:
+		case OP_XOP_I8_X:
+		case OP_XOP_X_X_X:
+		case OP_XOP_X_X_I4:
+		case OP_XOP_X_X_I8: {
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_SSE_MOVMSK: {
 			LLVMValueRef args [1];
@@ -8959,18 +8974,6 @@ MONO_RESTORE_WARNING
 		case OP_XOP: {
 			IntrinsicId id = (IntrinsicId)ins->inst_c0;
 			call_intrins (ctx, id, NULL, "");
-			break;
-		}
-		case OP_XOP_X_I:
-		case OP_XOP_X_X:
-		case OP_XOP_I4_X:
-		case OP_XOP_I8_X:
-		case OP_XOP_X_X_X:
-		case OP_XOP_X_X_I4:
-		case OP_XOP_X_X_I8: {
-			IntrinsicId id = (IntrinsicId)ins->inst_c0;
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 
@@ -9730,6 +9733,32 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SHUFFLE, args, "i8x16.shuffle");
 			break;
 		}
+		case OP_WASM_SIMD_SUM: {
+			gboolean is_float = FALSE;
+			switch (inst_c1_type (ins)) {
+			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
+			}
+
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			LLVMValueRef v1 = lhs;
+			for (int cn = nelems; cn > 1; cn >>= 1) {
+				int stride_len = 32 / cn;
+				int stride_len_2 = stride_len >> 1;
+				int n_strides = 16 / stride_len;
+				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i8_t, 16));
+				for (int i = 0; i < n_strides; i++)
+					for (int j = 0; j < stride_len; j++)
+						swizzle_mask = LLVMBuildInsertElement (builder, swizzle_mask, const_int8(i * stride_len + ((stride_len_2 + j) % stride_len)), const_int32 (i * stride_len + j), "");
+
+				LLVMValueRef args [] = { v1, swizzle_mask };
+				LLVMValueRef v2 = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				LLVMValueRef v3 = LLVMBuildBitCast (builder, v2, LLVMTypeOf (lhs), "");
+				v1 = is_float ? LLVMBuildFAdd (builder, v1, v3, "") : LLVMBuildAdd (builder, v1, v3, "");
+			}
+
+			values [ins->dreg] = v1;
+			break;
+		}
 		case OP_WASM_SIMD_SWIZZLE: {
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
 			if (nelems == 16) {
@@ -9958,32 +9987,12 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
-		case OP_ARM64_MVN: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "arm64_mvn");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_ARM64_BIC: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
 			LLVMValueRef mask = bitcast_to_integral (ctx, rhs);
 			mask = LLVMBuildNot (builder, mask, "");
 			result = LLVMBuildAnd (builder, mask, result, "arm64_bic");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_BSL: {
-			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
-			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "arm64_bsl");
-			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
-			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
 			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
@@ -10536,25 +10545,6 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildAdd (builder, lhs, result, "");
 			if (subtract)
 				result = LLVMBuildSub (builder, lhs, result, "");
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_XNEG:
-		case OP_ARM64_XNEG_SCALAR: {
-			gboolean scalar = ins->opcode == OP_ARM64_XNEG_SCALAR;
-			gboolean is_float = FALSE;
-			switch (inst_c1_type (ins)) {
-			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
-			}
-			LLVMValueRef result = lhs;
-			if (scalar)
-				result = scalar_from_vector (ctx, result);
-			if (is_float)
-				result = LLVMBuildFNeg (builder, result, "arm64_xneg");
-			else
-				result = LLVMBuildNeg (builder, result, "arm64_xneg");
-			if (scalar)
-				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -11301,7 +11291,45 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		case OP_BSL: {
+			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
+			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
+			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
+			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
+			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
+			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
+			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_NEGATION:
+		case OP_NEGATION_SCALAR: {
+			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
+			gboolean is_float = (ins->inst_c1 == MONO_TYPE_R4 || ins->inst_c1 == MONO_TYPE_R8);
 
+			LLVMValueRef result = lhs; 
+			if (scalar)
+				result = scalar_from_vector (ctx, result);
+			if (is_float)
+				result = LLVMBuildFNeg (builder, result, "");
+			else
+				result = LLVMBuildNeg (builder, result, "");
+			if (scalar)
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ONES_COMPLEMENT: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
 		case OP_DUMMY_USE:
 			break;
 

@@ -655,45 +655,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 // time).
 REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    {
-        retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-    }
-#elif HAVE_CLOCK_MONOTONIC
-    {
-        clockid_t clockType =
-#if HAVE_CLOCK_MONOTONIC_COARSE
-            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-            CLOCK_MONOTONIC;
-#endif
-        struct timespec ts;
-        if (clock_gettime(clockType, &ts) == 0)
-        {
-            retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
-        }
-    }
-#else
-    {
-        struct timeval tv;
-        if (gettimeofday(&tv, NULL) == 0)
-        {
-            retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
-        }
-    }
-#endif
-
-    return retval;
+    return GCToOSInterface::GetLowPrecisionTimeStamp();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -1215,24 +1177,14 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
+extern "C" uint64_t PalQueryPerformanceCounter()
 {
-    // TODO: More efficient, platform-specific implementation
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("gettimeofday() failed");
-        return UInt32_FALSE;
-    }
-    lpPerformanceCount->QuadPart =
-        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceCounter();
 }
 
-extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
+extern "C" uint64_t PalQueryPerformanceFrequency()
 {
-    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()

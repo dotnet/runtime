@@ -13,7 +13,7 @@ namespace Internal.Runtime.InteropServices
     /// This class enables the .NET IJW host to load an in-memory module as a .NET assembly
     /// </summary>
     [SupportedOSPlatform("windows")]
-    public static class InMemoryAssemblyLoader
+    internal static class InMemoryAssemblyLoader
     {
         private static bool IsSupported { get; } = InitializeIsSupported();
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;

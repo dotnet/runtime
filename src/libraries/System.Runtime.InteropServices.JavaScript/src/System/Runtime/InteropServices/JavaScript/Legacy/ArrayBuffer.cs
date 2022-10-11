@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Gets a value indicating whether this ArrayBuffer is view.
         /// </summary>
-        /// <value><c>true</c> if is view; otherwise, <c>false</c>.</value>
+        /// <value><see langword="true"/> if is view; otherwise, <see langword="false"/>.</value>
         public bool IsView => (bool)this.GetObjectProperty("isView");
 
         /// <summary>

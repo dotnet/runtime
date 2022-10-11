@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Tests
                 additionalData[0] ^= 1;
 
                 byte[] decrypted = new byte[dataLength];
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
             }
         }
@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.Tests
 
                 tag[0] ^= 1;
 
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(nonce, data, tag, data));
                 Assert.Equal(new byte[data.Length], data);
             }
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] plaintext = new byte[testCase.Plaintext.Length];
                 RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }
@@ -377,10 +377,26 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] plaintext = new byte[testCase.Plaintext.Length];
                 RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }
+        }
+
+        [Fact]
+        public static void UseAfterDispose()
+        {
+            byte[] key = new byte[16];
+            byte[] nonce = new byte[12];
+            byte[] plaintext = Array.Empty<byte>();
+            byte[] ciphertext = Array.Empty<byte>();
+            byte[] tag = "58e2fccefa7e3061367f1d57a4e7455a".HexToByteArray();
+
+            AesGcm aesGcm = new AesGcm(key);
+            aesGcm.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => aesGcm.Encrypt(nonce, plaintext, ciphertext, new byte[tag.Length]));
+            Assert.Throws<ObjectDisposedException>(() => aesGcm.Decrypt(nonce, ciphertext, tag, plaintext));
         }
 
         public static IEnumerable<object[]> GetValidNonceSizes()

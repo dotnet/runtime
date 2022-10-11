@@ -218,6 +218,16 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
     return true;
 }
 
+extern "C" uint64_t PalQueryPerformanceCounter()
+{
+    return GCToOSInterface::QueryPerformanceCounter();
+}
+
+extern "C" uint64_t PalQueryPerformanceFrequency()
+{
+    return GCToOSInterface::QueryPerformanceFrequency();
+}
+
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 {
     return GetCurrentThreadId();

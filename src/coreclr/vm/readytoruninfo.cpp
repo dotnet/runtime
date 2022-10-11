@@ -400,7 +400,12 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Printf(W("%s.%u"), wszReadyToRunLogFile.GetValue(), GetCurrentProcessId());
+            fullname.Append(wszReadyToRunLogFile.GetValue());
+
+            WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
+            DWORD pid = GetCurrentProcessId();
+            FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
+            fullname.Append(pidSuffix);
             r2rLogFile = _wfopen(fullname.GetUnicode(), W("w"));
         }
         else
@@ -1717,7 +1722,7 @@ public:
             if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
             {
                 mdToken assemblyRef;
-                
+
                 IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
                 if (assemblyRef == mdTokenNil)
                 {

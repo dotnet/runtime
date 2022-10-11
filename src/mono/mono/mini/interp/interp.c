@@ -4092,6 +4092,18 @@ call:
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I1)
+			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U1)
+			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I2)
+			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U2)
+			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
 			goto exit_frame;

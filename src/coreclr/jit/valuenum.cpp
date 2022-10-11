@@ -5254,6 +5254,7 @@ GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
         case GTF_ICON_FIELD_HDL:
         case GTF_ICON_TOKEN_HDL:
         case GTF_ICON_STR_HDL:
+        case GTF_ICON_OBJ_HDL:
         case GTF_ICON_CONST_PTR:
         case GTF_ICON_VARG_HDL:
         case GTF_ICON_PINVKI_HDL:
@@ -5281,6 +5282,52 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     return c->m_attribs == CEA_Handle;
+}
+
+//------------------------------------------------------------------------
+// SwapRelop: return VNFunc for swapped relop
+//
+// Arguments:
+//    vnf - vnf for original relop
+//
+// Returns:
+//    VNFunc for swapped relop, or VNF_MemOpaque if the original VNFunc
+//    was not a relop.
+//
+VNFunc ValueNumStore::SwapRelop(VNFunc vnf)
+{
+    VNFunc swappedFunc = VNF_MemOpaque;
+    if (vnf >= VNF_Boundary)
+    {
+        switch (vnf)
+        {
+            case VNF_LT_UN:
+                swappedFunc = VNF_GT_UN;
+                break;
+            case VNF_LE_UN:
+                swappedFunc = VNF_GE_UN;
+                break;
+            case VNF_GE_UN:
+                swappedFunc = VNF_LE_UN;
+                break;
+            case VNF_GT_UN:
+                swappedFunc = VNF_LT_UN;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        const genTreeOps op = (genTreeOps)vnf;
+
+        if (GenTree::OperIsCompare(op))
+        {
+            swappedFunc = (VNFunc)GenTree::SwapRelop(op);
+        }
+    }
+
+    return swappedFunc;
 }
 
 //------------------------------------------------------------------------
@@ -5354,36 +5401,11 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
     //
     if (swap)
     {
-        if (newFunc >= VNF_Boundary)
-        {
-            switch (newFunc)
-            {
-                case VNF_LT_UN:
-                    newFunc = VNF_GT_UN;
-                    break;
-                case VNF_LE_UN:
-                    newFunc = VNF_GE_UN;
-                    break;
-                case VNF_GE_UN:
-                    newFunc = VNF_LE_UN;
-                    break;
-                case VNF_GT_UN:
-                    newFunc = VNF_LT_UN;
-                    break;
-                default:
-                    return NoVN;
-            }
-        }
-        else
-        {
-            const genTreeOps op = (genTreeOps)newFunc;
+        newFunc = SwapRelop(newFunc);
 
-            if (!GenTree::OperIsCompare(op))
-            {
-                return NoVN;
-            }
-
-            newFunc = (VNFunc)GenTree::SwapRelop(op);
+        if (newFunc == VNF_MemOpaque)
+        {
+            return NoVN;
         }
     }
 
@@ -6908,7 +6930,8 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 {
     printf("ZeroObj(");
     comp->vnPrint(zeroObj->m_args[0], 0);
-    printf(": %s)", comp->eeGetClassName(CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(zeroObj->m_args[0]))));
+    ClassLayout* layout = reinterpret_cast<ClassLayout*>(ConstantValue<ssize_t>(zeroObj->m_args[0]));
+    printf(": %s)", layout->GetClassName());
 }
 #endif // DEBUG
 
@@ -7027,6 +7050,12 @@ void ValueNumStore::InitValueNumStoreStatics()
             unsigned newArity = oldArity + 1;
 
             ValueNumFuncSetArity(func, newArity);
+        }
+
+        if (HWIntrinsicInfo::IsCommutative(id))
+        {
+            VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+            vnfOpAttribs[func] |= VNFOA_Commutative;
         }
     }
 
@@ -8162,7 +8191,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(doesMethodHaveFrozenString()); // Constant object can be only frozen string.
+                assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
@@ -8485,7 +8514,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             }
                             else
                             {
-                                assert((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF));
+                                assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                                       ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
                                 lcl->gtVNPair = wholeLclVarVNP;
                             }
                         }
@@ -10434,7 +10464,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     // We evaluate the baseAddr ValueNumber further in order
     // to obtain a better value to use for the null check exception.
     //
-    ValueNumPair baseVNP = baseAddr->gtVNPair;
+    ValueNumPair baseVNP = vnStore->VNPNormalPair(baseAddr->gtVNPair);
     ValueNum     baseLVN = baseVNP.GetLiberal();
     ValueNum     baseCVN = baseVNP.GetConservative();
     ssize_t      offsetL = 0;
@@ -10501,26 +10531,21 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
         }
     }
 
-    // Create baseVNP, from the values we just computed,
-    baseVNP = ValueNumPair(baseLVN, baseCVN);
-
     // The exceptions in "baseVNP" should have been added to the "tree"'s set already.
-    assert(vnStore->VNPExcIsSubset(vnStore->VNPExceptionSet(tree->gtVNPair), vnStore->VNPExceptionSet(baseVNP)));
+    assert(vnStore->VNPExcIsSubset(vnStore->VNPExceptionSet(tree->gtVNPair),
+                                   vnStore->VNPExceptionSet(ValueNumPair(baseLVN, baseCVN))));
 
-    // The normal VN for base address is used to create the NullPtrExc
-    ValueNumPair vnpBaseNorm = vnStore->VNPNormalPair(baseVNP);
-    ValueNumPair excChkSet   = vnStore->VNPForEmptyExcSet();
+    // The normal VNs for base address are used to create the NullPtrExcs
+    ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
 
-    if (!vnStore->IsKnownNonNull(vnpBaseNorm.GetLiberal()))
+    if (!vnStore->IsKnownNonNull(baseLVN))
     {
-        excChkSet.SetLiberal(
-            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetLiberal())));
+        excChkSet.SetLiberal(vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseLVN)));
     }
 
-    if (!vnStore->IsKnownNonNull(vnpBaseNorm.GetConservative()))
+    if (!vnStore->IsKnownNonNull(baseCVN))
     {
-        excChkSet.SetConservative(
-            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetConservative())));
+        excChkSet.SetConservative(vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseCVN)));
     }
 
     // Add the NullPtrExc to "tree"'s value numbers.

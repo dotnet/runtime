@@ -11,15 +11,12 @@
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
-    m_CurrentSegment(nullptr),
-    m_Enabled(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0)
+    m_CurrentSegment(nullptr)
 {
 }
 
 // Allocates an object of the give size (including header) on a frozen segment.
-// May return nullptr in the following cases:
-//   1) DOTNET_UseFrozenObjectHeap is 0 (disabled)
-//   2) Object is too large (large than FOH_COMMIT_SIZE)
+// May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
 Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
@@ -36,12 +33,6 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #else // FEATURE_BASICFREEZE
 
     CrstHolder ch(&m_Crst);
-
-    if (!m_Enabled)
-    {
-        // Disabled via DOTNET_UseFrozenObjectHeap=0
-        return nullptr;
-    }
 
     _ASSERT(type != nullptr);
     _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
@@ -126,7 +117,7 @@ FrozenObjectSegment::FrozenObjectSegment():
     }
 
     m_pStart = static_cast<uint8_t*>(committedAlloc);
-    m_pCurrent = m_pStart;
+    m_pCurrent = m_pStart + sizeof(ObjHeader);
     m_SizeCommitted = si.ibCommit;
     INDEBUG(m_ObjectsCount = 0);
     return;
@@ -136,18 +127,27 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 {
     _ASSERT(m_pStart != nullptr && FOH_SEGMENT_SIZE > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
+    _ASSERT(objectSize <= FOH_COMMIT_SIZE);
+    _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
-    uint8_t* obj = m_pCurrent;
-    if (reinterpret_cast<size_t>(m_pStart + FOH_SEGMENT_SIZE) < reinterpret_cast<size_t>(obj + objectSize))
+    const size_t spaceUsed = (size_t)(m_pCurrent - m_pStart);
+    const size_t spaceLeft = FOH_SEGMENT_SIZE - spaceUsed;
+
+    _ASSERT(spaceUsed >= sizeof(ObjHeader));
+    _ASSERT(spaceLeft >= sizeof(ObjHeader));
+
+    // Test if we have a room for the given object (including extra sizeof(ObjHeader) for next object)
+    if (spaceLeft - sizeof(ObjHeader) < objectSize)
     {
-        // Segment is full
         return nullptr;
     }
 
     // Check if we need to commit a new chunk
-    if (reinterpret_cast<size_t>(m_pStart + m_SizeCommitted) < reinterpret_cast<size_t>(obj + objectSize))
+    if (spaceUsed + objectSize + sizeof(ObjHeader) > m_SizeCommitted)
     {
+        // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= FOH_SEGMENT_SIZE);
+
         if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
             ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
@@ -158,10 +158,10 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
     INDEBUG(m_ObjectsCount++);
 
-    m_pCurrent = obj + objectSize;
-
-    Object* object = reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
+    Object* object = reinterpret_cast<Object*>(m_pCurrent);
     object->SetMethodTable(type);
+
+    m_pCurrent += objectSize;
 
     // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);

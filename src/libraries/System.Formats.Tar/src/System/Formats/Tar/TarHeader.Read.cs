@@ -376,7 +376,8 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            long size = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            long size = (long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            Debug.Assert(size <= TarHelpers.MaxSizeLength, "size exceeded the max value possible with 11 octal digits. Actual size " + size);
             if (size < 0)
             {
                 throw new InvalidDataException(string.Format(SR.TarSizeFieldNegative));
@@ -517,8 +518,8 @@ namespace System.Formats.Tar
         private void ReadPosixAndGnuSharedAttributes(Span<byte> buffer)
         {
             // Convert the byte arrays
-            _uName = TarHelpers.GetTrimmedAsciiString(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
-            _gName = TarHelpers.GetTrimmedAsciiString(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+            _uName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+            _gName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
 
             // DevMajor and DevMinor only have values with character devices and block devices.
             // For all other typeflags, the values in these fields are irrelevant.

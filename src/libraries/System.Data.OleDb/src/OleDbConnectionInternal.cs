@@ -373,7 +373,7 @@ namespace System.Data.OleDb
             return dbprops[0].dwStatus;
         }
 
-        internal DataTable? BuildInfoLiterals()
+        internal unsafe DataTable? BuildInfoLiterals()
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
             {
@@ -402,17 +402,17 @@ namespace System.Data.OleDb
 
                 OleDbHResult hr;
                 int literalCount = 0;
-                IntPtr literalInfo = ADP.PtrZero;
+                IntPtr literalInfo = IntPtr.Zero;
                 using (DualCoTaskMem handle = new DualCoTaskMem(dbInfo, null, out literalCount, out literalInfo, out hr))
                 {
                     // All literals were either invalid or unsupported. The provider allocates memory for *prgLiteralInfo and sets the value of the fSupported element in all of the structures to FALSE. The consumer frees this memory when it no longer needs the information.
                     if (OleDbHResult.DB_E_ERRORSOCCURRED != hr)
                     {
-                        long offset = literalInfo.ToInt64();
+                        byte* offset = (byte*)literalInfo;
                         tagDBLITERALINFO tag = new tagDBLITERALINFO();
                         for (int i = 0; i < literalCount; ++i, offset += ODB.SizeOf_tagDBLITERALINFO)
                         {
-                            Marshal.PtrToStructure((IntPtr)offset, tag);
+                            Marshal.PtrToStructure((nint)offset, tag);
 
                             DataRow row = table.NewRow();
                             row[literalName] = ((OleDbLiteral)tag.it).ToString();
@@ -527,7 +527,7 @@ namespace System.Data.OleDb
                     return null;
                 }
                 string? literalValue = null;
-                IntPtr literalInfo = ADP.PtrZero;
+                IntPtr literalInfo = IntPtr.Zero;
                 int literalCount = 0;
                 OleDbHResult hr;
 
@@ -572,8 +572,8 @@ namespace System.Data.OleDb
 
                 OleDbHResult hr;
                 int schemaCount = 0;
-                IntPtr schemaGuids = ADP.PtrZero;
-                IntPtr schemaRestrictions = ADP.PtrZero;
+                IntPtr schemaGuids = IntPtr.Zero;
+                IntPtr schemaRestrictions = IntPtr.Zero;
 
                 using (DualCoTaskMem safehandle = new DualCoTaskMem(dbSchemaRowset, out schemaCount, out schemaGuids, out schemaRestrictions, out hr))
                 {
@@ -584,7 +584,7 @@ namespace System.Data.OleDb
                     }
 
                     supportedSchemas = new SchemaSupport[schemaCount];
-                    if (ADP.PtrZero != schemaGuids)
+                    if (IntPtr.Zero != schemaGuids)
                     {
                         for (int i = 0, offset = 0; i < supportedSchemas.Length; ++i, offset += ODB.SizeOf_Guid)
                         {
@@ -592,7 +592,7 @@ namespace System.Data.OleDb
                             supportedSchemas[i]._schemaRowset = (Guid)Marshal.PtrToStructure(ptr, typeof(Guid))!;
                         }
                     }
-                    if (ADP.PtrZero != schemaRestrictions)
+                    if (IntPtr.Zero != schemaRestrictions)
                     {
                         for (int i = 0; i < supportedSchemas.Length; ++i)
                         {
@@ -622,7 +622,7 @@ namespace System.Data.OleDb
 
                 UnsafeNativeMethods.IRowset? rowset = null;
                 OleDbHResult hr;
-                hr = dbSchemaRowset.GetRowset(ADP.PtrZero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, ADP.PtrZero, out rowset);
+                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
 
                 if (hr < 0)
                 { // ignore infomsg

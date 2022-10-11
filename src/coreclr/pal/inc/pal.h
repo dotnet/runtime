@@ -2674,7 +2674,7 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 
 #if defined(__APPLE__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
-#elif defined(__APPLE__) && defined(__x86_64__)
+#elif defined(__APPLE__) && defined(HOST_AMD64)
 #define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__APPLE__) && defined(HOST_ARM64)
 #define PAL_CS_NATIVE_DATA_SIZE 120
@@ -4059,7 +4059,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define exit          PAL_exit
 #define printf        PAL_printf
 #define vprintf       PAL_vprintf
-#define wprintf       PAL_wprintf
 #define wcstod        PAL_wcstod
 #define wcstoul       PAL_wcstoul
 #define wcscat        PAL_wcscat
@@ -4069,7 +4068,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcschr        PAL_wcschr
 #define wcsrchr       PAL_wcsrchr
 #define wcsstr        PAL_wcsstr
-#define swscanf       PAL_swscanf
 #define wcspbrk       PAL_wcspbrk
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy
@@ -4079,9 +4077,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define strtoul       PAL_strtoul
 #define strtoull      PAL_strtoull
 #define fprintf       PAL_fprintf
-#define fwprintf      PAL_fwprintf
 #define vfprintf      PAL_vfprintf
-#define vfwprintf     PAL_vfwprintf
 #define rand          PAL_rand
 #define time          PAL_time
 #define getenv        PAL_getenv
@@ -4258,9 +4254,6 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
-PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
-PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
@@ -4494,9 +4487,6 @@ PALIMPORT LONG __cdecl PAL_ftell(PAL_FILE *);
 PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
 PALIMPORT PAL_FILE * __cdecl PAL_fopen(const char *, const char *);
 PALIMPORT int __cdecl PAL_setvbuf(PAL_FILE *stream, char *, int, size_t);
-PALIMPORT DLLEXPORT int __cdecl PAL_fwprintf(PAL_FILE *, const WCHAR *, ...);
-PALIMPORT int __cdecl PAL_vfwprintf(PAL_FILE *, const WCHAR *, va_list);
-PALIMPORT int __cdecl PAL_wprintf(const WCHAR*, ...);
 
 PALIMPORT int __cdecl _getw(PAL_FILE *);
 PALIMPORT int __cdecl _putw(int, PAL_FILE *);
@@ -4581,12 +4571,14 @@ void _mm_setcsr(unsigned int i);
 
 #ifdef  __cplusplus
 
+#if defined(HOST_ARM64) && defined(TARGET_ARM64)
 class CORJIT_FLAGS;
 
 PALIMPORT
 VOID
 PALAPI
 PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
+#endif // HOST_ARM64 && TARGET_ARM64
 
 #endif
 

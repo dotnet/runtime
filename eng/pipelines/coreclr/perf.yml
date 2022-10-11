@@ -20,21 +20,32 @@ trigger:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-schedules:
-- cron: "30 2 * * *"
-  displayName: Every night at 2:30AM
-  branches:
-    include:
-    - main
-  always: true
+#
+# For the 'schedule' case, only wasm/jsc perf jobs are run.
+# And the rest are build jobs - wasm, mono, coreclr, and libraries.
+#
+# Since, we are not running *any* perf jobs, none of these builds are needed,
+# thus the whole scheduled run can be disabled.
+#
+#schedules:
+#- cron: "30 2 * * *"
+  #displayName: Every night at 2:30AM
+  #branches:
+    #include:
+    #- main
+  #always: true
 
-jobs:
-
-- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-      runProfile: 'non-v8'
-    ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
-      runProfile: 'v8'
+    jobs:
 
-- template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+    - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      parameters:
+        collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+        ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+          runProfile: 'non-v8'
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+          runProfile: 'v8'
+
+    - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml

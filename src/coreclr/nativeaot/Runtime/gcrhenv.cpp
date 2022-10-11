@@ -177,6 +177,11 @@ bool RedhawkGCInterface::InitializeSubsystems()
     g_heap_type = GC_HEAP_WKS;
 #endif
 
+    if (g_pRhConfig->GetgcConservative())
+    {
+        GetRuntimeInstance()->EnableConservativeStackReporting();
+    }
+
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
         return false;
@@ -1177,9 +1182,9 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
 
     WeakReference* weakRefObj = (WeakReference*)obj;
-    OBJECTHANDLE handle = (OBJECTHANDLE)weakRefObj->m_Handle;
-    weakRefObj->m_Handle = 0;
-    HandleType handleType = weakRefObj->m_trackResurrection ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_HandleAndKind & ~(uintptr_t)1);
+    HandleType handleType = (weakRefObj->m_HandleAndKind & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    weakRefObj->m_HandleAndKind &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
     return true;
 }
@@ -1234,7 +1239,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
             ThreadStore::AttachCurrentThread(false);
         }
 
-        ThreadStore::RawGetCurrentThread()->SetGCSpecial(true);
+        ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
         auto realStartRoutine = pStartContext->m_pRealStartRoutine;
         void* realContext = pStartContext->m_pRealContext;

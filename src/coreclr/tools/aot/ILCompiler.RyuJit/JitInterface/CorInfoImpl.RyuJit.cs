@@ -340,7 +340,7 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
+                        object helperArg = HandleToObject(pGenericLookupKind.runtimeLookupArgs);
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -375,7 +375,7 @@ namespace Internal.JitInterface
 
                 var methodIL = HandleToObject(pTargetMethod.tokenScope);
                 var typeOrMethodContext = (pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
-                    MethodBeingCompiled : HandleToObject((IntPtr)pTargetMethod.tokenContext);
+                    MethodBeingCompiled : HandleToObject((void*)pTargetMethod.tokenContext);
                 var canonConstrainedType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, targetConstraint);
                 TypeDesc interfaceType = HandleToObject(pTargetMethod.hClass);
                 var interfaceMethod = (MethodDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, pTargetMethod.token);
@@ -808,7 +808,7 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            MethodIL methodIL = (MethodIL)HandleToObject((void*)module);
 
             ISymbolNode stringObject;
             if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
@@ -905,7 +905,7 @@ namespace Internal.JitInterface
                         {
                             builder.EmitCompressedUInt(clause.HandlerOffset);
 
-                            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+                            var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
 
                             var typeSymbol = _compilation.NecessaryTypeSymbolIfPossible(type);
@@ -935,7 +935,7 @@ namespace Internal.JitInterface
 
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+            var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
 
             MethodSignature sig = methodIL.OwningMethod.Signature;
             int numLocals = methodIL.GetLocals().Length;
@@ -1132,7 +1132,7 @@ namespace Internal.JitInterface
 
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
-                MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)pScope);
+                MethodIL methodIL = (MethodIL)HandleToObject((void*)pScope);
                 _compilation.DetectGenericCycles(methodIL.OwningMethod, method);
             }
 
@@ -1260,7 +1260,7 @@ namespace Internal.JitInterface
                     // The scanner won't be able to predict such inlinig. See https://github.com/dotnet/runtimelab/pull/489
                     !MethodBeingCompiled.HasInstantiation)
                 {
-                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
                     var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
@@ -1407,7 +1407,7 @@ namespace Internal.JitInterface
                     // If this is an intrinsic method with a callsite-specific expansion, this will replace
                     // the method with a method the intrinsic expands into. If it's not the special intrinsic,
                     // method stays unchanged.
-                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
 
                     // For multidim array Address method, we pretend the method requires a hidden instantiation argument
@@ -1523,7 +1523,7 @@ namespace Internal.JitInterface
                 MethodDesc targetOfLookup = _compilation.GetTargetOfGenericVirtualMethodCall((MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
 
                 _compilation.DetectGenericCycles(
-                    ((MethodILScope)HandleToObject((IntPtr)pResolvedToken.tokenScope)).OwningMethod,
+                    ((MethodILScope)HandleToObject((void*)pResolvedToken.tokenScope)).OwningMethod,
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
                 ComputeLookup(ref pResolvedToken,
@@ -1898,7 +1898,7 @@ namespace Internal.JitInterface
             if (handle == null)
             {
 #if DEBUG
-                MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+                MethodSignature methodSignature = (MethodSignature)HandleToObject((void*)callSiteSig->pSig);
 
                 MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
                     methodSignature,
@@ -1926,7 +1926,7 @@ namespace Internal.JitInterface
 
         private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
 
             // Suppress recursive expansion of calli in marshaling stubs
             if (methodIL is Internal.IL.Stubs.PInvokeILStubMethodIL)
@@ -2202,6 +2202,89 @@ namespace Internal.JitInterface
 
             Debug.Assert(index <= maxExactClasses);
             return index;
+        }
+
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
+        {
+            Debug.Assert(fieldHandle != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+
+            FieldDesc field = HandleToObject(fieldHandle);
+            Debug.Assert(field.IsStatic);
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            {
+                PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                if (preinitManager.IsPreinitialized(owningType))
+                {
+                    TypePreinit.ISerializableValue value = preinitManager
+                        .GetPreinitializationInfo(owningType).GetFieldValue(field);
+
+                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
+
+                    if (value == null)
+                    {
+                        Debug.Assert(bufferSize == targetPtrSize);
+
+                        // Write "null" to buffer
+                        new Span<byte>(buffer, targetPtrSize).Clear();
+                        return true;
+                    }
+
+                    if (value.GetRawData(_compilation.NodeFactory, out object data))
+                    {
+                        switch (data)
+                        {
+                            case byte[] bytes:
+                                Debug.Assert(bufferSize == bytes.Length);
+
+                                // Ensure we have enough room in the buffer, it can be a large struct
+                                bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
+                                return true;
+
+                            case FrozenObjectNode or FrozenStringNode:
+                                Debug.Assert(bufferSize == targetPtrSize);
+
+                                // save handle's value to buffer
+                                nint handle = ObjectToHandle(data);
+                                new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
+                                return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        {
+            object obj = HandleToObject(objPtr);
+            return obj switch
+            {
+                FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
+                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
+                _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
+            };
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
+            return null;
+        }
+
+        private bool isObjectImmutable(void* objPtr)
+        {
+            object obj = HandleToObject(objPtr);
+            return obj switch
+            {
+                FrozenStringNode => true,
+                FrozenObjectNode frozenObj => frozenObj.IsKnownImmutable,
+                _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
+            };
         }
     }
 }

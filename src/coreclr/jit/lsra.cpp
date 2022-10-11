@@ -632,6 +632,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #ifdef DEBUG
     maxNodeLocation   = 0;
     activeRefPosition = nullptr;
+    currBuildNode     = nullptr;
 
     lsraStressMask = JitConfig.JitStressRegs();
 
@@ -3928,7 +3929,10 @@ regNumber LinearScan::findAnotherHalfRegNum(regNumber regNum)
 //    None
 //
 // Return Value:
-//    True only if previous interval of regRec can be restored
+//    True if:
+//      1. previous interval of regRec is different than `assignedInterval`
+//      2. previous interval's assigned interval is still `regRec`.
+//      3. previous interval still have more refpositions.
 //
 bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval)
 {
@@ -4666,7 +4670,11 @@ void LinearScan::allocateRegisters()
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
             RegRecord* regRecord = lastAllocatedRefPosition->getInterval()->assignedReg;
+
+            INDEBUG(activeRefPosition = lastAllocatedRefPosition);
             unassignPhysReg(regRecord, lastAllocatedRefPosition);
+            INDEBUG(activeRefPosition = nullptr);
+
             // Now set lastAllocatedRefPosition to null, so that we don't try to spill it again
             lastAllocatedRefPosition = nullptr;
         }
@@ -4794,6 +4802,7 @@ void LinearScan::allocateRegisters()
                     }
                     else
                     {
+                        // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
                         assert(!isRegConstant(reg, physRegRecord->registerType));
                         assert(nextIntervalRef[reg] == MaxLocation);
@@ -5043,7 +5052,13 @@ void LinearScan::allocateRegisters()
             // enough that it may not warrant the additional complexity.
             if (assignedRegister != REG_NA)
             {
-                unassignPhysReg(getRegisterRecord(assignedRegister), currentInterval->firstRefPosition);
+                RegRecord* regRecord        = getRegisterRecord(assignedRegister);
+                Interval*  assignedInterval = regRecord->assignedInterval;
+                unassignPhysReg(regRecord, currentInterval->firstRefPosition);
+                if (assignedInterval->isConstant)
+                {
+                    clearConstantReg(assignedRegister, assignedInterval->registerType);
+                }
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
             }
             currentRefPosition->registerAssignment = RBM_NONE;
@@ -5277,23 +5292,8 @@ void LinearScan::allocateRegisters()
                 // It's already in a register, but not one we need.
                 if (!RefTypeIsDef(currentRefPosition->refType))
                 {
-                    regNumber copyReg        = assignCopyReg(currentRefPosition);
-                    lastAllocatedRefPosition = currentRefPosition;
-                    bool unassign            = false;
-                    if (currentInterval->isWriteThru)
-                    {
-                        if (currentRefPosition->refType == RefTypeDef)
-                        {
-                            currentRefPosition->writeThru = true;
-                        }
-                        if (!currentRefPosition->lastUse)
-                        {
-                            if (currentRefPosition->spillAfter)
-                            {
-                                unassign = true;
-                            }
-                        }
-                    }
+                    regNumber copyReg         = assignCopyReg(currentRefPosition);
+                    lastAllocatedRefPosition  = currentRefPosition;
                     regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                     regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;
@@ -6951,25 +6951,10 @@ void LinearScan::resolveRegisters()
                             // register specified by multi-reg index of current RefPosition.
                             // Note that the spill flag on treeNode indicates that one or
                             // more its allocated registers are in that state.
-                            if (treeNode->IsMultiRegCall())
+                            if (treeNode->IsMultiRegNode())
                             {
-                                GenTreeCall* call = treeNode->AsCall();
-                                call->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                                treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
-#if FEATURE_ARG_SPLIT
-                            else if (treeNode->OperIsPutArgSplit())
-                            {
-                                GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
-                                splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
-                            }
-#ifdef TARGET_ARM
-                            else if (compFeatureArgSplit() && treeNode->OperIsMultiRegOp())
-                            {
-                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
-                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
-                            }
-#endif // TARGET_ARM
-#endif // FEATURE_ARG_SPLIT
                         }
 
                         // If the value is reloaded or moved to a different register, we need to insert
@@ -9813,7 +9798,7 @@ void LinearScan::dumpLsraAllocationEvent(
             assert(interval != nullptr);
             if ((activeRefPosition == nullptr) || (activeRefPosition->refType == RefTypeBB))
             {
-                printf(emptyRefPositionFormat, "");
+                dumpEmptyRefPosition();
             }
             else
             {
@@ -10030,6 +10015,7 @@ void LinearScan::dumpRegRecordHeader()
                           : maxNodeLocation; // corner case of a method with an infinite loop without any gentree nodes
     assert(maxNodeLocation >= 1);
     assert(refPositions.size() >= 1);
+    int treeIdWidth               = 9; /* '[XXXXX] '*/
     int nodeLocationWidth         = (int)log10((double)maxNodeLocation) + 1;
     int refPositionWidth          = (int)log10((double)refPositions.size()) + 1;
     int refTypeInfoWidth          = 4 /*TYPE*/ + 2 /* last-use and delayed */ + 1 /* space */;
@@ -10049,12 +10035,13 @@ void LinearScan::dumpRegRecordHeader()
     //  - a short RefPosition dump (shortRefPositionDumpWidth), which includes a space
     //  - the allocation info (allocationInfoWidth), which also includes a space
 
-    regTableIndent = shortRefPositionDumpWidth + allocationInfoWidth;
+    regTableIndent = treeIdWidth + shortRefPositionDumpWidth + allocationInfoWidth;
 
     // BBnn printed left-justified in the NAME Typeld and allocationInfo space.
     int bbNumWidth = (int)log10((double)compiler->fgBBNumMax) + 1;
     // In the unlikely event that BB numbers overflow the space, we'll simply omit the predBB
-    int predBBNumDumpSpace = regTableIndent - locationAndRPNumWidth - bbNumWidth - 9; // 'BB' + ' PredBB'
+    int predBBNumDumpSpace =
+        regTableIndent - locationAndRPNumWidth - bbNumWidth - treeIdWidth - 9 /* 'BB' + ' PredBB' */;
     if (predBBNumDumpSpace < bbNumWidth)
     {
         sprintf_s(bbRefPosFormat, MAX_LEGEND_FORMAT_CHARS, "BB%%-%dd", shortRefPositionDumpWidth - 2);
@@ -10083,8 +10070,9 @@ void LinearScan::dumpRegRecordHeader()
     sprintf_s(indentFormat, MAX_FORMAT_CHARS, "%%-%ds", regTableIndent);
 
     // Now, set up the legend format for the RefPosition info
-    sprintf_s(legendFormat, MAX_LEGEND_FORMAT_CHARS, "%%-%d.%ds%%-%d.%ds%%-%ds%%s", nodeLocationWidth + 1,
-              nodeLocationWidth + 1, refPositionWidth + 2, refPositionWidth + 2, regColumnWidth + 1);
+    sprintf_s(legendFormat, MAX_LEGEND_FORMAT_CHARS, "%%-%ds%%-%d.%ds%%-%d.%ds%%-%ds%%s", treeIdWidth,
+              nodeLocationWidth + 1, nodeLocationWidth + 1, refPositionWidth + 2, refPositionWidth + 2,
+              regColumnWidth + 1);
 
     // Print a "title row" including the legend and the reg names.
     lastDumpedRegisters = RBM_NONE;
@@ -10134,7 +10122,7 @@ void LinearScan::dumpRegRecordTitle()
     dumpRegRecordTitleLines();
 
     // Print out the legend for the RefPosition info
-    printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action    Reg  ");
+    printf(legendFormat, "TreeID ", "Loc ", "RP# ", "Name ", "Type  Action    Reg  ");
 
     // Print out the register name column headers
     char columnFormatArray[MAX_FORMAT_CHARS];
@@ -10213,8 +10201,14 @@ void LinearScan::dumpIntervalName(Interval* interval)
     }
 }
 
+void LinearScan::dumpEmptyTreeID()
+{
+    printf("         ");
+}
+
 void LinearScan::dumpEmptyRefPosition()
 {
+    dumpEmptyTreeID();
     printf(emptyRefPositionFormat, "");
 }
 
@@ -10246,6 +10240,8 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
         printf(regNameFormat, "");
         return;
     }
+
+    dumpEmptyTreeID();
     printf(shortRefPositionFormat, location, activeRefPosition->rpNum);
     if (currentBlock == nullptr)
     {
@@ -10276,6 +10272,17 @@ void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* curr
         dumpNewBlock(currentBlock, refPosition->nodeLocation);
         return;
     }
+
+    if (refPosition->buildNode != nullptr)
+    {
+        Compiler::printTreeID(refPosition->buildNode);
+        printf(" ");
+    }
+    else
+    {
+        dumpEmptyTreeID();
+    }
+
     printf(shortRefPositionFormat, refPosition->nodeLocation, refPosition->rpNum);
     if (refPosition->isIntervalRef())
     {
@@ -10977,6 +10984,8 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     }
     if (VERBOSE)
     {
+        Compiler::printTreeID(resolutionMove);
+        printf(" ");
         printf(shortRefPositionFormat, currentLocation, 0);
         dumpIntervalName(interval);
         printf("  Move      ");

@@ -76,6 +76,10 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
                                                                                      // through return buffers.
 
+CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
+               W("JitUnrollLoopMaxIterationCount"),
+               DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
@@ -576,10 +580,6 @@ CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts")
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
-
-// Control when Virtual Calls are expanded
-CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
-                                                                 // phase)
 
 // Force the generation of CFG checks
 CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
