@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         // Called by base.Run when the service is ready to start.
         /// <summary>
-        /// Raises the Start event when the servuce is ready to start.
+        /// Raises the Start event when the service is ready to start.
         /// </summary>
         /// <param name="args">The command line arguments passed to the service.</param>
         protected override void OnStart(string[] args)
