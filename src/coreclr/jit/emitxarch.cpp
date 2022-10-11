@@ -12720,7 +12720,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         break;
 
                     case INS_add:
-                    case INS_sub
+                    case INS_sub:
                     case INS_sub_hide:
                         assert(id->idGCref() == GCT_BYREF);
 
