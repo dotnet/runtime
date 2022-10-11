@@ -36,6 +36,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo ti = r.GetTypeInfo(type, o);
 
+            Assert.False(ti.IsReadOnly);
             Assert.Same(o, ti.Options);
             Assert.NotNull(ti.Properties);
 
@@ -400,7 +401,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(typeof(T), typeInfo.Type);
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
+            Assert.True(typeInfo.IsReadOnly);
             Assert.True(typeInfo.Properties.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateJsonPropertyInfo(typeof(string), "foo"));
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
