@@ -712,7 +712,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
+            int twoDigitYearMax = CalendarData.GetTwoDigitYearMax(CalID);
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

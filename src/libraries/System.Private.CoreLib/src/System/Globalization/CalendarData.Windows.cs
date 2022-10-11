@@ -426,5 +426,16 @@ namespace System.Globalization
             // Now we have a list of data, return the count
             return data.calendars.Count;
         }
+
+        // Get native two digit year max
+        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
+        }
     }
 }

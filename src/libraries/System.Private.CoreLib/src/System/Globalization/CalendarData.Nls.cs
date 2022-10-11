@@ -10,17 +10,6 @@ namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-        // Get native two digit year max
-        internal static int NlsGetTwoDigitYearMax(CalendarId calendarId)
-        {
-            Debug.Assert(GlobalizationMode.UseNls);
-
-            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
-                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
-                        twoDigitYearMax :
-                        -1;
-        }
-
         private static bool NlsSystemSupportsTaiwaneseCalendar()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
