@@ -1760,7 +1760,7 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
         return nullptr;
     }
 
-    GenTree* node = call->gtPrev;
+    GenTree* node = call;
     do
     {
         node = node->gtPrev;
