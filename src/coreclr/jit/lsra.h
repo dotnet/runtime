@@ -1586,6 +1586,8 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
+    regMaskTP availableRegs[TYP_COUNT];
+
     // The set of all register candidates. Note that this may be a subset of tracked vars.
     VARSET_TP registerCandidateVars;
     // Current set of live register candidate vars, used during building of RefPositions to determine

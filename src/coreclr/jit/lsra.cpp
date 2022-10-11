@@ -239,25 +239,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 regMaskTP LinearScan::allRegs(RegisterType rt)
 {
     assert((rt != TYP_UNDEF) && (rt != TYP_STRUCT));
-    if (rt == TYP_FLOAT)
-    {
-        return availableFloatRegs;
-    }
-    else if (rt == TYP_DOUBLE)
-    {
-        return availableDoubleRegs;
-    }
-#ifdef FEATURE_SIMD
-    // TODO-Cleanup: Add an RBM_ALLSIMD
-    else if (varTypeIsSIMD(rt))
-    {
-        return availableDoubleRegs;
-    }
-#endif // FEATURE_SIMD
-    else
-    {
-        return availableIntRegs;
-    }
+    return availableRegs[rt];
 }
 
 regMaskTP LinearScan::allByteRegs()
@@ -676,6 +658,29 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+
+    for (unsigned int i = 0; i < TYP_COUNT; i++)
+    {
+        var_types thisType = (var_types)genActualTypes[i];
+        if (thisType == TYP_FLOAT)
+        {
+            availableRegs[i] = availableFloatRegs;
+        }
+        else if (thisType == TYP_DOUBLE)
+        {
+            availableRegs[i] = availableDoubleRegs;
+        }
+#ifdef FEATURE_SIMD
+        else if (varTypeIsSIMD(thisType))
+        {
+            availableRegs[i] = availableDoubleRegs;
+        }
+#endif
+        else
+        {
+            availableRegs[i] = availableIntRegs;
+        }
+    }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
