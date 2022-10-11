@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue("TODO", TestPlatforms.Android)]
     public sealed class Http1CloseResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";

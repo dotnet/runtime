@@ -14,11 +14,13 @@ namespace System.Net
         private static object s_initializationLock = new();
         private static bool s_initialized;
 
-        private readonly GCHandle _handle;
         private readonly RemoteCertificateVerification _remoteCertificateVerifier;
+        private GCHandle? _handle;
 
-
-        public IntPtr Handle => GCHandle.ToIntPtr(_handle);
+        public IntPtr Handle
+            => _handle is GCHandle handle
+                ? GCHandle.ToIntPtr(handle)
+                : throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
         public unsafe TrustManagerProxy(RemoteCertificateVerification remoteCertificateVerifier)
         {
@@ -41,7 +43,10 @@ namespace System.Net
         }
 
         public void Dispose()
-            => _handle.Free();
+        {
+            _handle?.Free();
+            _handle = null;
+        }
 
         [UnmanagedCallersOnly]
         private static unsafe bool TrustManagerCallback(
@@ -56,11 +61,6 @@ namespace System.Net
             try
             {
                 return proxy.Validate(certificates);
-            }
-            catch
-            {
-                // TODO log the exception somehow
-                return false;
             }
             finally
             {
@@ -79,7 +79,7 @@ namespace System.Net
 
         private static TrustManagerProxy FromHandle(IntPtr handle)
             => GCHandle.FromIntPtr(handle).Target as TrustManagerProxy
-                ?? throw new ArgumentNullException(nameof(handle));
+                ?? throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
         private static unsafe X509Certificate2[] Convert(
             int certificatesCount,

@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
