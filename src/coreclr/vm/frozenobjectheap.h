@@ -38,7 +38,7 @@ private:
 class FrozenObjectSegment
 {
 public:
-    FrozenObjectSegment(size_t size);
+    FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
     size_t GetSize() const

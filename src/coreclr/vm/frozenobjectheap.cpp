@@ -62,7 +62,9 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     if (obj == nullptr)
     {
         // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
-        m_CurrentSegment = new FrozenObjectSegment(m_CurrentSegment->GetSize() * 2);
+        // Use the same size in case if prevSegmentSize*2 operation overflows.
+        size_t prevSegmentSize = m_CurrentSegment->GetSize();
+        m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
         m_FrozenSegments.Append(m_CurrentSegment);
 
         // Try again
@@ -75,12 +77,13 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #endif // !FEATURE_BASICFREEZE
 }
 
-
-FrozenObjectSegment::FrozenObjectSegment(size_t size) :
+// Reserve sizeHint bytes of memory for the given frozen segment.
+// The requested size can be be ignored in case of memory pressure and FOH_SEGMENT_DEFAULT_SIZE is used instead.
+FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pStart(nullptr),
     m_pCurrent(nullptr),
     m_SizeCommitted(0),
-    m_Size(size),
+    m_Size(sizeHint),
     m_SegmentHandle(nullptr)
     COMMA_INDEBUG(m_ObjectsCount(0))
 {
