@@ -25,6 +25,9 @@
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
+  <ItemGroup>
+    <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
+  </ItemGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.4-beta1.22504.1</MicrosoftCodeAnalysisAnalyzersVersion>
