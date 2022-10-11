@@ -2265,7 +2265,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     if (regTmp != REG_NA)
     {
         // For x86, some cases don't want to use "sub ESP" because we don't want the emitter to track the adjustment
-        // to ESP. So do the work in the count register.
+        // to ESP.
         inst_RV_IV(INS_sub_hide, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
     }
     else
