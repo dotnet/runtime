@@ -134,21 +134,9 @@ namespace HelloFrozenSegment
 
     internal static class Program
     {
-        internal sealed class RawData
-        {
-            public byte Data;
-        }
-
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
-        internal static unsafe IntPtr GetMethodTablePointer(object obj) =>
-            (IntPtr)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-
         private static unsafe int Main(string[] args)
         {
             IntPtr methodTable = typeof(Node).TypeHandle.Value;
-            IntPtr methodTable = GetMethodTablePointer(template);
 
             FrozenSegmentBuilder frozenSegmentBuilder = new FrozenSegmentBuilder(1000);
             IntPtr node1Ptr = frozenSegmentBuilder.Allocate(methodTable);
