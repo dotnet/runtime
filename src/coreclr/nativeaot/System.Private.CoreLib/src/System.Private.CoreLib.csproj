@@ -282,7 +282,6 @@
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="System\Environment.NativeAot.Windows.cs" />
-    <Compile Include="System\Environment.NativeAot.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -325,17 +324,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
       <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
