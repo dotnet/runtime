@@ -11248,7 +11248,7 @@ DONE:
 
             case IF_RRW_ARD:
                 // Mark the destination register as holding a GCT_BYREF
-                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub));
+                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
                 break;
 
@@ -11265,7 +11265,7 @@ DONE:
 
             case IF_ARW_RRD:
             case IF_ARW_CNS:
-                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub));
+                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
                 break;
 
             default:
@@ -11695,7 +11695,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 // reg could have been a GCREF as GCREF + int=BYREF
                 //                             or BYREF+/-int=BYREF
-                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub));
+                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
                 emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
                 break;
 
@@ -12155,7 +12155,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case IF_RRW_MRD:
 
                 assert(id->idGCref() == GCT_BYREF);
-                assert(ins == INS_add || ins == INS_sub);
+                assert(ins == INS_add || ins == INS_sub || ins == INS_sub_hide);
 
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
@@ -12720,7 +12720,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         break;
 
                     case INS_add:
-                    case INS_sub:
+                    case INS_sub
+                    case INS_sub_hide:
                         assert(id->idGCref() == GCT_BYREF);
 
 #if 0
@@ -12743,7 +12744,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
                         //                               or BYREF+/-int=BYREF
                         assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
-                               ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
+                               ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide)));
 #endif // DEBUG
 #endif // 0
 
@@ -13221,7 +13222,7 @@ DONE:
                 }
                 if (emitThisByrefRegs & regMask)
                 {
-                    assert(ins == INS_add || ins == INS_sub);
+                    assert(ins == INS_add || ins == INS_sub || ins == INS_sub_hide);
                 }
 #endif
                 // Mark it as holding a GCT_BYREF
@@ -14844,8 +14845,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 break;
 
             case INS_sub:
+            case INS_sub_hide:
                 // Check for "sub ESP, icon"
-                if (ins == INS_sub && id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
+                if (id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
                 {
                     assert((size_t)emitGetInsSC(id) < 0x00000000FFFFFFFFLL);
                     emitStackPushN(dst, (unsigned)(emitGetInsSC(id) / TARGET_POINTER_SIZE));
@@ -14854,7 +14856,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             case INS_add:
                 // Check for "add ESP, icon"
-                if (ins == INS_add && id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
+                if (id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
                 {
                     assert((size_t)emitGetInsSC(id) < 0x00000000FFFFFFFFLL);
                     emitStackPop(dst, /*isCall*/ false, /*callInstrSize*/ 0,
@@ -15334,6 +15336,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_add:
         case INS_sub:
+        case INS_sub_hide:
         case INS_and:
         case INS_or:
         case INS_xor:
