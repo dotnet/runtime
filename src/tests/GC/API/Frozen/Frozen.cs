@@ -134,15 +134,16 @@ namespace HelloFrozenSegment
 
     internal static class Program
     {
-        private static unsafe IntPtr GetMethodTablePointer(object obj)
+        internal sealed class RawData
         {
-            GCHandle gch = GCHandle.Alloc(obj);
-            IntPtr pointerToPointerToObject = GCHandle.ToIntPtr(gch);
-            IntPtr pointerToObject = *((IntPtr*)pointerToPointerToObject);
-            IntPtr methodTable = *((IntPtr*)pointerToObject);
-            gch.Free();
-            return methodTable;
+            public byte Data;
         }
+
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+
+        internal static unsafe IntPtr GetMethodTablePointer(object obj) =>
+            (IntPtr)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
 
         private static unsafe int Main(string[] args)
         {
