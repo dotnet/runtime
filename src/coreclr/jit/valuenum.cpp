@@ -9987,6 +9987,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         break;
 
         case VNF_ReadyToRunStaticBase:
+        case VNF_ReadyToRunCctorTrigger:
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
@@ -10349,6 +10350,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_READYTORUN_STATIC_BASE:
             vnf = VNF_ReadyToRunStaticBase;
+            break;
+        case CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
+            vnf = VNF_ReadyToRunCctorTrigger;
             break;
         case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
             vnf = VNF_ReadyToRunGenericStaticBase;
