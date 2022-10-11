@@ -295,10 +295,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var exception = Assert.Throws<InvalidOperationException>(() =>
                 CreateInstance<ClassWithAmbiguousCtorsAndAttribute>(createFunc, serviceProvider, 0, "hello"));
             Assert.Equal(message, exception.Message);
-
-            exception = Assert.Throws<InvalidOperationException>(() =>
-                CreateInstance<ClassWithMultipleAmbiguousCtorsAndAttribute>(createFunc, serviceProvider, 0, "hello"));
-            Assert.Equal(message, exception.Message);
         }
 
         [Fact]

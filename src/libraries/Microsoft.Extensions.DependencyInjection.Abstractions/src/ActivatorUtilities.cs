@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     var matcher = new ConstructorMatcher(constructor);
                     bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                    int length = matcher.Match(parameters, serviceProviderIsService!);
+                    int length = matcher.Match(parameters, serviceProviderIsService);
 
                     if (isPreferred)
                     {
@@ -250,8 +250,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.Format(SR.CtorNotLocated, instanceType));
             }
 
-            matchingConstructor = constructorInfo!;
-            matchingParameterMap = parameterMap!;
+            matchingConstructor = constructorInfo;
+            matchingParameterMap = parameterMap;
         }
 
         // Tries to find constructor based on provided argument types
@@ -394,6 +394,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
+                // confirms the rest of ctor arguments match either as a parameter with a default value or as a service registered
                 for (int i = 0; i < _parameters.Length; i++)
                 {
                     if (_parameterValues[i] == null &&
