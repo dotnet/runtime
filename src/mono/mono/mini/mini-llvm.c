@@ -9289,7 +9289,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
-		case OP_SSSE3_ABS: {
+		case OP_VECTOR_IABS: {
 			// %sub = sub <16 x i8> zeroinitializer, %arg
 			// %cmp = icmp sgt <16 x i8> %arg, zeroinitializer
 			// %abs = select <16 x i1> %cmp, <16 x i8> %arg, <16 x i8> %sub
