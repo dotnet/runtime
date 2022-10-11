@@ -2266,12 +2266,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     {
         // For x86, some cases don't want to use "sub ESP" because we don't want the emitter to track the adjustment
         // to ESP. So do the work in the count register.
-        // TODO-CQ: manipulate ESP directly, to share code, reduce #ifdefs, and improve CQ. This would require
-        // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't
-        // track".
-        inst_Mov(TYP_I_IMPL, regTmp, REG_SPBASE, /* canSkip */ false);
-        inst_RV_IV(INS_sub, regTmp, (target_ssize_t)-spDelta, EA_PTRSIZE);
-        inst_Mov(TYP_I_IMPL, REG_SPBASE, regTmp, /* canSkip */ false);
+        inst_RV_IV(INS_sub_hide, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
     }
     else
 #endif // TARGET_X86
