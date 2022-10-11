@@ -2753,7 +2753,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
     // Do not optimise further if op1 has a contained chain.
     if (op1->OperIs(GT_AND) &&
-        (op1->gtGetOp1()->isContainedAndNotIntOrIImmed() || op1->gtGetOp2()->isContainedAndNotIntOrIImmed()))
+        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
     {
         return cmp;
     }
@@ -3322,16 +3322,9 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     else if (ret->TypeGet() != TYP_VOID)
     {
 #if FEATURE_MULTIREG_RET
-        if (retVal->OperIs(GT_LCL_VAR) && varTypeIsStruct(retVal))
+        if (comp->compMethodReturnsMultiRegRetType() && retVal->OperIs(GT_LCL_VAR))
         {
-            ReturnTypeDesc retTypeDesc;
-            LclVarDsc*     varDsc = nullptr;
-            varDsc                = comp->lvaGetDesc(retVal->AsLclVar());
-            retTypeDesc.InitializeStructReturnType(comp, varDsc->GetStructHnd(), comp->info.compCallConv);
-            if (retTypeDesc.GetReturnRegCount() > 1)
-            {
-                CheckMultiRegLclVar(retVal->AsLclVar(), &retTypeDesc);
-            }
+            CheckMultiRegLclVar(retVal->AsLclVar(), &comp->compRetTypeDesc);
         }
 #endif // FEATURE_MULTIREG_RET
 #ifdef DEBUG
@@ -3607,7 +3600,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (comp->info.compRetNativeType == TYP_STRUCT)
             {
                 assert(varTypeIsSIMD(ret->gtGetOp1()));
-                assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
+                assert(comp->compMethodReturnsMultiRegRetType());
                 ret->ChangeType(comp->info.compRetNativeType);
             }
             else
@@ -3618,7 +3611,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     }
 #endif // TARGET_ARM64
 
-    if (comp->compMethodReturnsMultiRegRegTypeAlternate())
+    if (comp->compMethodReturnsMultiRegRetType())
     {
         return;
     }
@@ -3694,7 +3687,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 //
 void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
-    assert(!comp->compMethodReturnsMultiRegRegTypeAlternate());
+    assert(!comp->compMethodReturnsMultiRegRetType());
     assert(ret->OperIs(GT_RETURN));
     GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));

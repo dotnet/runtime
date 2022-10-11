@@ -6342,7 +6342,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             break;
     }
 
-    info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
+    info.compRetType = JITtype2varType(methodInfo->args.retType);
+    if (info.compRetType == TYP_STRUCT)
+    {
+        info.compRetType = impNormStructType(methodInfo->args.retTypeClass);
+    }
 
     info.compUnmanagedCallCountWithGCTransition = 0;
     info.compLvFrameListRoot                    = BAD_VAR_NUM;
@@ -9413,6 +9417,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STR_HDL:
 
                         chars += printf("[ICON_STR_HDL]");
+                        break;
+
+                    case GTF_ICON_OBJ_HDL:
+
+                        chars += printf("[ICON_OBJ_HDL]");
                         break;
 
                     case GTF_ICON_CONST_PTR:

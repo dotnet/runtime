@@ -214,6 +214,11 @@ Crst FCall
 End
 
 Crst FrozenObjectHeap
+    Unordered
+End
+
+Crst MethodTableExposedObject
+    Unordered
 End
 
 Crst RetThunkCache

@@ -1439,6 +1439,15 @@ class SuperPMIReplay:
 def html_color(color, text):
     return "<span style=\"color:{}\">{}</span>".format(color, text)
 
+def calculate_improvements_regressions(base_diff_sizes):
+    num_improvements = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size < base_size)
+    num_regressions = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size > base_size)
+
+    byte_improvements = sum(max(0, base_size - diff_size) for (base_size, diff_size) in base_diff_sizes)
+    byte_regressions = sum(max(0, diff_size - base_size) for (base_size, diff_size) in base_diff_sizes)
+
+    return (num_improvements, num_regressions, byte_improvements, byte_regressions)
+
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
 
@@ -1646,9 +1655,7 @@ class SuperPMIReplayAsmDiffs:
 
                 diffs = read_csv_diffs(diffs_info)
 
-                # This file had asm diffs; keep track of that.
-                has_diffs = len(diffs) > 0
-                if has_diffs:
+                if any(diffs):
                     files_with_asm_diffs.append(mch_file)
 
                 # There were diffs. Go through each method that created diffs and
@@ -1656,7 +1663,7 @@ class SuperPMIReplayAsmDiffs:
                 # it. In addition, create a standalone .mc for easy iteration.
                 jit_analyze_summary_file = None
 
-                if has_diffs and not self.coreclr_args.diff_with_release:
+                if any(diffs) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
@@ -1817,9 +1824,24 @@ class SuperPMIReplayAsmDiffs:
 
                     # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
                     if self.coreclr_args.metrics is None:
-                        num_improvements = sum(1 for r in diffs if int(r["Diff size"]) < int(r["Base size"]))
-                        num_regressions = sum(1 for r in diffs if int(r["Diff size"]) > int(r["Base size"]))
-                        logging.info("{} contexts with differences found ({} improvements, {} regressions)".format(len(diffs), num_improvements, num_regressions))
+                        base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+
+                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+
+                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions)".format(
+                            len(diffs),
+                            num_improvements,
+                            num_regressions,
+                            byte_improvements,
+                            byte_regressions))
+                        
+                        if byte_improvements > 0 and byte_regressions > 0:
+                            logging.info("  -{:,d}/+{:,d} bytes".format(byte_improvements, byte_regressions))
+                        elif byte_improvements > 0:
+                            logging.info("  -{:,d} bytes".format(byte_improvements))
+                        elif byte_regressions > 0:
+                            logging.info("  +{:,d} bytes".format(byte_regressions))
+
                         logging.info("")
                         logging.info("")
 
@@ -1845,10 +1867,10 @@ class SuperPMIReplayAsmDiffs:
                             logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
                             logging.warning("Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
-                ################################################################################################ end of processing asm diffs (if has_diffs...
+                ################################################################################################ end of processing asm diffs (if any(diffs)...
 
                 mch_file_basename = os.path.basename(mch_file)
-                asm_diffs.append((mch_file_basename, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file))
+                asm_diffs.append((mch_file_basename, base_metrics, diff_metrics, diffs, jit_analyze_summary_file))
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
@@ -1871,7 +1893,7 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(asm_diffs) > 0 and not self.coreclr_args.diff_with_release:
+        if any(asm_diffs) and not self.coreclr_args.diff_with_release:
             overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
@@ -1919,8 +1941,9 @@ class SuperPMIReplayAsmDiffs:
                 def has_diffs(row):
                     return int(row["Contexts with diffs"]) > 0
 
+                any_diffs = any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _) in asm_diffs)
                 # Exclude entire diffs section?
-                if any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _) in asm_diffs):
+                if any_diffs:
                     def write_pivot_section(row):
                         # Exclude this particular Overall/MinOpts/FullOpts table?
                         if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _) in asm_diffs):
@@ -1957,19 +1980,60 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
 
-                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Contexts with diffs|Missed, base|Missed, diff|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
-                for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
-                        mch_file,
-                        int(diff_metrics["Overall"]["Successful compiles"]),
-                        int(diff_metrics["MinOpts"]["Successful compiles"]),
-                        int(diff_metrics["FullOpts"]["Successful compiles"]),
-                        int(diff_metrics["Overall"]["Contexts with diffs"]),
-                        int(base_metrics["Overall"]["Missing compiles"]),
-                        int(diff_metrics["Overall"]["Missing compiles"])))
+                if any_diffs:
+                    write_fh.write("#### Improvements/regressions per collection\n\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Improvements (bytes)|Regressions (bytes)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|\n")
 
-                write_fh.write("\n")
+                    def write_row(name, diffs):
+                        base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|\n".format(
+                            name,
+                            len(diffs),
+                            html_color("green", "{:,d}".format(num_improvements)),
+                            html_color("red", "{:,d}".format(num_regressions)),
+                            html_color("green", "-{:,d}".format(byte_improvements)),
+                            html_color("red", "+{:,d}".format(byte_regressions))))
+
+                    for (mch_file, _, _, diffs, _) in asm_diffs:
+                        write_row(mch_file, diffs)
+
+                    if len(asm_diffs) > 1:
+                        write_row("", [r for (_, _, _, diffs, _) in asm_diffs for r in diffs])
+
+                    write_fh.write("\n---\n\n")
+
+                write_fh.write("#### Context information\n\n")
+                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+
+                rows = [(mch_file,
+                         int(diff_metrics["Overall"]["Successful compiles"]),
+                         int(diff_metrics["MinOpts"]["Successful compiles"]),
+                         int(diff_metrics["FullOpts"]["Successful compiles"]),
+                         int(base_metrics["Overall"]["Missing compiles"]),
+                         int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _) in asm_diffs]
+
+                def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
+                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
+                        name,
+                        num_contexts,
+                        num_minopts,
+                        num_fullopts,
+                        num_missed_base,
+                        num_missed_diff))
+                          
+                for t in rows:
+                    write_row(*t)
+
+                if len(rows) > 1:
+                    def sum_row(index):
+                        return sum(r[index] for r in rows)
+
+                    write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5))
+
+                write_fh.write("\n\n")
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     write_fh.write("---\n\n")
