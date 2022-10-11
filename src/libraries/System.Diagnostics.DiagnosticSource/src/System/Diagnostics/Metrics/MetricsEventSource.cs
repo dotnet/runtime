@@ -60,7 +60,9 @@ namespace System.Diagnostics.Metrics
             public const EventKeywords InstrumentPublishing = (EventKeywords)0x4;
         }
 
-        private Lazy<CommandHandler> _handler = new Lazy<CommandHandler>();
+        private CommandHandler _handler = new CommandHandler();
+
+        private MetricsEventSource(){}
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.
@@ -184,7 +186,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _handler.Value.OnEventCommand(command, this);
+                _handler.OnEventCommand(command, this);
             }
         }
 
