@@ -57,19 +57,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void CreateInstance_NullInstance_HandlesBadInputWithInvalidOperationException()
-        {
-            var services = new ServiceCollection();
-            services.AddScoped<B>();
-            services.AddScoped<S>();
-            using var provider = services.BuildServiceProvider();
-            B? b = null;
-            C c = new C();
-
-            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithABCS>(provider, c, b!));
-        }
-
-        [Fact]
         public void TypeActivatorThrowsOnNullProvider()
         {
             Assert.Throws<ArgumentNullException>(() => ActivatorUtilities.CreateInstance<ClassWithABCS>(null, "hello"));

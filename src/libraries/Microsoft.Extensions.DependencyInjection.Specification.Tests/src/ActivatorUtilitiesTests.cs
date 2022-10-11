@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         private static object CreateInstanceFromFactory(IServiceProvider provider, Type type, object[] args)
         {
-            var factory = ActivatorUtilities.CreateFactory(type, args.Select(a => a.GetType()).ToArray());
+            var factory = ActivatorUtilities.CreateFactory(type, args.Select(a => a?.GetType()).ToArray());
             return factory(provider, args);
         }
 
@@ -376,6 +376,19 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
                 Assert.Equal(2, service.InstanceId);
                 Assert.Equal(2, CreationCountFakeService.InstanceCount);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateInstanceFuncs))]
+        public void CreateInstance_NullInstance_HandlesBadInputWithInvalidOperationException(CreateInstanceFunc createFunc)
+        {
+            var serviceCollection = new TestServiceCollection()
+                .AddTransient<IFakeService, FakeService>();
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            IFakeService? fakeService = null;
+
+            Assert.Throws<InvalidOperationException>(() =>
+                CreateInstance<CreationCountFakeService>(createFunc, serviceProvider, fakeService!));
         }
 
         [Theory]

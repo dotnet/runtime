@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            var argumentTypes = new Type[parameters.Length];
+            Type?[] argumentTypes = new Type[parameters.Length];
             for (int i = 0; i < argumentTypes.Length; i++)
             {
                 argumentTypes[i] = parameters[i]?.GetType();
@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
-            Type[] argumentTypes,
+            Type?[] argumentTypes,
             out ConstructorInfo matchingConstructor,
             out int?[] matchingParameterMap)
         {
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.DependencyInjection
         // Tries to find constructor based on provided argument types
         private static bool TryFindMatchingConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
-            Type[] argumentTypes,
+            Type?[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.DependencyInjection
         // Tries to find constructor marked with ActivatorUtilitiesConstructorAttribute
         private static bool TryFindPreferredConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
-            Type[] argumentTypes,
+            Type?[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
@@ -323,7 +323,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         // Creates an injective parameterMap from givenParameterTypes to assignable constructorParameters.
         // Returns true if each given parameter type is assignable to a unique; otherwise, false.
-        private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type[] argumentTypes, out int?[] parameterMap)
+        private static bool TryCreateParameterMap(ParameterInfo[] constructorParameters, Type?[] argumentTypes, out int?[] parameterMap)
         {
             parameterMap = new int?[constructorParameters.Length];
 
