@@ -61,6 +61,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
+                    Log("error", $"DevToolsProxy: Client initiated close: {result.CloseStatus.Value} - {result.CloseStatusDescription}");
                     client_initiated_close.TrySetResult();
                     return null;
                 }
@@ -257,7 +258,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            Task task = await Task.WhenAny(pending_ops.ToArray());
+                            Task task = await Task.WhenAny(pending_ops.Where(i => i != null).ToArray());
 
                             if (client_initiated_close.Task.IsCompleted)
                             {
