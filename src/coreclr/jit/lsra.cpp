@@ -624,6 +624,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , intervals(theCompiler->getAllocator(CMK_LSRA_Interval))
     , allocationPassComplete(false)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
+    , callRefPositionLocations(theCompiler->getAllocator(CMK_LSRA))
+    , callKillMasks(theCompiler->getAllocator(CMK_LSRA))
     , listNodePool(theCompiler)
 {
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
@@ -703,6 +705,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     blockSequenceWorkList = nullptr;
     curBBSeqNum           = 0;
     bbSeqCount            = 0;
+    callRefPositionCount  = 0;
+    recentRefPosition     = nullptr;
 
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;
