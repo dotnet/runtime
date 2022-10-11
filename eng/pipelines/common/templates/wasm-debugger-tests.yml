@@ -32,7 +32,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      ${{ if eq(nameSuffix, '') }}:
+      ${{ if eq(parameters.nameSuffix, '') }}:
         nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
       ${{ else }}:
         nameSuffix: ${{ parameters.nameSuffix }}
