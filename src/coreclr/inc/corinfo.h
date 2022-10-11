@@ -416,7 +416,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
     CORINFO_HELP_STRCNS,            // create a new string literal
-    CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
 
     /* Object model */
 
