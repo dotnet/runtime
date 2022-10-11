@@ -1774,6 +1774,7 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
         }
     } while (numMarkedNodes > 0);
 
+    assert(node->OperIsPutArg());
     return node;
 }
 
