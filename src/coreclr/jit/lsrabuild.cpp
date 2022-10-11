@@ -152,12 +152,25 @@ void RefInfoListNodePool::ReturnNode(RefInfoListNode* listNode)
 //
 Interval* LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
-    Interval* newInt = &intervals.back();
-
+    Interval* newInt = nullptr;
+#ifdef TARGET_ARM
+    if (theRegisterType == TYP_DOUBLE)
+    {
+        intervals_2.emplace_back(theRegisterType, allRegs(theRegisterType));
+        newInt = &intervals_2.back();
 #ifdef DEBUG
-    newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
+        newInt->intervalIndex = static_cast<unsigned>(intervals_2.size() - 1);
 #endif // DEBUG
+    }
+    else
+#endif
+    {
+        intervals_1.emplace_back(theRegisterType, allRegs(theRegisterType));
+        newInt = &intervals_1.back();
+#ifdef DEBUG
+        newInt->intervalIndex = static_cast<unsigned>(intervals_1.size() - 1);
+#endif // DEBUG
+    }
 
     DBEXEC(VERBOSE, newInt->dump());
     return newInt;
@@ -1453,7 +1466,21 @@ void LinearScan::makeUpperVectorInterval(unsigned varIndex)
 Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 {
     // TODO-Throughput: Consider creating a map from varIndex to upperVector interval.
-    for (Interval& interval : intervals)
+    for (Interval& interval : intervals_1)
+    {
+        if (interval.isLocalVar)
+        {
+            continue;
+        }
+        noway_assert(interval.isUpperVector);
+        if (interval.relatedInterval->getVarIndex(compiler) == varIndex)
+        {
+            return &interval;
+        }
+    }
+
+    // TODO-Throughput: Consider creating a map from varIndex to upperVector interval.
+    for (Interval& interval : intervals_2)
     {
         if (interval.isLocalVar)
         {

@@ -11,6 +11,7 @@
 
 // Minor and forward-reference types
 class Interval;
+class Interval2;
 class RefPosition;
 class LinearScan;
 class RegRecord;
@@ -444,7 +445,8 @@ inline bool RefTypeIsDef(RefType refType)
 
 typedef regNumberSmall* VarToRegMap;
 
-typedef jitstd::list<Interval>                      IntervalList;
+typedef jitstd::list<Interval>                      IntervalList_1;
+typedef jitstd::list<Interval2>                     IntervalList_2;
 typedef jitstd::list<RefPosition>                   RefPositionList;
 typedef jitstd::list<RefPosition>::iterator         RefPositionIterator;
 typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
@@ -1498,7 +1500,8 @@ private:
     RefPosition* activeRefPosition;
 #endif // DEBUG
 
-    IntervalList intervals;
+    IntervalList_1 intervals_1;
+    IntervalList_2 intervals_2;
 
     RegRecord physRegs[REG_COUNT];
 
@@ -1703,11 +1706,17 @@ private:
         makeRegsAvailable(regMask);
     }
 
-    void clearNextIntervalRef(regNumber reg, var_types regType);
+    
     void updateNextIntervalRef(regNumber reg, Interval* interval);
-
-    void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
+
+    void clearSpillCost_regType(regNumber reg, var_types regType);
+    void clearSpillCost(regNumber reg, Interval* interval);
+    void clearSpillCost(regNumber reg, RegRecord* regRecord);
+
+    void clearNextIntervalRef_regType(regNumber reg, var_types regType);
+    void clearNextIntervalRef(regNumber reg, Interval* interval);
+    void clearNextIntervalRef(regNumber reg, RegRecord* regRecord);
 
     regMaskTP m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
@@ -1970,11 +1979,13 @@ public:
 #endif
         , isWriteThru(false)
         , isSingleDef(false)
+        , regCount(1)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
     {
     }
+
 
 #ifdef DEBUG
     // print out representation
@@ -2067,6 +2078,10 @@ public:
 
     // True if this interval has a single definition.
     bool isSingleDef : 1;
+
+    // Number of registers associated with this interval.
+    // Most often it will be 1.
+    unsigned int regCount : 2;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
@@ -2214,6 +2229,15 @@ public:
 
         // Now merge the new preferences.
         mergeRegisterPreferences(preferences);
+    }
+};
+
+class Interval2 : public Interval
+{
+public:
+    Interval2(RegisterType registerType, regMaskTP registerPreferences) : Interval(registerType, registerPreferences)
+    {
+        regCount = 2;
     }
 };
 
