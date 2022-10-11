@@ -147,7 +147,7 @@ namespace HelloFrozenSegment
 
         private static unsafe int Main(string[] args)
         {
-            Node template = new Node();
+            IntPtr methodTable = typeof(Node).TypeHandle.Value;
             IntPtr methodTable = GetMethodTablePointer(template);
 
             FrozenSegmentBuilder frozenSegmentBuilder = new FrozenSegmentBuilder(1000);
