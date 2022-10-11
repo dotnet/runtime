@@ -439,7 +439,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
         internal MonoSDBHelper SdbAgent { get; init; }
-        public TaskCompletionSource<DebugStore> Source { get; set; } = new TaskCompletionSource<DebugStore>();
+        public TaskCompletionSource<DebugStore> Source { get; private set; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
