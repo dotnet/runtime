@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- Needed for .NET Framework. -->
+    <GenerateDependencyFile>true</GenerateDependencyFile>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- CS0436: DynamicallyAccessedMemberTypes conflicts with imported type -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn);CS0436</NoWarn>
@@ -21,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />

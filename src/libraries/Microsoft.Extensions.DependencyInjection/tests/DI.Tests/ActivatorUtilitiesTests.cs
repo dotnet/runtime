@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using Moq;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -30,6 +31,23 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void CreateInstance_OneCtor_IsRegistered_CreatesInstanceSuccessfully()
         {
             var services = new ServiceCollection();
+            services.AddScoped<A>();
+            using var provider = services.BuildServiceProvider();
+
+            var instance = ActivatorUtilities.CreateInstance<ClassWithA>(provider);
+            Assert.NotNull(instance.A);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CreateInstance_OneCtorRegistered_IncorrectIServiceProviderIsService_CreatesInstanceSuccessfully(bool isService)
+        {
+            var mockedService = new Mock<IServiceProviderIsService>();
+            mockedService.Setup(r => r.IsService(It.IsAny<Type>()))
+                .Returns(isService);
+            var services = new ServiceCollection();
+            services.AddScoped<IServiceProviderIsService>(p => mockedService.Object);
             services.AddScoped<A>();
             using var provider = services.BuildServiceProvider();
 
