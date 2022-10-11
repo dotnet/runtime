@@ -47,8 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // (b) matches the rest of ctor arguments as either a parameter with a default value or as a service registered
             // if no such match is found we fallback to the same logic used by CreateFactory which would only allow creating an
             // instance if all parameters given to CreateInstance only match with a single ctor
-            if (serviceProviderIsService != null &&
-                serviceProviderIsService.IsService(typeof(IServiceProviderIsService)))
+            if (serviceProviderIsService != null)
             {
                 int bestLength = -1;
                 bool seenPreferred = false;
