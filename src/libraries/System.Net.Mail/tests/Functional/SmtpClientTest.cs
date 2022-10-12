@@ -491,10 +491,21 @@ namespace System.Net.Mail.Tests
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
-        [Fact]
-        public async Task SendMailAsync_CanBeCanceled_CancellationToken_Loop()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        public async Task SendMailAsync_CanBeCanceled_CancellationToken_Loop(int ignore)
         {
-            for (int i = 0; i < 1000; ++i)
+            
+            for (int i = 0; i < ignore * 100; ++i)
             {
                 await SendMailAsync_CanBeCanceled_CancellationToken();
             }
