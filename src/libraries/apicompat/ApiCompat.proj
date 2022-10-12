@@ -41,7 +41,9 @@
 
   <Target Name="RunApiCompat"
           DependsOnTargets="FindReferenceAssembliesForReferences;CollectApiCompatInputs"
-          AfterTargets="Build">
+          AfterTargets="Build"
+          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
+          Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
     <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and .NETCoreApp$(NetCoreAppLatestStableVersion)..." Importance="high"  />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppLatestStable -->
