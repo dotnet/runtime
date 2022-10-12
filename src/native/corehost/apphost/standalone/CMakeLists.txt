@@ -30,7 +30,6 @@ set(HEADERS
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
-        ../apphost.rc
         ../apphost.windows.cpp)
 
     list(APPEND HEADERS

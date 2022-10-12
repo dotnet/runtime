@@ -4,7 +4,6 @@
 #include "apphost.windows.h"
 #include "error_codes.h"
 #include "pal.h"
-#include "resource.windows.h"
 #include "trace.h"
 #include "utils.h"
 
@@ -92,24 +91,39 @@ namespace
     class activation_context final
     {
     public:
-        activation_context(const pal::char_t* source, const pal::char_t* resource_name)
+        activation_context()
             : m_activated{false}
             , m_context_handle{INVALID_HANDLE_VALUE}
             , m_cookie{}
         {
-            ACTCTXW actctx = { sizeof(ACTCTXW), 0, source };
-            if (resource_name != nullptr)
+            // Create an activation context using a manifest that enables visual styles
+            // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
+            // To avoid increasing the size of all applications by embedding manifest,
+            // we just use the WindowsShell manifest.
+            pal::char_t buf[MAX_PATH];
+            UINT len = ::GetWindowsDirectoryW(buf, MAX_PATH);
+            if (len == 0 || len >= MAX_PATH)
             {
-                actctx.lpResourceName = resource_name;
-                actctx.dwFlags = ACTCTX_FLAG_RESOURCE_NAME_VALID;
+                trace::verbose(_X("GetWindowsDirectory failed. Error code: %d"), ::GetLastError());
+                return;
             }
 
+            pal::string_t manifest(buf);
+            append_path(&manifest, _X("WindowsShell.Manifest"));
+
+            ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
             m_context_handle = ::CreateActCtxW(&actctx);
             if (m_context_handle == INVALID_HANDLE_VALUE)
+            {
+                trace::verbose(_X("CreateActCtxW failed using manifest '%s'. Error code: %d"), manifest.c_str(), ::GetLastError());
                 return;
+            }
 
             if (::ActivateActCtx(m_context_handle, &m_cookie) == FALSE)
+            {
+                trace::verbose(_X("ActivateActCtx failed. Error code: %d"), ::GetLastError());
                 return;
+            }
 
             m_activated = true;
         }
@@ -225,9 +239,7 @@ namespace
         assert(is_gui_application());
         url.append(_X("&gui=true"));
 
-        // Create an activation context using a manifest that enables visual styles
-        // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
-        activation_context ctx(executable_path, MAKEINTRESOURCEW(IDR_ACTCTX_MANIFEST));
+        activation_context ctx;
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - dialog message: %s"), executable_name, error_code, url.c_str(), dialogMsg.c_str());
         if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
