@@ -1802,6 +1802,7 @@ size_t Lowering::MarkPutArgNodes(GenTree* node)
     }
     else
     {
+        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
         node->gtLIRFlags |= LIR::Flags::Mark;
         result++;
     }
