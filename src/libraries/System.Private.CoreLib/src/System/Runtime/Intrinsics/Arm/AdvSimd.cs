@@ -3432,14 +3432,14 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ushort> TransposeOdd(Vector128<ushort> left, Vector128<ushort> right) => TransposeOdd(left, right);
 
             /// <summary>
-            /// uint32x4_t vtrn1q_u32(uint32x4_t a, uint32x4_t b)
-            ///   A64: TRN1 Vd.4S, Vn.4S, Vm.4S
+            /// uint32x4_t vtrn2q_u32(uint32x4_t a, uint32x4_t b)
+            ///   A64: TRN2 Vd.4S, Vn.4S, Vm.4S
             /// </summary>
             public static Vector128<uint> TransposeOdd(Vector128<uint> left, Vector128<uint> right) => TransposeOdd(left, right);
 
             /// <summary>
-            /// uint64x2_t vtrn1q_u64(uint64x2_t a, uint64x2_t b)
-            ///   A64: TRN1 Vd.2D, Vn.2D, Vm.2D
+            /// uint64x2_t vtrn2q_u64(uint64x2_t a, uint64x2_t b)
+            ///   A64: TRN2 Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> TransposeOdd(Vector128<ulong> left, Vector128<ulong> right) => TransposeOdd(left, right);
 
