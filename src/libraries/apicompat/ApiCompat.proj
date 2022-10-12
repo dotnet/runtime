@@ -53,7 +53,7 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
-      EnableRuleAttributesMustMatch="true"
+      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
@@ -65,7 +65,7 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard21BaselineFile)"
-      EnableRuleAttributesMustMatch="true"
+      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
@@ -77,7 +77,7 @@
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
       CompatibilitySuppressionFilePath="$(ApiCompatNetStandard20BaselineFile)"
-      EnableRuleAttributesMustMatch="true"
+      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
