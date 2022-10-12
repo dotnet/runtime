@@ -14,7 +14,7 @@ namespace System.Text.Json
         internal JsonSeparatorNamingPolicy(bool lowercase, char separator) =>
             (_lowercase, _separator) = (lowercase, separator);
 
-        public override string ConvertName(string name)
+        public sealed override string ConvertName(string name)
         {
             // Rented buffer 20% longer that the input.
             int bufferLength = (12 * name.Length) / 10;
