@@ -1221,7 +1221,7 @@ namespace System.Xml
                 }
             }
 
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
+            if (!_ps.chars.AsSpan(_ps.charPos).StartsWith(XmlDeclarationBeginning) ||
                  XmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
@@ -1318,10 +1318,10 @@ namespace System.Xml
                 int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
 
                 NodeData? attr = null;
-                switch (_ps.chars[_ps.charPos])
+                switch (_ps.chars.AsSpan(_ps.charPos, nameEndPos - _ps.charPos))
                 {
-                    case 'v':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "version") && xmlDeclState == 0)
+                    case "version":
+                        if (xmlDeclState == 0)
                         {
                             if (!isTextDecl)
                             {
@@ -1330,9 +1330,8 @@ namespace System.Xml
                             break;
                         }
                         goto default;
-                    case 'e':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "encoding") &&
-                            (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0)))
+                    case "encoding":
+                        if (xmlDeclState == 1 || (isTextDecl && xmlDeclState == 0))
                         {
                             if (!isTextDecl)
                             {
@@ -1342,9 +1341,8 @@ namespace System.Xml
                             break;
                         }
                         goto default;
-                    case 's':
-                        if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
-                             (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
+                    case "standalone":
+                        if ((xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
                             attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
@@ -1410,7 +1408,7 @@ namespace System.Xml
                         // version
                         case 0:
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
-                            if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "1.0"))
+                            if (_ps.chars.AsSpan(_ps.charPos).StartsWith("1.0"))
                             {
                                 if (!isTextDecl)
                                 {
@@ -1434,18 +1432,18 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "yes"))
+                            switch (_ps.chars.AsSpan(_ps.charPos, pos - _ps.charPos))
                             {
-                                _standalone = true;
-                            }
-                            else if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "no"))
-                            {
-                                _standalone = false;
-                            }
-                            else
-                            {
-                                Debug.Assert(!isTextDecl);
-                                Throw(SR.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
+                                case "yes":
+                                    _standalone = true;
+                                    break;
+                                case "no":
+                                    _standalone = false;
+                                    break;
+                                default:
+                                    Debug.Assert(!isTextDecl);
+                                    Throw(SR.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
+                                    break;
                             }
                             if (!isTextDecl)
                             {
@@ -1561,7 +1559,7 @@ namespace System.Xml
                                     {
                                         return ParseDocumentContentAsync_ReadData(needMoreChars);
                                     }
-                                    if (XmlConvert.StrEqual(chars, pos, 6, "CDATA["))
+                                    if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         return ParseCDataAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ParseDocumentContentAsync_CData(), this);
@@ -1815,7 +1813,7 @@ namespace System.Xml
                                     {
                                         return ParseElementContent_ReadData();
                                     }
-                                    if (XmlConvert.StrEqual(chars, pos, 6, "CDATA["))
+                                    if (chars.AsSpan(pos).StartsWith("CDATA["))
                                     {
                                         _ps.charPos = pos + 6;
                                         return ParseCDataAsync().ReturnTrueTaskWhenFinishAsync();
@@ -2010,7 +2008,7 @@ namespace System.Xml
             {
                 int startPos = _ps.charPos;
                 int prefixLen = colonPos - startPos;
-                if (prefixLen == _lastPrefix.Length && XmlConvert.StrEqual(chars, startPos, prefixLen, _lastPrefix))
+                if (prefixLen == _lastPrefix.Length && chars.AsSpan(startPos).StartsWith(_lastPrefix))
                 {
                     _curNode.SetNamedNode(XmlNodeType.Element,
                                           _nameTable.Add(chars, colonPos + 1, pos - colonPos - 1),
@@ -2152,7 +2150,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
             if (startTagNode.prefix.Length == 0)
             {
-                if (!XmlConvert.StrEqual(chars, _ps.charPos, locLen, startTagNode.localName))
+                if (!chars.AsSpan(_ps.charPos).StartsWith(startTagNode.localName))
                 {
                     return ThrowTagMismatchAsync(startTagNode);
                 }
@@ -2161,9 +2159,9 @@ namespace System.Xml
             else
             {
                 int colonPos = _ps.charPos + prefLen;
-                if (!XmlConvert.StrEqual(chars, _ps.charPos, prefLen, startTagNode.prefix) ||
+                if (!chars.AsSpan(_ps.charPos).StartsWith(startTagNode.prefix) ||
                         chars[colonPos] != ':' ||
-                        !XmlConvert.StrEqual(chars, colonPos + 1, locLen, startTagNode.localName))
+                        !chars.AsSpan(colonPos + 1).StartsWith(startTagNode.localName))
                 {
                     return ThrowTagMismatchAsync(startTagNode);
                 }
@@ -4467,7 +4465,7 @@ namespace System.Xml
                     Throw(SR.Xml_UnexpectedEOF, "DOCTYPE");
                 }
             }
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 7, "DOCTYPE"))
+            if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("DOCTYPE"))
             {
                 ThrowUnexpectedToken((!_rootElementParsed && _dtdInfo == null) ? "DOCTYPE" : "<!--");
             }
@@ -4551,7 +4549,7 @@ namespace System.Xml
                     }
                 }
                 // check 'PUBLIC'
-                if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 6, "PUBLIC"))
+                if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("PUBLIC"))
                 {
                     ThrowUnexpectedToken("PUBLIC");
                 }
@@ -4588,7 +4586,7 @@ namespace System.Xml
                     }
                 }
                 // check 'SYSTEM'
-                if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 6, "SYSTEM"))
+                if (!_ps.chars.AsSpan(_ps.charPos).StartsWith("SYSTEM"))
                 {
                     ThrowUnexpectedToken("SYSTEM");
                 }

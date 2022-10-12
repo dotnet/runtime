@@ -2,7 +2,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(PALRT_SOURCES
-    coguid.cpp
     comem.cpp
     guid.cpp
     memorystream.cpp

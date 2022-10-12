@@ -51,7 +51,7 @@ namespace System.Data.Common
             // SxS: clearing error information is considered safe
             internal static void ClearErrorInfo()
             {
-                Interop.OleAut32.SetErrorInfo(0, ADP.PtrZero);
+                Interop.OleAut32.SetErrorInfo(0, IntPtr.Zero);
             }
         }
     }

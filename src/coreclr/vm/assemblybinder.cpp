@@ -45,30 +45,28 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
     static const size_t MVID_TEXT_LENGTH = 39;
-    WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(mvidActual, assemblyMvidText, MVID_TEXT_LENGTH);
+    CHAR assemblyMvidText[MVID_TEXT_LENGTH];
+    GuidToLPSTR(mvidActual, assemblyMvidText);
 
-    WCHAR componentMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(mvidExpected, componentMvidText, MVID_TEXT_LENGTH);
+    CHAR componentMvidText[MVID_TEXT_LENGTH];
+    GuidToLPSTR(mvidExpected, componentMvidText);
 
     SString message;
     if (compositeComponent)
     {
-        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-            SString(SString::Utf8, simpleName).GetUnicode(),
+        message.Printf("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)",
+            simpleName,
             assemblyMvidText,
-            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            assemblyRequirementName,
             componentMvidText);
     }
     else
     {
-        SString simpleNameUtf8(SString::Utf8, simpleName);
-
-        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and version of assembly '%s' expected by assembly '%s' (MVID = %s)"),
-            simpleNameUtf8.GetUnicode(),
+        message.Printf("MVID mismatch between loaded assembly '%s' (MVID = %s) and version of assembly '%s' expected by assembly '%s' (MVID = %s)",
+            simpleName,
             assemblyMvidText,
-            simpleNameUtf8.GetUnicode(),
-            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            simpleName,
+            assemblyRequirementName,
             componentMvidText);
     }
 

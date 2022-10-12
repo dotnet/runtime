@@ -107,7 +107,8 @@ OPDEF(MINT_STSFLD_W, "stsfld.w", 8, 0, 1, MintOpTwoInts)
 OPDEF(MINT_LDSFLDA, "ldsflda", 4, 1, 0, MintOpTwoShorts)
 OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
 
-OPDEF(MINT_MOV_OFF, "mov.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
 
 OPDEF(MINT_MOV_I1, "mov.i1", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_U1, "mov.u1", 3, 1, 1, MintOpNoArgs)
@@ -410,7 +411,6 @@ OPDEF(MINT_STELEM_REF, "stelem.ref", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_LDLEN_SPAN, "ldlen.span", 4, 1, 1, MintOpShortInt)
 
 OPDEF(MINT_GETITEM_SPAN, "getitem.span", 7, 1, 2, MintOpTwoShorts)
 

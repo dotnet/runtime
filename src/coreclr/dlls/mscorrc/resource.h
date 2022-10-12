@@ -175,9 +175,6 @@
 #define IDS_PERFORMANCEMON_PSAPINOTFOUND        0x17bd
 #define IDS_PERFORMANCEMON_PSAPINOTFOUND_TITLE  0x17be
 
-#define IDS_DEBUG_UNHANDLED_EXCEPTION_MSG       0x17c0
-#define IDS_DEBUG_USER_BREAKPOINT_MSG           0x17c1
-
 #define IDS_INVALID_REDIM                       0x17c3
 #define IDS_INVALID_PINVOKE_CALLCONV            0x17c4
 #define IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   0x17c7
@@ -478,8 +475,8 @@
 #define IDS_ER_STACK_OVERFLOW                   0x208a
 #define IDS_ER_STACK                            0x208b
 #define IDS_ER_WORDAT                           0x208c
-#define IDS_ER_UNMANAGEDFAILFASTMSG             0x208d
-#define IDS_ER_UNHANDLEDEXCEPTIONINFO           0x208e
+
+
 #define IDS_ER_MESSAGE_TRUNCATE                 0x208f
 
 #define IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  0x2090
@@ -488,8 +485,6 @@
 #define IDS_EE_BADMARSHALFIELD_DECIMAL          0x2099
 
 #define IDS_EE_CANNOTCASTSAME                   0x209a
-#define IDS_EE_CANNOTCAST_HELPER_BYTE           0x209b
-#define IDS_EE_CANNOTCAST_HELPER_PATH           0x209c
 
 // For ForwardInteropStubAttribute
 #ifdef FEATURE_COMINTEROP

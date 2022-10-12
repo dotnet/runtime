@@ -260,7 +260,7 @@
 
     <!-- for testing with workloads, we use separate items -->
     <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>

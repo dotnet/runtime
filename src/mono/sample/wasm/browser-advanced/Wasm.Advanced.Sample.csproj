@@ -4,8 +4,12 @@
     <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- add OpenGL emulation -->
+    <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL</EmccExtraLDFlags>
   </PropertyGroup>
   <ItemGroup>
+    <!-- add export GL object from Module -->
+    <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>

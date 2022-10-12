@@ -2173,7 +2173,7 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
 
 LPWSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen)
 {
-    StringFromGUID2(inGuid, guidString, bufLen);
+    GuidToLPWSTR(inGuid, guidString, bufLen);
     return guidString;
 } // LPWSTR MDInfo::GUIDAsString()
 
