@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -520,8 +521,6 @@ namespace System.Xml.Schema
         }
 
         protected DatatypeImplementation? Base { get { return _baseType; } }
-
-        internal abstract Type ListValueType { get; }
 
         internal abstract RestrictionFlags ValidRestrictionFlags { get; }
 
@@ -1126,8 +1125,8 @@ namespace System.Xml.Schema
 
                     values.Add(typedValue);
                 }
-                array = values.ToArray(_itemType.ValueType);
-                Debug.Assert(array.GetType() == ListValueType);
+                Debug.Assert(_itemType.ListValueType.GetElementType() == _itemType.ValueType);
+                array = ToArray(values, _itemType.ListValueType);
             }
             if (values.Count < _minListSize)
             {
@@ -1143,6 +1142,12 @@ namespace System.Xml.Schema
 
         Error:
             return exception;
+
+            // TODO: Replace with https://github.com/dotnet/runtime/issues/76478 once available
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+                Justification = "Array type is always present as it is passed in as a parameter.")]
+            static Array ToArray(ArrayList values, Type arrayType)
+                => values.ToArray(arrayType.GetElementType()!);
         }
     }
 

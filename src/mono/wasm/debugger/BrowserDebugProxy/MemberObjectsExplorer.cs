@@ -64,12 +64,8 @@ namespace BrowserDebugProxy
                 typePropertiesBrowsableInfo.TryGetValue(field.Name, out state);
             }
             fieldValue["__state"] = state?.ToString();
-
-            fieldValue["__section"] = field.Attributes switch
-            {
-                FieldAttributes.Private => "private",
-                _ => "result"
-            };
+            fieldValue["__section"] = field.Attributes.HasFlag(FieldAttributes.Private)
+                ? "private" : "result";
 
             if (field.IsBackingField)
             {

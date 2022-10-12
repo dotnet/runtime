@@ -586,7 +586,7 @@ namespace Internal.Runtime.TypeLoader
 
         private class IntPtrCell : GenericDictionaryCell
         {
-            internal IntPtr Value;
+            internal nint Value;
             internal override unsafe void Prepare(TypeBuilder builder)
             {
             }

@@ -128,7 +128,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int MinimumObjectSize => _type.Context.Target.PointerSize * 3;
+        public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
+
+        public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
+            => typeSystemContext.Target.PointerSize * 3;
 
         protected virtual bool EmitVirtualSlotsAndInterfaces => false;
 
@@ -1053,7 +1056,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!relocsOnly && MightHaveInterfaceDispatchMap(factory))
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(Type).IndexFromBeginningOfArray));
+                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
             }
 
             ComputeRareFlags(factory, relocsOnly);

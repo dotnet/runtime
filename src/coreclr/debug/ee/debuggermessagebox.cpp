@@ -113,7 +113,9 @@ static int UtilMessageBoxNonLocalized(
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #ifdef HOST_UNIX
         StackSString message;
-        message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
+        message.Append(W(".NET Runtime version : "));
+        message.Append(CLR_PRODUCT_VERSION_L);
+        message.Append(W(" - "));
         message.Append(lpTitle);
         message.Append(lpText);
 

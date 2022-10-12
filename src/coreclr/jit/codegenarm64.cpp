@@ -2527,7 +2527,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
-        assert(!(tree->gtFlags & GTF_SET_FLAGS));
+
+        // These operations cannot set flags
+        assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2560,8 +2562,141 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         genProduceReg(tree);
         return;
     }
+    else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
 
-    if (tree->OperIs(GT_AND) && op2->isContainedAndNotIntOrIImmed())
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        // The shift amount needs to be contained as well
+        assert(c->isContained() && c->IsCnsIntOrI());
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                case GT_AND:
+                {
+                    ins = INS_ands;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
+
+        switch (op2->gtOper)
+        {
+            case GT_LSH:
+            {
+                opt = INS_OPTS_LSL;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                opt = INS_OPTS_ASR;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                opt = INS_OPTS_LSR;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
+                              c->AsIntConCommon()->IconValue(), opt);
+
+        genProduceReg(tree);
+        return;
+    }
+    else if (op2->OperIs(GT_CAST) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
+
+        GenTree* a = op1;
+        GenTree* b = op2->AsCast()->CastOp();
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
+
+        bool isZeroExtending = op2->AsCast()->IsZeroExtending();
+
+        if (varTypeIsByte(op2->CastToType()))
+        {
+            opt = isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB;
+        }
+        else if (varTypeIsShort(op2->CastToType()))
+        {
+            opt = isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH;
+        }
+        else
+        {
+            assert(op2->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
+            opt = isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+        }
+
+        emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
+
+        genProduceReg(tree);
+        return;
+    }
+
+    if (tree->isContainedCompareChainSegment(op2))
     {
         GenCondition cond;
         bool         chain = false;
@@ -2684,9 +2819,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     unsigned   varNum = tree->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
     GenTree* data = tree->gtOp1;
     genConsumeRegs(data);
@@ -10482,54 +10614,6 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);
 
-    genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForAddEx: Generates the code sequence for a GenTree node that
-// represents an addition with sign or zero extended
-//
-// Arguments:
-//    tree - the add with extend node.
-//
-void CodeGen::genCodeForAddEx(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_ADDEX));
-    genConsumeOperands(tree);
-
-    GenTree* op;
-    GenTree* containedOp;
-    if (tree->gtGetOp1()->isContained())
-    {
-        containedOp = tree->gtGetOp1();
-        op          = tree->gtGetOp2();
-    }
-    else
-    {
-        containedOp = tree->gtGetOp2();
-        op          = tree->gtGetOp1();
-    }
-    assert(containedOp->isContained() && !op->isContained());
-
-    regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = op->GetRegNum();
-    regNumber op2Reg = containedOp->gtGetOp1()->GetRegNum();
-
-    if (containedOp->OperIs(GT_CAST))
-    {
-        GenTreeCast* cast = containedOp->AsCast();
-        assert(varTypeIsLong(cast->CastToType()));
-        insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-        GetEmitter()->emitIns_R_R_R(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
-                                    op2Reg, opts);
-    }
-    else
-    {
-        assert(containedOp->OperIs(GT_LSH));
-        ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
-        GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
-                                      op2Reg, cns, INS_OPTS_LSL);
-    }
     genProduceReg(tree);
 }
 

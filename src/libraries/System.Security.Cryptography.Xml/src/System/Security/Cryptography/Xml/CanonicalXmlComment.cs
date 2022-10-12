@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
         private bool _isInNodeSet;
         private readonly bool _includeComments;
 
-        public CanonicalXmlComment(string comment, XmlDocument doc, bool defaultNodeSetInclusionState, bool includeComments)
+        public CanonicalXmlComment(string? comment, XmlDocument doc, bool defaultNodeSetInclusionState, bool includeComments)
             : base(comment, doc)
         {
             _isInNodeSet = defaultNodeSetInclusionState;
@@ -49,19 +49,22 @@ namespace System.Security.Cryptography.Xml
             if (!IsInNodeSet || !IncludeComments)
                 return;
 
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            byte[] rgbData = utf8.GetBytes("(char) 10");
+            byte[] rgbData;
             if (docPos == DocPosition.AfterRootElement)
+            {
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes("<!--");
+            }
+
+            rgbData = "<!--"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes(Value);
+            rgbData = Encoding.UTF8.GetBytes(Value!);
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes("-->");
+            rgbData = "-->"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             if (docPos == DocPosition.BeforeRootElement)
             {
-                rgbData = utf8.GetBytes("(char) 10");
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }

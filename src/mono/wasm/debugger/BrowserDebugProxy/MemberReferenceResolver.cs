@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using BrowserDebugProxy;
 using System.Globalization;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -577,7 +578,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
                 }
-                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], methodName, token);
+                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], methodName, BindingFlags.Default, token);
                 if (methodIds == null)
                 {
                     //try to search on System.Linq.Enumerable
@@ -683,7 +684,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                int[] newMethodIds = await context.SdbAgent.GetMethodIdsByName(linqTypeId, methodName, token);
+                int[] newMethodIds = await context.SdbAgent.GetMethodIdsByName(linqTypeId, methodName, BindingFlags.Default, token);
                 if (newMethodIds == null)
                     return 0;
 

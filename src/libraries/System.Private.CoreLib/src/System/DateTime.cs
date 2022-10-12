@@ -1170,11 +1170,7 @@ namespace System
         //
         public override bool Equals([NotNullWhen(true)] object? value)
         {
-            if (value is DateTime)
-            {
-                return Ticks == ((DateTime)value).Ticks;
-            }
-            return false;
+            return value is DateTime dt && this == dt;
         }
 
         public bool Equals(DateTime value)

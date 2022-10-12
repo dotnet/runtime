@@ -3007,7 +3007,7 @@ namespace System.IO.Tests
 
                 if (FlushGuaranteesAllDataWritten)
                 {
-                    AssertExtensions.SequenceEqual(data, buffer.AsSpan().Slice(0, bytesRead));
+                    AssertExtensions.SequenceEqual(data, buffer.AsSpan(0, bytesRead));
                 }
             }
         }

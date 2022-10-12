@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_random.c
     pal_rsa.c
     pal_sec.c
@@ -30,13 +31,31 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
 else()
     set(NATIVECRYPTO_SOURCES
         ${NATIVECRYPTO_SOURCES}
+        pal_swiftbindings.o
         pal_keychain_macos.c
-        pal_keyderivation_macos.c
         pal_seckey_macos.c
         pal_trust_macos.c
         pal_x509_macos.c
     )
 endif()
+
+# As of CMake 3.20.2 support for Swift only works with the Ninja and XCode
+# generators so we cannot rely on it. Even with the Ninja generator it doesn't
+# work in combination with other languages within the same library.
+if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
+    set(SWIFT_PLATFORM "macosx")
+    set(SWIFT_PLATFORM_SUFFIX "")
+    set(SWIFT_DEPLOYMENT_TARGET ${CMAKE_OSX_DEPLOYMENT_TARGET})
+    set(SWIFT_COMPILER_TARGET "${CMAKE_OSX_ARCHITECTURES}-apple-${SWIFT_PLATFORM}${SWIFT_DEPLOYMENT_TARGET}${SWIFT_PLATFORM_SUFFIX}")
+endif()
+
+add_custom_command(
+    OUTPUT pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
+    COMMENT "Compiling Swift file pal_swiftbindings.swift"
+)
+set_source_files_properties(pal_swiftbindings.o PROPERTIES EXTERNAL_OBJECT true GENERATED true)
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
     add_definitions(-DTARGET_MACCATALYST)

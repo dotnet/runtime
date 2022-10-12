@@ -801,7 +801,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private DebugStore store;
         private SessionId sessionId;
 
-        private readonly ILogger logger;
+        internal readonly ILogger logger;
         private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
@@ -1623,6 +1623,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     dispAttrStr = dispAttrStr.Replace(",nq", "");
                 }
+                if (dispAttrStr.Contains(", raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(", raw", "");
+                }
+                if (dispAttrStr.Contains(",raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(",raw", "");
+                }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
@@ -1743,7 +1751,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, CancellationToken token)
+        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, BindingFlags extraFlags, CancellationToken token)
         {
             if (type_id <= 0)
                 throw new DebuggerAgentException($"Invalid type_id {type_id} (method_name: {method_name}");
@@ -1751,7 +1759,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.Write(method_name);
-            commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
+            commandParamsWriter.Write((int)(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | extraFlags));
             commandParamsWriter.Write((int)1); //case sensitive
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetMethodsByNameFlags, commandParamsWriter, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
@@ -1843,6 +1851,38 @@ namespace Microsoft.WebAssembly.Diagnostics
             return dotnetObjectId.Scheme is "object" or "valuetype"
                 ? InvokeMethod(dotnetObjectId.Value, methodId, isValueType: dotnetObjectId.IsValueType, token)
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
+        }
+
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        {
+            try
+            {
+                foreach (var typeId in typeIds)
+                {
+                    var typeInfo = await GetTypeInfo(typeId, token);
+                    if (typeInfo == null || typeInfo.Name == "object")
+                        continue;
+                    Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
+                    if (isEnum != true && methodInfo == null)
+                        continue;
+                    int[] methodIds = await GetMethodIdsByName(typeId, "ToString", extraFlags, token);
+                    if (methodIds == null)
+                        continue;
+                    foreach (var methodId in methodIds)
+                    {
+                        var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
+                        if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                            continue;
+                        var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
+                        return retMethod["value"]?["value"].Value<string>();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Error while evaluating ToString method: {e}");
+            }
+            return null;
         }
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
@@ -2175,7 +2215,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         cAttrTypeId = genericTypeId;
                     }
-                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", token);
+                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", BindingFlags.Default, token);
                     if (methodIds != null)
                         methodId = methodIds[0];
                     break;

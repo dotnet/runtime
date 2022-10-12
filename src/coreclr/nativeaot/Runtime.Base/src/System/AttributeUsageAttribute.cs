@@ -14,7 +14,7 @@ namespace System
 {
     /* By default, attributes are inherited and multiple attributes are not allowed */
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
-    internal sealed class AttributeUsageAttribute : Attribute
+    public sealed class AttributeUsageAttribute : Attribute
     {
         //Constructors
         public AttributeUsageAttribute(AttributeTargets validOn)

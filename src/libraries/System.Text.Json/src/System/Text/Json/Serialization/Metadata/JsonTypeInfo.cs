@@ -731,7 +731,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (!_isConfigured)
                     {
-                        // Ensure SourceGen had a chance to add properties
                         LateAddProperties();
                         _properties = new(this);
                         return;
@@ -876,12 +875,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                // Resolver didn't modify properties
-
-                // Source gen currently when initializes properties
-                // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
-                // cycles in the object graph. For that reason properties cannot be added immediately.
-                // This is a no-op for ReflectionJsonTypeInfo
+                // Resolver didn't modify any properties, create the property cache from scratch.
                 LateAddProperties();
                 PropertyCache ??= CreatePropertyCache(capacity: 0);
             }

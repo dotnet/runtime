@@ -788,7 +788,7 @@ namespace System.Reflection.Emit
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
-        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
+        private protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
 
         [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
