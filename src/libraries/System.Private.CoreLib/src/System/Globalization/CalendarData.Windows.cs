@@ -23,6 +23,7 @@ namespace System.Globalization
         private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
         private const uint CAL_SERASTRING = 0x00000004;
         private const uint CAL_SABBREVERASTRING = 0x00000039;
+        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private const uint ENUM_ALL_CALENDARS = 0xffffffff;
 

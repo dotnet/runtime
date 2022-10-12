@@ -23,7 +23,6 @@ namespace System.Globalization
 
         private const uint CAL_RETURN_NUMBER = 0x20000000;
         private const uint CAL_SCALNAME = 0x00000002;
-        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
