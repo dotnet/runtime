@@ -485,7 +485,10 @@ typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlag
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
 typedef bool (* async_pin_enum_fn)(Object* object, void* context);
 
+// Implement pure virtual for NativeAOT Unix (for -p:LinkStandardCPlusPlusLibrary=false the default),
+// to avoid linker requiring __cxa_pure_virtual.
 #if defined(FEATURE_NATIVEAOT) && !defined(TARGET_WINDOWS)
+// `while(true);` is to satisfy the missing `return` statement. It will be optimized away by the compiler.
 #define PURE_VIRTUAL { assert(!"pure virtual function called"); while(true); }
 #else
 #define PURE_VIRTUAL = 0;

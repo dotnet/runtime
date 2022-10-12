@@ -13,7 +13,7 @@
     <IlcTrimMetadata>false</IlcTrimMetadata>
 
     <!--
-      By default, we link libstdc++compat.a, this property is set to exercise code
+      By default, we link libstdc++compat.a, This property is set to exercise code
       with system C++ runtime library (-lstdc++).
     -->
     <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
