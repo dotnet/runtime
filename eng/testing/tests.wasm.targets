@@ -149,13 +149,13 @@
     <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                           Variant="net7"
-                          Version="$(PackageVersion)"
+                          Version="$(PackageVersionForWorkloadManifests)"
                           VersionBand="$(SdkBandVersion)" />
 
     <WorkloadIdForTesting Include="wasm-tools-net6"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                           Variant="net6"
-                          Version="$(PackageVersion)"
+                          Version="$(PackageVersionForWorkloadManifests)"
                           VersionBand="$(SdkBandVersion)"
                           IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                           />
