@@ -6,8 +6,15 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
+#include <stdlib.h>
+#include <stdio.h>
 #include <new>
+
+#ifdef TARGET_WINDOWS
+#define PURE_VIRTUAL = 0;
+#else
+#define PURE_VIRTUAL { assert(!"pure virtual function called"); while(true); }
+#endif
 
 using std::nothrow;
 using std::size_t;
