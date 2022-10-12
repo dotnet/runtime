@@ -14,18 +14,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.IDispatchImplAttribute</Target>
-    <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
-    <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.IDispatchImplType</Target>
-    <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
-    <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.RegistrationClassContext</Target>
     <Left>ref/net7.0/System.Runtime.InteropServices.dll</Left>
     <Right>lib/net7.0/System.Runtime.InteropServices.dll</Right>

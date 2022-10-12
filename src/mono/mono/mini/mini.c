@@ -3027,7 +3027,7 @@ static gboolean
 is_simd_supported (MonoCompile *cfg)
 {
 #ifdef DISABLE_SIMD
-	return FALSE;
+    return FALSE;
 #endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
@@ -3035,10 +3035,6 @@ is_simd_supported (MonoCompile *cfg)
 		return FALSE;
 #else
 	if (cfg->llvm_only)
-		return FALSE;
-	// FIXME We disable simd intrinsics when mixing between llvmaot and jit since the llvm backend could
-	// see that certain simd operations are supported while with jit we fail to emit correct code.
-	if (cfg->compile_aot && cfg->compile_llvm && !cfg->full_aot)
 		return FALSE;
 #endif
 	return TRUE;
@@ -4054,7 +4050,7 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 
 #endif /* DISABLE_JIT */
 
-gint64 mono_time_track_start ()
+gint64 mono_time_track_start (void)
 {
 	return mono_100ns_ticks ();
 }

@@ -2420,7 +2420,7 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
         /* Some loops may have been already removed by
          * loop unrolling or conditional folding */
 
-        if (optLoopTable[loopNum].lpFlags & LPFLG_REMOVED)
+        if (optLoopTable[loopNum].lpIsRemoved())
         {
             continue;
         }
@@ -4988,10 +4988,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         double notTakenCount =
                             ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
                         double totalCount = takenCount + notTakenCount;
-                        double takenRatio = takenCount / totalCount;
 
-                        // If the takenRatio is greater or equal to 51% then we will reverse the branch
-                        if (takenRatio < 0.51)
+                        // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
+                        // the branch
+                        if (takenCount < (0.51 * totalCount))
                         {
                             reorderBlock = false;
                         }

@@ -20,6 +20,7 @@
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
 #define MINT_TYPE_VT 9
+#define MINT_TYPE_VOID 10
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
@@ -346,6 +347,8 @@ enum_type:
 	case MONO_TYPE_GENERICINST:
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto enum_type;
+	case MONO_TYPE_VOID:
+		return MINT_TYPE_VOID;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
