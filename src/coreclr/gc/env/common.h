@@ -12,18 +12,17 @@
  #define _CRT_SECURE_NO_WARNINGS
 #endif // _CRT_SECURE_NO_WARNINGS
 
-#include <cstddef>
-#include <assert.h>
-#include <inttypes.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+#include <assert.h>
+#include <stdarg.h>
+#include <memory.h>
 
-#if defined(FEATURE_NATIVEAOT) && !defined(TARGET_WINDOWS)
-#include "CommonTypes.h"
-#else
 #include <new>
-#endif
 
 #ifdef TARGET_UNIX
 #include <pthread.h>
