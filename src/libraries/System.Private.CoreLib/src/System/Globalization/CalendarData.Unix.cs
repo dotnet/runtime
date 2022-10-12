@@ -21,7 +21,7 @@ namespace System.Globalization
 
             // There is no user override for this value on Linux or in ICU.
             // So just return -1 to use the hard-coded defaults.
-            return -1;
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax : -1;
         }
     }
 }
