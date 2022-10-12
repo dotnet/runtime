@@ -12,13 +12,16 @@ namespace System.Reflection.Metadata
     {
         private const int Size = BlobUtilities.SizeOfGuid + sizeof(uint);
 
-        public Guid Guid { get; }
-        public uint Stamp { get; }
+        private readonly Guid _guid;
+        private readonly uint _stamp;
+
+        public Guid Guid => _guid;
+        public uint Stamp => _stamp;
 
         public BlobContentId(Guid guid, uint stamp)
         {
-            Guid = guid;
-            Stamp = stamp;
+            _guid = guid;
+            _stamp = stamp;
         }
 
         public BlobContentId(ImmutableArray<byte> id)
@@ -28,7 +31,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(id));
             }
 
-            (Guid, Stamp) = Initialize(id.AsSpan());
+            Initialize(id.AsSpan(), out _guid, out _stamp);
         }
 
         public BlobContentId(byte[] id)
@@ -38,10 +41,10 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(id));
             }
 
-            (Guid, Stamp) = Initialize(id);
+            Initialize(id, out _guid, out _stamp);
         }
 
-        private static unsafe (Guid guid, uint stamp) Initialize(ReadOnlySpan<byte> id)
+        private static unsafe void Initialize(ReadOnlySpan<byte> id, out Guid guid, out uint stamp)
         {
             if (id.Length != Size)
             {
@@ -51,10 +54,8 @@ namespace System.Reflection.Metadata
             fixed (byte* ptr = &id[0])
             {
                 var reader = new BlobReader(ptr, id.Length);
-                Guid guid = reader.ReadGuid();
-                uint stamp = reader.ReadUInt32();
-
-                return (guid, stamp);
+                guid = reader.ReadGuid();
+                stamp = reader.ReadUInt32();
             }
         }
 
