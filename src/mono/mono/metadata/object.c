@@ -2460,16 +2460,59 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	MonoObject *res;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
+	gboolean has_byref_nullables = FALSE;
+	void **params_copy = NULL;
+	void **params_arg;
+
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	for (int i = 0; i < sig->param_count; i++) {
+		MonoType *t = sig->params [i];
+		if (t->type == MONO_TYPE_GENERICINST && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			MonoClass *klass = mono_class_from_mono_type_internal (t);
+			MonoObject *boxed_vt = (MonoObject*)params [i];
+			gpointer unboxed_vt = mono_object_unbox_internal (boxed_vt);
+			gpointer nullable_vt = g_alloca (mono_class_value_size (klass, NULL));
+
+			mono_nullable_init_unboxed (nullable_vt, unboxed_vt, klass);
+			if (!params_copy) {
+				params_copy = g_alloca (sig->param_count * sizeof (void*));
+				memcpy (params_copy, params, sig->param_count * sizeof (void*));
+			}
+			params_copy [i] = nullable_vt;
+			if (m_type_is_byref (t))
+				has_byref_nullables = TRUE;
+		}
+	}
+
+	if (params_copy != NULL)
+		params_arg = params_copy;
+	else
+		params_arg = params;
+
 	if (exc) {
-		res = mono_runtime_try_invoke (method, obj, params, exc, error);
+		res = mono_runtime_try_invoke (method, obj, params_arg, exc, error);
 		if (*exc == NULL && !is_ok(error)) {
 			*exc = (MonoObject*) mono_error_convert_to_exception (error);
 		} else
 			mono_error_cleanup (error);
 	} else {
-		res = mono_runtime_invoke_checked (method, obj, params, error);
+		res = mono_runtime_invoke_checked (method, obj, params_arg, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 	}
+
+	if (has_byref_nullables) {
+		// The params_args will contain the ref to the modified nullable. We need
+		// to return it as boxed vt or NULL
+		for (int i = 0; i < sig->param_count; i++) {
+			MonoType *t = sig->params [i];
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+				MonoClass *klass = mono_class_from_mono_type_internal (t);
+				gpointer nullable_vt = params_arg [i];
+				params [i] = mono_nullable_box (nullable_vt, klass, error);
+			}
+		}
+	}
+
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
@@ -4640,6 +4683,106 @@ extract_this_ptr (MonoMethod *method, gpointer this_ptr, MonoObject **res, MonoE
 	return new_this_ptr;
 }
 
+static gpointer
+invoke_array_extract_argument (MonoArray *array, int i, MonoType *t, gboolean* has_byref_nullables, MonoError *error)
+{
+	MonoType *t_orig = t;
+	gpointer result = NULL;
+	error_init (error);
+again:
+	switch (t->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_VALUETYPE:
+			if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type_internal (t_orig))) {
+				// Convert from boxed_vt to pointer to nullable data
+				MonoClass *klass = mono_class_from_mono_type_internal (t_orig);
+				MonoObject *boxed_vt = mono_array_get_internal (array, MonoObject*, i);
+				MONO_HANDLE_PIN (boxed_vt);
+				gpointer unboxed_vt = mono_object_unbox_internal (boxed_vt);
+				MonoObject *nullable = mono_object_new_checked (klass, error);
+				MONO_HANDLE_PIN (nullable);
+				result = mono_object_unbox_internal (nullable);
+				mono_nullable_init_unboxed (result, unboxed_vt, klass);
+				if (m_type_is_byref (t))
+					*has_byref_nullables = TRUE;
+			} else {
+				/* MS seems to create the objects if a null is passed in */
+				gboolean was_null = FALSE;
+				if (!mono_array_get_internal (array, MonoObject*, i)) {
+					MonoObject *o = mono_object_new_checked (mono_class_from_mono_type_internal (t_orig), error);
+					return_val_if_nok (error, NULL);
+					mono_array_setref_internal (array, i, o);
+					was_null = TRUE;
+				}
+				if (m_type_is_byref (t)) {
+					/*
+					 * We can't pass the unboxed vtype byref to the callee, since
+					 * that would mean the callee would be able to modify boxed
+					 * primitive types. So we (and MS) make a copy of the boxed
+					 * object, pass that to the callee, and replace the original
+					 * boxed object in the arg array with the copy.
+					 */
+					MonoObject *orig = mono_array_get_internal (array, MonoObject*, i);
+					MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
+					return_val_if_nok (error, NULL);
+					mono_array_setref_internal (array, i, copy);
+				}
+				result = mono_array_get_internal (array, MonoObject*, i);
+				MONO_HANDLE_PIN (result);
+				result = mono_object_unbox_internal (result);
+				if (!m_type_is_byref (t) && was_null)
+					mono_array_set_internal (array, MonoObject*, i, NULL);
+			}
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			if (m_type_is_byref (t)) {
+				result = mono_array_addr_internal (array, MonoObject*, i);
+			} else {
+				result = mono_array_get_internal (array, MonoObject*, i);
+				MONO_HANDLE_PIN (result);
+			}
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (m_type_is_byref (t))
+				t = m_class_get_this_arg (t->data.generic_class->container_class);
+			else
+				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			goto again;
+		case MONO_TYPE_PTR: {
+			MonoObject *arg;
+			/* The argument should be an IntPtr */
+			arg = mono_array_get_internal (array, MonoObject*, i);
+			if (arg == NULL) {
+				result = NULL;
+			} else {
+				g_assert (arg->vtable->klass == mono_defaults.int_class || arg->vtable->klass == mono_defaults.uint_class);
+				result = ((MonoIntPtr*)arg)->m_value;
+			}
+			break;
+		}
+		default:
+			g_error ("type 0x%x not handled in mono_runtime_invoke_array", t_orig->type);
+	}
+	return result;
+}
+
 /**
  * mono_runtime_invoke_array:
  * \param method method to invoke
@@ -4683,20 +4826,77 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	MonoObject *res;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
+	gpointer *pa = NULL;
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	gboolean has_byref_nullables = FALSE;
+	int param_count = sig->param_count;
+
+	// This method has similar behavior as mono_runtime_try_invoke_byrefs. The only
+	// difference is that one receives an managed array of objects, passed over by
+	// the embedder, while the other one receives an array of byrefs, initialized by
+	// our reflection code. So the only difference lies in transforming these arguments
+	// to what is required by the runtime invoke wrapper.
+
+	if (param_count) {
+		pa = g_newa (gpointer, param_count);
+		for (int i = 0; i < sig->param_count; i++) {
+			MonoType *t = sig->params [i];
+			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, error);
+			goto_if_nok (error, return_error);
+		}
+	}
+	if (!strcmp (method->name, ".ctor") && mono_class_is_nullable (method->klass)) {
+		/* Need to create a boxed vtype instead */
+		g_assert (!obj);
+		res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
+		goto return_res;
+	}
+
+	MonoObject *invoke_res;
+	obj = extract_this_ptr (method, obj, &res, error);
+	goto_if_nok (error, return_error);
+
 	if (exc) {
-		g_error ("FIXME");
-		res = NULL;
+		invoke_res = mono_runtime_try_invoke (method, obj, pa, exc, error);
 		if (*exc) {
 			res = NULL;
 			mono_error_cleanup (error);
-		} else if (!is_ok (error)) {
-			*exc = (MonoObject*)mono_error_convert_to_exception (error);
+			goto return_res;
+		} else {
+			goto_if_nok (error, return_error);
 		}
 	} else {
-		g_error ("FIXME");
-		res = NULL;
+		invoke_res = mono_runtime_invoke_checked (method, obj, pa, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 	}
+
+	if (!res)
+                res = invoke_res;
+	if (sig->ret->type == MONO_TYPE_PTR) {
+		res = mono_boxed_intptr_to_pointer (res, sig->ret, error);
+		goto_if_nok (error, return_error);
+	}
+
+	if (has_byref_nullables) {
+		// The params_args will contain the ref to the modified nullable. We need
+		// to return it as boxed vt or NULL
+		for (int i = 0; i < param_count; i++) {
+			MonoType *t = sig->params [i];
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+				MonoClass *klass = mono_class_from_mono_type_internal (t);
+				MonoObject *boxed_vt = mono_nullable_box (pa [i], klass, error);
+				goto_if_nok (error, return_error);
+				mono_array_setref_internal (params, i, boxed_vt);
+			}
+		}
+	}
+
+	goto return_res;
+return_error:
+	res = NULL;
+	if (exc)
+		*exc = (MonoObject*)mono_error_convert_to_exception (error);
+return_res:
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
