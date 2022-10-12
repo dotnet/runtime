@@ -5,9 +5,6 @@
 
 using System;
 using Newtonsoft.Json.Linq;
-using BrowserDebugProxy;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -15,17 +12,6 @@ internal static class HelperExtensions
 {
     private const int MaxLogMessageLineLength = 65536;
     private static readonly bool TruncateLogMessages = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WASM_DONT_TRUNCATE_LOG_MESSAGES"));
-    private static Dictionary<ProxyInternalUseProperty, string> proxyInternalUsePropNames = new Dictionary<ProxyInternalUseProperty, string>() {
-        { ProxyInternalUseProperty.Hidden, "__hidden" },
-        { ProxyInternalUseProperty.State, "__state" },
-        { ProxyInternalUseProperty.Section, "__section" },
-        { ProxyInternalUseProperty.Owner, "__owner" },
-        { ProxyInternalUseProperty.IsStatic, "__isStatic" },
-        { ProxyInternalUseProperty.IsNewSlot, "__isNewSlot" },
-        { ProxyInternalUseProperty.IsBackingField, "__isBackingField" },
-        { ProxyInternalUseProperty.ParentTypeId, "__parentTypeId" }
-    };
-    private static Dictionary<string, ProxyInternalUseProperty> proxyInternalUsePropNamesInverse = proxyInternalUsePropNames.ToDictionary((i) => i.Value, (i) => i.Key);
 
     public static string Truncate(this string message, int maxLen, string suffix = "")
 
@@ -42,9 +28,6 @@ internal static class HelperExtensions
         foreach (var item in addedArr)
             arr.Add(item);
     }
-
-    public static string ToUnderscoredString(this ProxyInternalUseProperty key) => proxyInternalUsePropNames[key];
-    public static bool TryConvertToProxyInternalUseProperty(this string key) => proxyInternalUsePropNamesInverse.TryGetValue(key, out _);
 
     public static bool IsNullValuedObject(this JObject obj)
         => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
