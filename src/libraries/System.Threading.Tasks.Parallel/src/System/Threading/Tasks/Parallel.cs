@@ -17,6 +17,11 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Threading.Tasks
 {
+    internal sealed class Box<T> where T: class
+    {
+        public T? Value { get; set; }
+    }
+
     /// <summary>
     /// Stores options that configure the operation of methods on the
     /// <see cref="System.Threading.Tasks.Parallel">Parallel</see> class.
@@ -911,7 +916,7 @@ namespace System.Threading.Tasks
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            OperationCanceledException? oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out var ctr);
+            Box<OperationCanceledException> oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out var ctr);
 
             const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
 
@@ -942,7 +947,7 @@ namespace System.Threading.Tasks
 
                 // If we got through that with no exceptions, and we were canceled, then
                 // throw our cancellation exception
-                if (oce != null) throw oce;
+                if (oce.Value != null) throw oce.Value;
             }
             catch (AggregateException aggExp)
             {
@@ -2653,7 +2658,7 @@ namespace System.Threading.Tasks
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            OperationCanceledException? oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out var ctr);
+            Box<OperationCanceledException> oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
             const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
 
@@ -2699,7 +2704,7 @@ namespace System.Threading.Tasks
 
                 // If we got through that with no exceptions, and we were canceled, then
                 // throw our cancellation exception
-                if (oce != null) throw oce;
+                if (oce.Value != null) throw oce.Value;
             }
             catch (AggregateException aggExp)
             {
@@ -2731,6 +2736,24 @@ namespace System.Threading.Tasks
             }
 
             return result;
+        }
+
+        private static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
+            ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
+        {
+            Box<OperationCanceledException> oce = new() { Value = null };
+
+            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
+            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
+                ? default
+                : parallelOptions.CancellationToken.UnsafeRegister((o) =>
+                {
+                    // Record our cancellation before stopping processing
+                    oce.Value = new OperationCanceledException(parallelOptions.CancellationToken);
+                    // Cause processing to stop
+                    sharedPStateFlags.Cancel();
+                }, state: null);
+            return oce;
         }
 
         private static TaskReplicator.ReplicatableUserAction<IEnumerator> CreatePartitionerForEachWorker<TSource, TLocal>(
@@ -3045,26 +3068,6 @@ namespace System.Threading.Tasks
             }
 
             return actionsCopy;
-        }
-
-        private static OperationCanceledException? RegisterCallbackForLoopTermination(
-            ParallelOptions parallelOptions,
-            ParallelLoopStateFlags sharedPStateFlags,
-            out CancellationTokenRegistration ctr)
-        {
-            OperationCanceledException? oce = null;
-
-            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
-            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
-                ? default
-                : parallelOptions.CancellationToken.UnsafeRegister((o) =>
-                {
-                    // Record our cancellation before stopping processing
-                    oce = new OperationCanceledException(parallelOptions.CancellationToken);
-                    // Cause processing to stop
-                    sharedPStateFlags.Cancel();
-                }, state: null);
-            return oce;
         }
 
         private static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
