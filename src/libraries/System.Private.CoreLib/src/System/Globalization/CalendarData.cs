@@ -65,7 +65,7 @@ namespace System.Globalization
             invariant.sNativeName = "Gregorian Calendar";  // Calendar Name
 
             // Year
-            invariant.iTwoDigitYearMax = 2049; // Max 2 digit year (for Y2K bug data entry)
+            invariant.iTwoDigitYearMax = 2049; // Max 2 digit year
             invariant.iCurrentEra = 1; // Current era #
 
             // Formats
