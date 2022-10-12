@@ -18,6 +18,8 @@ namespace R2RDump
             new(new[] { "--raw" }, "Dump the raw bytes of each section or runtime function");
         public Option<bool> Header { get; } =
             new(new[] { "--header" }, "Dump R2R header");
+        public Option<bool> VersionOnly { get; } =
+            new(new[] { "--versiononly" }, "Dump R2R version only");
         public Option<bool> Disasm { get; } =
             new(new[] { "--disasm", "-d" }, "Show disassembly of methods or runtime functions");
         public Option<bool> Naked { get; } =
@@ -86,6 +88,7 @@ namespace R2RDump
             AddOption(Out);
             AddOption(Raw);
             AddOption(Header);
+            AddOption(VersionOnly);
             AddOption(Disasm);
             AddOption(Naked);
             AddOption(HideOffsets);

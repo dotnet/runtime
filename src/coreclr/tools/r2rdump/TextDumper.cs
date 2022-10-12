@@ -57,6 +57,12 @@ namespace R2RDump
             _writer.WriteLine();
         }
 
+        public override void DumpVersion()
+        {
+            ReadyToRunHeader header = _r2r.ReadyToRunHeader;
+            _writer.WriteLine($"[R2R {header.MajorVersion}.{header.MinorVersion}, {_r2r.OperatingSystem}-{_r2r.Architecture}] {_r2r.Filename}");
+        }
+
         /// <summary>
         /// Dumps the R2RHeader and all the sections in the header
         /// </summary>

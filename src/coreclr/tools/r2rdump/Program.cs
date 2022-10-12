@@ -154,11 +154,18 @@ namespace R2RDump
         /// <param name="r2r">The structure containing the info of the ReadyToRun image</param>
         public void Dump(ReadyToRunReader r2r)
         {
-            _dumper.Begin();
             bool entryPoints = Get(_command.EntryPoints);
             bool createPDB = Get(_command.CreatePDB);
             bool createPerfmap = Get(_command.CreatePerfmap);
             bool standardDump = !(entryPoints || createPDB || createPerfmap);
+
+            if (Get(_command.VersionOnly))
+            {
+                _dumper.DumpVersion();
+                return;
+            }
+
+            _dumper.Begin();
 
             if (Get(_command.Header) && standardDump)
             {
@@ -443,32 +450,46 @@ namespace R2RDump
 
                 foreach (string filename in inputs)
                 {
-                    // parse the ReadyToRun image
-                    ReadyToRunReader r2r = new(model, filename);
+                    try
+                    {
+                        // parse the ReadyToRun image
+                        ReadyToRunReader r2r = new(model, filename);
 
-                    if (disasm)
-                    {
-                        disassembler = new Disassembler(r2r, model);
-                    }
-
-                    if (!diff)
-                    {
-                        // output the ReadyToRun info
-                        _dumper = new TextDumper(r2r, _writer, disassembler, model);
-                        Dump(r2r);
-                    }
-                    else
-                    {
-                        string perFileOutput = filename + ".common-methods.r2r";
-                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding), disassembler, model);
-                        if (previousDumper != null)
+                        if (disasm)
                         {
-                            new R2RDiff(previousDumper, _dumper, _writer).Run();
+                            disassembler = new Disassembler(r2r, model);
                         }
-                        previousDumper?.Writer?.Flush();
-                        previousDumper = _dumper;
-                    }
 
+                        if (!diff)
+                        {
+                            // output the ReadyToRun info
+                            _dumper = new TextDumper(r2r, _writer, disassembler, model);
+                            Dump(r2r);
+                        }
+                        else
+                        {
+                            string perFileOutput = filename + ".common-methods.r2r";
+                            _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding),
+                                disassembler, model);
+                            if (previousDumper != null)
+                            {
+                                new R2RDiff(previousDumper, _dumper, _writer).Run();
+                            }
+
+                            previousDumper?.Writer?.Flush();
+                            previousDumper = _dumper;
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        // Ignore exceptions in --versiononly mode
+                        if (!Get(_command.VersionOnly))
+                        {
+                            throw;
+                        }
+
+                        _writer.WriteLine(filename);
+                    }
                 }
             }
             catch (Exception e)

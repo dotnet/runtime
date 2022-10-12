@@ -56,6 +56,7 @@ namespace R2RDump
         public abstract void WriteSubDivider();
         public abstract void SkipLine();
         public abstract void DumpHeader(bool dumpSections);
+        public abstract void DumpVersion();
         public abstract void DumpSection(ReadyToRunSection section);
         public abstract void DumpEntryPoints();
         public abstract void DumpAllMethods();
