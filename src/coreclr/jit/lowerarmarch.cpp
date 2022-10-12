@@ -2327,8 +2327,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
-                 varTypeIsIntegral(child->gtGetOp2()))
+        else if (child->OperIsCmpCompare())
         {
             child->AsOp()->SetContained();
 
