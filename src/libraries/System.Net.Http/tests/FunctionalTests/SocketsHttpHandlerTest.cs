@@ -1290,6 +1290,7 @@ namespace System.Net.Http.Functional.Tests
                 : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
 
             bool streamDisposed = false;
+            bool responseComplete = false;
             int readCount = 0;
             int fastFillLength = 64 * 1024 * 1024; // 64 MB
 
@@ -1298,6 +1299,11 @@ namespace System.Net.Http.Functional.Tests
                 if (streamDisposed)
                 {
                     throw new ObjectDisposedException("Foo");
+                }
+
+                if (responseComplete)
+                {
+                    return 0;
                 }
 
                 Span<byte> buffer = memory.Span;
@@ -1343,6 +1349,8 @@ namespace System.Net.Http.Functional.Tests
                         return 1;
                     }
                 }
+
+                responseComplete = true;
 
                 Debug.Assert(buffer.Length >= 4);
                 return Encoding.ASCII.GetBytes("\r\n\r\n", buffer);
