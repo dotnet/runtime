@@ -9,6 +9,15 @@
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+    <InstallWorkloadUsingArtifactsDependsOn>
+      $(InstallWorkloadUsingArtifactsDependsOn);
+      _SetPackageVersion;
+      _GetNuGetsToBuild;
+      _PreparePackagesForWorkloadInstall;
+      GetWorkloadInputs;
+      _ProvisionDotNetForWorkloadTesting;
+      _InstallWorkloads
+    </InstallWorkloadUsingArtifactsDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -68,6 +77,17 @@
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
   </Target>
 
+  <Target Name="_SetPackageVersion">
+    <PropertyGroup>
+      <!-- Used for workload testing -->
+      <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
+      <PackageVersionForWorkloadManifests Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersionForWorkloadManifests>
+    </PropertyGroup>
+
+    <Error Condition="'$(PackageVersionForWorkloadManifests)' == ''"
+           Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
+  </Target>
+
   <Target Name="GetWorkloadInputs">
     <ItemGroup>
       <AvailableNuGetsInArtifacts Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
@@ -92,7 +112,7 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;GetWorkloadInputs;_ProvisionDotNetForWorkloadTesting;_InstallWorkloads"
+          DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild">

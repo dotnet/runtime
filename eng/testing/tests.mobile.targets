@@ -9,10 +9,6 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
-
-    <!-- Used for workload testing -->
-    <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
-    <PackageVersionForWorkloadManifests Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersionForWorkloadManifests>
   </PropertyGroup>
 
   <PropertyGroup>
