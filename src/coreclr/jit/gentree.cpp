@@ -12945,7 +12945,7 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         JITDUMP("\n");
 
         // If we bashed to a compare, try to fold that.
-        if (replacement->OperIsCmpCompare())
+        if (replacement->OperIsCompare())
         {
             return gtFoldExprCompare(replacement);
         }
@@ -12953,7 +12953,7 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
         return replacement;
     }
 
-    assert(cond->OperIsCmpCompare());
+    assert(cond->OperIsCompare());
 
     if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {

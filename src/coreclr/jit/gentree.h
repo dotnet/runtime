@@ -913,7 +913,7 @@ public:
     // Node and its child in isolation form a contained compare chain.
     bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
+        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCompare()));
     }
 
     bool isContainedFltOrDblImmed() const
@@ -1352,18 +1352,6 @@ public:
     bool OperIsCompare() const
     {
         return OperIsCompare(OperGet());
-    }
-
-    // Oper is a compare that generates a cmp instruction (as opposed to a test instruction).
-    static bool OperIsCmpCompare(genTreeOps gtOper)
-    {
-        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
-        return (GT_EQ <= gtOper) && (gtOper <= GT_GT);
-    }
-
-    bool OperIsCmpCompare() const
-    {
-        return OperIsCmpCompare(OperGet());
     }
 
     static bool OperIsConditional(genTreeOps gtOper)

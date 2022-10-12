@@ -1629,7 +1629,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
-        else if (tree->OperIsCmpCompare() || tree->OperIs(GT_AND))
+        else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
         {
             // Compares and ANDs may be contained in a conditional chain.
             genConsumeRegs(tree->gtGetOp1());

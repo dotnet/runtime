@@ -4676,7 +4676,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
     }
     else
     {
-        assert(tree->OperIsCmpCompare());
+        assert(tree->OperIsCompare());
 
         // Generate the compare, putting the result in the flags register.
         if (!*inChain)

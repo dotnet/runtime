@@ -2266,7 +2266,7 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
         return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
                IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
     }
-    else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
+    else if (child->OperIsCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
     {
         // Can the child compare be contained.
         return IsSafeToContainMem(parent, child);
@@ -2327,7 +2327,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCompare())
         {
             child->AsOp()->SetContained();
 
@@ -2373,7 +2373,7 @@ void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
                 if (startOfChain != nullptr)
                 {
                     // The earliest node in the chain will be generated as a standard compare.
-                    assert(startOfChain->OperIsCmpCompare());
+                    assert(startOfChain->OperIsCompare());
                     startOfChain->AsOp()->gtGetOp1()->ClearContained();
                     startOfChain->AsOp()->gtGetOp2()->ClearContained();
                     ContainCheckCompare(startOfChain->AsOp());
@@ -2394,7 +2394,7 @@ void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
 //
 void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
 {
-    assert(cmp->OperIsCmpCompare());
+    assert(cmp->OperIsCompare());
     GenTree* op2 = cmp->gtOp2;
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
@@ -2428,7 +2428,7 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
     if (startOfChain != nullptr)
     {
         // The earliest node in the chain will be generated as a standard compare.
-        assert(startOfChain->OperIsCmpCompare());
+        assert(startOfChain->OperIsCompare());
         startOfChain->AsOp()->gtGetOp1()->ClearContained();
         startOfChain->AsOp()->gtGetOp2()->ClearContained();
         ContainCheckCompare(startOfChain->AsOp());

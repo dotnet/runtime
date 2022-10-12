@@ -4662,13 +4662,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     GenTree* last = block->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
     GenTree* cond = last->gtGetOp1();
-    if (!cond->OperIsCmpCompare())
-    {
-        return false;
-    }
-
-    // Skip compares against zero as they will be optimized via cbz etc.
-    if (cond->gtGetOp2()->IsIntegralConst(0) || cond->gtGetOp1()->IsIntegralConst(0))
+    if (!cond->OperIsCompare())
     {
         return false;
     }

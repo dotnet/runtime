@@ -3151,7 +3151,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL) || node->OperIsCmpCompare() || node->OperIs(GT_AND))
+    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
     {
         // MUL can be contained for madd or msub on arm64.
         // Compare and AND may be contained due to If Conversion.
