@@ -315,7 +315,7 @@
     <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersion" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
+  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
     <ItemGroup>
       <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
