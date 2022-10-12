@@ -461,7 +461,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
                         }
                         var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                        int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", token);
+                        int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", BindingFlags.Default, token);
                         if (methodIds == null)
                             throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
 
