@@ -104,7 +104,6 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: release
-          container: ubuntu-18.04-cross-arm64
           platforms:
           - Linux_arm64
           - windows_arm64
@@ -116,7 +115,6 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          container: ubuntu-18.04-cross-arm64
           runtimeFlavor: mono
           platforms:
           - Browser_wasm
