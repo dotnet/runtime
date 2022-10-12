@@ -979,8 +979,7 @@ namespace System.Threading.Tasks
             return result;
         }
 
-
-        private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateForWorker<TIndex, TLocal>(
+         private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateForWorker2<TIndex, TLocal>(
             ParallelLoopStateFlags sharedPStateFlags,
             RangeManager rangeManager,
             int forkJoinContextID,
@@ -1102,6 +1101,194 @@ namespace System.Threading.Tasks
                     LogEtwEventParallelJoin(forkJoinContextID);
                 }
             };
+        }
+
+
+
+        private static TaskReplicator.ReplicatableUserAction<RangeWorker> CreateForWorker<TIndex, TLocal>(
+            ParallelLoopStateFlags sharedPStateFlags,
+            RangeManager rangeManager,
+            int forkJoinContextId,
+            Action<TIndex>? body,
+            Action<TIndex, ParallelLoopState>? bodyWithState,
+            Func<TIndex, ParallelLoopState, TLocal, TLocal>? bodyWithLocal,
+            Func<TLocal>? localInit,
+            Action<TLocal>? localFinally) where TIndex : INumber<TIndex>
+        {
+            if (body != null)
+            {
+                return new WorkerWithBody<TIndex>(rangeManager, sharedPStateFlags, forkJoinContextId, body).Work;
+            }
+            if (bodyWithState != null)
+            {
+                return new WorkerWithState<TIndex>(rangeManager, sharedPStateFlags, forkJoinContextId, bodyWithState).Work;
+            }
+
+            Debug.Assert(bodyWithLocal != null && localInit != null,
+                "We expect body with local and local init to be non null in this branch");
+            return new WorkerWithLocal<TIndex, TLocal>(rangeManager, sharedPStateFlags, forkJoinContextId, bodyWithLocal!, localInit!, localFinally).Work;
+        }
+
+        private abstract class Worker<TIndex> where TIndex : INumber<TIndex>
+        {
+            private readonly RangeManager _rangeManager;
+            protected readonly ParallelLoopStateFlags SharedPStateFlags;
+            private readonly int _forkJoinContextId;
+
+            protected Worker(RangeManager rangeManager, ParallelLoopStateFlags sharedPStateFlags, int forkJoinContextId)
+            {
+                _rangeManager = rangeManager;
+                SharedPStateFlags = sharedPStateFlags;
+                _forkJoinContextId = forkJoinContextId;
+            }
+
+            internal void Work(ref RangeWorker currentWorker, int timeout, out bool replicationDelegateYieldedBeforeCompletion)
+            {
+                // First thing we do upon entering the task is to register as a new "RangeWorker" with the
+                // shared RangeManager instance.
+                if (!currentWorker.IsInitialized)
+                    currentWorker = _rangeManager.RegisterNewWorker();
+
+                // We will need to reset this to true if we exit due to a timeout:
+                replicationDelegateYieldedBeforeCompletion = false;
+
+                // We need to call FindNewWork() on it to see whether there's a chunk available.
+                // These are the local index values to be used in the sequential loop.
+                // Their values filled in by FindNewWork
+                if (currentWorker.FindNewWork(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) == false ||
+                    SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
+                {
+                    return; // no need to run
+                }
+
+                LogEtwEventParallelFork(_forkJoinContextId);
+
+                try
+                {
+                    // Create a new state object that references the shared "stopped" and "exceptional" flags
+                    // If needed, it will contain a new instance of thread-local state by invoking the selector.
+                    ParallelLoopState state = ParallelLoopState.Create<TIndex>(SharedPStateFlags);
+
+                    // initialize a loop timer which will help us decide whether we should exit early
+                    int loopTimeout = ComputeTimeoutPoint(timeout);
+
+                    // Now perform the loop itself.
+                    do
+                    {
+                        Body(nFromInclusiveLocal, nToExclusiveLocal);
+
+                        // Cooperative multitasking:
+                        // Check if allowed loop time is exceeded, if so save current state and return.
+                        // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
+                        if (CheckTimeoutReached(loopTimeout))
+                        {
+                            replicationDelegateYieldedBeforeCompletion = true;
+                            break;
+                        }
+                        // Exit DO-loop if we can't find new work, or if the loop was stopped:
+                    } while (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) &&
+                             ((SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
+                              !SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
+                }
+                catch (Exception ex)
+                {
+                    // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
+                    SharedPStateFlags.SetExceptional();
+                    ExceptionDispatchInfo.Throw(ex);
+                }
+                finally
+                {
+                    Finally();
+
+                    LogEtwEventParallelJoin(_forkJoinContextId);
+                }
+            }
+
+            protected virtual void Finally() { }
+
+            protected abstract void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal);
+        }
+
+        private sealed class WorkerWithBody<TIndex> : Worker<TIndex> where TIndex : INumber<TIndex>
+        {
+            private readonly Action<TIndex> _body;
+
+            public WorkerWithBody(RangeManager rangeManager, ParallelLoopStateFlags sharedPStateFlags, int forkJoinContextId, Action<TIndex> body) : base(rangeManager, sharedPStateFlags, forkJoinContextId)
+            {
+                _body = body;
+            }
+
+            protected override void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal)
+            {
+                for (TIndex j = nFromInclusiveLocal;
+                     j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
+                                               || !SharedPStateFlags.ShouldExitLoop()); // the no-arg version is used since we have no state
+                     j += TIndex.One)
+                {
+                    _body(j);
+                }
+            }
+        }
+
+        private sealed class WorkerWithState<TIndex> : Worker<TIndex> where TIndex : INumber<TIndex>
+        {
+            private readonly Action<TIndex, ParallelLoopState> _bodyWithState;
+            private readonly ParallelLoopState _state;
+
+            public WorkerWithState(RangeManager rangeManager, ParallelLoopStateFlags sharedPStateFlags, int forkJoinContextId, Action<TIndex, ParallelLoopState> bodyWithState) : base(rangeManager, sharedPStateFlags, forkJoinContextId)
+            {
+                _bodyWithState = bodyWithState;
+                _state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
+            }
+
+            protected override void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal)
+            {
+                for (TIndex j = nFromInclusiveLocal;
+                     j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
+                                               || !SharedPStateFlags.ShouldExitLoop(j));
+                     j += TIndex.One)
+                {
+                    _state!.SetCurrentIteration(j);
+                    _bodyWithState(j, _state);
+                }
+            }
+        }
+
+        private sealed class WorkerWithLocal<TIndex, TLocal> : Worker<TIndex> where TIndex : INumber<TIndex>
+        {
+            private readonly Func<TIndex, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
+            private readonly Action<TLocal>? _localFinally;
+            private readonly ParallelLoopState _state;
+            private TLocal _localValue;
+
+            public WorkerWithLocal(RangeManager rangeManager, ParallelLoopStateFlags sharedPStateFlags, int forkJoinContextId,
+                Func<TIndex, ParallelLoopState, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
+                : base(rangeManager, sharedPStateFlags, forkJoinContextId)
+            {
+                _bodyWithLocal = bodyWithLocal;
+                _localValue = localInit();
+                _localFinally = localFinally;
+                _state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
+            }
+
+            protected override void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal)
+            {
+                for (TIndex j = nFromInclusiveLocal;
+                     j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
+                                               || !SharedPStateFlags.ShouldExitLoop(j));
+                     j += TIndex.One)
+                {
+                    _state!.SetCurrentIteration(j);
+                    _localValue = _bodyWithLocal(j, _state, _localValue);
+                }
+            }
+
+            protected override void Finally()
+            {
+                // If a cleanup function was specified, call it. Otherwise, if the type is
+                // IDisposable, we will invoke Dispose on behalf of the user.
+                _localFinally?.Invoke(_localValue);
+            }
         }
 
         /// <summary>
