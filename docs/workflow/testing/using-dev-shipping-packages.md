@@ -30,7 +30,7 @@ For Windows:
 .\build.cmd -s clr+libs+packs+host
 ```
 
-For MacOS and Linux:
+For macOS and Linux:
 
 ```bash
 ./build.sh -s clr+libs+packs+host

@@ -14,7 +14,7 @@ Here is a brief overview on how to build the common form of CoreCLR in general. 
 
 To build just CoreCLR, use the `subset` flag to the `build.sh` or `build.cmd` script at the repo root. Note that specifying `-subset` explicitly is not necessary if it is the first argument (i.e. `./build.sh --subset clr` and `./build.sh clr` are equivalent). However, if you specify any other argument beforehand, then you must specify the `-subset` flag.
 
-For Linux and MacOS:
+For Linux and macOS:
 
 ```bash
 ./build.sh --subset clr
@@ -89,7 +89,7 @@ If you want to force a full rebuild of the subsets you specified when calling th
 Now that you've got the general idea on how the _CoreCLR_ builds work, here are some further documentation links on platform-specific caveats and features.
 
 * [Build CoreCLR on Windows](windows-instructions.md)
-* [Build CoreCLR on MacOS](macos-instructions.md)
+* [Build CoreCLR on macOS](macos-instructions.md)
 * [Build CoreCLR on Linux](linux-instructions.md)
 * [Build CoreCLR on FreeBSD](freebsd-instructions.md)
 
