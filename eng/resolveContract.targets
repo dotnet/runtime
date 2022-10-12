@@ -4,6 +4,9 @@
     <ApiCompatStrictMode Condition="'$(ApiCompatStrictMode)' == ''">true</ApiCompatStrictMode>
     <_ApiCompatCaptureGroupPattern>.+\$([System.IO.Path]::DirectorySeparatorChar)(.+)\$([System.IO.Path]::DirectorySeparatorChar)(.+)</_ApiCompatCaptureGroupPattern>
     <_ApiCompatRuntimePrefixPattern>(.+)/(net\d.\d)-(.+)/(.+)</_ApiCompatRuntimePrefixPattern>
+    <_ApiCompatLibReplacementString>lib/$1/$2</_ApiCompatLibReplacementString>
+    <!-- CoreLib source projects have different output paths. -->
+    <_ApiCompatLibReplacementString Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'">lib/$(NetCoreAppCurrent)/$2</_ApiCompatLibReplacementString>
 
     <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
@@ -18,7 +21,7 @@
     <ApiCompatLeftAssembliesTransformationPattern Include="$(_ApiCompatRuntimePrefixPattern)" ReplacementString="runtimes/$3/$1/$2/$4" />
     <ApiCompatLeftAssembliesTransformationPattern Include="runtimes/windows/" ReplacementString="runtimes/win/" />
 
-    <ApiCompatRightAssembliesTransformationPattern Include="$(_ApiCompatCaptureGroupPattern)" ReplacementString="lib/$1/$2" />
+    <ApiCompatRightAssembliesTransformationPattern Include="$(_ApiCompatCaptureGroupPattern)" ReplacementString="$(_ApiCompatLibReplacementString)" />
     <ApiCompatRightAssembliesTransformationPattern Include="$(_ApiCompatRuntimePrefixPattern)" ReplacementString="runtimes/$3/$1/$2/$4" />
     <ApiCompatRightAssembliesTransformationPattern Include="runtimes/windows/" ReplacementString="runtimes/win/" />
 
