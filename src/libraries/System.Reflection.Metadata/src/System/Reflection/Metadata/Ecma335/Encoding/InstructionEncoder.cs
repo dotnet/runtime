@@ -53,6 +53,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public void OpCode(ILOpCode code)
         {
+            ControlFlowBuilder?.AssertNotInSwitch();
             if (unchecked((byte)code) == (ushort)code)
             {
                 CodeBuilder.WriteByte((byte)code);
@@ -80,6 +81,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public void Token(int token)
         {
+            ControlFlowBuilder?.AssertNotInSwitch();
             CodeBuilder.WriteInt32(token);
         }
 
@@ -436,7 +438,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Before using this <see cref="InstructionEncoder"/> in any other way,
         /// the method <see cref="SwitchInstructionEncoder.Branch(LabelHandle)"/>
         /// must be called on the returned value exactly <paramref name="branchCount"/>
-        /// times. Failure to do so will result in silent bad IL code generation.
+        /// times. Failure to do so will throw <see cref="InvalidOperationException"/>.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="branchCount"/>
         /// less than or equal to zero.</exception>
@@ -446,11 +448,13 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 Throw.ArgumentOutOfRange(nameof(branchCount));
             }
+            ControlFlowBuilder branchBuilder = GetBranchBuilder();
 
             // We want the offset before we add the opcode.
             int ilOffset = Offset;
 
             OpCode(ILOpCode.Switch);
+            branchBuilder.RemainingSwitchBranches = branchCount;
             CodeBuilder.WriteUInt32((uint)branchCount);
 
             // We calculate the offset where the instruction will end.
@@ -473,6 +477,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="label"/> has default value.</exception>
         public void MarkLabel(LabelHandle label)
         {
+            ControlFlowBuilder?.AssertNotInSwitch();
             GetBranchBuilder().MarkLabel(Offset, label);
         }
 

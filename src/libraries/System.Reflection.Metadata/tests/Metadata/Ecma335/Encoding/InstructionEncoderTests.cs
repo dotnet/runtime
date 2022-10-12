@@ -479,13 +479,20 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void Switch()
         {
             var builder = new BlobBuilder();
-            var il = new InstructionEncoder(builder, new ControlFlowBuilder());
+            var controlFlowBuilder = new ControlFlowBuilder();
+            var il = new InstructionEncoder(builder, controlFlowBuilder);
             var l = il.DefineLabel();
             var switchEncoder = il.Switch(4);
+            Assert.Throws<InvalidOperationException>(() => il.OpCode(ILOpCode.Nop));
+            Assert.Throws<InvalidOperationException>(() => il.Token(0));
+            Assert.Throws<InvalidOperationException>(() => il.MarkLabel(l));
+            Assert.Throws<InvalidOperationException>(() => controlFlowBuilder.AddFinallyRegion(l, l, l, l));
+            Assert.Throws<InvalidOperationException>(() => new MethodBodyStreamEncoder(new BlobBuilder()).AddMethodBody(il));
             switchEncoder.Branch(l);
             switchEncoder.Branch(l);
             switchEncoder.Branch(l);
             switchEncoder.Branch(l);
+            Assert.Throws<InvalidOperationException>(() => switchEncoder.Branch(l));
 
             AssertEx.Equal(new byte[]
             {

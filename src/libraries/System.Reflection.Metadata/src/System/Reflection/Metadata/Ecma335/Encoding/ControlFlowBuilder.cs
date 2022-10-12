@@ -104,6 +104,7 @@ namespace System.Reflection.Metadata.Ecma335
             _branches.Clear();
             _labels.Clear();
             _lazyExceptionHandlers?.Clear();
+            RemainingSwitchBranches = 0;
         }
 
         internal LabelHandle AddLabel()
@@ -239,6 +240,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(tryEnd, nameof(tryEnd));
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
+            AssertNotInSwitch();
 
             _lazyExceptionHandlers ??= new List<ExceptionHandlerInfo>();
 
@@ -254,6 +256,25 @@ namespace System.Reflection.Metadata.Ecma335
         internal int BranchCount => _branches.Count;
 
         internal int ExceptionHandlerCount => _lazyExceptionHandlers?.Count ?? 0;
+
+        internal int RemainingSwitchBranches { get; set; }
+
+        internal void AssertNotInSwitch()
+        {
+            if (RemainingSwitchBranches > 0)
+            {
+                Throw.InvalidOperation(SR.SwitchInstructionEncoderTooFewBranches);
+            }
+        }
+
+        internal void SwitchBranchAdded()
+        {
+            if (RemainingSwitchBranches == 0)
+            {
+                Throw.InvalidOperation(SR.SwitchInstructionEncoderTooManyBranches);
+            }
+            RemainingSwitchBranches--;
+        }
 
         /// <exception cref="InvalidOperationException" />
         internal void CopyCodeAndFixupBranches(BlobBuilder srcBuilder, BlobBuilder dstBuilder)

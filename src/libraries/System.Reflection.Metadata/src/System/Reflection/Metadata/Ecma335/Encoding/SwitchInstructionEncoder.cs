@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Reflection.Metadata.Ecma335
 {
     /// <summary>
@@ -17,6 +19,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal SwitchInstructionEncoder(InstructionEncoder encoder, int ilOffset, int instructionEnd)
         {
+            Debug.Assert(encoder.ControlFlowBuilder is not null);
             _encoder = encoder;
             _ilOffset = ilOffset;
             _instructionEnd = instructionEnd;
@@ -30,6 +33,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </remarks>
         public void Branch(LabelHandle label)
         {
+            _encoder.ControlFlowBuilder!.SwitchBranchAdded();
             _encoder.LabelOperand(ILOpCode.Switch, label, _instructionEnd - _encoder.Offset, _ilOffset);
         }
     }
