@@ -211,13 +211,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
 
-                case "Debugger.scriptParsed":
-                    {
-                        string url = args?["url"]?.Value<string>() ?? "";
-                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
-                        break;
-                    }
-
                 case "Target.attachedToTarget":
                     {
                         if (args["targetInfo"]["type"]?.ToString() == "page")
