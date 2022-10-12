@@ -73,28 +73,28 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// The <see cref="ServiceLifetime"/> of the service.
+        /// Gets the <see cref="ServiceLifetime"/> of the service.
         /// </summary>
         public ServiceLifetime Lifetime { get; }
 
         /// <summary>
-        /// The <see cref="Type"/> of the service.
+        /// Gets the <see cref="Type"/> of the service.
         /// </summary>
         public Type ServiceType { get; }
 
         /// <summary>
-        /// The <see cref="Type"/> implementing the service.
+        /// Gets the <see cref="Type"/> that implements the service.
         /// </summary>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? ImplementationType { get; }
 
         /// <summary>
-        /// The instance implementing the service.
+        /// Gets the instance that implements the service.
         /// </summary>
         public object? ImplementationInstance { get; }
 
         /// <summary>
-        /// A factory used for creating service instances.
+        /// Gets the factory used for creating service instances.
         /// </summary>
         public Func<IServiceProvider, object>? ImplementationFactory { get; }
 
