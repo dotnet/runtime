@@ -88,67 +88,44 @@ namespace
         return msg;
     }
 
-    class activation_context final
+    void enable_visual_styles()
     {
-    public:
-        activation_context()
-            : m_activated{false}
-            , m_context_handle{INVALID_HANDLE_VALUE}
-            , m_cookie{}
+        // Create an activation context using a manifest that enables visual styles
+        // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
+        // To avoid increasing the size of all applications by embedding a manifest,
+        // we just use the WindowsShell manifest.
+        pal::char_t buf[MAX_PATH];
+        UINT len = ::GetWindowsDirectoryW(buf, MAX_PATH);
+        if (len == 0 || len >= MAX_PATH)
         {
-            // Create an activation context using a manifest that enables visual styles
-            // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
-            // To avoid increasing the size of all applications by embedding manifest,
-            // we just use the WindowsShell manifest.
-            pal::char_t buf[MAX_PATH];
-            UINT len = ::GetWindowsDirectoryW(buf, MAX_PATH);
-            if (len == 0 || len >= MAX_PATH)
-            {
-                trace::verbose(_X("GetWindowsDirectory failed. Error code: %d"), ::GetLastError());
-                return;
-            }
-
-            pal::string_t manifest(buf);
-            append_path(&manifest, _X("WindowsShell.Manifest"));
-
-            ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
-            m_context_handle = ::CreateActCtxW(&actctx);
-            if (m_context_handle == INVALID_HANDLE_VALUE)
-            {
-                trace::verbose(_X("CreateActCtxW failed using manifest '%s'. Error code: %d"), manifest.c_str(), ::GetLastError());
-                return;
-            }
-
-            if (::ActivateActCtx(m_context_handle, &m_cookie) == FALSE)
-            {
-                trace::verbose(_X("ActivateActCtx failed. Error code: %d"), ::GetLastError());
-                return;
-            }
-
-            m_activated = true;
+            trace::verbose(_X("GetWindowsDirectory failed. Error code: %d"), ::GetLastError());
+            return;
         }
 
-        ~activation_context()
-        {
-            if (m_activated)
-                ::DeactivateActCtx(0, m_cookie);
+        pal::string_t manifest(buf);
+        append_path(&manifest, _X("WindowsShell.Manifest"));
 
-            if (m_context_handle != INVALID_HANDLE_VALUE)
-                ::ReleaseActCtx(m_context_handle);
+        // Since this is only for errors shown when the process is about to exit, we
+        // skip releasing/deactivating the context to minimize impact on apphost size
+        ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
+        HANDLE context_handle = ::CreateActCtxW(&actctx);
+        if (context_handle == INVALID_HANDLE_VALUE)
+        {
+            trace::verbose(_X("CreateActCtxW failed using manifest '%s'. Error code: %d"), manifest.c_str(), ::GetLastError());
+            return;
         }
 
-        bool activated()
+        ULONG_PTR cookie;
+        if (::ActivateActCtx(context_handle, &cookie) == FALSE)
         {
-            return m_activated;
+            trace::verbose(_X("ActivateActCtx failed. Error code: %d"), ::GetLastError());
+            return;
         }
 
-    private:
-        bool m_activated;
-        HANDLE m_context_handle;
-        ULONG_PTR m_cookie;
-    };
+        return;
+    }
 
-    void show_error_dialog(const pal::char_t* executable_path, const pal::char_t* executable_name, int error_code)
+    void show_error_dialog(const pal::char_t* executable_name, int error_code)
     {
         pal::string_t gui_errors_disabled;
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
@@ -239,7 +216,7 @@ namespace
         assert(is_gui_application());
         url.append(_X("&gui=true"));
 
-        activation_context ctx;
+        enable_visual_styles();
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - dialog message: %s"), executable_name, error_code, url.c_str(), dialogMsg.c_str());
         if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
@@ -277,5 +254,5 @@ void apphost::write_buffered_errors(int error_code)
     write_errors_to_event_log(executable_path.c_str(), executable_name.c_str());
 
     if (is_gui_application())
-        show_error_dialog(executable_path.c_str(), executable_name.c_str(), error_code);
+        show_error_dialog(executable_name.c_str(), error_code);
 }
