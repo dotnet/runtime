@@ -144,10 +144,10 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentOutOfRange(nameof(byteCount));
             }
 
-            WriteBytesUnchecked(new ReadOnlySpan<byte>(buffer, byteCount));
+            WriteBytes(new ReadOnlySpan<byte>(buffer, byteCount));
         }
 
-        private void WriteBytesUnchecked(ReadOnlySpan<byte> buffer)
+        internal void WriteBytes(ReadOnlySpan<byte> buffer)
         {
             int start = Advance(buffer.Length);
             buffer.CopyTo(_buffer.AsSpan(start));
@@ -192,7 +192,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            WriteBytesUnchecked(buffer.AsSpan());
+            WriteBytes(buffer.AsSpan());
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -206,7 +206,7 @@ namespace System.Reflection.Metadata
 
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
-            WriteBytesUnchecked(buffer.AsSpan(start, byteCount));
+            WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -217,7 +217,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            WriteBytesUnchecked(buffer);
+            WriteBytes(buffer);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -231,7 +231,7 @@ namespace System.Reflection.Metadata
 
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
-            WriteBytesUnchecked(buffer.AsSpan(start, byteCount));
+            WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
         public void PadTo(int offset)
@@ -397,7 +397,7 @@ namespace System.Reflection.Metadata
         {
             if (BitConverter.IsLittleEndian)
             {
-                WriteBytesUnchecked(MemoryMarshal.AsBytes(value));
+                WriteBytes(MemoryMarshal.AsBytes(value));
             }
             else
             {

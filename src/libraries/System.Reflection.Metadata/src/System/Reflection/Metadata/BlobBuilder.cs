@@ -344,7 +344,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer, 0, chunk.Length);
+                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
             }
         }
 
@@ -359,7 +359,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan());
+                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
             }
         }
 
