@@ -19,10 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppLatestStable)/$1" />
-    <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
-    <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
-    <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+\$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
+    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppLatestStable)/$1" />
+    <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
+    <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
+    <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
   </ItemGroup>
 
   <!-- For API comparison, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
@@ -41,9 +41,7 @@
 
   <Target Name="RunApiCompat"
           DependsOnTargets="FindReferenceAssembliesForReferences;CollectApiCompatInputs"
-          AfterTargets="Build"
-          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
-          Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
+          AfterTargets="Build">
     <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and .NETCoreApp$(NetCoreAppLatestStableVersion)..." Importance="high"  />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppLatestStable -->
