@@ -15,6 +15,9 @@ namespace System.Reflection.Internal
     {
         public static T? FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
         {
+            // Despite being on the System.Linq namespace, this function resides
+            // in the System.Collections.Immutable assembly and avoids importing
+            // LINQ elsewhere.
             return ImmutableArrayExtensions.FirstOrDefault(collection, predicate);
         }
 
