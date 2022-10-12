@@ -148,6 +148,7 @@
 
     <ItemGroup>
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono*$(PackageVersionForWorkloadManifests).nupkg" />
+      <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
     </ItemGroup>
 
     <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 3 and @(_RuntimePackNugetAvailable -> Count()) != 1"
