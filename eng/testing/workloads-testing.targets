@@ -11,7 +11,7 @@
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
-      _SetPackageVersion;
+      _SetPackageVersionForWorkloadsTesting;
       _GetNuGetsToBuild;
       _PreparePackagesForWorkloadInstall;
       GetWorkloadInputs;
@@ -77,7 +77,7 @@
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
   </Target>
 
-  <Target Name="_SetPackageVersion">
+  <Target Name="_SetPackageVersionForWorkloadsTesting">
     <PropertyGroup>
       <!-- Used for workload testing -->
       <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
