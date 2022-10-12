@@ -893,6 +893,7 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 4215344322)]
         [InlineData(0, byte.MaxValue, 2910671697)]
         [InlineData(123, byte.MaxValue, 1164749927)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76830", TestPlatforms.tvOS)]
         public static void BitOps_Crc32C_byte(uint crc, byte data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
