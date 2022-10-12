@@ -11,95 +11,35 @@ using System.Reflection.Metadata;
 namespace ILCompiler
 {
     /// <summary>
-    /// Provides compilation group for a library that compiles everything in the input IL module.
+    /// Roots all methods in the input IL module.
     /// </summary>
-    public class ReadyToRunRootProvider : ICompilationRootProvider
+    public class ReadyToRunLibraryRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
-        private IEnumerable<MethodDesc> _profileData;
-        private readonly bool _profileDrivenPartialNGen;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
+        public ReadyToRunLibraryRootProvider(EcmaModule module)
         {
             _module = module;
-            _profileData = profileDataManager.GetMethodsForModuleDesc(module);
-            _profileDrivenPartialNGen = profileDrivenPartialNGen;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var method in _profileData)
+            foreach (MetadataType type in _module.GetAllTypes())
             {
-                try
+                MetadataType typeWithMethods = type;
+                if (type.HasInstantiation)
                 {
-                    // Validate that this method is fully instantiated
-                    if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
-                    {
+                    typeWithMethods = InstantiateIfPossible(type);
+                    if (typeWithMethods == null)
                         continue;
-                    }
-
-                    if (method.IsGenericMethodDefinition)
-                    {
-                        continue;
-                    }
-
-                    bool containsSignatureVariables = false;
-                    foreach (TypeDesc t in method.Instantiation)
-                    {
-                        if (t.IsGenericDefinition)
-                        {
-                            containsSignatureVariables = true;
-                            break;
-                        }
-
-                        if (t.ContainsSignatureVariables())
-                        {
-                            containsSignatureVariables = true;
-                            break;
-                        }
-                    }
-                    if (containsSignatureVariables)
-                        continue;
-
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
-                    {
-                        CheckCanGenerateMethod(method);
-                        rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");
-                    }
-                }
-                catch (TypeSystemException)
-                {
-                    // Individual methods can fail to load types referenced in their signatures.
-                    // Skip them in library mode since they're not going to be callable.
-                    continue;
-                }
-            }
-
-            if (!_profileDrivenPartialNGen)
-            {
-                foreach (MetadataType type in _module.GetAllTypes())
-                {
-                    MetadataType typeWithMethods = type;
-                    if (type.HasInstantiation)
-                    {
-                        typeWithMethods = InstantiateIfPossible(type);
-                        if (typeWithMethods == null)
-                            continue;
-                    }
-
-                    RootMethods(typeWithMethods, "Library module method", rootProvider, ((EcmaAssembly)_module.Assembly).HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"));
                 }
 
-                if (_module.EntryPoint is not null)
-                {
-                    rootProvider.AddCompilationRoot(_module.EntryPoint, rootMinimalDependencies: false, $"{_module.Assembly.GetName()} Main Method");
-                }
+                RootMethods(typeWithMethods, "Library module method", rootProvider);
             }
         }
 
-        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider, bool anyInternalsVisibleTo)
+        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider)
         {
-            MethodImplRecord[] methodImplRecords = GetAllMethodImplRecordsForType((EcmaType)type.GetTypeDefinition());
             foreach (MethodDesc method in type.GetAllMethods())
             {
                 // Skip methods with no IL
@@ -108,42 +48,6 @@ namespace ILCompiler
 
                 if (method.IsInternalCall)
                     continue;
-
-                // If the method is not visible outside the assembly, then do not root the method.
-                // It will be rooted by any callers that require it and do not inline it.
-                if (!method.IsStaticConstructor
-                    && method.GetTypicalMethodDefinition() is EcmaMethod ecma
-                    && !ecma.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo))
-                {
-                    // If a method itself is not visible outside the assembly, but it implements a method that is,
-                    // we want to root it as it could be called from outside the assembly.
-                    // Since instance method overriding does not always require a MethodImpl record (it can be omitted when both the name and signature match)
-                    // we will also root any methods that are virtual and do not have any MethodImpl records as it is difficult to determine all methods a method
-                    // overrides or implements and we don't need to be perfect here.
-                    bool anyMethodImplRecordsForMethod = false;
-                    bool implementsOrOverridesVisibleMethod = false;
-                    foreach (var record in methodImplRecords)
-                    {
-                        if (record.Body == ecma)
-                        {
-                            anyMethodImplRecordsForMethod = true;
-                            implementsOrOverridesVisibleMethod = record.Decl.GetTypicalMethodDefinition() is EcmaMethod decl
-                                && decl.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo);
-                            if (implementsOrOverridesVisibleMethod)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    if (anyMethodImplRecordsForMethod && !implementsOrOverridesVisibleMethod)
-                    {
-                        continue;
-                    }
-                    if (!anyMethodImplRecordsForMethod && !method.IsVirtual)
-                    {
-                        continue;
-                    }
-                }
 
                 MethodDesc methodToRoot = method;
                 if (method.HasInstantiation)
@@ -169,24 +73,6 @@ namespace ILCompiler
                     continue;
                 }
             }
-        }
-
-        private MethodImplRecord[] GetAllMethodImplRecordsForType(EcmaType type)
-        {
-            ArrayBuilder<MethodImplRecord> records = default;
-            MetadataReader metadataReader = type.MetadataReader;
-            TypeDefinition definition = metadataReader.GetTypeDefinition(type.Handle);
-
-            foreach (var methodImplHandle in definition.GetMethodImplementations())
-            {
-                MethodImplementation methodImpl = metadataReader.GetMethodImplementation(methodImplHandle);
-
-                records.Add(new MethodImplRecord(
-                    _module.GetMethod(methodImpl.MethodDeclaration),
-                   _module.GetMethod(methodImpl.MethodBody)
-                ));
-            }
-            return records.ToArray();
         }
 
         /// <summary>

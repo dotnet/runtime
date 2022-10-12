@@ -110,7 +110,7 @@ namespace ILCompiler
                 MetadataType typeWithMethods = (MetadataType)type;
                 if (type.HasInstantiation)
                 {
-                    typeWithMethods = ReadyToRunRootProvider.InstantiateIfPossible(typeWithMethods);
+                    typeWithMethods = ReadyToRunLibraryRootProvider.InstantiateIfPossible(typeWithMethods);
                     if (typeWithMethods == null)
                         return;
                 }
@@ -133,7 +133,7 @@ namespace ILCompiler
                 MethodDesc methodToRoot = method;
                 if (method.HasInstantiation)
                 {
-                    methodToRoot = ReadyToRunRootProvider.InstantiateIfPossible(method);
+                    methodToRoot = ReadyToRunLibraryRootProvider.InstantiateIfPossible(method);
 
                     if (methodToRoot == null)
                         return;
@@ -143,7 +143,7 @@ namespace ILCompiler
                 {
                     if (!CorInfoImpl.ShouldSkipCompilation(method))
                     {
-                        ReadyToRunRootProvider.CheckCanGenerateMethod(methodToRoot);
+                        ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
                         _rootingServiceProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: "Linker XML descriptor");
                     }
                 }
@@ -191,7 +191,7 @@ namespace ILCompiler
                 MetadataType typeWithMethods = (MetadataType)type;
                 if (type.HasInstantiation)
                 {
-                    InstantiatedType instantiated = ReadyToRunRootProvider.InstantiateIfPossible(typeWithMethods);
+                    InstantiatedType instantiated = ReadyToRunLibraryRootProvider.InstantiateIfPossible(typeWithMethods);
                     method = method.Context.GetMethodForInstantiatedType(method, instantiated);
                 }
 
