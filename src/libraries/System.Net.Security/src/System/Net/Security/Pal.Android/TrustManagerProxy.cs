@@ -36,7 +36,7 @@ namespace System.Net
             {
                 if (!s_initialized)
                 {
-                    Interop.AndroidCrypto.RegisterTrustManagerValidationCallbackImpl(&TrustManagerCallback);
+                    Interop.AndroidCrypto.RegisterTrustManagerValidationCallback(&TrustManagerCallback);
                     s_initialized = true;
                 }
             }
