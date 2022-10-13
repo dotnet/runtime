@@ -1577,6 +1577,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
     else if (strcmp(fileSystemName, "rpc_pipefs") == 0) result = 0x67596969;
     else if (strcmp(fileSystemName, "samba") == 0) result = 0x517B;
+    else if (strcmp(fileSystemName, "sdcardfs") == 0) result = 0x5DCA2DF5;
     else if (strcmp(fileSystemName, "securityfs") == 0) result = 0x73636673;
     else if (strcmp(fileSystemName, "selinux") == 0) result = 0xF97CFF8C;
     else if (strcmp(fileSystemName, "sffs") == 0) result = 0x786F4256;

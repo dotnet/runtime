@@ -115,6 +115,7 @@ internal static partial class Interop
             rootfs = 0x53464846,
             rpc_pipefs = 0x67596969,
             samba = 0x517B,
+            sdcardfs = 0x5DCA2DF5,
             securityfs = 0x73636673,
             selinux = 0xF97CFF8C,
             sffs = 0x786F4256, // same as vboxfs
