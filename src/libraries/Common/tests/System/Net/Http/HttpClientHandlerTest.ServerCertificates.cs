@@ -321,9 +321,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);
-                    // TODO figure out why it's not validating the hostname correctly
-                    // Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, errors);
-                    Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, errors & SslPolicyErrors.RemoteCertificateChainErrors);
+                    Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, errors);
                     return true;
                 };
 

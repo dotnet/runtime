@@ -432,6 +432,7 @@ extern jclass    g_SSLEngine;
 extern jmethodID g_SSLEngineBeginHandshake;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
+extern jmethodID g_SSLEngineGetHandshakeSession;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
 extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineGetSSLParameters;

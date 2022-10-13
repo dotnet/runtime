@@ -3754,7 +3754,6 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [SkipOnPlatform(TestPlatforms.Android, "X509ChainPolicy is not supported on Android")]
         public async Task SslOptions_CustomTrust_Ok()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3821,7 +3820,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "X509ChainPolicy is not supported on Android")]
         public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();

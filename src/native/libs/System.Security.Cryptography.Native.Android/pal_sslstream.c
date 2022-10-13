@@ -975,14 +975,32 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     bool ret = false;
     INIT_LOCALS(loc, name, verifier);
 
+    // During the initial handshake our sslStream->sslSession doesn't have access
+    // to the peer certificates which we need for hostname verification
+    // and we need to access the handshake SSLSession from the SSLEngine
+
+    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    bool isHandshaking = handshakeStatus != HANDSHAKE_STATUS__FINISHED;
+
+    jobject sslSession = isHandshaking
+        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+        : sslStream->sslSession;
+
+    if (CheckJNIExceptions(env))
+        return false;
+
     // HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
     // return verifier.verify(hostname, sslSession);
     loc[name] = make_java_string(env, hostname);
     loc[verifier] =
         (*env)->CallStaticObjectMethod(env, g_HttpsURLConnection, g_HttpsURLConnectionGetDefaultHostnameVerifier);
-    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslStream->sslSession);
+    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslSession);
 
     RELEASE_LOCALS(loc, env);
+    if (isHandshaking) {
+        ReleaseLRef(env, sslSession);
+    }
+
     return ret;
 }
 

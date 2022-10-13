@@ -31,7 +31,6 @@ namespace System.Net.Security
             X509Certificate2? remoteCertificate,
             SslCertificateTrust? trust,
             X509Chain? chain,
-            bool remoteCertRequired,
             out SslPolicyErrors sslPolicyErrors,
             out X509ChainStatus[] chainStatus)
         {
@@ -43,7 +42,7 @@ namespace System.Net.Security
             {
                 if (remoteCertificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && remoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                    if (NetEventSource.Log.IsEnabled() && _sslAuthenticationOptions.RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
@@ -97,7 +96,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    if (!remoteCertRequired)
+                    if (!_sslAuthenticationOptions.RemoteCertRequired)
                     {
                         sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                     }

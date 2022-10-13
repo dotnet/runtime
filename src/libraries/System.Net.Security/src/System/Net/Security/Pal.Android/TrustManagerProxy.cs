@@ -72,9 +72,15 @@ namespace System.Net
         private bool Validate(X509Certificate2[] certificates)
         {
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
-            // todo init the chain with the certificates
 
-            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain: null, remoteCertRequired: true, out _, out _);
+            X509Chain? chain = null;
+            if (certificates.Length > 1)
+            {
+                chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.AddRange(certificates[1..]);
+            }
+
+            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain, out _, out _);
         }
 
         private static TrustManagerProxy FromHandle(IntPtr handle)
