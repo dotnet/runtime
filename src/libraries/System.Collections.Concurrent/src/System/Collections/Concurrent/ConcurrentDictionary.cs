@@ -54,22 +54,11 @@ namespace System.Collections.Concurrent
         /// </remarks>
         private const int MaxLockNumber = 1024;
 
-        /// <summary>Whether TValue is a type that can be written atomically (i.e., with no danger of torn reads).</summary>
-        private static readonly bool s_isValueWriteAtomic = IsValueWriteAtomic();
+        /// <summary>Whether TValue's underlying type can be written atomically (i.e., with no danger of torn reads).</summary>
+        private static readonly bool s_isValueUnderlyingTypeWriteAtomic = IsValueUnderlyingTypeWriteAtomic();
 
-        /// <summary>Determines whether type TValue can be written atomically.</summary>
-        private static bool IsValueWriteAtomic()
+        private static bool IsValueUnderlyingTypeWriteAtomic()
         {
-            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
-            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-
-            if (!typeof(TValue).IsValueType ||
-                typeof(TValue) == typeof(IntPtr) ||
-                typeof(TValue) == typeof(UIntPtr))
-            {
-                return true;
-            }
-
             switch (Type.GetTypeCode(typeof(TValue)))
             {
                 case TypeCode.Boolean:
@@ -82,15 +71,48 @@ namespace System.Collections.Concurrent
                 case TypeCode.UInt16:
                 case TypeCode.UInt32:
                     return true;
-
                 case TypeCode.Double:
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     return IntPtr.Size == 8;
-
                 default:
                     return false;
             }
+        }
+
+        /// <summary>Determines whether type TValue can be written atomically.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsValueWriteAtomic()
+        {
+            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
+            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
+
+            // Check common cases that JIT can intrinsify even in shared generic code up front.
+            if (!typeof(TValue).IsValueType ||
+                typeof(TValue) == typeof(IntPtr) ||
+                typeof(TValue) == typeof(UIntPtr) ||
+                typeof(TValue) == typeof(bool) ||
+                typeof(TValue) == typeof(byte) ||
+                typeof(TValue) == typeof(char) ||
+                typeof(TValue) == typeof(short) ||
+                typeof(TValue) == typeof(int) ||
+                typeof(TValue) == typeof(sbyte) ||
+                typeof(TValue) == typeof(float) ||
+                typeof(TValue) == typeof(ushort) ||
+                typeof(TValue) == typeof(uint))
+            {
+                return true;
+            }
+
+            if (IntPtr.Size == 8 &&
+                (typeof(TValue) == typeof(double) ||
+                 typeof(TValue) == typeof(long) ||
+                 typeof(TValue) == typeof(ulong)))
+            {
+                return true;
+            }
+
+            return s_isValueUnderlyingTypeWriteAtomic;
         }
 
         /// <summary>
@@ -594,7 +616,7 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (s_isValueWriteAtomic)
+                                if (IsValueWriteAtomic())
                                 {
                                     node._value = newValue;
                                 }
@@ -933,7 +955,7 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (s_isValueWriteAtomic)
+                                if (IsValueWriteAtomic())
                                 {
                                     node._value = value;
                                 }
