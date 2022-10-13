@@ -136,7 +136,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           container: ubuntu-18.04-cross-arm64
-          crossrootfsDir: '/crossrootfs/arm64'  
           runtimeFlavor: mono
           runtimeVariant: 'llvmaot'
           platforms:
