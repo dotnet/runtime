@@ -13111,13 +13111,15 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 
-/*****************************************************************************
- This method makes STATIC inlining decision based on the IL code.
- It should not make any inlining decision based on the context.
- If forceInline is true, then the inlining decision should not depend on
- performance heuristics (code size, etc.).
- */
-
+//------------------------------------------------------------------------
+// impCanInlineIL: screen inline candate based on info from the method header
+//
+// Arguments:
+//   fncHandle -- inline candidate method
+//   methInfo -- method info from VN
+//   forceInline -- true if method is marked with AggressiveInlining
+//   inlineResult -- ongoing inline evaluation
+//
 void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
                               CORINFO_METHOD_INFO*  methInfo,
                               bool                  forceInline,
