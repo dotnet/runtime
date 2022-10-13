@@ -9,27 +9,30 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class InternalUseFieldName
 {
-    public static string Hidden => "__hidden__";
-    public static string State => "__state__";
-    public static string Section => "__section__";
-    public static string Owner => "__owner__";
-    public static string IsStatic => "__isStatic__";
-    public static string IsNewSlot => "__isNewSlot__";
-    public static string IsBackingField => "__isBackingField__";
-    public static string ParentTypeId => "__parentTypeId__";
+    public static InternalUseFieldName Hidden = new(nameof(Hidden));
+    public static InternalUseFieldName State = new(nameof(State));
+    public static InternalUseFieldName Section = new(nameof(Section));
+    public static InternalUseFieldName Owner = new(nameof(Owner));
+    public static InternalUseFieldName IsStatic = new(nameof(IsStatic));
+    public static InternalUseFieldName IsNewSlot = new(nameof(IsNewSlot));
+    public static InternalUseFieldName IsBackingField = new(nameof(IsBackingField));
+    public static InternalUseFieldName ParentTypeId = new(nameof(ParentTypeId));
 
     private static readonly HashSet<string> s_names = new()
     {
-        Hidden,
-        State,
-        Section,
-        Owner,
-        IsStatic,
-        IsNewSlot,
-        IsBackingField,
-        ParentTypeId
+        Hidden.Name,
+        State.Name,
+        Section.Name,
+        Owner.Name,
+        IsStatic.Name,
+        IsNewSlot.Name,
+        IsBackingField.Name,
+        ParentTypeId.Name
     };
+
+    private InternalUseFieldName(string fieldName) => Name = $"__{fieldName}__";
 
     public static int Count => s_names.Count;
     public static bool IsKnown(string name) => !string.IsNullOrEmpty(name) && s_names.Contains(name);
+    public string Name { get; init; }
 }
