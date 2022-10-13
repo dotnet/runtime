@@ -6,17 +6,9 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
   </PropertyGroup>
-   <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_JitAggressiveInlining=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_JitAggressiveInlining=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="LoopsToProcess.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_JitAggressiveInlining" Value="1" />
   </ItemGroup>
 </Project>
