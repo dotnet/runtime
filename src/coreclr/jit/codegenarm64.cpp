@@ -4613,6 +4613,9 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCon
     // Should only be called on contained nodes.
     assert(targetReg == REG_NA);
 
+    // Should not be called for test conditionals (Arm64 does not have a ctst).
+    assert(tree->OperIsCmpCompare());
+
     // For the ccmp flags, invert the condition of the compare.
     insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
 

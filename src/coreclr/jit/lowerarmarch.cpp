@@ -2327,7 +2327,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCompare())
+        else if (child->OperIsCmpCompare())
         {
             child->AsOp()->SetContained();
 
@@ -2339,6 +2339,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             return true;
         }
     }
+
 
     return false;
 }
@@ -2394,7 +2395,7 @@ void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
 //
 void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
 {
-    assert(cmp->OperIsCompare());
+    assert(cmp->OperIsCmpCompare());
     GenTree* op2 = cmp->gtOp2;
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))

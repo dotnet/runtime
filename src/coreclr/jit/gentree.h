@@ -1354,6 +1354,18 @@ public:
         return OperIsCompare(OperGet());
     }
 
+    // Oper is a compare that generates a cmp instruction (as opposed to a test instruction).
+    static bool OperIsCmpCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_GT);
+    }
+
+    bool OperIsCmpCompare() const
+    {
+        return OperIsCmpCompare(OperGet());
+    }
+
     static bool OperIsConditional(genTreeOps gtOper)
     {
         return (GT_SELECT == gtOper);
