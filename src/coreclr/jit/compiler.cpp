@@ -5090,14 +5090,44 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            // There are two special cases:
+            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+            //    region range.
+            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+            //    can't add alignment because we can't add instructions in that block. In the
+            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+            //
+            // Currently, we don't align loops for these cases.
             //
             if (bbHavingAlign == nullptr)
             {
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+#if FEATURE_EH_CALLFINALLY_THUNKS
+                if (block->bbJumpKind == BBJ_CALLFINALLY)
                 {
+                    // It must be a retless BBJ_CALLFINALLY if we get here.
+                    assert(!block->isBBCallAlwaysPair());
+
+                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                    // BBJ_CALLFINALLY), we allow it.
+                    isSpecialCallFinally = true;
+                }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+                if (isSpecialCallFinally)
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                    madeChanges = true;
+                }
+                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
+                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    // In some odd cases we may see blocks within the loop before we see the
+                    // top block of the loop. Just bail on aligning such loops.
+                    //
                     loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
                     madeChanges = true;
                 }
