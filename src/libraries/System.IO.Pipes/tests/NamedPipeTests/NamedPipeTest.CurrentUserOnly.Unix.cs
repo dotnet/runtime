@@ -23,7 +23,7 @@ namespace System.IO.Pipes.Tests
             _output = output;
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Needs sudo access")]
         [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.In)]
         [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)]
