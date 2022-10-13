@@ -25,7 +25,7 @@ In console #1 start dsrouter
 c:\Dev\diagnostics\artifacts\bin\dotnet-dsrouter\Debug\net6.0\dotnet-dsrouter.exe server-websocket -ws http://127.0.0.1:8088/diagnostics -ipcs C:\Dev\diagnostics\socket
 ```
 
-In console #2 start the sample 
+In console #2 start the sample
 ```
 dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug /t:RunSample src/mono/sample/wasm/browser-eventpipe /p:MonoDiagnosticsMock=false
 ```
