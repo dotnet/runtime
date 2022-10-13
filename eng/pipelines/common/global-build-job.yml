@@ -83,10 +83,10 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ parameters.crossBuild }}
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+      - ${{ if ne(parameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
-          value: ${{ parameters.jobParameters.crossrootfsDir }}
+          value: ${{ parameters.crossrootfsDir }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
