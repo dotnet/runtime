@@ -25888,7 +25888,7 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
                                uint64_t* available_physical,
                                uint64_t* available_page_file)
 {
-    GCToOSInterface::GetMemoryStatus(is_restricted_physical_mem ? total_physical_mem  : 0,  memory_load, available_physical, available_page_file);
+    GCToOSInterface::GetMemoryStatus(is_restricted_physical_mem ? total_physical_mem  : 0,  memory_load, (unsigned long long*) available_physical, (unsigned long long*) available_page_file);
 }
 
 //returns TRUE is an overflow happened.

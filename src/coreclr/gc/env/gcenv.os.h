@@ -429,7 +429,8 @@ public:
     //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
     // Remarks:
     //  Any parameter can be null.
-    static void GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
+    //  explicit (unsigned long long) is used to conform to both Linux and MacOS 
+    static void GetMemoryStatus(unsigned long long restricted_limit, uint32_t* memory_load, unsigned long long* available_physical, unsigned long long* available_page_file);
 
     // Get size of an OS memory page
     static size_t GetPageSize();

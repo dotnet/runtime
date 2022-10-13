@@ -137,31 +137,12 @@ typedef cpuset_t cpu_set_t;
 
 #if HAVE_NUMA_H
 
-#include <numa.h>
+#include <../../pal/src/numa/numashim.h>
 #include <numaif.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-// List of all functions from the numa library that are used
-#define FOR_ALL_NUMA_FUNCTIONS \
-    PER_FUNCTION_BLOCK(mbind) \
-    PER_FUNCTION_BLOCK(numa_available) \
-    PER_FUNCTION_BLOCK(numa_max_node) \
-    PER_FUNCTION_BLOCK(numa_node_of_cpu)
-
-// Declare pointers to all the used numa functions
-#define PER_FUNCTION_BLOCK(fn) extern decltype(fn)* fn##_ptr_gc;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-// Redefine all calls to numa functions as calls through pointers that are set
-// to the functions of libnuma in the initialization.
-#define mbind(...) mbind_ptr_gc(__VA_ARGS__)
-#define numa_available() numa_available_ptr_gc()
-#define numa_max_node() numa_max_node_ptr_gc()
-#define numa_node_of_cpu(...) numa_node_of_cpu_ptr_gc(__VA_ARGS__)
 
 #endif // HAVE_NUMA_H
 
@@ -234,16 +215,12 @@ uint32_t g_pageSizeUnixInl = 0;
 AffinitySet g_processAffinitySet;
 
 // The highest NUMA node available
-int g_highestNumaNode_gc = 0;
+static int g_highestNumaNode = 0;
 // Is numa available
-bool g_numaAvailable_gc = false;
+static bool g_numaAvailable = false;
 
 void* g_numaHandle = nullptr;
 
-#if HAVE_NUMA_H
-#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr_gc;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
 
 #if defined(__linux__)
 static bool ShouldOpenLibNuma()
@@ -286,7 +263,6 @@ static bool ShouldOpenLibNuma()
 }
 #endif // __linux__
 
-#endif // HAVE_NUMA_H
 
 // Initialize data structures for getting and setting thread affinities to processors and
 // querying NUMA related processor information.
@@ -297,8 +273,8 @@ void NUMASupportInitialize()
 #if HAVE_NUMA_H
     if (!ShouldOpenLibNuma())
     {
-        g_numaAvailable_gc = false;
-        g_highestNumaNode_gc = 0;
+        g_numaAvailable = false;
+        g_highestNumaNode = 0;
         return;
     }
 
@@ -314,8 +290,8 @@ void NUMASupportInitialize()
     if (g_numaHandle != 0)
     {
 #define PER_FUNCTION_BLOCK(fn) \
-    fn##_ptr_gc = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
-    if (fn##_ptr_gc == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
+    fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
 FOR_ALL_NUMA_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -325,15 +301,15 @@ FOR_ALL_NUMA_FUNCTIONS
         }
         else
         {
-            g_numaAvailable_gc = true;
-            g_highestNumaNode_gc = numa_max_node();
+            g_numaAvailable = true;
+            g_highestNumaNode = numa_max_node();
         }
     }
 #endif // HAVE_NUMA_H
-    if (!g_numaAvailable_gc)
+    if (!g_numaAvailable)
     {
         // No NUMA
-        g_highestNumaNode_gc = 0;
+        g_highestNumaNode = 0;
     }
 }
 
@@ -341,7 +317,7 @@ FOR_ALL_NUMA_FUNCTIONS
 void NUMASupportCleanup()
 {
 #if HAVE_NUMA_H
-    if (g_numaAvailable_gc)
+    if (g_numaAvailable)
     {
         dlclose(g_numaHandle);
     }
@@ -725,11 +701,11 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
 #if HAVE_NUMA_H
-    if (success && g_numaAvailable_gc && (node != NUMA_NODE_UNDEFINED))
+    if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
-        if ((int)node <= g_highestNumaNode_gc)
+        if ((int)node <= g_highestNumaNode)
         {
-            int usedNodeMaskBits = g_highestNumaNode_gc + 1;
+            int usedNodeMaskBits = g_highestNumaNode + 1;
             int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
             unsigned long nodeMask[nodeMaskLength];
             memset(nodeMask, 0, sizeof(nodeMask));
@@ -825,7 +801,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
-bool ReadMemoryValueFromFile_GC(const char* filename, uint64_t* val)
+static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char* line = nullptr;
@@ -917,11 +893,11 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile_GC(path_to_size_file, &size))
+            if (ReadMemoryValueFromFile(path_to_size_file, &size))
             {
                 path_to_level_file[index] = (char)(48 + i);
 
-                if (ReadMemoryValueFromFile_GC(path_to_level_file, &level))
+                if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
@@ -1360,7 +1336,7 @@ uint64_t GetAvailablePageFile()
 //      that is in use (0 indicates no memory use and 100 indicates full memory use).
 //  available_physical - The amount of physical memory currently available, in bytes.
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(unsigned long long restricted_limit, uint32_t* memory_load, unsigned long long* available_physical, unsigned long long* available_page_file)
 {
     uint64_t available = 0;
     uint32_t load = 0;
@@ -1494,7 +1470,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
-    return g_numaAvailable_gc;
+    return g_numaAvailable;
 }
 
 bool GCToOSInterface::CanEnableGCCPUGroups()
