@@ -217,7 +217,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            WriteBytes(buffer);
+            WriteBytes(buffer.AsSpan());
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
