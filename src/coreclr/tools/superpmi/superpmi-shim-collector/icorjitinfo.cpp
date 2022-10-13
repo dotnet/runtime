@@ -253,6 +253,7 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?

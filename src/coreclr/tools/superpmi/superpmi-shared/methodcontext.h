@@ -290,6 +290,10 @@ public:
     void dmpIsSDArray(DWORDLONG key, DWORD value);
     bool repIsSDArray(CORINFO_CLASS_HANDLE cls);
 
+    void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void dmpExpandRawHandleIntrinsic(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result);
+    void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
+
     void recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsIntrinsicType(DWORDLONG key, DWORD value);
     bool repIsIntrinsicType(CORINFO_CLASS_HANDLE cls);
@@ -1144,6 +1148,7 @@ enum mcPackets
     Packet_GetReadonlyStaticFieldValue = 198,
     Packet_GetObjectType = 199,
     Packet_IsObjectImmutable = 200,
+    Packet_ExpandRawHandleIntrinsic = 201,
 };
 
 void SetDebugDumpVariables();
