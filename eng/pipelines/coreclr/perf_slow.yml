@@ -140,6 +140,8 @@ extends:
           runtimeVariant: 'llvmaot'
           platforms:
           - Linux_arm64
+          env:
+            ROOTFS_DIR: /crossrootfs/arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: AOT
