@@ -340,7 +340,8 @@ namespace System.Reflection.Metadata.Ecma335
                     {
                         // We have processed all branches. The MaxValue will cause the rest
                         // of the IL stream to be directly copied to the destination blob.
-                        branch = new BranchInfo(operandOffset: int.MaxValue, default, default, default, default);
+                        branch = new BranchInfo(operandOffset: int.MaxValue, label: default,
+                            instructionEndDisplacement: default, ilOffset: default, opCode: default);
                     }
                     else
                     {
