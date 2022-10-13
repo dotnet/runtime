@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
         /// </summary>
         /// <param name="environment">Information about the host.</param>
-        /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor)
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// Initializes a new instance of the <see cref="WindowsServiceLifetime"/> class.
         /// </summary>
         /// <param name="environment">Information about the host.</param>
-        /// <param name="applicationLifetime">The <see cref="IHostLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
         /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
         /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
@@ -103,10 +103,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         // Called by base.Run when the service is ready to start.
-        /// <summary>
-        /// Raises the Start event when the service is ready to start.
-        /// </summary>
-        /// <param name="args">The command line arguments passed to the service.</param>
+        /// <inheritdoc />
         protected override void OnStart(string[] args)
         {
             _delayStart.TrySetResult(null);
@@ -126,7 +123,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Raise the Shutdown event.
+        /// Raises the Shutdown event.
         /// </summary>
         protected override void OnShutdown()
         {
