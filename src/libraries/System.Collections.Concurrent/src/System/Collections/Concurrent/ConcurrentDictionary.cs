@@ -555,7 +555,7 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic())
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = newValue;
                                 }
@@ -894,7 +894,7 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic())
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = value;
                                 }
@@ -2233,7 +2233,7 @@ namespace System.Collections.Concurrent
     internal static class ConcurrentDictionaryTypeProps<T>
     {
         /// <summary>Whether T's type can be written atomically (i.e., with no danger of torn reads).</summary>
-        private static readonly bool s_isTypeWriteAtomic = IsWriteAtomicPrivate();
+        internal static readonly bool IsWriteAtomic = IsWriteAtomicPrivate();
 
         private static bool IsWriteAtomicPrivate()
         {
@@ -2269,11 +2269,6 @@ namespace System.Collections.Concurrent
                     return false;
             }
         }
-
-        /// <summary>Determines whether type T can be written atomically.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWriteAtomic()
-            => !typeof(T).IsValueType || s_isTypeWriteAtomic;
     }
 
     internal sealed class IDictionaryDebugView<TKey, TValue> where TKey : notnull
