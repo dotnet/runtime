@@ -825,7 +825,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
-bool _ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+bool ReadMemoryValueFromFile_GC(const char* filename, uint64_t* val)
 {
     bool result = false;
     char* line = nullptr;
@@ -917,11 +917,11 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (_ReadMemoryValueFromFile(path_to_size_file, &size))
+            if (ReadMemoryValueFromFile_GC(path_to_size_file, &size))
             {
                 path_to_level_file[index] = (char)(48 + i);
 
-                if (_ReadMemoryValueFromFile(path_to_level_file, &level))
+                if (ReadMemoryValueFromFile_GC(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }

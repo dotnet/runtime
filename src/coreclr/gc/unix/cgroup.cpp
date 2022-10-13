@@ -52,8 +52,7 @@ Abstract:
 #define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
 #define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
 
-extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
-
+extern bool ReadMemoryValueFromFile_GC(const char* filename, uint64_t* val);
 
 class CGroup_GC
 {
@@ -375,7 +374,7 @@ private:
         if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
             return false;
 
-        bool result = ReadMemoryValueFromFile(mem_limit_filename, val);
+        bool result = ReadMemoryValueFromFile_GC(mem_limit_filename, val);
         free(mem_limit_filename);
         return result;
     }
@@ -394,7 +393,7 @@ private:
 
         size_t usage = 0;
 
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
+        bool result = ReadMemoryValueFromFile_GC(mem_usage_filename, &temp);
         if (result)
         {
             if (temp > std::numeric_limits<size_t>::max())
