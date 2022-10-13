@@ -1107,11 +1107,13 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
         }
 #ifdef TARGET_AMD64
-        else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && (imm <= 127) && isPow2(imm + 1))
+        else if (!requiresOverflowCheck && isUnsignedMultiply && rmOp->isUsedFromReg() && (imm == 7) && isPow2(imm + 1))
         {
+            // Use shift for constant multiply when legal
             uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(imm + 1));
             unsigned int shiftAmount = genLog2(zextImm );
 
+            // Copy reg src to dest register
             inst_Mov(targetType, targetReg, rmOp->GetRegNum(), /* canSkip */ false);
 
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
