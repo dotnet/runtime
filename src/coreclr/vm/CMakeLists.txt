@@ -324,7 +324,6 @@ set(VM_SOURCES_WKS
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
-    gcenv.os.cpp
     gchelpers.cpp
     genanalysis.cpp
     genmeth.cpp
@@ -492,6 +491,7 @@ set(GC_SOURCES_WKS
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set ( GC_SOURCES_WKS
     ${GC_SOURCES_WKS}
+    gcenv.os.cpp
     ../gc/vxsort/isa_detection.cpp
     ../gc/vxsort/do_vxsort_avx2.cpp
     ../gc/vxsort/do_vxsort_avx512.cpp

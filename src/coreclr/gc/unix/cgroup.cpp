@@ -54,7 +54,8 @@ Abstract:
 
 extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
-class CGroup
+
+class CGroup_GC
 {
     // the cgroup version number or 0 to indicate cgroups are not found or not enabled
     static int s_cgroup_version;
@@ -454,24 +455,24 @@ private:
     }
 };
 
-int CGroup::s_cgroup_version = 0;
-char *CGroup::s_memory_cgroup_path = nullptr;
+int CGroup_GC::s_cgroup_version = 0;
+char *CGroup_GC::s_memory_cgroup_path = nullptr;
 
 void InitializeCGroup()
 {
-    CGroup::Initialize();
+    CGroup_GC::Initialize();
 }
 
 void CleanupCGroup()
 {
-    CGroup::Cleanup();
+    CGroup_GC::Cleanup();
 }
 
 size_t GetRestrictedPhysicalMemoryLimit()
 {
     uint64_t physical_memory_limit = 0;
 
-    if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
+    if (!CGroup_GC::GetPhysicalMemoryLimit(&physical_memory_limit))
          return 0;
 
     // If there's no memory limit specified on the container this
@@ -526,7 +527,7 @@ bool GetPhysicalMemoryUsed(size_t* val)
         return false;
 
     // Linux uses cgroup usage to trigger oom kills.
-    if (CGroup::GetPhysicalMemoryUsage(val))
+    if (CGroup_GC::GetPhysicalMemoryUsage(val))
         return true;
 
     // process resident set size.
