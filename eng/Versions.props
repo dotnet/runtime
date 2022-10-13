@@ -24,6 +24,8 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
+    <MonoCecilVersion>
+    </MonoCecilVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->

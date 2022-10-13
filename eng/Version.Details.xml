@@ -84,6 +84,10 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
+    <Dependency Name="Mono.Cecil" Version="">
+      <Uri>https://github.com/dotnet/cecil</Uri>
+      <Sha>07ae1c51452adb2febe654e74f717325ef416e8e</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.22503.1">
