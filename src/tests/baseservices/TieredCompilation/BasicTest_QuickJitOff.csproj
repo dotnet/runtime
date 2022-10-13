@@ -6,15 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJit" Value="0" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TC_QuickJit=0
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TC_QuickJit=0
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

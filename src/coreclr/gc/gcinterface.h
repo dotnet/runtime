@@ -485,22 +485,29 @@ typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlag
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
 typedef bool (* async_pin_enum_fn)(Object* object, void* context);
 
-
+// Implement pure virtual for NativeAOT Unix (for -p:LinkStandardCPlusPlusLibrary=false the default),
+// to avoid linker requiring __cxa_pure_virtual.
+#if defined(FEATURE_NATIVEAOT) && !defined(TARGET_WINDOWS)
+// `while(true);` is to satisfy the missing `return` statement. It will be optimized away by the compiler.
+#define PURE_VIRTUAL { assert(!"pure virtual function called"); while(true); }
+#else
+#define PURE_VIRTUAL = 0;
+#endif
 
 class IGCHandleStore {
 public:
 
-    virtual void Uproot() = 0;
+    virtual void Uproot() PURE_VIRTUAL
 
-    virtual bool ContainsHandle(OBJECTHANDLE handle) = 0;
+    virtual bool ContainsHandle(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo) = 0;
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
+    virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) PURE_VIRTUAL
 
     virtual ~IGCHandleStore() {};
 };
@@ -508,41 +515,41 @@ public:
 class IGCHandleManager {
 public:
 
-    virtual bool Initialize() = 0;
+    virtual bool Initialize() PURE_VIRTUAL
 
-    virtual void Shutdown() = 0;
+    virtual void Shutdown() PURE_VIRTUAL
 
-    virtual IGCHandleStore* GetGlobalHandleStore() = 0;
+    virtual IGCHandleStore* GetGlobalHandleStore() PURE_VIRTUAL
 
-    virtual IGCHandleStore* CreateHandleStore() = 0;
+    virtual IGCHandleStore* CreateHandleStore() PURE_VIRTUAL
 
-    virtual void DestroyHandleStore(IGCHandleStore* store) = 0;
+    virtual void DestroyHandleStore(IGCHandleStore* store) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type) = 0;
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type) PURE_VIRTUAL
 
-    virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) = 0;
+    virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) = 0;
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
 
-    virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
+    virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) = 0;
+    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) PURE_VIRTUAL
 
-    virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
+    virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object) = 0;
+    virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
 
-    virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) = 0;
+    virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
 
-    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object) = 0;
+    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object) PURE_VIRTUAL
 
-    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle) = 0;
+    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) PURE_VIRTUAL
 
-    virtual HandleType HandleFetchType(OBJECTHANDLE handle) = 0;
+    virtual HandleType HandleFetchType(OBJECTHANDLE handle) PURE_VIRTUAL
 
-    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
+    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) PURE_VIRTUAL
 };
 
 // Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.
@@ -568,16 +575,16 @@ public:
     */
 
     // Returns whether or not the given size is a valid segment size.
-    virtual bool IsValidSegmentSize(size_t size) = 0;
+    virtual bool IsValidSegmentSize(size_t size) PURE_VIRTUAL
 
     // Returns whether or not the given size is a valid gen 0 max size.
-    virtual bool IsValidGen0MaxSize(size_t size) = 0;
+    virtual bool IsValidGen0MaxSize(size_t size) PURE_VIRTUAL
 
     // Gets a valid segment size.
-    virtual size_t GetValidSegmentSize(bool large_seg = false) = 0;
+    virtual size_t GetValidSegmentSize(bool large_seg = false) PURE_VIRTUAL
 
     // Sets the limit for reserved virtual memory.
-    virtual void SetReservedVMLimit(size_t vmlimit) = 0;
+    virtual void SetReservedVMLimit(size_t vmlimit) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -590,22 +597,22 @@ public:
     */
 
     // Blocks until any running concurrent GCs complete.
-    virtual void WaitUntilConcurrentGCComplete() = 0;
+    virtual void WaitUntilConcurrentGCComplete() PURE_VIRTUAL
 
     // Returns true if a concurrent GC is in progress, false otherwise.
-    virtual bool IsConcurrentGCInProgress() = 0;
+    virtual bool IsConcurrentGCInProgress() PURE_VIRTUAL
 
     // Temporarily enables concurrent GC, used during profiling.
-    virtual void TemporaryEnableConcurrentGC() = 0;
+    virtual void TemporaryEnableConcurrentGC() PURE_VIRTUAL
 
     // Temporarily disables concurrent GC, used during profiling.
-    virtual void TemporaryDisableConcurrentGC() = 0;
+    virtual void TemporaryDisableConcurrentGC() PURE_VIRTUAL
 
     // Returns whether or not Concurrent GC is enabled.
-    virtual bool IsConcurrentGCEnabled() = 0;
+    virtual bool IsConcurrentGCEnabled() PURE_VIRTUAL
 
     // Wait for a concurrent GC to complete if one is in progress, with the given timeout.
-    virtual HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout) = 0;    // Use in native threads. TRUE if succeed. FALSE if failed or timeout
+    virtual HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout) PURE_VIRTUAL    // Use in native threads. TRUE if succeed. FALSE if failed or timeout
 
 
     /*
@@ -616,10 +623,10 @@ public:
     */
 
     // Gets the number of finalizable objects.
-    virtual size_t GetNumberOfFinalizable() = 0;
+    virtual size_t GetNumberOfFinalizable() PURE_VIRTUAL
 
     // Gets the next finalizable object.
-    virtual Object* GetNextFinalizable() = 0;
+    virtual Object* GetNextFinalizable() PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -667,77 +674,77 @@ public:
                                bool* isConcurrent,
                                uint64_t* genInfoRaw,
                                uint64_t* pauseInfoRaw,
-                               int kind) = 0;
+                               int kind) PURE_VIRTUAL;
 
     // Get the last memory load in percentage observed by the last GC.
-    virtual uint32_t GetMemoryLoad() = 0;
+    virtual uint32_t GetMemoryLoad() PURE_VIRTUAL
 
     // Gets the current GC latency mode.
-    virtual int GetGcLatencyMode() = 0;
+    virtual int GetGcLatencyMode() PURE_VIRTUAL
 
     // Sets the current GC latency mode. newLatencyMode has already been
     // verified by CoreLib to be valid.
-    virtual int SetGcLatencyMode(int newLatencyMode) = 0;
+    virtual int SetGcLatencyMode(int newLatencyMode) PURE_VIRTUAL
 
     // Gets the current LOH compaction mode.
-    virtual int GetLOHCompactionMode() = 0;
+    virtual int GetLOHCompactionMode() PURE_VIRTUAL
 
     // Sets the current LOH compaction mode. newLOHCompactionMode has
     // already been verified by CoreLib to be valid.
-    virtual void SetLOHCompactionMode(int newLOHCompactionMode) = 0;
+    virtual void SetLOHCompactionMode(int newLOHCompactionMode) PURE_VIRTUAL
 
     // Registers for a full GC notification, raising a notification if the gen 2 or
     // LOH object heap thresholds are exceeded.
-    virtual bool RegisterForFullGCNotification(uint32_t gen2Percentage, uint32_t lohPercentage) = 0;
+    virtual bool RegisterForFullGCNotification(uint32_t gen2Percentage, uint32_t lohPercentage) PURE_VIRTUAL
 
     // Cancels a full GC notification that was requested by `RegisterForFullGCNotification`.
-    virtual bool CancelFullGCNotification() = 0;
+    virtual bool CancelFullGCNotification() PURE_VIRTUAL
 
     // Returns the status of a registered notification for determining whether a blocking
     // Gen 2 collection is about to be initiated, with the given timeout.
-    virtual int WaitForFullGCApproach(int millisecondsTimeout) = 0;
+    virtual int WaitForFullGCApproach(int millisecondsTimeout) PURE_VIRTUAL
 
     // Returns the status of a registered notification for determining whether a blocking
     // Gen 2 collection has completed, with the given timeout.
-    virtual int WaitForFullGCComplete(int millisecondsTimeout) = 0;
+    virtual int WaitForFullGCComplete(int millisecondsTimeout) PURE_VIRTUAL
 
     // Returns the generation in which obj is found. Also used by the VM
     // in some places, in particular syncblk code.
-    virtual unsigned WhichGeneration(Object* obj) = 0;
+    virtual unsigned WhichGeneration(Object* obj) PURE_VIRTUAL
 
     // Returns the number of GCs that have transpired in the given generation
     // since the beginning of the life of the process. Also used by the VM
     // for debug code.
-    virtual int CollectionCount(int generation, int get_bgc_fgc_coutn = 0) = 0;
+    virtual int CollectionCount(int generation, int get_bgc_fgc_coutn = 0) PURE_VIRTUAL
 
     // Begins a no-GC region, returning a code indicating whether entering the no-GC
     // region was successful.
-    virtual int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC) = 0;
+    virtual int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC) PURE_VIRTUAL
 
     // Exits a no-GC region.
-    virtual int EndNoGCRegion() = 0;
+    virtual int EndNoGCRegion() PURE_VIRTUAL
 
     // Gets the total number of bytes in use.
-    virtual size_t GetTotalBytesInUse() = 0;
+    virtual size_t GetTotalBytesInUse() PURE_VIRTUAL
 
-    virtual uint64_t GetTotalAllocatedBytes() = 0;
+    virtual uint64_t GetTotalAllocatedBytes() PURE_VIRTUAL
 
     // Forces a garbage collection of the given generation. Also used extensively
     // throughout the VM.
-    virtual HRESULT GarbageCollect(int generation = -1, bool low_memory_p = false, int mode = collection_blocking) = 0;
+    virtual HRESULT GarbageCollect(int generation = -1, bool low_memory_p = false, int mode = collection_blocking) PURE_VIRTUAL
 
     // Gets the largest GC generation. Also used extensively throughout the VM.
-    virtual unsigned GetMaxGeneration() = 0;
+    virtual unsigned GetMaxGeneration() PURE_VIRTUAL
 
     // Indicates that an object's finalizer should not be run upon the object's collection.
-    virtual void SetFinalizationRun(Object* obj) = 0;
+    virtual void SetFinalizationRun(Object* obj) PURE_VIRTUAL
 
     // Indicates that an object's finalizer should be run upon the object's collection.
-    virtual bool RegisterForFinalization(int gen, Object* obj) = 0;
+    virtual bool RegisterForFinalization(int gen, Object* obj) PURE_VIRTUAL
 
-    virtual int GetLastGCPercentTimeInGC() = 0;
+    virtual int GetLastGCPercentTimeInGC() PURE_VIRTUAL
 
-    virtual size_t GetLastGCGenerationSize(int gen) = 0;
+    virtual size_t GetLastGCGenerationSize(int gen) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -747,55 +754,55 @@ public:
 
     // Initializes the GC heap, returning whether or not the initialization
     // was successful.
-    virtual HRESULT Initialize() = 0;
+    virtual HRESULT Initialize() PURE_VIRTUAL
 
     // Returns whether nor this GC was promoted by the last GC.
-    virtual bool IsPromoted(Object* object) = 0;
+    virtual bool IsPromoted(Object* object) PURE_VIRTUAL
 
     // Returns true if this pointer points into a GC heap, false otherwise.
-    virtual bool IsHeapPointer(void* object, bool small_heap_only = false) = 0;
+    virtual bool IsHeapPointer(void* object, bool small_heap_only = false) PURE_VIRTUAL
 
     // Return the generation that has been condemned by the current GC.
-    virtual unsigned GetCondemnedGeneration() = 0;
+    virtual unsigned GetCondemnedGeneration() PURE_VIRTUAL
 
     // Returns whether or not a GC is in progress.
-    virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) = 0;
+    virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) PURE_VIRTUAL
 
     // Returns the number of GCs that have occurred. Mainly used for
     // sanity checks asserting that a GC has not occurred.
-    virtual unsigned GetGcCount() = 0;
+    virtual unsigned GetGcCount() PURE_VIRTUAL
 
     // Gets whether or not the home heap of this alloc context matches the heap
     // associated with this thread.
-    virtual bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number) = 0;
+    virtual bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number) PURE_VIRTUAL
 
     // Returns whether or not this object resides in an ephemeral generation.
-    virtual bool IsEphemeral(Object* object) = 0;
+    virtual bool IsEphemeral(Object* object) PURE_VIRTUAL
 
     // Blocks until a GC is complete, returning a code indicating the wait was successful.
-    virtual uint32_t WaitUntilGCComplete(bool bConsiderGCStart = false) = 0;
+    virtual uint32_t WaitUntilGCComplete(bool bConsiderGCStart = false) PURE_VIRTUAL
 
     // "Fixes" an allocation context by binding its allocation pointer to a
     // location on the heap.
-    virtual void FixAllocContext(gc_alloc_context* acontext, void* arg, void* heap) = 0;
+    virtual void FixAllocContext(gc_alloc_context* acontext, void* arg, void* heap) PURE_VIRTUAL
 
     // Gets the total survived size plus the total allocated bytes on the heap.
-    virtual size_t GetCurrentObjSize() = 0;
+    virtual size_t GetCurrentObjSize() PURE_VIRTUAL
 
     // Sets whether or not a GC is in progress.
-    virtual void SetGCInProgress(bool fInProgress) = 0;
+    virtual void SetGCInProgress(bool fInProgress) PURE_VIRTUAL
 
     // Gets whether or not the GC runtime structures are in a valid state for heap traversal.
-    virtual bool RuntimeStructuresValid() = 0;
+    virtual bool RuntimeStructuresValid() PURE_VIRTUAL
 
     // Tells the GC when the VM is suspending threads.
-    virtual void SetSuspensionPending(bool fSuspensionPending) = 0;
+    virtual void SetSuspensionPending(bool fSuspensionPending) PURE_VIRTUAL
 
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
-    virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
+    virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) PURE_VIRTUAL
 
     // Flush the log and close the file if GCLog is turned on.
-    virtual void Shutdown() = 0;
+    virtual void Shutdown() PURE_VIRTUAL
 
     /*
     ============================================================================
@@ -807,13 +814,13 @@ public:
 
     // Get the timestamp corresponding to the last GC that occurred for the
     // given generation.
-    virtual size_t GetLastGCStartTime(int generation) = 0;
+    virtual size_t GetLastGCStartTime(int generation) PURE_VIRTUAL
 
     // Gets the duration of the last GC that occurred for the given generation.
-    virtual size_t GetLastGCDuration(int generation) = 0;
+    virtual size_t GetLastGCDuration(int generation) PURE_VIRTUAL
 
     // Gets a timestamp for the current moment in time.
-    virtual size_t GetNow() = 0;
+    virtual size_t GetNow() PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -828,17 +835,17 @@ public:
     // owned by the thread that is calling this function. If using per-thread alloc contexts,
     // no lock is needed; callers not using per-thread alloc contexts will need to acquire
     // a lock to ensure that the calling thread has unique ownership over this alloc context;
-    virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
+    virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) PURE_VIRTUAL
 
     // This is for the allocator to indicate it's done allocating a large object during a
     // background GC as the BGC threads also need to walk UOH.
-    virtual void PublishObject(uint8_t* obj) = 0;
+    virtual void PublishObject(uint8_t* obj) PURE_VIRTUAL
 
     // Signals the WaitForGCEvent event, indicating that a GC has completed.
-    virtual void SetWaitForGCEvent() = 0;
+    virtual void SetWaitForGCEvent() PURE_VIRTUAL
 
     // Resets the state of the WaitForGCEvent back to an unsignalled state.
-    virtual void ResetWaitForGCEvent() = 0;
+    virtual void ResetWaitForGCEvent() PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -846,21 +853,21 @@ public:
     ===========================================================================
     */
     // Returns whether or not this object is too large for SOH.
-    virtual bool IsLargeObject(Object* pObj) = 0;
+    virtual bool IsLargeObject(Object* pObj) PURE_VIRTUAL
 
     // Walks an object and validates its members.
-    virtual void ValidateObjectMember(Object* obj) = 0;
+    virtual void ValidateObjectMember(Object* obj) PURE_VIRTUAL
 
     // Retrieves the next object after the given object. When the EE
     // is not suspended, the result is not accurate - if the input argument
     // is in Gen0, the function could return zeroed out memory as the next object.
-    virtual Object* NextObj(Object* object) = 0;
+    virtual Object* NextObj(Object* object) PURE_VIRTUAL
 
     // Given an interior pointer, return a pointer to the object
     // containing that pointer. This is safe to call only when the EE is suspended.
     // When fCollectedGenOnly is true, it only returns the object if it's found in
     // the generation(s) that are being collected.
-    virtual Object* GetContainingObject(void* pInteriorPtr, bool fCollectedGenOnly) = 0;
+    virtual Object* GetContainingObject(void* pInteriorPtr, bool fCollectedGenOnly) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -870,38 +877,38 @@ public:
     */
 
     // Walks an object, invoking a callback on each member.
-    virtual void DiagWalkObject(Object* obj, walk_fn fn, void* context) = 0;
+    virtual void DiagWalkObject(Object* obj, walk_fn fn, void* context) PURE_VIRTUAL
 
     // Walks an object, invoking a callback on each member.
-    virtual void DiagWalkObject2(Object* obj, walk_fn2 fn, void* context) = 0;
+    virtual void DiagWalkObject2(Object* obj, walk_fn2 fn, void* context) PURE_VIRTUAL
 
     // Walk the heap object by object.
-    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) = 0;
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     // Walks the survivors and get the relocation information if objects have moved.
     // gen_number is used when type == walk_for_uoh, otherwise ignored
-    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1) = 0;
+    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1) PURE_VIRTUAL
 
     // Walks the finalization queue.
-    virtual void DiagWalkFinalizeQueue(void* gc_context, fq_walk_fn fn) = 0;
+    virtual void DiagWalkFinalizeQueue(void* gc_context, fq_walk_fn fn) PURE_VIRTUAL
 
     // Scan roots on finalizer queue. This is a generic function.
-    virtual void DiagScanFinalizeQueue(fq_scan_fn fn, ScanContext* context) = 0;
+    virtual void DiagScanFinalizeQueue(fq_scan_fn fn, ScanContext* context) PURE_VIRTUAL
 
     // Scan handles for profiling or ETW.
-    virtual void DiagScanHandles(handle_scan_fn fn, int gen_number, ScanContext* context) = 0;
+    virtual void DiagScanHandles(handle_scan_fn fn, int gen_number, ScanContext* context) PURE_VIRTUAL
 
     // Scan dependent handles for profiling or ETW.
-    virtual void DiagScanDependentHandles(handle_scan_fn fn, int gen_number, ScanContext* context) = 0;
+    virtual void DiagScanDependentHandles(handle_scan_fn fn, int gen_number, ScanContext* context) PURE_VIRTUAL
 
     // Describes all generations to the profiler, invoking a callback on each generation.
-    virtual void DiagDescrGenerations(gen_walk_fn fn, void* context) = 0;
+    virtual void DiagDescrGenerations(gen_walk_fn fn, void* context) PURE_VIRTUAL
 
     // Traces all GC segments and fires ETW events with information on them.
-    virtual void DiagTraceGCSegments() = 0;
+    virtual void DiagTraceGCSegments() PURE_VIRTUAL
 
     // Get GC settings for tracing purposes. These are settings not obvious from a trace.
-    virtual void DiagGetGCSettings(EtwGCSettingsInfo* settings) = 0;
+    virtual void DiagGetGCSettings(EtwGCSettingsInfo* settings) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -911,7 +918,7 @@ public:
 
     // Returns TRUE if GC actually happens, otherwise FALSE. The passed alloc context
     // must not be null.
-    virtual bool StressHeap(gc_alloc_context* acontext) = 0;
+    virtual bool StressHeap(gc_alloc_context* acontext) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -921,13 +928,13 @@ public:
     */
 
     // Registers a frozen segment with the GC.
-    virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
+    virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) PURE_VIRTUAL
 
     // Unregisters a frozen segment.
-    virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
+    virtual void UnregisterFrozenSegment(segment_handle seg) PURE_VIRTUAL
 
     // Indicates whether an object is in a frozen segment.
-    virtual bool IsInFrozenSegment(Object *object) = 0;
+    virtual bool IsInFrozenSegment(Object *object) PURE_VIRTUAL
 
     /*
     ===========================================================================
@@ -936,13 +943,13 @@ public:
     */
 
     // Enables or disables the given keyword or level on the default event provider.
-    virtual void ControlEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
+    virtual void ControlEvents(GCEventKeyword keyword, GCEventLevel level) PURE_VIRTUAL
 
     // Enables or disables the given keyword or level on the private event provider.
-    virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
+    virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) PURE_VIRTUAL
 
     // Get the segment/region associated with an address together with its generation for the profiler.
-    virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
+    virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) PURE_VIRTUAL
 
     IGCHeap() {}
 
@@ -951,13 +958,13 @@ public:
     // version resilience purposes.
 
     // Get the total paused duration.
-    virtual int64_t GetTotalPauseDuration() = 0;
+    virtual int64_t GetTotalPauseDuration() PURE_VIRTUAL
 
     // Gets all the names and values of the GC configurations.
-    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) PURE_VIRTUAL
 
     // Updates given frozen segment
-    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) = 0;
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -11488,6 +11488,8 @@ bool gc_heap::is_region_demoted (uint8_t* obj)
     return demoted_p;
 }
 
+static GCSpinLock write_barrier_spin_lock;
+
 inline
 void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
 {
@@ -11510,8 +11512,6 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
     {
         if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
         {
-            static GCSpinLock write_barrier_spin_lock;
-
             while (true)
             {
                 if (Interlocked::CompareExchange(&write_barrier_spin_lock.lock, 0, -1) < 0)
