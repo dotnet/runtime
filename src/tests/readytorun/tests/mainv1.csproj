@@ -90,7 +90,7 @@ $(BashCLRTestPreCommands)
 
 # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
 export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
-export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 
 mkdir IL_DLLS
 
