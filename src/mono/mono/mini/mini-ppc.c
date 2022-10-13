@@ -3837,7 +3837,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			ppc_ldptr (code, ppc_r0, 0, ins->sreg1);
+			ppc_lbz (code, ppc_r0, 0, ins->sreg1);
 			break;
 		case OP_ARGLIST: {
 			long cookie_offset = cfg->sig_cookie + cfg->stack_usage;
