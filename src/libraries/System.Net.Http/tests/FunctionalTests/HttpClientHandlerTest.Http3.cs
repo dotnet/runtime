@@ -422,7 +422,6 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
-
         [Fact]
         public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
         {
