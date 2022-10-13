@@ -138,14 +138,14 @@ extends:
           container: ubuntu-18.04-cross-arm64
           runtimeFlavor: mono
           runtimeVariant: 'llvmaot'
+          variables:
+            - name: ROOTFS_DIR
+              value: /crossrootfs/arm64
           platforms:
           - Linux_arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: AOT
-            variables:
-              - name: ROOTFS_DIR
-                value: /crossrootfs/arm64
             isOfficialBuild: false
             extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
             extraStepsParameters:
