@@ -1107,12 +1107,12 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
         }
 #ifdef TARGET_AMD64
-        else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && isPow2(imm + 1))
+        else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && (imm <= 127) && isPow2(imm + 1))
         {
             uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(imm + 1));
             unsigned int shiftAmount = genLog2(zextImm );
 
-            inst_Mov(targetType, targetReg, rmOp->GetRegNum(), /* canSkip */ true);
+            inst_Mov(targetType, targetReg, rmOp->GetRegNum(), /* canSkip */ false);
 
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
 
