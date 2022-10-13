@@ -846,8 +846,16 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             *pc = W('.');
         }
         wcscpy_s(pc+1,4,W("PDB"));
-#undef DeleteFileW
-        DeleteFileW(wzOutputFilename);
+
+#ifdef TARGET_WINDOWS
+        _wremove(wzOutputFilename);        
+#else
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(szOutputFilename, wzOutputFilename);
+        if (szOutputFilename != NULL)
+        {
+            remove(szOutputFilename);
+        }
+#endif        
     }
     if (exitval == 0)
     {

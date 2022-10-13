@@ -5,7 +5,7 @@
     * [Using Visual Studio Open Folder with CMake](#using-visual-studio-open-folder-with-cmake)
   * [Using Visual Studio Code](#using-visual-studio-code)
   * [Using SOS with Windbg or Cdb on Windows](#using-sos-with-windbg-or-cdb-on-windows)
-* [Debugging CoreCLR on Linux and MacOS](#debugging-coreclr-on-linux-and-macos)
+* [Debugging CoreCLR on Linux and macOS](#debugging-coreclr-on-linux-and-macos)
   * [SOS on Unix](#sos-on-unix)
   * [Debugging CoreCLR with lldb](#debugging-coreclr-with-lldb)
     * [Disabling Managed Attach/Debugging](#disabling-managed-attachdebugging)
@@ -117,9 +117,9 @@ Under normal circumstances, SOS usually comes shipped with Windbg, so no additio
 
 For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos-debugging-extension-windows.md).
 
-## Debugging CoreCLR on Linux and MacOS
+## Debugging CoreCLR on Linux and macOS
 
-Very similarly to Windows, Linux and MacOS also require to have at least the _clr_ subset built prior to attempting to debug, most preferably under the _Debug_ configuration:
+Very similarly to Windows, Linux and macOS also require to have at least the _clr_ subset built prior to attempting to debug, most preferably under the _Debug_ configuration:
 
 ```bash
 ./build.sh -s clr -c Debug
@@ -137,12 +137,12 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 ### SOS on Unix
 
-For Linux and MacOS, you have to install SOS by yourself, as opposed to Windows' Windbg. The instructions are very similar however, and you can find them on these two links:
+For Linux and macOS, you have to install SOS by yourself, as opposed to Windows' Windbg. The instructions are very similar however, and you can find them on these two links:
 
 * The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md).
 
-It might also be the case that you would need the latest changes in SOS, or you're working with a not-officially-supported scenario that actually works. The most common occurrence of this scenario is when using MacOS Arm64. In this case, you have to build SOS from the diagnostics repo (linked above). Once you have it done, then simply load it to your `lldb`. More details in the following section.
+It might also be the case that you would need the latest changes in SOS, or you're working with a not-officially-supported scenario that actually works. The most common occurrence of this scenario is when using macOS Arm64. In this case, you have to build SOS from the diagnostics repo (linked above). Once you have it done, then simply load it to your `lldb`. More details in the following section.
 
 ### Debugging CoreCLR with lldb
 
@@ -150,7 +150,7 @@ It might also be the case that you would need the latest changes in SOS, or you'
 
 1. Perform a build of the _clr_ subset of the runtime repo.
 2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb /path/to/corerun /path/to/app.dll <app args go here>`
-3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for MacOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
+3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for macOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
 4. Launch program: `process launch -s`
 5. To stop breaks on _SIGUSR1_ signals used by the runtime run the following command: `process handle -s false SIGUSR1`
 6. Set a breakpoint where CoreCLR is initialized, as it's the most stable point to begin debugging: `breakpoint set -n coreclr_execute_assembly`.
@@ -159,7 +159,7 @@ It might also be the case that you would need the latest changes in SOS, or you'
 
 #### Disabling Managed Attach/Debugging
 
-The `DOTNET_EnableDiagnostics` _environment variable_ can be used to disable managed debugging. This prevents the various OS artifacts used for debugging, such as named pipes and semaphores on Linux and MacOS, from being created.
+The `DOTNET_EnableDiagnostics` _environment variable_ can be used to disable managed debugging. This prevents the various OS artifacts used for debugging, such as named pipes and semaphores on Linux and macOS, from being created.
 
 ```bash
 export DOTNET_EnableDiagnostics=0

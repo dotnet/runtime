@@ -12,7 +12,7 @@
 * [Running the Tests](#running-the-tests)
   * [Running Individual Tests](#running-individual-tests)
     * [Tests Without a Main Method](#tests-without-a-main-method)
-  * [PAL Tests (MacOS and Linux only)](#pal-tests-macos-and-linux-only)
+  * [PAL Tests (macOS and Linux only)](#pal-tests-macos-and-linux-only)
     * [Building PAL Tests](#building-pal-tests)
     * [Running PAL Tests](#running-pal-tests)
 * [Modifying Tests](#modifying-tests)
@@ -25,7 +25,7 @@ This guide will walk you through building and running the CoreCLR tests. These a
 In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
 
 * [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
-* [MacOS](/docs/workflow/building/coreclr/macos-instructions.md)
+* [macOS](/docs/workflow/building/coreclr/macos-instructions.md)
 * [Linux](/docs/workflow/building/coreclr/linux-instructions.md)
 
 For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/README.md).
@@ -86,7 +86,7 @@ On Windows:
 .\src\tests\build.cmd test JIT\Intrinsics\MathRoundDouble_ro.csproj test JIT\Intrinsics\MathFloorDouble_ro.csproj
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
 ./src/tests/build.sh -test:JIT/Intrinsics/MathRoundDouble_ro.csproj -test:JIT/Intrinsics/MathFloorDouble_ro.csproj
@@ -108,7 +108,7 @@ On Windows:
 .\src\tests\build.cmd dir JIT\Methodical\Arrays\lcs dir JIT\Methodical\cctor\misc\Desktop
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
 ./src/tests/build.sh -dir:JIT/Methodical/Arrays/lcs -dir:JIT/Methodical/cctor/misc/Desktop
@@ -124,7 +124,7 @@ On Windows:
 .\src\tests\build.cmd tree baseservices\exceptions tree JIT\Methodical
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
 ./src/tests/build.sh -tree:baseservices/exceptions -tree:JIT/Methodical
@@ -154,13 +154,13 @@ On Windows:
 .\src\tests\build.cmd dir JIT\Methodical\divrem\div -priority=1
 ```
 
-On MacOS and Linux:
+On macOS and Linux:
 
 ```bash
 ./src/tests/build.sh -dir:JIT/Methodical/divrem/div -priority1
 ```
 
-**NOTE**: Yes, you're seeing it right. The `priority` flag is a bit different between the Windows and MacOS/Linux scripts.
+**NOTE**: Yes, you're seeing it right. The `priority` flag is a bit different between the Windows and macOS/Linux scripts.
 
 ## Running the Tests
 
@@ -201,7 +201,7 @@ cd path\to\JIT\Intrinsics\MathRoundDouble_ro
 .\MathRoundDouble_ro.cmd
 ```
 
-On MacOS/Linux:
+On macOS/Linux:
 
 ```bash
 export CORE_ROOT=<repo_root>/artifacts/tests/coreclr/<OS>.<Arch>.<Configuration>/Tests/Core_Root
@@ -226,7 +226,7 @@ cd path\to\JIT\Intrinsics\MathRoundDouble_ro
 .\MathRoundDouble_ro.cmd -coreroot <repo_root>\artifacts\tests\coreclr\windows.<Arch>.<Configuration>\Tests\Core_Root
 ```
 
-On MacOS/Linux:
+On macOS/Linux:
 
 ```bash
 cd path/to/JIT/Intrinsics/MathRoundDouble_ro
@@ -237,7 +237,7 @@ cd path/to/JIT/Intrinsics/MathRoundDouble_ro
 
 Guide on how to run tests without a `Main()` Method coming soon!
 
-### PAL Tests (MacOS and Linux only)
+### PAL Tests (macOS and Linux only)
 
 The PAL layer tests are exclusive to Unix-based operating systems. This section will go on how to work with them.
 

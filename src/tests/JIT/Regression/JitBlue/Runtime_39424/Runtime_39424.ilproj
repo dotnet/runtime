@@ -7,18 +7,10 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <PropertyGroup>
-  <!-- Disable CSE to protect fragile `OBJ(ADDR(LCL_FIELD)` constructions. -->
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_JitNoCSE=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_JitNoCSE=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
+
+    <!-- Disable CSE to protect fragile `OBJ(ADDR(LCL_FIELD)` constructions. -->
+    <CLRTestEnvironmentVariable Include="COMPlus_JitNoCSE" Value="1" />
   </ItemGroup>
 </Project>

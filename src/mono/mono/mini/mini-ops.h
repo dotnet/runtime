@@ -1026,6 +1026,8 @@ MINI_OP(OP_CVTPS2PD, "cvtps2pd", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPD2DQ, "cvttpd2dq", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPS2DQ, "cvttps2dq", XREG, XREG, NONE)
 
+MINI_OP(OP_VECTOR_IABS, "vector_integer_abs", XREG, XREG, NONE)
+
 /* sse 1 */
 /* inst_c1 is target type */
 MINI_OP(OP_SSE_LOADU, "sse_loadu", XREG, XREG, NONE)
@@ -1112,7 +1114,6 @@ MINI_OP(OP_SSE3_MOVSLDUP, "sse3_movsldup", XREG, XREG, NONE)
 MINI_OP(OP_SSE3_MOVDDUP_MEM, "sse3_movddup_mem", XREG, IREG, NONE)
 
 /* ssse 3 */
-MINI_OP(OP_SSSE3_ABS, "ssse3_abs", XREG, XREG, NONE)
 MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
 MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 

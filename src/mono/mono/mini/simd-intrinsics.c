@@ -1130,12 +1130,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Abs: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-#ifdef TARGET_ARM64
 		if (type_enum_is_unsigned (arg0_type))
 			return NULL;
-
+#ifdef TARGET_ARM64
 		int iid = type_enum_is_float (arg0_type) ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
+#elif defined(TARGET_AMD64)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+		if (type_enum_is_float(arg0_type)) {
+			// args [0] & ~vector(-0.0)
+			MonoInst *zero = emit_xzero(cfg, arg_class);	// 0.0
+			zero = emit_simd_ins (cfg, klass, OP_NEGATION, zero->dreg, -1); // -0.0
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_SSE_ANDN, zero->dreg, args [0]->dreg);
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else {
+			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+		}
 #else
 		return NULL;
 #endif
@@ -3403,7 +3418,7 @@ static SimdIntrinsic sse3_methods [] = {
 };
 
 static SimdIntrinsic ssse3_methods [] = {
-	{SN_Abs, OP_SSSE3_ABS},
+	{SN_Abs, OP_VECTOR_IABS},
 	{SN_AlignRight},
 	{SN_HorizontalAdd},
 	{SN_HorizontalAddSaturate, OP_XOP_X_X_X, INTRINS_SSE_PHADDSW},
