@@ -315,6 +315,10 @@ c_runtime/_finitef/test1/paltest_finitef_test1
 c_runtime/_isnan/test1/paltest_isnan_test1
 c_runtime/_isnanf/test1/paltest_isnanf_test1
 c_runtime/_itow/test1/paltest_itow_test1
+c_runtime/_putenv/test1/paltest_putenv_test1
+c_runtime/_putenv/test2/paltest_putenv_test2
+c_runtime/_putenv/test3/paltest_putenv_test3
+c_runtime/_putenv/test4/paltest_putenv_test4
 c_runtime/_rotl/test1/paltest_rotl_test1
 c_runtime/_rotr/test1/paltest_rotr_test1
 c_runtime/_snprintf_s/test1/paltest_snprintf_test1

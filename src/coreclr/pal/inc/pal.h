@@ -4443,6 +4443,7 @@ PALIMPORT DLLEXPORT int * __cdecl PAL_errno(int caller);
 #endif // PAL_STDCPP_COMPAT
 
 PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
+PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
 

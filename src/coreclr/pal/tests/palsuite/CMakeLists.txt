@@ -384,6 +384,10 @@ add_executable_clr(paltests
   c_runtime/_isnan/test1/test1.cpp
   c_runtime/_isnanf/test1/test1.cpp
   c_runtime/_itow/test1/test1.cpp
+  c_runtime/_putenv/test1/test1.cpp
+  c_runtime/_putenv/test2/test2.cpp
+  c_runtime/_putenv/test3/test3.cpp
+  c_runtime/_putenv/test4/test4.cpp
   c_runtime/_rotl/test1/test1.cpp
   c_runtime/_rotr/test1/test1.cpp
   c_runtime/_snprintf_s/test1/test1.cpp
