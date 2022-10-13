@@ -828,7 +828,7 @@ namespace System.Globalization.Tests
         [InlineData("nb-NO")]
         public void ContainsCulture(string culture)
         {
-			var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures).ToList();
+			var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
             var containsCulture = cultures.Any(x=>x.Name == culture);
             Assert.True(containsCulture);
         }
