@@ -134,13 +134,13 @@ public class TestClass
     }
 }
 /*
-set COMPlus_TieredCompilation=0
-set COMPlus_JitDoCopyProp=1
-set COMPlus_EnableSSE41=1
-set COMPlus_JitStress=2
-set COMPlus_GCStress=0xC
-set COMPlus_AltJitName=clrjit_win_x86_x64.dll
-set COMPlus_AltJit=Method1
+set DOTNET_TieredCompilation=0
+set DOTNET_JitDoCopyProp=1
+set DOTNET_EnableSSE41=1
+set DOTNET_JitStress=2
+set DOTNET_GCStress=0xC
+set DOTNET_AltJitName=clrjit_win_x86_x64.dll
+set DOTNET_AltJit=Method1
 
 Assert failure(PID 198288 [0x00030690], Thread: 232112 [0x38ab0]): Assertion failed 'fgReachable(begBlk, endBlk)' in 'TestClass:Method1(byref,byref,S1,byref,S1,byref):int:this' during 'Update flow graph opt pass' (IL size 270)
     File: D:\git\dotnet-runtime\src\coreclr\jit\optimizer.cpp Line: 167
@@ -148,6 +148,6 @@ Assert failure(PID 198288 [0x00030690], Thread: 232112 [0x38ab0]): Assertion fai
 
 Reduced repo (x86 VM):
 
-set COMPlus_TieredCompilation=0
-set COMPlus_JitStressModeNames=STRESS_BB_PROFILE
+set DOTNET_TieredCompilation=0
+set DOTNET_JitStressModeNames=STRESS_BB_PROFILE
 */

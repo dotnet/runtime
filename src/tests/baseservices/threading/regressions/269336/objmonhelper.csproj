@@ -7,6 +7,6 @@
   <ItemGroup>
     <Compile Include="objmonhelper.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_FastGCStress" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_FastGCStress" Value="1" />
   </ItemGroup>
 </Project>

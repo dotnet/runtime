@@ -6,8 +6,8 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_EnableHWIntrinsic" Value="0" />
-    <CLRTestEnvironmentVariable Include="COMPlus_JITInlineDepth" Value="0" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableHWIntrinsic" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITInlineDepth" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
   </ItemGroup>
 </Project>

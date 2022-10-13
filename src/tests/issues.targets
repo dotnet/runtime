@@ -3137,7 +3137,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/config/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
@@ -3907,7 +3907,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/SIMD/RayTracer/RayTracer/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/config/name_config_with_pid/**">
             <Issue>https://github.com/dotnet/runtime/issues/54974</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
@@ -3999,7 +3999,7 @@
             <Issue>System.DllNotFoundException: GCPollNative</Issue>
         </ExcludeList>
 
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/config/name_config_with_pid/**">
             <Issue>System.ArgumentNullException: Value cannot be null. (Parameter 'path1')</Issue>
         </ExcludeList>
 

@@ -24,7 +24,7 @@
 //     -listtags                  prints a list of the tag names and does nothing else
 //     -listexes                  prints a list of full path names to executables in benchmarks
 //     -runner                    run benchmarks on using runner(e.g. corerun, default is DesktopCLR)
-//     -complus_version <version> run benchmarks on particular DesktopCLR version
+//     -dotnet_version <version>  run benchmarks on particular DesktopCLR version
 //     -run                       run benchmarks
 //     -testcase                  run as CoreCLR test case (default)
 //     -norun                     prints what would be run, but don't run benchmarks
@@ -202,7 +202,7 @@ namespace BenchmarkConsoleApplication
         public bool DoListBenchmarkTagSets; // List out the benchmark tag sets from the .XML file
         public bool DoListBenchmarkExecutables; // List out the benchmark executables from the .XML file
         public int NumberOfRunsPerBenchmark; // Number of runs/iterations each benchmark should be run
-        public string ComplusVersion; // COMPlus_VERSION for .NET Framework hosted runs (optional).
+        public string DotnetVersion; // DOTNET_VERSION for .NET Framework hosted runs (optional).
         public string BenchmarksRootDirectory; // Root directory for benchmark tree specified in .XML file.
         public string BenchmarkXmlFileName; // Benchmark .XML filename (default coreclr_benchmarks.xml)
         public string BenchmarkCsvFileName; // Benchmark output .CSV filename (default coreclr_benchmarks.csv)
@@ -235,7 +235,7 @@ namespace BenchmarkConsoleApplication
             DoRun = false,
             DoRunAsTestCase = true,
             DoPrintResults = false,
-            ComplusVersion = "",
+            DotnetVersion = "",
             SuiteName = "",
             BenchmarksRootDirectory = "",
             BenchmarkXmlFileName = "coreclr_benchmarks.xml",
@@ -403,9 +403,9 @@ namespace BenchmarkConsoleApplication
                         case "-debug":
                             controls.DoDebugBenchmark = true;
                             break;
-                        case "-complus_version":
+                        case "-dotnet_version":
                             arg = args[i++];
-                            controls.ComplusVersion = arg;
+                            controls.DotnetVersion = arg;
                             break;
                         default:
                             throw new Exception("invalid argument: " + arg);
@@ -428,27 +428,27 @@ namespace BenchmarkConsoleApplication
             Console.WriteLine("");
             Console.WriteLine("   options: ");
             Console.WriteLine("");
-            Console.WriteLine("   -f <xmlFile>   specify benchmark xml file (default coreclr_benchmarks.xml)");
-            Console.WriteLine("   -n <number>    specify number of runs for each benchmark (default is 1)");
-            Console.WriteLine("   -w             specify that warmup run should be done first");
-            Console.WriteLine("   -v             run in verbose mode");
-            Console.WriteLine("   -r <rootDir>   specify root directory to run from");
-            Console.WriteLine("   -s <suite>     specify a single benchmark suite to run (by name)");
-            Console.WriteLine("   -i <benchmark> specify benchmark to include by name (multiple -i's allowed)");
-            Console.WriteLine("   -e <benchmark> specify benchmark to exclude by name (multiple -e's allowed)");
-            Console.WriteLine("   -list          prints a list of the benchmark names and does nothing else");
-            Console.WriteLine("   -listsuites    prints a list of the suite names and does nothing else");
-            Console.WriteLine("   -listtags      prints a list of the tag names and does nothing else");
-            Console.WriteLine("   -listexes      prints a list of the benchmark executables and does nothing else");
-            Console.WriteLine("   -runner        runner to be used to run benchmarks (e.g. corerun, default is DesktopCLR)");
-            Console.WriteLine("   -complus_version <version> run benchmarks on particular DesktopCLR version");
-            Console.WriteLine("   -run           run benchmarks");
-            Console.WriteLine("   -norun         prints what would be run, but nothing is executed");
-            Console.WriteLine("   -testcase      run as CoreCLR test case (default)");
-            Console.WriteLine("   -norun         prints what would be run, but don't run benchmarks");
-            Console.WriteLine("   -tags <tags>   specify benchmarks with tags to include");
-            Console.WriteLine("   -notags <tags> specify benchmarks with tags to exclude");
-            Console.WriteLine("   -csvfile       specify name of Comma Separated Value output file (default coreclr_benchmarks.csv)");
+            Console.WriteLine("   -f <xmlFile>               specify benchmark xml file (default coreclr_benchmarks.xml)");
+            Console.WriteLine("   -n <number>                specify number of runs for each benchmark (default is 1)");
+            Console.WriteLine("   -w                         specify that warmup run should be done first");
+            Console.WriteLine("   -v                         run in verbose mode");
+            Console.WriteLine("   -r <rootDir>               specify root directory to run from");
+            Console.WriteLine("   -s <suite>                 specify a single benchmark suite to run (by name)");
+            Console.WriteLine("   -i <benchmark>             specify benchmark to include by name (multiple -i's allowed)");
+            Console.WriteLine("   -e <benchmark>             specify benchmark to exclude by name (multiple -e's allowed)");
+            Console.WriteLine("   -list                      prints a list of the benchmark names and does nothing else");
+            Console.WriteLine("   -listsuites                prints a list of the suite names and does nothing else");
+            Console.WriteLine("   -listtags                  prints a list of the tag names and does nothing else");
+            Console.WriteLine("   -listexes                  prints a list of the benchmark executables and does nothing else");
+            Console.WriteLine("   -runner                    runner to be used to run benchmarks (e.g. corerun, default is DesktopCLR)");
+            Console.WriteLine("   -dotnet_version <version>  run benchmarks on particular DesktopCLR version");
+            Console.WriteLine("   -run                       run benchmarks");
+            Console.WriteLine("   -norun                     prints what would be run, but nothing is executed");
+            Console.WriteLine("   -testcase                  run as CoreCLR test case (default)");
+            Console.WriteLine("   -norun                     prints what would be run, but don't run benchmarks");
+            Console.WriteLine("   -tags <tags>               specify benchmarks with tags to include");
+            Console.WriteLine("   -notags <tags>             specify benchmarks with tags to exclude");
+            Console.WriteLine("   -csvfile                   specify name of Comma Separated Value output file (default coreclr_benchmarks.csv)");
 
             Exit(-1);
         }
@@ -828,7 +828,7 @@ namespace BenchmarkConsoleApplication
             string runner = Controls.Runner;
             bool doDebugBenchmark = Controls.DoDebugBenchmark;
             bool doVerbose = Controls.DoVerbose;
-            string complusVersion = Controls.ComplusVersion;
+            string dotnetVersion = Controls.DotnetVersion;
             string benchmarksRootDirectory = Controls.BenchmarksRootDirectory;
             string benchmarkDirectory = System.IO.Path.Combine(benchmarksRootDirectory, benchmark.WorkingDirectory);
             bool doRunInShell = benchmark.DoRunInShell;
@@ -884,25 +884,25 @@ namespace BenchmarkConsoleApplication
                     UseShellExecute = false
                 };
 
-                if (complusVersion != "")
+                if (dotnetVersion != "")
                 {
-                    startInfo.Environment["COMPlus_Version"] = complusVersion;
-                    startInfo.Environment["COMPlus_DefaultVersion"] = complusVersion;
+                    startInfo.Environment["DOTNET_Version"] = dotnetVersion;
+                    startInfo.Environment["DOTNET_DefaultVersion"] = dotnetVersion;
                 }
                 if (useSSE)
                 {
-                    startInfo.Environment["COMPlus_FeatureSIMD"] = "1";
-                    startInfo.Environment["COMPlus_EnableAVX"] = "0";
+                    startInfo.Environment["DOTNET_FeatureSIMD"] = "1";
+                    startInfo.Environment["DOTNET_EnableAVX"] = "0";
                 }
                 if (useAVX)
                 {
-                    startInfo.Environment["COMPlus_FeatureSIMD"] = "1";
-                    startInfo.Environment["COMPlus_EnableAVX"] = "1";
+                    startInfo.Environment["DOTNET_FeatureSIMD"] = "1";
+                    startInfo.Environment["DOTNET_EnableAVX"] = "1";
                 }
-                startInfo.Environment["COMPlus_gcConcurrent"] = "0";
-                startInfo.Environment["COMPlus_gcServer"] = "0";
-                startInfo.Environment["COMPlus_NoGuiOnAssert"] = "1";
-                startInfo.Environment["COMPlus_BreakOnUncaughtException"] = "0";
+                startInfo.Environment["DOTNET_gcConcurrent"] = "0";
+                startInfo.Environment["DOTNET_gcServer"] = "0";
+                startInfo.Environment["DOTNET_NoGuiOnAssert"] = "1";
+                startInfo.Environment["DOTNET_BreakOnUncaughtException"] = "0";
 
                 var clockTime = Stopwatch.StartNew();
                 int exitCode = 0;

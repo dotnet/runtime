@@ -7,7 +7,7 @@ using System;
 // On x86 we need to report enclosed handler
 // live-in locals as live into any enclosing filter.
 //
-// Run with optimized codegen and COMPlus_GCStress=0x4
+// Run with optimized codegen and DOTNET_GCStress=0x4
 
 class DisposableObject : IDisposable
 {
