@@ -3791,7 +3791,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        // [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_InvalidName_Throws()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
