@@ -696,11 +696,11 @@ namespace SuperPMICollection
 
             // Done with argument parsing.
 
-            // If someone already has one of the DOTNET_JitName/DOTNET_JitName/DOTNET_JitPath/DOTNET_JitPath variables set,
+            // If someone already has one of the COMPlus_JitName/DOTNET_JitName/COMPlus_JitPath/DOTNET_JitPath variables set,
             // We don't want to override that. Perhaps someone is already doing a SuperPMI collection and invokes this
             // program as part of a full test path in which this program exists.
 
-            string[] checkVars = { "DOTNET_JitName", "DOTNET_JitName", "DOTNET_JitPath", "DOTNET_JitPath" };
+            string[] checkVars = { "COMPlus_JitName", "DOTNET_JitName", "COMPlus_JitPath", "DOTNET_JitPath" };
             foreach (string varName in checkVars)
             {
                 string envVar = System.Environment.GetEnvironmentVariable(varName);

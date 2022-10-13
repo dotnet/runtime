@@ -42,6 +42,8 @@ $(CLRTestBatchPreCommands)
     REM Suppress GC stand alone mode for the duration of Crossgen2 execution
     set __gcStandaloneModeToRestore=!DOTNET_GCName!
     set DOTNET_GCName=
+    set __gcStandaloneModeToRestore=!COMPlus_GCName!
+    set COMPlus_GCName=
 
     set __Command=%_DebuggerFullPath%
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -89,7 +91,8 @@ $(BashCLRTestPreCommands)
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
-    # Suppress some DOTNET variables for the duration of Crossgen2 execution
+    # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+    export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
     __Command=$_DebuggerFullPath
