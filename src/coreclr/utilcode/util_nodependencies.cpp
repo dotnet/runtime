@@ -434,6 +434,27 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int
+GuidToLPSTR(
+                          REFGUID   guid,   // The GUID to convert.
+    _Out_writes_(cchGuid) LPSTR szGuid,     // String into which the GUID is stored
+                          DWORD  cchGuid)   // Count in chars
+{
+    if (cchGuid < 39)
+        return 0;
+
+    return sprintf_s(szGuid, cchGuid, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid.Data1, guid.Data2, guid.Data3,
+            guid.Data4[0], guid.Data4[1],
+            guid.Data4[2], guid.Data4[3],
+            guid.Data4[4], guid.Data4[5],
+            guid.Data4[6], guid.Data4[7]) + 1;
+}
+
 //*****************************************************************************
 // Convert hex value into a wide string of hex digits
 //*****************************************************************************
@@ -472,9 +493,9 @@ HRESULT GetStr(
 //*****************************************************************************
 int
 GuidToLPWSTR(
-                          GUID   Guid,      // The GUID to convert.
-    _Out_writes_(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
-                          DWORD  cchGuid)   // Count in wchars
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPWSTR szGuid,  // [OUT] String into which the GUID is stored
+    DWORD cchGuid)  // [IN] Size in wide chars of szGuid
 {
     CONTRACTL
     {
@@ -496,19 +517,19 @@ GuidToLPWSTR(
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //  ^^^^^^^^
-    if (FAILED (GetStr(Guid.Data1, szGuid+1 , 4))) return 0;
+    if (FAILED (GetStr(guid.Data1, szGuid+1 , 4))) return 0;
 
     szGuid[9]  = W('-');
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //           ^^^^
-    if (FAILED (GetStr(Guid.Data2, szGuid+10, 2))) return 0;
+    if (FAILED (GetStr(guid.Data2, szGuid+10, 2))) return 0;
 
     szGuid[14] = W('-');
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                ^^^^
-    if (FAILED (GetStr(Guid.Data3, szGuid+15, 2))) return 0;
+    if (FAILED (GetStr(guid.Data3, szGuid+15, 2))) return 0;
 
     szGuid[19] = W('-');
 
@@ -516,7 +537,7 @@ GuidToLPWSTR(
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                     ^^^^
     for (i=0; i < 2; ++i)
-        if (FAILED(GetStr(Guid.Data4[i], szGuid + 20 + (i * 2), 1)))
+        if (FAILED(GetStr(guid.Data4[i], szGuid + 20 + (i * 2), 1)))
             return (0);
 
     szGuid[24] = W('-');
@@ -524,7 +545,7 @@ GuidToLPWSTR(
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                          ^^^^^^^^^^^^
     for (i=0; i < 6; ++i)
-        if (FAILED(GetStr(Guid.Data4[i+2], szGuid + 25 + (i * 2), 1)))
+        if (FAILED(GetStr(guid.Data4[i+2], szGuid + 25 + (i * 2), 1)))
             return (0);
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -583,10 +604,9 @@ HRESULT GetHex(
 // Parse a Wide char string into a GUID
 //*****************************************************************************
 BOOL
-LPWSTRToGuid(
-                         GUID  * Guid,      // [OUT] The GUID to fill in
-    _In_reads_(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
-                         DWORD   cchGuid)   // [IN] Count in wchars in string
+LPCWSTRToGuid(
+    LPCWSTR szGuid, // [IN] String to convert.
+    GUID* pGuid)    // [OUT] Buffer for converted GUID.
 {
     CONTRACTL
     {
@@ -600,33 +620,27 @@ LPWSTRToGuid(
     // successive fields break the GUID into the form DWORD-WORD-WORD-WORD-WORD.DWORD
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
-    if (cchGuid < 38) // 38 chars + 1 null terminating.
+    // Verify the surrounding syntax.
+    if (wcslen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
+        szGuid[14] != '-' || szGuid[19] != '-' || szGuid[24] != '-' || szGuid[37] != '}')
+    {
         return FALSE;
-
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    // ^
-    if (szGuid[0] != W('{')) return FALSE;
+    }
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //  ^^^^^^^^
     if (FAILED (GetHex(&dw, szGuid+1 , 4))) return FALSE;
-    Guid->Data1 = dw;
-
-    if (szGuid[9] != W('-')) return FALSE;
+    pGuid->Data1 = dw;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //           ^^^^
     if (FAILED (GetHex(&dw, szGuid+10, 2))) return FALSE;
-    Guid->Data2 = (WORD)dw;
-
-    if (szGuid[14] != W('-')) return FALSE;
+    pGuid->Data2 = (WORD)dw;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                ^^^^
     if (FAILED (GetHex(&dw, szGuid+15, 2))) return FALSE;
-    Guid->Data3 = (WORD)dw;
-
-    if (szGuid[19] != W('-')) return FALSE;
+    pGuid->Data3 = (WORD)dw;
 
     // Get the last two fields (which are byte arrays).
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -634,25 +648,19 @@ LPWSTRToGuid(
     for (i=0; i < 2; ++i)
     {
         if (FAILED(GetHex(&dw, szGuid + 20 + (i * 2), 1))) return FALSE;
-        Guid->Data4[i] = (BYTE)dw;
+        pGuid->Data4[i] = (BYTE)dw;
     }
-
-    if (szGuid[24] != W('-')) return FALSE;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                          ^^^^^^^^^^^^
     for (i=0; i < 6; ++i)
     {
         if (FAILED(GetHex(&dw, szGuid + 25 + (i * 2), 1))) return FALSE;
-        Guid->Data4[i+2] = (BYTE)dw;
+        pGuid->Data4[i+2] = (BYTE)dw;
     }
 
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    //                                      ^
-    if (szGuid[37] != W('}')) return FALSE;
-
     return TRUE;
-} // GuidToLPWSTR
+} // LPCWSTRToGuid
 
 /**************************************************************************/
 void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)

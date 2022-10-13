@@ -2252,7 +2252,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                    = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2423,17 +2423,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
-    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
+    opts.compJitAlignLoopForJcc             = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize        = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp          = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer  = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
+    opts.compJitUnrollLoopMaxIterationCount = (unsigned short)JitConfig.JitUnrollLoopMaxIterationCount();
 #else
-    opts.compJitAlignLoopAdaptive          = true;
-    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp         = true;
-    opts.compJitOptimizeStructHiddenBuffer = true;
+    opts.compJitAlignLoopAdaptive           = true;
+    opts.compJitAlignLoopBoundary           = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight     = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize        = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp          = true;
+    opts.compJitOptimizeStructHiddenBuffer  = true;
+    opts.compJitUnrollLoopMaxIterationCount = DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT;
 #endif
 
 #ifdef TARGET_XARCH
@@ -5088,14 +5090,44 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            // There are two special cases:
+            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+            //    region range.
+            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+            //    can't add alignment because we can't add instructions in that block. In the
+            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+            //
+            // Currently, we don't align loops for these cases.
             //
             if (bbHavingAlign == nullptr)
             {
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+#if FEATURE_EH_CALLFINALLY_THUNKS
+                if (block->bbJumpKind == BBJ_CALLFINALLY)
                 {
+                    // It must be a retless BBJ_CALLFINALLY if we get here.
+                    assert(!block->isBBCallAlwaysPair());
+
+                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                    // BBJ_CALLFINALLY), we allow it.
+                    isSpecialCallFinally = true;
+                }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+                if (isSpecialCallFinally)
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                    madeChanges = true;
+                }
+                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
+                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    // In some odd cases we may see blocks within the loop before we see the
+                    // top block of the loop. Just bail on aligning such loops.
+                    //
                     loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
                     madeChanges = true;
                 }
@@ -6340,7 +6372,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             break;
     }
 
-    info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
+    info.compRetType = JITtype2varType(methodInfo->args.retType);
+    if (info.compRetType == TYP_STRUCT)
+    {
+        info.compRetType = impNormStructType(methodInfo->args.retTypeClass);
+    }
 
     info.compUnmanagedCallCountWithGCTransition = 0;
     info.compLvFrameListRoot                    = BAD_VAR_NUM;
@@ -7795,34 +7831,34 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 
 #if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
 const char* PhaseNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) string_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"
 };
 
 const char* PhaseEnums[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) #enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) #enum_nm,
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseShortNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) W(short_nm),
+const LPCWSTR PhaseEnumsW[] = {
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
 #include "compphases.h"
 };
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
 bool PhaseHasChildren[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) hasChildren,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) hasChildren,
 #include "compphases.h"
 };
 
 int PhaseParent[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) parent,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) parent,
 #include "compphases.h"
 };
 
 bool PhaseReportsIRSize[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) measureIR,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) measureIR,
 #include "compphases.h"
 };
 
@@ -9411,6 +9447,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STR_HDL:
 
                         chars += printf("[ICON_STR_HDL]");
+                        break;
+
+                    case GTF_ICON_OBJ_HDL:
+
+                        chars += printf("[ICON_OBJ_HDL]");
                         break;
 
                     case GTF_ICON_CONST_PTR:

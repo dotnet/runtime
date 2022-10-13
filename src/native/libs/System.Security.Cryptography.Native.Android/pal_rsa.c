@@ -54,7 +54,7 @@ static jobject GetRsaOaepPadding(JNIEnv* env, RsaPadding padding)
     return CheckJNIExceptions(env) ? FAIL : oaepParameterSpec;
 }
 
-PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
+PALEXPORT RSA* AndroidCryptoNative_RsaCreate(void)
 {
     RSA* rsa = xcalloc(1, sizeof(RSA));
     atomic_init(&rsa->refCount, 1);

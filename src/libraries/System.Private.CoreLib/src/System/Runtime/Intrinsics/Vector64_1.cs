@@ -6,11 +6,21 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
 {
+    // We mark certain methods with AggressiveInlining to ensure that the JIT will
+    // inline them. The JIT would otherwise not inline the method since it, at the
+    // point it tries to determine inline profability, currently cannot determine
+    // that most of the code-paths will be optimized away as "dead code".
+    //
+    // We then manually inline cases (such as certain intrinsic code-paths) that
+    // will generate code small enough to make the AgressiveInlining profitable. The
+    // other cases (such as the software fallback) are placed in their own method.
+    // This ensures we get good codegen for the "fast-path" and allows the JIT to
+    // determine inline profitability of the other paths as it would normally.
+
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector64DebugView<>))]
@@ -18,23 +28,31 @@ namespace System.Runtime.Intrinsics
     public readonly struct Vector64<T> : IEquatable<Vector64<T>>
         where T : struct
     {
-        // These fields exist to ensure the alignment is 8, rather than 1.
-        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
-        private readonly ulong _00;
+        // This field allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
+        internal readonly ulong _00;
 
         /// <summary>Gets a new <see cref="Vector64{T}" /> with all bits set to 1.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector64<T> AllBitsSet
         {
             [Intrinsic]
-            get => Vector64.Create(0xFFFFFFFF).As<uint, T>();
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+                Unsafe.SkipInit(out Vector64<T> result);
+                Unsafe.AsRef(in result._00) = ulong.MaxValue;
+
+                return result;
+            }
         }
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -47,25 +65,29 @@ namespace System.Runtime.Intrinsics
         public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(double)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(nint)) ||
-                   (typeof(T) == typeof(nuint)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(ulong));
+            get
+            {
+                return (typeof(T) == typeof(byte))
+                    || (typeof(T) == typeof(double))
+                    || (typeof(T) == typeof(short))
+                    || (typeof(T) == typeof(int))
+                    || (typeof(T) == typeof(long))
+                    || (typeof(T) == typeof(nint))
+                    || (typeof(T) == typeof(sbyte))
+                    || (typeof(T) == typeof(float))
+                    || (typeof(T) == typeof(ushort))
+                    || (typeof(T) == typeof(uint))
+                    || (typeof(T) == typeof(ulong))
+                    || (typeof(T) == typeof(nuint));
+            }
         }
 
         /// <summary>Gets a new <see cref="Vector64{T}" /> with all elements initialized to zero.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector64<T> Zero
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -73,29 +95,36 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal unsafe string DisplayString
+        internal string DisplayString
         {
             get
             {
-                if (IsSupported)
-                {
-                    return ToString();
-                }
-                else
-                {
-                    return SR.NotSupported_Type;
-                }
+                return IsSupported ? ToString() : SR.NotSupported_Type;
             }
         }
 
-        public T this[int index] => this.GetElement(index);
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public T this[int index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return this.GetElement(index);
+            }
+        }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator +(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator +(Vector64<T> left, Vector64<T> right)
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
@@ -112,8 +141,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
         /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator &(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator &(Vector64<T> left, Vector64<T> right)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -127,8 +158,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator |(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator |(Vector64<T> left, Vector64<T> right)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -142,8 +175,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
         /// <param name="right">The vector that will divide <paramref name="left" />.</param>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator /(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator /(Vector64<T> left, Vector64<T> right)
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
@@ -160,7 +195,9 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector64<T> left, Vector64<T> right)
         {
             for (int index = 0; index < Count; index++)
@@ -177,8 +214,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to exclusive-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to exclusive-or with <paramref name="left" />.</param>
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator ^(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator ^(Vector64<T> left, Vector64<T> right)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -192,17 +231,29 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector64<T> left, Vector64<T> right)
-            => !(left == right);
+        {
+            for (int index = 0; index < Count; index++)
+            {
+                if (Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator *(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator *(Vector64<T> left, Vector64<T> right)
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
@@ -219,7 +270,9 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The scalar to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator *(Vector64<T> left, T right)
         {
             Unsafe.SkipInit(out Vector64<T> result);
@@ -237,24 +290,35 @@ namespace System.Runtime.Intrinsics
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> operator *(T left, Vector64<T> right)
-            => right * left;
+        public static Vector64<T> operator *(T left, Vector64<T> right) => right * left;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> operator ~(Vector64<T> vector) => AllBitsSet ^ vector;
+        public static Vector64<T> operator ~(Vector64<T> vector)
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+            Unsafe.SkipInit(out Vector64<T> result);
+            Unsafe.AsRef(in result._00) = ~vector._00;
+
+            return result;
+        }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector64<T> operator -(Vector64<T> left, Vector64<T> right)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator -(Vector64<T> left, Vector64<T> right)
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
@@ -270,6 +334,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the unary negation of a vector.</summary>
         /// <param name="vector">The vector to negate.</param>
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator -(Vector64<T> vector) => Zero - vector;
@@ -277,21 +342,25 @@ namespace System.Runtime.Intrinsics
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
         /// <returns><paramref name="value" /></returns>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> operator +(Vector64<T> value) => value;
+        public static Vector64<T> operator +(Vector64<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            return value;
+        }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector64{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals([NotNullWhen(true)] object? obj)
-            => (obj is Vector64<T> other) && Equals(other);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector64<T> other) && Equals(other);
 
         /// <summary>Determines whether the specified <see cref="Vector64{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector64{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector64<T> other)
         {
@@ -328,14 +397,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Gets the hash code for the instance.</summary>
         /// <returns>The hash code for the instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
             HashCode hashCode = default;
 
             for (int i = 0; i < Count; i++)
             {
-                T value = this.GetElement(i);
+                T value = this.GetElementUnsafe(i);
                 hashCode.Add(value);
             }
 
@@ -344,9 +413,9 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
         /// <returns>An equivalent string representation of the current instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override string ToString()
-            => ToString("G", CultureInfo.InvariantCulture);
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
         private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
@@ -356,13 +425,13 @@ namespace System.Runtime.Intrinsics
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
 
             sb.Append('<');
-            sb.Append(((IFormattable)this.GetElement(0)).ToString(format, formatProvider));
+            sb.Append(((IFormattable)this.GetElementUnsafe(0)).ToString(format, formatProvider));
 
             for (int i = 1; i < Count; i++)
             {
                 sb.Append(separator);
                 sb.Append(' ');
-                sb.Append(((IFormattable)this.GetElement(i)).ToString(format, formatProvider));
+                sb.Append(((IFormattable)this.GetElementUnsafe(i)).ToString(format, formatProvider));
             }
             sb.Append('>');
 

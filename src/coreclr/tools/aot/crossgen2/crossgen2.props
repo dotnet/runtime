@@ -21,11 +21,6 @@
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
-
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
   </ItemGroup>
 
   <PropertyGroup>

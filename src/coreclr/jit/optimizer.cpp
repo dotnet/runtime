@@ -2951,10 +2951,38 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
     bool              modified = false;
-    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock*       h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const t        = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+
+    // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
+    // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
+    // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
+    // head block. See FindEntry() for the logic that allows this.
+    if ((h->bbJumpKind == BBJ_ALWAYS) && (h->bbJumpDest == t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    {
+        // Insert new head
+
+        BasicBlock* const newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+        newH->inheritWeight(h);
+        newH->bbNatLoopNum = h->bbNatLoopNum;
+        h->bbJumpDest      = newH;
+
+        fgRemoveRefPred(t, h);
+        fgAddRefPred(newH, h);
+        fgAddRefPred(t, newH);
+
+        optUpdateLoopHead(loopInd, h, newH);
+
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
+                " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
+                ". Replacing with new BBJ_NONE head " FMT_BB ".",
+                loopInd, h->bbNum, t->bbNum, newH->bbNum);
+
+        h        = newH;
+        modified = true;
+    }
 
     // Look for case (1)
     //
@@ -4201,11 +4229,17 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-            // Otherwise unroll only if limit is Vector_.Length
-            // (as a heuristic, not for correctness/structural reasons)
-            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
+            // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+            // We can unroll this
+        }
+        else
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
             continue;
         }
 

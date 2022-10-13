@@ -2972,7 +2972,7 @@ namespace Internal.JitInterface
             if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64)
                 return;
 
-            object node = HandleToObject((IntPtr)entryPoint.addr);
+            object node = HandleToObject(entryPoint.addr);
             if (node is not DelayLoadMethodImport imp)
                 return;
 
@@ -2991,6 +2991,26 @@ namespace Internal.JitInterface
         {
             // Not implemented for R2R yet
             return 0;
+        }
+
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
+        {
+            return false;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        {
+            throw new NotSupportedException();
+        }
+
+        private bool isObjectImmutable(void* objPtr)
+        {
+            throw new NotSupportedException();
+        }
+        
+        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return null;
         }
     }
 }

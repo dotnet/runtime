@@ -454,6 +454,21 @@ is_finalization_aware (MonoObject *obj)
 	return (vt->gc_bits & SGEN_GC_BIT_FINALIZER_AWARE) == SGEN_GC_BIT_FINALIZER_AWARE;
 }
 
+gboolean
+sgen_client_object_finalize_eagerly (GCObject *obj)
+{
+	if (obj->vtable->klass == mono_defaults.weakreference_class ||
+	    obj->vtable->klass == mono_defaults.generic_weakreference_class) {
+		MonoWeakReference *wr = (MonoWeakReference*)obj;
+		MonoGCHandle gc_handle = (MonoGCHandle)(wr->handleAndKind & ~(gsize)1);
+		mono_gchandle_free_internal (gc_handle);
+		wr->handleAndKind &= (gsize)1;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 void
 sgen_client_object_queued_for_finalization (GCObject *obj)
 {
@@ -2133,7 +2148,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 }
 
 MonoGCCallbacks *
-mono_gc_get_gc_callbacks ()
+mono_gc_get_gc_callbacks (void)
 {
 	return &gc_callbacks;
 }

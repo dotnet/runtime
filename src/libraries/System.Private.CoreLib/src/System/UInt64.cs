@@ -99,12 +99,12 @@ namespace System
 
         public override string ToString()
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
