@@ -4598,6 +4598,48 @@ mono_boxed_intptr_to_pointer (MonoObject *boxed_intptr, MonoType *ret_type, Mono
 	return res;
 }
 
+static gpointer
+extract_this_ptr (MonoMethod *method, gpointer this_ptr, MonoObject **res, MonoError *error)
+{
+	gpointer new_this_ptr = this_ptr;
+	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
+		MonoObject *newobj;
+		if (!this_ptr) {
+			newobj = mono_object_new_checked (method->klass, error);
+			MONO_HANDLE_PIN (newobj);
+			return_val_if_nok (error, NULL);
+			if (m_class_is_valuetype (method->klass))
+				new_this_ptr = mono_object_unbox_internal (newobj);
+			else
+				new_this_ptr = newobj;
+			*res = newobj;
+		} else if (m_class_is_valuetype (method->klass)) {
+			newobj = mono_value_box_checked (method->klass, this_ptr, error);
+			MONO_HANDLE_PIN (newobj);
+			return_val_if_nok (error, NULL);
+			*res = newobj;
+		} else {
+			*res = (MonoObject*)this_ptr;
+		}
+
+	} else {
+		if (mono_class_is_nullable (method->klass)) {
+			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+				new_this_ptr = NULL;
+			} else {
+				/* Convert the unboxed vtype into a Nullable structure */
+				MonoObject *newobj = mono_object_new_checked (method->klass, error);
+				MONO_HANDLE_PIN (newobj);
+
+				mono_nullable_init_unboxed ((guint8 *)mono_object_unbox_internal (newobj), this_ptr, method->klass);
+				new_this_ptr = mono_object_unbox_internal (newobj);
+			}
+		}
+		*res = NULL;
+	}
+	return new_this_ptr;
+}
+
 /**
  * mono_runtime_invoke_array:
  * \param method method to invoke
@@ -4726,57 +4768,26 @@ mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_
 			goto_if_nok (error, exit_null);
 		}
 	}
-	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
-		gpointer o = obj;
-		if (mono_class_is_nullable (method->klass)) {
-			/* Need to create a boxed vtype instead */
-			g_assert (!obj);
-			res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
-			goto exit;
-		}
+	if (!strcmp (method->name, ".ctor") && mono_class_is_nullable (method->klass)) {
+		/* Need to create a boxed vtype instead */
+		g_assert (!obj);
+		res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
+		goto exit;
+	}
 
-		if (!obj) {
-			MonoObjectHandle obj_h = mono_object_new_handle (method->klass, error);
-			goto_if_nok (error, exit_null);
-			obj = MONO_HANDLE_RAW (obj_h);
-			g_assert (obj);
-			if (m_class_is_valuetype (method->klass))
-				o = mono_object_unbox_internal ((MonoObject *)obj);
-			else
-				o = obj;
-		} else if (m_class_is_valuetype (method->klass)) {
-			MonoObjectHandle obj_h = mono_value_box_handle (method->klass, obj, error);
-			goto_if_nok (error, exit_null);
-			obj = MONO_HANDLE_RAW (obj_h);
-		}
+	obj = extract_this_ptr (method, obj, &res, error);
+	goto_if_nok (error, exit_null);
 
-		if (exc)
-			mono_runtime_try_invoke (method, o, pa, exc, error);
-		else
-			mono_runtime_invoke_checked (method, o, pa, error);
-		res = (MonoObject*)obj;
-	} else {
-		if (mono_class_is_nullable (method->klass)) {
-			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-				obj = NULL;
-			} else {
-				/* Convert the unboxed vtype into a Nullable structure */
-				MonoObjectHandle nullable_h = mono_object_new_handle (method->klass, error);
-				goto_if_nok (error, exit_null);
-				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
+	MonoObject *invoke_res;
+	if (exc)
+		invoke_res = mono_runtime_try_invoke (method, obj, pa, exc, error);
+	else
+		invoke_res = mono_runtime_invoke_checked (method, obj, pa, error);
+	goto_if_nok (error, exit_null);
 
-				mono_nullable_init_unboxed ((guint8 *)mono_object_unbox_internal (nullable), obj, method->klass);
-				obj = mono_object_unbox_internal (nullable);
-			}
-		}
-
-		if (exc)
-                        res = mono_runtime_try_invoke (method, obj, pa, exc, error);
-                else
-                        res = mono_runtime_invoke_checked (method, obj, pa, error);
-
+	if (!res) {
+		res = invoke_res;
 		MONO_HANDLE_PIN (res);
-		goto_if_nok (error, exit_null);
 
 		if (sig->ret->type == MONO_TYPE_PTR) {
 			res = mono_boxed_intptr_to_pointer (res, sig->ret, error);
