@@ -71,10 +71,12 @@ namespace System.Collections.Concurrent
                 case TypeCode.UInt16:
                 case TypeCode.UInt32:
                     return true;
+
                 case TypeCode.Double:
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     return IntPtr.Size == 8;
+
                 default:
                     return false;
             }
@@ -92,22 +94,22 @@ namespace System.Collections.Concurrent
                 typeof(TValue) == typeof(IntPtr) ||
                 typeof(TValue) == typeof(UIntPtr) ||
                 typeof(TValue) == typeof(bool) ||
-                typeof(TValue) == typeof(byte) ||
-                typeof(TValue) == typeof(char) ||
+                typeof(TValue) == typeof(sbyte) ||
                 typeof(TValue) == typeof(short) ||
                 typeof(TValue) == typeof(int) ||
-                typeof(TValue) == typeof(sbyte) ||
-                typeof(TValue) == typeof(float) ||
+                typeof(TValue) == typeof(byte) ||
                 typeof(TValue) == typeof(ushort) ||
-                typeof(TValue) == typeof(uint))
+                typeof(TValue) == typeof(uint) ||
+                typeof(TValue) == typeof(char) ||
+                typeof(TValue) == typeof(float))
             {
                 return true;
             }
 
             if (IntPtr.Size == 8 &&
-                (typeof(TValue) == typeof(double) ||
-                 typeof(TValue) == typeof(long) ||
-                 typeof(TValue) == typeof(ulong)))
+                (typeof(TValue) == typeof(long) ||
+                 typeof(TValue) == typeof(ulong) ||
+                 typeof(TValue) == typeof(double)))
             {
                 return true;
             }
