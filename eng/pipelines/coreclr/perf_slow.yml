@@ -136,13 +136,13 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           container: ubuntu-18.04-cross-arm64
+          crossrootfsDir: '/crossrootfs/arm64'
           runtimeFlavor: mono
           runtimeVariant: 'llvmaot'
           platforms:
           - Linux_arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            crossrootfsDir: '/crossrootfs/arm64'
             nameSuffix: AOT
             isOfficialBuild: false
             extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
