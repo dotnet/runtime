@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "emit.h"
-#include "register_arg_convention.h"
+#include "registerargconvention.h"
 #include "jitstd/algorithm.h"
 #include "patchpointinfo.h"
 
@@ -482,17 +482,6 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         if (eeIsValueClass(info.compClassHnd))
         {
             varDsc->lvType = TYP_BYREF;
-#ifdef FEATURE_SIMD
-            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-            var_types   type            = impNormStructType(info.compClassHnd, &simdBaseJitType);
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-            {
-                assert(varTypeIsSIMD(type));
-                varDsc->lvSIMDType = true;
-                varDsc->SetSimdBaseJitType(simdBaseJitType);
-                varDsc->lvExactSize = genTypeSize(type);
-            }
-#endif // FEATURE_SIMD
         }
         else
         {
@@ -550,19 +539,6 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         varDsc->SetOtherArgReg(REG_NA);
 #endif
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
-
-#ifdef FEATURE_SIMD
-        if (varTypeIsSIMD(info.compRetType))
-        {
-            varDsc->lvSIMDType = true;
-
-            CorInfoType simdBaseJitType =
-                getBaseJitTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
-            varDsc->SetSimdBaseJitType(simdBaseJitType);
-
-            assert(varDsc->GetSimdBaseType() != TYP_UNKNOWN);
-        }
-#endif // FEATURE_SIMD
 
         assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
 

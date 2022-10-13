@@ -194,7 +194,6 @@ struct Agnostic_GetFieldAddress
 {
     DWORDLONG ppIndirection;
     DWORDLONG fieldAddress;
-    DWORD     fieldValue;
 };
 
 struct Agnostic_GetStaticFieldCurrentClass

@@ -3,11 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Text.Json;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
@@ -28,6 +25,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
+            private const string MakeReadOnlyMethodName = "MakeReadOnly";
             private const string InfoVarName = "info";
             private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
@@ -1010,6 +1008,8 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 return $@"
 
+// Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
+// methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
 private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
 {{
     {GetEarlyNullCheckSource(emitNullCheck)}
@@ -1085,15 +1085,18 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
-    get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
+    get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName}, makeReadOnly: true);
 }}
 
-// Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
-// methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
-private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
+private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, bool makeReadOnly)
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
+
+    if (makeReadOnly)
+    {{
+        {JsonTypeInfoReturnValueLocalVariableName}.{MakeReadOnlyMethodName}();
+    }}
 
     return {JsonTypeInfoReturnValueLocalVariableName};
 }}
@@ -1271,30 +1274,23 @@ public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
                 // Explicit IJsonTypeInfoResolver implementation
                 sb.AppendLine();
                 sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
-{{
-    if ({OptionsInstanceVariableName} == {OptionsLocalVariableName})
-    {{
-        return this.GetTypeInfo(type);
-    }}
-    else
-    {{");
+{{");
                 // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
                 foreach (TypeGenerationSpec metadata in types)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                     {
                         sb.Append($@"
-        if (type == typeof({metadata.TypeRef}))
-        {{
-            return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName});
-        }}
+    if (type == typeof({metadata.TypeRef}))
+    {{
+        return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName}, makeReadOnly: false);
+    }}
 ");
                     }
                 }
 
                 sb.Append($@"
-        return null;
-    }}
+    return null;
 }}
 ");
 

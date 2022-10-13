@@ -672,8 +672,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode definition in safecrt.h.
 */
 
-#define swscanf_s swscanf
-
 #define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
 

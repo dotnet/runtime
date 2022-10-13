@@ -42,7 +42,7 @@ interface EventPipeCollectTracingCommandProvider {
     keywords: [number, number];
     logLevel: number;
     provider_name: string;
-    filter_data: string;
+    filter_data: string | null;
 }
 declare type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T, "command_set" | "command">;
 
@@ -50,6 +50,7 @@ declare type FilterPredicate = (data: ArrayBuffer) => boolean;
 interface MockScriptConnection {
     waitForSend(filter: FilterPredicate): Promise<void>;
     waitForSend<T>(filter: FilterPredicate, extract: (data: ArrayBuffer) => T): Promise<T>;
+    processSend(onMessage: (data: ArrayBuffer) => any): Promise<void>;
     reply(data: ArrayBuffer): void;
 }
 interface MockEnvironmentCommand {
@@ -62,6 +63,8 @@ interface MockEnvironmentReply {
     extractOkSessionID(data: ArrayBuffer): number;
 }
 interface MockEnvironment {
+    postMessageToBrowser(message: any, transferable?: Transferable[]): void;
+    addEventListenerFromBrowser(cmd: string, listener: (data: any) => void): void;
     createPromiseController<T>(): PromiseAndController<T>;
     delay: (ms: number) => Promise<void>;
     command: MockEnvironmentCommand;
