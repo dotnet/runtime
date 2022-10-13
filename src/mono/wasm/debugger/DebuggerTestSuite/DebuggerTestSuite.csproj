@@ -12,7 +12,7 @@
     <InstallFirefoxForTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForTests>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
