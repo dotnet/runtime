@@ -120,7 +120,7 @@ void DumpScope(void* GUICookie)
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[1024];
-    WCHAR guidString[1024];
+    CHAR guidString[1024];
     memset(scopeName,0,1024*sizeof(WCHAR));
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
@@ -133,15 +133,9 @@ void DumpScope(void* GUICookie)
             VDELETE(sz);
         }
         printLine(GUICookie,szString);
-        StringFromGUID2(mvid, guidString, 1024);
-        {
-            UINT32 L = (UINT32)wcslen(guidString)*3+3;
-            char* sz = new char[L];
-            memset(sz,0,L);
-            WszWideCharToMultiByte(CP_UTF8,0,guidString,-1,sz,L,NULL,NULL);
-            sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,sz);
-            VDELETE(sz);
-        }
+        GuidToLPSTR(mvid, guidString);
+        sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,guidString);
+
         printLine(GUICookie,szString);
         if(SUCCEEDED(g_pPubImport->GetModuleFromScope(&mdm)))
         {

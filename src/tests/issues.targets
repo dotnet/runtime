@@ -922,13 +922,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- All OSX targets on NativeAOT -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/DynamicGenerics/DynamicGenerics/*">
-            <Issue>https://github.com/dotnet/runtime/issues/73299</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
@@ -2181,6 +2174,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_68568/Runtime_68568/*">
             <Issue>Tests coreclr's handling of switches on natively sized integers</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
+            <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3799,9 +3795,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
-            <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>

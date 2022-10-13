@@ -19,6 +19,7 @@ namespace System.Formats.Tar
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
+        internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         // Default mode for TarEntry created for a file-type.
         private const UnixFileMode DefaultFileMode =

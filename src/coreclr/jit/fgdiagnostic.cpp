@@ -3032,10 +3032,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
             break;
 
-        case GT_LCL_VAR:
-            assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
-            break;
-
         case GT_QMARK:
             assert(!op1->CanCSE());
             assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));

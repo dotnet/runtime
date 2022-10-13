@@ -821,7 +821,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
 
     PAL_TRY(Param *, pParam, &param) {
         GUID guidLang={0},guidLangVendor={0},guidDoc={0};
-        WCHAR wzLang[64],wzVendor[64],wzDoc[64];
+        CHAR zLang[64],zVendor[64],zDoc[64];
         ULONG32 k;
         if(pParam->pLCD->FileToken != ulWasFileToken)
         {
@@ -832,11 +832,11 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
                 ||memcmp(&guidLangVendor,&guidWasLangVendor,sizeof(GUID))
                 ||memcmp(&guidDoc,&guidWasDoc,sizeof(GUID)))
             {
-                GuidToLPWSTR(guidLang,wzLang,64);
-                GuidToLPWSTR(guidLangVendor,wzVendor,64);
-                GuidToLPWSTR(guidDoc,wzDoc,64);
-                sprintf_s(szString,SZSTRING_SIZE,"%s%s '%ls', '%ls', '%ls'", g_szAsmCodeIndent,KEYWORD(".language"),
-                    wzLang,wzVendor,wzDoc);
+                GuidToLPSTR(guidLang,zLang);
+                GuidToLPSTR(guidLangVendor,zVendor);
+                GuidToLPSTR(guidDoc,zDoc);
+                sprintf_s(szString,SZSTRING_SIZE,"%s%s '%s', '%s', '%s'", g_szAsmCodeIndent,KEYWORD(".language"),
+                    zLang,zVendor,zDoc);
                 printLine(pParam->GUICookie,szString);
                 memcpy(&guidWasLang,&guidLang,sizeof(GUID));
                 memcpy(&guidWasLangVendor,&guidLangVendor,sizeof(GUID));

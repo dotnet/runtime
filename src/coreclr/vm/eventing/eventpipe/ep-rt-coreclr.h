@@ -2065,7 +2065,7 @@ ep_rt_thread_create (
 static
 inline
 void
-ep_rt_set_server_name()
+ep_rt_set_server_name(void)
 {
 	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
 }

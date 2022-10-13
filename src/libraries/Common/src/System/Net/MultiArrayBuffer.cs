@@ -200,16 +200,16 @@ namespace System.Net
                         }
 
                         byte[]?[] newBlockArray = new byte[]?[blockArraySize];
-                        _blocks.AsSpan().Slice((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(newBlockArray);
+                        _blocks.AsSpan((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(newBlockArray);
                         _blocks = newBlockArray;
                     }
                     else
                     {
                         // We can shift the array down to make enough space
-                        _blocks.AsSpan().Slice((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(_blocks);
+                        _blocks.AsSpan((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(_blocks);
 
                         // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
-                        _blocks.AsSpan().Slice((int)usedBlocks, (int)unusedInitialBlocks).Clear();
+                        _blocks.AsSpan((int)usedBlocks, (int)unusedInitialBlocks).Clear();
                     }
 
                     uint shift = unusedInitialBlocks * BlockSize;

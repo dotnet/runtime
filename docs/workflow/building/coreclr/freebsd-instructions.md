@@ -1,19 +1,62 @@
-Build CoreCLR on FreeBSD
-======================
+# Build CoreCLR on FreeBSD
 
-This guide will walk you through building CoreCLR on FreeBSD and running Hello World.  We'll start by showing how to set up your environment from scratch.
+* [Build using Docker](#build-using-docker)
+* [Build using cross-compilation on Linux](#build-using-cross-compilation-on-linux)
+* [Build directly on FreeBSD](#build-directly-on-freebsd)
+* [Old Documentation](#old-documentation)
+  * [Environment](#environment)
+    * [Toolchain Setup](#toolchain-setup)
+  * [Debugging CoreCLR (Optional)](#debugging-coreclr-optional)
+  * [Git Setup](#git-setup)
+  * [Build the Runtime](#build-the-runtime)
+  * [Build the Framework Native Components](#build-the-framework-native-components)
+  * [Build the Framework Managed Components](#build-the-framework-managed-components)
+  * [Download Dependencies](#download-dependencies)
+  * [Install Mono](#install-mono)
+  * [Download the NuGet Client](#download-the-nuget-client)
+  * [Download NuGet Packages](#download-nuget-packages)
+  * [Compile an App](#compile-an-app)
+  * [Run your App](#run-your-app)
+  * [Run the test suite](#run-the-test-suite)
+  * [Note on Clang/LLVM versions](#note-on-clangllvm-versions)
 
-Environment
-===========
+This guide will walk you through building CoreCLR on FreeBSD.
 
-These instructions are written assuming FreeBSD 10.1-RELEASE, since that's the release the team uses.
+As mentioned in the [FreeBSD requirements doc](/docs/workflow/requirements/freebsd-requirements.md), there are three ways to go on about to build CoreCLR for FreeBSD:
+
+* Build using Docker
+* Build using cross-compilation on your own Linux environment
+* Build directly on FreeBSD
+
+## Build using Docker
+
+Building for FreeBSD with Docker follows a very similar workflow to using Docker for Linux. Since this is also a cross-building scenario, the instructions are found in the [Docker section of the cross-building doc](/docs/workflow/building/coreclr/cross-building.md#cross-compiling-for-freebsd-with-docker).
+
+## Build using cross-compilation on Linux
+
+Ensure you have all of the prerequisites installed from the [Linux Requirements](/docs/workflow/requirements/linux-requirements.md), and the additional ones listed in the [FreeBSD Requirements](/docs/workflow/requirements/freebsd-requirements.md#linux-environment).
+
+Once that is done, refer to the [Linux section of the cross-building doc](/docs/workflow/building/coreclr/cross-building.md#linux-cross-building). There are detailed instructions on how to cross-compile using your Linux environment, including a section dedicated to FreeBSD building.
+
+## Build directly on FreeBSD
+
+Ensure you have all of the prerequisites installed from the [FreeBSD Requirements](/docs/workflow/requirements/freebsd-requirements.md).
+
+Instructions for building directly on FreeBSD coming soon!
+
+Meanwhile, here are the old instructions.
+
+## Old Documentation
+
+These instructions were written quite a while ago, and they may or may not work today. Updated instructions coming soon.
+
+### Environment
 
 These instructions assume you use the binary package tool `pkg` (analog to `apt-get` or `yum` on Linux) to install the environment. Compiling the dependencies from source using the ports tree might work too, but is untested.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 4069](https://github.com/dotnet/runtime/issues/4069)).
 
-Toolchain Setup
----------------
+#### Toolchain Setup
 
 Install the following packages for the toolchain:
 
@@ -35,8 +78,7 @@ janhenke@freebsd-frankfurt:~ % sudo pkg install bash cmake libunwind gettext llv
 
 The command above will install Clang and LLVM 3.7. For information on building CoreCLR with other versions, see section on [Clang/LLVM versions](#note-on-clangllvm-versions).
 
-Debugging CoreCLR (Optional)
-----------------------------
+### Debugging CoreCLR (Optional)
 
 Note: This step is not required to build CoreCLR itself. If you intend on hacking or debugging the CoreCLR source code, you need to follow these steps. You must follow these steps *before* starting the build itself.
 
@@ -54,13 +96,11 @@ Run tests:
 ./src/pal/tests/palsuite/runpaltests.sh $PWD/artifacts/obj/FreeBSD.x64.Debug $PWD/artifacts/paltestout
 ```
 
-Git Setup
----------
+### Git Setup
 
 This guide assumes that you've cloned the corefx and coreclr repositories into `~/git/corefx` and `~/git/coreclr` on your FreeBSD machine and the corefx and coreclr repositories into `D:\git\corefx` and `D:\git\coreclr` on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show what directory I'm in on both the FreeBSD and Windows machine.
 
-Build the Runtime
-=================
+### Build the Runtime
 
 To build the runtime on FreeBSD, run build.sh from the root of the coreclr repository:
 
@@ -92,16 +132,14 @@ janhenke@freebsd-frankfurt:~/git/coreclr % cp artifacts/Product/FreeBSD.x64.Debu
 janhenke@freebsd-frankfurt:~/git/coreclr % cp artifacts/Product/FreeBSD.x64.Debug/libcoreclr*.so ~/coreclr-demo/runtime
 ```
 
-Build the Framework Native Components
-======================================
+### Build the Framework Native Components
 
 ```sh
 janhenke@freebsd-frankfurt:~/git/corefx$ ./build-native.sh
 janhenke@freebsd-frankfurt:~/git/corefx$ cp artifacts/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
 ```
 
-Build the Framework Managed Components
-======================================
+### Build the Framework Managed Components
 
 We don't _yet_ have support for building managed code on FreeBSD, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
@@ -132,8 +170,7 @@ janhenke@freebsd-frankfurt:~/git/coreclr % ls ~/coreclr-demo/runtime/
 System.Console.dll  System.Diagnostics.Debug.dll  corerun  libcoreclr.so  libcoreclrpal.so  System.Private.CoreLib.dll
 ```
 
-Download Dependencies
-=====================
+### Download Dependencies
 
 The rest of the assemblies you need to run are presently just facades that point to System.Private.CoreLib.  We can pull these dependencies down via NuGet (which currently requires Mono).
 
@@ -144,8 +181,7 @@ janhenke@freebsd-frankfurt:~/git/coreclr % mkdir ~/coreclr-demo/packages
 janhenke@freebsd-frankfurt:~/git/coreclr % cd ~/coreclr-demo/packages
 ```
 
-Install Mono
-------------
+### Install Mono
 
 If you don't already have Mono installed on your system, use the pkg tool again:
 
@@ -153,16 +189,14 @@ If you don't already have Mono installed on your system, use the pkg tool again:
 janhenke@freebsd-frankfurt:~/coreclr-demo/packages % sudo pkg install mono
 ```
 
-Download the NuGet Client
--------------------------
+### Download the NuGet Client
 
 Grab NuGet (if you don't have it already)
 
 ```sh
 janhenke@freebsd-frankfurt:~/coreclr-demo/packages % curl -L -O https://nuget.org/nuget.exe
 ```
-Download NuGet Packages
------------------------
+### Download NuGet Packages
 
 With Mono and NuGet in hand, you can use NuGet to get the required dependencies.
 
@@ -210,8 +244,7 @@ Finally, you need to copy over the assemblies to the runtime folder.  You don't 
 janhenke@freebsd-frankfurt:~/coreclr-demo/packages % find . -wholename '*/aspnetcore50/*.dll' -exec cp -n {} ~/coreclr-demo/runtime \;
 ```
 
-Compile an App
-==============
+### Compile an App
 
 Now you need a Hello World application to run.  You can write your own, if you'd like.  Personally, I'm partial to the one on corefxlab which will draw Tux for us.
 
@@ -226,8 +259,7 @@ Then you just need to build it, with `mcs`, the Mono C# compiler. FYI: The Rosly
 janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % mcs /nostdlib /noconfig /r:../packages/System.Console.4.0.0-beta-22703/lib/contract/System.Console.dll /r:../packages/System.Runtime.4.0.20-beta-22703/lib/contract/System.Runtime.dll HelloWorld.cs
 ```
 
-Run your App
-============
+### Run your App
 
 You're ready to run Hello World!  To do that, run corerun, passing the path to the managed exe, plus any arguments.  The HelloWorld from corefxlab will print a daemon if you pass "freebsd" as an argument, so:
 
@@ -242,8 +274,7 @@ Over time, this process will get easier. We will remove the dependency on having
 A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would be great! Some of our processes (e.g. the System.Private.CoreLib build) rely on Windows-specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
 
 
-Run the test suite
-==================
+### Run the test suite
 
 If you've made changes to the CoreCLR PAL code, you might want to run the PAL tests directly to validate your changes.
 This can be done after a clean build, without any other dependencies.
@@ -256,8 +287,7 @@ janhenke@freebsd-frankfurt:~/coreclr % ./src/pal/tests/palsuite/runpaltests.sh  
 
 This should run all the tests associated with the PAL.
 
-Note on Clang/LLVM versions
-===========================
+### Note on Clang/LLVM versions
 
 The minimum version to build CoreCLR is Clang 3.5 or above.
 

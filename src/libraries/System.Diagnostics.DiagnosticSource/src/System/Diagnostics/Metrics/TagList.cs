@@ -234,7 +234,7 @@ namespace System.Diagnostics
 
             if (_overflowTags is not null)
             {
-                _overflowTags.AsSpan().Slice(0, _tagsCount).CopyTo(tags);
+                _overflowTags.AsSpan(0, _tagsCount).CopyTo(tags);
                 return;
             }
 
@@ -273,7 +273,7 @@ namespace System.Diagnostics
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            CopyTo(array.AsSpan().Slice(arrayIndex));
+            CopyTo(array.AsSpan(arrayIndex));
         }
 
         /// <summary>

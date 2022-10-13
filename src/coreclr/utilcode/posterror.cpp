@@ -123,10 +123,19 @@ static HRESULT FormatRuntimeErrorVA(
         hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf), true);
         if (hr == S_OK)
         {
-            MAKE_UTF8PTR_FROMWIDE(rcUtf8, rcBuf);
-            _vsnprintf_s(msgBufUtf8, ARRAY_SIZE(msgBufUtf8), _TRUNCATE, rcUtf8, marker);
-            MAKE_WIDEPTR_FROMUTF8(msgBuf, msgBufUtf8);
-            wcscpy_s(rcMsg, cchMsg, msgBuf);
+            hr = E_OUTOFMEMORY; // Out of memory is possible
+
+            MAKE_UTF8PTR_FROMWIDE_NOTHROW(rcUtf8, rcBuf);
+            if (rcUtf8 != NULL)
+            {
+                _vsnprintf_s(msgBufUtf8, ARRAY_SIZE(msgBufUtf8), _TRUNCATE, rcUtf8, marker);
+                MAKE_WIDEPTR_FROMUTF8_NOTHROW(msgBuf, msgBufUtf8);
+                if (msgBuf != NULL)
+                {
+                    hr = S_OK; // Performed all formatting allocations.
+                    wcscpy_s(rcMsg, cchMsg, msgBuf);
+                }
+            }
         }
     }
     // Otherwise it isn't one of ours, so we need to see if the system can
