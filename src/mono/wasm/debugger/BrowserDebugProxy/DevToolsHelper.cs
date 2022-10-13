@@ -408,13 +408,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
         }
-        public ExecutionContext Clone(SessionId sessionId)
-           => new ExecutionContext(SdbAgent.Clone(sessionId), Id, AuxData, PauseOnExceptions)
+        public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
+            => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
             {
-                ready = ready,
-                store = store,
-                Source = Source
+                ParentContext = this,
+                SessionId = sessionId
             };
+        public bool CopyDataFromParentContext()
+        {
+            if (SdbAgent != null)
+                return false;
+            ready = ParentContext.ready;
+            store = ParentContext.store;
+            Source = ParentContext.Source;
+            SdbAgent = ParentContext.SdbAgent.Clone(SessionId);
+            return true;
+        }
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
         public int breakpointId;
@@ -425,6 +434,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
+        public ExecutionContext ParentContext { get; set; }
+        public SessionId SessionId { get; set; }
 
         public bool PausedOnWasm { get; set; }
 
@@ -438,7 +449,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
-        internal MonoSDBHelper SdbAgent { get; init; }
+        internal MonoSDBHelper SdbAgent { get; set; }
         public TaskCompletionSource<DebugStore> Source { get; private set; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();

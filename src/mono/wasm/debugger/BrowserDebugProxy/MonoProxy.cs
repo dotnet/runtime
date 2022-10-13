@@ -171,10 +171,18 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.paused":
                     {
-                        // Don't process events from sessions we aren't tracking unless they have asyncStackTraceId
-                        if (!contexts.ContainsKey(sessionId) && args["asyncStackTraceId"] != null)
+                        if (args["asyncStackTraceId"] != null)
                         {
-                            await CreateAsyncExecutionContext(sessionId, token);
+                            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                                return false;
+                            if (context.CopyDataFromParentContext())
+                            {
+                                var store = await LoadStore(sessionId, true, token);
+                                foreach (var source in store.AllSources())
+                                {
+                                    await OnSourceFileAdded(sessionId, source, context, token);
+                                }
+                            }
                         }
 
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
@@ -234,6 +242,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (args["targetInfo"]["type"]?.ToString() == "page")
                             await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
+                        else if (args["targetInfo"]["type"]?.ToString() == "worker")
+                            CreateAsyncExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()));
                         break;
                     }
 
@@ -247,14 +257,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        protected async Task CreateAsyncExecutionContext(SessionId sessionId, CancellationToken token)
+        protected void CreateAsyncExecutionContext(SessionId sessionId, SessionId originSessionId)
         {
-            contexts[sessionId] = contexts.First().Value.Clone(sessionId);
-            var store = await LoadStore(sessionId, true, token);
-            foreach (var source in store.AllSources())
-            {
-                await OnSourceFileAdded(sessionId, source, contexts[sessionId], true, token);
-            }
+            if (!contexts.TryGetValue(originSessionId, out ExecutionContext context))
+                return;
+            if (contexts.ContainsKey(sessionId))
+                return;
+            contexts[sessionId] = context.CreateChildAsyncExecutionContext(sessionId);
         }
 
         protected virtual async Task SendResume(SessionId id, CancellationToken token)
@@ -1071,9 +1080,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<Result> GetLastDebuggerAgentBuffer(SessionId sessionId, JObject args, CancellationToken token)
         {
+            if (args?["callFrames"].Value<JArray>().Count == 0 || args["callFrames"][0]["scopeChain"].Value<JArray>().Count == 0)
+                return Result.Err($"Unexpected callFrames {args}");
             var argsNew = JObject.FromObject(new
             {
-                objectId = args?["callFrames"]?[0]?["scopeChain"]?[0]?["object"]?["objectId"]?.Value<string>(),
+                objectId = args["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>(),
             });
             Result res = await SendCommand(sessionId, "Runtime.getProperties", argsNew, token);
             return res;
@@ -1082,9 +1093,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, Result debuggerAgentBuffer, CancellationToken token)
         {
             SaveLastDebuggerAgentBufferReceivedToContext(sessionId, debuggerAgentBuffer);
-            if (!debuggerAgentBuffer.IsOk)
+            if (!debuggerAgentBuffer.IsOk || debuggerAgentBuffer.Value?["result"].Value<JArray>().Count == 0)
+            {
+                logger.LogTrace($"Unexpected DebuggerAgentBufferReceived {debuggerAgentBuffer}");
                 return false;
-
+            }
             ExecutionContext context = GetContext(sessionId);
             byte[] newBytes = Convert.FromBase64String(debuggerAgentBuffer.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
             using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
@@ -1311,7 +1324,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var context = GetContext(sessionId);
                 foreach (var source in store.Add(sessionId, assembly_name, assembly_data, pdb_data, token))
                 {
-                    await OnSourceFileAdded(sessionId, source, context, false, token);
+                    await OnSourceFileAdded(sessionId, source, context, token);
                 }
 
                 return true;
@@ -1487,12 +1500,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
-        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, bool ignoreBreakpoint, CancellationToken token)
+        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token, bool resolveBreakpoints = true)
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             // Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-            if (ignoreBreakpoint)
+            if (!resolveBreakpoints)
                 return;
             foreach (var req in context.BreakpointRequests.Values)
             {
@@ -1529,7 +1542,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, context, useDebuggerProtocol, token))
                     {
-                        await OnSourceFileAdded(sessionId, source, context, false, token);
+                        await OnSourceFileAdded(sessionId, source, context, token, false);
                     }
                 }
             }

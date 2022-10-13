@@ -717,9 +717,11 @@ internal sealed class FirefoxMonoProxy : MonoProxy
     {
         var context = GetContextFixefox(sessionId);
         Result res = context.LastDebuggerAgentBufferReceived;
-        if (!res.IsOk)
+        if (!res.IsOk || res.Value?["result"].Value<JArray>().Count == 0)
+        {
+            logger.LogTrace($"Unexpected DebuggerAgentBufferReceived {res}");
             return false;
-
+        }
         byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);
@@ -835,7 +837,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return SendCommand(id, "evaluateJSAsync", o, token);
     }
 
-    internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, bool ignoreBreakpoint, CancellationToken token)
+    internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token, bool resolveBreakpoints = true)
     {
         //different behavior when debugging from VSCode and from Firefox
         var ctx = context as FirefoxExecutionContext;
@@ -870,7 +872,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             });
         }
         await SendEvent(sessionId, "", sourcesJObj, token);
-        if (ignoreBreakpoint)
+        if (!resolveBreakpoints)
             return;
         foreach (var req in context.BreakpointRequests.Values)
         {
