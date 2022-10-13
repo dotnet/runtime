@@ -2340,7 +2340,6 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         }
     }
 
-
     return false;
 }
 
