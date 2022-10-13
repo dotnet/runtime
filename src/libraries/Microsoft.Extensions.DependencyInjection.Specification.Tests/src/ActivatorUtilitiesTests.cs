@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         private static object CreateInstanceFromFactory(IServiceProvider provider, Type type, object[] args)
         {
-            var factory = ActivatorUtilities.CreateFactory(type, args.Select(a => a?.GetType()).ToArray());
+            var factory = ActivatorUtilities.CreateFactory(type, args.Select(a => a.GetType()).ToArray());
             return factory(provider, args);
         }
 
@@ -378,39 +378,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        [Fact]
-        public void CreateInstance_BadlyConfiguredIServiceProviderIsService_ProperlyCreatesUnambiguousInstance()
-        {
-            if (SupportsIServiceProviderIsService)
-            {
-                return;
-            }
-
-            var serviceCollection = new TestServiceCollection()
-                .AddScoped<FakeService1>();
-            var fakeIServiceProviderIsService = new FakeIServiceProviderIsService();
-
-            serviceCollection.AddScoped<IServiceProviderIsService>((p) => (IServiceProviderIsService)fakeIServiceProviderIsService);
-            var serviceProvider = CreateServiceProvider(serviceCollection);
-
-            var instance = ActivatorUtilities.CreateInstance<FakeService2>(serviceProvider);
-            Assert.NotNull(instance);
-            Assert.True(fakeIServiceProviderIsService.Called);
-        }
-
-        [Theory]
-        [MemberData(nameof(CreateInstanceFuncs))]
-        public void CreateInstance_NullInstance_HandlesBadInputWithInvalidOperationException(CreateInstanceFunc createFunc)
-        {
-            var serviceCollection = new TestServiceCollection()
-                .AddTransient<IFakeService, FakeService>();
-            var serviceProvider = CreateServiceProvider(serviceCollection);
-            IFakeService? fakeService = null;
-
-            Assert.Throws<InvalidOperationException>(() =>
-                CreateInstance<CreationCountFakeService>(createFunc, serviceProvider, fakeService!));
-        }
-
         [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
         public void UnRegisteredServiceAsConstructorParameterThrowsException(CreateInstanceFunc createFunc)
@@ -450,16 +417,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var msg = "some error";
             Assert.Equal(msg, ex.Message);
         }
-
-        private class FakeIServiceProviderIsService : IServiceProviderIsService
-        {
-            public FakeIServiceProviderIsService() { }
-            public bool Called { get; set; }
-            public bool IsService(Type serviceType) { Called = true; return false; }
-        }
-
-        private class FakeService1 { public FakeService1() { } }
-        private class FakeService2 { public FakeService2(FakeService1 fakeService) { } }
 
         private abstract class AbstractFoo
         {

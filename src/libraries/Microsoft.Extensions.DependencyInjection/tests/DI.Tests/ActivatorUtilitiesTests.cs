@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using static Microsoft.Extensions.DependencyInjection.Tests.AsyncServiceScopeTests;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -37,6 +38,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(instance.A);
         }
 
+        [Fact]
+        public void CreateInstance_BadlyConfiguredIServiceProviderIsService_ProperlyCreatesUnambiguousInstance()
+        {
+            var serviceCollection = new ServiceCollection()
+                .AddScoped<A>();
+            var fakeServiceProvider = new FakeServiceProvider();
+            fakeServiceProvider.Populate(serviceCollection);
+            fakeServiceProvider.Build();
+
+            var instance = ActivatorUtilities.CreateInstance<ClassWithA>(fakeServiceProvider);
+
+            Assert.NotNull(instance);
+            Assert.True(fakeServiceProvider.FakeServiceProviderIsService.IsServiceGotCalled);
+        }
+
         [Theory]
         [InlineData(typeof(ABCS1))]
         [InlineData(typeof(ABCS2))]
@@ -54,6 +70,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(b, instance.B);
             Assert.Same(c, instance.C);
             Assert.NotNull(instance.S);
+        }
+
+        [Fact]
+        public void CreateInstance_NullInstance_HandlesBadInputWithInvalidOperationException()
+        {
+            var serviceCollection = new ServiceCollection()
+                .AddScoped<S>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            B? nullB = null;
+
+            Assert.Throws<InvalidOperationException>(() =>
+                ActivatorUtilities.CreateInstance<ABCS1>(serviceProvider, nullB!, new C()));
         }
 
         [Fact]
@@ -168,6 +196,43 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
         [ActivatorUtilitiesConstructor]
         public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b , c) { }
+    }
+
+    internal class FakeServiceProvider : IServiceProvider
+    {
+        private IServiceProvider _inner;
+        private IServiceCollection _services;
+        public IServiceCollection Services => _services;
+        public FakeIServiceProviderIsService FakeServiceProviderIsService { get; set; } = new FakeIServiceProviderIsService();
+
+        public object GetService(Type serviceType)
+        {
+            if (serviceType == typeof(IServiceProviderIsService))
+            {
+                return FakeServiceProviderIsService;
+            }
+
+            return _inner.GetService(serviceType);
+        }
+
+        public void Populate(IServiceCollection services)
+        {
+            _services = services;
+            _services.AddSingleton<FakeServiceProvider>(this);
+            _services.AddSingleton<IServiceProviderIsService>((p) => (IServiceProviderIsService)FakeServiceProviderIsService);
+        }
+
+        public void Build()
+        {
+            _inner = _services.BuildServiceProvider();
+        }
+    }
+
+    internal class FakeIServiceProviderIsService : IServiceProviderIsService
+    {
+        public FakeIServiceProviderIsService() { }
+        public bool IsServiceGotCalled { get; set; }
+        public bool IsService(Type serviceType) { IsServiceGotCalled = true; return false; }
     }
 
     internal class ClassWithA
