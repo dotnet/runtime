@@ -364,7 +364,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
 {
     if (compiler->compFloatingPointUsed)
     {
-        return allRegs(TYP_FLOAT);
+        return availableFloatRegs;
     }
     else
     {
