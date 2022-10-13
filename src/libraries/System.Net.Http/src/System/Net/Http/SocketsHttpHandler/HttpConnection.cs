@@ -1203,12 +1203,12 @@ namespace System.Net.Http
                 value = value.Slice(1);
             }
 
-            // Skip trailing whitespace for value.
+            // Skip trailing OWS for value.
             while (true)
             {
                 int spIdx = value.Length - 1;
 
-                if ((uint)spIdx >= (uint)value.Length || value[spIdx] != ' ')
+                if ((uint)spIdx >= (uint)value.Length || value[spIdx] != ' ' || value[spIdx] != '\t')
                 {
                     // hot path
                     break;
