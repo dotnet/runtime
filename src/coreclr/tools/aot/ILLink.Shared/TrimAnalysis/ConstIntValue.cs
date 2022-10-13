@@ -11,7 +11,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// Represents a ldc on an int32.
 	/// </summary>
-	sealed record ConstIntValue : SingleValue
+	internal sealed record ConstIntValue : SingleValue
 	{
 		public ConstIntValue (int value) => Value = value;
 

@@ -64,6 +64,9 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
-    <ProjectReference Include="LongPath\LongPath.csproj" />
+    <ProjectReference Include="LongPath\LongPath.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 </Project>

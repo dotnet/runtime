@@ -1255,13 +1255,13 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
     // Call to the vectored handler to give other parts of the Runtime a chance to jump in and take over an
     // exception before we do too much with it. The most important point in the vectored handler is not to toggle
     // the GC mode.
-    DWORD filter = CLRVectoredExceptionHandler(&ptrs);
+    VEH_ACTION filter = CLRVectoredExceptionHandler(&ptrs);
 
-    if (filter == (DWORD) EXCEPTION_CONTINUE_EXECUTION)
+    if (filter == VEH_CONTINUE_EXECUTION)
     {
         return ExceptionContinueExecution;
     }
-    else if (filter == EXCEPTION_CONTINUE_SEARCH)
+    else if (filter == VEH_CONTINUE_SEARCH)
     {
         return ExceptionContinueSearch;
     }
@@ -1301,22 +1301,16 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
 
     CPFH_VerifyThreadIsInValidState(pThread, exceptionCode, pEstablisherFrame);
 
-    // If we were in cooperative mode when we came in here, then its okay to see if we should do HandleManagedFault
+    // If we were in cooperative mode when we came in here, then it's okay to see if we should do HandleManagedFault
     // and push a FaultingExceptionFrame. If we weren't in coop mode coming in here, then it means that there's no
-    // way the exception could really be from managed code. I might look like it was from managed code, but in
-    // reality its a rethrow from unmanaged code, either unmanaged user code, or unmanaged EE implementation.
+    // way the exception could really be from managed code. It might look like it was from managed code, but in
+    // reality it's a rethrow from unmanaged code, either unmanaged user code, or unmanaged EE implementation.
     if (disabled && ShouldHandleManagedFault(pExceptionRecord, pContext, pEstablisherFrame, pThread))
     {
 #if defined(USE_FEF)
-        HandleManagedFault(pExceptionRecord, pContext, pEstablisherFrame, pThread);
+        HandleManagedFault(pExceptionRecord, pContext);
         retval = ExceptionContinueExecution;
         goto exit;
-#else // USE_FEF
-        // Save the context pointer in the Thread's EXInfo, so that a stack crawl can recover the
-        //  register values from the fault.
-
-        //@todo: I haven't yet found any case where we need to do anything here.  If there are none, eliminate
-        //  this entire if () {} block.
 #endif // USE_FEF
     }
 
@@ -2971,7 +2965,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // Check that the InlinedCallFrame is in the method with the exception handler. There can be other
         // InlinedCallFrame somewhere up the call chain that is not related to the current exception
         // handling.
-        
+
         // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 
 #ifdef DEBUG
@@ -2991,7 +2985,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
 #ifdef USE_PER_FRAME_PINVOKE_INIT
             // If we're setting up the frame for each P/Invoke for the given platform,
             // then we do this for all P/Invokes except ones in IL stubs.
-            if (!ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+            if (returnAddress != NULL && !ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
 #else
             // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
             // then ReadyToRun code is the only code using the per-P/Invoke logic.

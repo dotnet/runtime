@@ -129,7 +129,7 @@ namespace Internal.TypeSystem
                 sb.Append(bit ? '1' : '0');
             return sb.ToString();
         }
-        
+
         public int CompareTo(GCPointerMap other)
         {
             if (_numCells != other._numCells)

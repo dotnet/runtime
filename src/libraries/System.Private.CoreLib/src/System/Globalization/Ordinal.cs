@@ -264,8 +264,8 @@ namespace System.Globalization
             {
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
-                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
-                    SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
+                    SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
                 if (relativeIndex < 0)
                 {
                     break;
@@ -326,7 +326,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan().Slice(startIndex, count), value) : LastIndexOf(source, value, startIndex, count);
+                return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan(startIndex, count), value) : LastIndexOf(source, value, startIndex, count);
             }
 
             if (GlobalizationMode.UseNls)

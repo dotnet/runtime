@@ -16,7 +16,7 @@ namespace System.IO
         /// including the specified path in the error message.
         /// </summary>
         internal static Exception GetExceptionForLastWin32Error(string? path = "")
-            => GetExceptionForWin32Error(Marshal.GetLastWin32Error(), path);
+            => GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), path);
 
         /// <summary>
         /// Converts the specified Win32 error into a corresponding <see cref="Exception"/> object, optionally
@@ -68,7 +68,9 @@ namespace System.IO
 
             static string GetPInvokeErrorMessage(int errorCode)
             {
-#if NET7_0_OR_GREATER
+                // Call Kernel32.GetMessage directly in CoreLib. It eliminates one level of indirection and it is necessary to
+                // produce correct error messages for CoreCLR Win32 PAL.
+#if NET7_0_OR_GREATER && !SYSTEM_PRIVATE_CORELIB
                 return Marshal.GetPInvokeErrorMessage(errorCode);
 #else
                 return Interop.Kernel32.GetMessage(errorCode);

@@ -237,7 +237,8 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
                             }
 
-                            stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount));
+                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                            stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
                         }
                         break;
 
@@ -340,6 +341,17 @@ namespace ILCompiler
                                 TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
+
+                                // Since we don't reset the instruction counter as we interpret the nested cctor,
+                                // remember the instruction counter before we start interpreting so that we can subtract
+                                // the instructions later when we convert object instances allocated in the nested
+                                // cctor to foreign instances in the currently analyzed cctor.
+                                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
+                                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
+                                // site ID of `instructionCounter + 0`.
+                                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
+                                // and resetting it would lead to unpredictable analysis durations.
+                                int baseInstructionCounter = instructionCounter;
                                 Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
                                 if (!status.IsSuccessful)
                                 {
@@ -350,7 +362,7 @@ namespace ILCompiler
                                 if (value is ValueTypeValue)
                                     stack.PushFromLocation(field.FieldType, value);
                                 else if (value is ReferenceTypeValue referenceType)
-                                    stack.PushFromLocation(field.FieldType, new ForeignTypeInstance(referenceType.Type, field, referenceType));
+                                    stack.PushFromLocation(field.FieldType, referenceType.ToForeignInstance(baseInstructionCounter));
                                 else
                                     return Status.Fail(methodIL.OwningMethod, opcode);
                             }
@@ -470,6 +482,8 @@ namespace ILCompiler
                                 ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
                             }
 
+                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+
                             Value instance;
                             if (owningType.IsDelegate)
                             {
@@ -478,16 +492,13 @@ namespace ILCompiler
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Unverifiable delegate creation");
                                 }
 
-                                ForeignTypeInstance firstParameter = null;
+                                ReferenceTypeValue firstParameter = null;
                                 if (ctorParameters[1] != null)
                                 {
-                                    // We only have a way to refer to an allocated object if it's referenced from a static
-                                    // field of a different type. This conveniently matches delegates that the C# compiler creates
-                                    // for lambdas: this is more common than it sounds.
-                                    firstParameter = ctorParameters[1] as ForeignTypeInstance;
+                                    firstParameter = ctorParameters[1] as ReferenceTypeValue;
                                     if (firstParameter == null)
                                     {
-                                        return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with an unsupported first parameter");
+                                        ThrowHelper.ThrowInvalidProgramException();
                                     }
                                 }
 
@@ -502,7 +513,7 @@ namespace ILCompiler
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with fat pointer");
                                 }
 
-                                instance = new DelegateInstance(owningType, pointedMethod, firstParameter);
+                                instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
                             }
                             else
                             {
@@ -514,7 +525,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    instance = new ObjectInstance((DefType)owningType);
+                                    instance = new ObjectInstance((DefType)owningType, allocSite);
                                     ctorParameters[0] = instance;
                                 }
 
@@ -1361,7 +1372,8 @@ namespace ILCompiler
                                     return Status.Fail(methodIL.OwningMethod, opcode);
 
                                 Value value = stack.PopIntoLocation(type);
-                                if (!ObjectInstance.TryBox((DefType)type, value, out ObjectInstance boxedResult))
+                                AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                                if (!ObjectInstance.TryBox((DefType)type, value, allocSite, out ObjectInstance boxedResult))
                                 {
                                     return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
@@ -1414,7 +1426,7 @@ namespace ILCompiler
             }
         }
 
-        private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
+        private static bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
         {
             retVal = default;
 
@@ -1438,7 +1450,7 @@ namespace ILCompiler
             return false;
         }
 
-        private TypeDesc GetArgType(MethodDesc method, int index)
+        private static TypeDesc GetArgType(MethodDesc method, int index)
         {
             var sig = method.Signature;
             int offset = 0;
@@ -1455,7 +1467,7 @@ namespace ILCompiler
             return sig[index - offset];
         }
 
-        class Stack : Stack<StackEntry>
+        private sealed class Stack : Stack<StackEntry>
         {
             private readonly TargetDetails _target;
 
@@ -1691,7 +1703,9 @@ namespace ILCompiler
         /// </summary>
         public interface ISerializableValue
         {
-            void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory);
+            void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            bool GetRawData(NodeFactory factory, out object data);
         }
 
         /// <summary>
@@ -1701,6 +1715,7 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            bool IsKnownImmutable { get; }
         }
 
         /// <summary>
@@ -1753,9 +1768,11 @@ namespace ILCompiler
                 return false;
             }
 
-            public abstract void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory);
+            public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            private T ThrowInvalidProgram<T>()
+            public abstract bool GetRawData(NodeFactory factory, out object data);
+
+            private static T ThrowInvalidProgram<T>()
             {
                 ThrowHelper.ThrowInvalidProgramException();
                 return default;
@@ -1776,7 +1793,7 @@ namespace ILCompiler
         }
 
         // Also represents pointers and function pointer.
-        private class ValueTypeValue : BaseValueTypeValue, IAssignableValue
+        private sealed class ValueTypeValue : BaseValueTypeValue, IAssignableValue
         {
             public readonly byte[] InstanceBytes;
 
@@ -1838,10 +1855,15 @@ namespace ILCompiler
                 return true;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                Debug.Assert(field.FieldType.GetElementSize().AsInt == InstanceBytes.Length);
                 builder.EmitBytes(InstanceBytes);
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = InstanceBytes;
+                return true;
             }
 
             private byte[] AsExactByteCount(int size)
@@ -1867,7 +1889,7 @@ namespace ILCompiler
             public static ValueTypeValue FromDouble(double value) => new ValueTypeValue(BitConverter.GetBytes(value));
         }
 
-        private class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public FieldDesc Field { get; private set; }
 
@@ -1888,13 +1910,19 @@ namespace ILCompiler
                 return Field == ((RuntimeFieldHandleValue)value).Field;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 throw new NotSupportedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
-        private class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public MethodDesc PointedToMethod { get; }
 
@@ -1915,13 +1943,19 @@ namespace ILCompiler
                 return PointedToMethod == ((MethodPointerValue)value).PointedToMethod;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 throw new NotSupportedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
-        private class ByRefValue : Value, IHasInstanceFields
+        private sealed class ByRefValue : Value, IHasInstanceFields
         {
             public readonly byte[] PointedToBytes;
             public readonly int PointedToOffset;
@@ -1960,10 +1994,16 @@ namespace ILCompiler
                 }
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 // This would imply we have a byref-typed static field. The layout algorithm should have blocked this.
                 throw new NotImplementedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
             }
         }
 
@@ -1977,15 +2017,62 @@ namespace ILCompiler
             {
                 return this == value;
             }
+
+            public abstract ReferenceTypeValue ToForeignInstance(int baseInstructionCounter);
         }
 
-        private class DelegateInstance : ReferenceTypeValue, ISerializableReference
+        private struct AllocationSite
+        {
+            public MetadataType OwningType { get; }
+            public int InstructionCounter { get; }
+            public AllocationSite(MetadataType type, int instructionCounter)
+            {
+                Debug.Assert(type.HasStaticConstructor);
+                OwningType = type;
+                InstructionCounter = instructionCounter;
+            }
+        }
+
+        /// <summary>
+        /// A reference type that is not a string literal.
+        /// </summary>
+        private abstract class AllocatedReferenceTypeValue : ReferenceTypeValue
+        {
+            protected AllocationSite AllocationSite { get; }
+
+            public AllocatedReferenceTypeValue(TypeDesc type, AllocationSite allocationSite)
+                : base(type)
+            {
+                AllocationSite = allocationSite;
+            }
+
+            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) =>
+                new ForeignTypeInstance(
+                    Type,
+                    new AllocationSite(AllocationSite.OwningType, AllocationSite.InstructionCounter - baseInstructionCounter),
+                    this);
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                if (this is ISerializableReference serializableRef)
+                {
+                    data = factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, serializableRef);
+                    return true;
+                }
+                data = null;
+                return false;
+            }
+        }
+
+#pragma warning disable CA1852
+        private class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly MethodDesc _methodPointed;
-            private readonly ForeignTypeInstance _firstParameter;
+            private readonly ReferenceTypeValue _firstParameter;
 
-            public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ForeignTypeInstance firstParameter)
-                : base(delegateType)
+            public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ReferenceTypeValue firstParameter, AllocationSite allocationSite)
+                : base(delegateType, allocationSite)
             {
                 _methodPointed = methodPointed;
                 _firstParameter = firstParameter;
@@ -2031,7 +2118,7 @@ namespace ILCompiler
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
 
                     // m_firstParameter
-                    _firstParameter.WriteFieldData(ref builder, _firstParameter.ForeignField, factory);
+                    _firstParameter.WriteFieldData(ref builder, factory);
 
                     // m_helperObject
                     builder.EmitZeroPointer();
@@ -2044,20 +2131,24 @@ namespace ILCompiler
                 }
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
+                builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
+
+            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
         }
 
-        private class ArrayInstance : ReferenceTypeValue, ISerializableReference
+#pragma warning disable CA1852
+        private class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly int _elementCount;
             private readonly int _elementSize;
             private readonly byte[] _data;
 
-            public ArrayInstance(ArrayType type, int elementCount)
-                : base(type)
+            public ArrayInstance(ArrayType type, int elementCount, AllocationSite allocationSite)
+                : base(type, allocationSite)
             {
                 _elementCount = elementCount;
                 _elementSize = type.ElementType.GetElementSize().AsInt;
@@ -2108,9 +2199,9 @@ namespace ILCompiler
                 return true;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
+                builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
             public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
@@ -2134,34 +2225,36 @@ namespace ILCompiler
 
                 builder.EmitBytes(_data);
             }
+
+            public bool IsKnownImmutable => _elementCount == 0;
         }
 
-        private class ForeignTypeInstance : ReferenceTypeValue
+        private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
         {
-            public FieldDesc ForeignField { get; }
             public ReferenceTypeValue Data { get; }
 
-            public ForeignTypeInstance(TypeDesc type, FieldDesc foreignField, ReferenceTypeValue data)
-                : base(type)
+            public ForeignTypeInstance(TypeDesc type, AllocationSite allocationSite, ReferenceTypeValue data)
+                : base(type, allocationSite)
             {
-                ForeignField = foreignField;
                 Data = data;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 if (Data is ISerializableReference serializableReference)
                 {
-                    builder.EmitPointerReloc(factory.SerializedFrozenObject(ForeignField, serializableReference));
+                    builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, serializableReference));
                 }
                 else
                 {
-                    Data.WriteFieldData(ref builder, field, factory);
+                    Data.WriteFieldData(ref builder, factory);
                 }
             }
+
+            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
-        private class StringInstance : ReferenceTypeValue
+        private sealed class StringInstance : ReferenceTypeValue
         {
             private readonly string _value;
 
@@ -2171,18 +2264,28 @@ namespace ILCompiler
                 _value = value;
             }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 builder.EmitPointerReloc(factory.SerializedStringObject(_value));
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = factory.SerializedStringObject(_value);
+                return true;
+            }
+
+            public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
-        private class ObjectInstance : ReferenceTypeValue, IHasInstanceFields, ISerializableReference
+#pragma warning disable CA1852
+        private class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly byte[] _data;
 
-            public ObjectInstance(DefType type)
-                : base(type)
+            public ObjectInstance(DefType type, AllocationSite allocationSite)
+                : base(type, allocationSite)
             {
                 int size = type.InstanceByteCount.AsInt;
                 if (type.IsValueType)
@@ -2190,7 +2293,7 @@ namespace ILCompiler
                 _data = new byte[size];
             }
 
-            public static bool TryBox(DefType type, Value value, out ObjectInstance result)
+            public static bool TryBox(DefType type, Value value, AllocationSite allocationSite, out ObjectInstance result)
             {
                 if (!(value is BaseValueTypeValue))
                     ThrowHelper.ThrowInvalidProgramException();
@@ -2201,7 +2304,7 @@ namespace ILCompiler
                     return false;
                 }
 
-                result = new ObjectInstance(type);
+                result = new ObjectInstance(type, allocationSite);
                 Array.Copy(valuetype.InstanceBytes, 0, result._data, type.Context.Target.PointerSize, valuetype.InstanceBytes.Length);
                 return true;
             }
@@ -2226,9 +2329,9 @@ namespace ILCompiler
             void IHasInstanceFields.SetField(FieldDesc field, Value value) => new FieldAccessor(_data).SetField(field, value);
             ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_data).GetFieldAddress(field);
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
+                builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
             public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
@@ -2243,6 +2346,8 @@ namespace ILCompiler
                 int pointerSize = factory.Target.PointerSize;
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
+
+            public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
         }
 
         private struct FieldAccessor

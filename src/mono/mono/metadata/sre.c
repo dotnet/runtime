@@ -19,6 +19,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/class-init-internals.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/dynamic-image-internals.h"
 #include "mono/metadata/dynamic-stream-internals.h"
@@ -73,7 +74,7 @@ static char* string_to_utf8_image_raw (MonoImage *image, MonoString *s, MonoErro
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper, MonoError *error);
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
-static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb);
+static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb, MonoStringHandle name, guint32 attrs, guint32 call_conv);
 static gboolean reflection_setup_internal_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_init_generic_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_setup_class_hierarchy (GHashTable *unparented, MonoError *error);
@@ -588,7 +589,7 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 }
 
 static void
-reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb)
+reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb, MonoStringHandle name, guint32 attrs, guint32 call_conv)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -604,17 +605,17 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
 	rmb->pinfo = NULL;
-	rmb->attrs = mb->attrs;
+	rmb->attrs = attrs;
 	rmb->iattrs = 0;
-	rmb->call_conv = mb->call_conv;
+	rmb->call_conv = call_conv;
 	rmb->code = NULL;
 	rmb->type = (MonoObject *) mb->owner;
 	MONO_HANDLE_PIN (rmb->type);
-	rmb->name = mb->name;
+	rmb->name = MONO_HANDLE_RAW (name);
 	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = NULL;
 	rmb->init_locals = mb->init_locals;
-	rmb->skip_visibility = mb->skip_visibility;
+	rmb->skip_visibility = mb->skip_visibility | mb->restricted_skip_visibility;
 	rmb->return_modreq = NULL;
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = NULL;
@@ -1838,7 +1839,7 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 }
 
 static MonoMethodSignature*
-dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError *error)
+dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, guint32 attrs, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoMethodSignature *sig = NULL;
@@ -1848,7 +1849,7 @@ dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError
 	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters),
 		MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), error);
 	goto_if_nok (error, leave);
-	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
+	sig->hasthis = attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	MonoReflectionTypeHandle rtype;
 	rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
 	if (!MONO_HANDLE_IS_NULL (rtype)) {
@@ -3231,7 +3232,6 @@ static gboolean
 fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
 	MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
-	int i;
 
 	error_init (error);
 
@@ -3255,58 +3255,6 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (!mono_class_get_generic_class (klass)->need_sync)
-		return TRUE;
-
-	int mcount = mono_class_get_method_count (klass);
-	int gmcount = mono_class_get_method_count (gklass);
-	if (mcount != gmcount) {
-		mono_class_set_method_count (klass, gmcount);
-		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * (gmcount + 1));
-
-		for (i = 0; i < gmcount; i++) {
-			klass->methods [i] = mono_class_inflate_generic_method_full_checked (
-				gklass->methods [i], klass, mono_class_get_context (klass), error);
-			mono_error_assert_ok (error);
-		}
-	}
-
-	if (klass->interface_count && klass->interface_count != gklass->interface_count) {
-		klass->interface_count = gklass->interface_count;
-		klass->interfaces = (MonoClass **)mono_image_alloc (klass->image, sizeof (MonoClass*) * gklass->interface_count);
-		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
-
-		MonoClass **gklass_interfaces = m_class_get_interfaces (gklass);
-		for (i = 0; i < gklass->interface_count; ++i) {
-			MonoType *iface_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (gklass_interfaces [i]), mono_class_get_context (klass), error);
-			return_val_if_nok (error, FALSE);
-
-			klass->interfaces [i] = mono_class_from_mono_type_internal (iface_type);
-			mono_metadata_free_type (iface_type);
-
-			if (!ensure_runtime_vtable (klass->interfaces [i], error))
-				return FALSE;
-		}
-		klass->interfaces_inited = 1;
-	}
-
-	int fcount = mono_class_get_field_count (klass);
-	int gfcount = mono_class_get_field_count (gklass);
-	if (fcount != gfcount) {
-		mono_class_set_field_count (klass, gfcount);
-		klass->fields = image_g_new0 (klass->image, MonoClassField, gfcount);
-
-		for (i = 0; i < gfcount; i++) {
-			klass->fields [i] = gklass->fields [i];
-			m_field_set_parent (&klass->fields [i], klass);
-			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), error);
-			return_val_if_nok (error, FALSE);
-		}
-	}
-
-	/*We can only finish with this klass once it's parent has as well*/
-	if (gklass->wastypebuilder)
-		klass->wastypebuilder = TRUE;
 	return TRUE;
 }
 
@@ -3402,7 +3350,8 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 				im->slot = slot_num++;
 		}
 
-		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
+		/* make mono_class_setup_interface_offsets do work */
+		mono_class_setup_invalidate_interface_offsets (klass);
 		mono_class_setup_interface_offsets (klass);
 		mono_class_setup_interface_id (klass);
 	}
@@ -3986,7 +3935,7 @@ free_dynamic_method (void *dynamic_method)
 }
 
 static gboolean
-reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, MonoError *error)
+reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
 	/* We need to clear handles for rmb fields created in reflection_methodbuilder_from_dynamic_method */
 	HANDLE_FUNCTION_ENTER ();
@@ -4010,11 +3959,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		mono_loader_unlock ();
 	}
 
-	sig = dynamic_method_to_signature (ref_mb, error);
+	sig = dynamic_method_to_signature (ref_mb, attrs, error);
 	goto_if_nok (error, exit_false);
 
 	mb = MONO_HANDLE_RAW (ref_mb); /* FIXME convert reflection_create_dynamic_method to use handles */
-	reflection_methodbuilder_from_dynamic_method (&rmb, mb);
+	reflection_methodbuilder_from_dynamic_method (&rmb, mb, name, attrs, call_conv);
 
 	/*
 	 * Resolve references.
@@ -4121,9 +4070,9 @@ exit:
 }
 
 void
-ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoError *error)
+ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
-	(void) reflection_create_dynamic_method (mb, error);
+	(void) reflection_create_dynamic_method (mb, name, attrs, call_conv, error);
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */
@@ -4436,7 +4385,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle tb, 
 }
 
 void
-ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoError *error)
+ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
 	error_init (error);
 }

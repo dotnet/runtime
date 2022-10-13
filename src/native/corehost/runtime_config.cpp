@@ -396,15 +396,16 @@ bool runtime_config_t::read_framework_array(const json_parser_t::value_t& framew
 
 bool runtime_config_t::ensure_parsed()
 {
-    trace::verbose(_X("Attempting to read runtime config: %s"), m_path.c_str());
     if (!ensure_dev_config_parsed())
     {
         trace::verbose(_X("Did not successfully parse the runtimeconfig.dev.json"));
     }
 
+    trace::verbose(_X("Attempting to read runtime config: %s"), m_path.c_str());
     if (!bundle::info_t::config_t::probe(m_path) && !pal::realpath(&m_path, true))
     {
         // Not existing is not an error.
+        trace::verbose(_X("Runtime config does not exist at [%s]"), m_path.c_str());
         return true;
     }
 

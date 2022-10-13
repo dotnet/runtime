@@ -108,7 +108,8 @@ public:
     virtual bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                        CONTEXT *context,
                                        DWORD code,
-                                       Thread *thread) = 0;
+                                       Thread *thread,
+                                       BOOL fIsVEH = TRUE) = 0;
 
     // pThread is thread that exception is on.
     // currentSP is stack frame of the throw site.
@@ -193,6 +194,11 @@ public:
                                              SIZE_T ilOffset,
                                              TADDR nativeFnxStart,
                                              SIZE_T *nativeOffset) = 0;
+
+
+    // Used by FixContextAndResume
+    virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
+    virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // EnC_SUPPORTED
 
     // Get debugger variable information for a specific version of a method
@@ -389,7 +395,7 @@ public:
     virtual BOOL FallbackJITAttachPrompt() = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
-    virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord) = 0;
+    virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord, BOOL fIsVEH = TRUE) = 0;
 #endif
 
     // Helper method for cleaning up transport socket

@@ -368,7 +368,7 @@ void ControllerStackInfo::SetReturnFrameWithActiveFrame()
 
     // Invalidate the active frame.
     m_activeFound = false;
-    memset(&(m_activeFrame), 0, sizeof(m_activeFrame));
+    m_activeFrame = {};
     m_activeFrame.fp = LEAF_MOST_FRAME;
 }
 

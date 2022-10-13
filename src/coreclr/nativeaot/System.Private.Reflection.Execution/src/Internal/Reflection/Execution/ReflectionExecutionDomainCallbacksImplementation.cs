@@ -80,7 +80,7 @@ namespace Internal.Reflection.Execution
         }
 
         //=======================================================================================
-        // MissingMetadataException support.
+        // Missing metadata exception support.
         //=======================================================================================
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {
@@ -91,7 +91,7 @@ namespace Internal.Reflection.Execution
         // This helper makes a "best effort" to give the caller something better than "EETypePtr nnnnnnnnn".
         public sealed override string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return Type.GetTypeFromHandle(runtimeTypeHandle).ToDisplayStringIfAvailable(null);
+            return Type.GetTypeFromHandle(runtimeTypeHandle).ToDisplayStringIfAvailable();
         }
 
         public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)

@@ -1,0 +1,19 @@
+# This is a wrapper yml for `runtime-extra-platforms-androidemulator.yml`,
+# which has all the wasm jobs. This file is essentially so we can have
+# point the pipeline in azdo UI to this, and thus avoid any scheduled
+# triggers
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  parameters:
+    jobs:
+    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+      parameters:
+        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+        isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+        isRollingBuild: ${{ variables.isRollingBuild }}

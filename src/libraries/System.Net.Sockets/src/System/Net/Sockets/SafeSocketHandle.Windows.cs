@@ -146,7 +146,7 @@ namespace System.Net.Sockets
 #if DEBUG
                 _closeSocketResult = errorCode;
 #endif
-                if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
+                if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastPInvokeError();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket()#1:{errorCode}");
 
@@ -163,7 +163,7 @@ namespace System.Net.Sockets
                     handle,
                     Interop.Winsock.IoctlSocketConstants.FIONBIO,
                     ref nonBlockCmd);
-                if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
+                if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastPInvokeError();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#1:{errorCode}");
 
@@ -174,7 +174,7 @@ namespace System.Net.Sockets
 #if DEBUG
                     _closeSocketResult = errorCode;
 #endif
-                    if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastPInvokeError();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket#2():{errorCode}");
 
                     // If it's not WSAEWOULDBLOCK, there's no more recourse - we either succeeded or failed.
@@ -201,7 +201,7 @@ namespace System.Net.Sockets
 #if DEBUG
             _closeSocketLinger = errorCode;
 #endif
-            if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
+            if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastPInvokeError();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
             if (errorCode != SocketError.Success && errorCode != SocketError.InvalidArgument && errorCode != SocketError.ProtocolOption)
@@ -214,7 +214,7 @@ namespace System.Net.Sockets
 #if DEBUG
             _closeSocketResult = errorCode;
 #endif
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastPInvokeError() : errorCode)}");
 
             return errorCode;
         }

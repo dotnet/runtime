@@ -701,7 +701,6 @@ struct hdrInfo
     bool                doubleAlign;    // is the stack double-aligned? locals addressed relative to ESP, and arguments relative to EBP
     bool                interruptible;  // intr. at all times (excluding prolog/epilog), not just call sites
 
-    bool                securityCheck;  // has a slot for security object
     bool                handlers;       // has callable handlers
     bool                localloc;       // uses localloc
     bool                editNcontinue;  // has been compiled in EnC mode

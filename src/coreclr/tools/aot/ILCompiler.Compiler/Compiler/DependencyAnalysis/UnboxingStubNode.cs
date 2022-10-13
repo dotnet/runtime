@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.Text;
 using Internal.TypeSystem;
-
-using ILCompiler.DependencyAnalysisFramework;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -17,12 +13,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public partial class UnboxingStubNode : AssemblyStubNode, IMethodNode, ISymbolDefinitionNode
     {
-        // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
-        // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
-        // stubs region, in order for the runtime to know where the region starts and ends.
-        internal static readonly string WindowsSectionName = ".unbox$M";
-        internal static readonly string UnixSectionName = "__unbox";
-
         private readonly TargetDetails _targetDetails;
 
         public MethodDesc Method { get; }
@@ -31,8 +21,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                string sectionName = _targetDetails.IsWindows ? WindowsSectionName : UnixSectionName;
-                return new ObjectNodeSection(sectionName, SectionType.Executable);
+                return _targetDetails.IsWindows ?
+                    ObjectNodeSection.UnboxingStubWindowsContentSection :
+                    ObjectNodeSection.UnboxingStubUnixContentSection;
             }
         }
         public override bool IsShareable => true;

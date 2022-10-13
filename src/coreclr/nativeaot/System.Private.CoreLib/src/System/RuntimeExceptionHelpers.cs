@@ -211,7 +211,7 @@ namespace System
                     }
 
                     failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                        reason.ToString(),  // Explicit call to ToString() to avoid MissingMetadataException inside String.Format()
+                        reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
                         GetStringForFailFastReason(reason),
                         exception != null ? " [exception object available]" : "");
                 }

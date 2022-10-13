@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Internal.TypeSystem
 {
     // Implementation of MethodImpl api surface implemented without metadata access.
@@ -24,7 +22,7 @@ namespace Internal.TypeSystem
             {
                 MethodDesc decl;
 
-                var implTypeInstantiated = uninstMethodImpls[i].Decl.OwningType.InstantiateSignature(this.Instantiation, new Instantiation());
+                var implTypeInstantiated = uninstMethodImpls[i].Decl.OwningType.InstantiateSignature(this.Instantiation, default(Instantiation));
                 if (implTypeInstantiated is InstantiatedType)
                 {
                     decl = _typeDef.Context.GetMethodForInstantiatedType(uninstMethodImpls[i].Decl.GetTypicalMethodDefinition(), (InstantiatedType)implTypeInstantiated);

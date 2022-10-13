@@ -72,6 +72,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
 
+            public ISet<string> ISetNoSetter { get; } = new HashSet<string>();
+
             public HashSet<string> InstantiatedHashSetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] {"existing1", "existing2"});
 
@@ -249,6 +251,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         public record struct RecordStructTypeOptions(string Color, int Length);
+
+        public record RecordOptionsWithNesting(int Number, RecordOptionsWithNesting.RecordNestedOptions Nested1,
+            RecordOptionsWithNesting.RecordNestedOptions Nested2 = null!)
+        {
+            public record RecordNestedOptions(string ValueA, int ValueB);
+        }
 
         // Here, the constructor has three parameters, but not all of those match
         // match to a property or field
@@ -491,6 +499,33 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public byte[] MyByteArray { get; set; }
         }
 
+        public enum TestSettingsEnum
+        {
+            Option1,
+            Option2,
+        }
+
+        [Fact]
+        public void EnumBindCaseInsensitiveNotThrows()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Section:Option1", "opt1"},
+                {"Section:option2", "opt2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+            var configSection = config.GetSection("Section");
+
+            var configOptions = new Dictionary<TestSettingsEnum, string>();
+            configSection.Bind(configOptions);
+
+            Assert.Equal("opt1", configOptions[TestSettingsEnum.Option1]);
+            Assert.Equal("opt2", configOptions[TestSettingsEnum.Option2]);
+        }
+
         [Fact]
         public void CanBindIConfigurationSection()
         {
@@ -633,6 +668,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.NonInstantiatedISet.Count);
             Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindISetNoSetter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ISetNoSetter:0", "Yo1"},
+                {"ISetNoSetter:1", "Yo2"},
+                {"ISetNoSetter:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.ISetNoSetter.Count);
+            Assert.Equal("Yo1", options.ISetNoSetter.ElementAt(0));
+            Assert.Equal("Yo2", options.ISetNoSetter.ElementAt(1));
         }
 
 #if NETCOREAPP
@@ -2327,6 +2383,29 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<RecordStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindNestedRecordOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Number", "1"},
+                {"Nested1:ValueA", "Cool"},
+                {"Nested1:ValueB", "42"},
+                {"Nested2:ValueA", "Uncool"},
+                {"Nested2:ValueB", "24"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordOptionsWithNesting>();
+            Assert.Equal(1, options.Number);
+            Assert.Equal("Cool", options.Nested1.ValueA);
+            Assert.Equal(42, options.Nested1.ValueB);
+            Assert.Equal("Uncool", options.Nested2.ValueA);
+            Assert.Equal(24, options.Nested2.ValueB);
         }
 
         [Fact]

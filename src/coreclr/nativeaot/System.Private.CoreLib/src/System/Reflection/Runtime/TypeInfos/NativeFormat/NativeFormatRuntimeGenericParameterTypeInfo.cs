@@ -58,11 +58,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         protected MetadataReader Reader { get; }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            if (_genericParameter.Name.IsNull(Reader))
-                return string.Empty;
-            return _genericParameter.Name.GetString(Reader);
+            get
+            {
+                if (_genericParameter.Name.IsNull(Reader))
+                    return string.Empty;
+                return _genericParameter.Name.GetString(Reader);
+            }
         }
 
         protected sealed override QTypeDefRefOrSpec[] Constraints

@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 
         public static SocketError GetLastSocketError()
         {
-            int win32Error = Marshal.GetLastWin32Error();
+            int win32Error = Marshal.GetLastPInvokeError();
             Debug.Assert(win32Error != 0, "Expected non-0 error");
             return (SocketError)win32Error;
         }
@@ -883,7 +883,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
-            static bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
+            static bool ShouldStackAlloc(IList? list, scoped ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
                 if (list == null || (count = list.Count) == 0)

@@ -388,6 +388,16 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
+size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */
+                                      char*  buffer,              /* OUT */
+                                      size_t bufferSize,          /* IN  */
+                                      size_t* pRequiredBufferSize /* OUT */
+                                     )
+{
+    jitInstance->mc->cr->AddCall("printObjectDescription");
+    return jitInstance->mc->repPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
+}
+
 /**********************************************************************************/
 //
 // ICorClassInfo
@@ -660,6 +670,27 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getUnBoxHelper");
     CorInfoHelpFunc result = jitInstance->mc->repGetUnBoxHelper(cls);
+    return result;
+}
+
+void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
+    void* result = jitInstance->mc->repGetRuntimeTypePointer(cls);
+    return result;
+}
+
+bool MyICJI::isObjectImmutable(void* objPtr)
+{
+    jitInstance->mc->cr->AddCall("isObjectImmutable");
+    bool result = jitInstance->mc->repIsObjectImmutable(objPtr);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(void* objPtr)
+{
+    jitInstance->mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(objPtr);
     return result;
 }
 
@@ -1086,6 +1117,15 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     return value;
 }
 
+int MyICJI::getExactClasses(CORINFO_CLASS_HANDLE    baseType,        /* IN */
+                            int                     maxExactClasses, /* IN */
+                            CORINFO_CLASS_HANDLE*   exactClsRet      /* OUT */
+                            )
+{
+    jitInstance->mc->cr->AddCall("getExactClasses");
+    return jitInstance->mc->repGetExactClasses(baseType, maxExactClasses, exactClsRet);
+}
+
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
 CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
                                          CORINFO_ARG_LIST_HANDLE args /* IN */
@@ -1476,6 +1516,12 @@ void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getFieldAddress");
     return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
+}
+
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+{
+    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize);
 }
 
 // return the class handle for the current value of a static field

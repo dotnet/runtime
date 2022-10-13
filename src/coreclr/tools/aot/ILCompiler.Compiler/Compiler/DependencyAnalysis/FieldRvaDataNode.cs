@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     public class FieldRvaDataNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly EcmaField _field;
-        
+
         public FieldRvaDataNode(EcmaField field)
         {
             Debug.Assert(field.HasRva);

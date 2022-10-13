@@ -52,7 +52,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).cmd"
-    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
+    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript;GetSuperPMICollectionBatchScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -298,13 +298,14 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 
 $(BatchIlrtTestLaunchCmds)
 
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :TakeLock
 )
+
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :ReleaseLock
 )
 $(BatchLinkerTestCleanupCmds)
@@ -338,10 +339,17 @@ cmd /c $(InputAssemblyName)
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
       ]]></BatchCLRTestLaunchCmds>
+
+      <BatchCLRTestPostCommands><![CDATA[
+$(BatchDisasmCheckPostCommands)
+$(CLRTestBatchPostCommands)
+      ]]></BatchCLRTestPostCommands>
+
     </PropertyGroup>
     <PropertyGroup>
       <BatchEnvironmentVariables>
-@(CLRTestBatchEnvironmentVariable -> '%(Identity)', '%0d%0a')
+@(CLRTestBatchEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
+@(CLRTestEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
       </BatchEnvironmentVariables>
     </PropertyGroup>
 
@@ -427,23 +435,25 @@ IF NOT "%__TestEnv%"=="" (
     )
 )
 
-REM Environment Variables
-$(BatchEnvironmentVariables)
-
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 
 $(IlasmRoundTripBatchScript)
 
-REM Allow precommands to override the ExePath
+$(SuperPMICollectionBatchScript)
+
+REM Allow test environment variables or precommands to override the ExePath
 set ExePath=$(InputAssemblyName)
 set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
+
+REM Environment Variables
+$(BatchEnvironmentVariables)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
 REM Launch
 $(BatchCLRTestLaunchCmds)
 REM PostCommands
-$(CLRTestBatchPostCommands)
+$(BatchCLRTestPostCommands)
 $(BatchCLRTestExitCodeCheck)
       ]]></_CLRTestExecutionScriptText>
     </PropertyGroup>

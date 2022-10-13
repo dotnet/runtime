@@ -88,7 +88,14 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                if (request.IsExtendedConnectRequest)
+                {
+                    // Extended connect request is negotiating strictly for ALPN = "h2" because HttpClient is unaware of a possible downgrade.
+                    // At this point, SSL connection for HTTP / 2 failed, and the exception should indicate the reason for the external client / user.
+                    ex.Data["HTTP2_ENABLED"] = false;
+                }
+                throw ex;
             }
 
             // Handle race condition if cancellation happens after SSL auth completes but before the registration is disposed

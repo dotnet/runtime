@@ -234,11 +234,11 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Get the last system error on the current thread
+        /// Gets the last system error on the current thread.
         /// </summary>
-        /// <returns>The last system error</returns>
+        /// <returns>The last system error.</returns>
         /// <remarks>
-        /// The error is that for the current operating system (e.g. errno on Unix, GetLastError on Windows)
+        /// The error is that for the current operating system (for example, errno on Unix, GetLastError on Windows).
         /// </remarks>
         public static int GetLastSystemError()
         {
@@ -246,11 +246,11 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Set the last system error on the current thread
+        /// Sets the last system error on the current thread.
         /// </summary>
-        /// <param name="error">Error to set</param>
+        /// <param name="error">The error to set.</param>
         /// <remarks>
-        /// The error is that for the current operating system (e.g. errno on Unix, SetLastError on Windows)
+        /// The error is that for the current operating system (for example, errno on Unix, SetLastError on Windows).
         /// </remarks>
         public static void SetLastSystemError(int error)
         {

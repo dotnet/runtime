@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 
@@ -11,7 +12,7 @@ namespace ILCompiler
 {
     internal delegate void RootAdder(object o, string reason);
 
-    internal class RootingServiceProvider : IRootingServiceProvider
+    internal sealed class RootingServiceProvider : IRootingServiceProvider
     {
         private readonly NodeFactory _factory;
         private readonly RootAdder _rootAdder;
@@ -50,6 +51,12 @@ namespace ILCompiler
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
                 _rootAdder(_factory.ReflectableField(field), reason);
+        }
+
+        public void AddCompilationRoot(object o, string reason)
+        {
+            Debug.Assert(o is IDependencyNode<NodeFactory>);
+            _rootAdder(o, reason);
         }
 
         public void RootThreadStaticBaseForType(TypeDesc type, string reason)

@@ -8,6 +8,12 @@ namespace System.Security.Cryptography.Cose.Tests
     public class CoseHeaderLabelTests
     {
         [Fact]
+        public void CoseHeaderLabel_StringCtor_ThrowIfNull()
+        {
+            Assert.Throws<ArgumentNullException>("label", () => new CoseHeaderLabel(null!));
+        }
+
+        [Fact]
         public void CoseHeaderLabel_GetHashCode()
         {
             // First, construct a COSE header of (0) using several different methods.

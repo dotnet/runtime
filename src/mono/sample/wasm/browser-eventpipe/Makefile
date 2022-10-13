@@ -2,6 +2,8 @@ TOP=../../../../..
 
 include ../wasm.mk
 
+override MSBUILD_ARGS+=/p:WasmEnablePerfTracing=true
+
 ifneq ($(AOT),)
 override MSBUILD_ARGS+=/p:RunAOTCompilation=true
 endif

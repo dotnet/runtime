@@ -19,6 +19,7 @@
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.cs" />
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystem.cs" />
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystemInfo.cs" />
+    <Compile Include="Directory\CreateTempSubdirectory.cs" />
     <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="Directory\SymbolicLinks.cs" />
     <Compile Include="DirectoryInfo\SymbolicLinks.cs" />

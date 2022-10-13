@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -51,6 +52,11 @@ namespace System.Text.RegularExpressions.Tests
 
         public static async Task<Regex> GetRegexAsync(RegexEngine engine, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options, Globalization.CultureInfo culture)
         {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, culture, options);
+            }
+
             using (new System.Tests.ThreadCultureChange(culture))
             {
                 return await GetRegexAsync(engine, pattern, options);
@@ -110,7 +116,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (engine == RegexEngine.SourceGenerated)
             {
-                return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, options, matchTimeout);
+                return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, null, options, matchTimeout);
             }
 
             // TODO-NONBACKTRACKING
@@ -122,7 +128,7 @@ namespace System.Text.RegularExpressions.Tests
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
         }
 
-        public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
+        public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
         {
             if (engine == RegexEngine.SourceGenerated)
             {
@@ -135,7 +141,7 @@ namespace System.Text.RegularExpressions.Tests
             var results = new Regex[regexes.Length];
             for (int i = 0; i < regexes.Length; i++)
             {
-                (string pattern, RegexOptions? options, TimeSpan? matchTimeout) = regexes[i];
+                (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout) = regexes[i];
                 results[i] =
                     options is null ? new Regex(pattern, OptionsFromEngine(engine)) :
                     matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :

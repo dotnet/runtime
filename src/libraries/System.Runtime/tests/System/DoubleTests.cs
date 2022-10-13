@@ -171,6 +171,8 @@ namespace System.Tests
         [InlineData(0.0,                     3.0,                     3.0,                     0.0)]
         [InlineData(0.0,                     10.0,                    10.0,                    0.0)]
         [InlineData(1.0,                     1.0,                     1.4142135623730950,      CrossPlatformMachineEpsilon * 10)]
+        [InlineData(1.0,                     1e+10,                   1e+10,                   0.0)] // dotnet/runtime#75651
+        [InlineData(1.0,                     1e+20,                   1e+20,                   0.0)] // dotnet/runtime#75651
         [InlineData(2.7182818284590452,      0.31830988618379067,     2.7368553638387594,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (1 / pi)
         [InlineData(2.7182818284590452,      0.43429448190325183,     2.7527563996732919,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (log10(e))
         [InlineData(2.7182818284590452,      0.63661977236758134,     2.7918346715914253,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (2 / pi)
@@ -191,7 +193,7 @@ namespace System.Tests
         [InlineData(10.0,                    0.69314718055994531,     10.023993865417028,      CrossPlatformMachineEpsilon * 100)]  //          y: (ln(2))
         [InlineData(10.0,                    0.70710678118654752,     10.024968827881711,      CrossPlatformMachineEpsilon * 100)]  //          y: (1 / sqrt(2))
         [InlineData(10.0,                    0.78539816339744831,     10.030795096853892,      CrossPlatformMachineEpsilon * 100)]  //          y: (pi / 4)
-        [InlineData(10.0,                    1.0,                     10.049875621120890,      CrossPlatformMachineEpsilon * 100)]  //       
+        [InlineData(10.0,                    1.0,                     10.049875621120890,      CrossPlatformMachineEpsilon * 100)]  //
         [InlineData(10.0,                    1.1283791670955126,      10.063460614755501,      CrossPlatformMachineEpsilon * 100)]  //          y: (2 / sqrt(pi))
         [InlineData(10.0,                    1.4142135623730950,      10.099504938362078,      CrossPlatformMachineEpsilon * 100)]  //          y: (sqrt(2))
         [InlineData(10.0,                    1.4426950408889634,      10.103532500121213,      CrossPlatformMachineEpsilon * 100)]  //          y: (log2(e))
@@ -664,7 +666,7 @@ namespace System.Tests
         [InlineData(-0.0,                      2,  0.0,                     0.0)]
         [InlineData(-0.0,                      3, -0.0,                     0.0)]
         [InlineData(-0.0,                      4,  0.0,                     0.0)]
-        [InlineData(-0.0,                      5, -0.0,                     0.0)]                                  
+        [InlineData(-0.0,                      5, -0.0,                     0.0)]
         [InlineData( double.NaN,              -5,  double.NaN,              0.0)]
         [InlineData( double.NaN,              -4,  double.NaN,              0.0)]
         [InlineData( double.NaN,              -3,  double.NaN,              0.0)]
@@ -827,9 +829,26 @@ namespace System.Tests
             double d = 123.0;
             Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            Assert.Throws<FormatException>(() => d.ToString("E" + int.MaxValue.ToString()));
             long intMaxPlus1 = (long)int.MaxValue + 1;
             string intMaxPlus1String = intMaxPlus1.ToString();
             Assert.Throws<FormatException>(() => d.ToString("E" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => d.ToString("E4772185890"));
+            Assert.Throws<FormatException>(() => d.ToString("E1000000000"));
+            Assert.Throws<FormatException>(() => d.ToString("E000001000000000"));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
+        [OuterLoop("Takes a long time, allocates a lot of memory")]
+        public static void ToString_ValidLargeFormat()
+        {
+            double d = 123.0;
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            d.ToString("E999999999"); // Should not throw
+            d.ToString("E00000999999999"); // Should not throw
         }
 
         [Theory]
@@ -1453,7 +1472,7 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.AsinPi(+value), allowedVariance);
         }
 
-        [Theory]                                                      
+        [Theory]
         [InlineData( double.NaN,               double.NaN,              double.NaN,           0.0)]
         [InlineData( 0.0,                     -1.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
         [InlineData( 0.0,                     -0.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
@@ -1486,7 +1505,7 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.Atan2Pi(+y, +x), allowedVariance);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/71252
+        [Theory]
         [InlineData( double.NaN,               double.NaN,          0.0)]
         [InlineData( 0.0,                      0.0,                 0.0)]
         [InlineData( 1.5574077246549022,       0.31830988618379067, CrossPlatformMachineEpsilon)]
@@ -1495,8 +1514,8 @@ namespace System.Tests
         [InlineData(-2.1850398632615190,      -0.36338022763241866, CrossPlatformMachineEpsilon)]
         [InlineData(-1.4406084404920341,      -0.30685281944005469, CrossPlatformMachineEpsilon)]
         [InlineData(-1.3136757077477542,      -0.29289321881345248, CrossPlatformMachineEpsilon)]
-        [InlineData(-0.79909939792801821,     -0.21460183660255169, CrossPlatformMachineEpsilon)]     
-        [InlineData( 0.42670634433261806,      0.12837916709551257, CrossPlatformMachineEpsilon)]    
+        [InlineData(-0.79909939792801821,     -0.21460183660255169, CrossPlatformMachineEpsilon)]
+        [InlineData( 0.42670634433261806,      0.12837916709551257, CrossPlatformMachineEpsilon)]
         [InlineData( 3.6202185671074506,       0.41421356237309505, CrossPlatformMachineEpsilon)]
         [InlineData( 5.4945259425167300,       0.44269504088896341, CrossPlatformMachineEpsilon)]
         [InlineData(-4.4217522209161288,      -0.42920367320510338, CrossPlatformMachineEpsilon)]

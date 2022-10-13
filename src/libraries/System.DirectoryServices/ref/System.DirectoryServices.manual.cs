@@ -4,9 +4,15 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.DirectoryServices.Design;
+
 namespace System.DirectoryServices
 {
     [System.ComponentModel.TypeConverter(typeof(DirectoryEntryConverter))]
     public partial class DirectoryEntry { }
+}
+
+namespace System.DirectoryServices.Design
+{
     internal sealed class DirectoryEntryConverter { }
 }

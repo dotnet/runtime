@@ -701,7 +701,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int Token { get; }
         internal string Namespace { get; }
         internal bool IsCompilerGenerated { get; }
+        private bool NonUserCode { get; }
         public string FullName { get; }
+        internal bool IsNonUserCode => assembly.pdbMetadataReader == null || NonUserCode;
         public List<MethodInfo> Methods { get; } = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
@@ -769,8 +771,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                 var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                if (attributeName == nameof(CompilerGeneratedAttribute))
-                    IsCompilerGenerated = true;
+                switch (attributeName)
+                {
+                    case nameof(CompilerGeneratedAttribute):
+                        IsCompilerGenerated = true;
+                        break;
+                    case nameof(DebuggerNonUserCodeAttribute):
+                        NonUserCode = true;
+                        break;
+                }
             }
 
             void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)
@@ -987,13 +996,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
-                                source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
+                                source = GetOrAddSourceFile(methodDebugInformation.Document, documentName);
                             }
                             var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                             methods[entryRow] = methodInfo;
 
-                            if (source != null)
-                                source.AddMethod(methodInfo);
+                            source?.AddMethod(methodInfo);
 
                             typeInfo.Methods.Add(methodInfo);
                         }
@@ -1010,13 +1018,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-        private SourceFile GetOrAddSourceFile(DocumentHandle doc, int rowid, string documentName)
+        private SourceFile GetOrAddSourceFile(DocumentHandle doc, string documentName)
         {
-            if (_documentIdToSourceFileTable.TryGetValue(rowid, out SourceFile source))
+            if (_documentIdToSourceFileTable.TryGetValue(documentName.GetHashCode(), out SourceFile source))
                 return source;
 
             var src = new SourceFile(this, _documentIdToSourceFileTable.Count, doc, GetSourceLinkUrl(documentName), documentName);
-            _documentIdToSourceFileTable[rowid] = src;
+            _documentIdToSourceFileTable[documentName.GetHashCode()] = src;
             return src;
         }
 
@@ -1046,14 +1054,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
                             var documentName = pdbMetadataReader.GetString(document.Name);
-                            source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
+                            source = GetOrAddSourceFile(methodDebugInformation.Document, documentName);
                         }
                     }
                     var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
                     methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
 
-                    if (source != null)
-                        source.AddMethod(methodInfo);
+                    source?.AddMethod(methodInfo);
 
                     typeInfo.Methods.Add(methodInfo);
                 }
@@ -1460,11 +1467,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     try
                     {
+                        string unescapedFileName = Uri.UnescapeDataString(file_name);
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
                             });
                     }
                     catch (Exception e)
@@ -1596,7 +1604,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request)
+        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request, bool ifNoneFoundThenFindNext = false)
         {
             request.TryResolve(this);
 
@@ -1606,16 +1614,64 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (sourceFile == null)
                 yield break;
 
-            foreach (MethodInfo method in sourceFile.Methods)
+            List<MethodInfo> methodList = FindMethodsContainingLine(sourceFile, request.Line);
+            if (methodList.Count == 0)
+                yield break;
+
+            List<SourceLocation> locations = new List<SourceLocation>();
+            foreach (var method in methodList)
             {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
+                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                {
+                    if (!sequencePoint.IsHidden &&
+                            Match(sequencePoint, request.Line, request.Column) &&
+                            sequencePoint.StartLine - 1 == request.Line &&
+                            (request.Column == 0 || sequencePoint.StartColumn - 1 == request.Column))
+                    {
+                        // Found an exact match
+                        locations.Add(new SourceLocation(method, sequencePoint));
+                    }
+                }
+            }
+            if (locations.Count == 0 && ifNoneFoundThenFindNext)
+            {
+                (MethodInfo method, SequencePoint seqPoint)? closest = null;
+                foreach (var method in methodList)
                 {
                     foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
                     {
-                        if (!sequencePoint.IsHidden && Match(sequencePoint, request.Line, request.Column))
-                            yield return new SourceLocation(method, sequencePoint);
+                        if (!sequencePoint.IsHidden &&
+                                sequencePoint.StartLine > request.Line &&
+                                (closest is null || closest.Value.seqPoint.StartLine > sequencePoint.StartLine))
+                        {
+                            // sequence points in a method are ordered,
+                            // and we found the one right after request.Line
+                            closest = (method, sequencePoint);
+                            // .. and now we can look for it in other methods
+                            break;
+                        }
                     }
                 }
+
+                if (closest is not null)
+                    locations.Add(new SourceLocation(closest.Value.method, closest.Value.seqPoint));
+            }
+
+            foreach (SourceLocation loc in locations)
+                yield return loc;
+
+            static List<MethodInfo> FindMethodsContainingLine(SourceFile sourceFile, int line)
+            {
+                List<MethodInfo> ret = new();
+                foreach (MethodInfo method in sourceFile.Methods)
+                {
+                    if (method.DebugInformation.SequencePointsBlob.IsNil)
+                        continue;
+                    if (!(method.StartLocation.Line <= line && line <= method.EndLocation.Line))
+                        continue;
+                    ret.Add(method);
+                }
+                return ret;
             }
         }
 

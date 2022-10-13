@@ -10,11 +10,11 @@ namespace System.Net.Quic;
 public enum QuicAbortDirection
 {
     /// <summary>
-    /// Abort read side of the stream.
+    /// Abort the read side of the stream.
     /// </summary>
     Read = 1,
     /// <summary>
-    /// Abort write side of the stream.
+    /// Abort the write side of the stream.
     /// </summary>
     Write = 2,
     /// <summary>

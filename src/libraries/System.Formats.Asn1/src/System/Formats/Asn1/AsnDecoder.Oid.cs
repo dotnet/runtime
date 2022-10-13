@@ -53,8 +53,27 @@ namespace System.Formats.Asn1
             out int bytesConsumed,
             Asn1Tag? expectedTag = null)
         {
-            // TODO: Inline this call when it won't cause a PR/diff problem.
-            return ReadObjectIdentifier(source, ruleSet, expectedTag, out bytesConsumed);
+            // T-REC-X.690-201508 sec 8.19.1
+            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.ObjectIdentifier,
+                UniversalTagNumber.ObjectIdentifier,
+                out int consumed);
+
+#if NETCOREAPP
+            string? wellKnown = WellKnownOids.GetValue(contents);
+
+            if (wellKnown is not null)
+            {
+                bytesConsumed = consumed;
+                return wellKnown;
+            }
+#endif
+
+            string ret = ReadObjectIdentifier(contents);
+            bytesConsumed = consumed;
+            return ret;
         }
 
         private static void ReadSubIdentifier(
@@ -172,20 +191,8 @@ namespace System.Formats.Asn1
             CryptoPool.Return(tmpBytes, bytesWritten);
         }
 
-        private static string ReadObjectIdentifier(
-            ReadOnlySpan<byte> source,
-            AsnEncodingRules ruleSet,
-            Asn1Tag? expectedTag,
-            out int totalBytesRead)
+        private static string ReadObjectIdentifier(ReadOnlySpan<byte> contents)
         {
-            // T-REC-X.690-201508 sec 8.19.1
-            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
-                source,
-                ruleSet,
-                expectedTag ?? Asn1Tag.ObjectIdentifier,
-                UniversalTagNumber.ObjectIdentifier,
-                out int consumed);
-
             // T-REC-X.690-201508 sec 8.19.2 says the minimum length is 1
             if (contents.Length < 1)
             {
@@ -278,7 +285,6 @@ namespace System.Formats.Asn1
                 contents = contents.Slice(bytesRead);
             }
 
-            totalBytesRead = consumed;
             return builder.ToString();
         }
     }

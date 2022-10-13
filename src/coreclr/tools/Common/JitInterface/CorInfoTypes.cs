@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Pgo;
-using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -889,10 +888,10 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct CORINFO_TAILCALL_HELPERS
     {
-        CORINFO_TAILCALL_HELPERS_FLAGS flags;
-        CORINFO_METHOD_STRUCT_*        hStoreArgs;
-        CORINFO_METHOD_STRUCT_*        hCallTarget;
-        CORINFO_METHOD_STRUCT_*        hDispatcher;
+        private CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        private CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        private CORINFO_METHOD_STRUCT_*        hCallTarget;
+        private CORINFO_METHOD_STRUCT_*        hDispatcher;
     };
 
     public enum CORINFO_THIS_TRANSFORM
@@ -1432,7 +1431,7 @@ namespace Internal.JitInterface
 
     public struct CORJIT_FLAGS
     {
-        private UInt64 _corJitFlags;
+        private ulong _corJitFlags;
         public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()

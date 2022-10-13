@@ -570,7 +570,8 @@ OBJECTREF InvokeUtil::CreateClassLoadExcept(OBJECTREF* classes, OBJECTREF* excep
         OBJECTREF o;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.o = NULL;
+    gc.str = NULL;
 
     MethodTable *pVMClassLoadExcept = CoreLibBinder::GetException(kReflectionTypeLoadException);
     gc.o = AllocateObject(pVMClassLoadExcept);

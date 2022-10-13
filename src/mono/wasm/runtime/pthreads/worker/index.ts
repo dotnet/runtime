@@ -5,8 +5,9 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
-import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
-import { mono_assert, is_nullish } from "../../types";
+import { isMonoThreadMessageApplyMonoConfig, makeChannelCreatedMonoMessage } from "../shared";
+import type { pthread_ptr } from "../shared/types";
+import { mono_assert, is_nullish, MonoConfig } from "../../types";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -15,6 +16,7 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
+import { setup_proxy_console } from "../../logging";
 
 // re-export some of the events types
 export {
@@ -53,7 +55,16 @@ export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 export const currentWorkerThreadEvents: WorkerThreadEventTarget =
     MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
 
+
+// this is the message handler for the worker that receives messages from the main thread
+// extend this with new cases as needed
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
+    if (isMonoThreadMessageApplyMonoConfig(event.data)) {
+        const config = JSON.parse(event.data.config) as MonoConfig;
+        console.debug("MONO_WASM: applying mono config from main", event.data.config);
+        onMonoConfigReceived(config);
+        return;
+    }
     console.debug("MONO_WASM: got message from main on the dedicated channel", event.data);
 }
 
@@ -67,6 +78,22 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
     pthread_self = new WorkerSelf(pthread_ptr, workerPort);
     self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
     return pthread_self;
+}
+
+// TODO: should we just assign to Module.config here?
+let workerMonoConfig: MonoConfig = null as unknown as MonoConfig;
+
+// called when the main thread sends us the mono config
+function onMonoConfigReceived(config: MonoConfig): void {
+    if (workerMonoConfig !== null) {
+        console.debug("MONO_WASM: mono config already received");
+        return;
+    }
+    workerMonoConfig = config;
+    console.debug("MONO_WASM: mono config received", config);
+    if (workerMonoConfig.diagnosticTracing) {
+        setup_proxy_console("pthread-worker", console, self.location.href);
+    }
 }
 
 /// This is an implementation detail function.

@@ -85,7 +85,13 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
-
+#ifdef TARGET_ARM64
+    bool IsValidCompareChain(GenTree* child, GenTree* parent);
+    bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
+    void ContainCheckCompareChainForAnd(GenTree* tree);
+    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    void ContainCheckSelect(GenTreeConditional* node);
+#endif
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -155,6 +161,8 @@ private:
                                   GenTree*     lookForUsesStart,
                                   GenTreeCall* callNode);
     void InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
+    GenTree* FindEarliestPutArg(GenTreeCall* call);
+    size_t MarkPutArgNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
@@ -382,10 +390,11 @@ private:
             return op;
         }
 
-        GenTreeCast* cast = op->AsCast();
+        GenTreeCast* cast   = op->AsCast();
+        GenTree*     castOp = cast->CastOp();
 
         // FP <-> INT casts should be kept
-        if (varTypeIsFloating(cast->CastFromType()) ^ varTypeIsFloating(expectedType))
+        if (varTypeIsFloating(castOp) ^ varTypeIsFloating(expectedType))
         {
             return op;
         }
@@ -396,17 +405,23 @@ private:
             return op;
         }
 
+        // Keep casts with operands usable from memory.
+        if (castOp->isContained() || castOp->IsRegOptional())
+        {
+            return op;
+        }
+
         if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
         {
 #ifndef TARGET_64BIT
             // Don't expose TYP_LONG on 32bit
-            if (varTypeIsLong(cast->CastFromType()))
+            if (castOp->TypeIs(TYP_LONG))
             {
                 return op;
             }
 #endif
             BlockRange().Remove(op);
-            return cast->CastOp();
+            return castOp;
         }
 
         return op;

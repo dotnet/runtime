@@ -147,12 +147,6 @@ GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CEQ              , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CNE              , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CLT              , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CLE              , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CGE              , GenTreeConditional ,0,GTK_SPECIAL)
-GTNODE(CGT              , GenTreeConditional ,0,GTK_SPECIAL)
 
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
@@ -226,7 +220,6 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result

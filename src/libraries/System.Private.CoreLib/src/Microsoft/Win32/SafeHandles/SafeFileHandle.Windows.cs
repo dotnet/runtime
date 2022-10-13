@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Buffers;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -286,12 +287,43 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.Kernel32.FILE_STANDARD_INFO info;
 
-                if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                {
+                    return info.EndOfFile;
+                }
+
+                // In theory when GetFileInformationByHandleEx fails, then
+                // a) IsDevice can modify last error (not true today, but can be in the future),
+                // b) DeviceIoControl can succeed (last error set to ERROR_SUCCESS) but return fewer bytes than requested.
+                // The error is stored and in such cases exception for the first failure is going to be thrown.
+                int lastError = Marshal.GetLastPInvokeError();
+
+                if (Path is null || !PathInternal.IsDevice(Path))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
+                }
+
+                Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
+                bool success = Interop.Kernel32.DeviceIoControl(
+                    this,
+                    dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
+                    lpInBuffer: null,
+                    nInBufferSize: 0,
+                    lpOutBuffer: &storageReadCapacity,
+                    nOutBufferSize: (uint)sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY),
+                    out uint bytesReturned,
+                    IntPtr.Zero);
+
+                if (!success)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(Path);
                 }
+                else if (bytesReturned != sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
+                }
 
-                return info.EndOfFile;
+                return storageReadCapacity.DiskLength;
             }
         }
     }

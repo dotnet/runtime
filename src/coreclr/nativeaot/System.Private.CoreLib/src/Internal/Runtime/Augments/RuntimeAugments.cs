@@ -152,6 +152,14 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
         }
 
+        public static unsafe bool MightBeUnconstructedType(RuntimeTypeHandle type)
+        {
+            // If there are no vtable slots the type is likely an unconstructed type.
+            // But could also be an interface with no virtuals. We can't distinguish those.
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots != 0);
+            return CreateEETypePtr(type).ToPointer()->NumVtableSlots == 0;
+        }
+
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
             return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);

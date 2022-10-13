@@ -19,8 +19,8 @@
 // ******************************************************************************
 // WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/stresslog.h
-// Parser: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/stressLogDump.cpp
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
+// Parser: https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/stressLogDump.cpp
 // ******************************************************************************
 
 /*************************************************************************************/
@@ -259,7 +259,7 @@
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
-void AppendPid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength);
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
 
 class ThreadStressLog;
 

@@ -281,6 +281,12 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_getenv (const char *name)
+{
+	return monoeg_g_getenv (name); // JS must free
+}
+
 static void *sysglobal_native_handle;
 
 static void*
@@ -443,7 +449,10 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-void mono_initialize_internals ()
+typedef void (*background_job_cb)(void);
+void mono_threads_schedule_background_job (background_job_cb cb);
+
+void mono_initialize_internals (void)
 {
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
@@ -452,10 +461,11 @@ void mono_initialize_internals ()
 	core_initialize_internals();
 #endif
 
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_register_bundled_satellite_assemblies ()
+mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
@@ -536,7 +546,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
-	
+
 #ifdef GEN_PINVOKE
 	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
 #endif
@@ -631,7 +641,7 @@ mono_wasm_assembly_load (const char *name)
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib ()
+mono_wasm_get_corlib (void)
 {
 	MonoAssembly* result;
 	MONO_ENTER_GC_UNSAFE;
@@ -902,7 +912,7 @@ _get_uri_class(MonoException** exc)
 }
 
 static void
-_ensure_classes_resolved ()
+_ensure_classes_resolved (void)
 {
 	MONO_ENTER_GC_UNSAFE;
 	if (!datetime_class && !resolved_datetime_class) {

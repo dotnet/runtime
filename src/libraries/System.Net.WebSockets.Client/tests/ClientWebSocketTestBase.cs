@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Net.Http;
+using System.Diagnostics;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    /// <summary>
-    /// ClientWebSocket tests that do require a remote server.
-    /// </summary>
     public class ClientWebSocketTestBase
     {
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
@@ -24,6 +22,11 @@ namespace System.Net.WebSockets.Client.Tests
             new object[] { o[0], false },
             new object[] { o[0], true }
         }).ToArray();
+        public static readonly object[][] SecureEchoServersAndBoolean = new object[][]
+        {
+            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, false },
+            new object[] { Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, true }
+        };
 
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
@@ -104,6 +107,48 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }
         }
+
+        protected virtual bool UseCustomInvoker => false;
+
+        protected virtual bool UseHttpClient => false;
+
+        protected bool UseSharedHandler => !UseCustomInvoker && !UseHttpClient;
+
+        protected Action<HttpClientHandler>? ConfigureCustomHandler;
+
+        internal HttpMessageInvoker? GetInvoker()
+        {
+            var handler = new HttpClientHandler();
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+
+            ConfigureCustomHandler?.Invoke(handler);
+
+            if (UseCustomInvoker)
+            {
+                Debug.Assert(!UseHttpClient);
+                return new HttpMessageInvoker(handler);
+            }
+
+            if (UseHttpClient)
+            {
+                return new HttpClient(handler);
+            }
+
+            return null;
+        }
+
+        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker());
+
+        protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
+
+        protected Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
     }

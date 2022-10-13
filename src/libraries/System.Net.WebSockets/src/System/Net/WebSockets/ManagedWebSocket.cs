@@ -423,7 +423,17 @@ namespace System.Net.WebSockets
                 // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    return writeTask;
+                    writeTask.GetAwaiter().GetResult();
+                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    if (flushTask.IsCompleted)
+                    {
+                        return flushTask;
+                    }
+                    else
+                    {
+                        releaseSendBufferAndSemaphore = false;
+                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                    }
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -447,14 +457,18 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask);
+            return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
+                if (shouldFlush)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
@@ -478,6 +492,7 @@ namespace System.Net.WebSockets
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))

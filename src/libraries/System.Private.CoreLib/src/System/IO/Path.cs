@@ -240,13 +240,11 @@ namespace System.IO
             // We don't want to cut off "C:\file.txt:stream" (i.e. should be "file.txt:stream")
             // but we *do* want "C:Foo" => "Foo". This necessitates checking for the root.
 
-            for (int i = path.Length; --i >= 0;)
-            {
-                if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1);
-            }
+            int i = PathInternal.DirectorySeparatorChar == PathInternal.AltDirectorySeparatorChar ?
+                path.LastIndexOf(PathInternal.DirectorySeparatorChar) :
+                path.LastIndexOfAny(PathInternal.DirectorySeparatorChar, PathInternal.AltDirectorySeparatorChar);
 
-            return path;
+            return path.Slice(i < root ? root : i + 1);
         }
 
         [return: NotNullIfNotNull(nameof(path))]
@@ -818,7 +816,7 @@ namespace System.IO
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
-        private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
+        internal static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
             // This method requires bytes of length 8 and chars of length 12.
             Debug.Assert(bytes != null);

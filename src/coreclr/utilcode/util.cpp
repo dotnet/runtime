@@ -99,9 +99,9 @@ HRESULT GetHex(                         // Return status.
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
 //*****************************************************************************
-HRESULT LPCSTRToGuid(                   // Return status.
-    LPCSTR      szGuid,                 // String to convert.
-    GUID        *psGuid)                // Buffer for converted GUID.
+BOOL LPCSTRToGuid(
+    LPCSTR szGuid,  // [IN] String to convert.
+    GUID* pGuid)    // [OUT] Buffer for converted GUID.
 {
     CONTRACTL
     {
@@ -115,33 +115,33 @@ HRESULT LPCSTRToGuid(                   // Return status.
     if (strlen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
         szGuid[14] != '-' || szGuid[19] != '-' || szGuid[24] != '-' || szGuid[37] != '}')
     {
-        return (E_FAIL);
+        return FALSE;
     }
 
     // Parse the first 3 fields.
-    if (FAILED(GetHex(szGuid + 1, 4, &psGuid->Data1)))
-        return E_FAIL;
-    if (FAILED(GetHex(szGuid + 10, 2, &psGuid->Data2)))
-        return E_FAIL;
-    if (FAILED(GetHex(szGuid + 15, 2, &psGuid->Data3)))
-        return E_FAIL;
+    if (FAILED(GetHex(szGuid + 1, 4, &pGuid->Data1)))
+        return FALSE;
+    if (FAILED(GetHex(szGuid + 10, 2, &pGuid->Data2)))
+        return FALSE;
+    if (FAILED(GetHex(szGuid + 15, 2, &pGuid->Data3)))
+        return FALSE;
 
     // Get the last two fields (which are byte arrays).
     for (i = 0; i < 2; ++i)
     {
-        if (FAILED(GetHex(szGuid + 20 + (i * 2), 1, &psGuid->Data4[i])))
+        if (FAILED(GetHex(szGuid + 20 + (i * 2), 1, &pGuid->Data4[i])))
         {
-            return E_FAIL;
+        return FALSE;
         }
     }
     for (i=0; i < 6; ++i)
     {
-        if (FAILED(GetHex(szGuid + 25 + (i * 2), 1, &psGuid->Data4[i+2])))
+        if (FAILED(GetHex(szGuid + 25 + (i * 2), 1, &pGuid->Data4[i+2])))
         {
-            return E_FAIL;
+        return FALSE;
         }
     }
-    return S_OK;
+    return TRUE;
 }
 
 //
@@ -760,7 +760,16 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
-    BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
+    USHORT groupCount = 0;
+
+    // On Windows 11+ and Windows Server 2022+, a process is no longer restricted to a single processor group by default.
+    // If more than one processor group is available to the process (a non-affinitized process on Windows 11+),
+    // default to using multiple processor groups; otherwise, default to using a single processor group. This default
+    // behavior may be overridden by the configuration values below.
+    if (GetProcessGroupAffinity(GetCurrentProcess(), &groupCount, NULL) || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        groupCount = 1;
+
+    BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup, groupCount > 1);
 
     if (!enableGCCPUGroups)
         return;
@@ -772,7 +781,7 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
         m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
@@ -1263,8 +1272,8 @@ void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
 //=============================================================================
 // The string should be of the form
 // MyAssembly
-// MyAssembly;mscorlib;System
-// MyAssembly;mscorlib System
+// MyAssembly;System.Private.CoreLib;System
+// MyAssembly;System.Private.CoreLib System
 
 AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
@@ -2887,7 +2896,7 @@ namespace Com
             STANDARD_VM_CONTRACT;
 
             WCHAR wszClsid[39];
-            if (GuidToLPWSTR(rclsid, wszClsid, ARRAY_SIZE(wszClsid)) == 0)
+            if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 
             StackSString ssKeyName;

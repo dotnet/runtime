@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return GetSlotForEntry(entry);
         }
-        
+
         public abstract IEnumerable<GenericLookupResult> Entries
         {
             get;
@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
         {
-            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = default(ArrayBuilder<NativeLayoutVertexNode>);
             foreach (var entry in Entries)
             {
                 templateEntries.Add(entry.TemplateDictionaryNode(factory));
@@ -182,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
             return conditionalDependencies;
         }
 
-        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType}";
 
         public override bool HasConditionalStaticDependencies => HasFixedSlots;
         public override bool HasDynamicDependencies => false;
@@ -201,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis
         public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, IEnumerable<GenericLookupResult> layout)
             : base(owningMethodOrType)
         {
-            ArrayBuilder<GenericLookupResult> l = new ArrayBuilder<GenericLookupResult>();
+            ArrayBuilder<GenericLookupResult> l = default(ArrayBuilder<GenericLookupResult>);
             foreach (var entry in layout)
                 l.Add(entry);
 
@@ -243,10 +243,10 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class LazilyBuiltDictionaryLayoutNode : DictionaryLayoutNode
     {
-        class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
+        private sealed class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
-            protected override bool CompareKeyToValue(GenericLookupResult key, GenericLookupResult value) => Object.Equals(key, value);
-            protected override bool CompareValueToValue(GenericLookupResult value1, GenericLookupResult value2) => Object.Equals(value1, value2);
+            protected override bool CompareKeyToValue(GenericLookupResult key, GenericLookupResult value) => Equals(key, value);
+            protected override bool CompareValueToValue(GenericLookupResult value1, GenericLookupResult value2) => Equals(value1, value2);
             protected override GenericLookupResult CreateValueFromKey(GenericLookupResult key) => key;
             protected override int GetKeyHashCode(GenericLookupResult key) => key.GetHashCode();
             protected override int GetValueHashCode(GenericLookupResult value) => value.GetHashCode();

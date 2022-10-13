@@ -247,7 +247,7 @@ namespace System.Xml
         {
             try
             {
-                return new UniqueId(Trim(value));
+                return new UniqueId(value.Trim());
             }
             catch (ArgumentException exception)
             {
@@ -293,7 +293,7 @@ namespace System.Xml
         {
             try
             {
-                return new Guid(Trim(value));
+                return new Guid(value.Trim());
             }
             catch (FormatException exception)
             {
@@ -318,7 +318,7 @@ namespace System.Xml
         {
             try
             {
-                return ulong.Parse(value, NumberStyles.Any, NumberFormatInfo.InvariantInfo);
+                return ulong.Parse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
             }
             catch (ArgumentException exception)
             {
@@ -395,7 +395,6 @@ namespace System.Xml
         public static string ToString(double value) { return XmlConvert.ToString(value); }
         public static string ToString(decimal value) { return XmlConvert.ToString(value); }
         public static string ToString(TimeSpan value) { return XmlConvert.ToString(value); }
-
         public static string ToString(UniqueId value) { return value.ToString(); }
         public static string ToString(Guid value) { return value.ToString(); }
         public static string ToString(ulong value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
@@ -459,14 +458,14 @@ namespace System.Xml
             if (index < 0)
             {
                 prefix = string.Empty;
-                localName = Trim(qname);
+                localName = qname.Trim();
             }
             else
             {
                 if (index == qname.Length - 1)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlInvalidQualifiedName, qname)));
-                prefix = Trim(qname.Substring(0, index));
-                localName = Trim(qname.Substring(index + 1));
+                prefix = qname.Substring(0, index).Trim();
+                localName = qname.Substring(index + 1).Trim();
             }
         }
 
@@ -616,7 +615,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(float)value;
             else
                 result = value;
             return true;
@@ -668,7 +667,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(double)value;
             else
                 result = value;
             return true;
@@ -795,7 +794,7 @@ namespace System.Xml
         {
             for (int i = 0; i < s.Length; i++)
             {
-                Fx.Assert(s[i] < 128, "");
+                DiagnosticUtility.DebugAssert(s[i] < 128, "");
                 buffer[offset++] = (byte)s[i];
             }
             return s.Length;
@@ -1134,22 +1133,6 @@ namespace System.Xml
                     }
                 }
             });
-        }
-
-        private static string Trim(string s)
-        {
-            int i;
-            for (i = 0; i < s.Length && IsWhitespace(s[i]); i++)
-                ;
-            int j;
-            for (j = s.Length; j > 0 && IsWhitespace(s[j - 1]); j--)
-                ;
-            if (i == 0 && j == s.Length)
-                return s;
-            else if (j == 0)
-                return string.Empty;
-            else
-                return s.Substring(i, j - i);
         }
     }
 }

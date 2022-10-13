@@ -130,7 +130,8 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(4, reader.ReadStartArray());
 
             // Protected headers
-            AssertProtectedHeaders(reader.ReadByteString(), expectedProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
+            byte[] rawProtectedHeaders = reader.ReadByteString();
+            AssertProtectedHeaders(rawProtectedHeaders, expectedProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
 
             // Unprotected headers
             AssertHeaders(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
@@ -164,6 +165,12 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.True(msg.VerifyEmbedded(signingKey), "msg.Verify(key)");
             }
 
+            // Raw Protected Headers
+            AssertExtensions.SequenceEqual(rawProtectedHeaders, msg.RawProtectedHeaders.Span);
+
+            // Signature
+            AssertExtensions.SequenceEqual(signatureBytes, msg.Signature.Span);
+
             // GetEncodedLength
             Assert.Equal(encodedMsg.Length, msg.GetEncodedLength());
 
@@ -190,7 +197,8 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(4, reader.ReadStartArray());
 
             // Body's Protected headers
-            AssertProtectedHeaders(reader.ReadByteString(), expectedBodyProtectedHeaders);
+            byte[] encodedBodyProtectedHeaders = reader.ReadByteString();
+            AssertProtectedHeaders(encodedBodyProtectedHeaders, expectedBodyProtectedHeaders);
 
             // Body's Unprotected headers
             AssertHeaders(reader, expectedBodyUnprotectedHeaders ?? GetEmptyExpectedHeaders());
@@ -206,6 +214,8 @@ namespace System.Security.Cryptography.Cose.Tests
             }
 
             Assert.Equal(expectedSignatures, reader.ReadStartArray());
+            List<byte[]> listOfRawSignProtectedHeaders = new();
+            List<byte[]> listOfSignatureBytes = new();
 
             for (int i = 0; i < expectedSignatures; i++)
             {
@@ -213,7 +223,9 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.Equal(3, reader.ReadStartArray());
 
                 // Sign's Protected headers
-                AssertProtectedHeaders(reader.ReadByteString(), expectedSignProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
+                byte[] rawSignProtectedHeaders = reader.ReadByteString();
+                listOfRawSignProtectedHeaders.Add(rawSignProtectedHeaders);
+                AssertProtectedHeaders(rawSignProtectedHeaders, expectedSignProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
 
                 // Sign's Unprotected headers
                 AssertHeaders(reader, expectedSignUnprotectedHeaders ?? GetEmptyExpectedHeaders());
@@ -221,6 +233,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 // Signature
                 byte[] signatureBytes = reader.ReadByteString();
                 Assert.Equal(GetSignatureSize(signingKey), signatureBytes.Length);
+                listOfSignatureBytes.Add(signatureBytes);
 
                 reader.ReadEndArray(); // End of Cose_Signature.
             }
@@ -233,7 +246,8 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseMultiSignMessage msg = CoseMessage.DecodeMultiSign(encodedMsg);
             Assert.Equal(expectedSignatures, msg.Signatures.Count);
 
-            CoseSignature signature = msg.Signatures[0];
+            ReadOnlyCollection<CoseSignature> signatures = msg.Signatures;
+            CoseSignature signature = signatures[0];
 
             if (expectedDetachedContent)
             {
@@ -242,6 +256,18 @@ namespace System.Security.Cryptography.Cose.Tests
             else
             {
                 Assert.True(signature.VerifyEmbedded(signingKey), "msg.Verify(ecdsa)");
+            }
+
+            // Raw Body Protected Headers
+            AssertExtensions.SequenceEqual(encodedBodyProtectedHeaders, msg.RawProtectedHeaders.Span);
+
+            for (int i = 0; i < signatures.Count; i++)
+            {
+                // Raw Sign Protected Headers
+                AssertExtensions.SequenceEqual(listOfRawSignProtectedHeaders[i], signatures[i].RawProtectedHeaders.Span);
+
+                // Signature
+                AssertExtensions.SequenceEqual(listOfSignatureBytes[i], signatures[i].Signature.Span);
             }
 
             // GetEncodedLength
@@ -515,17 +541,17 @@ namespace System.Security.Cryptography.Cose.Tests
             MultiSign = 98
         }
 
-        internal static void WriteDummyCritHeaderValue(CborWriter writer)
+        internal static void WriteDummyCritHeaderValue(CborWriter writer, bool useIndefiniteLength = false)
         {
-            writer.WriteStartArray(1);
+            writer.WriteStartArray(useIndefiniteLength ? null : 1);
             writer.WriteInt32(42);
             writer.WriteEndArray();
         }
 
-        internal static byte[] GetDummyCritHeaderValue()
+        internal static byte[] GetDummyCritHeaderValue(bool useIndefiniteLength = false)
         {
             var writer = new CborWriter();
-            WriteDummyCritHeaderValue(writer);
+            WriteDummyCritHeaderValue(writer, useIndefiniteLength);
             return writer.Encode();
         }
 
@@ -651,6 +677,102 @@ namespace System.Security.Cryptography.Cose.Tests
                 w.Reset();
                 return encodedValue;
             }
+        }
+
+        internal static byte[] GetCounterSign(CoseMultiSignMessage msg, CoseSignature signature, CoseAlgorithm algorithm)
+        {
+            Assert.True(msg.Signatures.Contains(signature));
+            var writer = new CborWriter();
+            writer.WriteStartArray(3);
+
+            // encoded protected
+            byte[] encodedProtectedHeaders = GetCounterSignProtectedHeaders((int)algorithm);
+            writer.WriteByteString(encodedProtectedHeaders);
+
+            // empty unprotected headers
+            writer.WriteStartMap(0);
+            writer.WriteEndMap();
+
+            // signature
+            (AsymmetricAlgorithm key, HashAlgorithmName hash, _) = GetKeyHashPaddingTriplet<AsymmetricAlgorithm>(algorithm);
+            byte[] signatureBytes = GetSignature(key, hash, GetToBeSignedForCounterSign(msg, signature, encodedProtectedHeaders));
+            writer.WriteByteString(signatureBytes);
+            writer.WriteEndArray();
+
+            return writer.Encode();
+        }
+
+        private static byte[] GetCounterSignProtectedHeaders(int algorithm)
+        {
+            var writer = new CborWriter();
+            writer.WriteStartMap(1);
+            writer.WriteInt32(KnownHeaderAlg);
+            writer.WriteInt32(algorithm);
+            writer.WriteEndMap();
+
+            return writer.Encode();
+        }
+
+        private static byte[] GetSignature(AsymmetricAlgorithm key, HashAlgorithmName hash, byte[] toBeSigned)
+        {
+            if (key is ECDsa ecdsa)
+            {
+                return ecdsa.SignData(toBeSigned, hash);
+            }
+            else if (key is RSA rsa)
+            {
+                return rsa.SignData(toBeSigned, hash, RSASignaturePadding.Pss);
+            }
+
+            throw new ArgumentException("Key must be ECDsa or RSA", nameof(key));
+        }
+
+        internal static bool VerifyCounterSign(AsymmetricAlgorithm key, HashAlgorithmName hash, byte[] toBeSigned, byte[] signature)
+        {
+            if (key is ECDsa ecdsa)
+            {
+                return ecdsa.VerifyData(toBeSigned, signature, hash);
+            }
+            else if (key is RSA rsa)
+            {
+                return rsa.VerifyData(toBeSigned, signature, hash, RSASignaturePadding.Pss);
+            }
+
+            throw new ArgumentException("Key must be ECDsa or RSA", nameof(key));
+        }
+
+        internal static byte[] GetToBeSignedForCounterSign(CoseMultiSignMessage msg, CoseSignature signature, byte[] signProtected)
+        {
+            var writer = new CborWriter();
+            writer.WriteStartArray(5);
+            writer.WriteTextString("CounterSignature");
+            writer.WriteByteString(msg.RawProtectedHeaders.Span); // body_protected
+            writer.WriteByteString(signProtected); // sign_protected
+            writer.WriteByteString(default(Span<byte>)); // external_aad
+            writer.WriteByteString(signature.Signature.Span);
+            writer.WriteEndArray();
+
+            return writer.Encode();
+        }
+
+        internal static (byte[], byte[]) ReadCounterSign(CoseHeaderValue value, AsymmetricAlgorithm key)
+        {
+            var reader = new CborReader(value.EncodedValue);
+            Assert.Equal(3, reader.ReadStartArray());
+
+            // encoded protected
+            byte[] encodedProtectedHeaders = reader.ReadByteString();
+
+            // empty unprotected headers
+            Assert.Equal(0, reader.ReadStartMap());
+            reader.ReadEndMap();
+
+            // signature
+            byte[] signature = reader.ReadByteString();
+            Assert.Equal(GetSignatureSize(key), signature.Length);
+
+            reader.ReadEndArray();
+            return (encodedProtectedHeaders, signature);
         }
     }
 }

@@ -181,7 +181,7 @@ DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
 // We allow a special abbreviated form of the Microsoft public key (16 bytes
 // long: 0 for both alg ids, 4 for key length and 4 bytes of 0 for the key
 // itself). This allows us to build references to system libraries that are
-// platform neutral (so a 3rd party can build mscorlib replacements). The
+// platform neutral (so a 3rd party can build SPCL replacements). The
 // special zero PK is just shorthand for the local runtime's real system PK,
 // which is always used to perform the signature verification, so no security
 // hole is opened by this. Therefore we need to store a copy of the real PK (for

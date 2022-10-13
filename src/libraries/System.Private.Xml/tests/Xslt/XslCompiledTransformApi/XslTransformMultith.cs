@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2
     {
@@ -34,6 +35,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd;           // Loads XML file
@@ -98,22 +100,21 @@ namespace System.Xml.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc2()
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+            using (new AllowDefaultResolverContext())
+            {
+                Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
-            Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
+                CThreads rThreads = new CThreads(_output);
+                rThreads.Add(new ThreadFunc(Transform), "1");
+                rThreads.Add(new ThreadFunc(Transform), "2");
+                rThreads.Add(new ThreadFunc(Transform), "3");
+                rThreads.Add(new ThreadFunc(Transform), "4");
+                rThreads.Add(new ThreadFunc(Transform), "5");
 
-            CThreads rThreads = new CThreads(_output);
-            rThreads.Add(new ThreadFunc(Transform), "1");
-            rThreads.Add(new ThreadFunc(Transform), "2");
-            rThreads.Add(new ThreadFunc(Transform), "3");
-            rThreads.Add(new ThreadFunc(Transform), "4");
-            rThreads.Add(new ThreadFunc(Transform), "5");
-
-            //Wait until they are complete
-            rThreads.Start();
-            rThreads.Wait();
-
-            return;
+                //Wait until they are complete
+                rThreads.Start();
+                rThreads.Wait();
+            }
         }
 
         //[Variation("Multiple Transform(): Reader - AVTs")]
@@ -318,6 +319,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd; // Loads XML file
@@ -385,22 +387,21 @@ namespace System.Xml.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void proc2()
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+            using (new AllowDefaultResolverContext())
+            {
+                Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
-            Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
+                CThreads rThreads = new CThreads(_output);
+                rThreads.Add(new ThreadFunc(Transform), "1");
+                rThreads.Add(new ThreadFunc(Transform), "2");
+                rThreads.Add(new ThreadFunc(Transform), "3");
+                rThreads.Add(new ThreadFunc(Transform), "4");
+                rThreads.Add(new ThreadFunc(Transform), "5");
 
-            CThreads rThreads = new CThreads(_output);
-            rThreads.Add(new ThreadFunc(Transform), "1");
-            rThreads.Add(new ThreadFunc(Transform), "2");
-            rThreads.Add(new ThreadFunc(Transform), "3");
-            rThreads.Add(new ThreadFunc(Transform), "4");
-            rThreads.Add(new ThreadFunc(Transform), "5");
-
-            //Wait until they are complete
-            rThreads.Start();
-            rThreads.Wait();
-
-            return;
+                //Wait until they are complete
+                rThreads.Start();
+                rThreads.Wait();
+            }
         }
 
         //[Variation("Multiple Transform(): TextWriter - AVTs")]

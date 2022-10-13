@@ -9,6 +9,7 @@
 //         (c) 2002
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Xunit;
 
@@ -54,7 +55,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 (string Pattern, RegexOptions Options, string Input, string Expected)[] allEngineCases = Cases(engine).ToArray();
 
-                Regex[] results = RegexHelpers.GetRegexesAsync(engine, allEngineCases.Select(c => (c.Pattern, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] results = RegexHelpers.GetRegexesAsync(engine, allEngineCases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
                 for (int i = 0; i < results.Length; i++)
                 {
                     string expected = allEngineCases[i].Expected;

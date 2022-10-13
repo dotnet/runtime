@@ -1,24 +1,7 @@
-import createDotnetRuntime from "./dotnet.js";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-function downloadData(dataURL, filename) {
-    // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
-    const elt = document.createElement('a');
-    elt.download = filename;
-    elt.href = dataURL;
-
-    document.body.appendChild(elt);
-
-    elt.click();
-
-    document.body.removeChild(elt);
-}
-
-function makeTimestamp() {
-    // ISO date string, but with : and . replaced by -
-    const t = new Date();
-    const s = t.toISOString();
-    return s.replace(/[:.]/g, '-');
-}
+import { dotnet, exit } from "./dotnet.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -43,6 +26,11 @@ async function doWork(startWork, stopWork, getIterationsDone) {
     const ret = await workPromise; // get the answer
     const iterations = getIterationsDone(); // get how many times the loop ran
 
+    INTERNAL.diagnosticServerThread.postMessageToWorker({
+        type: "diagnostic_server_mock",
+        cmd: "fibonacci-done"
+    });
+
     btn = document.getElementById("startWork");
     btn.disabled = false;
     btn.innerText = "Start Work";
@@ -54,56 +42,61 @@ async function doWork(startWork, stopWork, getIterationsDone) {
     return ret;
 }
 
-function getOnClickHandler(startWork, stopWork, getIterationsDone) {
-    return async function () {
-        let sessions = MONO.diagnostics.getStartupSessions();
-
-        if (typeof (sessions) !== "object" || sessions.length === "undefined")
-            console.error("expected an array of sessions, got ", sessions);
-        let eventSession = null;
-        if (sessions.length !== 0) {
-            if (sessions.length != 1)
-                console.error("expected one startup session, got ", sessions);
-            eventSession = sessions[0];
-            console.debug("eventSession state is ", eventSession._state); // ooh protected member access
-        }
-
-        const ret = await doWork(startWork, stopWork, getIterationsDone);
-
-        if (eventSession !== null) {
-            eventSession.stop();
-
-            const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-
-            const blob = eventSession.getTraceBlob();
-            const uri = URL.createObjectURL(blob);
-            downloadData(uri, filename);
-        }
-
-        console.debug("sample onclick handler done");
-    }
+const isTest = (config) => config.environmentVariables["CI_TEST"] === "true";
+async function runTest({ StartAsyncWork, StopWork, GetIterationsDone }) {
+    const result = await doWork(StartAsyncWork, StopWork, GetIterationsDone);
+    const expectedResult = 55; // the default value of `inputN` is 10 (see index.html)
+    return result === expectedResult;
 }
 
 async function main() {
-    const { MONO, BINDING, Module } = await createDotnetRuntime(() => {
-        return {
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-        }
-    });
+    const { INTERNAL, MONO, Module, getAssemblyExports, getConfig } = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .withDiagnosticTracing(false)
+        .create();
+
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
+    globalThis.INTERNAL = INTERNAL;
 
-    const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
-    const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
-    const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-
+    const exports = await getAssemblyExports("Wasm.Browser.EventPipe.Sample.dll");
 
     const btn = document.getElementById("startWork");
-
     btn.style.backgroundColor = "rgb(192,255,192)";
-    btn.onclick = getOnClickHandler(startWork, stopWork, getIterationsDone);
+    btn.onclick = () => doWork(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 
+    INTERNAL.diagnosticServerThread.port.addEventListener("message", (event) => {
+        console.warn("diagnosticServerThread" + event.type)
+
+        if (event.data.cmd === "collecting") {
+            btn.onclick();
+        }
+
+        if (event.data.cmd === "collected") {
+            const buffer = event.data.buffer;
+            const length = event.data.length;
+            console.warn("Downloading trace " + length)
+            const view = new Uint8Array(buffer, 0, length)
+            const blobUrl = URL.createObjectURL(new Blob([view.slice()]));
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = "trace." + (new Date()).valueOf() + ".nettrace";
+            document.body.appendChild(link);
+
+            link.dispatchEvent(new MouseEvent('click', {
+                bubbles: true, cancelable: true, view: window
+            }));
+
+            document.body.removeChild(link);
+        }
+    });
+
+    const config = getConfig();
+    if (isTest(config)) {
+        const succeeded = await runTest(exports.Sample.Test);
+        exit(succeeded ? 0 : 1);
+    }
 }
 
 main();

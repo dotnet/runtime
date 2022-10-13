@@ -1228,7 +1228,6 @@ typedef struct {
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean         have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
-	guint            use_fpstack : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
 	guint            need_div_check : 1;
@@ -1493,6 +1492,7 @@ typedef struct {
 	guint            after_method_to_ir : 1;
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
+	guint            prefer_instances : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;

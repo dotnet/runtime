@@ -81,7 +81,12 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return typeb; }
+            get
+            {
+                if (typeb.is_hidden_global_type)
+                    return null;
+                return typeb;
+            }
         }
 
         public override RuntimeFieldHandle FieldHandle

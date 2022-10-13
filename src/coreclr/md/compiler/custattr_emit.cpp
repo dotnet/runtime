@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -712,7 +711,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 
     LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
             pCustomAttribute, cbCustomAttribute, pcv));
-    START_MD_PERF();
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);
@@ -825,7 +823,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
 
 ErrExit:
-    STOP_MD_PERF(DefineCustomAttribute);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -849,7 +846,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     CustomAttributeRec  *pRecord = NULL;// Existing custom Attribute record.
 
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -863,7 +859,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
 
-    STOP_MD_PERF(SetCustomAttributeValue);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -1223,17 +1218,17 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         { // Just verify the attribute.  It still gets stored as a real custom attribute.
         // format is "{01234567-0123-0123-0123-001122334455}"
         GUID guid;
-        WCHAR wzGuid[40];
+        CHAR zGuid[40];
         int cch = qArgs[0].val.str.cbStr;
 
         // Guid should be 36 characters; need to add curlies.
         if (cch == 36)
         {
-            WszMultiByteToWideChar(CP_UTF8, 0, qArgs[0].val.str.pStr,cch, wzGuid+1,39);
-            wzGuid[0] = '{';
-            wzGuid[37] = '}';
-            wzGuid[38] = 0;
-            hr = IIDFromString(wzGuid, &guid);
+            memcpy(zGuid+1, qArgs[0].val.str.pStr, cch);
+            zGuid[0] = '{';
+            zGuid[37] = '}';
+            zGuid[38] = 0;
+            hr = LPCSTRToGuid(zGuid, &guid) ? S_OK : E_FAIL;
         }
         else
             hr = META_E_CA_INVALID_UUID;

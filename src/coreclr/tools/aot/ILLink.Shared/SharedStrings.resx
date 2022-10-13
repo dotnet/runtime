@@ -1191,4 +1191,10 @@
   <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
     <value>Unrecognized dependencies file type.</value>
   </data>
+  <data name="RedundantSuppressionMessage" xml:space="preserve">
+    <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>
+  </data>
+  <data name="RedundantSuppressionTitle" xml:space="preserve">
+    <value>Unused 'UnconditionalSuppressMessageAttribute' found. Consider removing the unused warning suppression.</value>
+  </data>
 </root>

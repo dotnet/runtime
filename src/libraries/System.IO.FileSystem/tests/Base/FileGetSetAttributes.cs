@@ -27,7 +27,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(FileAttributes.Hidden)]
-        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SettingAttributes_OSXAndFreeBSD(FileAttributes attributes)
         {
             string path = CreateItem();
@@ -80,8 +80,7 @@ namespace System.IO.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         [InlineData(FileAttributes.Hidden)]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst))]
         public void SettingInvalidAttributes_UnixExceptOSXAndFreeBSD(FileAttributes attributes)
         {
             string path = CreateItem();

@@ -16,6 +16,12 @@
     <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/74302 -->
+    <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
+    <WasmXHarnessMonoArgs>--setenv=XUNIT_RANDOM_ORDER_SEED=1</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
@@ -111,6 +117,9 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
+    <Compile Include="System\Numerics\IFloatingPointTests.cs" />
+    <Compile Include="System\Numerics\TotalOrderIeee754ComparerTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
     <Compile Include="System\ObsoleteAttributeTests.cs" />
@@ -262,6 +271,8 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
+    <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DecimalTests.GenericMath.cs" />

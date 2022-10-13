@@ -40,9 +40,9 @@ namespace System.Reflection.Runtime.General
                 return RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(assemblyRef.ToRuntimeAssemblyName());
         }
 
-        public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
+        public sealed override Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
         {
-            if (rawAssembly == null)
+            if (rawAssembly.IsEmpty)
                 throw new ArgumentNullException(nameof(rawAssembly));
 
             return RuntimeAssemblyInfo.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);

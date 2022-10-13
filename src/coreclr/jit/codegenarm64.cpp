@@ -2334,7 +2334,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
-            double   constValue = tree->AsDblCon()->gtDconVal;
+            double   constValue = tree->AsDblCon()->DconValue();
 
             // Make sure we use "movi reg, 0x00"  only for positive zero (0.0) and not for negative zero (-0.0)
             if (*(__int64*)&constValue == 0)
@@ -2412,8 +2412,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd16_t             constValue = vecCon->gtSimd16Val;
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+                        simd16_t constValue = {};
+
+                        if (vecCon->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = vecCon->gtSimd16Val;
+
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
@@ -2513,12 +2519,17 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
     // Handles combined operations: 'madd', 'msub'
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
-        assert(!(tree->gtFlags & GTF_SET_FLAGS));
+
+        // These operations cannot set flags
+        assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2551,6 +2562,168 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         genProduceReg(tree);
         return;
     }
+    else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
+
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        // The shift amount needs to be contained as well
+        assert(c->isContained() && c->IsCnsIntOrI());
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                case GT_AND:
+                {
+                    ins = INS_ands;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
+
+        switch (op2->gtOper)
+        {
+            case GT_LSH:
+            {
+                opt = INS_OPTS_LSL;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                opt = INS_OPTS_ASR;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                opt = INS_OPTS_LSR;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
+                              c->AsIntConCommon()->IconValue(), opt);
+
+        genProduceReg(tree);
+        return;
+    }
+    else if (op2->OperIs(GT_CAST) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
+
+        GenTree* a = op1;
+        GenTree* b = op2->AsCast()->CastOp();
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
+
+        bool isZeroExtending = op2->AsCast()->IsZeroExtending();
+
+        if (varTypeIsByte(op2->CastToType()))
+        {
+            opt = isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB;
+        }
+        else if (varTypeIsShort(op2->CastToType()))
+        {
+            opt = isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH;
+        }
+        else
+        {
+            assert(op2->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
+            opt = isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+        }
+
+        emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
+
+        genProduceReg(tree);
+        return;
+    }
+
+    if (tree->isContainedCompareChainSegment(op2))
+    {
+        GenCondition cond;
+        bool         chain = false;
+
+        JITDUMP("Generating compare chain:\n");
+        if (op1->isContained())
+        {
+            // Generate Op1 into flags.
+            genCodeForContainedCompareChain(op1, &chain, &cond);
+            assert(chain);
+        }
+        else
+        {
+            // Op1 is not contained, move it from a register into flags.
+            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
+            cond  = GenCondition::NE;
+            chain = true;
+        }
+        // Gen Op2 into flags.
+        genCodeForContainedCompareChain(op2, &chain, &cond);
+        assert(chain);
+
+        // Move the result from flags into a register.
+        inst_SETCC(cond, tree->TypeGet(), targetReg);
+        genProduceReg(tree);
+        return;
+    }
 
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
@@ -2574,9 +2747,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                 noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
         }
     }
-
-    // The arithmetic node must be sitting in a register (since it's not contained)
-    assert(targetReg != REG_NA);
 
     regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(tree), tree, op1, op2);
     assert(r == targetReg);
@@ -2649,9 +2819,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     unsigned   varNum = tree->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
     GenTree* data = tree->gtOp1;
     genConsumeRegs(data);
@@ -3322,8 +3489,19 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //
                 bool checkDividend = true;
 
-                // Do we have an immediate for the 'divisorOp'?
+                // Do we have an immediate for the 'divisorOp' or 'dividendOp'?
                 //
+                GenTree* dividendOp = tree->gtGetOp1();
+                if (dividendOp->IsCnsIntOrI())
+                {
+                    GenTreeIntConCommon* intConstTree  = dividendOp->AsIntConCommon();
+                    ssize_t              intConstValue = intConstTree->IconValue();
+                    if ((targetType == TYP_INT && intConstValue != INT_MIN) ||
+                        (targetType == TYP_LONG && intConstValue != INT64_MIN))
+                    {
+                        checkDividend = false; // We statically know that the dividend is not the minimum int
+                    }
+                }
                 if (divisorOp->IsCnsIntOrI())
                 {
                     GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
@@ -3349,7 +3527,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     inst_JMP(EJ_ne, sdivLabel);
                     // If control flow continues past here the 'divisorReg' is known to be -1
 
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+                    regNumber dividendReg = dividendOp->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
                     // Issue the 'adds  zr, dividendReg, dividendReg' instruction
@@ -4361,8 +4539,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     assert(!op1->isUsedFromMemory());
 
-    genConsumeOperands(tree);
-
     emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
 
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
@@ -4412,12 +4588,121 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCompare: Produce code for a GT_CEQ/GT_CNE node.
+// genCodeForConditionalCompare: Produce code for a compare that's dependent on a previous compare.
+//
+// Arguments:
+//    tree - a compare node (GT_EQ etc)
+//    cond - the condition of the previous generated compare.
+//
+void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond)
+{
+    emitter* emit = GetEmitter();
+
+    GenTree*  op1       = tree->gtGetOp1();
+    GenTree*  op2       = tree->gtGetOp2();
+    var_types op1Type   = genActualType(op1->TypeGet());
+    var_types op2Type   = genActualType(op2->TypeGet());
+    emitAttr  cmpSize   = EA_ATTR(genTypeSize(op1Type));
+    regNumber targetReg = tree->GetRegNum();
+    regNumber srcReg1   = op1->GetRegNum();
+
+    // No float support or swapping op1 and op2 to generate cmp reg, imm.
+    assert(!varTypeIsFloating(op2Type));
+    assert(!op1->isContainedIntOrIImmed());
+
+    // Should only be called on contained nodes.
+    assert(targetReg == REG_NA);
+
+    // For the ccmp flags, invert the condition of the compare.
+    insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
+
+    // For the condition, use the previous compare.
+    const GenConditionDesc& prevDesc    = GenConditionDesc::Get(prevCond);
+    insCond                 prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
+
+    if (op2->isContainedIntOrIImmed())
+    {
+        GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, prevInsCond);
+    }
+    else
+    {
+        regNumber srcReg2 = op2->GetRegNum();
+        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, prevInsCond);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForContainedCompareChain: Produce code for a chain of conditional compares.
+//
+// Only generates for contained nodes. Nodes that are not contained are assumed to be
+// generated as part of standard tree generation.
+//
+// Arguments:
+//    tree - the node. Either a compare or a tree of compares connected by ANDs.
+//    inChain - whether a contained chain is in progress.
+//    prevCond - If a chain is in progress, the condition of the previous compare.
+// Return:
+//    The last compare node generated.
+//
+void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenCondition* prevCond)
+{
+    assert(tree->isContained());
+
+    if (tree->OperIs(GT_AND))
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+
+        assert(op2->isContained());
+
+        // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
+        if (op1->isContained())
+        {
+            genCodeForContainedCompareChain(op1, inChain, prevCond);
+            assert(*inChain);
+        }
+        else
+        {
+            emitter* emit = GetEmitter();
+            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
+            *prevCond = GenCondition::NE;
+            *inChain  = true;
+        }
+
+        // Generate Op2 based on Op1.
+        genCodeForContainedCompareChain(op2, inChain, prevCond);
+        assert(*inChain);
+    }
+    else
+    {
+        assert(tree->OperIsCmpCompare());
+
+        // Generate the compare, putting the result in the flags register.
+        if (!*inChain)
+        {
+            // First item in a chain. Use a standard compare.
+            genCodeForCompare(tree->AsOp());
+        }
+        else
+        {
+            // Within the chain. Use a conditional compare (which is
+            // dependent on the previous emitted compare).
+            genCodeForConditionalCompare(tree->AsOp(), *prevCond);
+        }
+
+        *inChain  = true;
+        *prevCond = GenCondition::FromRelop(tree);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForSelect: Produce code for a GT_SELECT node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForConditional(GenTreeConditional* tree)
+void CodeGen::genCodeForSelect(GenTreeConditional* tree)
 {
     emitter* emit = GetEmitter();
 
@@ -4427,42 +4712,34 @@ void CodeGen::genCodeForConditional(GenTreeConditional* tree)
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
-    insCond   cond    = InsCondForCompareOp(opcond);
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
-    regNumber targetReg = tree->GetRegNum();
-    regNumber srcReg1   = genConsumeReg(op1);
-
-    if (tree->OperIs(GT_SELECT))
+    GenCondition prevCond;
+    genConsumeRegs(opcond);
+    if (opcond->isContained())
     {
-        regNumber srcReg2 = genConsumeReg(op2);
-        emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, cond);
-        regSet.verifyRegUsed(targetReg);
+        // Generate the contained condition.
+        bool chain = false;
+        JITDUMP("Generating compare chain:\n");
+        genCodeForContainedCompareChain(opcond, &chain, &prevCond);
+        assert(chain);
     }
     else
     {
-        assert(!varTypeIsFloating(op2Type));
-        // We don't support swapping op1 and op2 to generate cmp reg, imm.
-        assert(!op1->isContainedIntOrIImmed());
-        // This should not be generating into a register.
-        assert(targetReg == REG_NA);
-
-        // For the ccmp flags, get the condition of the compare.
-        insCflags cflags = InsCflagsForCcmp(InsCondForCompareOp(tree));
-
-        if (op2->isContainedIntOrIImmed())
-        {
-            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, cond);
-        }
-        else
-        {
-            regNumber srcReg2 = genConsumeReg(op2);
-            emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, cond);
-        }
+        // Condition has been generated into a register - move it into flags.
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
+        prevCond = GenCondition::NE;
     }
+
+    regNumber               targetReg = tree->GetRegNum();
+    regNumber               srcReg1   = genConsumeReg(op1);
+    regNumber               srcReg2   = genConsumeReg(op2);
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
+
+    emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+    regSet.verifyRegUsed(targetReg);
 }
 
 //------------------------------------------------------------------------
@@ -10341,54 +10618,6 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForAddEx: Generates the code sequence for a GenTree node that
-// represents an addition with sign or zero extended
-//
-// Arguments:
-//    tree - the add with extend node.
-//
-void CodeGen::genCodeForAddEx(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_ADDEX));
-    genConsumeOperands(tree);
-
-    GenTree* op;
-    GenTree* containedOp;
-    if (tree->gtGetOp1()->isContained())
-    {
-        containedOp = tree->gtGetOp1();
-        op          = tree->gtGetOp2();
-    }
-    else
-    {
-        containedOp = tree->gtGetOp2();
-        op          = tree->gtGetOp1();
-    }
-    assert(containedOp->isContained() && !op->isContained());
-
-    regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = op->GetRegNum();
-    regNumber op2Reg = containedOp->gtGetOp1()->GetRegNum();
-
-    if (containedOp->OperIs(GT_CAST))
-    {
-        GenTreeCast* cast = containedOp->AsCast();
-        assert(varTypeIsLong(cast->CastToType()));
-        insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-        GetEmitter()->emitIns_R_R_R(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
-                                    op2Reg, opts);
-    }
-    else
-    {
-        assert(containedOp->OperIs(GT_LSH));
-        ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
-        GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
-                                      op2Reg, cns, INS_OPTS_LSL);
-    }
-    genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
 // genCodeForCond: Generates the code sequence for a GenTree node that
 // represents a conditional instruction.
 //
@@ -10436,90 +10665,6 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// InsCondForCompareOp: Map the condition in a Compare/Conditional op to a insCond.
-//
-// Arguments:
-//    tree - the node
-//
-insCond CodeGen::InsCondForCompareOp(GenTree* tree)
-{
-    assert(tree->OperIsCompare() || tree->OperIsConditionalCompare());
-
-    if (tree->OperIsCompare())
-    {
-        switch (tree->AsOp()->OperGet())
-        {
-            case GT_EQ:
-            case GT_TEST_EQ:
-                return INS_COND_EQ;
-            case GT_NE:
-            case GT_TEST_NE:
-                return INS_COND_NE;
-            case GT_GE:
-                return INS_COND_GE;
-            case GT_GT:
-                return INS_COND_GT;
-            case GT_LT:
-                return INS_COND_LT;
-            case GT_LE:
-                return INS_COND_LE;
-            default:
-                assert(false && "Invalid condition");
-                return INS_COND_EQ;
-        }
-    }
-    else
-    {
-        switch (tree->AsConditional()->OperGet())
-        {
-            case GT_CEQ:
-                return INS_COND_EQ;
-            case GT_CNE:
-                return INS_COND_NE;
-            case GT_CGE:
-                return INS_COND_GE;
-            case GT_CGT:
-                return INS_COND_GT;
-            case GT_CLT:
-                return INS_COND_LT;
-            case GT_CLE:
-                return INS_COND_LE;
-            default:
-                assert(false && "Invalid condition");
-                return INS_COND_EQ;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// InvertInsCond: Invert an insCond
-//
-// Arguments:
-//    cond - the insCond.
-//
-insCond CodeGen::InvertInsCond(insCond cond)
-{
-    switch (cond)
-    {
-        case INS_COND_EQ:
-            return INS_COND_NE;
-        case INS_COND_NE:
-            return INS_COND_EQ;
-        case INS_COND_GE:
-            return INS_COND_LT;
-        case INS_COND_GT:
-            return INS_COND_LE;
-        case INS_COND_LT:
-            return INS_COND_GE;
-        case INS_COND_LE:
-            return INS_COND_GT;
-        default:
-            assert(false && "Invalid condition");
-            return INS_COND_EQ;
-    }
-}
-
-//------------------------------------------------------------------------
 // InsCflagsForCcmp: Get the Cflags for a required for a CCMP instruction.
 //
 // Consider:
@@ -10530,27 +10675,81 @@ insCond CodeGen::InvertInsCond(insCond cond)
 // Given COND, this function returns A.
 //
 // Arguments:
-//    cond - the insCond.
+//    cond - the GenCondition.
 //
-insCflags CodeGen::InsCflagsForCcmp(insCond cond)
+insCflags CodeGen::InsCflagsForCcmp(GenCondition cond)
 {
-    switch (InvertInsCond(cond))
+    GenCondition inverted = GenCondition::Reverse(cond);
+    switch (inverted.GetCode())
     {
-        case INS_COND_EQ:
+        case GenCondition::EQ:
             return INS_FLAGS_Z;
-        case INS_COND_NE:
+        case GenCondition::NE:
             return INS_FLAGS_NONE;
-        case INS_COND_GE:
+        case GenCondition::SGE:
             return INS_FLAGS_Z;
-        case INS_COND_GT:
+        case GenCondition::SGT:
             return INS_FLAGS_NONE;
-        case INS_COND_LT:
+        case GenCondition::SLT:
             return INS_FLAGS_NC;
-        case INS_COND_LE:
+        case GenCondition::SLE:
             return INS_FLAGS_NZC;
-        default:
-            assert(false && "Invalid condition");
+        case GenCondition::UGE:
+            return INS_FLAGS_C;
+        case GenCondition::UGT:
+            return INS_FLAGS_C;
+        case GenCondition::ULT:
             return INS_FLAGS_NONE;
+        case GenCondition::ULE:
+            return INS_FLAGS_Z;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_FLAGS_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// JumpKindToInsCond: Convert a Jump Kind to a condition.
+//
+// Arguments:
+//    condition - the emitJumpKind.
+//
+insCond CodeGen::JumpKindToInsCond(emitJumpKind condition)
+{
+    /* Convert the condition to an insCond value */
+    switch (condition)
+    {
+        case EJ_eq:
+            return INS_COND_EQ;
+        case EJ_ne:
+            return INS_COND_NE;
+        case EJ_hs:
+            return INS_COND_HS;
+        case EJ_lo:
+            return INS_COND_LO;
+        case EJ_mi:
+            return INS_COND_MI;
+        case EJ_pl:
+            return INS_COND_PL;
+        case EJ_vs:
+            return INS_COND_VS;
+        case EJ_vc:
+            return INS_COND_VC;
+        case EJ_hi:
+            return INS_COND_HI;
+        case EJ_ls:
+            return INS_COND_LS;
+        case EJ_ge:
+            return INS_COND_GE;
+        case EJ_lt:
+            return INS_COND_LT;
+        case EJ_gt:
+            return INS_COND_GT;
+        case EJ_le:
+            return INS_COND_LE;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_COND_EQ;
     }
 }
 

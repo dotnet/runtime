@@ -138,6 +138,31 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
     .balign 16
     Exit:
         REPRET
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
 #else
         // JIT_WriteBarrier_PostGrow64
 
@@ -330,6 +355,41 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         cmp     rcx, [rax]
         jnb     Exit_ByRefWriteBarrier
 
+        mov     rax, rcx
+
+        PREPARE_EXTERNAL_VAR g_region_shr, rcx
+        mov     cl, [rcx]
+        test    cl, cl
+        je      SkipCheck_ByRefWriteBarrier
+
+        // check if the source is in gen 2 - then it's not an ephemeral pointer
+        shr     rax, cl
+        PREPARE_EXTERNAL_VAR g_region_to_generation_table, r10
+        mov     r10, [r10]
+        cmp     byte ptr [rax + r10], 0x82
+        je      Exit_ByRefWriteBarrier
+
+        // check if the destination happens to be in gen 0
+        mov     rax, rdi
+        shr     rax, cl
+        cmp     byte ptr [rax + r10], 0
+        je      Exit_ByRefWriteBarrier
+    SkipCheck_ByRefWriteBarrier:
+
+        PREPARE_EXTERNAL_VAR g_card_table, r10
+        mov     r10, [r10]
+
+        PREPARE_EXTERNAL_VAR g_region_use_bitwise_write_barrier, rax
+        cmp     byte ptr [rax], 0
+        je      CheckCardTableByte_ByRefWriteBarrier
+
+        // compute card table bit
+        mov     ecx, edi
+        mov     al, 1
+        shr     ecx, 8
+        and     cl, 7
+        shl     al, cl
+
         // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
@@ -337,19 +397,31 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 
         // Check if we need to update the card table
         // Calc pCardByte
-        shr     rcx, 0x0B
-
-        PREPARE_EXTERNAL_VAR g_card_table, rax
-        mov     rax, [rax]
-
-        // Check if this card is dirty
-        cmp     byte ptr [rcx + rax], 0xFF
-
-        jne     UpdateCardTable_ByRefWriteBarrier
+        shr     rcx, 0xB
+        // Check if this card table bit is already set
+        test    byte ptr [rcx + r10], al
+        je      SetCardTableBit_ByRefWriteBarrier
         REPRET
 
-    UpdateCardTable_ByRefWriteBarrier:
-        mov     byte ptr [rcx + rax], 0xFF
+    SetCardTableBit_ByRefWriteBarrier:
+        lock or byte ptr [rcx + r10], al
+
+        jmp     CheckCardBundle_ByRefWriteBarrier
+
+    CheckCardTableByte_ByRefWriteBarrier:
+        // move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 0x8
+        add     rdi, 0x8
+
+        shr     rcx, 0xB
+        cmp     byte ptr [rcx + r10], 0xFF
+        jne     SetCardTableByte_ByRefWriteBarrier
+        REPRET
+    SetCardTableByte_ByRefWriteBarrier:
+        mov     byte ptr [rcx + r10], 0xFF
+
+    CheckCardBundle_ByRefWriteBarrier:
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)

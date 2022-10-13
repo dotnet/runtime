@@ -155,7 +155,7 @@ internal static partial class Interop
         {
             uint fstatfsResult = GetFileSystemType(fd);
             fileSystemType = (UnixFileSystemTypes)fstatfsResult;
-            Debug.Assert(Enum.IsDefined(fileSystemType) || fstatfsResult == 0 || !OperatingSystem.IsLinux(), $"GetFileSystemType returned {fstatfsResult}");
+            Debug.Assert(Enum.IsDefined(fileSystemType) || fstatfsResult == 0, $"GetFileSystemType returned {fstatfsResult}");
             return fstatfsResult != 0;
         }
     }

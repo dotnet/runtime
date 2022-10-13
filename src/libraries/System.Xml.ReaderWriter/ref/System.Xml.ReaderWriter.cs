@@ -343,7 +343,7 @@ namespace System.Xml
         public virtual System.Xml.XmlNode CreateNode(string nodeTypeString, string name, string? namespaceURI) { throw null; }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string name, string? namespaceURI) { throw null; }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string? prefix, string name, string? namespaceURI) { throw null; }
-        public virtual System.Xml.XmlProcessingInstruction CreateProcessingInstruction(string target, string data) { throw null; }
+        public virtual System.Xml.XmlProcessingInstruction CreateProcessingInstruction(string target, string? data) { throw null; }
         public virtual System.Xml.XmlSignificantWhitespace CreateSignificantWhitespace(string? text) { throw null; }
         public virtual System.Xml.XmlText CreateTextNode(string? text) { throw null; }
         public virtual System.Xml.XmlWhitespace CreateWhitespace(string? text) { throw null; }
@@ -738,13 +738,15 @@ namespace System.Xml
     }
     public partial class XmlProcessingInstruction : System.Xml.XmlLinkedNode
     {
-        protected internal XmlProcessingInstruction(string target, string data, System.Xml.XmlDocument doc) { }
+        protected internal XmlProcessingInstruction(string target, string? data, System.Xml.XmlDocument doc) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Data { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string InnerText { get { throw null; } set { } }
         public override string LocalName { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
-        public string? Target { get { throw null; } }
+        public string Target { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Value { get { throw null; } set { } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
@@ -948,11 +950,13 @@ namespace System.Xml
     {
         protected XmlResolver() { }
         public virtual System.Net.ICredentials Credentials { set { } }
+        public static System.Xml.XmlResolver ThrowingResolver { get { throw null; } }
         public abstract object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn);
         public virtual System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public virtual System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
         public virtual bool SupportsType(System.Uri absoluteUri, System.Type? type) { throw null; }
     }
+    [System.ObsoleteAttribute("XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.", DiagnosticId = "SYSLIB0047", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class XmlSecureResolver : System.Xml.XmlResolver
     {
         public XmlSecureResolver(System.Xml.XmlResolver resolver, string? securityUrl) { }

@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization
         internal sealed override object ReadCoreAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             Debug.Fail("We should never get here.");
 
@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization
         internal sealed override bool OnTryReadAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             out object? value)
         {
             Debug.Fail("We should never get here.");
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization
         internal sealed override bool TryReadAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             out object? value)
         {
             Debug.Fail("We should never get here.");

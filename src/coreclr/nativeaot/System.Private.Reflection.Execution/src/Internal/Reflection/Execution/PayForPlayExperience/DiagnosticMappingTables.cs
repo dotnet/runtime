@@ -15,20 +15,11 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 {
     internal static partial class DiagnosticMappingTables
     {
-        // Get the diagnostic name string for a type. This attempts to reformat the string into something that is essentially human readable.
+        // Get the diagnostic name string for a type.
         //  Returns true if the function is successful.
         //  runtimeTypeHandle represents the type to get a name for
         //  diagnosticName is the name that is returned
-        //
-        // the genericParameterOffsets list is an optional parameter that contains the list of the locations of where generic parameters may be inserted
-        // to make the string represent an instantiated generic.
-        //
-        // For example for Dictionary<K,V>, metadata names the type Dictionary`2, but this function will return Dictionary<,>
-        // For consumers of this function that will be inserting generic arguments, the genericParameterOffsets list is used to find where to insert the generic parameter name.
-        //
-        // That isn't all that interesting for Dictionary, but it becomes substantially more interesting for nested generic types, or types which are compiler named as
-        // those may contain embedded <> pairs and such.
-        public static bool TryGetDiagnosticStringForNamedType(RuntimeTypeHandle runtimeTypeHandle, out string diagnosticName, List<int> genericParameterOffsets)
+        public static bool TryGetDiagnosticStringForNamedType(RuntimeTypeHandle runtimeTypeHandle, out string diagnosticName)
         {
             diagnosticName = null;
             ExecutionEnvironmentImplementation executionEnvironment = ReflectionExecution.ExecutionEnvironment;
@@ -37,30 +28,30 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             TypeReferenceHandle typeReferenceHandle;
             if (executionEnvironment.TryGetTypeReferenceForNamedType(runtimeTypeHandle, out reader, out typeReferenceHandle))
             {
-                diagnosticName = GetTypeFullNameFromTypeRef(typeReferenceHandle, reader, genericParameterOffsets);
+                diagnosticName = GetTypeFullNameFromTypeRef(typeReferenceHandle, reader);
                 return true;
             }
 
             QTypeDefinition qTypeDefinition;
             if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition))
             {
-                TryGetFullNameFromTypeDefEcma(qTypeDefinition, genericParameterOffsets, ref diagnosticName);
+                TryGetFullNameFromTypeDefEcma(qTypeDefinition, ref diagnosticName);
                 if (diagnosticName != null)
                     return true;
 
                 if (qTypeDefinition.IsNativeFormatMetadataBased)
                 {
                     TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
-                    diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, qTypeDefinition.NativeFormatReader, genericParameterOffsets);
+                    diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, qTypeDefinition.NativeFormatReader);
                     return true;
                 }
             }
             return false;
         }
 
-        static partial void TryGetFullNameFromTypeDefEcma(QTypeDefinition qTypeDefinition, List<int> genericParameterOffsets, ref string result);
+        static partial void TryGetFullNameFromTypeDefEcma(QTypeDefinition qTypeDefinition, ref string result);
 
-        private static string GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader, List<int> genericParameterOffsets)
+        private static string GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader)
         {
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             string s = typeReference.TypeName.GetString(reader);
@@ -68,8 +59,8 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             HandleType parentHandleType = parentHandle.HandleType;
             if (parentHandleType == HandleType.TypeReference)
             {
-                string containingTypeName = GetTypeFullNameFromTypeRef(parentHandle.ToTypeReferenceHandle(reader), reader, genericParameterOffsets);
-                s = containingTypeName + "." + s;
+                string containingTypeName = GetTypeFullNameFromTypeRef(parentHandle.ToTypeReferenceHandle(reader), reader);
+                s = containingTypeName + "+" + s;
             }
             else if (parentHandleType == HandleType.NamespaceReference)
             {
@@ -92,40 +83,10 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 // If we got here, the metadata is illegal but this helper is for ToString() - better to
                 // return something partial than throw.
             }
-            return ConvertBackTickNameToNameWithReducerInputFormat(s, genericParameterOffsets);
+            return s;
         }
 
-        public static string ConvertBackTickNameToNameWithReducerInputFormat(string typename, List<int> genericParameterOffsets)
-        {
-            int indexOfBackTick = typename.LastIndexOf('`');
-            if (indexOfBackTick != -1)
-            {
-                string typeNameSansBackTick = typename.Substring(0, indexOfBackTick);
-                if ((indexOfBackTick + 1) < typename.Length)
-                {
-                    string textAfterBackTick = typename.Substring(indexOfBackTick + 1);
-                    int genericParameterCount;
-                    if (int.TryParse(textAfterBackTick, out genericParameterCount) && (genericParameterCount > 0))
-                    {
-                        // Replace the `Number with <,,,> where the count of ',' is one less than Number.
-                        StringBuilder genericTypeName = new StringBuilder();
-                        genericTypeName.Append(typeNameSansBackTick);
-                        genericTypeName.Append('<');
-                        genericParameterOffsets?.Add(genericTypeName.Length);
-                        for (int i = 1; i < genericParameterCount; i++)
-                        {
-                            genericTypeName.Append(',');
-                            genericParameterOffsets?.Add(genericTypeName.Length);
-                        }
-                        genericTypeName.Append('>');
-                        return genericTypeName.ToString();
-                    }
-                }
-            }
-            return typename;
-        }
-
-        private static string GetTypeFullNameFromTypeDef(TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, List<int> genericParameterOffsets)
+        private static string GetTypeFullNameFromTypeDef(TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader)
         {
             string s;
 
@@ -135,8 +96,8 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             TypeDefinitionHandle enclosingTypeDefHandle = typeDefinition.EnclosingType;
             if (!enclosingTypeDefHandle.IsNull(reader))
             {
-                string containingTypeName = GetTypeFullNameFromTypeDef(enclosingTypeDefHandle, reader, genericParameterOffsets);
-                s = containingTypeName + "." + s;
+                string containingTypeName = GetTypeFullNameFromTypeDef(enclosingTypeDefHandle, reader);
+                s = containingTypeName + "+" + s;
             }
             else
             {
@@ -154,19 +115,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     namespaceHandle = namespaceDefinition.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(reader);
                 }
             }
-            return ConvertBackTickNameToNameWithReducerInputFormat(s, genericParameterOffsets);
-        }
-
-        public static bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
-        {
-            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
-            return true;
-        }
-
-        public static bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
-        {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
-            return true;
+            return s;
         }
     }
 }

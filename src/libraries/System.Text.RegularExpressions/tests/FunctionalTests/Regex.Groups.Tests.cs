@@ -953,7 +953,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex regex;
             try
             {
-                regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+                regex = await RegexHelpers.GetRegexAsync(engine, pattern, options, CultureInfo.GetCultureInfo(cultureName));
             }
             catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException && RegexHelpers.IsNonBacktracking(engine))
             {
