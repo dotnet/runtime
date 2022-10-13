@@ -153,7 +153,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
-        [SkipOnPlatform(TestPlatforms.Android, "IPv6 loopback with SSL doesn't work on Android")] // TODO I believe this should work. I need to look into it later.
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

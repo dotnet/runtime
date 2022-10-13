@@ -579,7 +579,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-    [ActiveIssue("TODO", TestPlatforms.Android)]
     public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public SocketsHttpHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
@@ -2327,7 +2326,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
+        // [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
