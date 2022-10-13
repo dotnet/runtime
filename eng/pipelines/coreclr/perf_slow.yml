@@ -144,7 +144,8 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: AOT
             variables:
-              ROOTFS_DIR: /crossrootfs/arm64
+              - name: ROOTFS_DIR
+                value: /crossrootfs/arm64
             isOfficialBuild: false
             extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
             extraStepsParameters:
