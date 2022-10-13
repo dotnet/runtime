@@ -1106,6 +1106,24 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
         }
+#ifdef TARGET_AMD64
+        else if (!requiresOverflowCheck && rmOp->isUsedFromReg())
+        {
+            ssize_t immPlusOne = imm + 1;
+
+            if (isPow2(immPlusOne))
+            {
+                uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(immPlusOne));
+                unsigned int shiftAmount = genLog2(zextImm );
+
+                inst_Mov(targetType, targetReg, rmOp->GetRegNum(), /* canSkip */ true);
+
+                inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
+
+                GetEmitter()->emitIns_R_R(INS_sub, emitTypeSize(treeNode->gtType), targetReg, rmOp->GetRegNum());
+            }
+        }
+#endif
         else
         {
             // use the 3-op form with immediate

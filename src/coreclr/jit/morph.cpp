@@ -12624,19 +12624,6 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             return mul;
         }
 
-#ifdef TARGET_AMD64
-        if (op1->OperIs(GT_LCL_VAR))
-        {
-            ssize_t multPlusOne = mult + 1;
-
-            if (isPow2(multPlusOne))
-            {
-                op2->AsIntConCommon()->SetIconValue(multPlusOne);
-                return fgMorphTree(gtNewOperNode(GT_SUB, mul->gtType, gtCloneExpr(mul), gtCloneExpr(op1)));
-            }    
-        }
-#endif
-
 #ifdef TARGET_XARCH
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
