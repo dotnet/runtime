@@ -505,7 +505,8 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { " + func_name + "(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await Task.Delay(1000, token);
+            insp.NotifyOfNonWasmIsLoading(true);
+            await insp.WaitFor(Inspector.NON_WASM_PAGE_READY);
 
             run_method = JObject.FromObject(new
             {
