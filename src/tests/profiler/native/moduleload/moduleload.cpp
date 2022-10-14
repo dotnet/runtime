@@ -16,7 +16,7 @@ HRESULT ModuleLoad::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
 
     HRESULT hr = S_OK;
     printf("Setting exception mask\n");
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_MODULE_LOADS, 0)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_MODULE_LOADS | COR_PRF_MONITOR_ASSEMBLY_LOADS, 0)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
@@ -44,21 +44,25 @@ HRESULT ModuleLoad::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 
 HRESULT ModuleLoad::AssemblyLoadStarted(AssemblyID assemblyId)
 {
+    _assemblyLoadStartedCount++;
     return S_OK;
 }
 
 HRESULT ModuleLoad::AssemblyLoadFinished(AssemblyID assemblyId, HRESULT hrStatus)
 {
+    _assemblyLoadFinishedCount++;
     return S_OK;
 }
 
 HRESULT ModuleLoad::ModuleLoadStarted(ModuleID moduleId)
 {
+    _moduleLoadStartedCount++;
     return S_OK;
 }
 
 HRESULT ModuleLoad::ModuleLoadFinished(ModuleID moduleId, HRESULT hrStatus)
 {
+    _moduleLoadFinishedCount++;
     return S_OK;
 }
 
