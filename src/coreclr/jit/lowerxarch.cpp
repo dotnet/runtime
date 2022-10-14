@@ -120,6 +120,12 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIsMul());
 
+    GenTree* replacementNode = TryLowerMulOpToLshSub(mul);
+    if (replacementNode != nullptr)
+    {
+        return replacementNode->gtNext;
+    }
+
     ContainCheckMul(mul);
 
     return mul->gtNext;
@@ -4145,6 +4151,60 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     ContainCheckHWIntrinsic(blsmskNode);
 
     return blsmskNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToAndNot: Lowers a tree AND(X, NOT(Y)) to HWIntrinsic::AndNot
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
+{
+    assert(mulOp->OperIs(GT_MUL));
+
+    if (!varTypeIsLong(mulOp))
+        return nullptr;
+
+    if (!mulOp->gtOverflow())
+        return nullptr;
+
+    GenTree* op1 = mulOp->gtGetOp1();
+    GenTree* op2 = mulOp->gtGetOp2();
+
+    if (op1->isContained() || op2->isContained())
+        return nullptr;
+
+    if (!op1->OperIs(GT_LCL_VAR))
+        return nullptr;
+
+    if (!op2->IsCnsIntOrI())
+        return nullptr;
+
+    GenTreeIntConCommon* cns = op2->AsIntConCommon();
+
+    ssize_t cnsVal = cns->IconValue() + 1;
+
+    if (!isPow2(cnsVal))
+        return nullptr;
+
+    mulOp->ChangeOper(GT_SUB);
+    cns->SetIconValue(genLog2((unsigned int)cnsVal));
+
+    mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
+    mulOp->gtOp2 = comp->gtClone(op1);
+
+    BlockRange().InsertBefore(mulOp, mulOp->gtOp2);
+    BlockRange().InsertBefore(mulOp, cns);
+    BlockRange().InsertBefore(mulOp, op1);
+    BlockRange().InsertBefore(mulOp, mulOp->gtOp1);
+
+    return LowerNode(mulOp);
 }
 
 //----------------------------------------------------------------------------------------------
