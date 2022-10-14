@@ -4220,23 +4220,15 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
     if (useSub)
     {
         cnsVal = cnsValPlusOne;
-    }
-    else
-    {
-        cnsVal = cnsValMinusOne;
-    }
-
-    unsigned int shiftAmount = genLog2((unsigned int)cnsVal);
-
-    if (useSub)
-    {
         mulOp->ChangeOper(GT_SUB);
     }
     else
     {
+        cnsVal = cnsValMinusOne;
         mulOp->ChangeOper(GT_ADD);
     }
 
+    unsigned int shiftAmount = genLog2((unsigned int)cnsVal);
     cns->SetIconValue(shiftAmount);
 
     mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
