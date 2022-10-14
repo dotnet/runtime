@@ -125,8 +125,9 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   indirectcalltransformer.cpp
+  importercalls.cpp
   importer.cpp
-  importer_vectorization.cpp
+  importervectorization.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
@@ -154,7 +155,7 @@ set( JIT_SOURCES
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
-  register_arg_convention.cpp
+  registerargconvention.cpp
   regset.cpp
   scopeinfo.cpp
   sideeffects.cpp
@@ -332,7 +333,7 @@ set( JIT_HEADERS
   rangecheck.h
   rationalize.h
   regalloc.h
-  register_arg_convention.h
+  registerargconvention.h
   register.h
   regset.h
   sideeffects.h

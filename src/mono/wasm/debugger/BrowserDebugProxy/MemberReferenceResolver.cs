@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using BrowserDebugProxy;
 using System.Globalization;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -458,7 +459,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
                                 }
                                 var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "ToArray", token);
+                                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "ToArray", BindingFlags.Default, token);
                                 // ToArray should not have an overload, but if user defined it, take the default one: without params
                                 if (methodIds == null)
                                     throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
@@ -560,7 +561,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
                 }
-                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], methodName, token);
+                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], methodName, BindingFlags.Default, token);
                 if (methodIds == null)
                 {
                     //try to search on System.Linq.Enumerable
@@ -666,7 +667,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                int[] newMethodIds = await context.SdbAgent.GetMethodIdsByName(linqTypeId, methodName, token);
+                int[] newMethodIds = await context.SdbAgent.GetMethodIdsByName(linqTypeId, methodName, BindingFlags.Default, token);
                 if (newMethodIds == null)
                     return 0;
 

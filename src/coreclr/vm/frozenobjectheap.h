@@ -33,14 +33,18 @@ private:
     Crst m_Crst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
-    bool m_Enabled;
 };
 
 class FrozenObjectSegment
 {
 public:
-    FrozenObjectSegment();
+    FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
+
+    size_t GetSize() const
+    {
+        return m_Size;
+    }
 
 private:
     // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
@@ -56,6 +60,9 @@ private:
     //
     // m_SizeCommitted <= m_pStart + FOH_SIZE_RESERVED
     size_t m_SizeCommitted;
+
+    // Total memory reserved for the current segment
+    size_t m_Size;
 
     segment_handle m_SegmentHandle;
     INDEBUG(size_t m_ObjectsCount);

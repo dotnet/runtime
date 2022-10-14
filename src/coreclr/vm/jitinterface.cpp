@@ -715,6 +715,64 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+size_t CEEInfo::printObjectDescription (
+        void*  handle,
+        char*  buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    size_t bytesWritten = 0;
+
+    _ASSERT(handle != nullptr);
+
+    JIT_TO_EE_TRANSITION();
+
+    Object* obj = (Object*)handle;
+
+    GCX_COOP();
+
+    StackSString stackStr;
+
+    // Currently only supported for String and RuntimeType
+    if (obj->GetMethodTable()->IsString())
+    {
+        ((StringObject*)obj)->GetSString(stackStr);
+    }
+    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+    }
+    else
+    {
+        _ASSERTE(!"Unexpected object type");
+    }
+
+    const UTF8* utf8data = stackStr.GetUTF8();
+    if (bufferSize > 0)
+    {
+        bytesWritten = min(bufferSize - 1, stackStr.GetCount());
+        memcpy((BYTE*)buffer, (BYTE*)utf8data, bytesWritten);
+
+        // Always null-terminate
+        buffer[bytesWritten] = 0;
+    }
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = stackStr.GetCount() + 1;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return bytesWritten;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -5943,6 +6001,82 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         return CORINFO_HELP_UNBOX_NULLABLE;
 
     return CORINFO_HELP_UNBOX;
+}
+
+/***********************************************************************/
+void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void* pointer = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
+    {
+        GCX_COOP();
+        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return pointer;
+}
+
+
+/***********************************************************************/
+bool CEEInfo::isObjectImmutable(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+#ifdef DEBUG
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    MethodTable* type = obj->GetMethodTable();
+
+    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
+
+    EE_TO_JIT_TRANSITION();
+#endif
+
+     // All currently allocated frozen objects can be treated as immutable
+    return true;
+}
+
+/***********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(objPtr != nullptr);
+
+    CORINFO_CLASS_HANDLE handle = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    VALIDATEOBJECT(obj);
+    handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
+
+    EE_TO_JIT_TRANSITION();
+
+    return handle;
 }
 
 /***********************************************************************/
@@ -11733,6 +11867,71 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     }
 
     result = field->GetStaticAddressHandle(base);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(fieldHnd != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+    _ASSERTE(field->IsStatic());
+    _ASSERTE((unsigned)bufferSize == field->GetSize());
+
+    MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
+    _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
+    _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+
+    // Allocate space for the local class if necessary, but don't trigger
+    // class construction.
+    DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
+    pLocalModule->PopulateClass(pEnclosingMT);
+
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    {
+        GCX_COOP();
+        if (field->IsObjRef())
+        {
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            if (fieldObj != NULL)
+            {
+                Object* obj = OBJECTREFToObject(fieldObj);
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                {
+                    intptr_t ptr = (intptr_t)obj;
+                    memcpy(buffer, &ptr, sizeof(intptr_t));
+                    result = true;
+                }
+            }
+            else
+            {
+                memset(buffer, 0, sizeof(intptr_t));
+                result = true;
+            }
+        }
+        else
+        {
+            void* fldAddr = field->GetCurrentStaticAddress();
+            _ASSERTE(fldAddr != nullptr);
+            memcpy(buffer, fldAddr, bufferSize);
+            result = true;
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 

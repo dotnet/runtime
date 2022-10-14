@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -403,8 +403,6 @@ namespace System.Runtime.CompilerServices
             c.CreateEntryNoResize(key, value);
         }
 
-        private static bool IsPowerOfTwo(int value) => (value > 0) && ((value & (value - 1)) == 0);
-
         //--------------------------------------------------------------------------------------------
         // Entry can be in one of four states:
         //
@@ -462,7 +460,7 @@ namespace System.Runtime.CompilerServices
             internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
                 Debug.Assert(parent != null);
-                Debug.Assert(IsPowerOfTwo(InitialCapacity));
+                Debug.Assert(BitOperations.IsPow2(InitialCapacity));
 
                 const int Size = InitialCapacity;
                 _buckets = new int[Size];
@@ -485,7 +483,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(buckets != null);
                 Debug.Assert(entries != null);
                 Debug.Assert(buckets.Length == entries.Length);
-                Debug.Assert(IsPowerOfTwo(buckets.Length));
+                Debug.Assert(BitOperations.IsPow2(buckets.Length));
 
                 _parent = parent;
                 _buckets = buckets;
@@ -678,7 +676,7 @@ namespace System.Runtime.CompilerServices
             internal Container Resize(int newSize)
             {
                 Debug.Assert(newSize >= _buckets.Length);
-                Debug.Assert(IsPowerOfTwo(newSize));
+                Debug.Assert(BitOperations.IsPow2(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.

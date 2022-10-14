@@ -9,7 +9,7 @@
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
-    <AnalyzerLanguage>cs</AnalyzerLanguage>    
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +26,7 @@
 
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
   </ItemGroup>
 
 </Project>
