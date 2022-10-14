@@ -3,7 +3,7 @@
 * [Windows Cross-Building](#windows-cross-building)
   * [Cross-Compiling for ARM32 and ARM64 on Windows](#cross-compiling-for-arm32-and-arm64-on-windows)
   * [Cross-Compiling for x86 on Windows](#cross-compiling-for-x86-on-windows)
-* [MacOS Cross-Building](#macos-cross-building)
+* [macOS Cross-Building](#macos-cross-building)
 * [Linux Cross-Building](#linux-cross-building)
   * [Generating the ROOTFS](#generating-the-rootfs)
     * [ROOTFS for FreeBSD](#rootfs-for-freebsd)
@@ -39,11 +39,11 @@ Building for x86 doesn't require any additional software installed or configured
 .\build.cmd -s clr -c Release -arch x86
 ```
 
-## MacOS Cross-Building
+## macOS Cross-Building
 
-This section will go over cross-compiling on MacOS. Currently, MacOS allows you to cross-compile between x64 and ARM64.
+This section will go over cross-compiling on macOS. Currently, macOS allows you to cross-compile between x64 and ARM64.
 
-Similarly to targeting Windows x86, the native tooling you installed back in the [MacOS requirements doc](/docs/workflow/requirements/macos-requirements.md) has the capabilities to effectuate the cross-compilation. You have simply to pass the `-cross` flag, along with the designated architecture. For example, for an arm64 build on an Intel x64 Mac:
+Similarly to targeting Windows x86, the native tooling you installed back in the [macOS requirements doc](/docs/workflow/requirements/macos-requirements.md) has the capabilities to effectuate the cross-compilation. You have simply to pass the `-cross` flag, along with the designated architecture. For example, for an arm64 build on an Intel x64 Mac:
 
 ```bash
 ./build.sh -s clr -c Release --cross -a arm64

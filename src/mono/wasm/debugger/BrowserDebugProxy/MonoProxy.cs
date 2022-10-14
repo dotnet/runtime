@@ -92,6 +92,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "Runtime.consoleAPICalled":
                     {
+                        // Don't process events from sessions we aren't tracking
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
                         {
@@ -110,7 +113,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     {
                                         // The optional 3rd argument is the stringified assembly
                                         // list so that we don't have to make more round trips
-                                        ExecutionContext context = GetContext(sessionId);
                                         string loaded = a[2]?["value"]?.ToString();
                                         if (loaded != null)
                                             context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
@@ -208,22 +210,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.breakpointResolved":
                     {
-                        break;
-                    }
-
-                case "Debugger.scriptParsed":
-                    {
-                        string url = args?["url"]?.Value<string>() ?? "";
-
-                        switch (url)
-                        {
-                            case var _ when url == "":
-                            {
-                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
-                                return true;
-                            }
-                        }
-                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
 

@@ -63,10 +63,10 @@ In order to run with your local changes, the application needs to be self-contai
 We are using Windows x64 for this example. Make sure you set it to the platform and configuration you have your build in. The codenames for the most common OS's are:
 
 * _Windows_: `win`
-* _MacOS_: `osx`
+* _macOS_: `osx`
 * _Linux_: `linux`
 
-For example, if we were testing a MacOS ARM64 build, our `RuntimeIdentifier` would be `osx-arm64`.
+For example, if we were testing a macOS ARM64 build, our `RuntimeIdentifier` would be `osx-arm64`.
 
 ### Publish your App
 

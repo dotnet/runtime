@@ -36,15 +36,11 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
   * **Desktop Development with C++** with all default components.
-* The build tools (CMake, Ninja and Python) can be downloaded and installed separately (see detailed instructions in the [section below](#build-tools)) or by selecting the following **Individual Components**:
-  * **C++ CMake tools for Windows** (includes Ninja, but might not work on ARM64 machines),
-  * **Python 3 64-bit** (3.7.4 or newer).
 * To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
-  * For Arm32, check the box for _MSVC v143* VS 2022 C++ ARM build tools (Latest)_, which must be _v14.31_ or newer.
-  * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_, which must be _v14.31_ or newer.
+  * For Arm32, check the box for _MSVC v143* VS 2022 C++ ARM build tools (Latest)_.
+  * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
-  * **Windows 10 SDK (10.0.19041)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
-  * **C++/CLI support for v142 build tools (Latest)**, which must be v14.23 or newer.
+  * **C++/CLI support for v142 build tools (Latest)**.
 
 A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components. You may get a message saying  `Microsoft.Net.Component.4.5.2.TargetingPack has no matching workload or component found`. This is not an issue as long as you have a newer targeting pack installed.
 

@@ -4,17 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_Thread_DeadThreadCountThresholdForGCTrigger" Value="8" />
+    <CLRTestEnvironmentVariable Include="COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds" Value="3e8" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_Thread_DeadThreadCountThresholdForGCTrigger=8
-set COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_Thread_DeadThreadCountThresholdForGCTrigger=8
-export COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

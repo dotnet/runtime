@@ -579,8 +579,8 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
 
         // In CI, we sometimes get XACT_E_TMNOTAVAILABLE; when it happens, it's typically on the very first
         // attempt to connect to MSDTC (flaky/slow on-demand startup of MSDTC), though not only.
-        // This catches that error and retries.
-        int nRetries = 60;
+        // This catches that error and retries: 5 minutes of retries, with a second between them.
+        int nRetries = 60 * 5;
 
         while (true)
         {
@@ -596,7 +596,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
                     throw;
                 }
 
-                Thread.Sleep(500);
+                Thread.Sleep(1000);
             }
         }
     }
@@ -605,7 +605,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     // so allow some time for assertions to succeed.
     private static void Retry(Action action)
     {
-        const int Retries = 50;
+        const int Retries = 100;
 
         for (var i = 0; i < Retries; i++)
         {

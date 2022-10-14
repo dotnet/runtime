@@ -27,6 +27,4 @@
 #cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 
-#cmakedefine01 HAVE_THREAD_LOCAL
-
 #endif

@@ -9,17 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExplicitTailCallNoSO.il" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJit" Value="1" />
+    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJitForLoops" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TC_QuickJit=1
-set COMPlus_TC_QuickJitForLoops=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TC_QuickJit=1
-export COMPlus_TC_QuickJitForLoops=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>
