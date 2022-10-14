@@ -149,8 +149,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
   export DOTNET_ZapRequire=$(ZapRequire)
   export DOTNET_ZapRequireList=$(AssemblyName)
-  export COMPlus_ZapRequire=$(ZapRequire)
-  export COMPlus_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -283,8 +281,6 @@ if defined RunCrossGen2 (
 
   set DOTNET_ZapRequire=$(ZapRequire)
   set DOTNET_ZapRequireList=$(AssemblyName)
-  set COMPlus_ZapRequire=$(ZapRequire)
-  set COMPlus_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>
