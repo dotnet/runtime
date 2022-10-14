@@ -4163,7 +4163,7 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
 //
 // Arguments:
-//    mulOp - GT_MUL node of integral type
+//    node - GT_MUL node of integral type
 //
 // Return Value:
 //    Returns the replacement node if one is created else nullptr indicating no replacement
