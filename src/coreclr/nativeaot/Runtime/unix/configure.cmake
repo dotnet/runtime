@@ -15,9 +15,6 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
-check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
-check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
