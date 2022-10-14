@@ -25203,6 +25203,13 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
         return;
     }
 
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!(is_in_bookkeeping_range (o)))
+    {
+        return;
+    }
+#endif
+
     if (flags & GC_CALL_INTERIOR)
     {
         o = hp->find_object (o);
@@ -35960,6 +35967,13 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
     {
         return;
     }
+
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!(is_in_bookkeeping_range (o)))
+    {
+        return;
+    }
+#endif
 
     if (flags & GC_CALL_INTERIOR)
     {
