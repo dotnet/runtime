@@ -1631,7 +1631,8 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
         else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
         {
-            // Compares and ANDs may be contained in a conditional chain.
+            // Compares can be contained by a SELECT.
+            // ANDs and Cmp Compares may be contained in a chain.
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }

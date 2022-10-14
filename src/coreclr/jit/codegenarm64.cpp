@@ -4679,7 +4679,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
     }
     else
     {
-        assert(tree->OperIsCompare());
+        assert(tree->OperIsCmpCompare());
 
         // Generate the compare, putting the result in the flags register.
         if (!*inChain)
@@ -4724,10 +4724,20 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     if (opcond->isContained())
     {
         // Generate the contained condition.
-        bool chain = false;
-        JITDUMP("Generating compare chain:\n");
-        genCodeForContainedCompareChain(opcond, &chain, &prevCond);
-        assert(chain);
+        if (opcond->OperIsCompare())
+        {
+            genCodeForCompare(opcond->AsOp());
+            prevCond = GenCondition::FromRelop(opcond);
+        }
+        else
+        {
+            // Condition is a compare chain. Try to contain it.
+            assert(opcond->OperIs(GT_AND));
+            bool chain = false;
+            JITDUMP("Generating compare chain:\n");
+            genCodeForContainedCompareChain(opcond, &chain, &prevCond);
+            assert(chain);
+        }
     }
     else
     {
