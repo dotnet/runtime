@@ -555,7 +555,11 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (IsValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = newValue;
                                 }
@@ -894,7 +898,11 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (IsValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = value;
                                 }
@@ -2124,15 +2132,6 @@ namespace System.Collections.Concurrent
             {
                 ReleaseLocks(0, locksAcquired);
             }
-        }
-
-        /// <summary>Determine whether writing a value is atomic.</summary>
-        private static bool IsValueWriteAtomic
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            // Do the reference type check up front here since JIT is unable to
-            // inline across the different shared generic dictionary.
-            get => !typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic;
         }
 
         /// <summary>
