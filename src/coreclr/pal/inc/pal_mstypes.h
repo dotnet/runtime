@@ -195,12 +195,7 @@ extern "C" {
 // they must be either signed or unsigned) and we want to be able to use
 // __int64 as though it were intrinsic
 
-#ifdef HOST_64BIT
-#define __int64     long
-#else // HOST_64BIT
 #define __int64     long long
-#endif // HOST_64BIT
-
 #define __int32     int
 #define __int16     short int
 #define __int8      char        // assumes char is signed
@@ -543,8 +538,13 @@ typedef _W64 unsigned __int32 DWORD_PTR, *PDWORD_PTR;
 #define UlongToPtr(ul) ULongToPtr(ul)
 #define UintToPtr(ui)  UIntToPtr(ui)
 
-typedef ULONG_PTR SIZE_T, *PSIZE_T;
-typedef LONG_PTR SSIZE_T, *PSSIZE_T;
+#ifdef HOST_64BIT
+typedef unsigned long SIZE_T;
+typedef long SSIZE_T;
+#else
+typedef unsigned int SIZE_T;
+typedef int SSIZE_T;
+#endif
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ULONG_PTR_MAX
@@ -562,6 +562,7 @@ typedef LONG_PTR SSIZE_T, *PSSIZE_T;
 #if defined(__APPLE_CC__) || defined(__linux__)
 #ifdef HOST_64BIT
 typedef unsigned long size_t;
+typedef long ssize_t;
 typedef long ptrdiff_t;
 #else // !HOST_64BIT
 typedef unsigned int size_t;
@@ -596,8 +597,8 @@ typedef int intptr_t;
 typedef unsigned int uintptr_t;
 #endif // !HOST_64BIT
 #else
-typedef INT_PTR intptr_t;
-typedef UINT_PTR uintptr_t;
+typedef long int intptr_t;
+typedef unsigned long int uintptr_t;
 #endif
 
 #endif // PAL_STDCPP_COMPAT

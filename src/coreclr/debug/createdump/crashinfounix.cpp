@@ -378,7 +378,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 
             uint64_t ehFrameStart;
             uint64_t ehFrameSize;
-            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
+            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, (ULONG64*)&ehFrameStart, (ULONG64*)&ehFrameSize))
             {
                 TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
                 if (ehFrameStart != 0 && ehFrameSize != 0)
