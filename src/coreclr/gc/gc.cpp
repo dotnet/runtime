@@ -7905,6 +7905,32 @@ BOOL gc_heap::ephemeral_pointer_p (uint8_t* o)
 #endif //USE_REGIONS
 }
 
+// This needs to check the range that's covered by bookkeeping because find_object will
+// need to look at the brick table.
+inline
+bool gc_heap::is_in_find_object_range (uint8_t* o)
+{
+    if (o == nullptr)
+    {
+        return false;
+    }
+#if defined(USE_REGIONS) && defined(FEATURE_CONSERVATIVE_GC)
+    return ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
+#else //USE_REGIONS && FEATURE_CONSERVATIVE_GC
+    if ((o >= g_gc_lowest_address) && (o < g_gc_highest_address))
+    {
+#ifdef USE_REGIONS
+        assert ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
+#endif //USE_REGIONS
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+#endif //USE_REGIONS && FEATURE_CONSERVATIVE_GC
+}
+
 #ifdef USE_REGIONS
 // This assumes o is guaranteed to be in a region.
 inline
@@ -7923,14 +7949,6 @@ bool gc_heap::is_in_condemned_gc (uint8_t* o)
     }
 
     return true;
-}
-
-// This needs to check the range that's covered by bookkeeping because find_object will
-// need to look at the brick table.
-inline
-bool gc_heap::is_in_bookkeeping_range (uint8_t* o)
-{
-    return ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
 }
 
 inline
@@ -25185,15 +25203,10 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
-        return;
-
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!is_in_bookkeeping_range (o))
+    if (!is_in_find_object_range (o))
     {
         return;
     }
-#endif
 
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
@@ -35956,15 +35969,10 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
-        return;
-
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!is_in_bookkeeping_range (o))
+    if (!is_in_find_object_range (o))
     {
         return;
     }
-#endif
 
     HEAP_FROM_THREAD;
 
@@ -45892,15 +45900,10 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
-        return;
-
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!gc_heap::is_in_bookkeeping_range (o))
+    if (!gc_heap::is_in_find_object_range (o))
     {
         return;
     }
-#endif
 
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
@@ -45967,18 +45970,15 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
 
     uint8_t* object = (uint8_t*)(Object*)(*ppObject);
 
+    if (!gc_heap::is_in_find_object_range (object))
+    {
+        return;
+    }
+
     THREAD_NUMBER_FROM_CONTEXT;
 
     //dprintf (3, ("Relocate location %Ix\n", (size_t)ppObject));
     dprintf (3, ("R: %Ix", (size_t)ppObject));
-
-    if (!object 
-#if defined(USE_REGIONS) && defined(FEATURE_CONSERVATIVE_GC)
-        || !gc_heap::is_in_bookkeeping_range (object))
-#else //USE_REGIONS && FEATURE_CONSERVATIVE_GC
-        || !((object >= g_gc_lowest_address) && (object < g_gc_highest_address)))
-#endif //USE_REGIONS && FEATURE_CONSERVATIVE_GC
-        return;
 
     gc_heap* hp = gc_heap::heap_of (object);
 
@@ -46429,12 +46429,10 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 {
     uint8_t *o = (uint8_t*)pInteriorPtr;
 
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!gc_heap::is_in_bookkeeping_range (o))
+    if (!gc_heap::is_in_find_object_range (o))
     {
         return NULL;
     }
-#endif
 
     gc_heap* hp = gc_heap::heap_of (o);
 
