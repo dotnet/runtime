@@ -402,7 +402,13 @@ namespace Wasm.Build.Tests
                 if (options.ExpectSuccess && options.AssertAppBundle)
                 {
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
-                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                    AssertBasicAppBundle(bundleDir,
+                                         buildArgs.ProjectName,
+                                         buildArgs.Config,
+                                         options.MainJS ?? (EnvironmentVariables.TestingForNet6 is not null ? "runtime.js" : "test-main.js"),
+                                         options.HasV8Script,
+                                         options.HasIcudt,
+                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
                 }
 
                 if (options.UseCache)
