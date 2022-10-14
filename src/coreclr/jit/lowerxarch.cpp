@@ -4198,16 +4198,12 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
     // Use GT_LSH if cnsVal is a power of two.
     // This is handled in codegen.
     if (isPow2(cnsVal))
-    {
         return nullptr;
-    }
 
     // Use GT_LEA if cnsVal is 3, 5, or 9.
     // This is handled in codegen.
     if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
-    {
         return nullptr;
-    }
 
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
