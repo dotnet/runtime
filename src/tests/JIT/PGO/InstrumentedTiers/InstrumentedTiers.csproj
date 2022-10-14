@@ -6,13 +6,13 @@
       $(CLRTestBatchPreCommands)
       set DOTNET_TieredCompilation=1
       set DOTNET_TieredPGO=1
-      set TieredPGO_Strategy=2
+      set DOTNET_TieredPGO_InstrumentOnlyHotCode=1
       ]]></CLRTestBatchPreCommands>
           <BashCLRTestPreCommands><![CDATA[
       $(BashCLRTestPreCommands)
       export DOTNET_TieredCompilation=1
       export DOTNET_TieredPGO=1
-      export TieredPGO_Strategy=2
+      export DOTNET_TieredPGO_InstrumentOnlyHotCode=1
       ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>

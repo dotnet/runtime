@@ -239,7 +239,7 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
-    tieredPGO_Strategy = (TieredPGOStrategy)0;
+    tieredPGO_InstrumentOnlyHotCode = false;
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -783,25 +783,12 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-    tieredPGO_Strategy = (TieredPGOStrategy)CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_Strategy);
+    tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
 
     // We need quick jit for TieredPGO
     if (!fTieredCompilation_QuickJit)
     {
         fTieredPGO = false;
-    }
-    else
-    {
-        if (tieredPGO_Strategy == InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode ||
-            tieredPGO_Strategy == InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode)
-        {
-            // When we're not using optimizations in the instrumented tiers we produce a lot of new first-time compilation 
-            // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
-            // tieredCompilation_CallCountingDelayMs
-            tieredCompilation_CallCountingDelayMs /= 3;
-            tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
-        }
-        _ASSERTE(tieredPGO_Strategy >= 0 && tieredPGO_Strategy <= 4);
     }
 #endif
 

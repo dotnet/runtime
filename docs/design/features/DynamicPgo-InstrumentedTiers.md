@@ -23,57 +23,43 @@ Yellow line provides the highest level of performance (RPS) by sacrificing start
 
 # Tiered compilation workflow in TieredPGO mode
 
-The following diagram explains how the instrumentation for hot R2R code works under the hood when TieredPGO is enabled (it's disabled by default):
+The following diagram explains how the instrumentation for hot code works under the hood when TieredPGO is enabled (it's disabled by default):
 
 ```mermaid
 flowchart
     prestub(.NET Function) -->|Compilation| hasAO{"Marked with<br/>[AggressiveOpts]?"}
     hasAO-->|Yes|tier1ao["JIT to <b><ins>Tier1</ins></b><br/><br/>(that attribute is extremely<br/> rarely a good idea)"]
     hasAO-->|No|hasR2R
-    hasR2R{"Is prejitted (R2R)<br/>and ReadyToRun==1"?} -->|No| istrTier0Q
+    hasR2R{"Is prejitted (R2R)<br/>and ReadyToRun==1"?} -->|No| tier000
 
-    istrTier0Q{"<b>TieredPGO_Strategy:</b><br/>Instrument only<br/>hot Tier0 code?"}
-    istrTier0Q-->|No, always instrument tier0|tier0
-    istrTier0Q-->|Yes, only hot|tier000
     tier000["JIT to <b><ins>Tier0</ins></b><br/><br/>(not optimized, not instrumented,<br/> with patchpoints)"]-->|Running...|ishot555
     ishot555{"Is hot?<br/>(called >30 times)"}
     ishot555-.->|No,<br/>keep running...|ishot555
     ishot555-->|Yes|tier0
    
     hasR2R -->|Yes| R2R
-    R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>with patchpoints)"] -->|Running...|ishot1
+    R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>no patchpoints)"] -->|Running...|ishot1
     ishot1{"Is hot?<br/>(called >30 times)"}-.->|No,<br/>keep running...|ishot1
-    ishot1--->|"Yes"|instrumentR2R
-
-    instrumentR2R{"<b>TieredPGO_Strategy:</b><br/>Instrument hot<br/>R2R'd code?"}
-    instrumentR2R-->|Yes, instrument R2R'd code|istier1inst
-    instrumentR2R-->|No, don't instrument R2R'd code|tier1nopgo["JIT to <b><ins>Tier1</ins></b><br/><br/>(no dynamic profile data)"]
+    ishot1--->|"Yes"|tier1inst
 
     tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
-    tier1pgo2_1["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
       
-    istier1inst{"<b>TieredPGO_Strategy:</b><br/>Enable optimizations<br/>for InstrumentedTier?"}-->|"No"|tier0_1
-    istier1inst--->|"Yes"|tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>with patchpoints)"]
-    tier1inst-->|Running...|ishot5_1
+    tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
+    tier1inst-->|Running...|ishot5
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
-
-    
-    ishot5_1{"Is hot?<br/>(called >30 times)"}
-    ishot5_1-.->|No,<br/>keep running...|ishot5_1
-    ishot5_1{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2_1
-
-    tier0_1["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]
-    tier0_1-->|Running...|ishot5_1
 ```
-(_VSCode doesn't support mermaid diagrams, consider installing external add-ins_)
+(_VSCode doesn't support mermaid diagrams out of the box, consider installing external add-ins_)
 
 ## Pros & cons of using optimizations inside the instrumented tiers
 
+Pros & cons of using optimizations inside the instrumented tiers
 Pros:
-* Lower overhead from instrumentation (and thanks to optimizations we _can_ optimize probes and emit less of those)
-* Optimized code is able to inline methods so we won't be producing new Compilation units for even small methods
+   * Lower overhead from instrumentation
+   * We definitely don't want to use unoptimized instrumented tier for R2R - it will produce a lot of new first-time compilations for non-inlined methods
+     and performance impact might be noticeable (when we switch from fast R2R to extremely slow Tier0+instrumentation)
 
 Cons:
-* Currently, we won't instrument inlinees -> we'll probably miss a lot of opportunities and produce less accurate profile leading to a less optimized final tier
+   * Currently, we don't instrument inlinees -> we'll probably miss some oportunities and produce less accurate profile leading to a less optimized final tier
+   * Non-optimized instrumented tier is faster to prepare for use

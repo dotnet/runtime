@@ -114,29 +114,16 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 #ifdef FEATURE_PGO
     if (g_pConfig->TieredPGO())
     {
-        switch (g_pConfig->TieredPGO_Strategy())
+        // Initial tier for R2R is always just OptimizationTier0
+        // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+        // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+        // 2 - OptimizationTierInstrumented - instrument all ILOnly code
+        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
+            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
         {
-            // Use OptimizationTierInstrumented for non-prejitted code as the initial tier
-            // and OptimizationTier0 for R2R'd
-            case InstrumentColdNonPrejittedCode:
-            case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
-            case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-            {
-                if (ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
-                {
-                    return NativeCodeVersion::OptimizationTier0;
-                }
-                return NativeCodeVersion::OptimizationTierInstrumented;
-            }
-
-            // These never start with OptimizationTierInstrumented
-            case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode:
-            case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-                return NativeCodeVersion::OptimizationTier0;
-
-            default:
-                UNREACHABLE_MSG("Unknown TieredPGO_Strategy");
+            return NativeCodeVersion::OptimizationTier0;
         }
+        return NativeCodeVersion::OptimizationTierInstrumented;
     }
 #endif
 
@@ -295,54 +282,26 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
 
 #ifdef FEATURE_PGO
-    // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
     if (g_pConfig->TieredPGO())
     {
         if (currentNativeCodeVersion.IsDefaultVersion() &&
-            currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+            currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            g_pConfig->TieredPGO_InstrumentOnlyHotCode())
         {
-            switch (g_pConfig->TieredPGO_Strategy())
+            if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
             {
-                // 0: In this mode previous tier is OptimizationTier0 only in case of R2R
-                case InstrumentColdNonPrejittedCode:
-                    _ASSERT(ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()));
-                    break;
-
-                // 1: Promote hot R2R code to TierInstrumented
-                case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
-                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
-                    {
-                        nextTier = NativeCodeVersion::OptimizationTierInstrumented;
-                    }
-                    break;
-
-                // 2: Promote hot R2R code to TierInstrumentedOptimized
-                case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
-                    {
-                        nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
-                    }
-                    break;
-
-                // 3: Promote hot Tier0/R2R code to TierInstrumented
-                case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode:
-                    nextTier = NativeCodeVersion::OptimizationTierInstrumented;
-                    break;
-
-                // 4: Promote hot Tier0 to TierInstrumented and hot R2R to TierInstrumentedOptimized
-                case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
-                    {
-                        nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
-                    }
-                    else
-                    {
-                        nextTier = NativeCodeVersion::OptimizationTierInstrumented;
-                    }
-                    break;
-
-                default:
-                    UNREACHABLE_MSG("Unknown TieredPGO_Strategy");
+                // We definitely don't want to use unoptimized instrumentation tier for hot R2R:
+                // 1) It will produce a lot of new compilations for small methods which were inlined in R2R
+                // 2) Noticeable performance regression from fast R2R to slow instrumented Tier0
+                nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+            }
+            else
+            {
+                // For ILOnly it's fine to use unoptimized instrumented tier:
+                // 1) No new compilations since previous tier already triggered them
+                // 2) Better profile since we'll be able to instrument inlinees
+                // 3) Unoptimized instrumented tier is faster to produce and wire up
+                nextTier = NativeCodeVersion::OptimizationTierInstrumented;
             }
         }
     }

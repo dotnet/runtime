@@ -218,6 +218,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             return impImportJitTestLabelMark(sig->numArgs);
         }
+
+        // static ulong JitHelpers_JitFlags() => 0;
+        // can be defined anywhere and will be replaced by Debug-version of RyuJIT
+        if ((mflags & CORINFO_FLG_STATIC) && (sig->numArgs == 0) && (sig->retType == CorInfoType::CORINFO_TYPE_ULONG) &&
+            (strcmp("JitHelpers_JitFlags", eeGetMethodName(methHnd, nullptr)) == 0))
+        {
+            call = gtNewLconNode((__int64)opts.jitFlags->GetRawFlags());
+            goto DONE_CALL;
+        }
 #endif // DEBUG
 
         const bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
@@ -6290,7 +6299,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
         return false;
     }
 
-    assert(opts.OptimizationDisabled() || opts.IsOSR());
+    assert(opts.OptimizationDisabled() || opts.IsInstrumentedOptimized());
     assert(!compIsForInlining());
 
     // During importation, optionally flag this block as one that

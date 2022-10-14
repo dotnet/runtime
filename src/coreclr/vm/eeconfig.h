@@ -51,25 +51,6 @@ enum ParseCtl {
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
 };
 
-// Keep in sync with comments in clrconfigvalues.h around "TieredPGO_Strategy"
-enum TieredPGOStrategy
-{
-    // Instrument any non-prejitted code
-    InstrumentColdNonPrejittedCode = 0,
-
-    // Instrument any non-prejitted code and only hot R2R code
-    InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode = 1,
-
-    // Instrument any non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
-    InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized = 2,
-
-    // Instrument only hot non-prejitted code and only hot R2R code
-    InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode = 3,
-
-    // Instrument only hot non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
-    InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized = 4
-};
-
 class EEConfig
 {
 public:
@@ -110,8 +91,8 @@ public:
 #endif
 
 #if defined(FEATURE_PGO)
-    bool              TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
-    TieredPGOStrategy TieredPGO_Strategy(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_Strategy; }
+    bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    bool          TieredPGO_InstrumentOnlyHotCode(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_InstrumentOnlyHotCode; }
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -678,7 +659,7 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
-    TieredPGOStrategy tieredPGO_Strategy;
+    bool tieredPGO_InstrumentOnlyHotCode;
 #endif
 
 #if defined(FEATURE_READYTORUN)
