@@ -691,10 +691,10 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
+        [InlineData(false, true)] // fails on Android
+        [InlineData(false, false)] // fails on Android
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)] // setting target hostname doesn't work on Android
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
@@ -753,7 +753,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        // [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
@@ -810,7 +810,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        // [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("CRASH", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -857,7 +857,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
