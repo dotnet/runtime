@@ -434,8 +434,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
-        public ExecutionContext ParentContext { get; set; }
-        public SessionId SessionId { get; set; }
+        public ExecutionContext ParentContext { get; private set; }
+        public SessionId SessionId { get; private set; }
 
         public bool PausedOnWasm { get; set; }
 
@@ -449,7 +449,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
-        internal MonoSDBHelper SdbAgent { get; set; }
+        internal MonoSDBHelper SdbAgent { get; private set; }
         public TaskCompletionSource<DebugStore> Source { get; private set; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
