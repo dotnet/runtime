@@ -4157,7 +4157,10 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMul: Lowers a tree MUL(X, CNS) to SUB(LSH(X, log2(CNS)), X)
+// Lowering::TryLowerMul:
+//    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
+//    or
+//    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
 //
 // Arguments:
 //    mulOp - GT_MUL node of integral type
@@ -4167,21 +4170,21 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 //
 // Notes:
 //    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
+GenTree* Lowering::TryLowerMul(GenTreeOp* node)
 {
-    assert(mulOp->OperIs(GT_MUL));
+    assert(node->OperIs(GT_MUL));
 
 #if TARGET_X86
     return nullptr;
 #else // !TARGET_X86
-    if (!varTypeIsIntegral(mulOp))
+    if (!varTypeIsIntegral(node))
         return nullptr;
 
-    if (mulOp->gtOverflow())
+    if (node->gtOverflow())
         return nullptr;
 
-    GenTree* op1 = mulOp->gtGetOp1();
-    GenTree* op2 = mulOp->gtGetOp2();
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
 
     if (op1->isContained() || op2->isContained())
         return nullptr;
@@ -4216,31 +4219,31 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
     if (useSub)
     {
         cnsVal = cnsValPlusOne;
-        mulOp->ChangeOper(GT_SUB);
+        node->ChangeOper(GT_SUB);
     }
     else
     {
         cnsVal = cnsValMinusOne;
-        mulOp->ChangeOper(GT_ADD);
+        node->ChangeOper(GT_ADD);
     }
 
     unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
     cns->SetIconValue(shiftAmount);
 
-    mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
-    mulOp->gtOp2 = comp->gtClone(op1);
+    node->gtOp1 = comp->gtNewOperNode(GT_LSH, node->gtType, op1, cns);
+    node->gtOp2 = comp->gtClone(op1);
 
     BlockRange().Remove(op1);
     BlockRange().Remove(cns);
-    BlockRange().InsertBefore(mulOp, mulOp->gtGetOp2());
-    BlockRange().InsertBefore(mulOp, cns);
-    BlockRange().InsertBefore(mulOp, op1);
-    BlockRange().InsertBefore(mulOp, mulOp->gtGetOp1());
+    BlockRange().InsertBefore(node, node->gtGetOp2());
+    BlockRange().InsertBefore(node, cns);
+    BlockRange().InsertBefore(node, op1);
+    BlockRange().InsertBefore(node, node->gtGetOp1());
 
-    ContainCheckBinary(mulOp);
-    ContainCheckShiftRotate(mulOp->gtGetOp1()->AsOp());
+    ContainCheckBinary(node);
+    ContainCheckShiftRotate(node->gtGetOp1()->AsOp());
 
-    return mulOp;
+    return node;
 #endif // !TARGET_X86
 }
 
