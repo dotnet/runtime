@@ -7,7 +7,8 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <SdkBandVersion>7.0.100</SdkBandVersion>
-    <PackageVersionNet6>6.0.11</PackageVersionNet6>
+        <!-- HACK for testing -->
+    <PackageVersionNet6>6.0.10</PackageVersionNet6>
     <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
     </PreReleaseVersionIteration>

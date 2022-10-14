@@ -170,6 +170,18 @@ namespace Microsoft.Workload.Build.Tasks
                     return false;
                 }
 
+                string[] fixupPaths = new[]
+                {
+                    Path.Combine("sdk-manifests", "7.0.100", "microsoft.net.workload.emscripten.net6", "WorkloadManifest.json"),
+                    Path.Combine("sdk", "7.0.100", "Microsoft.NETCoreSdk.BundledVersions.props")
+                };
+
+                foreach (string fixupPath in fixupPaths)
+                {
+                    string fullFixupPath = Path.Combine(Path.GetDirectoryName(SdkWithNoWorkloadInstalledPath)!, req.TargetPath, fixupPath);
+                    File.WriteAllText(fullFixupPath, File.ReadAllText(fullFixupPath).Replace("6.0.11", "6.0.10"));
+                }
+
                 manifestsInstalled.Add(req.ManifestName);
             }
 

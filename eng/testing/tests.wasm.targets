@@ -27,6 +27,7 @@
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
+    <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == '' and '$(TESTING_FOR_NET6)' != ''">false</WasmIgnoreNet6WorkloadInstallErrors>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
     <InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>
@@ -332,7 +333,8 @@
                             IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                             />
 
-      <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
+      <WorkloadCombinationsToInstall Include="net7"   Variants="net6;net7" />
+      <!--<WorkloadCombinationsToInstall Include="net6+7" Variants="net6;net7" />-->
       <!-- Latest net6 6.0.x versions are not available in feed currently so don't install them -->
       <!--
       <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />

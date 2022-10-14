@@ -161,7 +161,7 @@ namespace Wasm.Build.Tests
                                     .Replace("##RESOURCE_NAME##", resourceName)
                                     .Replace("##TYPE_NAME##", typeName));
 
-        private const string s_resourcesProjectTemplate =
+        private static readonly string s_resourcesProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
