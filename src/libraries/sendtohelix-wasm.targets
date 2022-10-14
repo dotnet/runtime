@@ -268,8 +268,8 @@
       </HelixWorkItem>
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)-6-%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot; &amp; set TESTING_FOR_NET6=1</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot; &amp;&amp; export TESTING_FOR_NET6=1</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
