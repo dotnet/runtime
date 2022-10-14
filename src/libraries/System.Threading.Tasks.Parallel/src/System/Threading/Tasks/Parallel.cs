@@ -371,11 +371,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int> body)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive,
-                s_defaultParallelOptions,
-                body, null, null, null, null);
+            return For<int>(fromInclusive, toExclusive, s_defaultParallelOptions, body);
         }
 
         /// <summary>
@@ -396,10 +392,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long> body)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<long, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                body, null, null, null, null);
+            return For<long>(fromInclusive, toExclusive, s_defaultParallelOptions, body);
         }
 
         /// <summary>
@@ -431,11 +424,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int> body)
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive, parallelOptions,
-                body, null, null, null, null);
+            return For<int>(fromInclusive, toExclusive, parallelOptions, body);
         }
 
         /// <summary>
@@ -467,9 +456,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions, Action<long> body)
         {
+            return For<long>(fromInclusive, toExclusive, parallelOptions, body);
+        }
+
+        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex> body)
+            where TIndex: INumber<TIndex>
+        {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<long, object>(
+            return ForWorker<TIndex, object>(
                 fromInclusive, toExclusive, parallelOptions,
                 body, null, null, null, null);
         }
@@ -516,10 +511,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int, ParallelLoopState> body)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                null, body, null, null, null);
+            return For<int>(fromInclusive, toExclusive, s_defaultParallelOptions, body);
         }
 
         /// <summary>
@@ -542,10 +534,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long, ParallelLoopState> body)
         {
-            ArgumentNullException.ThrowIfNull(body);
-            return ForWorker<long, object>(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                null, body, null, null, null);
+            return For<long>(fromInclusive, toExclusive, s_defaultParallelOptions, body);
         }
 
         /// <summary>
@@ -579,12 +568,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int, ParallelLoopState> body)
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
-
-            return ForWorker<int, object>(
-                fromInclusive, toExclusive, parallelOptions,
-                null, body, null, null, null);
+            return For<int>(fromInclusive, toExclusive, parallelOptions, body);
         }
 
         /// <summary>
@@ -619,10 +603,16 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions,
             Action<long, ParallelLoopState> body)
         {
+            return For<long>(fromInclusive, toExclusive, parallelOptions, body);
+        }
+
+        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex, ParallelLoopState> body)
+            where TIndex: INumber<TIndex>
+        {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
-            return ForWorker<long, object>(
+            return ForWorker<TIndex, object>(
                 fromInclusive, toExclusive, parallelOptions,
                 null, body, null, null, null);
         }
@@ -671,13 +661,7 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
-
-            return ForWorker(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                null, null, body, localInit, localFinally);
+            return For<int, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body, localFinally);
         }
 
         /// <summary>
@@ -724,13 +708,7 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
-
-            return ForWorker(
-                fromInclusive, toExclusive, s_defaultParallelOptions,
-                null, null, body, localInit, localFinally);
+            return For<long, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body, localFinally);
         }
 
         /// <summary>
@@ -788,14 +766,7 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
-
-            return ForWorker(
-                fromInclusive, toExclusive, parallelOptions,
-                null, null, body, localInit, localFinally);
+            return For<int, TLocal>(fromInclusive, toExclusive, parallelOptions, localInit, body, localFinally);
         }
 
         /// <summary>
@@ -852,6 +823,16 @@ namespace System.Threading.Tasks
             Func<TLocal> localInit,
             Func<long, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
+        {
+            return For<long, TLocal>(fromInclusive, toExclusive, parallelOptions, localInit, body, localFinally);
+        }
+
+        private static ParallelLoopResult For<TIndex, TLocal>(
+            TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions,
+            Func<TLocal> localInit,
+            Func<TIndex, ParallelLoopState, TLocal, TLocal> body,
+            Action<TLocal> localFinally)
+            where TIndex: INumber<TIndex>
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(localInit);
