@@ -3594,8 +3594,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CHECK_THIS: {
 			/* ensure ins->sreg1 is not NULL */
-			s390_lg   (code, s390_r0, 0, ins->sreg1, 0);
-			s390_ltgr (code, s390_r0, s390_r0);
+			s390_llgc (code, s390_r0, 0, ins->sreg1, 0);
 		}
 			break;
 		case OP_ARGLIST: {

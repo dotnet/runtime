@@ -12,7 +12,6 @@ namespace System.Collections.Generic
         int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
     }
 
-    [TypeDependency("System.Collections.Generic.GenericArraySortHelper`1")]
     internal sealed partial class ArraySortHelper<T>
         : IArraySortHelper<T>
     {
@@ -46,7 +45,6 @@ namespace System.Collections.Generic
         void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer);
     }
 
-    [TypeDependency("System.Collections.Generic.GenericArraySortHelper`2")]
     internal sealed partial class ArraySortHelper<TKey, TValue>
         : IArraySortHelper<TKey, TValue>
     {

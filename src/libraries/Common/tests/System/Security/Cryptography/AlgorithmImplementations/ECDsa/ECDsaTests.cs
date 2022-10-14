@@ -348,7 +348,14 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.True(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify 4");
             }
 
-            int distinctSignatures = signatures.Distinct(new ByteArrayComparer()).Count();
+            int distinctSignatures = signatures.Distinct(EqualityComparer<byte[]>.Create(
+                (x, y) => x.SequenceEqual(y),
+                x =>
+                {
+                    HashCode hc = default;
+                    hc.AddBytes(x);
+                    return hc.ToHashCode();
+                })).Count();
             Assert.True(distinctSignatures == signatures.Count, "Signing should be randomized");
 
             foreach (byte[] signature in signatures)
@@ -357,26 +364,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.False(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify Tampered 1");
                 Assert.False(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify Tampered 4");
             }
-        }
-
-        private class ByteArrayComparer : IEqualityComparer<byte[]>
-        {
-            public bool Equals(byte[] x, byte[] y)
-            {
-                return x.SequenceEqual(y);
-            }
-
-            public int GetHashCode(byte[] obj)
-            {
-                int h = 5381;
-
-                foreach (byte b in obj)
-                {
-                    h = unchecked((h << 5) + h) ^ b.GetHashCode();
-                }
-
-                return h;
-           }
         }
     }
 }

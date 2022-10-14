@@ -93,7 +93,7 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Enqueue, Dequeue, Peek, EnqueueDequeue
+        #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -194,6 +194,28 @@ namespace System.Collections.Tests
             }
 
             IEnumerable<(TElement Element, TPriority Priority)> expectedItems = itemsToEnqueue.OrderByDescending(x => x.Priority, queue.Comparer).Take(count);
+            AssertExtensions.CollectionEqual(expectedItems, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void PriorityQueue_DequeueEnqueue(int count)
+        {
+            (TElement Element, TPriority Priority)[] itemsToEnqueue = CreateItems(count * 2).ToArray();
+            PriorityQueue<TElement, TPriority> queue = CreateEmptyPriorityQueue();
+            queue.EnqueueRange(itemsToEnqueue.Take(count));
+
+            var dequeuedItems = new List<(TElement Element, TPriority Priority)>();
+            foreach ((TElement element, TPriority priority) in itemsToEnqueue.Skip(count))
+            {
+                queue.TryPeek(out var dequeuedElement, out var dequeuedPriority);
+                dequeuedItems.Add((dequeuedElement, dequeuedPriority));
+                queue.DequeueEnqueue(element, priority);
+            }
+
+            Assert.Equal(dequeuedItems.Count, count);
+
+            IEnumerable<(TElement Element, TPriority Priority)> expectedItems = itemsToEnqueue.Where(item => !dequeuedItems.Contains(item, EqualityComparer<(TElement, TPriority)>.Default));
             AssertExtensions.CollectionEqual(expectedItems, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
         }
 

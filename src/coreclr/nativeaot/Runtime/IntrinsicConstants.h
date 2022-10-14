@@ -24,6 +24,14 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Lzcnt = 0x1000,
     XArchIntrinsicConstants_AvxVnni = 0x2000,
     XArchIntrinsicConstants_Movbe = 0x4000,
+    XArchIntrinsicConstants_Avx512f = 0x8000,
+    XArchIntrinsicConstants_Avx512f_vl = 0x10000,
+    XArchIntrinsicConstants_Avx512bw = 0x20000,
+    XArchIntrinsicConstants_Avx512bw_vl = 0x40000,
+    XArchIntrinsicConstants_Avx512cd = 0x80000,
+    XArchIntrinsicConstants_Avx512cd_vl = 0x100000,
+    XArchIntrinsicConstants_Avx512dq = 0x200000,
+    XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
 };
 #endif //HOST_X86 || HOST_AMD64
 

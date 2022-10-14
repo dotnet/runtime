@@ -179,13 +179,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
         try
         {
             QUIC_HANDLE* handle;
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionOpen(
-                MsQuicApi.Api.Registration.QuicHandle,
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionOpen(
+                MsQuicApi.Api.Registration,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
                 &handle),
                 "ConnectionOpen failed");
-            _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ConnectionClose, SafeHandleType.Connection);
+            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Connection);
         }
         catch
         {
@@ -204,12 +204,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
+            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Connection);
             delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_CONNECTION_EVENT*, int> nativeCallback = &NativeCallback;
-            MsQuicApi.Api.ApiTable->SetCallbackHandler(
-                handle,
+            MsQuicApi.Api.SetCallbackHandler(
+                _handle,
                 nativeCallback,
                 (void*)GCHandle.ToIntPtr(context));
-            _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ConnectionClose, SafeHandleType.Connection);
         }
         catch
         {
@@ -294,9 +294,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 unsafe
                 {
-                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
-                        _handle.QuicHandle,
-                        _configuration.QuicHandle,
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
+                        _handle,
+                        _configuration,
                         (ushort)addressFamily,
                         (sbyte*)targetHostPtr,
                         (ushort)port),
@@ -334,9 +334,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             unsafe
             {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
-                    _handle.QuicHandle,
-                    _configuration.QuicHandle),
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionSetConfiguration(
+                    _handle,
+                    _configuration),
                     "ConnectionSetConfiguration failed");
             }
         }
@@ -430,8 +430,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             unsafe
             {
-                MsQuicApi.Api.ApiTable->ConnectionShutdown(
-                    _handle.QuicHandle,
+                MsQuicApi.Api.ConnectionShutdown(
+                    _handle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
                     (ulong)errorCode);
             }
@@ -458,7 +458,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -473,7 +472,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -484,7 +482,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -492,11 +489,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             NetEventSource.Info(this, $"{this} Received event SHUTDOWN_INITIATED_BY_PEER_DATA");
         }
 
-        _shutdownTcs.TrySetResult();
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
     {
         _localEndPoint = data.Address->ToIPEndPoint();
@@ -507,7 +503,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerAddressChanged(ref PEER_ADDRESS_CHANGED_DATA data)
     {
         _remoteEndPoint = data.Address->ToIPEndPoint();
@@ -518,7 +513,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -540,7 +534,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         return QUIC_STATUS_SUCCESS;
     }
-
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         if (NetEventSource.Log.IsEnabled())
@@ -631,8 +624,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             unsafe
             {
-                MsQuicApi.Api.ApiTable->ConnectionShutdown(
-                    _handle.QuicHandle,
+                MsQuicApi.Api.ConnectionShutdown(
+                    _handle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
                     (ulong)_defaultCloseErrorCode);
             }

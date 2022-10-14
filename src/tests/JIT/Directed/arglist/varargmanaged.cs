@@ -1331,5 +1331,31 @@ namespace NativeVarargTest
         {
             return new FourDoubleStruct { a = a, b = b, c = c, d = d };
         }
+
+        // Miscellaneous tests
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static FourDoubleStruct TestEchoFourDoubleStructViaParameterAssign(FourDoubleStruct a, __arglist)
+        {
+            // Tests that a multi-reg return from an inline candidate can be assigned successfully to a by-reference
+            // parameter on Windows ARM64.
+            a = ReturnDoubleStructInlineCandidate(a);
+
+            return a;
+        }
+
+        private static FourDoubleStruct ReturnDoubleStructInlineCandidate(FourDoubleStruct a)
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void Call() { }
+
+            Call();
+            Call();
+            Call();
+            Call();
+            Call();
+
+            return a;
+        }
     }
 }

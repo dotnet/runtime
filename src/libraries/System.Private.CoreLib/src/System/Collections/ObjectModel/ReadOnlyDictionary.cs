@@ -264,7 +264,7 @@ namespace System.Collections.ObjectModel
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            bool ICollection<TKey>.Contains(TKey item)
+            public bool Contains(TKey item)
             {
                 return _collection.Contains(item);
             }

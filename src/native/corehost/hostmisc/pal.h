@@ -65,16 +65,16 @@
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
 #if defined(TARGET_WINDOWS)
-#define LIB_PREFIX
-#define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
 #define FALLBACK_HOST_RID _X("win10")
 #elif defined(TARGET_OSX)
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
 #define FALLBACK_HOST_RID _X("osx.10.12")
 #else
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
 #if defined(TARGET_FREEBSD)
 #define FALLBACK_HOST_RID _X("freebsd")
 #elif defined(TARGET_ILLUMOS)
@@ -90,15 +90,16 @@
 #endif
 #endif
 
-#define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
-#define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
+#define _STRINGIFY(s) _X(s)
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
 
 #define CORELIB_NAME _X("System.Private.CoreLib.dll")
-
-#define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
-#define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
-
-#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
 
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096

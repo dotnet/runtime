@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
@@ -8,9 +9,9 @@ namespace System.Security.Cryptography.Xml
     public abstract class EncryptedReference
     {
         private string _uri;
-        private string _referenceType;
-        private TransformChain _transformChain;
-        internal XmlElement _cachedXml;
+        private string? _referenceType;
+        private TransformChain? _transformChain;
+        internal XmlElement? _cachedXml;
 
         protected EncryptedReference() : this(string.Empty, new TransformChain())
         {
@@ -30,6 +31,8 @@ namespace System.Security.Cryptography.Xml
         public string Uri
         {
             get { return _uri; }
+
+            [MemberNotNull(nameof(_uri))]
             set
             {
                 if (value == null)
@@ -54,7 +57,7 @@ namespace System.Security.Cryptography.Xml
             TransformChain.Add(transform);
         }
 
-        protected string ReferenceType
+        protected string? ReferenceType
         {
             get { return _referenceType; }
             set
@@ -64,6 +67,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_cachedXml))]
         protected internal bool CacheValid
         {
             get
@@ -107,7 +111,7 @@ namespace System.Security.Cryptography.Xml
 
             ReferenceType = value.LocalName;
 
-            string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            string? uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             if (uri == null)
                 throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);
             Uri = uri;
@@ -115,9 +119,9 @@ namespace System.Security.Cryptography.Xml
             // Transforms
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
-            XmlNode transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
+            XmlNode? transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
             if (transformsNode != null)
-                TransformChain.LoadXml(transformsNode as XmlElement);
+                TransformChain.LoadXml((transformsNode as XmlElement)!);
 
             // cache the Xml
             _cachedXml = value;

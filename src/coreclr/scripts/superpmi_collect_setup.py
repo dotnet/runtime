@@ -9,22 +9,25 @@
 #
 # Script to setup directory structure required to perform SuperPMI collection in CI.
 # It does the following steps:
-# 1.  It creates `correlation_payload_directory` that contains files from CORE_ROOT, src\coreclr\scripts.
-#     This directory is the one that is sent to all the helix machines that performs SPMI collection.
-# 2.  It clones dotnet/jitutils, builds it and then copies the `pmi.dll` to `correlation_payload_directory` folder.
-#     This file is needed to do pmi SPMI runs.
-# 3.  The script takes `input_artifacts` parameter which contains managed .dlls and .exes on
-#     which SPMI needs to be run. This script will partition these folders into equal buckets of approximately `max_size`
-#     bytes and stores them under `payload` directory. Each sub-folder inside `payload` directory is sent to individual
-#     helix machine to do SPMI collection on. E.g. for `input_artifacts` to be run on libraries, the parameter would be path to
-#     `CORE_ROOT` folder and this script will copy `max_size` bytes of those files under `payload/libraries/0/binaries`,
-#     `payload/libraries/1/binaries` and so forth.
-# 4.  Lastly, it sets the pipeline variables.
+# 1.  Create `correlation_payload_directory` that contains files from CORE_ROOT, src\coreclr\scripts.
+#     This directory is the one that is sent to all the helix machines that perform SPMI collections.
+# 2.  For PMI collections, clone dotnet/jitutils, build it and then copy the `pmi.dll` to
+#     `correlation_payload_directory` folder.
+# 3.  For PMI/crossgen2 collections, the `input_directory` directory contains the set of assemblies
+#     to collect over. This script will partition these folders into equal buckets of approximately
+#     `max_size` bytes and stores them under the workitem payload directory. Each sub-folder inside
+#     this directory is sent to an individual helix machine to do SPMI collection on. E.g. for
+#     `input_directory` to be run on libraries, the parameter is the path to `CORE_ROOT` folder and
+#     this script will copy `max_size` bytes of those files under
+#     `payload/collectAssembliesDirectory/libraries/0/binaries`,
+#     `payload/collectAssembliesDirectory/libraries/1/binaries` and so forth.
+# 4.  For benchmarks collections, a specialized script is called to set up the benchmarks collection.
+# 5.  Lastly, it sets the pipeline variables.
 #
 # Below are the helix queues it sets depending on the OS/architecture:
 # | Arch  | windows                 | Linux                                                                                                                                | macOS          |
 # |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
-# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      | -              |
+# | x86   | Windows.10.Amd64.X86.Rt | -                                                                                                                                    | -              |
 # | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
 # | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 | -              |
 # | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 | OSX.1100.ARM64 |
@@ -34,26 +37,34 @@
 
 import argparse
 import os
+import shutil
 import stat
 
 from coreclr_arguments import *
 from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
 
-
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-source_directory", help="path to source directory")
-parser.add_argument("-core_root_directory", help="path to core_root directory")
-parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-platform", help="OS platform")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (crossgen2, pmi, run)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
+parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
+parser.add_argument("-source_directory", required=True, help="Path to source directory")
+parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
+parser.add_argument("-arch", required=True, help="Architecture")
+parser.add_argument("-platform", required=True, help="OS platform")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
-parser.add_argument("-collection_name", help="Name of the SPMI collection to be done (e.g., libraries, tests)")
-parser.add_argument("-collection_type", help="Type of the SPMI collection to be done (crossgen, crossgen2, pmi)")
-parser.add_argument("-input_directory", help="directory containing assemblies for which superpmi collection to be done")
-parser.add_argument("-max_size", help="Max size of each partition in MB")
+parser.add_argument("-input_directory", help="Directory containing assemblies which SuperPMI will use for collection (for pmi/crossgen2 collections)")
+parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi/crossgen2 collections)")
+
 is_windows = platform.system() == "Windows"
+
+legal_collection_types = [ "crossgen2", "pmi", "run" ]
+
+directories_to_ignore = [
+    "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
+]
 
 native_binaries_to_ignore = [
     "api-ms-win-core-console-l1-1-0.dll",
@@ -99,6 +110,12 @@ native_binaries_to_ignore = [
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
+    "clrjit_universal_arm_arm.dll",
+    "clrjit_universal_arm_arm64.dll",
+    "clrjit_universal_arm_x64.dll",
+    "clrjit_universal_arm_x86.dll",
+    "clrjit_universal_arm64_arm64.dll",
+    "clrjit_universal_arm64_x64.dll",
     "clrjit_unix_arm_arm.dll",
     "clrjit_unix_arm_arm64.dll",
     "clrjit_unix_arm_x64.dll",
@@ -125,12 +142,6 @@ native_binaries_to_ignore = [
     "clrjit_win_x86_arm64.dll",
     "clrjit_win_x86_x64.dll",
     "clrjit_win_x86_x86.dll",
-    "clrjit_universal_arm_arm.dll",
-    "clrjit_universal_arm_arm64.dll",
-    "clrjit_universal_arm_x64.dll",
-    "clrjit_universal_arm_x86.dll",
-    "clrjit_universal_arm64_arm64.dll",
-    "clrjit_universal_arm64_x64.dll",
     "coreclr.dll",
     "CoreConsole.exe",
     "coredistools.dll",
@@ -140,6 +151,8 @@ native_binaries_to_ignore = [
     "crossgen.exe",
     "crossgen2.exe",
     "dbgshim.dll",
+    "e_sqlite3.dll",
+    "FileCheck.exe",
     "ilasm.exe",
     "ildasm.exe",
     "jitinterface_arm.dll",
@@ -148,6 +161,7 @@ native_binaries_to_ignore = [
     "jitinterface_x86.dll",
     "KernelTraceControl.dll",
     "KernelTraceControl.Win61.dll",
+    "llvm-mca.exe",
     "mcs.exe",
     "Microsoft.DiaSymReader.Native.amd64.dll",
     "Microsoft.DiaSymReader.Native.x86.dll",
@@ -157,17 +171,21 @@ native_binaries_to_ignore = [
     "msdia140.dll",
     "msquic.dll",
     "msvcp140.dll",
-    "vcruntime140.dll",
-    "vcruntime140_1.dll",
+    "NativeLibrary.dll",
     "R2RDump.exe",
     "R2RTest.exe",
-    "superpmi.exe",
+    "sni.dll",
+    "SuperFileCheck.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "superpmi.exe",
     "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
+    "UnloadableAssembly.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
     "xunit.console.exe",
 ]
 
@@ -188,14 +206,27 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
+                        "payload_directory",
+                        lambda unused: True,
+                        "Unable to set payload_directory",
+                        modify_arg=lambda payload_directory: os.path.abspath(payload_directory))
+
+    coreclr_args.verify(args,
                         "source_directory",
                         lambda source_directory: os.path.isdir(source_directory),
-                        "source_directory doesn't exist")
+                        "source_directory doesn't exist",
+                        modify_arg=lambda source_directory: os.path.abspath(source_directory))
+
+    check_dir = os.path.join(coreclr_args.source_directory, 'src', 'coreclr', 'scripts')
+    if not os.path.isdir(check_dir):
+        print("Specified directory {0} doesn't looks like a source directory".format(coreclr_args.source_directory))
+        sys.exit(1)
 
     coreclr_args.verify(args,
                         "core_root_directory",
                         lambda core_root_directory: os.path.isdir(core_root_directory),
-                        "core_root_directory doesn't exist")
+                        "core_root_directory doesn't exist",
+                        modify_arg=lambda core_root_directory: os.path.abspath(core_root_directory))
 
     coreclr_args.verify(args,
                         "arch",
@@ -219,17 +250,18 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "collection_type",
-                        lambda unused: True,
-                        "Unable to set collection_type")
+                        lambda collection_type: collection_type in legal_collection_types,
+                        "Please specify one of the allowed collection types: " + ' '.join(legal_collection_types))
 
     coreclr_args.verify(args,
                         "input_directory",
-                        lambda input_directory: os.path.isdir(input_directory),
-                        "input_directory doesn't exist")
+                        lambda input_directory: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or os.path.isdir(input_directory),
+                        "input_directory doesn't exist",
+                        modify_arg=lambda input_directory: None if input_directory is None else os.path.abspath(input_directory))
 
     coreclr_args.verify(args,
                         "max_size",
-                        lambda max_size: max_size > 0,
+                        lambda max_size: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or max_size > 0,
                         "Please enter valid positive numeric max_size",
                         modify_arg=lambda max_size: int(
                             max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
@@ -356,6 +388,11 @@ def setup_microbenchmark(workitem_directory, arch):
     run_command(
         ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
 
+    try:
+        shutil.rmtree(os.path.join(performance_directory, ".git"))
+    except Exception as ex:
+        print("Warning: failed to remove directory \"%s\": %s", os.path.join(performance_directory, ".git"), ex)
+
     with ChangeDir(performance_directory):
         dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
         dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
@@ -364,8 +401,11 @@ def setup_microbenchmark(workitem_directory, arch):
             print("Missing " + dotnet_install_script)
             return
 
+        # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
+        # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
+        # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -390,15 +430,31 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
     source_directory = coreclr_args.source_directory
 
-    # CorrelationPayload directories
-    correlation_payload_directory = os.path.join(coreclr_args.source_directory, "payload")
+    # If the payload directory doesn't already exist (it probably shouldn't) then create it.
+    if not os.path.isdir(coreclr_args.payload_directory):
+        os.makedirs(coreclr_args.payload_directory)
+
+    correlation_payload_directory = os.path.join(coreclr_args.payload_directory, 'correlation')
+    workitem_payload_directory = os.path.join(coreclr_args.payload_directory, 'workitem')
+
     superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
+
+    # Correlation payload directories (sent to every Helix machine).
+    # Currently, all the Core_Root files, superpmi script files, and pmi.dll go in the same place.
     superpmi_dst_directory = os.path.join(correlation_payload_directory, "superpmi")
+    core_root_dst_directory = superpmi_dst_directory
+
+    # Workitem directories
+    # input_artifacts is only used for pmi/crossgen2 collections.
+    input_artifacts = ""
+
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
     helix_source_prefix = "official"
     creator = ""
     ci = True
+
+    # Determine the Helix queue name to use when running jobs.
     if platform_name == "windows":
         helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
     elif platform_name == "linux":
@@ -411,9 +467,12 @@ def main(main_args):
     elif platform_name == "osx":
         helix_queue = "OSX.1100.ARM64" if arch == "arm64" else "OSX.1014.Amd64"
 
-    # create superpmi directory
+    # Copy the superpmi scripts
+
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
     copy_directory(superpmi_src_directory, superpmi_dst_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+
+    # Copy Core_Root
 
     if platform_name == "windows":
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
@@ -423,80 +482,78 @@ def main(main_args):
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
-    print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
-    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
-
-    # Copy all the test files to CORE_ROOT
-    # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
-    # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
-    # references will be present in CORE_ROOT.
-    if coreclr_args.collection_name == "libraries_tests":
-        print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
-
-        def make_readable(folder_name):
-            """Make file executable by changing the permission
-
-            Args:
-                folder_name (string): folder to mark with 744
-            """
-            if is_windows:
-                return
-
-            print("Inside make_readable")
-            run_command(["ls", "-l", folder_name])
-            for file_path, dirs, files in os.walk(folder_name, topdown=True):
-                for d in dirs:
-                    os.chmod(os.path.join(file_path, d),
-                    # read+write+execute for owner
-                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
-                    # read for group
-                    (stat.S_IRGRP) |
-                    # read for other
-                    (stat.S_IROTH))
-
-                for f in files:
-                    os.chmod(os.path.join(file_path, f),
-                    # read+write+execute for owner
-                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
-                    # read for group
-                    (stat.S_IRGRP) |
-                    # read for other
-                    (stat.S_IROTH))
-            run_command(["ls", "-l", folder_name])
-
-        make_readable(coreclr_args.input_directory)
-        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
-
-    # Workitem directories
-    workitem_directory = os.path.join(source_directory, "workitem")
-    input_artifacts = ""
+    print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
+    copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     if coreclr_args.collection_name == "benchmarks":
         # Setup microbenchmarks
-        setup_microbenchmark(workitem_directory, arch)
+        setup_microbenchmark(workitem_payload_directory, arch)
     else:
-        # Setup for pmi/crossgen runs
+        # Setup for pmi/crossgen2 runs
 
-        # Clone and build jitutils
-        try:
-            with TempDir() as jitutils_directory:
-                run_command(
-                    ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+        # For libraries tests, copy all the test files to the single 
+        # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
+        # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
+        # references will be present in CORE_ROOT.
+        if coreclr_args.collection_name == "libraries_tests":
 
-                # Make sure ".dotnet" directory exists, by running the script at least once
-                dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
-                dotnet_script_path = os.path.join(source_directory, dotnet_script_name)
-                run_command([dotnet_script_path, "--info"], jitutils_directory)
+            def make_readable(folder_name):
+                """Make file executable by changing the permission
 
-                # Set dotnet path to run build
-                os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-                build_file = "build.cmd" if is_windows else "build.sh"
-                run_command([os.path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
+                Args:
+                    folder_name (string): folder to mark with 744
+                """
+                if is_windows:
+                    return
 
-                copy_files(os.path.join(jitutils_directory, "bin"), superpmi_dst_directory, [os.path.join(jitutils_directory, "bin", "pmi.dll")])
-        except PermissionError as pe_error:
-            # Details: https://bugs.python.org/issue26660
-            print('Ignoring PermissionError: {0}'.format(pe_error))
+                print("Inside make_readable")
+                run_command(["ls", "-l", folder_name])
+                for file_path, dirs, files in os.walk(folder_name, topdown=True):
+                    for d in dirs:
+                        os.chmod(os.path.join(file_path, d),
+                        # read+write+execute for owner
+                        (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                        # read for group
+                        (stat.S_IRGRP) |
+                        # read for other
+                        (stat.S_IROTH))
+
+                    for f in files:
+                        os.chmod(os.path.join(file_path, f),
+                        # read+write+execute for owner
+                        (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                        # read for group
+                        (stat.S_IRGRP) |
+                        # read for other
+                        (stat.S_IROTH))
+                run_command(["ls", "-l", folder_name])
+
+            make_readable(coreclr_args.input_directory)
+            print('Copying {} -> {}'.format(coreclr_args.input_directory, core_root_dst_directory))
+            copy_directory(coreclr_args.input_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+
+        # We need the PMI tool if we're doing a PMI collection. We could download a cached copy from Azure DevOps JIT blob
+        # storage, but instead we clone and build jitutils to build pmi.dll.
+        if coreclr_args.collection_type == "pmi":
+            try:
+                with TempDir() as jitutils_directory:
+                    run_command(
+                        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+
+                    # Make sure ".dotnet" directory exists, by running the script at least once
+                    dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
+                    dotnet_script_path = os.path.join(source_directory, dotnet_script_name)
+                    run_command([dotnet_script_path, "--info"], jitutils_directory)
+
+                    # Set dotnet path to run build
+                    os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+                    build_file = "build.cmd" if is_windows else "build.sh"
+                    run_command([os.path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
+
+                    copy_files(os.path.join(jitutils_directory, "bin"), core_root_dst_directory, [os.path.join(jitutils_directory, "bin", "pmi.dll")])
+            except PermissionError as pe_error:
+                # Details: https://bugs.python.org/issue26660
+                print('Ignoring PermissionError: {0}'.format(pe_error))
 
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
@@ -509,11 +566,13 @@ def main(main_args):
         #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
         #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
-        # payload
-        pmiassemblies_directory = os.path.join(workitem_directory, "pmiAssembliesDirectory")
-        input_artifacts = os.path.join(pmiassemblies_directory, coreclr_args.collection_name)
-        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "coreclr_tests" else []
-        exclude_files = native_binaries_to_ignore
+        input_artifacts = os.path.join(workitem_payload_directory, "collectAssembliesDirectory", coreclr_args.collection_name)
+
+        exclude_directories = list(directories_to_ignore)
+        if coreclr_args.collection_name == "coreclr_tests":
+            exclude_directories += ['Core_Root']
+
+        exclude_files = list(native_binaries_to_ignore)
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
@@ -525,13 +584,13 @@ def main(main_args):
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
 
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
-    set_pipeline_variable("WorkItemDirectory", workitem_directory)
+    set_pipeline_variable("WorkItemDirectory", workitem_payload_directory)
     set_pipeline_variable("InputArtifacts", input_artifacts)
     set_pipeline_variable("Python", ' '.join(get_python_name()))
     set_pipeline_variable("Architecture", arch)

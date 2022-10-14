@@ -10,15 +10,15 @@ namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 internal interface IResourceManagerFactory2
 {
     internal void Create(
-        Guid pguidRM,
+        in Guid pguidRM,
         [MarshalAs(UnmanagedType.LPStr)] string pszRMName,
         [MarshalAs(UnmanagedType.Interface)] IResourceManagerSink pIResMgrSink,
         [MarshalAs(UnmanagedType.Interface)] out IResourceManager rm);
 
     internal void CreateEx(
-        Guid pguidRM,
+        in Guid pguidRM,
         [MarshalAs(UnmanagedType.LPStr)] string pszRMName,
         [MarshalAs(UnmanagedType.Interface)] IResourceManagerSink pIResMgrSink,
-        Guid riidRequested,
+        in Guid riidRequested,
         [MarshalAs(UnmanagedType.Interface)] out object rm);
 }

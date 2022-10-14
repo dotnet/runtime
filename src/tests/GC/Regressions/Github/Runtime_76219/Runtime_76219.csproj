@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+
+    <!-- This test needs GCStress mode but it doesn't take long to execute
+         so is fine to keep it in the inner loop -->
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set DOTNET_TieredCompilation=0
+      set DOTNET_GCStress=0x3
+      set DOTNET_COMPlus_GCSegmentSize=8000
+      ]]></CLRTestBatchPreCommands>
+          <BashCLRTestPreCommands><![CDATA[
+      $(BashCLRTestPreCommands)
+      export DOTNET_TieredCompilation=0
+      export DOTNET_GCStress=0x3
+      export DOTNET_COMPlus_GCSegmentSize=8000
+      ]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

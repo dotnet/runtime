@@ -41,6 +41,6 @@ namespace System.Linq.Expressions.Tests
         private static readonly Type s_runtimeConstructorInfoType = Type.GetType("System.Reflection.RuntimeConstructorInfo", throwOnError: true);
 
         private static readonly Type s_rtDynamicMethodType = Type.GetType("System.Reflection.Emit.DynamicMethod+RTDynamicMethod", throwOnError: true);
-        private static readonly FieldInfo s_fiOwner = s_rtDynamicMethodType.GetFieldAssert("m_owner");
+        private static readonly FieldInfo s_fiOwner = s_rtDynamicMethodType.GetFieldAssert("_owner");
     }
 }

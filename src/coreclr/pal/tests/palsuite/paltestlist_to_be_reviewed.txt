@@ -9,16 +9,12 @@ c_runtime/fread/test1/paltest_fread_test1
 c_runtime/fread/test2/paltest_fread_test2
 c_runtime/fread/test3/paltest_fread_test3
 c_runtime/ftell/test1/paltest_ftell_test1
-c_runtime/fwprintf/test19/paltest_fwprintf_test19
-c_runtime/fwprintf/test2/paltest_fwprintf_test2
-c_runtime/fwprintf/test7/paltest_fwprintf_test7
 c_runtime/iswprint/test1/paltest_iswprint_test1
 c_runtime/swprintf/test2/paltest_swprintf_test2
 c_runtime/swprintf/test7/paltest_swprintf_test7
 c_runtime/vprintf/test1/paltest_vprintf_test1
 c_runtime/vswprintf/test2/paltest_vswprintf_test2
 c_runtime/vswprintf/test7/paltest_vswprintf_test7
-c_runtime/wprintf/test2/paltest_wprintf_test2
 c_runtime/_gcvt/test1/paltest_gcvt_test1
 c_runtime/_gcvt/test2/paltest_gcvt_test2
 c_runtime/_getw/test1/paltest_getw_test1
@@ -64,9 +60,6 @@ filemapping_memmgt/GetModuleFileNameA/test1/paltest_getmodulefilenamea_test1
 filemapping_memmgt/GetModuleFileNameW/test1/paltest_getmodulefilenamew_test1
 filemapping_memmgt/GetProcAddress/test1/paltest_getprocaddress_test1
 filemapping_memmgt/GetProcAddress/test2/paltest_getprocaddress_test2
-filemapping_memmgt/OpenFileMappingW/test1/paltest_openfilemappingw_test1
-filemapping_memmgt/OpenFileMappingW/test2/paltest_openfilemappingw_test2
-filemapping_memmgt/OpenFileMappingW/test3/paltest_openfilemappingw_test3
 filemapping_memmgt/ReadProcessMemory/ReadProcessMemory_neg1/paltest_readprocessmemory_readprocessmemory_neg1
 filemapping_memmgt/ReadProcessMemory/test1/paltest_readprocessmemory_test1
 filemapping_memmgt/ReadProcessMemory/test2/paltest_readprocessmemory_test2
@@ -82,8 +75,6 @@ file_io/GetTempFileNameW/test1/paltest_gettempfilenamew_test1
 file_io/GetTempFileNameW/test2/paltest_gettempfilenamew_test2
 file_io/gettemppatha/test1/paltest_gettemppatha_test1
 file_io/GetTempPathW/test1/paltest_gettemppathw_test1
-file_io/MoveFileExA/test1/paltest_movefileexa_test1
-file_io/MoveFileExW/test1/paltest_movefileexw_test1
 file_io/ReadFile/test1/paltest_readfile_test1
 file_io/WriteFile/test2/paltest_writefile_test2
 loader/LoadLibraryA/test1/paltest_loadlibrarya_test1

@@ -107,7 +107,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Add_BadValues_Throws()
         {
-            string x = SR.net_http_message_not_success_statuscode;
+            string x = SR.net_http_message_not_success_statuscode_reason;
             string input = "Digest algorithm=MD5-sess,nonce=\"+Upgraded+v109e309640b\",charset=utf-8,realm=\"Digest\", ";
 
             HttpRequestMessage request = new HttpRequestMessage();

@@ -745,7 +745,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 break;
 
             case GT_CNS_DBL:
-                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());

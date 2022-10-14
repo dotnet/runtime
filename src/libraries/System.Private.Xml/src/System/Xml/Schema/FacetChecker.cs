@@ -700,27 +700,26 @@ namespace System.Xml.Schema
                 StringBuilder bufBld = new StringBuilder();
                 bufBld.Append('^');
 
-                char[] source = pattern.ToCharArray();
                 int length = pattern.Length;
                 int copyPosition = 0;
                 for (int position = 0; position < length - 2; position++)
                 {
-                    if (source[position] == '\\')
+                    if (pattern[position] == '\\')
                     {
-                        if (source[position + 1] == '\\')
+                        if (pattern[position + 1] == '\\')
                         {
                             position++; // skip it
                         }
                         else
                         {
-                            char ch = source[position + 1];
+                            char ch = pattern[position + 1];
                             for (int i = 0; i < s_map.Length; i++)
                             {
                                 if (s_map[i].match == ch)
                                 {
                                     if (copyPosition < position)
                                     {
-                                        bufBld.Append(source, copyPosition, position - copyPosition);
+                                        bufBld.Append(pattern, copyPosition, position - copyPosition);
                                     }
                                     bufBld.Append(s_map[i].replacement);
                                     position++;
@@ -733,7 +732,7 @@ namespace System.Xml.Schema
                 }
                 if (copyPosition < length)
                 {
-                    bufBld.Append(source, copyPosition, length - copyPosition);
+                    bufBld.Append(pattern, copyPosition, length - copyPosition);
                 }
 
                 bufBld.Append('$');

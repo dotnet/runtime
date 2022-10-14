@@ -411,10 +411,12 @@ namespace System.Collections.Tests
             }
             else
             {
-                keysEnum.MoveNext();
+                if (keysEnum.MoveNext())
+                {
+                    _ = keysEnum.Current;
+                }
                 keysEnum.Reset();
             }
-            var cur = keysEnum.Current;
         }
 
         [Theory]
@@ -506,10 +508,12 @@ namespace System.Collections.Tests
             }
             else
             {
-                valuesEnum.MoveNext();
+                if (valuesEnum.MoveNext())
+                {
+                    _ = valuesEnum.Current;
+                }
                 valuesEnum.Reset();
             }
-            var cur = valuesEnum.Current;
         }
 
         [Theory]

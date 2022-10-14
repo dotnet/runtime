@@ -1758,18 +1758,16 @@ namespace System.Xml
                     break;
                 case SpecialAttr.XmlSpace:
                     // validate XmlSpace attribute
-                    value = XmlConvert.TrimString(value);
-                    if (value == "default")
+                    switch (value.AsSpan().Trim(XmlConvert.WhitespaceChars))
                     {
-                        _stack[_top].xmlSpace = XmlSpace.Default;
-                    }
-                    else if (value == "preserve")
-                    {
-                        _stack[_top].xmlSpace = XmlSpace.Preserve;
-                    }
-                    else
-                    {
-                        throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
+                        case "default":
+                            _stack[_top].xmlSpace = XmlSpace.Default;
+                            break;
+                        case "preserve":
+                            _stack[_top].xmlSpace = XmlSpace.Preserve;
+                            break;
+                        default:
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
                     }
                     break;
                 case SpecialAttr.XmlNs:

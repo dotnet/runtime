@@ -188,6 +188,13 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 		object = tagged_object_get_object (object);
 		if (!sgen_major_collector.is_object_live (object)) {
 			gboolean is_fin_ready = sgen_gc_is_object_ready_for_finalization (object);
+			if (is_fin_ready && sgen_client_object_finalize_eagerly (object)) {
+				/* just remove an eagerly finalized object */
+				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+
+				SGEN_LOG (5, "Eagerly finalized object: %p (%s) (was at %p)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), object);
+				continue;
+			}
 			GCObject *copy = object;
 			copy_func (&copy, queue);
 			if (is_fin_ready) {
