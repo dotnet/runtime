@@ -1,12 +1,13 @@
 <Project TreatAsLocalProperty="WasmNativeWorkload">
     <PropertyGroup>
-        <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
+        <_RuntimePackInWorkloadVersion6>6.0.11</_RuntimePackInWorkloadVersion6>
         <_BrowserWorkloadDisabled6>$(BrowserWorkloadDisabled)</_BrowserWorkloadDisabled6>
         <_BrowserWorkloadDisabled6 Condition="'$(_BrowserWorkloadDisabled6)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
                                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                             !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</_BrowserWorkloadDisabled6>
         <TargetsNet6 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</TargetsNet6>
+
         <_UsingBrowserRuntimeWorkload6 Condition="'$(TargetsNet6)' == 'true'">$(UsingBrowserRuntimeWorkload)</_UsingBrowserRuntimeWorkload6>
     </PropertyGroup>
 
@@ -31,6 +32,7 @@
         <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
         <WasmNativeWorkload>false</WasmNativeWorkload>
     </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(_BrowserWorkloadDisabled6)' != 'true'">
         <UsingBrowserRuntimeWorkload Condition="'$(_UsingBrowserRuntimeWorkload6)' != 'false' and '$(_UsingBrowserRuntimeWorkload6)' != ''">true</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
@@ -121,15 +123,5 @@
 
       <Warning Condition="@(NativeFileReference->Count()) > 0"
                Text="%40(NativeFileReference) is not empty, but the native references won't be linked in, because neither %24(WasmBuildNative), nor %24(RunAOTCompilation) are 'true'. NativeFileReference=@(NativeFileReference)" />
-    </Target>
-
-    <!-- not checking TargetsNet7 here since this essentially checks for net5.0 -->
-    <!-- FIXME: does this need to be updated? -->
-    <Target Name="_ErrorDisabledWorkload6" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
-      <Error Condition="'$(RunAOTCompilation)' == 'true'"
-             Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
-
-      <Error Condition="@(NativeFileReference->Count()) > 0"
-             Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
     </Target>
 </Project>

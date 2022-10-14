@@ -1,12 +1,14 @@
 <Project>
     <PropertyGroup>
-        <_RuntimePackInWorkloadVersion7>${PackageVersion}</_RuntimePackInWorkloadVersion7>
+        <_RuntimePackInWorkloadVersion7>7.0.0</_RuntimePackInWorkloadVersion7>
         <_BrowserWorkloadDisabled7>$(BrowserWorkloadDisabled)</_BrowserWorkloadDisabled7>
         <_BrowserWorkloadDisabled7 Condition="'$(_BrowserWorkloadDisabled7)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
                                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                             !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</_BrowserWorkloadDisabled7>
         <TargetsNet7 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
+        <TargetsLessThanNet6 Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">true</TargetsLessThanNet6>
+
         <_UsingBrowserRuntimeWorkload7 Condition="'$(TargetsNet7)' == 'true'">$(UsingBrowserRuntimeWorkload)</_UsingBrowserRuntimeWorkload7>
     </PropertyGroup>
 
@@ -32,11 +34,18 @@
         <WasmNativeWorkload7>false</WasmNativeWorkload7>
         <WasmNativeWorkload>false</WasmNativeWorkload>
     </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(_BrowserWorkloadDisabled7)' != 'true'">
         <UsingBrowserRuntimeWorkload Condition="'$(_UsingBrowserRuntimeWorkload7)' != 'false' and '$(_UsingBrowserRuntimeWorkload7)' != ''">true</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsLessThanNet6)' == 'true'">
+        <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        <WasmNativeWorkload7>false</WasmNativeWorkload7>
+        <WasmNativeWorkload>false</WasmNativeWorkload>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(_UsingBrowserRuntimeWorkload7)' == 'true'">
       <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
@@ -91,11 +100,11 @@
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
-        <Import Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
-        <Import Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
-        <Import Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
-        <Import Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm" />
-        <Import Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Condition="'$(_UsingBrowserRuntimeWorkload7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
+        <Import Condition="'$(_UsingBrowserRuntimeWorkload7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
+        <Import Condition="'$(_UsingBrowserRuntimeWorkload7)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.net7" />
+        <Import Condition="'$(_UsingBrowserRuntimeWorkload7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net7.browser-wasm" />
+        <Import Condition="'$(_UsingBrowserRuntimeWorkload7)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
 
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(RuntimeIdentifier)' == 'browser-wasm')">
@@ -115,7 +124,8 @@
     <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
          and emit a warning -->
     <Target Name="_CheckBrowserWorkloadNeededButNotAvailable7"
-            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmNativeWorkload7)' != 'true'"
+            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
+                        '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmNativeWorkload7)' != 'true'"
             BeforeTargets="Build">
 
       <Warning Condition="@(NativeFileReference->Count()) > 0"
@@ -123,7 +133,10 @@
     </Target>
 
     <!-- not checking TargetsNet7 here since this essentially checks for net5.0 -->
-    <Target Name="_ErrorDisabledWorkload7" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
+    <Target Name="_ErrorWorkloadsNotSupportedForLessThanNet6"
+            Condition="'$(TargetsLessThanNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'"
+            BeforeTargets="Build">
+
       <Error Condition="'$(RunAOTCompilation)' == 'true'"
              Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
 
@@ -132,8 +145,11 @@
     </Target>
 
     <Target Name="_ErrorDualWasmThreadProps7"
-            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnableThreading)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
+            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
+                        '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnableThreading)' == 'true' and
+                        '$(WasmEnablePerfTrace)' == 'true'"
             BeforeTargets="Build">
+
         <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreading or WasmEnablePerfTrace to true, but not both." />
     </Target>
 </Project>
