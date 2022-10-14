@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_TieredCompilation=0
+set COMPlus_JITMinOpts=0
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_TieredCompilation=0
+export COMPlus_JITMinOpts=0
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>
