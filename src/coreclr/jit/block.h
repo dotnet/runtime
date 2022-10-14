@@ -1198,10 +1198,10 @@ struct BasicBlock : private LIR::Range
 
     bool bbFallsThrough() const;
 
-    // Our slop fraction is 1/128 of the block weight rounded off
+    // Our slop fraction is 1/100 of the block weight.
     static weight_t GetSlopFraction(weight_t weightBlk)
     {
-        return ((weightBlk + 64) / 128);
+        return weightBlk / 100.0;
     }
 
     // Given an the edge b1 -> b2, calculate the slop fraction by

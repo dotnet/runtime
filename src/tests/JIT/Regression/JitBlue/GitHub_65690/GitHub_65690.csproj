@@ -7,21 +7,11 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-    <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_JitDoValueNumber=0
-set COMPlus_JitStressRegs=3
-set COMPlus_TieredCompilation=0
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_JitDoValueNumber=0
-export COMPlus_JitStressRegs=3
-export COMPlus_TieredCompilation=0
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_JitDoValueNumber" Value="0" />
+    <CLRTestEnvironmentVariable Include="COMPlus_JitStressRegs" Value="3" />
+    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="0" />
   </ItemGroup>
 </Project>

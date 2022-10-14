@@ -254,7 +254,7 @@ namespace System.Collections.Generic
                 {
                     if (_items.Length - _size < count)
                     {
-                        Grow(_size + count);
+                        Grow(checked(_size + count));
                     }
 
                     c.CopyTo(_items, _size);
@@ -787,7 +787,7 @@ namespace System.Collections.Generic
                 {
                     if (_items.Length - _size < count)
                     {
-                        Grow(_size + count);
+                        Grow(checked(_size + count));
                     }
                     if (index < _size)
                     {

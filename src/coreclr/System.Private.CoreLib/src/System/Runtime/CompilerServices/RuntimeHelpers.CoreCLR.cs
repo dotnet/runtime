@@ -14,8 +14,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        private static int s_pointerHashSeed;
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
@@ -400,31 +398,6 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
-
-        internal static int GetHashCodeOfPtr(IntPtr ptr)
-        {
-            int hashCode = (int)ptr;
-
-            if (hashCode == 0)
-            {
-                return 0;
-            }
-
-            int seed = s_pointerHashSeed;
-
-            // Initialize s_pointerHashSeed lazily
-            if (seed == 0)
-            {
-                // We use the first non-0 pointer as the seed, all hashcodes will be based off that.
-                // This is to make sure that we only reveal relative memory addresses and never absolute ones.
-                seed = hashCode;
-                Interlocked.CompareExchange(ref s_pointerHashSeed, seed, 0);
-                seed = s_pointerHashSeed;
-            }
-
-            Debug.Assert(s_pointerHashSeed != 0);
-            return hashCode - seed;
-        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

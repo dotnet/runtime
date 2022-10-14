@@ -76,7 +76,9 @@ typedef enum {
 #define MINT_IS_LDFLD(op) ((op) >= MINT_LDFLD_I1 && (op) <= MINT_LDFLD_O)
 #define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
 #define MINT_IS_LDIND_INT(op) ((op) >= MINT_LDIND_I1 && (op) <= MINT_LDIND_I8)
+#define MINT_IS_LDIND(op) ((op) >= MINT_LDIND_I1 && (op) <= MINT_LDIND_R8)
 #define MINT_IS_STIND_INT(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_I8)
+#define MINT_IS_STIND(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_REF)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

@@ -16,9 +16,9 @@ namespace ILCompiler
     internal sealed class ILCompilerRootCommand : RootCommand
     {
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
-            new("input-file-path", result => Helpers.BuildPathDictionay(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
+            new("input-file-path", result => Helpers.BuildPathDictionary(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> ReferenceFiles { get; } =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, "Reference file(s) for compilation");
+            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, "Reference file(s) for compilation");
         public Option<string> OutputFilePath { get; } =
             new(new[] { "--out", "-o" }, "Output file path");
         public Option<bool> Optimize { get; } =
@@ -334,9 +334,9 @@ namespace ILCompiler
                             }
                             Console.Write(instructionSet.Name);
                         }
-
-                        Console.WriteLine();
                     }
+
+                    Console.WriteLine();
                 }
 
                 Console.WriteLine();

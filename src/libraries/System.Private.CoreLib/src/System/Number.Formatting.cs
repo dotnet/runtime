@@ -301,6 +301,31 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
+        // Optimizations using "TwoDigits" inspired by:
+        // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
+        private const string TwoDigitsChars =
+            "00010203040506070809" +
+            "10111213141516171819" +
+            "20212223242526272829" +
+            "30313233343536373839" +
+            "40414243444546474849" +
+            "50515253545556575859" +
+            "60616263646566676869" +
+            "70717273747576777879" +
+            "80818283848586878889" +
+            "90919293949596979899";
+        private static ReadOnlySpan<byte> TwoDigitsBytes =>
+            "00010203040506070809"u8 +
+            "10111213141516171819"u8 +
+            "20212223242526272829"u8 +
+            "30313233343536373839"u8 +
+            "40414243444546474849"u8 +
+            "50515253545556575859"u8 +
+            "60616263646566676869"u8 +
+            "70717273747576777879"u8 +
+            "80818283848586878889"u8 +
+            "90919293949596979899"u8;
+
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
@@ -833,7 +858,7 @@ namespace System
             if (format.Length == 0)
             {
                 return value >= 0 ?
-                    TryUInt32ToDecStr((uint)value, digits: -1, destination, out charsWritten) :
+                    TryUInt32ToDecStr((uint)value, destination, out charsWritten) :
                     TryNegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
 
@@ -931,7 +956,7 @@ namespace System
             // Fast path for default format
             if (format.Length == 0)
             {
-                return TryUInt32ToDecStr(value, digits: -1, destination, out charsWritten);
+                return TryUInt32ToDecStr(value, destination, out charsWritten);
             }
 
             return TryFormatUInt32Slow(value, format, provider, destination, out charsWritten);
@@ -979,7 +1004,7 @@ namespace System
             if (string.IsNullOrEmpty(format))
             {
                 return value >= 0 ?
-                    UInt64ToDecStr((ulong)value, digits: -1) :
+                    UInt64ToDecStr((ulong)value) :
                     NegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
 
@@ -1031,7 +1056,7 @@ namespace System
             if (format.Length == 0)
             {
                 return value >= 0 ?
-                    TryUInt64ToDecStr((ulong)value, digits: -1, destination, out charsWritten) :
+                    TryUInt64ToDecStr((ulong)value, destination, out charsWritten) :
                     TryNegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
 
@@ -1081,7 +1106,7 @@ namespace System
             // Fast path for default format
             if (string.IsNullOrEmpty(format))
             {
-                return UInt64ToDecStr(value, digits: -1);
+                return UInt64ToDecStr(value);
             }
 
             return FormatUInt64Slow(value, format, provider);
@@ -1129,7 +1154,7 @@ namespace System
             // Fast path for default format
             if (format.Length == 0)
             {
-                return TryUInt64ToDecStr(value, digits: -1, destination, out charsWritten);
+                return TryUInt64ToDecStr(value, destination, out charsWritten);
             }
 
             return TryFormatUInt64Slow(value, format, provider, destination, out charsWritten);
@@ -1540,67 +1565,133 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WriteTwoDigits(char* ptr, uint value)
+        {
+            Debug.Assert(value <= 99);
+            Unsafe.WriteUnaligned(ptr,
+                Unsafe.ReadUnaligned<uint>(
+                    ref Unsafe.As<char, byte>(
+                        ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (int)value * 2))));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WriteTwoDigits(byte* ptr, uint value)
+        {
+            Debug.Assert(value <= 99);
+            Unsafe.WriteUnaligned(ptr,
+                Unsafe.ReadUnaligned<ushort>(
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (int)value * 2)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value)
         {
-            do
+            if (value >= 10)
             {
-                uint remainder;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (byte)(remainder + '0');
-            }
-            while (value != 0);
+                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+                while (value >= 100)
+                {
+                    bufferEnd -= 2;
+                    (value, uint remainder) = Math.DivRem(value, 100);
+                    WriteTwoDigits(bufferEnd, remainder);
+                }
 
+                // If there are two digits remaining, store them.
+                if (value >= 10)
+                {
+                    bufferEnd -= 2;
+                    WriteTwoDigits(bufferEnd, value);
+                    return bufferEnd;
+                }
+            }
+
+            // Otherwise, store the single digit remaining.
+            *(--bufferEnd) = (byte)(value + '0');
             return bufferEnd;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value, int digits)
         {
-            while (--digits >= 0 || value != 0)
+            uint remainder;
+            while (value >= 100)
             {
-                uint remainder;
+                bufferEnd -= 2;
+                digits -= 2;
+                (value, remainder) = Math.DivRem(value, 100);
+                WriteTwoDigits(bufferEnd, remainder);
+            }
+
+            while (value != 0 || digits > 0)
+            {
+                digits--;
                 (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (byte)(remainder + '0');
             }
+
             return bufferEnd;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value)
         {
-            do
+            if (value >= 10)
             {
-                uint remainder;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (char)(remainder + '0');
-            }
-            while (value != 0);
+                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+                while (value >= 100)
+                {
+                    bufferEnd -= 2;
+                    (value, uint remainder) = Math.DivRem(value, 100);
+                    WriteTwoDigits(bufferEnd, remainder);
+                }
 
+                // If there are two digits remaining, store them.
+                if (value >= 10)
+                {
+                    bufferEnd -= 2;
+                    WriteTwoDigits(bufferEnd, value);
+                    return bufferEnd;
+                }
+            }
+
+            // Otherwise, store the single digit remaining.
+            *(--bufferEnd) = (char)(value + '0');
             return bufferEnd;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value, int digits)
         {
-            while (--digits >= 0 || value != 0)
+            // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+            uint remainder;
+            while (value >= 100)
             {
-                uint remainder;
+                bufferEnd -= 2;
+                digits -= 2;
+                (value, remainder) = Math.DivRem(value, 100);
+                WriteTwoDigits(bufferEnd, remainder);
+            }
+
+            // Continue writing single digits until we've exhausted both the value and the requested number of digits.
+            while (value != 0 || digits > 0)
+            {
+                digits--;
                 (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (char)(remainder + '0');
             }
+
             return bufferEnd;
         }
 
         internal static unsafe string UInt32ToDecStr(uint value)
         {
-            // Intrinsified in mono interpreter
-            int bufferLength = FormattingHelpers.CountDigits(value);
-
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (bufferLength == 1)
+            if (value < 10)
             {
                 return s_singleDigitStringCache[value];
             }
+
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
@@ -1628,30 +1719,44 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt32ToDecStr(uint value, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt32ToDecStr(uint value, Span<char> destination, out int charsWritten)
         {
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
-            if (bufferLength > destination.Length)
+            int bufferLength = FormattingHelpers.CountDigits(value);
+            if (bufferLength <= destination.Length)
             {
-                charsWritten = 0;
-                return false;
+                charsWritten = bufferLength;
+                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                {
+                    char* p = UInt32ToDecChars(buffer + bufferLength, value);
+                    Debug.Assert(p == buffer);
+                }
+                return true;
             }
 
-            charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            charsWritten = 0;
+            return false;
+        }
+
+        private static unsafe bool TryUInt32ToDecStr(uint value, int digits, Span<char> destination, out int charsWritten)
+        {
+            int countedDigits = FormattingHelpers.CountDigits(value);
+            int bufferLength = Math.Max(digits, countedDigits);
+            if (bufferLength <= destination.Length)
             {
-                char* p = buffer + bufferLength;
-                if (digits <= 1)
+                charsWritten = bufferLength;
+                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    p = UInt32ToDecChars(p, value);
+                    char* p = buffer + bufferLength;
+                    p = digits > countedDigits ?
+                        UInt32ToDecChars(p, value, digits) :
+                        UInt32ToDecChars(p, value);
+                    Debug.Assert(p == buffer);
                 }
-                else
-                {
-                    p = UInt32ToDecChars(p, value, digits);
-                }
-                Debug.Assert(p == buffer);
+                return true;
             }
-            return true;
+
+            charsWritten = 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1851,14 +1956,27 @@ namespace System
             }
             return UInt32ToDecChars(bufferEnd, (uint)value);
 #else
-            do
+            if (value >= 10)
             {
-                ulong remainder;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (byte)(remainder + '0');
-            }
-            while (value != 0);
+                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+                while (value >= 100)
+                {
+                    bufferEnd -= 2;
+                    (value, ulong remainder) = Math.DivRem(value, 100);
+                    WriteTwoDigits(bufferEnd, (uint)remainder);
+                }
 
+                // If there are two digits remaining, store them.
+                if (value >= 10)
+                {
+                    bufferEnd -= 2;
+                    WriteTwoDigits(bufferEnd, (uint)value);
+                    return bufferEnd;
+                }
+            }
+
+            // Otherwise, store the single digit remaining.
+            *(--bufferEnd) = (byte)(value + '0');
             return bufferEnd;
 #endif
         }
@@ -1876,12 +1994,22 @@ namespace System
             }
             return UInt32ToDecChars(bufferEnd, (uint)value, digits);
 #else
-            while (--digits >= 0 || value != 0)
+            ulong remainder;
+            while (value >= 100)
             {
-                ulong remainder;
+                bufferEnd -= 2;
+                digits -= 2;
+                (value, remainder) = Math.DivRem(value, 100);
+                WriteTwoDigits(bufferEnd, (uint)remainder);
+            }
+
+            while (value != 0 || digits > 0)
+            {
+                digits--;
                 (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (byte)(remainder + '0');
             }
+
             return bufferEnd;
 #endif
         }
@@ -1898,14 +2026,27 @@ namespace System
             }
             return UInt32ToDecChars(bufferEnd, (uint)value);
 #else
-            do
+            if (value >= 10)
             {
-                ulong remainder;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (char)(remainder + '0');
-            }
-            while (value != 0);
+                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
+                while (value >= 100)
+                {
+                    bufferEnd -= 2;
+                    (value, ulong remainder) = Math.DivRem(value, 100);
+                    WriteTwoDigits(bufferEnd, (uint)remainder);
+                }
 
+                // If there are two digits remaining, store them.
+                if (value >= 10)
+                {
+                    bufferEnd -= 2;
+                    WriteTwoDigits(bufferEnd, (uint)value);
+                    return bufferEnd;
+                }
+            }
+
+            // Otherwise, store the single digit remaining.
+            *(--bufferEnd) = (char)(value + '0');
             return bufferEnd;
 #endif
         }
@@ -1923,26 +2064,35 @@ namespace System
             }
             return UInt32ToDecChars(bufferEnd, (uint)value, digits);
 #else
-            while (--digits >= 0 || value != 0)
+            ulong remainder;
+            while (value >= 100)
             {
-                ulong remainder;
+                bufferEnd -= 2;
+                digits -= 2;
+                (value, remainder) = Math.DivRem(value, 100);
+                WriteTwoDigits(bufferEnd, (uint)remainder);
+            }
+
+            while (value != 0 || digits > 0)
+            {
+                digits--;
                 (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (char)(remainder + '0');
             }
+
             return bufferEnd;
 #endif
         }
 
         internal static unsafe string UInt64ToDecStr(ulong value)
         {
-            // Intrinsified in mono interpreter
-            int bufferLength = FormattingHelpers.CountDigits(value);
-
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (bufferLength == 1)
+            if (value < 10)
             {
                 return s_singleDigitStringCache[value];
             }
+
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
@@ -1970,30 +2120,45 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt64ToDecStr(ulong value, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt64ToDecStr(ulong value, Span<char> destination, out int charsWritten)
         {
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
-            if (bufferLength > destination.Length)
+            int bufferLength = FormattingHelpers.CountDigits(value);
+            if (bufferLength <= destination.Length)
             {
-                charsWritten = 0;
-                return false;
+                charsWritten = bufferLength;
+                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                {
+                    char* p = buffer + bufferLength;
+                    p = UInt64ToDecChars(p, value);
+                    Debug.Assert(p == buffer);
+                }
+                return true;
             }
 
-            charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            charsWritten = 0;
+            return false;
+        }
+
+        private static unsafe bool TryUInt64ToDecStr(ulong value, int digits, Span<char> destination, out int charsWritten)
+        {
+            int countedDigits = FormattingHelpers.CountDigits(value);
+            int bufferLength = Math.Max(digits, countedDigits);
+            if (bufferLength <= destination.Length)
             {
-                char* p = buffer + bufferLength;
-                if (digits <= 1)
+                charsWritten = bufferLength;
+                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    p = UInt64ToDecChars(p, value);
+                    char* p = buffer + bufferLength;
+                    p = digits > countedDigits ?
+                        UInt64ToDecChars(p, value, digits) :
+                        UInt64ToDecChars(p, value);
+                    Debug.Assert(p == buffer);
                 }
-                else
-                {
-                    p = UInt64ToDecChars(p, value, digits);
-                }
-                Debug.Assert(p == buffer);
+                return true;
             }
-            return true;
+
+            charsWritten = 0;
+            return false;
         }
 
         private static unsafe void Int128ToNumber(Int128 value, ref NumberBuffer number)
@@ -2176,16 +2341,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe byte* UInt128ToDecChars(byte* bufferEnd, UInt128 value)
-        {
-            while (value.Upper != 0)
-            {
-                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
-            }
-            return UInt64ToDecChars(bufferEnd, value.Lower);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe byte* UInt128ToDecChars(byte* bufferEnd, UInt128 value, int digits)
         {
             while (value.Upper != 0)
@@ -2256,28 +2411,24 @@ namespace System
 
         private static unsafe bool TryUInt128ToDecStr(UInt128 value, int digits, Span<char> destination, out int charsWritten)
         {
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
-            if (bufferLength > destination.Length)
+            int countedDigits = FormattingHelpers.CountDigits(value);
+            int bufferLength = Math.Max(digits, countedDigits);
+            if (bufferLength <= destination.Length)
             {
-                charsWritten = 0;
-                return false;
+                charsWritten = bufferLength;
+                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                {
+                    char* p = buffer + bufferLength;
+                    p = digits > countedDigits ?
+                        UInt128ToDecChars(p, value, digits) :
+                        UInt128ToDecChars(p, value);
+                    Debug.Assert(p == buffer);
+                }
+                return true;
             }
 
-            charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
-            {
-                char* p = buffer + bufferLength;
-                if (digits <= 1)
-                {
-                    p = UInt128ToDecChars(p, value);
-                }
-                else
-                {
-                    p = UInt128ToDecChars(p, value, digits);
-                }
-                Debug.Assert(p == buffer);
-            }
-            return true;
+            charsWritten = 0;
+            return false;
         }
 
         internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)

@@ -194,7 +194,6 @@ struct Agnostic_GetFieldAddress
 {
     DWORDLONG ppIndirection;
     DWORDLONG fieldAddress;
-    DWORD     fieldValue;
 };
 
 struct Agnostic_GetStaticFieldCurrentClass
@@ -767,6 +766,13 @@ struct Agnostic_RecordCallSite
 {
     Agnostic_CORINFO_SIG_INFO callSig;
     DWORDLONG                 methodHandle;
+};
+
+struct Agnostic_PrintObjectDescriptionResult
+{
+    DWORDLONG bytesWritten;
+    DWORDLONG requiredBufferSize;
+    DWORD buffer;
 };
 
 #pragma pack(pop)
