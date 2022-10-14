@@ -4157,10 +4157,10 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerAndOpToAndNot: Lowers a tree AND(X, NOT(Y)) to HWIntrinsic::AndNot
+// Lowering::TryLowerMulOpToLshSub: Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS), X)
 //
 // Arguments:
-//    andNode - GT_AND node of integral type
+//    mulOp - GT_MUL node of integral type
 //
 // Return Value:
 //    Returns the replacement node if one is created else nullptr indicating no replacement
@@ -4202,10 +4202,15 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
     mulOp->gtOp2 = comp->gtClone(op1);
 
-    BlockRange().InsertBefore(mulOp, mulOp->gtOp2);
+    BlockRange().Remove(op1);
+    BlockRange().Remove(cns);
+    BlockRange().InsertBefore(mulOp, mulOp->gtGetOp2());
     BlockRange().InsertBefore(mulOp, cns);
     BlockRange().InsertBefore(mulOp, op1);
-    BlockRange().InsertBefore(mulOp, mulOp->gtOp1);
+    BlockRange().InsertBefore(mulOp, mulOp->gtGetOp1());
+
+    ContainCheckBinary(mulOp);
+    ContainCheckShiftRotate(mulOp->gtGetOp1()->AsOp());
 
     return mulOp;
 }
