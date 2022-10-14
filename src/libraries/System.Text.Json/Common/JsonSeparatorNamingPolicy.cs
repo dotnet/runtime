@@ -29,7 +29,7 @@ namespace System.Text.Json
 
             void ExpandBuffer(ref Span<char> result)
             {
-                var bufferNew = ArrayPool<char>.Shared.Rent(bufferLength *= 2);
+                char[] bufferNew = ArrayPool<char>.Shared.Rent(result.Length * 2);
 
                 result.CopyTo(bufferNew);
 
