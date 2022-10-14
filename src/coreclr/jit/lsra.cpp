@@ -700,13 +700,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
     // This is so that any blocks that are added during the first traversal
     // are accounted for (and we don't have BasicBlockEpoch issues).
-    blockSequencingDone   = false;
-    blockSequence         = nullptr;
-    blockSequenceWorkList = nullptr;
-    curBBSeqNum           = 0;
-    bbSeqCount            = 0;
-    callRefPositionCount  = 0;
-    recentRefPosition     = nullptr;
+    blockSequencingDone           = false;
+    blockSequence                 = nullptr;
+    blockSequenceWorkList         = nullptr;
+    curBBSeqNum                   = 0;
+    bbSeqCount                    = 0;
+    callRefPositionCount          = 0;
+    recentRefPosition             = nullptr;
+    recentCallRefPositionLocation = 0;
 
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;

@@ -1586,6 +1586,7 @@ private:
     RefPosition* recentRefPosition;
 
     // Ordered list of locations where CALL happens
+    LsraLocation               recentCallRefPositionLocation;
     jitstd::list<LsraLocation> callRefPositionLocations;
     // Equivalent list of kill masks for those calls
     jitstd::list<regMaskTP> callKillMasks;

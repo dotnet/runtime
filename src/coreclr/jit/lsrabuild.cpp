@@ -357,14 +357,13 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 }
 
 //------------------------------------------------------------------------
-// applyCalleeSaveHeuristics: Set register preferences for an interval based on the given RefPosition
+// applyCalleeSaveHeuristics: Check if an interval should be set to prefer callee-save.
+//   This is done by checking if this interval interferes with any call (`recentCallRefPositionLocation`)
+//   and if yes, sets `preferCalleeSave = true`.
 //
 // Arguments:
 //    rp - The RefPosition of interest
 //
-// Notes:
-//    This is slightly more general than its name applies, and updates preferences not just
-//    for callee-save registers.
 //
 void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 {
@@ -376,15 +375,70 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
     }
 #endif // TARGET_AMD64
 
-    Interval* theInterval = rp->getInterval();
+    Interval* theInterval          = rp->getInterval();
+    regMaskTP calleeSavePreference = rp->registerAssignment;
+
+    if (!theInterval->preferCalleeSave && !theInterval->isLocalVar && RefTypeIsUse(rp->refType))
+    {
+        RefPosition* firstPosition = theInterval->firstRefPosition;
+        if ((firstPosition != nullptr) && (firstPosition->nodeLocation > 0))
+        {
+            if (firstPosition->nodeLocation < recentCallRefPositionLocation)
+            {
+                JITDUMP("Interval %2u: Prefer callee-save because of presence of kills at location %d. First "
+                        "RefPosition is at #%d @%d and current RefPosition is #%d @%d\n",
+                        theInterval->intervalIndex, recentCallRefPositionLocation, firstPosition->rpNum,
+                        firstPosition->nodeLocation, rp->rpNum, rp->nodeLocation);
+
+                theInterval->preferCalleeSave = true;
+                if (!theInterval->isWriteThru)
+                {
+                    regMaskTP killMask = RBM_CALLEE_TRASH;
+                    // if there is no FP used, we can ignore the FP kills
+                    if (!compiler->compFloatingPointUsed)
+                    {
+                        killMask &= ~RBM_FLT_CALLEE_TRASH;
+                    }
+
+                    //  We are more conservative about allocating callee-saves registers to write-thru vars,
+                    //  since a call only requires reloading after (not spilling before). So we record (above)
+                    //  the fact that we'd prefer a callee-save register, but we don't update the preferences at
+                    //  this point. See the "heuristics for writeThru intervals" in 'buildIntervals()'.
+                    regMaskTP newPreferences = allRegs(theInterval->registerType) & (~killMask);
+#ifdef DEBUG
+                    if (VERBOSE)
+                    {
+                        JITDUMP("Interval %2u: Current preference= ", theInterval->intervalIndex);
+                        dumpRegMask(theInterval->registerPreferences);
+                        JITDUMP(", New preference= ");
+                        dumpRegMask(newPreferences);
+                    }
+#endif
+                    if (newPreferences != RBM_NONE)
+                    {
+                        calleeSavePreference = newPreferences;
+                    }
+                }
+            }
+        }
+    }
 
 #ifdef DEBUG
     if (!doReverseCallerCallee())
 #endif // DEBUG
     {
         // Set preferences so that this register set will be preferred for earlier refs
-        theInterval->mergeRegisterPreferences(rp->registerAssignment);
+        theInterval->mergeRegisterPreferences(calleeSavePreference);
     }
+
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        JITDUMP(", Merged preference= ");
+        dumpRegMask(theInterval->registerPreferences);
+        printf("\n");
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1175,6 +1229,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 assert(recentRefPosition);
                 if (recentRefPosition->refType != RefTypeBB)
                 {
+                    JITDUMP("Recording killMask at %d\n", recentRefPosition->nodeLocation);
+                    recentCallRefPositionLocation = recentRefPosition->nodeLocation;
                     callRefPositionLocations.push_back(recentRefPosition->nodeLocation);
                     callKillMasks.push_back(killMask);
                     callRefPositionCount++;
@@ -2626,6 +2682,7 @@ void LinearScan::buildIntervals()
         }
 
         // Adjust preferCalleeSave
+        callRefPositionCount = 0;
         if (callRefPositionCount > 0)
         {
             LsraLocation firstCallLocation = callRefPositionLocations.front();
@@ -2638,6 +2695,11 @@ void LinearScan::buildIntervals()
                 if (interval.isLocalVar)
                 {
                     // We already handle them in BuildKillPositionsForNode.
+                    continue;
+                }
+
+                if ((interval.firstRefPosition == nullptr) || (interval.lastRefPosition == nullptr))
+                {
                     continue;
                 }
 
@@ -2675,12 +2737,15 @@ void LinearScan::buildIntervals()
                                     printf("Interval %2u: Update preferences (callee-save) from ",
                                            interval.intervalIndex);
                                     dumpRegMask(interval.registerPreferences);
-                                    printf(" to ");
+                                    JITDUMP(", New preference= ");
                                     dumpRegMask(newPreferences);
-                                    printf("\n");
                                 }
 #endif
                                 interval.updateRegisterPreferences(newPreferences);
+
+                                printf(" to ");
+                                dumpRegMask(interval.registerPreferences);
+                                printf("\n");
                             }
                         }
                         break;
