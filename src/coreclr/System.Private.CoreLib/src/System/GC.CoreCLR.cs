@@ -305,7 +305,7 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.m_handle);
+            int result = GetGenerationWR(wo.Handle);
             KeepAlive(wo);
             return result;
         }

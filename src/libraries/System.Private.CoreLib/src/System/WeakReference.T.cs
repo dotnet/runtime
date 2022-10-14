@@ -21,13 +21,11 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-#if !CORECLR
         // the handle field is effectively readonly until the object is finalized.
         private IntPtr _handleAndKind;
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
         private const nint TracksResurrectionBit = 1;
-#endif
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -78,7 +76,6 @@ namespace System
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }
 
-#if !CORECLR
         // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         // or just until they're finalized (false).
         private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
@@ -140,6 +137,5 @@ namespace System
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
 
-#endif
     }
 }
