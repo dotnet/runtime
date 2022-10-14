@@ -236,7 +236,7 @@ inline unsigned genLog2(unsigned __int64 value)
 #if defined(HOST_UNIX) && defined(HOST_64BIT)
 inline unsigned genLog2(size_t value)
 {
-    return genLog2((unsigned __int64) value);
+    return genLog2((unsigned __int64)value);
 }
 #endif // HOST_UNIX && HOST_BIT64
 
@@ -1543,8 +1543,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
     static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
                           std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, ssize_t>::value ||
-                          std::is_same<T, double>::value));
+                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
 
     static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
 
