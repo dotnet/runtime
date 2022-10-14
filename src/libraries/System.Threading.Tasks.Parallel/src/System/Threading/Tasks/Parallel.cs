@@ -1003,7 +1003,7 @@ namespace System.Threading.Tasks
 
                     if (bodyWithState != null || bodyWithLocal != null)
                     {
-                        state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
+                        state = sharedPStateFlags.CreateLoopState();
                     }
 
                     // If a thread-local selector was supplied, invoke it. Otherwise, use the default.
@@ -2599,11 +2599,11 @@ namespace System.Threading.Tasks
 
                     if (bodyWithState != null || bodyWithStateAndIndex != null)
                     {
-                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
+                        state = sharedPStateFlags.CreateLoopState();
                     }
                     else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
                     {
-                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
+                        state = sharedPStateFlags.CreateLoopState();
                         // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
                         if (localInit != null)
                         {
