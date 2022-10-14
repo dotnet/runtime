@@ -180,7 +180,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 var store = await LoadStore(sessionId, true, token);
                                 foreach (var source in store.AllSources())
                                 {
-                                    await OnSourceFileAdded(sessionId, source, context, token);
+                                    await OnSourceFileAdded(sessionId, source, context, token, false);
                                 }
                             }
                         }
@@ -240,10 +240,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Target.attachedToTarget":
                     {
-                        if (args["targetInfo"]["type"]?.ToString() == "page")
+                        var targetType = args["targetInfo"]["type"]?.ToString();
+                        if (targetType == "page")
                             await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
-                        else if (args["targetInfo"]["type"]?.ToString() == "worker")
-                            CreateAsyncExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()));
+                        else if (targetType == "worker")
+                            CreateWorkerExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()));
                         break;
                     }
 
@@ -257,13 +258,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        protected void CreateAsyncExecutionContext(SessionId sessionId, SessionId originSessionId)
+        protected void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId)
         {
             if (!contexts.TryGetValue(originSessionId, out ExecutionContext context))
+            {
+                logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
                 return;
-            if (contexts.ContainsKey(sessionId))
+            }
+            if (contexts.ContainsKey(workerSessionId))
+            {
+                logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
                 return;
-            contexts[sessionId] = context.CreateChildAsyncExecutionContext(sessionId);
+            }
+            contexts[workerSessionId] = context.CreateChildAsyncExecutionContext(workerSessionId);
         }
 
         protected virtual async Task SendResume(SessionId id, CancellationToken token)
@@ -1542,7 +1549,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, context, useDebuggerProtocol, token))
                     {
-                        await OnSourceFileAdded(sessionId, source, context, token, false);
+                        await OnSourceFileAdded(sessionId, source, context, token);
                     }
                 }
             }
