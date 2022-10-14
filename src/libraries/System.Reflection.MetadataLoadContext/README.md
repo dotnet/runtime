@@ -3,12 +3,8 @@ This provides a high-level API for inspecting types given raw assembly contents 
 
 This library takes a dependency on `System.Reflection.Metadata` for reading the assembly.
 
-## Status: [Inactive](../../libraries/README.md#development-statuses)
+## Contribution Bar: [we only take fixes to maintain or improve quality](../../libraries/README.md#contribution-bar)
 The APIs and functionality are mature, but do get extended occasionally.
-
-## Source
-
-* [../System.Reflection.MetadataLoadContext](../System.Reflection.MetadataLoadContext)
 
 ## Deployment
 [System.Reflection.MetadataLoadContext](https://www.nuget.org/packages/System.Reflection.MetadataLoadContext) NuGet package.
