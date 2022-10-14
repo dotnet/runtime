@@ -208,6 +208,7 @@ namespace Wasm.Build.Tests
                                         string? appArgs=null, string? extraXHarnessMonoArgs = null, bool useWasmConsoleOutput = false)
         {
             _testOutput.WriteLine($"============== {testCommand} =============");
+            Console.WriteLine($"============== {testCommand} =============");
             Directory.CreateDirectory(testLogPath);
 
             StringBuilder args = new();
@@ -246,7 +247,9 @@ namespace Wasm.Build.Tests
             args.Append($" {appArgs ?? string.Empty}");
 
             _testOutput.WriteLine(string.Empty);
+            Console.WriteLine(string.Empty);
             _testOutput.WriteLine($"---------- Running with {testCommand} ---------");
+            Console.WriteLine($"---------- Running with {testCommand} ---------");
             var (exitCode, output) = RunProcess(s_buildEnv.DotNet, _testOutput,
                                         args: args.ToString(),
                                         workingDir: bundleDir,
@@ -274,6 +277,7 @@ namespace Wasm.Build.Tests
             if (exitCode != xharnessExitCode)
             {
                 _testOutput.WriteLine($"Exit code: {exitCode}");
+                Console.WriteLine($"Exit code: {exitCode}");
                 if (exitCode != expectedAppExitCode)
                     throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {testCommand} {args}");
             }
@@ -340,6 +344,7 @@ namespace Wasm.Build.Tests
             if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
                 _testOutput.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
+                Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
                 if (!product.Result)
                     throw new XunitException($"Found existing build at {product.ProjectDir}, but it had failed. Check build log at {product.LogFile}");
@@ -357,7 +362,10 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"), Path.Combine(_projectDir, "test-main.js"));
+                if (EnvironmentVariables.TestingForNet6 is not null)
+                    File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "runtime-test.js"), Path.Combine(_projectDir, "test-main.js"));
+                else
+                    File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"), Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
             {
@@ -375,13 +383,16 @@ namespace Wasm.Build.Tests
             string logFileSuffix = options.Label == null ? string.Empty : options.Label.Replace(' ', '_');
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}{logFileSuffix}.binlog");
             _testOutput.WriteLine($"-------- Building ---------");
+            Console.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
+            Console.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
             sb.Append($" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
             _testOutput.WriteLine($"Building {buildArgs.ProjectName} in {_projectDir}");
+            Console.WriteLine($"Building {buildArgs.ProjectName} in {_projectDir}");
 
             (int exitCode, string buildOutput) result;
             try
@@ -536,6 +547,7 @@ namespace Wasm.Build.Tests
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
+            Console.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
 
             string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{label}.binlog");
             string[] combinedArgs = new[]
@@ -802,7 +814,9 @@ namespace Wasm.Build.Tests
                                          int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
+            Console.WriteLine($"Running {path} {args}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
+            Console.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
             object syncObj = new();
 
@@ -825,12 +839,16 @@ namespace Wasm.Build.Tests
             if (envVars != null)
             {
                 if (envVars.Count > 0)
+                {
                     _testOutput.WriteLine("Setting environment variables for execution:");
+                    Console.WriteLine("Setting environment variables for execution:");
+                }
 
                 foreach (KeyValuePair<string, string> envVar in envVars)
                 {
                     processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
                     _testOutput.WriteLine($"\t{envVar.Key} = {envVar.Value}");
+                    Console.WriteLine($"\t{envVar.Key} = {envVar.Value}");
                 }
             }
 
@@ -889,6 +907,7 @@ namespace Wasm.Build.Tests
             catch (Exception ex)
             {
                 _testOutput.WriteLine($"-- exception -- {ex}");
+                Console.WriteLine($"-- exception -- {ex}");
                 throw;
             }
 
@@ -899,6 +918,7 @@ namespace Wasm.Build.Tests
                     if (logToXUnit && message != null)
                     {
                         _testOutput.WriteLine($"{label} {message}");
+                        Console.WriteLine($"{label} {message}");
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }

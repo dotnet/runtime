@@ -80,6 +80,7 @@ namespace Wasm.Build.Tests
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
             _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            Console.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
@@ -88,6 +89,7 @@ namespace Wasm.Build.Tests
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
             _testOutput.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            Console.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
         }
 
@@ -114,6 +116,7 @@ namespace Wasm.Build.Tests
 
                 output.Add($"[{_label}] {e.Data}");
                 _testOutput.WriteLine($"[{_label}] {e.Data}");
+                Console.WriteLine($"[{_label}] {e.Data}");
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -124,6 +127,7 @@ namespace Wasm.Build.Tests
 
                 output.Add($"[{_label}] {e.Data}");
                 _testOutput.WriteLine($"[{_label}] {e.Data}");
+                Console.WriteLine($"[{_label}] {e.Data}");
                 OutputDataReceived?.Invoke(s, e);
             };
 
