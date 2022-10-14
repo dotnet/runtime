@@ -546,6 +546,9 @@ typedef unsigned int SIZE_T;
 typedef int SSIZE_T;
 #endif
 
+static_assert(sizeof(SIZE_T) == sizeof(void*), "SIZE_T should be pointer sized");
+static_assert(sizeof(SSIZE_T) == sizeof(void*), "SSIZE_T should be pointer sized");
+
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ULONG_PTR_MAX
 #endif // SIZE_T_MAX

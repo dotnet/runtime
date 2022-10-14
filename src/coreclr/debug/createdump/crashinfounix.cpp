@@ -376,9 +376,9 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
             TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
             InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
 
-            uint64_t ehFrameStart;
-            uint64_t ehFrameSize;
-            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, (ULONG64*)&ehFrameStart, (ULONG64*)&ehFrameSize))
+            ULONG64 ehFrameStart;
+            ULONG64 ehFrameSize;
+            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
             {
                 TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
                 if (ehFrameStart != 0 && ehFrameSize != 0)
