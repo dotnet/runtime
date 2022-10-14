@@ -4174,6 +4174,7 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
+// We do not do this optimization in X86 as it is not recommended.
 #if TARGET_X86
     return nullptr;
 #else // !TARGET_X86
