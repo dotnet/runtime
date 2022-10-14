@@ -4157,7 +4157,7 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMulOpToLshSub: Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS), X)
+// Lowering::TryLowerMulOpToLshSub: Lowers a tree MUL(X, CNS) to SUB(LSH(X, log2(CNS)), X)
 //
 // Arguments:
 //    mulOp - GT_MUL node of integral type
@@ -4171,7 +4171,7 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
 {
     assert(mulOp->OperIs(GT_MUL));
 
-    if (!varTypeIsLong(mulOp))
+    if (!varTypeIsIntegral(mulOp))
         return nullptr;
 
     if (mulOp->gtOverflow())
@@ -4196,8 +4196,14 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     if (!isPow2(cnsVal))
         return nullptr;
 
+    unsigned int shiftAmount = genLog2((unsigned int)cnsVal);
+
+    // If shift amount is less than or equal to two then this will emit INS_lea, so return.
+    if (shiftAmount <= 2)
+        return nullptr;
+
     mulOp->ChangeOper(GT_SUB);
-    cns->SetIconValue(genLog2((unsigned int)cnsVal));
+    cns->SetIconValue(shiftAmount);
 
     mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
     mulOp->gtOp2 = comp->gtClone(op1);
