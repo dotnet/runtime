@@ -1582,16 +1582,7 @@ private:
     // Ordered list of RefPositions
     RefPositionList refPositions;
 
-    // Most recent refpostion assigned
-    RefPosition* recentRefPosition;
-
-    // Ordered list of locations where CALL happens
     LsraLocation               recentCallRefPositionLocation;
-    jitstd::list<LsraLocation> callRefPositionLocations;
-    // Equivalent list of kill masks for those calls
-    jitstd::list<regMaskTP> callKillMasks;
-    int                     callRefPositionCount;
-
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
     VarToRegMap* inVarToRegMaps;

@@ -153,7 +153,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="RefPosition">
-    <DisplayString>[{nodeLocation,d}. #{rpNum,d} - {refType,en}]</DisplayString>
+    <DisplayString>[#{rpNum,d} - {refType,en}]</DisplayString>
     <Expand>
         <Item Name="Referent" Condition="this->isPhysRegRef">(RegRecord*)this-&gt;referent</Item>
         <Item Name="Referent" Condition="!this->isPhysRegRef">(Interval*)this-&gt;referent</Item>

@@ -186,7 +186,6 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
     currBuildNode = nullptr;
     newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
 #endif // DEBUG
-    recentRefPosition = newRP;
     return newRP;
 }
 
@@ -1196,9 +1195,8 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 //
 // Notes:
 //    The return value is needed because if we have any kills, we need to make sure that
-//    all defs are located AFTER the kills. TODO: This is always the case.
-//    On the other hand, if there aren't kills, the multiple defs for a regPair are in
-//    different locations.
+//    all defs are located AFTER the kills.  On the other hand, if there aren't kills,
+//    the multiple defs for a regPair are in different locations.
 //    If we generate any kills, we will mark all currentLiveVars as being preferenced
 //    to avoid the killed registers.  This is somewhat conservative.
 //
@@ -1223,20 +1221,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // if (!blockSequence[curBBSeqNum]->isRunRarely())
         if (enregisterLocalVars)
         {
-            const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
-            if (isCallKill)
-            {
-                assert(recentRefPosition);
-                if (recentRefPosition->refType != RefTypeBB)
-                {
                     JITDUMP("Recording killMask at %d\n", recentRefPosition->nodeLocation);
                     recentCallRefPositionLocation = recentRefPosition->nodeLocation;
-                    callRefPositionLocations.push_back(recentRefPosition->nodeLocation);
-                    callKillMasks.push_back(killMask);
-                    callRefPositionCount++;
-                }
-            }
-
             VarSetOps::Iter iter(compiler, currentLiveVars);
             unsigned        varIndex = 0;
             while (iter.NextElem(&varIndex))
@@ -1257,7 +1243,9 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     continue;
                 }
-                Interval* interval = getIntervalForLocalVar(varIndex);
+                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+
                 if (isCallKill)
                 {
                     interval->preferCalleeSave = true;
@@ -2681,83 +2669,16 @@ void LinearScan::buildIntervals()
             }
         }
 
-        // Adjust preferCalleeSave
         callRefPositionCount = 0;
-        if (callRefPositionCount > 0)
-        {
-            LsraLocation firstCallLocation = callRefPositionLocations.front();
-            LsraLocation lastCallLocation  = callRefPositionLocations.back();
-
-            JITDUMP("\n\nCHECKING if Intervals can use callee-save registers");
-            JITDUMP("\n==============================\n");
-            for (Interval& interval : intervals)
-            {
-                if (interval.isLocalVar)
-                {
-                    // We already handle them in BuildKillPositionsForNode.
-                    continue;
-                }
-
                 if ((interval.firstRefPosition == nullptr) || (interval.lastRefPosition == nullptr))
                 {
                     continue;
                 }
 
-                LsraLocation firstRef = interval.firstRefPosition->nodeLocation;
-                LsraLocation lastRef  = interval.lastRefPosition->nodeLocation;
-
-                if ((firstRef > lastCallLocation) || (lastRef < firstCallLocation))
-                {
-                    // Current interval doesn't interfer with any calls. Skip it.
-                    continue;
-                }
-
-                jitstd::list<regMaskTP> callKillMasksLocal = callKillMasks;
-                for (LsraLocation& callLocation : callRefPositionLocations)
-                {
-                    regMaskTP killMask = callKillMasksLocal.front();
-                    callKillMasksLocal.pop_front();
-
-                    if ((firstRef <= callLocation) && (callLocation < lastRef))
-                    {
-                        interval.preferCalleeSave = true;
-                        if (!interval.isWriteThru)
-                        {
-                            // We are more conservative about allocating callee-saves registers to write-thru vars,
-                            // since a call only requires reloading after (not spilling before). So we record (above)
-                            // the fact that we'd prefer a callee-save register, but we don't update the preferences at
-                            // this point. See the "heuristics for writeThru intervals" in 'buildIntervals()'.
-                            regMaskTP newPreferences = allRegs(interval.registerType) & ~killMask;
-
-                            if (newPreferences != RBM_NONE)
-                            {
-                                if (VERBOSE)
-                                {
-                                    printf("Interval %2u: Update preferences (callee-save) from ",
-                                           interval.intervalIndex);
-                                    dumpRegMask(interval.registerPreferences);
-                                    JITDUMP(", New preference= ");
-                                    dumpRegMask(newPreferences);
-                                }
-                                interval.updateRegisterPreferences(newPreferences);
 
                                 printf(" to ");
                                 dumpRegMask(interval.registerPreferences);
                                 printf("\n");
-                            }
-                        }
-                        break;
-                    }
-
-                    if (lastRef < callLocation)
-                    {
-                        // We passed lastRef, no point in checking further callRefPositions.
-                        break;
-                    }
-                }
-            }
-        }
-
 #ifdef DEBUG
         if (getLsraExtendLifeTimes())
         {
