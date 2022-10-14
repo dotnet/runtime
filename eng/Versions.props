@@ -24,7 +24,6 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <MonoCecilVersion>0.11.4-alpha.22513.1</MonoCecilVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
@@ -201,6 +200,8 @@
     <CompilerPlatformTestingVersion>1.1.2-beta1.22403.2</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
+    <!-- Mono Cecil -->
+    <MonoCecilVersion>0.11.4-alpha.22513.1</MonoCecilVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>7.0.100-1.22504.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
