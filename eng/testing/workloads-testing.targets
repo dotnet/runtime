@@ -224,8 +224,11 @@
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
       />
 
-    <Copy SourceFiles="$(RepoRoot)emscripten6.targets" DestinationFiles="%(SdkWithNoWorkloadInstalledPath.InstallPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net6/WorkloadManifest.targets" />
-    <Copy SourceFiles="$(RepoRoot)emscripten7.targets" DestinationFiles="%(SdkWithNoWorkloadInstalledPath.InstallPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net7/WorkloadManifest.targets" />
+    <Copy SourceFiles="$(RepoRoot)emscripten6.targets" DestinationFiles="%(_SdkWithWorkloadToInstall.InstallPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net6/WorkloadManifest.targets" />
+    <Copy SourceFiles="$(RepoRoot)emscripten7.targets" DestinationFiles="%(_SdkWithWorkloadToInstall.InstallPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net7/WorkloadManifest.targets" />
+
+    <Copy SourceFiles="$(RepoRoot)emscripten6.targets" DestinationFiles="$(_SdkWithNoWorkloadPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net6/WorkloadManifest.targets" />
+    <Copy SourceFiles="$(RepoRoot)emscripten7.targets" DestinationFiles="$(_SdkWithNoWorkloadPath)/sdk-manifests/7.0.100/microsoft.net.workload.emscripten.net7/WorkloadManifest.targets" />
 
     <WriteLinesToFile Lines="" File="$(_SdkWithNoWorkloadStampPath)" />
   </Target>
