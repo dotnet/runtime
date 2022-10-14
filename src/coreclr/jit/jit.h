@@ -639,7 +639,7 @@ inline size_t unsigned_abs(__int64 x)
 {
     return ((size_t)abs(x));
 }
-#endif HOST_UNIX
+#endif // HOST_UNIX
 #endif // TARGET_64BIT
 
 /*****************************************************************************/
