@@ -275,11 +275,11 @@ namespace DebuggerTests
             await SetPauseOnException("all");
 
             await SendCommand("Page.enable", null);
+            // this is waiting for Debugger.paused, so we don't need to use Thread.Sleep after it
             var pause_location = await SendCommandAndCheck(JObject.FromObject(new
                                     {
                                         ignoreCache = true
-                                    }), "Page.reload",null, 0, 0, null);
-            Thread.Sleep(1000);
+                                    }), "Page.reload", null, 0, 0, null);
 
             // Hit resume to skip
             int count = 0;
