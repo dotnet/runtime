@@ -4173,7 +4173,7 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
 
 #if TARGET_X86
     return nullptr;
-#else
+#else // !TARGET_X86
     if (!varTypeIsIntegral(mulOp))
         return nullptr;
 
@@ -4224,7 +4224,7 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
         mulOp->ChangeOper(GT_ADD);
     }
 
-    unsigned int shiftAmount = genLog2((unsigned int)cnsVal);
+    unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
     cns->SetIconValue(shiftAmount);
 
     mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
@@ -4241,7 +4241,7 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
     ContainCheckShiftRotate(mulOp->gtGetOp1()->AsOp());
 
     return mulOp;
-#endif
+#endif // !TARGET_X86
 }
 
 //----------------------------------------------------------------------------------------------
