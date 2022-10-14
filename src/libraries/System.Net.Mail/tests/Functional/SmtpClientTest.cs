@@ -476,7 +476,7 @@ namespace System.Net.Mail.Tests
             Task sendTask = client.SendMailAsync(message, cts.Token);
 
             cts.Cancel();
-            await Task.Delay(500);
+            await Task.Delay(new Random().Next(500));
             serverMre.Set();
 
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
@@ -497,11 +497,6 @@ namespace System.Net.Mail.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
-        [InlineData(6)]
-        [InlineData(7)]
-        [InlineData(8)]
-        [InlineData(9)]
-        [InlineData(10)]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken_Loop(int ignore)
         {
             
