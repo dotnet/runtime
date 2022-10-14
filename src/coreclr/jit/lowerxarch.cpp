@@ -120,10 +120,13 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIsMul());
 
-    GenTree* replacementNode = TryLowerMulOpToLshSub(mul);
-    if (replacementNode != nullptr)
+    if (mul->OperIs(GT_MUL))
     {
-        return replacementNode->gtNext;
+        GenTree* replacementNode = TryLowerMulOpToLshSub(mul);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
     }
 
     ContainCheckMul(mul);
@@ -4171,7 +4174,7 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     if (!varTypeIsLong(mulOp))
         return nullptr;
 
-    if (!mulOp->gtOverflow())
+    if (mulOp->gtOverflow())
         return nullptr;
 
     GenTree* op1 = mulOp->gtGetOp1();
@@ -4204,7 +4207,7 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     BlockRange().InsertBefore(mulOp, op1);
     BlockRange().InsertBefore(mulOp, mulOp->gtOp1);
 
-    return LowerNode(mulOp);
+    return mulOp;
 }
 
 //----------------------------------------------------------------------------------------------
