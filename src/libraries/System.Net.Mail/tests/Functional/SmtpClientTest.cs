@@ -491,16 +491,13 @@ namespace System.Net.Mail.Tests
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        public async Task SendMailAsync_CanBeCanceled_CancellationToken_Loop(int ignore)
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "This test only fails on Unix-like")]
+        public async Task SendMailAsync_CanBssseCanceled_CancellationToken_Loop()
         {
             
-            for (int i = 0; i < ignore * 100; ++i)
+            for (int i = 0; i < 1000; ++i)
             {
                 await SendMailAsync_CanBeCanceled_CancellationToken();
             }
