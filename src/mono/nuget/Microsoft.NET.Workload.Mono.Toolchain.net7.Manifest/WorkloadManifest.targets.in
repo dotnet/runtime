@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <_RuntimePackInWorkloadVersion7>7.0.0</_RuntimePackInWorkloadVersion7>
+        <_RuntimePackInWorkloadVersion7>${PackageVersion}</_RuntimePackInWorkloadVersion7>
         <_BrowserWorkloadDisabled7>$(BrowserWorkloadDisabled)</_BrowserWorkloadDisabled7>
         <_BrowserWorkloadDisabled7 Condition="'$(_BrowserWorkloadDisabled7)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and

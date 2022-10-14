@@ -1,6 +1,6 @@
 <Project TreatAsLocalProperty="WasmNativeWorkload">
     <PropertyGroup>
-        <_RuntimePackInWorkloadVersion6>6.0.11</_RuntimePackInWorkloadVersion6>
+        <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
         <_BrowserWorkloadDisabled6>$(BrowserWorkloadDisabled)</_BrowserWorkloadDisabled6>
         <_BrowserWorkloadDisabled6 Condition="'$(_BrowserWorkloadDisabled6)' == '' and
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
