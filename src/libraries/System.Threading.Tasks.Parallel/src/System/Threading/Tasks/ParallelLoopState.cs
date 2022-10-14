@@ -262,23 +262,9 @@ namespace System.Threading.Tasks
             }
         }
 
+        //Can't Turn the class to abstract so added as virtual
         internal virtual void SetCurrentIteration<TIndex>(TIndex CurrentIteration)
             where TIndex : INumber<TIndex> => throw new NotImplementedException("Should not call this");
-
-        internal static ParallelLoopState Create<TIndex>(ParallelLoopStateFlags flags)
-        {
-            if (typeof(TIndex) == typeof(int))
-            {
-                return new ParallelLoopState32((ParallelLoopStateFlags32)flags);
-            }
-
-            if (typeof(TIndex) == typeof(long))
-            {
-                return new ParallelLoopState64((ParallelLoopStateFlags64)flags);
-            }
-
-            throw new InvalidOperationException("Only int and long supported in ParallelLoopState.Create");
-        }
     }
 
     internal sealed class ParallelLoopState32 : ParallelLoopState
@@ -488,6 +474,7 @@ namespace System.Threading.Tasks
         }
 
         internal abstract long LowestBreakIteration { get; }
+        internal abstract ParallelLoopState CreateLoopState();
 
         internal static ParallelLoopStateFlags Create<TIndex>() where TIndex : INumber<TIndex>
         {
@@ -507,6 +494,7 @@ namespace System.Threading.Tasks
         internal volatile int _lowestBreakIteration = int.MaxValue;
 
         internal override long LowestBreakIteration => NullableLowestBreakIteration;
+        internal override ParallelLoopState CreateLoopState() => new ParallelLoopState32(this);
 
         // Does some processing to convert _lowestBreakIteration to a long?.
         internal long NullableLowestBreakIteration
@@ -561,6 +549,8 @@ namespace System.Threading.Tasks
         // or Int64.MaxValue if no break has been called.  Used directly
         // by Break().
         internal long _lowestBreakIteration = long.MaxValue;
+
+        internal override ParallelLoopState CreateLoopState() => new ParallelLoopState64(this);
 
         // Performs a conditionally interlocked read of _lowestBreakIteration.
         internal override long LowestBreakIteration

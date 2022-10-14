@@ -979,10 +979,6 @@ namespace System.Threading.Tasks
 
                 try
                 {
-                    // Create a new state object that references the shared "stopped" and "exceptional" flags
-                    // If needed, it will contain a new instance of thread-local state by invoking the selector.
-                    ParallelLoopState state = ParallelLoopState.Create<TIndex>(SharedPStateFlags);
-
                     // initialize a loop timer which will help us decide whether we should exit early
                     int loopTimeout = ComputeTimeoutPoint(timeout);
 
@@ -1057,7 +1053,7 @@ namespace System.Threading.Tasks
             private WorkerWithState(RangeManager rangeManager, ParallelLoopStateFlags sharedPStateFlags, int forkJoinContextId, Action<TIndex, ParallelLoopState> bodyWithState) : base(rangeManager, sharedPStateFlags, forkJoinContextId)
             {
                 _bodyWithState = bodyWithState;
-                _state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
+                _state = sharedPStateFlags.CreateLoopState();
             }
 
             protected override void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal)
@@ -1092,7 +1088,7 @@ namespace System.Threading.Tasks
                 _bodyWithLocal = bodyWithLocal;
                 _localValue = localInit();
                 _localFinally = localFinally;
-                _state = ParallelLoopState.Create<TIndex>(sharedPStateFlags);
+                _state = sharedPStateFlags.CreateLoopState();
             }
 
             protected override void Body(TIndex nFromInclusiveLocal, TIndex nToExclusiveLocal)
@@ -2691,11 +2687,11 @@ namespace System.Threading.Tasks
 
                     if (bodyWithState != null || bodyWithStateAndIndex != null)
                     {
-                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
+                        state = sharedPStateFlags.CreateLoopState();
                     }
                     else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
                     {
-                        state = ParallelLoopState.Create<long>(sharedPStateFlags);
+                        state = sharedPStateFlags.CreateLoopState();
                         // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
                         if (localInit != null)
                         {
