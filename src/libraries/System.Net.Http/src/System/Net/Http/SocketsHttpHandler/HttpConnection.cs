@@ -1208,7 +1208,7 @@ namespace System.Net.Http
             {
                 int spIdx = value.Length - 1;
 
-                if ((uint)spIdx >= (uint)value.Length || value[spIdx] != ' ' || value[spIdx] != '\t')
+                if ((uint)spIdx >= (uint)value.Length || !(value[spIdx] is (byte)' ' or (byte)'\t'))
                 {
                     // hot path
                     break;
