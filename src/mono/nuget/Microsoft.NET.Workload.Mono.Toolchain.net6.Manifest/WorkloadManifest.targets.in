@@ -115,7 +115,7 @@
 
     <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
          and emit a warning -->
-    <Target Name="_CheckBrowserWorkloadNeededButNotAvailable"
+    <Target Name="_CheckBrowserWorkloadNeededButNotAvailable6"
             Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled6)' != 'true' and '$(WasmNativeWorkload)' != 'true'"
             BeforeTargets="Build">
 
@@ -125,7 +125,7 @@
 
     <!-- not checking TargetsNet7 here since this essentially checks for net5.0 -->
     <!-- FIXME: does this need to be updated? -->
-    <Target Name="_ErrorDisabledWorkload" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
+    <Target Name="_ErrorDisabledWorkload6" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
       <Error Condition="'$(RunAOTCompilation)' == 'true'"
              Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
 

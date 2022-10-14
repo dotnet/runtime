@@ -114,7 +114,7 @@
 
     <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
          and emit a warning -->
-    <Target Name="_CheckBrowserWorkloadNeededButNotAvailable"
+    <Target Name="_CheckBrowserWorkloadNeededButNotAvailable7"
             Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmNativeWorkload7)' != 'true'"
             BeforeTargets="Build">
 
@@ -123,7 +123,7 @@
     </Target>
 
     <!-- not checking TargetsNet7 here since this essentially checks for net5.0 -->
-    <Target Name="_ErrorDisabledWorkload" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
+    <Target Name="_ErrorDisabledWorkload7" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
       <Error Condition="'$(RunAOTCompilation)' == 'true'"
              Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
 
@@ -131,7 +131,7 @@
              Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
     </Target>
 
-    <Target Name="_ErrorDualWasmThreadProps"
+    <Target Name="_ErrorDualWasmThreadProps7"
             Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnableThreading)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
             BeforeTargets="Build">
         <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreading or WasmEnablePerfTrace to true, but not both." />
