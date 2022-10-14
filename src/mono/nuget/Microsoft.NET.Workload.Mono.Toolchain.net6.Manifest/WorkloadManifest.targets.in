@@ -28,16 +28,16 @@
         <_UsingBrowserRuntimeWorkload6 Condition="'$(_UsingBrowserRuntimeWorkload6)' == ''" >$(WasmNativeWorkload)</_UsingBrowserRuntimeWorkload6>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(_BrowserWorkloadDisabled6)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled6)' == 'true'">
         <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
         <WasmNativeWorkload>false</WasmNativeWorkload>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(_BrowserWorkloadDisabled6)' != 'true'">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled6)' != 'true'">
         <UsingBrowserRuntimeWorkload Condition="'$(_UsingBrowserRuntimeWorkload6)' != 'false' and '$(_UsingBrowserRuntimeWorkload6)' != ''">true</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(_UsingBrowserRuntimeWorkload6)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(_UsingBrowserRuntimeWorkload6)' == 'true'">
       <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
