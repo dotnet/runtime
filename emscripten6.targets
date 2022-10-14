@@ -5,24 +5,24 @@
                                               '$(RuntimeIdentifier)' == 'browser-wasm' and
                                               '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                               !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</_EmscriptenWorkloadDisabled6>
-    <TargetsNet6 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</TargetsNet6>
+    <_Emsdk_TargetsNet6 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</_Emsdk_TargetsNet6>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsNet6)' == 'true'">
+  <PropertyGroup Condition="'$(_Emsdk_TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
     <_UsingEmscriptenWorkload6>$(UsingBrowserRuntimeWorkload)</_UsingEmscriptenWorkload6>
     <WasmWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or
-                                    '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">true</WasmWorkloadNeeded>
+                                    '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' or '$(WasmNativeWorkload)' == 'true'">true</WasmWorkloadNeeded>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
+  <PropertyGroup Condition="'$(_Emsdk_TargetsNet6)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
                             '$(_EmscriptenWorkloadDisabled6)' != 'true' and '$(_UsingEmscriptenWorkload6)' == ''">
     <_UsingEmscriptenWorkload6 Condition="'$(WasmWorkloadNeeded)' == 'true'">true</_UsingEmscriptenWorkload6>
     <_UsingEmscriptenWorkload6 Condition="'$(_UsingEmscriptenWorkload6)' == '' and '$(WasmNativeWorkload)' == 'true'">true</_UsingEmscriptenWorkload6>
   </PropertyGroup>
 
   <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <Import Condition="!$([MSBuild]::IsOsPlatform('Linux')) and '$(_UsingEmscriptenWorkload6)' == 'true' and '$(TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python.net6" />
-    <Import Condition="'$(_UsingEmscriptenWorkload6)' == 'true' and '$(TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node.net6" />
-    <Import Condition="'$(_UsingEmscriptenWorkload6)' == 'true' and '$(TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk.net6" />
+    <Import Condition="!$([MSBuild]::IsOsPlatform('Linux')) and '$(_UsingEmscriptenWorkload6)' == 'true' and '$(_Emsdk_TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python.net6" />
+    <Import Condition="'$(_UsingEmscriptenWorkload6)' == 'true' and '$(_Emsdk_TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node.net6" />
+    <Import Condition="'$(_UsingEmscriptenWorkload6)' == 'true' and '$(_Emsdk_TargetsNet6)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk.net6" />
   </ImportGroup>
 </Project>

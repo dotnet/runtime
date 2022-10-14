@@ -5,18 +5,19 @@
                                               '$(RuntimeIdentifier)' == 'browser-wasm' and
                                               '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                               !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</_EmscriptenWorkloadDisabled7>
-    <TargetsNet7 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
+    <_Emsdk_TargetsNet7 Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</_Emsdk_TargetsNet7>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsNet7)' == 'true'">
+  <PropertyGroup Condition="'$(_Emsdk_TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
     <!-- if UsingBrowserRuntimeWorkload has already been set, for example, maybe the wasm manifest
          decided that we need it. -->
     <_UsingEmscriptenWorkload7>$(UsingBrowserRuntimeWorkload)</_UsingEmscriptenWorkload7>
     <WasmWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or
-                                    '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">true</WasmWorkloadNeeded>
+                                    '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' or
+                                    ('$(WasmNativeWorkload)' != 'false' and '$(WasmNativeWorkload7)' == 'true')">true</WasmWorkloadNeeded>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetsNet7)' == 'true' and '$(_EmscriptenWorkloadDisabled7)' == ''">
+  <PropertyGroup Condition="'$(_Emsdk_TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_EmscriptenWorkloadDisabled7)' == ''">
     <_UsingEmscriptenWorkload7>$(WasmWorkloadNeeded)</_UsingEmscriptenWorkload7>
     <_UsingEmscriptenWorkload7 Condition="'$(_UsingEmscriptenWorkload7)' == '' and '$(WasmNativeWorkload7)' == 'true' and
                                             '$(WasmNativeWorkload)' != 'false'">$(WasmNativeWorkload7)</_UsingEmscriptenWorkload7>
@@ -28,10 +29,10 @@
   </PropertyGroup>
 
   <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <Import Condition="!$([MSBuild]::IsOsPlatform('Linux')) and '$(_UsingEmscriptenWorkload7)' == 'true' and '$(TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python.net7" />
-    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node.net7" />
-    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk.net7" />
-    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Cache.net7" />
-    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(TargetsNet7)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.Emscripten.Cache.net7" />
+    <Import Condition="!$([MSBuild]::IsOsPlatform('Linux')) and '$(_UsingEmscriptenWorkload7)' == 'true' and '$(_Emsdk_TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python.net7" />
+    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(_Emsdk_TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node.net7" />
+    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(_Emsdk_TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk.net7" />
+    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(_Emsdk_TargetsNet7)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Cache.net7" />
+    <Import Condition="'$(_UsingEmscriptenWorkload7)' == 'true' and '$(_Emsdk_TargetsNet7)' == 'true'" Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.Emscripten.Cache.net7" />
   </ImportGroup>
 </Project>
