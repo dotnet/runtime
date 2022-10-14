@@ -122,7 +122,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
-        GenTree* replacementNode = TryLowerMulOpToLshSub(mul);
+        GenTree* replacementNode = TryLowerMul(mul);
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
@@ -4157,7 +4157,7 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMulOpToLshSub: Lowers a tree MUL(X, CNS) to SUB(LSH(X, log2(CNS)), X)
+// Lowering::TryLowerMul: Lowers a tree MUL(X, CNS) to SUB(LSH(X, log2(CNS)), X)
 //
 // Arguments:
 //    mulOp - GT_MUL node of integral type
@@ -4167,10 +4167,13 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 //
 // Notes:
 //    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
+GenTree* Lowering::TryLowerMul(GenTreeOp* mulOp)
 {
     assert(mulOp->OperIs(GT_MUL));
 
+#if TARGET_X86
+    return nullptr;
+#else
     if (!varTypeIsIntegral(mulOp))
         return nullptr;
 
@@ -4189,20 +4192,51 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     if (!op2->IsCnsIntOrI())
         return nullptr;
 
-    GenTreeIntConCommon* cns = op2->AsIntConCommon();
+    GenTreeIntConCommon* cns    = op2->AsIntConCommon();
+    ssize_t              cnsVal = cns->IconValue();
 
-    ssize_t cnsVal = cns->IconValue() + 1;
-
-    if (!isPow2(cnsVal))
+    // Use GT_LSH if cnsVal is a power of two.
+    // This is handled in codegen.
+    if (isPow2(cnsVal))
+    {
         return nullptr;
+    }
+
+    // Use GT_LEA if cnsVal is 3, 5, or 9.
+    // This is handled in codegen.
+    if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
+    {
+        return nullptr;
+    }
+
+    ssize_t cnsValPlusOne  = cnsVal + 1;
+    ssize_t cnsValMinusOne = cnsVal - 1;
+
+    bool useSub = isPow2(cnsValPlusOne);
+
+    if (!useSub && !isPow2(cnsValMinusOne))
+        return nullptr;
+
+    if (useSub)
+    {
+        cnsVal = cnsValPlusOne;
+    }
+    else
+    {
+        cnsVal = cnsValMinusOne;
+    }
 
     unsigned int shiftAmount = genLog2((unsigned int)cnsVal);
 
-    // If shift amount is less than or equal to two then this will emit INS_lea, so return.
-    if (shiftAmount <= 2)
-        return nullptr;
+    if (useSub)
+    {
+        mulOp->ChangeOper(GT_SUB);
+    }
+    else
+    {
+        mulOp->ChangeOper(GT_ADD);
+    }
 
-    mulOp->ChangeOper(GT_SUB);
     cns->SetIconValue(shiftAmount);
 
     mulOp->gtOp1 = comp->gtNewOperNode(GT_LSH, mulOp->gtType, op1, cns);
@@ -4219,6 +4253,7 @@ GenTree* Lowering::TryLowerMulOpToLshSub(GenTreeOp* mulOp)
     ContainCheckShiftRotate(mulOp->gtGetOp1()->AsOp());
 
     return mulOp;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
