@@ -186,6 +186,7 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
     currBuildNode = nullptr;
     newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
 #endif // DEBUG
+    recentRefPosition = newRP;
     return newRP;
 }
 
@@ -382,11 +383,11 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
         RefPosition* firstPosition = theInterval->firstRefPosition;
         if ((firstPosition != nullptr) && (firstPosition->nodeLocation > 0))
         {
-            if (firstPosition->nodeLocation < recentCallRefPositionLocation)
+            if (firstPosition->nodeLocation < recentKillLocation)
             {
                 JITDUMP("Interval %2u: Prefer callee-save because of presence of kills at location %d. First "
                         "RefPosition is at #%d @%d and current RefPosition is #%d @%d\n",
-                        theInterval->intervalIndex, recentCallRefPositionLocation, firstPosition->rpNum,
+                        theInterval->intervalIndex, recentKillLocation, firstPosition->rpNum,
                         firstPosition->nodeLocation, rp->rpNum, rp->nodeLocation);
 
                 theInterval->preferCalleeSave = true;
@@ -407,10 +408,11 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 #ifdef DEBUG
                     if (VERBOSE)
                     {
-                        JITDUMP("Interval %2u: Current preference= ", theInterval->intervalIndex);
+                        printf("Interval %2u: Current preference= ", theInterval->intervalIndex);
                         dumpRegMask(theInterval->registerPreferences);
-                        JITDUMP(", New preference= ");
+                        printf(", New preference= ");
                         dumpRegMask(newPreferences);
+                        printf(", ");
                     }
 #endif
                     if (newPreferences != RBM_NONE)
@@ -433,7 +435,7 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 #ifdef DEBUG
     if (VERBOSE)
     {
-        JITDUMP(", Merged preference= ");
+        printf("Merged preference= ");
         dumpRegMask(theInterval->registerPreferences);
         printf("\n");
     }
@@ -1221,8 +1223,13 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // if (!blockSequence[curBBSeqNum]->isRunRarely())
         if (enregisterLocalVars)
         {
-                    JITDUMP("Recording killMask at %d\n", recentRefPosition->nodeLocation);
-                    recentCallRefPositionLocation = recentRefPosition->nodeLocation;
+            const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+            if (isCallKill)
+            {
+                JITDUMP("Recording location of kill at %d\n", recentRefPosition->nodeLocation);
+                recentKillLocation = recentRefPosition->nodeLocation;
+            }
+
             VarSetOps::Iter iter(compiler, currentLiveVars);
             unsigned        varIndex = 0;
             while (iter.NextElem(&varIndex))
@@ -1243,9 +1250,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     continue;
                 }
-                Interval*  interval   = getIntervalForLocalVar(varIndex);
-                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
-
+                Interval* interval = getIntervalForLocalVar(varIndex);
                 if (isCallKill)
                 {
                     interval->preferCalleeSave = true;
@@ -2669,16 +2674,6 @@ void LinearScan::buildIntervals()
             }
         }
 
-        callRefPositionCount = 0;
-                if ((interval.firstRefPosition == nullptr) || (interval.lastRefPosition == nullptr))
-                {
-                    continue;
-                }
-
-
-                                printf(" to ");
-                                dumpRegMask(interval.registerPreferences);
-                                printf("\n");
 #ifdef DEBUG
         if (getLsraExtendLifeTimes())
         {

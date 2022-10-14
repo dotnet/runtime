@@ -1582,7 +1582,8 @@ private:
     // Ordered list of RefPositions
     RefPositionList refPositions;
 
-    LsraLocation               recentCallRefPositionLocation;
+    RefPosition* recentRefPosition;
+    LsraLocation recentKillLocation;
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
     VarToRegMap* inVarToRegMaps;
