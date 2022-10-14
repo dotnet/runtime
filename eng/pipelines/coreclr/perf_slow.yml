@@ -50,6 +50,9 @@ extends:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: release
           container: ubuntu-18.04-cross-arm64
+          variables:
+            - name: ROOTFS_DIR
+              value: /crossrootfs/arm64
           platforms:
           - Linux_arm64
           jobParameters:
@@ -138,6 +141,9 @@ extends:
           container: ubuntu-18.04-cross-arm64
           runtimeFlavor: mono
           runtimeVariant: 'llvmaot'
+          variables:
+            - name: ROOTFS_DIR
+              value: /crossrootfs/arm64
           platforms:
           - Linux_arm64
           jobParameters:
