@@ -4177,7 +4177,7 @@ GenTree* Lowering::TryLowerMul(GenTreeOp* node)
 // We do not do this optimization in X86 as it is not recommended.
 #if TARGET_X86
     return nullptr;
-#else // !TARGET_X86
+#else  // !TARGET_X86
     if (!varTypeIsIntegral(node))
         return nullptr;
 
