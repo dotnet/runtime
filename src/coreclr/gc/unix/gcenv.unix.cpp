@@ -137,12 +137,31 @@ typedef cpuset_t cpu_set_t;
 
 #if HAVE_NUMA_H
 
-#include <../../pal/src/numa/numashim.h>
+#include <numa.h>
 #include <numaif.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+// List of all functions from the numa library that are used
+#define FOR_ALL_NUMA_FUNCTIONS \
+    PER_FUNCTION_BLOCK(mbind) \
+    PER_FUNCTION_BLOCK(numa_available) \
+    PER_FUNCTION_BLOCK(numa_max_node) \
+    PER_FUNCTION_BLOCK(numa_node_of_cpu)
+
+// Declare pointers to all the used numa functions
+#define PER_FUNCTION_BLOCK(fn) extern decltype(fn)* fn##_ptr;
+FOR_ALL_NUMA_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+
+// Redefine all calls to numa functions as calls through pointers that are set
+// to the functions of libnuma in the initialization.
+#define mbind(...) mbind_ptr(__VA_ARGS__)
+#define numa_available() numa_available_ptr()
+#define numa_max_node() numa_max_node_ptr()
+#define numa_node_of_cpu(...) numa_node_of_cpu_ptr(__VA_ARGS__)
 
 #endif // HAVE_NUMA_H
 
@@ -215,12 +234,16 @@ uint32_t g_pageSizeUnixInl = 0;
 AffinitySet g_processAffinitySet;
 
 // The highest NUMA node available
-static int g_highestNumaNode = 0;
+int g_highestNumaNode = 0;
 // Is numa available
-static bool g_numaAvailable = false;
+bool g_numaAvailable = false;
 
 void* g_numaHandle = nullptr;
 
+#if HAVE_NUMA_H
+#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
+FOR_ALL_NUMA_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
 
 #if defined(__linux__)
 static bool ShouldOpenLibNuma()
@@ -263,6 +286,7 @@ static bool ShouldOpenLibNuma()
 }
 #endif // __linux__
 
+#endif // HAVE_NUMA_H
 
 // Initialize data structures for getting and setting thread affinities to processors and
 // querying NUMA related processor information.
