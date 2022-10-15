@@ -825,7 +825,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
-static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char* line = nullptr;
