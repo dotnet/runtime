@@ -5087,7 +5087,7 @@ void LinearScan::allocateRegisters()
                 unassignPhysReg(regRecord, currentInterval->firstRefPosition);
                 if (assignedInterval->isConstant)
                 {
-                    clearConstantReg(assignedRegister, assignedInterval->registerType);
+                    clearConstantReg(assignedRegister, assignedInterval);
                 }
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
             }
