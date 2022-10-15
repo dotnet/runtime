@@ -302,7 +302,7 @@ set( JIT_HEADERS
   hostallocator.h
   hwintrinsic.h
   ICorJitInfo_API_names_generated.h
-  ICorJitInfo_API_wrapper.hpp
+  ICorJitInfo_API_wrapper_generated.hpp
   inline.h
   inlinepolicy.h
   instr.h

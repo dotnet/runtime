@@ -7140,7 +7140,7 @@ struct WrapICorJitInfo : public ICorJitInfo
             {
                 // If you get a build error here due to 'WrapICorJitInfo' being
                 // an abstract class, it's very likely that the wrapper bodies
-                // in ICorJitInfo_API_wrapper.hpp are no longer in sync with
+                // in ICorJitInfo_API_wrapper_generated.hpp are no longer in sync with
                 // the EE interface; please be kind and update the header file.
                 wrap = new (inst, jitstd::placement_t()) WrapICorJitInfo();
 
@@ -7160,7 +7160,7 @@ private:
     COMP_HANDLE wrapHnd; // the "real thing"
 
 public:
-#include "ICorJitInfo_API_wrapper.hpp"
+#include "ICorJitInfo_API_wrapper_generated.hpp"
 };
 
 #endif // MEASURE_CLRAPI_CALLS
