@@ -9,8 +9,13 @@ namespace System.Globalization.Tests
     public class IcuAppLocalTests
     {
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        private static bool SupportIcuPackageDownload => PlatformDetection.Is64BitProcess &&
+                                                         PlatformDetection.IsNotOSX &&
+                                                         PlatformDetection.IsNotMobile &&
+                                                         !PlatformDetection.IsAlpine &&
+                                                         !PlatformDetection.IsLinuxBionic;
+
+        [ConditionalFact(nameof(SupportIcuPackageDownload))]
         public void TestIcuAppLocal()
         {
             Type? interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
