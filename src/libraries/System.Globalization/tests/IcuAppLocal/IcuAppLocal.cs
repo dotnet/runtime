@@ -16,6 +16,7 @@ namespace System.Globalization.Tests
                                                          !PlatformDetection.IsLinuxBionic;
 
         [ConditionalFact(nameof(SupportIcuPackageDownload))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "ICU package doesn't support these platforms.")]
         public void TestIcuAppLocal()
         {
             Type? interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
