@@ -3250,6 +3250,7 @@ public:
 
     static fgWalkPreFn lvaStressLclFldCB;
     void               lvaStressLclFld();
+    unsigned lvaStressLclFldPadding(unsigned lclNum);
 
     void lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars);
     void lvaDispVarSet(VARSET_VALARG_TP set);

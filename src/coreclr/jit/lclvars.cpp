@@ -8213,13 +8213,17 @@ int Compiler::lvaToInitialSPRelativeOffset(unsigned offset, bool isFpBased)
 /*****************************************************************************/
 
 #ifdef DEBUG
-/*****************************************************************************
- *  Pick a padding size at "random" for the local.
- *  0 means that it should not be converted to a GT_LCL_FLD
- */
-
-static unsigned LCL_FLD_PADDING(unsigned lclNum)
+//-----------------------------------------------------------------------------
+// lvaStressLclFldPadding: Pick a padding size at "random".
+//
+// Returns:
+//   Padding amoount in bytes
+//
+unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 {
+    // TODO: make this a bit more random, eg:
+    // return (lclNum ^ info.compMethodHash() ^ getJitStressLevel()) % 8;
+
     // Convert every 2nd variable
     if (lclNum % 2)
     {
@@ -8232,51 +8236,48 @@ static unsigned LCL_FLD_PADDING(unsigned lclNum)
     return size;
 }
 
-/*****************************************************************************
- *
- *  Callback for fgWalkAllTreesPre()
- *  Convert as many GT_LCL_VAR's to GT_LCL_FLD's
- */
-
-/* static */
-/*
-    The stress mode does 2 passes.
-
-    In the first pass we will mark the locals where we CAN't apply the stress mode.
-    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
-*/
+//-----------------------------------------------------------------------------
+// lvaStressLclFldCB: Convert GT_LCL_VAR's to GT_LCL_FLD's
+//
+// Arguments:
+//    pTree -- pointer to tree to possibly convert
+//    data  -- walker data
+//
+// Notes:
+//    The stress mode does 2 passes.
+//
+//    In the first pass we will mark the locals where we CAN't apply the stress mode.
+//    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
+//
 Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {
-    GenTree*   tree = *pTree;
-    genTreeOps oper = tree->OperGet();
-    GenTree*   lcl;
+    GenTree* const       tree = *pTree;
+    GenTreeLclVarCommon* lcl  = nullptr;
 
-    switch (oper)
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LCL_FLD, GT_LCL_FLD_ADDR))
     {
-        case GT_LCL_VAR:
-        case GT_LCL_VAR_ADDR:
-            lcl = tree;
-            break;
-
-        case GT_ADDR:
-            if (tree->AsOp()->gtOp1->gtOper != GT_LCL_VAR)
-            {
-                return WALK_CONTINUE;
-            }
-            lcl = tree->AsOp()->gtOp1;
-            break;
-
-        default:
-            return WALK_CONTINUE;
+        lcl = tree->AsLclVarCommon();
+    }
+    else if (tree->OperIs(GT_ADDR))
+    {
+        GenTree* const addr = tree->AsOp()->gtOp1;
+        if (addr->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        {
+            lcl = addr->AsLclVarCommon();
+        }
     }
 
-    noway_assert(lcl->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
+    if (lcl == nullptr)
+    {
+        return WALK_CONTINUE;
+    }
 
     Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
-    const bool       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    const unsigned   lclNum     = lcl->AsLclVarCommon()->GetLclNum();
-    var_types        type       = lcl->TypeGet();
+    bool const       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
+    unsigned const   lclNum     = lcl->GetLclNum();
     LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
+    var_types const  lclType    = lcl->TypeGet();
+    var_types const  varType    = varDsc->TypeGet();
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -8286,6 +8287,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
     if (bFirstPass)
     {
+        // Ignore locals that alreay have field appearances
+        if (lcl->OperIs(GT_LCL_FLD, GT_LCL_FLD_ADDR))
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
         // Ignore arguments and temps
         if (varDsc->lvIsParam || lclNum >= pComp->info.compLocalsCount)
         {
@@ -8328,7 +8336,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         }
 
         // Can't have GC ptrs in TYP_BLK.
-        if (!varTypeIsArithmetic(type))
+        if (!varTypeIsArithmetic(lclType))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8336,7 +8344,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
         // The noway_assert in the second pass below, requires that these types match, or we have a TYP_BLK
         //
-        if ((varDsc->lvType != lcl->gtType) && (varDsc->lvType != TYP_BLK))
+        if ((varType != lclType) && (varType != TYP_BLK))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8345,15 +8353,16 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
-        var_types varType = varDsc->TypeGet();
-        if (varType != TYP_BLK && genTypeSize(varType) != genTypeSize(genActualType(varType)))
+
+        if ((varType != TYP_BLK) && genTypeSize(varType) != genTypeSize(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
         }
 
         // Offset some of the local variable by a "random" non-zero amount
-        unsigned padding = LCL_FLD_PADDING(lclNum);
+
+        unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
         if (padding == 0)
         {
             varDsc->lvNoLclFldStress = true;
@@ -8363,11 +8372,10 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert((varDsc->lvType == lcl->gtType) || (varDsc->lvType == TYP_BLK));
-        var_types varType = varDsc->TypeGet();
+        noway_assert((varType == lclType) || (varType == TYP_BLK));
 
         // Calculate padding
-        unsigned padding = LCL_FLD_PADDING(lclNum);
+        unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         // We need to support alignment requirements to access memory.
@@ -8383,28 +8391,27 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
             varDsc->lvType      = TYP_BLK;
             pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
+
+            JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
+                    varDsc->lvExactSize, padding);
         }
 
         tree->gtFlags |= GTF_GLOB_REF;
 
-        /* Now morph the tree appropriately */
-        if (oper == GT_LCL_VAR)
+        // Update the trees
+        if (tree->OperIs(GT_LCL_VAR))
         {
-            /* Change lclVar(lclNum) to lclFld(lclNum,padding) */
-
             tree->ChangeOper(GT_LCL_FLD);
             tree->AsLclFld()->SetLclOffs(padding);
         }
-        else if (oper == GT_LCL_VAR_ADDR)
+        else if (tree->OperIs(GT_LCL_VAR_ADDR))
         {
             tree->ChangeOper(GT_LCL_FLD_ADDR);
             tree->AsLclFld()->SetLclOffs(padding);
         }
         else
         {
-            /* Change addr(lclVar) to addr(lclVar)+padding */
-
-            noway_assert(oper == GT_ADDR);
+            noway_assert(tree->OperIs(GT_ADDR));
             GenTree* paddingTree = pComp->gtNewIconNode(padding);
             GenTree* newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
 
