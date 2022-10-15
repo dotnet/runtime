@@ -469,6 +469,18 @@ public:
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
 
+    // Type of register for this reference.
+    // For physical registers (RegRecord), it will always be INT or FLOAT
+    // For virtual registers (Interval), it will be a composition of value that it represents.
+    RegisterType registerType;
+
+    // Number of registers associated with this reference.
+    // For physical registers (RegRecord), it will tell how many sequential
+    // registers it should operate on.
+    // For virtual registers (Interval), it will tell how many sequential
+    // registers it should operate on.
+    unsigned int regCount : 2;
+
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being updated
     // during traversal).
@@ -534,7 +546,6 @@ public:
 
     regNumber     regNum;
     bool          isCalleeSave;
-    RegisterType  registerType;
     unsigned char regOrder;
 };
 
@@ -988,7 +999,8 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void     clearAssignedInterval(RegRecord* reg, Interval* interval);
+    void updateAssignedInterval(RegRecord* reg, Interval* interval);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
@@ -1651,10 +1663,10 @@ private:
     //-----------------------------------------------------------------------
 
     regMaskTP m_AvailableRegs;
-    regNumber getRegForType(regNumber reg, var_types regType)
+    regNumber getRegForType(regNumber reg, Referenceable* reference)
     {
 #ifdef TARGET_ARM
-        if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+        if ((reference->registerType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
         {
             reg = REG_PREV(reg);
         }
@@ -1662,12 +1674,12 @@ private:
         return reg;
     }
 
-    regMaskTP getRegMask(regNumber reg, var_types regType)
+    regMaskTP getRegMask(regNumber reg, Referenceable* reference)
     {
-        reg               = getRegForType(reg, regType);
+        reg               = getRegForType(reg, reference);
         regMaskTP regMask = genRegMask(reg);
 #ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
+        if (reference->registerType == TYP_DOUBLE)
         {
             assert(genIsValidDoubleReg(reg));
             regMask |= (regMask << 1);
@@ -1682,57 +1694,57 @@ private:
         m_RegistersWithConstants = RBM_NONE;
     }
 
-    bool isRegAvailable(regNumber reg, var_types regType)
+    bool isRegAvailable(regNumber reg, Referenceable* reference)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
+        regMaskTP regMask = getRegMask(reg, reference);
         return (m_AvailableRegs & regMask) == regMask;
     }
+
     void setRegsInUse(regMaskTP regMask)
     {
         m_AvailableRegs &= ~regMask;
     }
-    void setRegInUse(regNumber reg, var_types regType)
+
+    void setRegInUse(regNumber reg, Referenceable* reference)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
+        regMaskTP regMask = getRegMask(reg, reference);
         setRegsInUse(regMask);
     }
+
     void makeRegsAvailable(regMaskTP regMask)
     {
         m_AvailableRegs |= regMask;
     }
-    void makeRegAvailable(regNumber reg, var_types regType)
+
+    void makeRegAvailable(regNumber reg, Referenceable* reference)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
+        regMaskTP regMask = getRegMask(reg, reference);
         makeRegsAvailable(regMask);
     }
-
     
     void updateNextIntervalRef(regNumber reg, Interval* interval);
     void updateSpillCost(regNumber reg, Interval* interval);
 
-    void clearSpillCost_regType(regNumber reg, var_types regType);
-    void clearSpillCost(regNumber reg, Interval* interval);
-    void clearSpillCost(regNumber reg, RegRecord* regRecord);
-
-    void clearNextIntervalRef_regType(regNumber reg, var_types regType);
-    void clearNextIntervalRef(regNumber reg, Interval* interval);
-    void clearNextIntervalRef(regNumber reg, RegRecord* regRecord);
+    void clearSpillCost(regNumber reg, Referenceable* reference);
+    void clearNextIntervalRef(regNumber reg, Referenceable* reference);
 
     regMaskTP m_RegistersWithConstants;
-    void clearConstantReg(regNumber reg, var_types regType)
+
+    void clearConstantReg(regNumber reg, Referenceable* reference)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, regType);
+        m_RegistersWithConstants &= ~getRegMask(reg, reference);
     }
-    void setConstantReg(regNumber reg, var_types regType)
+    void setConstantReg(regNumber reg, Referenceable* reference)
     {
-        m_RegistersWithConstants |= getRegMask(reg, regType);
+        m_RegistersWithConstants |= getRegMask(reg, reference);
     }
-    bool isRegConstant(regNumber reg, var_types regType)
+    bool isRegConstant(regNumber reg, Referenceable* reference)
     {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = getRegMask(reg, regType);
+        reg               = getRegForType(reg, reference);
+        regMaskTP regMask = getRegMask(reg, reference);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
+
     regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
 
     regMaskTP    fixedRegs;
@@ -1767,23 +1779,40 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
-    bool isRegBusy(regNumber reg, var_types regType)
+    //bool isRegBusy(regNumber reg, var_types regType)
+    //{
+    //    regMaskTP regMask = getRegMask(reg, regType);
+    //    return (regsBusyUntilKill & regMask) != RBM_NONE;
+    //}
+    //void setRegBusyUntilKill(regNumber reg, var_types regType)
+    //{
+    //    regsBusyUntilKill |= getRegMask(reg, regType);
+    //}
+
+    bool isRegBusy(regNumber reg, Referenceable* reference)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
+        regMaskTP regMask = getRegMask(reg, reference);
         return (regsBusyUntilKill & regMask) != RBM_NONE;
     }
-    void setRegBusyUntilKill(regNumber reg, var_types regType)
+    void setRegBusyUntilKill(regNumber reg, Referenceable* reference)
     {
-        regsBusyUntilKill |= getRegMask(reg, regType);
+        regsBusyUntilKill |= getRegMask(reg, reference);
     }
+
     void clearRegBusyUntilKill(regNumber reg)
     {
         regsBusyUntilKill &= ~genRegMask(reg);
     }
 
-    bool isRegInUse(regNumber reg, var_types regType)
+    //bool isRegInUse(regNumber reg, var_types regType)
+    //{
+    //    regMaskTP regMask = getRegMask(reg, regType);
+    //    return (regsInUseThisLocation & regMask) != RBM_NONE;
+    //}
+
+    bool isRegInUse(regNumber reg, Referenceable* reference)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
+        regMaskTP regMask = getRegMask(reg, reference);
         return (regsInUseThisLocation & regMask) != RBM_NONE;
     }
 
@@ -1954,13 +1983,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    Interval(RegisterType registerType, regMaskTP registerPreferences)
+    Interval(RegisterType _registerType, regMaskTP registerPreferences)
         : registerPreferences(registerPreferences)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
         , physReg(REG_COUNT)
-        , registerType(registerType)
         , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
@@ -1979,11 +2007,12 @@ public:
 #endif
         , isWriteThru(false)
         , isSingleDef(false)
-        , regCount(1)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
     {
+        regCount     = 1;
+        registerType = _registerType;
     }
 
 
@@ -2015,8 +2044,6 @@ public:
 
     // The register to which it is currently assigned.
     regNumber physReg;
-
-    RegisterType registerType;
 
     // Is this Interval currently in a register and live?
     bool isActive;
@@ -2078,10 +2105,6 @@ public:
 
     // True if this interval has a single definition.
     bool isSingleDef : 1;
-
-    // Number of registers associated with this interval.
-    // Most often it will be 1.
-    unsigned int regCount : 2;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
