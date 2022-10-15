@@ -999,7 +999,7 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void     clearAssignedInterval(RegRecord* reg, Interval* interval);
+    void clearAssignedInterval(RegRecord* reg, Interval* interval);
     void updateAssignedInterval(RegRecord* reg, Interval* interval);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
@@ -1721,7 +1721,7 @@ private:
         regMaskTP regMask = getRegMask(reg, reference);
         makeRegsAvailable(regMask);
     }
-    
+
     void updateNextIntervalRef(regNumber reg, Interval* interval);
     void updateSpillCost(regNumber reg, Interval* interval);
 
@@ -1779,12 +1779,12 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
-    //bool isRegBusy(regNumber reg, var_types regType)
+    // bool isRegBusy(regNumber reg, var_types regType)
     //{
     //    regMaskTP regMask = getRegMask(reg, regType);
     //    return (regsBusyUntilKill & regMask) != RBM_NONE;
     //}
-    //void setRegBusyUntilKill(regNumber reg, var_types regType)
+    // void setRegBusyUntilKill(regNumber reg, var_types regType)
     //{
     //    regsBusyUntilKill |= getRegMask(reg, regType);
     //}
@@ -1804,7 +1804,7 @@ private:
         regsBusyUntilKill &= ~genRegMask(reg);
     }
 
-    //bool isRegInUse(regNumber reg, var_types regType)
+    // bool isRegInUse(regNumber reg, var_types regType)
     //{
     //    regMaskTP regMask = getRegMask(reg, regType);
     //    return (regsInUseThisLocation & regMask) != RBM_NONE;
@@ -2014,7 +2014,6 @@ public:
         regCount     = 1;
         registerType = _registerType;
     }
-
 
 #ifdef DEBUG
     // print out representation

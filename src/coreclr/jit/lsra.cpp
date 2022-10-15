@@ -528,8 +528,7 @@ bool LinearScan::conflictingFixedRegReference(regNumber regNum, RefPosition* ref
 
     LsraLocation refLocation = refPosition->nodeLocation;
     RegRecord*   regRecord   = getRegisterRecord(regNum);
-    if (isRegInUse(regNum, refPosition->getInterval()) &&
-        (regRecord->assignedInterval != refPosition->getInterval()))
+    if (isRegInUse(regNum, refPosition->getInterval()) && (regRecord->assignedInterval != refPosition->getInterval()))
     {
         return true;
     }
@@ -2934,7 +2933,7 @@ bool LinearScan::canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLoc
 //
 void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 {
-    //assert(false);
+    // assert(false);
     assert(genIsValidDoubleReg(doubleRegRecord->regNum));
 
     RegRecord* doubleRegRecordLo = doubleRegRecord;
@@ -4813,8 +4812,7 @@ void LinearScan::allocateRegisters()
                                 }
                                 else
                                 {
-                                    assert((nextIntervalRef[reg] == MaxLocation) ||
-                                           isRegBusy(reg, assignedInterval));
+                                    assert((nextIntervalRef[reg] == MaxLocation) || isRegBusy(reg, assignedInterval));
                                 }
                             }
                             else
