@@ -12,4 +12,10 @@
     <Target>M:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.ExplictServiceRegisterationWithIsService</Target>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <!-- Test renamed to TypeActivatorCreateInstanceUsesLongestAvailableConstructor. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.TypeActivatorCreateInstanceUsesFirstMathchedConstructor(System.Object,System.String)</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
 </Suppressions>
