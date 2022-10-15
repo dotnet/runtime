@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.XPath;
-using System.Xml.Schema;
-using System.Globalization;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.XPath;
 using System.Xml.Xsl;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
-using System.Diagnostics.CodeAnalysis;
 using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.IlGen
@@ -3263,7 +3264,7 @@ namespace System.Xml.Xsl.IlGen
             kinds = typDerived.NodeKinds & kinds;
 
             // Attempt to allow or disallow exactly one kind
-            if (!Bits.ExactlyOne((uint)kinds))
+            if (!BitOperations.IsPow2((uint)kinds))
             {
                 // Not possible to allow one kind, so try to disallow one kind
                 kinds = ~kinds & XmlNodeKindFlags.Any;
