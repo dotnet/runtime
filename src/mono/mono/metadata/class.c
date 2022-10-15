@@ -2001,9 +2001,10 @@ mono_method_get_vtable_slot (MonoMethod *method)
 			g_assert (klass_methods);
 			mcount = mono_class_get_method_count (method->klass);
 			for (i = 0; i < mcount; ++i) {
-				if (klass_methods [i] == method)
+				if (klass_methods [i] == method || (klass_methods [i]->name == method->name && klass_methods [i]->slot != -1))
 					break;
 			}
+
 			g_assert (i < mcount);
 			g_assert (m_class_get_methods (gklass));
 			method->slot = m_class_get_methods (gklass) [i]->slot;
