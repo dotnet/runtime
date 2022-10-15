@@ -7327,6 +7327,15 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
+    GenTree* const addr = ind->Addr();
+    if (!comp->fgAddrCouldBeNull(addr))
+    {
+        addr->SetUnusedValue();
+        ind->gtBashToNOP();
+        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
+        return;
+    }
+
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -7334,7 +7343,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #elif TARGET_ARM
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    bool useNullCheck = !ind->Addr()->isContained();
+    // bool useNullCheck = !ind->Addr()->isContained();
+    bool useNullCheck = !addr->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
