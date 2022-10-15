@@ -25188,6 +25188,13 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
     if (o == 0)
         return;
 
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!(is_in_bookkeeping_range (o)))
+    {
+        return;
+    }
+#endif
+
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
@@ -25202,13 +25209,6 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
     {
         return;
     }
-
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!(is_in_bookkeeping_range (o)))
-    {
-        return;
-    }
-#endif
 
     if (flags & GC_CALL_INTERIOR)
     {
@@ -35959,6 +35959,13 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
     if (o == 0)
         return;
 
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!(is_in_bookkeeping_range (o)))
+    {
+        return;
+    }
+#endif
+
     HEAP_FROM_THREAD;
 
     gc_heap* hp = gc_heap::heap_of (o);
@@ -35967,13 +35974,6 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
     {
         return;
     }
-
-#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!(is_in_bookkeeping_range (o)))
-    {
-        return;
-    }
-#endif
 
     if (flags & GC_CALL_INTERIOR)
     {
