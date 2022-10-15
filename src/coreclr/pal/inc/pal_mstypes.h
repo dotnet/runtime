@@ -562,7 +562,6 @@ static_assert(sizeof(SSIZE_T) == sizeof(void*), "SSIZE_T should be pointer sized
 #endif
 
 #ifndef PAL_STDCPP_COMPAT
-#if defined(__APPLE_CC__) || defined(__linux__)
 #ifdef HOST_64BIT
 typedef unsigned long size_t;
 typedef long ssize_t;
@@ -571,10 +570,6 @@ typedef long ptrdiff_t;
 typedef unsigned int size_t;
 typedef int ptrdiff_t;
 #endif // !HOST_64BIT
-#else
-typedef ULONG_PTR size_t;
-typedef LONG_PTR ptrdiff_t;
-#endif
 #endif // !PAL_STDCPP_COMPAT
 #define _SIZE_T_DEFINED
 
