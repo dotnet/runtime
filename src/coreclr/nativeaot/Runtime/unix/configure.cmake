@@ -41,8 +41,6 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
 check_type_size(siginfo_t SIGINFO_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
-check_type_size(ucontext_t UCONTEXT_T)
 
 check_cxx_source_compiles("
 #include <lwp.h>
