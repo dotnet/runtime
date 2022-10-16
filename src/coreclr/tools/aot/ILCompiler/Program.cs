@@ -185,6 +185,7 @@ namespace ILCompiler
                 }
 
                 bool nativeLib = Get(_command.NativeLib);
+                bool splitExeInitalization = Get(_command.SplitExeInitalization);
                 if (multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -205,7 +206,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null && !nativeLib)
+                    if (entrypointModule == null && (!nativeLib || splitExeInitalization))
                         throw new Exception("No entrypoint module");
 
                     if (!systemModuleIsInputModule)
@@ -221,12 +222,20 @@ namespace ILCompiler
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                    if (splitExeInitalization)
+                    {
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
+                    }
                 }
                 else if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !splitExeInitalization));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                    if (splitExeInitalization)
+                    {
+                        compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    }
                 }
 
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
