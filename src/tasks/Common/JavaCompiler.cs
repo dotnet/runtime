@@ -24,10 +24,6 @@ internal sealed class JavaCompiler
 
     public void Compile(string javaSourceFile, string outputDir)
     {
-        Utils.RunProcess(
-            _logger,
-            path: "javac",
-            args: $"{_javaCompilerArgs} -d {outputDir} {javaSourceFile}",
-            workingDir: _workingDir);
+        Utils.RunProcess(_logger, "javac", $"{_javaCompilerArgs} -d {outputDir} {javaSourceFile}", workingDir: _workingDir);
     }
 }

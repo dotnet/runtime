@@ -17,11 +17,6 @@ namespace System.Net
         private readonly RemoteCertificateVerification _remoteCertificateVerifier;
         private GCHandle? _handle;
 
-        public IntPtr Handle
-            => _handle is GCHandle handle
-                ? GCHandle.ToIntPtr(handle)
-                : throw new ObjectDisposedException(nameof(TrustManagerProxy));
-
         public unsafe TrustManagerProxy(RemoteCertificateVerification remoteCertificateVerifier)
         {
             EnsureTrustManagerValidationCallbackIsRegistered();
@@ -29,6 +24,11 @@ namespace System.Net
             _remoteCertificateVerifier = remoteCertificateVerifier;
             _handle = GCHandle.Alloc(this);
         }
+
+        public IntPtr Handle
+            => _handle is GCHandle handle
+                ? GCHandle.ToIntPtr(handle)
+                : throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
         private static unsafe void EnsureTrustManagerValidationCallbackIsRegistered()
         {
@@ -50,12 +50,12 @@ namespace System.Net
 
         [UnmanagedCallersOnly]
         private static unsafe bool TrustManagerCallback(
-            IntPtr proxyHandle,
+            IntPtr proxyPtr,
             int certificatesCount,
             int* certificateLengths,
             byte** rawCertificates)
         {
-            TrustManagerProxy proxy = FromHandle(proxyHandle);
+            TrustManagerProxy proxy = GCHandle.FromIntPtr(proxyPtr).Target as TrustManagerProxy ?? throw new ObjectDisposedException(nameof(TrustManagerProxy));
             X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
             try
@@ -72,7 +72,6 @@ namespace System.Net
         private bool Validate(X509Certificate2[] certificates)
         {
             X509Certificate2? certificate = certificates.Length > 0 ? certificates[0] : null;
-
             X509Chain? chain = null;
             if (certificates.Length > 1)
             {
@@ -82,10 +81,6 @@ namespace System.Net
 
             return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain, out _, out _);
         }
-
-        private static TrustManagerProxy FromHandle(IntPtr handle)
-            => GCHandle.FromIntPtr(handle).Target as TrustManagerProxy
-                ?? throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
         private static unsafe X509Certificate2[] Convert(
             int certificatesCount,

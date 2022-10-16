@@ -19,6 +19,7 @@ namespace System.Net.Security
     {
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
+        private RemoteCertificateVerification? _remoteCertificateVerifier;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -958,9 +959,7 @@ namespace System.Net.Security
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatusFlags = X509ChainStatusFlags.NoError;
 
-            // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
             X509Chain? chain = null;
-
             X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
             if (_remoteCertificate != null &&
                 certificate != null &&
@@ -973,14 +972,9 @@ namespace System.Net.Security
             }
 
             _remoteCertificate = certificate;
+            _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
 
-            // TODO move the initialzation somewhere else
-            // can it be done just once in the constructor or something?
-            var remoteCertificateVerifier = new RemoteCertificateVerification(this, _sslAuthenticationOptions, _securityContext!);
-
-            bool success = remoteCertificateVerifier.VerifyRemoteCertificate(
-                _remoteCertificate, trust, chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
-
+            bool success = _remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
             if (!success)
             {
                 alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);

@@ -15,7 +15,7 @@ namespace System.Net.Security
 
         private readonly SslStream _sslStream;
         private readonly SslAuthenticationOptions _sslAuthenticationOptions;
-        private readonly SafeDeleteSslContext? _securityContext;
+        private readonly SafeDeleteSslContext _securityContext;
 
         public RemoteCertificateVerification(
             SslStream sslStream,
@@ -42,7 +42,9 @@ namespace System.Net.Security
             {
                 if (remoteCertificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && _sslAuthenticationOptions.RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                    if (NetEventSource.Log.IsEnabled() && _sslAuthenticationOptions.RemoteCertRequired)
+                        NetEventSource.Error(_sslStream, $"Remote certificate required, but no remote certificate received");
+
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
@@ -80,7 +82,7 @@ namespace System.Net.Security
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
-                        _securityContext!,
+                        _securityContext,
                         chain,
                         remoteCertificate,
                         _sslAuthenticationOptions.CheckCertName,
@@ -104,11 +106,7 @@ namespace System.Net.Security
                     success = (sslPolicyErrors == SslPolicyErrors.None);
                 }
 
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
-                    NetEventSource.Info(this, $"Cert validation, remote cert = {remoteCertificate}");
-                }
+                LogCertificateValidationResult(remoteCertificate, chain, success, sslPolicyErrors, remoteCertValidationCallback);
 
                 if (!success && chain != null)
                 {
@@ -135,11 +133,12 @@ namespace System.Net.Security
             return success;
         }
 
-        private void LogCertificateValidation(
-            RemoteCertificateValidationCallback? remoteCertValidationCallback,
-            SslPolicyErrors sslPolicyErrors,
+        private void LogCertificateValidationResult(
+            X509Certificate2? remoteCertificate,
+            X509Chain? chain,
             bool success,
-            X509Chain chain)
+            SslPolicyErrors sslPolicyErrors,
+            RemoteCertificateValidationCallback? remoteCertValidationCallback)
         {
             if (!NetEventSource.Log.IsEnabled())
                 return;
@@ -157,7 +156,7 @@ namespace System.Net.Security
                     NetEventSource.Log.RemoteCertificateError(_sslStream, SR.net_log_remote_cert_name_mismatch);
                 }
 
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0 && chain is not null)
                 {
                     string chainStatusString = "ChainStatus: ";
                     foreach (X509ChainStatus chainStatus in chain.ChainStatus)
@@ -186,6 +185,8 @@ namespace System.Net.Security
                     NetEventSource.Log.RemoteCertUserDeclaredInvalid(_sslStream);
                 }
             }
+
+            NetEventSource.Info(_sslStream, $"Cert validation, remote cert = {remoteCertificate}");
         }
     }
 }
