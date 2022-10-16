@@ -10,15 +10,13 @@ namespace System.Globalization.Tests
 {
     public class IcuAppLocalTests
     {
+        private static bool SupportsIcuPackageDownload => RemoteExecutor.IsSupported &&
+                                                          ((PlatformDetection.IsWindows && !PlatformDetection.IsArmProcess) ||
+                                                           (PlatformDetection.IsLinux && (PlatformDetection.IsX64Process || PlatformDetection.IsArm64Process) &&
+                                                           !PlatformDetection.IsAlpine && !PlatformDetection.IsLinuxBionic));
 
-        private static bool SupportIcuPackageDownload => PlatformDetection.Is64BitProcess &&
-                                                         PlatformDetection.IsNotOSX &&
-                                                         PlatformDetection.IsNotMobile &&
-                                                         !PlatformDetection.IsAlpine &&
-                                                         !PlatformDetection.IsLinuxBionic &&
-                                                         RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(SupportIcuPackageDownload))]
+        [ConditionalFact(nameof(SupportsIcuPackageDownload))]
         public void TestIcuAppLocal()
         {
             // We define this switch dynamically during the runtime using RemoteExecutor.
@@ -26,7 +24,7 @@ namespace System.Globalization.Tests
             // on all supported OSs even the ICU NuGet package not have native bits support such OSs.
             // Note, it doesn't matter if we have test case conditioned to not run on such OSs, because
             // the test has to start running first before filtering the test cases and the globalization
-            // code will run at that time and will fail fast at that time.
+            // code will run and fail fast at that time.
 
             ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", "68.2.0.9");
