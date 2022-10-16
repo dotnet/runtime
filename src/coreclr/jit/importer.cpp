@@ -9505,7 +9505,105 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     }
                                 }
                             }
+                            else if ((lclTyp == TYP_STRUCT) && opts.OptimizationEnabled() && !opts.IsReadyToRun())
+                            {
+                                // TODO: implement for NativeAOT as part of this PR
+                                CORINFO_CLASS_HANDLE fieldClsHnd;
+                                var_types            fieldElementType =
+                                    JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField, &fieldClsHnd,
+                                                                                   resolvedToken.hClass));
+                                assert(fieldElementType == TYP_STRUCT);
+                                unsigned fieldsCount = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
+
+                                // CanPromoteStructType is responsible for various legality checks such as
+                                // overlapping fields, etc.
+                                if (structPromotionHelper->CanPromoteStructType(fieldClsHnd))
+                                {
+                                    // TODO-CQ: Fold some non-promotable structs such as Guid (11 fields)
+                                    assert(fieldsCount <= MAX_NumOfFieldsInPromotableStruct);
+
+                                    const int bufferSize         = MAX_NumOfFieldsInPromotableStruct * sizeof(int64_t);
+                                    uint8_t   buffer[bufferSize] = {0};
+                                    unsigned  totalSize          = info.compCompHnd->getClassSize(fieldClsHnd);
+                                    if ((totalSize <= bufferSize) &&
+                                        info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
+                                                                                      totalSize))
+                                    {
+                                        struct InnerFieldInfo
+                                        {
+                                            var_types type;
+                                            unsigned  offset;
+                                        };
+
+                                        // Do a quick validation loop over fields before we start producing trees
+                                        // we want to make sure we only work with integral primitives
+                                        InnerFieldInfo fields[MAX_NumOfFieldsInPromotableStruct] = {};
+                                        for (unsigned fldIndex = 0; fldIndex < fieldsCount; fldIndex++)
+                                        {
+                                            CORINFO_FIELD_HANDLE innerField =
+                                                info.compCompHnd->getFieldInClass(fieldClsHnd, fldIndex);
+
+                                            if (innerField == NULL) // is it needed?
+                                            {
+                                                goto NONFOLDABLE_FIELD;
+                                            }
+
+                                            CORINFO_CLASS_HANDLE innerFieldClsHnd;
+                                            CorInfoType          innerFieldType =
+                                                info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd,
+                                                                               fieldClsHnd);
+                                            var_types filedVarType = JITtype2varType(innerFieldType);
+
+                                            // Technically, we can support frozen gc refs here
+                                            // and maybe floating point in future
+                                            if (!varTypeIsIntegral(filedVarType))
+                                            {
+                                                goto NONFOLDABLE_FIELD;
+                                            }
+
+                                            fields[fldIndex].type   = filedVarType;
+                                            fields[fldIndex].offset = info.compCompHnd->getFieldOffset(innerField);
+                                        }
+
+                                        unsigned structTempNum =
+                                            lvaGrabTemp(true DEBUGARG("folding static ro fld struct"));
+                                        lvaSetStruct(structTempNum, fieldClsHnd, false);
+
+                                        for (unsigned fldIndex = 0; fldIndex < fieldsCount; fldIndex++)
+                                        {
+                                            var_types      fldType = fields[fldIndex].type;
+                                            GenTreeLclFld* fieldTree =
+                                                gtNewLclFldNode(structTempNum, fldType, fields[fldIndex].offset);
+                                            GenTree* constValTree;
+
+                                            if (varTypeIsLong(fldType))
+                                            {
+                                                int64_t value;
+                                                memcpy(&value, buffer + fields[fldIndex].offset, genTypeSize(fldType));
+                                                constValTree = gtNewLconNode(value);
+                                            }
+                                            else
+                                            {
+                                                assert(varTypeIsIntegral(fldType));
+
+                                                ssize_t value;
+                                                memcpy(&value, buffer + fields[fldIndex].offset, genTypeSize(fldType));
+                                                constValTree = gtNewIconNode(value, fldType);
+                                            }
+
+                                            GenTree* fieldAsgTree = gtNewAssignNode(fieldTree, constValTree);
+                                            impAppendTree(fieldAsgTree, CHECK_SPILL_NONE, impCurStmtDI);
+                                        }
+
+                                        JITDUMP("Folding 'static readonly %s' field to a set of %d ASG nodes\n",
+                                                eeGetClassName(fieldClsHnd), fieldsCount);
+                                        op1 = impCreateLocalNode(structTempNum DEBUGARG(0));
+                                        goto FIELD_DONE;
+                                    }
+                                }
+                            }
                         }
+                    NONFOLDABLE_FIELD:
                         FALLTHROUGH;
 
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
