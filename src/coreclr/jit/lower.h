@@ -317,6 +317,7 @@ private:
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+    GenTree* TryLowerMul(GenTreeOp* node);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -361,7 +362,6 @@ private:
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
-    GenTree* TryLowerMul(GenTreeOp* node);
     void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
