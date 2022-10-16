@@ -9484,7 +9484,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                         // Replace static read-only fields with constant if possible
-                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL))
+                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
+                            opts.OptimizationEnabled())
                         {
                             const int bufferSize         = sizeof(uint64_t);
                             uint8_t   buffer[bufferSize] = {0};
@@ -9502,9 +9503,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     }
                                 }
                             }
-                            else if ((lclTyp == TYP_STRUCT) && opts.OptimizationEnabled() && !opts.IsReadyToRun())
+                            else if (lclTyp == TYP_STRUCT)
                             {
-                                // TODO: implement for NativeAOT as part of this PR
                                 CORINFO_CLASS_HANDLE fieldClsHnd;
                                 info.compCompHnd->getFieldType(resolvedToken.hField, &fieldClsHnd,
                                                                resolvedToken.hClass);
