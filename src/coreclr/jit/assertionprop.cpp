@@ -6129,6 +6129,16 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_INTRINSIC:
             break;
 
+        case GT_IND:
+        {
+            const ValueNum vn = tree->GetVN(VNK_Conservative);
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) || (vnStore->VNNormalValue(vn) != vn))
+            {
+                return WALK_CONTINUE;
+            }
+        }
+        break;
+
         case GT_JTRUE:
             break;
 
