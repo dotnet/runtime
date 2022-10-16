@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
             // the test has to start running first before filtering the test cases and the globalization
             // code will run and fail fast at that time.
 
-            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
+            ProcessStartInfo psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", "68.2.0.9");
 
             RemoteExecutor.Invoke(() =>
