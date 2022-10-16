@@ -4135,11 +4135,8 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     return node;
 }
 
-GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType)
+GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, var_types valueType)
 {
-    // We plan to support larger values (for structs), for now let's keep it 64 bit
-    assert(bufferSize == sizeof(INT64));
-
     GenTree* tree = nullptr;
     switch (valueType)
     {
@@ -9497,7 +9494,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
                                                                                   genTypeSize(lclTyp)))
                                 {
-                                    GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
+                                    GenTree* cnsValue = impImportStaticReadOnlyField(buffer, lclTyp);
                                     if (cnsValue != nullptr)
                                     {
                                         op1 = cnsValue;
@@ -9574,22 +9571,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                             var_types      fldType = fields[fldIndex].type;
                                             GenTreeLclFld* fieldTree =
                                                 gtNewLclFldNode(structTempNum, fldType, fields[fldIndex].offset);
-                                            GenTree* constValTree;
 
-                                            if (varTypeIsLong(fldType))
-                                            {
-                                                int64_t value;
-                                                memcpy(&value, buffer + fields[fldIndex].offset, genTypeSize(fldType));
-                                                constValTree = gtNewLconNode(value);
-                                            }
-                                            else
-                                            {
-                                                assert(varTypeIsIntegral(fldType));
-
-                                                ssize_t value;
-                                                memcpy(&value, buffer + fields[fldIndex].offset, genTypeSize(fldType));
-                                                constValTree = gtNewIconNode(value, fldType);
-                                            }
+                                            // Read corresponding chunk from the buffer for the given sub-field
+                                            GenTree* constValTree =
+                                                impImportStaticReadOnlyField(buffer + fields[fldIndex].offset, fldType);
+                                            assert(constValTree != nullptr);
 
                                             GenTree* fieldAsgTree = gtNewAssignNode(fieldTree, constValTree);
                                             impAppendTree(fieldAsgTree, CHECK_SPILL_NONE, impCurStmtDI);
