@@ -137,7 +137,9 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SafeSocketHandle newHandle;
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out newHandle);
+            _handle = newHandle;
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
             if (errorCode != SocketError.Success)
