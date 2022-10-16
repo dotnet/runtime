@@ -476,7 +476,7 @@ namespace System.Net.Mail.Tests
             Task sendTask = client.SendMailAsync(message, cts.Token);
 
             cts.Cancel();
-            await Task.Delay(new Random().Next(300, 700));
+            await Task.Delay(500);
             serverMre.Set();
 
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
