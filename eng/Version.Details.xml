@@ -94,11 +94,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="8.0.0-beta.22503.1">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.22503.1">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.22480.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
     </Dependency>
@@ -322,7 +318,7 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>ea9fb45000311153bfc91690f306cca2b80e6b83</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22462.3">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22511.23">
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>3f2524bd65a6ab77b9160bcc23824dbc03990f3d</Sha>
     </Dependency>
