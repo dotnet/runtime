@@ -83,6 +83,14 @@
 
 /eng/pipelines/**/*wasm* @radical
 
+# Linker codeowners
+/src/tools/linker/ @marek-safar
+/src/tools/linker/src/analyzer/ @radekdoulik
+/src/tools/linker/src/ILLink.Tasks/ @sbomer
+/src/tools/linker/src/ILLink.RoslynAnalyzer/ @sbomer
+/src/tools/linker/src/linker/ @marek-safar @mrvoorhe
+/src/tools/linker/test/ @marek-safar @mrvoorhe
+
 # Obsoletions / Custom Diagnostics
 
 /docs/project/list-of-diagnostics.md                @jeffhandley
