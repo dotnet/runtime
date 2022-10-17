@@ -1,4 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/sh
+
+set -e
 
 # This is a simple script primarily used for CI to install necessary dependencies
 #
@@ -13,24 +15,26 @@
 #
 # ./install-native-dependencies.sh <OS>
 
-if [ "$1" = "Linux" ]; then
-    sudo apt update
-    if [ "$?" != "0" ]; then
-       exit 1;
-    fi
-    sudo apt install cmake llvm-3.9 clang-3.9 lldb-3.9 liblldb-3.9-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libkrb5-dev libnuma-dev build-essential
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-elif [[ "$1" == "MacCatalyst" || "$1" == "OSX" || "$1" == "tvOS" || "$1" == "iOS" ]]; then
-    engdir=$(dirname "${BASH_SOURCE[0]}")
+os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
 
-    echo "Installed xcode version: `xcode-select -p`"
+if [ -e /etc/os-release ]; then
+    . /etc/os-release
+fi
+
+if [ "$os" = "linux" ] && { [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; }; then
+    apt update
+
+    apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
+        libssl-dev libkrb5-dev libnuma-dev
+
+    localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+elif [ "$os" = "maccatalyst" ] || [ "$os" = "osx" ] || [ "$os" = "macos" ] || [ "$os" = "tvos" ] || [ "$os" = "ios" ]; then
+    echo "Installed xcode version: $(xcode-select -p)"
 
     if [ "$3" = "azDO" ]; then
         # workaround for old osx images on hosted agents
         # piped in case we get an agent without these values installed
-        if ! brew_output="$(brew uninstall openssl@1.0.2t 2>&1 >/dev/null)"; then
+        if ! brew uninstall openssl@1.0.2t >/dev/null 2>&1; then
             echo "didn't uninstall openssl@1.0.2t"
         else
             echo "successfully uninstalled openssl@1.0.2t"
@@ -38,12 +42,8 @@ elif [[ "$1" == "MacCatalyst" || "$1" == "OSX" || "$1" == "tvOS" || "$1" == "iOS
     fi
 
     brew update --preinstall
-    brew bundle --no-upgrade --no-lock --file "${engdir}/Brewfile"
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
+    brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
 else
-    echo "Must pass \"Linux\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
+    echo "Must pass 'Linux', 'macOS', 'maccatalyst', 'iOS' or 'tvOS' as first argument."
     exit 1
 fi
-
