@@ -13,8 +13,6 @@
 // Headers
 // --------------------------------------------------------------------------------
 
-#include <shlwapi.h>
-
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"

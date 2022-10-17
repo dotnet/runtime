@@ -174,8 +174,6 @@
 #include "stacksampler.h"
 #endif
 
-#include <shlwapi.h>
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
