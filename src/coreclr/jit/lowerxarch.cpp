@@ -106,7 +106,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMulToShlSubOrShlAdd:
+// Lowering::TryLowerMulToLshSubOrLshAdd:
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -119,7 +119,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 // Notes:
 //    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerMulToShlSubOrShlAdd(GenTreeOp* node)
+GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
@@ -214,7 +214,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
-        GenTree* replacementNode = TryLowerMulToShlSubOrShlAdd(mul);
+        GenTree* replacementNode = TryLowerMulToLshSubOrLshAdd(mul);
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
