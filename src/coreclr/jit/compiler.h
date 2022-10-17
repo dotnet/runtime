@@ -1420,7 +1420,7 @@ enum class PhaseDumps
 enum API_ICorJitInfo_Names
 {
 #define DEF_CLR_API(name) API_##name,
-#include "ICorJitInfo_API_names.h"
+#include "ICorJitInfo_names_generated.h"
     API_COUNT
 };
 

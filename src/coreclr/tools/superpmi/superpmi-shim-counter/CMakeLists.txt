@@ -17,7 +17,7 @@ include_directories(../superpmi-shared)
 set(SUPERPMI_SHIM_COUNTER_SOURCES
     jithost.cpp
     icorjitcompiler.cpp
-    icorjitinfo.cpp
+    icorjitinfo_generated.cpp
     methodcallsummarizer.cpp
     superpmi-shim-counter.cpp
     ../superpmi-shared/callutils.cpp

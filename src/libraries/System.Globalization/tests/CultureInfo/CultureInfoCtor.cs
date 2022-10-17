@@ -233,8 +233,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "ms-MY", new [] { "ms-MY" } };
             yield return new object[] { "mt", new [] { "mt" }, true };
             yield return new object[] { "mt-MT", new [] { "mt-MT" }, true };
-            yield return new object[] { "nb", new [] { "nb" }, true };
-            yield return new object[] { "nb-NO", new [] { "nb-NO" }, true };
+            yield return new object[] { "nb", new [] { "nb" } };
+            yield return new object[] { "nb-NO", new [] { "nb-NO" } };
             yield return new object[] { "ne", new [] { "ne" }, true };
             yield return new object[] { "ne-NP", new [] { "ne-NP" }, true };
             yield return new object[] { "nl", new [] { "nl" } };
