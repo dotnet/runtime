@@ -17,10 +17,10 @@ namespace System.Text.Json.Serialization.Converters
 
         private static readonly char[] s_specialChars = new[] { ',', ' ' };
 
+        private static readonly bool s_containsSpecialChar = ContainsSpecialChar();
+
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
-
-        private static readonly bool s_containsSpecialChar = ContainsSpecialChar();
 
         private const string ValueSeparator = ", ";
 
@@ -532,16 +532,9 @@ namespace System.Text.Json.Serialization.Converters
 
             foreach (string name in names)
             {
-                foreach (char cha in s_specialChars)
+                if (name.IndexOfAny(s_specialChars) != -1)
                 {
-#if NETCOREAPP2_1_OR_GREATER
-                    if (name.Contains(cha))
-#else
-                    if (name.IndexOf(cha) != -1)
-#endif
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
