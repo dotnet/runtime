@@ -5653,6 +5653,7 @@ struct gap_reloc_pair
 
 struct DECLSPEC_ALIGN(8) aligned_plug_and_gap
 {
+    size_t       additional_pad;
     plug_and_gap plugandgap;
 };
 

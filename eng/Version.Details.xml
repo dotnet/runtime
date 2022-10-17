@@ -1,6 +1,6 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-alpha.1.22512.11">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-alpha.1.22513.1">
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>a14f6037f69588c9c0af85c3b78cebbe3eb33982</Sha>
     </Dependency>
@@ -94,11 +94,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="8.0.0-beta.22503.1">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.22503.1">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.22480.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d2d39276af2db3da7816ee2dc543e120d7e5781e</Sha>
     </Dependency>
@@ -258,9 +254,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>636777273b152a34bb244b35527ca563735efa35</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22504.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22514.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>5c909850449fa60f0a0df1cfec7d942a560f3607</Sha>
+      <Sha>3ebf0133b590e4be9f8ffb14f5c34fc56cce958d</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22511.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
@@ -322,7 +318,7 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>ea9fb45000311153bfc91690f306cca2b80e6b83</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22462.3">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22511.23">
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>3f2524bd65a6ab77b9160bcc23824dbc03990f3d</Sha>
     </Dependency>
