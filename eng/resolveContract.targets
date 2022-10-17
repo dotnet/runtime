@@ -57,6 +57,22 @@
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
 
+  <!-- Make configuration and private attributes on the CoreLib ProjectReference consistent between src/libraries and src/"runtime" references. -->
+  <ItemGroup Condition="'@(ProjectReference)' != ''">
+    <_coreLibProjectReference Include="@(ProjectReference->WithMetadataValue('Filename', 'System.Private.CoreLib'))" />
+    <ProjectReference Update="@(_coreLibProjectReference)"
+                      Private="false">
+      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
+                                   '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
+                                   '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
+    </ProjectReference>
+    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
+    <ProjectReference Update="@(ProjectReference->WithMetadataValue('PrivateAssets', ''))"
+                      PrivateAssets="all"
+                      Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
+  </ItemGroup>
+
   <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"
           Condition="'$(HasMatchingContract)' == 'true'"
