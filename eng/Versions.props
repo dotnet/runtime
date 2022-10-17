@@ -200,7 +200,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22504.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22514.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.22512.11</MicrosoftNETCoreRuntimeICUTransportVersion>
