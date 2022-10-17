@@ -18,14 +18,6 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ConsoleLogger"/> class.
-        /// </summary>
-        /// <param name="name">The name of the logger.</param>
-        /// <param name="loggerProcessor"></param>
-        /// <param name="formatter"></param>
-        /// <param name="scopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
-        /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
         internal ConsoleLogger(
             string name,
             ConsoleLoggerProcessor loggerProcessor,
