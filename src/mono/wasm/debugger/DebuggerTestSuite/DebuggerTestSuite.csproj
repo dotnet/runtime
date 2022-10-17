@@ -7,6 +7,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
     <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
+    <DefineConstants  Condition="'$(WasmEnableThreads)'=='true'">$(DefineConstants);WASM_ENABLE_THREADS</DefineConstants>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
     <InstallFirefoxForTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForTests>

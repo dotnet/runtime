@@ -37,6 +37,11 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
+#if WASM_ENABLE_THREADS
+        public static bool WasmEnableThreads = true;
+#else
+        public static bool WasmEnableThreads = false;
+#endif
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
         public const int FirefoxProxyPort = 6002;

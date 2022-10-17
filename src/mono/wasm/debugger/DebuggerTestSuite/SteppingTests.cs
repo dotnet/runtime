@@ -1037,5 +1037,12 @@ namespace DebuggerTests
                 step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
         }
+
+        [ConditionalFact(nameof(WasmEnableThreads))]
+        public async Task TestDebugUsingMultiThreadedRuntime()
+        {
+            //TODO WRITE HERE A TEST LIKE THE SAMPLE AND CHECK IF IT'S PAUSING IN ALL THREADS CORRECTLY
+            await Task.Delay(1);
+        }
     }
 }
