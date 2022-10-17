@@ -8,6 +8,9 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
+    /// <summary>
+    /// The windows event log.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     internal sealed class WindowsEventLog : IEventLog
     {
@@ -23,8 +26,14 @@ namespace Microsoft.Extensions.Logging.EventLog
             DiagnosticsEventLog = new System.Diagnostics.EventLog(logName, machineName, sourceName);
         }
 
+        /// <summary>
+        /// The diagnostics event log.
+        /// </summary>
         public System.Diagnostics.EventLog DiagnosticsEventLog { get; }
 
+        /// <summary>
+        /// The maximum message size.
+        /// </summary>
         public int MaxMessageSize => MaximumMessageSize;
 
         public int? DefaultEventId { get; set; }
