@@ -6607,6 +6607,21 @@ PhaseStatus Compiler::fgTailMerge()
     bool      madeChanges = false;
     int const mergeLimit  = 50;
 
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableTailMergeRange;
+    JitEnableTailMergeRange.EnsureInit(JitConfig.JitEnableTailMergeRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitEnableTailMergeRange.Contains(hash);
+#else
+    const bool inRange = true;
+#endif
+
+    if (!inRange)
+    {
+        JITDUMP("Tail merge disabled by JitEnableTailMergeRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     struct PredInfo
     {
         BasicBlock* m_block;
@@ -6631,15 +6646,40 @@ PhaseStatus Compiler::fgTailMerge()
 
         predInfo.Reset();
 
-        // Find subset preds that reach along non-critical edges
+        // Find the subset of preds that reach along non-critical edges
         // and populate predInfo.
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
             if ((predBlock->GetUniqueSucc() == block) && BasicBlock::sameEHRegion(block, predBlock))
             {
-                Statement* const lastStmt = predBlock->lastStmt();
+                Statement* lastStmt = predBlock->lastStmt();
 
+                // Block might be empty.
+                //
+                if (lastStmt == nullptr)
+                {
+                    continue;
+                }
+
+                // Walk back past any GT_NOPs.
+                //
+                Statement* const firstStmt = predBlock->firstStmt();
+                while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    if (lastStmt == firstStmt)
+                    {
+                        // predBlock is evidently all GT_NOP.
+                        //
+                        lastStmt = nullptr;
+                        break;
+                    }
+
+                    lastStmt = lastStmt->GetPrevStmt();
+                }
+
+                // We don't expect to see PHIs but watch for them anyways.
+                //
                 if ((lastStmt != nullptr) && !lastStmt->IsPhiDefnStmt())
                 {
                     PredInfo info;
@@ -6702,7 +6742,8 @@ PhaseStatus Compiler::fgTailMerge()
             //
             if (matchedPredInfo.Height() == (int)block->countOfInEdges())
             {
-                JITDUMP("All preds of " FMT_BB " end with the same tree, moving things\n", block->bbNum);
+                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", block->bbNum);
+                JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
                 for (int j = 0; j < matchedPredInfo.Height(); j++)
                 {
@@ -6735,13 +6776,14 @@ PhaseStatus Compiler::fgTailMerge()
             // statement or one that falls through to block (or both).
             //
             JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
+            JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
             BasicBlock* crossJumpVictim       = matchedPredInfo.TopRef(0).m_block;
             Statement*  crossJumpStmt         = matchedPredInfo.TopRef(0).m_stmt;
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
-            for (int j = 1; j < matchedPredInfo.Height(); j++)
+            for (int j = 0; j < matchedPredInfo.Height(); j++)
             {
                 PredInfo&         info      = matchedPredInfo.TopRef(j);
                 Statement* const  stmt      = info.m_stmt;
@@ -6797,8 +6839,10 @@ PhaseStatus Compiler::fgTailMerge()
             else
             {
                 crossJumpTarget = fgSplitBlockAfterStatement(crossJumpVictim, crossJumpStmt->GetPrevStmt());
-                JITDUMP("Will cross-jump to new " FMT_BB "\n", crossJumpTarget->bbNum);
+                JITDUMP("Will cross-jump to newly split off " FMT_BB "\n", crossJumpTarget->bbNum);
             }
+
+            assert(!crossJumpTarget->isEmpty());
 
             // Do the cross jumping
             //
