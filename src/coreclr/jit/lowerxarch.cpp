@@ -106,7 +106,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMulToLshSubOrLshAdd:
+// Lowering::TryLowerMulWithConstant:
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -119,14 +119,10 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 // Notes:
 //    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
+GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
-// We do not do this optimization in X86 as it is not recommended.
-#if TARGET_X86
-    return nullptr;
-#else  // !TARGET_X86
     if (!varTypeIsIntegral(node))
         return nullptr;
 
@@ -149,14 +145,53 @@ GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
     ssize_t              cnsVal = cns->IconValue();
 
     // Use GT_LSH if cnsVal is a power of two.
-    // This is handled in codegen.
     if (isPow2(cnsVal))
-        return nullptr;
+    {
+        // Use shift for constant multiply when legal
+        unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
+
+        cns->SetIconValue(shiftAmount);
+        node->ChangeOper(GT_LSH);
+
+        ContainCheckShiftRotate(node);
+
+        return node;
+    }
 
     // Use GT_LEA if cnsVal is 3, 5, or 9.
-    // This is handled in codegen.
     if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
-        return nullptr;
+    {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            // We will use the LEA instruction to perform this multiply
+            // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
+            unsigned int scale = (unsigned int)(cnsVal - 1);
+
+            GenTree* lea = OffsetByIndexWithScale(op1, comp->gtClone(op1), scale);
+
+            BlockRange().Remove(cns);
+            BlockRange().Remove(op1);
+            BlockRange().InsertBefore(node, lea->gtGetOp2());
+            BlockRange().InsertBefore(node, lea->gtGetOp1());
+            BlockRange().InsertBefore(node, lea);
+
+            use.ReplaceWith(lea);
+
+            BlockRange().Remove(node);
+
+            return lea;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+// We do not do this optimization in X86 as it is not recommended.
+#if TARGET_X86
+    return nullptr;
+#else  // !TARGET_X86
 
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
@@ -214,7 +249,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
-        GenTree* replacementNode = TryLowerMulToLshSubOrLshAdd(mul);
+        GenTree* replacementNode = TryLowerMulWithConstant(mul);
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
