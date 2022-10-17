@@ -15,6 +15,9 @@ namespace Microsoft.Extensions.Logging.EventLog
         private const int MaximumMessageSize = 31839;
         private bool _enabled = true;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WindowsEventLog"/> class.
+        /// </summary>
         public WindowsEventLog(string logName, string machineName, string sourceName)
         {
             DiagnosticsEventLog = new System.Diagnostics.EventLog(logName, machineName, sourceName);
