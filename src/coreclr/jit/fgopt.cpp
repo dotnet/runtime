@@ -6713,10 +6713,13 @@ PhaseStatus Compiler::fgTailMerge()
                     assert(stmt == predBlock->lastStmt());
                     fgUnlinkStmt(predBlock, stmt);
 
-                    // Add one of the matching stmts in the new block
+                    // Add one of the matching stmts to block, and
+                    // update its flags.
+                    //
                     if (j == 0)
                     {
                         fgInsertStmtAtBeg(block, stmt);
+                        block->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
                     }
 
                     madeChanges = true;
