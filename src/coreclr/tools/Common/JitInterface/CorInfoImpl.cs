@@ -9,6 +9,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
@@ -1828,6 +1829,27 @@ namespace Internal.JitInterface
                 str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
             }
             return str.Length;
+        }
+
+        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        {
+            Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
+
+            int bufferSize32 = checked((int)bufferSize);
+            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+
+            int written = 0;
+            if (bufferSize > 0)
+            {
+                Utf8.FromUtf16(objStr, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
+                // Always null-terminate
+                buffer[written] = 0;
+            }
+            if (pRequiredBufferSize != null)
+            {
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr) + 1;
+            }
+            return (nuint)written;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

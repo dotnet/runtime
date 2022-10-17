@@ -38,6 +38,9 @@ namespace Microsoft.Extensions.Hosting
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="HostBuilder"/>.
+        /// </summary>
         [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostBuilder()
         {

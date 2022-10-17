@@ -106,5 +106,37 @@ namespace DebuggerTests
                 Assert.True(task.Result);
             }
         }
+        
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task InspectObjectOfTypeWithToStringOverriden()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] ToStringOverriden:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1505, 8,
+                "ToStringOverriden.Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("a", TObject("ToStringOverriden", description:"helloToStringOverriden")),
+                        ("b", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("c", TObject("ToStringOverriden.ToStringOverridenD", description:"helloToStringOverridenD")),
+                        ("d", TObject("ToStringOverriden.ToStringOverridenE", description:"helloToStringOverridenE")),
+                        ("e", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("f", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("g", TObject("ToStringOverriden.ToStringOverridenG", description:"helloToStringOverridenG")),
+                        ("h", TObject("ToStringOverriden.ToStringOverridenH", description:"helloToStringOverridenH")),
+                        ("i", TObject("ToStringOverriden.ToStringOverridenI", description:"ToStringOverriden.ToStringOverridenI")),
+                        ("j", TObject("ToStringOverriden.ToStringOverridenJ", description:"helloToStringOverridenJ")),
+                        ("k", TObject("ToStringOverriden.ToStringOverridenK", description:"ToStringOverriden.ToStringOverridenK")),
+                        ("l", TObject("ToStringOverriden.ToStringOverridenL", description:"helloToStringOverridenL")),
+                        ("m", TObject("ToStringOverriden.ToStringOverridenM", description:"ToStringOverridenM { }")),
+                        ("n", TObject("ToStringOverriden.ToStringOverridenN", description:"helloToStringOverridenN"))
+                    );
+                }
+            );
+        }
     }
 }

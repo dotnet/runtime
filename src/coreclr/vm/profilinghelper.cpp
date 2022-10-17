@@ -533,7 +533,7 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     // Translate the string into a CLSID
     if (*wszClsid == W('{'))
     {
-        hr = IIDFromString(wszClsid, pClsid);
+        hr = LPCWSTRToGuid(wszClsid, pClsid) ? S_OK : E_FAIL;
     }
     else
     {

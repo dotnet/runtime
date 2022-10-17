@@ -18,7 +18,7 @@ namespace System.Linq
         private int[] SortedMap(Buffer<TElement> buffer, int minIdx, int maxIdx) =>
             GetEnumerableSorter().Sort(buffer._items, buffer._count, minIdx, maxIdx);
 
-        public IEnumerator<TElement> GetEnumerator()
+        public virtual IEnumerator<TElement> GetEnumerator()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             if (buffer._count > 0)
@@ -62,9 +62,7 @@ namespace System.Linq
 
         internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
 
-        private CachingComparer<TElement> GetComparer() => GetComparer(null);
-
-        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer);
+        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer = null);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -156,6 +154,57 @@ namespace System.Linq
                 ? new CachingComparer<TElement, TKey>(_keySelector, _comparer, _descending)
                 : new CachingComparerWithChild<TElement, TKey>(_keySelector, _comparer, _descending, childComparer);
             return _parent != null ? _parent.GetComparer(cmp) : cmp;
+        }
+    }
+
+    /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
+    internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+    {
+        private readonly bool _descending;
+
+        public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, bool descending) : base(source)
+        {
+            Debug.Assert(Enumerable.TypeIsImplicitlyStable<TElement>());
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            _descending = descending;
+        }
+
+        internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
+            childComparer == null ?
+                new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
+                new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, childComparer);
+
+        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next) =>
+            new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, next);
+
+        public override IEnumerator<TElement> GetEnumerator()
+        {
+            var buffer = new Buffer<TElement>(_source);
+            if (buffer._count > 0)
+            {
+                Sort(buffer._items.AsSpan(0, buffer._count), _descending);
+                for (int i = 0; i < buffer._count; i++)
+                {
+                    yield return buffer._items[i];
+                }
+            }
+        }
+
+        private static void Sort(Span<TElement> span, bool descending)
+        {
+            if (descending)
+            {
+                span.Sort(static (a, b) => Comparer<TElement>.Default.Compare(b, a));
+            }
+            else
+            {
+                span.Sort();
+            }
         }
     }
 

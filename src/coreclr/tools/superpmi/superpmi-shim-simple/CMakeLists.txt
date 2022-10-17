@@ -17,7 +17,7 @@ include_directories(../superpmi-shared)
 set(SUPERPMI_SHIM_SIMPLE_SOURCES
     jithost.cpp
     icorjitcompiler.cpp
-    icorjitinfo.cpp
+    icorjitinfo_generated.cpp
     superpmi-shim-simple.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
