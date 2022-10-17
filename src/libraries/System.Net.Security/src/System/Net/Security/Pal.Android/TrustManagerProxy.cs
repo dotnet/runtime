@@ -62,6 +62,11 @@ namespace System.Net
             {
                 return proxy.Validate(certificates);
             }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Remote certificate verification has thrown an exception: {exception}");
+                return false;
+            }
             finally
             {
                 foreach (var certificate in certificates)
