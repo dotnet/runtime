@@ -634,21 +634,6 @@ typedef unsigned int ALG_ID;
 #define CSTR_EQUAL                2
 #define CSTR_GREATER_THAN         3
 
-/******************* shlwapi ************************************/
-
-// note: diff in NULL handing and calling convetion
-#define StrChrW                 (WCHAR*)PAL_wcschr
-
-#define lstrcmpW                PAL_wcscmp
-#define lstrcmpiW               _wcsicmp
-
-#ifdef UNICODE
-#define StrChr                  StrChrW
-
-#define lstrcmp                 lstrcmpW
-#define lstrcmpi                lstrcmpiW
-#endif
-
 
 #ifdef __cplusplus
 /*
