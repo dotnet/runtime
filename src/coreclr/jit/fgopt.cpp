@@ -6751,7 +6751,6 @@ PhaseStatus Compiler::fgTailMerge()
                     Statement* const  stmt      = info.m_stmt;
                     BasicBlock* const predBlock = info.m_block;
 
-                    assert(stmt == predBlock->lastStmt());
                     fgUnlinkStmt(predBlock, stmt);
 
                     // Add one of the matching stmts to block, and
