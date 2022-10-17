@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Converters
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
+        private static readonly char[] s_specialChars = new[] { ',', ' ' };
+
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
@@ -112,7 +114,7 @@ namespace System.Text.Json.Serialization.Converters
                     return value;
                 }
 
-                // If enum contains special char, faile before pass bogus tokens into the naming policy.
+                // If enum contains special char, fail before passing bogus tokens into the naming policy.
                 if (s_containsSpecialChar)
                 {
                     ThrowHelper.ThrowJsonException();
@@ -194,6 +196,12 @@ namespace System.Text.Json.Serialization.Converters
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
+                // If enum contains special char, fail instead of write wrong json string.
+                if (s_containsSpecialChar)
+                {
+                    ThrowHelper.ThrowJsonException();
+                }
+
                 ulong key = ConvertToUInt64(value);
 
                 if (_nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
@@ -524,17 +532,15 @@ namespace System.Text.Json.Serialization.Converters
 
             foreach (string name in names)
             {
-                foreach (char cha in name)
+                foreach (char cha in s_specialChars)
                 {
-#if NET7_0_OR_GREATER
-                    if (!char.IsAsciiLetterOrDigit(cha) && cha != '_')
+#if NETCOREAPP2_1_OR_GREATER
+                    if (name.Contains(cha))
 #else
-                    if ((uint)((cha | 0x20) - 'a') > 'z' - 'a' &&
-                     (uint)(cha - '0') > '9' - '0' &&
-                     cha != '_')
+                    if (name.IndexOf(cha) != -1)
 #endif
                     {
-                        return false;
+                        return true;
                     }
                 }
             }
