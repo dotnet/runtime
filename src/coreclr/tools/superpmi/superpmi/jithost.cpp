@@ -7,21 +7,17 @@
 #include "icorjitinfo.h"
 #include "jithost.h"
 
-// Look for 'key' as an environment variable named COMPlus_<key>. The returned value
-// is nullptr if it is not found, or a string if found. If not nullptr, the returned
-// value must be freed with jitInstance.freeLongLivedArray(value).
-WCHAR* GetCOMPlusVariable(const WCHAR* key, JitInstance& jitInstance)
-{
-    static const WCHAR Prefix[]  = W("COMPlus_");
-    static const size_t  PrefixLen = (sizeof(Prefix) / sizeof(Prefix[0])) - 1;
+#include <clrconfignocache.h>
 
-    // Prepend "COMPlus_" to the provided key
+WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, const WCHAR* key, JitInstance& jitInstance)
+{
+    // Prepend prefix to the provided key
     size_t   keyLen       = wcslen(key);
-    size_t   keyBufferLen = keyLen + PrefixLen + 1;
+    size_t   keyBufferLen = keyLen + prefixLen + 1;
     WCHAR* keyBuffer =
         reinterpret_cast<WCHAR*>(jitInstance.allocateArray(sizeof(WCHAR) * keyBufferLen));
-    wcscpy_s(keyBuffer, keyBufferLen, Prefix);
-    wcscpy_s(&keyBuffer[PrefixLen], keyLen + 1, key);
+    wcscpy_s(keyBuffer, keyBufferLen, prefix);
+    wcscpy_s(&keyBuffer[prefixLen], keyLen + 1, key);
 
     // Look up the environment variable
     DWORD valueLen = GetEnvironmentVariableW(keyBuffer, nullptr, 0);
@@ -43,6 +39,20 @@ WCHAR* GetCOMPlusVariable(const WCHAR* key, JitInstance& jitInstance)
     }
 
     return value;
+}
+
+// Look for 'key' as an environment variable named DOTNET_<key> and fallback to COMPlus_<key>.
+// The returned value is nullptr if it is not found, or a string if found. If not nullptr,
+// the returned value must be freed with jitInstance.freeLongLivedArray(value).
+WCHAR* GetConfigFromEnvironmentVariable(const WCHAR* key, JitInstance& jitInstance)
+{
+    WCHAR* result = GetPrefixedEnvironmentVariable(DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX, key, jitInstance);
+    if (result == nullptr)
+    {
+        result = GetPrefixedEnvironmentVariable(COMPLUS_PREFIX, LEN_OF_COMPLUS_PREFIX, key, jitInstance);
+    }
+
+    return result;
 }
 
 JitHost::JitHost(JitInstance& jitInstance) : jitInstance(jitInstance)
@@ -121,11 +131,11 @@ int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
 
     if (!valueFound)
     {
-        WCHAR* complusVar = GetCOMPlusVariable(key, jitInstance);
-        valueFound          = convertStringValueToInt(key, complusVar, result);
-        if (complusVar != nullptr)
+        WCHAR* envVar = GetConfigFromEnvironmentVariable(key, jitInstance);
+        valueFound    = convertStringValueToInt(key, envVar, result);
+        if (envVar != nullptr)
         {
-            jitInstance.freeLongLivedArray(complusVar);
+            jitInstance.freeLongLivedArray(envVar);
         }
     }
 
@@ -161,7 +171,7 @@ const WCHAR* JitHost::getStringConfigValue(const WCHAR* key)
 
     if (result == nullptr)
     {
-        result    = GetCOMPlusVariable(key, jitInstance);
+        result    = GetConfigFromEnvironmentVariable(key, jitInstance);
         needToDup = false;
     }
 

@@ -6,15 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="McjRecorderTimeoutBeforeStop.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_MultiCoreJitProfileWriteDelay" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_MultiCoreJitProfileWriteDelay=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_MultiCoreJitProfileWriteDelay=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

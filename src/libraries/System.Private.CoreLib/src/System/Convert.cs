@@ -2341,7 +2341,7 @@ namespace System
 
             string result = string.FastAllocateString(outputLength);
 
-            if (!insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
+            if (Vector128.IsHardwareAccelerated && !insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
             {
                 ToBase64CharsLargeNoLineBreaks(bytes, new Span<char>(ref result.GetRawStringData(), result.Length), result.Length);
             }
@@ -2398,7 +2398,7 @@ namespace System
             if (offsetOut > outArrayLength - charLengthRequired)
                 throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
 
-            if (!insertLineBreaks && length >= Base64VectorizationLengthThreshold)
+            if (Vector128.IsHardwareAccelerated && !insertLineBreaks && length >= Base64VectorizationLengthThreshold)
             {
                 ToBase64CharsLargeNoLineBreaks(new ReadOnlySpan<byte>(inArray, offsetIn, length), outArray.AsSpan(offsetOut), charLengthRequired);
             }
@@ -2437,7 +2437,7 @@ namespace System
                 return false;
             }
 
-            if (!insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
+            if (Vector128.IsHardwareAccelerated && !insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
             {
                 ToBase64CharsLargeNoLineBreaks(bytes, chars, charLengthRequired);
             }

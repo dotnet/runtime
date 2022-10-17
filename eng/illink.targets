@@ -3,8 +3,8 @@
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
-    <!-- ApiCompat should perform compatibility checks on the trimmed assemblies. -->
-    <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
+    <!-- ApiCompat's assembly validation should use the trimmed assemblies as an input, so we make sure that ILLink runs first. -->
+    <ApiCompatValidateAssembliesDependsOn Condition="'$(IsCrossTargetingBuild)' != 'true'">$(ApiCompatValidateAssembliesDependsOn);ILLinkTrimAssembly</ApiCompatValidateAssembliesDependsOn>
   </PropertyGroup>
   
   <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
