@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
         public void EmitLDR(Register regDst, Register regSrc, int offset)
         {
-            Debug.Assert(offset >= -255 && offset <= 4095);
+            Debug.Assert(offset >= -255 && offset <= 32760);
             if (offset >= 0)
             {
                 Debug.Assert(offset % 8 == 0);
