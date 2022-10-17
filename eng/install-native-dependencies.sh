@@ -25,7 +25,7 @@ if [ "$os" = "linux" ] && { [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; }
     apt update
 
     apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-        libssl-dev libkrb5-dev libnuma-dev
+        libssl-dev libkrb5-dev libnuma-dev libz-dev
 
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 elif [ "$os" = "maccatalyst" ] || [ "$os" = "osx" ] || [ "$os" = "macos" ] || [ "$os" = "tvos" ] || [ "$os" = "ios" ]; then
