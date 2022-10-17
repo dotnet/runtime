@@ -639,15 +639,11 @@ typedef unsigned int ALG_ID;
 // note: diff in NULL handing and calling convetion
 #define StrChrW                 (WCHAR*)PAL_wcschr
 
-STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
-
 #define lstrcmpW                PAL_wcscmp
 #define lstrcmpiW               _wcsicmp
 
 #ifdef UNICODE
 #define StrChr                  StrChrW
-
-#define StrRChr                 StrRChrW
 
 #define lstrcmp                 lstrcmpW
 #define lstrcmpi                lstrcmpiW
@@ -728,15 +724,6 @@ inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const
 
 }
 #endif /* __cplusplus */
-
-STDAPI_(BOOL) PathIsUNCW(LPCWSTR pszPath);
-STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc);
-
-#ifdef UNICODE
-#define PathIsUNC           PathIsUNCW
-#define PathCanonicalize    PathCanonicalizeW
-
-#endif // UNICODE
 
 /******************* misc ***************************************/
 
