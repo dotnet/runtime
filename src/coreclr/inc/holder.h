@@ -5,6 +5,7 @@
 #ifndef __HOLDER_H_
 #define __HOLDER_H_
 
+#include <wincrypt.h>
 #include "cor.h"
 #include "staticcontract.h"
 #include "volatile.h"

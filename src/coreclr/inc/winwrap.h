@@ -32,6 +32,7 @@
 
 #include <crtwrap.h>
 #include <windows.h>
+#include <wincrypt.h>
 #include <specstrings.h>
 
 #include "longfilepathwrappers.h"
