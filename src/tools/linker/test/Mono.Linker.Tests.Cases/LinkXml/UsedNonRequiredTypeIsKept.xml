@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredTypeIsKept/Used1" preserve="fields" required="0"/>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredTypeIsKept/Used2" preserve="methods" required="0"/>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredTypeIsKept/Used3" preserve="all" required="0"/>
+    </assembly>
+</linker>
