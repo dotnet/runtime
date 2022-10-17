@@ -503,10 +503,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            // TODO here we should have a platform-specific strategy
-            // on Android we shouldn't do anything extra
-            // - the certificate validation process has already taken place
-            //   on the OS level with a callback to our code
+            // On Android the check happens during the handshake so we shouldn't call it again
 // #if !TARGET_ANDROID
 #if false
             if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, chain: null, RemoteCertRequired, ref alertToken, out sslPolicyErrors, out chainStatus))

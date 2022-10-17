@@ -284,25 +284,50 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-static jobject GetSSLContextInstance(JNIEnv* env)
+static jobject GetSSLContextInstanceByVersion(JNIEnv* env, char* sslProtocolName)
+{
+    jstring sslProtocol = make_java_string(env, sslProtocolName);
+    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, sslProtocol);
+    ReleaseLRef(env, sslProtocol);
+
+    return sslContext;
+}
+
+static jobject GetSSLContextInstance(JNIEnv* env, int enabledSslProtocolsFlags)
 {
     jobject sslContext = NULL;
 
-    // sslContext = SSLContext.getInstance("TLSv1.3");
-    jstring tls13 = make_java_string(env, "TLSv1.3");
-    sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls13);
-    if (TryClearJNIExceptions(env))
+    bool isTls13Enabled = (enabledSslProtocolsFlags & 12288) != 0;
+    bool isTls12Enabled = (enabledSslProtocolsFlags & 3072) != 0;
+    bool isTls11Enabled = (enabledSslProtocolsFlags & 768) != 0;
+    bool isTls10Enabled = (enabledSslProtocolsFlags & 192) != 0;
+
+    if (isTls13Enabled)
     {
+        sslContext = GetSSLContextInstanceByVersion(env, "TLSv1.3");
+
         // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
         // sslContext = SSLContext.getInstance("TLSv1.2");
-        jstring tls12 = make_java_string(env, "TLSv1.2");
-        sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
-        ReleaseLRef(env, tls12);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        bool isSupported = !TryClearJNIExceptions(env);
+        if (isSupported)
+            return sslContext;
     }
 
-cleanup:
-    ReleaseLRef(env, tls13);
+    char* protocolName = NULL;
+    if (isTls12Enabled) {
+        protocolName = "TLSv1.2";
+    } else if (isTls11Enabled) {
+        protocolName = "TLSv1.1";
+    } else if (isTls10Enabled) {
+        protocolName = "TLSv1";
+    } else {
+        protocolName = "TLS";
+    }
+
+    sslContext = GetSSLContextInstanceByVersion(env, protocolName);
+    if (CheckJNIExceptions(env))
+        return NULL;
+
     return sslContext;
 }
 
@@ -325,14 +350,14 @@ cleanup:
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle, int enabledSslProtocolsFlags)
 {
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(loc, sslContext, keyStore, trustManagers);
 
-    loc[sslContext] = GetSSLContextInstance(env);
+    loc[sslContext] = GetSSLContextInstance(env, enabledSslProtocolsFlags);
     if (loc[sslContext] == NULL)
         goto cleanup;
 
@@ -424,6 +449,7 @@ cleanup:
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidatorHandle,
+                                                               int enabledSslProtocolsFlags,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -436,7 +462,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers, trustManagers);
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-    loc[sslContext] = GetSSLContextInstance(env);
+    loc[sslContext] = GetSSLContextInstance(env, enabledSslProtocolsFlags);
     if (loc[sslContext] == NULL)
         goto cleanup;
 
