@@ -4731,13 +4731,8 @@ mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_
 		if (mono_class_is_nullable (method->klass)) {
 			/* Need to create a boxed vtype instead */
 			g_assert (!obj);
-
-			if (params_length == 0) {
-				goto_if_nok (error, exit_null);
-			} else {
-				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
-				goto exit;
-			}
+			res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
+			goto exit;
 		}
 
 		if (!obj) {
