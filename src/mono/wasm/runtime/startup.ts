@@ -27,6 +27,7 @@ import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
+import { endMeasure, MeasuredBlock, startMeasure } from "./performance";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -46,6 +47,7 @@ const MONO_PTHREAD_POOL_SIZE = 4;
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: RuntimeAPI): void {
+    startMeasure(MeasuredBlock.emscriptenStartup);
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
     const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any) = module.instantiateWasm;
@@ -72,6 +74,8 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     module.ready = module.ready.then(async () => {
         // wait for previous stage
         await afterPostRun.promise;
+        // startup end
+        endMeasure(MeasuredBlock.emscriptenStartup);
         // - here we resolve the promise returned by createDotnetRuntime export
         return exportedAPI;
         // - any code after createDotnetRuntime is executed now
@@ -99,6 +103,7 @@ function instantiateWasm(
     }
     runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
 
+    startMeasure(MeasuredBlock.instantiateWasm);
     if (userInstantiateWasm) {
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module) => {
             afterInstantiateWasm.promise_control.resolve();
@@ -108,12 +113,14 @@ function instantiateWasm(
     }
 
     instantiate_wasm_module(imports, successCallback);
+    endMeasure(MeasuredBlock.instantiateWasm);
     return []; // No exports
 }
 
 function preInit(userPreInit: (() => void)[]) {
     Module.addRunDependency("mono_pre_init");
     try {
+        startMeasure(MeasuredBlock.preInit);
         mono_wasm_pre_init_essential();
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInit");
         beforePreInit.promise_control.resolve();
@@ -135,6 +142,7 @@ function preInit(userPreInit: (() => void)[]) {
                 // - start download assets like DLLs
                 await mono_wasm_pre_init_full();
             }
+            endMeasure(MeasuredBlock.preInit);
         } catch (err) {
             abort_startup(err, true);
             throw err;
@@ -151,12 +159,14 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     await afterInstantiateWasm.promise;
     await afterPreInit.promise;
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
-    if (MonoWasmThreads) {
-        await instantiateWasmPThreadWorkerPool();
-    }
+    startMeasure(MeasuredBlock.preRun);
     try {
+        if (MonoWasmThreads) {
+            await instantiateWasmPThreadWorkerPool();
+        }
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
+        endMeasure(MeasuredBlock.preRun);
     } catch (err) {
         _print_error("MONO_WASM: user callback preRun() failed", err);
         abort_startup(err, true);
@@ -171,6 +181,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     // wait for previous stage
     await afterPreRun.promise;
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: onRuntimeInitialized");
+    startMeasure(MeasuredBlock.onRuntimeInitialized);
     // signal this stage, this will allow pending assets to allocate memory
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
@@ -192,6 +203,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
         // finish
         await mono_wasm_after_user_runtime_initialized();
+        endMeasure(MeasuredBlock.onRuntimeInitialized);
     } catch (err) {
         _print_error("MONO_WASM: onRuntimeInitializedAsync() failed", err);
         abort_startup(err, true);
@@ -206,8 +218,10 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     await afterOnRuntimeInitialized.promise;
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: postRunAsync");
     try {
+        startMeasure(MeasuredBlock.postRun);
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
+        endMeasure(MeasuredBlock.postRun);
     } catch (err) {
         _print_error("MONO_WASM: user callback posRun() failed", err);
         abort_startup(err, true);
@@ -432,6 +446,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
     }
     runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
+        startMeasure(MeasuredBlock.loadRuntime);
         if (debugLevel == undefined) {
             debugLevel = 0;
             if (config && config.debugLevel) {
@@ -439,6 +454,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
             }
         }
         cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        endMeasure(MeasuredBlock.loadRuntime);
         runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
         if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
@@ -461,11 +477,13 @@ export function bindings_init(): void {
     }
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
+        startMeasure(MeasuredBlock.bindingsInit);
         init_managed_exports();
         init_legacy_exports();
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
+        endMeasure(MeasuredBlock.bindingsInit);
     } catch (err) {
         _print_error("MONO_WASM: Error in bindings_init", err);
         throw err;

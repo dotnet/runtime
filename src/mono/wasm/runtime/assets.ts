@@ -6,6 +6,7 @@ import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { MONO } from "./net6-legacy/imports";
+import { endMeasure, MeasuredBlock, startMeasure } from "./performance";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
 import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
@@ -393,7 +394,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             if (runtimeHelpers.diagnosticTracing)
                 console.debug(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
 
-            if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
+            if (!mono_wasm_load_data_archive(bytes, parentDirectory, fileName || asset.name)) {
                 Module.FS_createDataFile(
                     parentDirectory, fileName,
                     bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
@@ -454,57 +455,63 @@ export async function instantiate_wasm_asset(
 }
 
 // used from Blazor
-export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
+export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string, name?: string): boolean {
     if (data.length < 8)
         return false;
-
-    const dataview = new DataView(data.buffer);
-    const magic = dataview.getUint32(0, true);
-    //    get magic number
-    if (magic != 0x626c6174) {
-        return false;
-    }
-    const manifestSize = dataview.getUint32(4, true);
-    if (manifestSize == 0 || data.length < manifestSize + 8)
-        return false;
-
-    let manifest;
     try {
-        const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
-        manifest = JSON.parse(manifestContent);
-        if (!(manifest instanceof Array))
+        startMeasure(MeasuredBlock.loadDataArchive + name);
+
+        const dataview = new DataView(data.buffer);
+        const magic = dataview.getUint32(0, true);
+        //    get magic number
+        if (magic != 0x626c6174) {
             return false;
-    } catch (exc) {
-        return false;
+        }
+        const manifestSize = dataview.getUint32(4, true);
+        if (manifestSize == 0 || data.length < manifestSize + 8)
+            return false;
+
+        let manifest;
+        try {
+            const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+            manifest = JSON.parse(manifestContent);
+            if (!(manifest instanceof Array))
+                return false;
+        } catch (exc) {
+            return false;
+        }
+
+        data = data.slice(manifestSize + 8);
+
+        // Create the folder structure
+        // /usr/share/zoneinfo
+        // /usr/share/zoneinfo/Africa
+        // /usr/share/zoneinfo/Asia
+        // ..
+
+        const folders = new Set<string>();
+        manifest.filter(m => {
+            const file = m[0];
+            const last = file.lastIndexOf("/");
+            const directory = file.slice(0, last + 1);
+            folders.add(directory);
+        });
+        folders.forEach(folder => {
+            Module["FS_createPath"](prefix, folder, true, true);
+        });
+
+        for (const row of manifest) {
+            const name = row[0];
+            const length = row[1];
+            const bytes = data.slice(0, length);
+            Module["FS_createDataFile"](prefix, name, bytes, true, true);
+            data = data.slice(length);
+        }
+        return true;
     }
-
-    data = data.slice(manifestSize + 8);
-
-    // Create the folder structure
-    // /usr/share/zoneinfo
-    // /usr/share/zoneinfo/Africa
-    // /usr/share/zoneinfo/Asia
-    // ..
-
-    const folders = new Set<string>();
-    manifest.filter(m => {
-        const file = m[0];
-        const last = file.lastIndexOf("/");
-        const directory = file.slice(0, last + 1);
-        folders.add(directory);
-    });
-    folders.forEach(folder => {
-        Module["FS_createPath"](prefix, folder, true, true);
-    });
-
-    for (const row of manifest) {
-        const name = row[0];
-        const length = row[1];
-        const bytes = data.slice(0, length);
-        Module["FS_createDataFile"](prefix, name, bytes, true, true);
-        data = data.slice(length);
+    finally {
+        endMeasure(MeasuredBlock.loadDataArchive + name);
     }
-    return true;
 }
 
 export async function wait_for_all_assets() {

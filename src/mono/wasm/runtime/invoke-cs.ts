@@ -15,6 +15,7 @@ import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { wrap_error_root } from "./invoke-js";
+import { startMeasure, MeasuredBlock, endMeasure } from "./performance";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -24,6 +25,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
         const args_count = get_signature_argument_count(signature);
         const js_fqn = conv_string_root(fqn_root)!;
+        startMeasure(MeasuredBlock.bindCsFunction + js_fqn);
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
         if (runtimeHelpers.diagnosticTracing) {
@@ -84,6 +86,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
+        endMeasure(MeasuredBlock.bindCsFunction + js_fqn);
     }
     catch (ex: any) {
         Module.printErr(ex.toString());
@@ -254,10 +257,12 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     const result = exportsByAssembly.get(assembly);
     if (!result) {
+        startMeasure(MeasuredBlock.getAssemblyExports + assembly);
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
         cwraps.mono_wasm_runtime_run_module_cctor(asm);
+        endMeasure(MeasuredBlock.getAssemblyExports + assembly);
     }
 
     return exportsByAssembly.get(assembly) || {};

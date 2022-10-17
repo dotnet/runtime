@@ -12,6 +12,7 @@ import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
+import { endMeasure, MeasuredBlock, startMeasure } from "./performance";
 
 const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
 
@@ -24,6 +25,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const js_function_name = conv_string_root(function_name_root)!;
+        startMeasure(MeasuredBlock.bindJsFunction + js_function_name);
         const js_module_name = conv_string_root(module_name_root)!;
         if (runtimeHelpers.diagnosticTracing) {
             console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
@@ -82,6 +84,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
         setI32(function_js_handle, <any>fn_handle);
+        endMeasure(MeasuredBlock.bindJsFunction + js_function_name);
     } catch (ex: any) {
         Module.printErr(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
