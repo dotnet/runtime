@@ -46,6 +46,9 @@ namespace Microsoft.Interop
                 elementFactory,
                 new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
 
+            // Include the native-to-managed this generator factory here as well as we use this function for all COM-related functionality
+            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
+
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion), generatorFactory);

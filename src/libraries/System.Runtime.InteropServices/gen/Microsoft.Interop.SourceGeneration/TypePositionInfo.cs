@@ -48,6 +48,16 @@ namespace Microsoft.Interop
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
 
+        private static bool IsSpecialIndex(int index)
+        {
+            return index is UnsetIndex or ReturnIndex;
+        }
+
+        public static int IncrementIndex(int index)
+        {
+            return IsSpecialIndex(index) ? index : index + 1;
+        }
+
         public string InstanceIdentifier { get; init; } = string.Empty;
 
         public RefKind RefKind { get; init; } = RefKind.None;

@@ -43,6 +43,8 @@ namespace Microsoft.Interop
 
         public const string System_Activator = "System.Activator";
 
+        public const string System_Exception = "System.Exception";
+
         public const string System_Type = "System.Type";
 
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
@@ -89,5 +91,7 @@ namespace Microsoft.Interop
         public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
+
+        public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
     }
 }

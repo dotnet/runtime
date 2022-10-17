@@ -27,20 +27,45 @@ namespace System.Runtime.InteropServices
         }
     }
 
-    public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
+    public unsafe interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
     {
         protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
 
         public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
         {
             return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
         }
+
+        public static void* GetVirtualMethodTableManagedImplementation<TUnmanagedInterfaceType>()
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+        {
+            return TUnmanagedInterfaceType.VirtualMethodTableManagedImplementation;
+        }
+
+        public static void* GetUnmanagedWrapperForObject<TUnmanagedInterfaceType>(TUnmanagedInterfaceType obj)
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+        {
+            return TUnmanagedInterfaceType.GetUnmanagedWrapperForObject(obj);
+        }
+
+        public static TUnmanagedInterfaceType GetObjectForUnmanagedWrapper<TUnmanagedInterfaceType>(void* ptr)
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+        {
+            return TUnmanagedInterfaceType.GetObjectForUnmanagedWrapper(ptr);
+        }
     }
 
-
-    public interface IUnmanagedInterfaceType<T> where T : IEquatable<T>
+    public unsafe interface IUnmanagedInterfaceType<TInterface, TKey>
+        where TInterface : IUnmanagedInterfaceType<TInterface, TKey>
+        where TKey : IEquatable<TKey>
     {
-        public abstract static T TypeKey { get; }
+        public static abstract void* VirtualMethodTableManagedImplementation { get; }
+
+        public static abstract void* GetUnmanagedWrapperForObject(TInterface obj);
+
+        public static abstract TInterface GetObjectForUnmanagedWrapper(void* ptr);
+
+        public static abstract TKey TypeKey { get; }
     }
 }

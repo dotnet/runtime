@@ -35,6 +35,7 @@ namespace Microsoft.Interop
         {
             public const string CalculateStubInformation = nameof(CalculateStubInformation);
             public const string GenerateManagedToNativeStub = nameof(GenerateManagedToNativeStub);
+            public const string GenerateNativeToManagedStub = nameof(GenerateNativeToManagedStub);
         }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -88,6 +89,18 @@ namespace Microsoft.Interop
 
             context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = generateStubInformation
+                .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+                .Select(
+                    static (data, ct) => GenerateNativeToManagedStub(data)
+                )
+                .WithComparer(Comparers.GeneratedSyntax)
+                .WithTrackingName(StepNames.GenerateNativeToManagedStub);
+
+            context.RegisterDiagnostics(generateNativeToManagedStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
+
+            context.RegisterConcatenatedSyntaxOutputs(generateNativeToManagedStub.Select((data, ct) => data.Item1), "NativeToManagedStubs.g.cs");
+
             IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeInterface = generateStubInformation
                 .Select(static (context, ct) => context.ContainingSyntaxContext)
                 .Collect()
@@ -137,16 +150,16 @@ namespace Microsoft.Interop
         }
 
         private static MemberDeclarationSyntax PrintGeneratedSource(
-            ContainingSyntax userDeclaredMethod,
+            ContainingSyntax stubMethodSyntax,
             ContainingSyntax originalInterfaceType,
             SignatureContext stub,
             BlockSyntax stubCode)
         {
             // Create stub function
-            return MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
+            return MethodDeclaration(stub.StubReturnType, stubMethodSyntax.Identifier)
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName(originalInterfaceType.Identifier)))
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
-                .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
+                .WithModifiers(StripTriviaFromModifiers(stubMethodSyntax.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
                 .WithBody(stubCode);
         }
@@ -291,7 +304,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[0]);
+                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[1]);
             }
 
             return new IncrementalStubGenerationContext(
@@ -305,29 +318,6 @@ namespace Microsoft.Interop
                 typeKeyType,
                 typeKeyOwner,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
-        }
-
-        private static IMarshallingGeneratorFactory GetMarshallingGeneratorFactory(StubEnvironment env)
-        {
-            IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-            ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
-            bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
-                && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
-            InteropGenerationOptions options = new(UseMarshalType: true);
-            IMarshallingGeneratorFactory generatorFactory;
-
-            generatorFactory = new UnsupportedMarshallingFactory();
-            generatorFactory = new NoMarshallingInfoErrorMarshallingFactory(generatorFactory);
-            generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
-
-            IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
-                new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true), new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
-            // We don't need to include the later generator factories for collection elements
-            // as the later generator factories only apply to parameters.
-            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
-
-            generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
-            return generatorFactory;
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
@@ -370,17 +360,65 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
+            IncrementalStubGenerationContext methodStub)
         {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
+            var diagnostics = new GeneratorDiagnostics();
+
+            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(methodStub.SignatureContext.ElementTypeInformation.Length + 1);
+
+            // Add the "this" parameter to our parameter list so it gets marshalled correctly.
+            const string thisParameterIdentifier = "@this";
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.TypeKeyType))
             {
-                return false;
+                InstanceIdentifier = thisParameterIdentifier,
+                NativeIndex = 0,
+            });
+            foreach (var element in methodStub.SignatureContext.ElementTypeInformation)
+            {
+                elements.Add(element with
+                {
+                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
+                });
             }
 
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+            // Generate stub code
+            var stubGenerator = new UnmanagedToManagedStubGenerator(
+                methodStub.GeneratorFactory.Key.TargetFramework,
+                methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
+                elements.ToImmutable(),
+                (elementInfo, ex) =>
+                {
+                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
+                },
+                methodStub.GeneratorFactory.GeneratorFactory);
+
+            // TODO: Implement our EH design based on the additional property on the attribute.
+            BlockSyntax code = stubGenerator.GenerateStubBody(
+                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    IdentifierName(thisParameterIdentifier),
+                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)),
+                catchClause: null);
+
+            var abiImplentationName = methodStub.StubMethodSyntaxTemplate with
+            {
+                Identifier = Identifier($"ABI_{methodStub.StubMethodSyntaxTemplate.Identifier.Text}")
+            };
+
+            return (
+                methodStub.ContainingSyntaxContext.AddContainingSyntax(
+                    new ContainingSyntax(
+                        TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)),
+                        SyntaxKind.InterfaceDeclaration,
+                        Identifier("Native"),
+                        null))
+                .WrapMemberInContainingSyntaxWithUnsafeModifier(
+                    PrintGeneratedSource(
+                        abiImplentationName,
+                        methodStub.ContainingSyntaxContext.ContainingSyntax[0],
+                        methodStub.SignatureContext,
+                        code)),
+                methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

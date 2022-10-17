@@ -9,6 +9,19 @@ namespace ComInterfaceGenerator.Unit.Tests
     {
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
+        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl = $$"""
+            partial interface INativeAPI
+            {
+                {{INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+            }
+            """;
+
+        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl = """
+                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableManagedImplementation => null;
+                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
+                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
+                static NoCasting IUnmanagedInterfaceType<INativeAPI, NoCasting>.TypeKey => default;
+            """;
 
         public static string NativeInterfaceUsage() => @"
 // Try using the generated native interface
@@ -23,24 +36,22 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     void Method();
-}" + NativeInterfaceUsage();
+}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
 
         public static readonly string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis = @"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method();
-}" + NativeInterfaceUsage();
+}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
 
         public static readonly string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions = @"
 using System.Runtime.CompilerServices;
@@ -48,9 +59,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
 
     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
     [VirtualMethodIndex(0)]
@@ -72,7 +82,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
     [SuppressGCTransition]
     [VirtualMethodIndex(4)]
     void Method4();
-}" + NativeInterfaceUsage();
+}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -82,12 +92,11 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
         public static string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -98,24 +107,22 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
 
         public static string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
 
@@ -126,12 +133,11 @@ using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method({typeName} value);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string BasicParameterWithByRefModifier(string modifier, string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -141,12 +147,11 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method({modifier} {typeName} value);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string BasicReturnType(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -154,12 +159,11 @@ using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     {typeName} Method();
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string MarshalUsingParametersAndModifiers(string typeName, string marshallerTypeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -167,9 +171,8 @@ using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     [return: MarshalUsing(typeof({marshallerTypeName}))]
     {typeName} Method(
@@ -177,7 +180,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
         [MarshalUsing(typeof({marshallerTypeName}))] in {typeName} pIn,
         [MarshalUsing(typeof({marshallerTypeName}))] ref {typeName} pRef,
         [MarshalUsing(typeof({marshallerTypeName}))] out {typeName} pOut);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.CompilerServices;
@@ -186,9 +189,8 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(ConstantElementCount=10)]
     {collectionType} Method(
@@ -198,7 +200,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -207,9 +209,8 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
     {collectionType} Method(
@@ -220,7 +221,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize
         );
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
         public static string MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -229,14 +230,13 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     int Method(
         [MarshalUsing(typeof({marshallerType}), CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out {collectionType} pOut
         );
-}}" + NativeInterfaceUsage();
+}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
 
         public static string MarshalUsingCollectionOutConstantLength(string collectionType, string predeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -247,9 +247,8 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     int Method(
         [MarshalUsing(ConstantElementCount = 10)] out {collectionType} pOut
@@ -265,9 +264,8 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(ConstantElementCount = 10)]
     {collectionType} Method();
@@ -282,9 +280,8 @@ using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
 {{
-    static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(ConstantElementCount=10)]
     [return:MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)]

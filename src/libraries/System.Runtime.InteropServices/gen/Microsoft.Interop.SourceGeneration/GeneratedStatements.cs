@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -104,16 +105,36 @@ namespace Microsoft.Interop
                 invoke = invoke.AddArgumentListArguments(argSyntax);
             }
             // Assign to return value if necessary
-            if (marshallers.NativeReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void)
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
             {
-                return ExpressionStatement(invoke);
-            }
+                if (marshallers.NativeReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void)
+                {
+                    return ExpressionStatement(invoke);
+                }
 
-            return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
-                        invoke));
+                return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
+                            invoke));
+            }
+            else if (context.Direction == MarshalDirection.UnmanagedToManaged)
+            {
+                if (marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void)
+                {
+                    return ExpressionStatement(invoke);
+                }
+
+                return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
+                            invoke));
+            }
+            else
+            {
+                throw new ArgumentException("Direction must be ManagedToUnmanaged or UnmanagedToManaged");
+            }
         }
 
         private static SyntaxTriviaList GenerateStageTrivia(StubCodeContext.Stage stage)
