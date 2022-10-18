@@ -322,8 +322,16 @@ namespace System.Threading.RateLimiting
                           ? _queue.PeekHead()
                           : _queue.PeekTail();
 
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? _queue.DequeueHead()
+                            : _queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
                     // If we have enough permits after replenishing to serve the queued requests
-                    if (_permitCount >= nextPendingRequest.Count)
+                    else if (_permitCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =

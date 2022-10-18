@@ -242,7 +242,15 @@ namespace System.Threading.RateLimiting
                         ? _queue.PeekHead()
                         : _queue.PeekTail();
 
-                    if (_permitCount >= nextPendingRequest.Count)
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? _queue.DequeueHead()
+                            : _queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
+                    else if (_permitCount >= nextPendingRequest.Count)
                     {
                         nextPendingRequest =
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
