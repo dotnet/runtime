@@ -10,15 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dblarray4.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_DoubleArrayToLargeObjectHeap" Value="0x64" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_DoubleArrayToLargeObjectHeap=0x64
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_DoubleArrayToLargeObjectHeap=0x64
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

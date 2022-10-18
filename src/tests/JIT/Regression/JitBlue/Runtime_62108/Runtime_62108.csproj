@@ -2,16 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
-    <CLRTestBatchPreCommands><![CDATA[
-      $(CLRTestBatchPreCommands)
-      set COMPlus_JitOptRepeat=LeafMethod6
-      ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-      $(BashCLRTestPreCommands)
-      export COMPlus_JitOptRepeat=LeafMethod6
-      ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_JitOptRepeat" Value="LeafMethod6" />
   </ItemGroup>
 </Project>
