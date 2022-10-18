@@ -26,6 +26,9 @@ public:
     static FCDECL2(void, SetTarget, WeakReferenceObject * pThis, Object * pTarget);
     static FCDECL1(FC_BOOL_RET, IsTrackResurrection, WeakReferenceObject * pThis);
     static FCDECL1(FC_BOOL_RET, IsAlive, WeakReferenceObject * pThis);
+
+    static FCDECL2(Object*, ComWeakRefToObject, void* pComWeakReference, INT64 wrapperId);
+    static FCDECL2(void*, ObjectToComWeakRef, Object* pTarget, INT64* pWrapperId);
 };
 
 class WeakReferenceOfTNative

@@ -687,6 +687,11 @@ FCFuncStart(gWeakReferenceOfTFuncs)
     FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
 FCFuncEnd()
 
+FCFuncStart(gInteropComWeakReferenceHelpers)
+    FCFuncElement("ComWeakRefToObject", WeakReferenceNative::ComWeakRefToObject)
+    FCFuncElement("ObjectToComWeakRef", WeakReferenceNative::ObjectToComWeakRef)
+FCFuncEnd()
+
 #ifdef FEATURE_COMINTEROP
 
 //
@@ -724,6 +729,7 @@ FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
+FCClassElement("ComWeakReferenceHelpers", "System.Runtime.InteropServices", gInteropComWeakReferenceHelpers)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)

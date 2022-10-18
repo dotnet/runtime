@@ -1546,7 +1546,7 @@ class AssemblyNameBaseObject : public Object
 class WeakReferenceObject : public Object
 {
 public:
-    Volatile<OBJECTHANDLE> m_Handle;
+    OBJECTHANDLE m_Handle;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS

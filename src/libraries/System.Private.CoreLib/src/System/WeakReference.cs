@@ -2,8 +2,109 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
+
+#if CORECLR
+namespace System.Runtime.InteropServices
+{
+    /// <summary>
+    /// This class stores the weak references to the native COM Objects to ensure a way to map the weak
+    /// reference to the native ComObject target and keep the mapping alive until the native object is alive
+    /// allowing the connection to remain alive even though the managed wrapper might die.
+    /// </summary>
+    internal static class ComWeakReferenceHelpers
+    {
+        // Holds the mapping from the weak reference to the COMWeakReference which is a thin wrapper for native WeakReference.
+        private static readonly ConditionalWeakTable<object, ComWeakReference> s_ComWeakReferenceTable = new ConditionalWeakTable<object, ComWeakReference>();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr ObjectToComWeakRef(object target, out long wrapperId);
+
+        /// <summary>
+        /// This class is a thin wrapper that holds the native IWeakReference and wrapperId.
+        /// </summary>
+        internal sealed class ComWeakReference
+        {
+            internal readonly IntPtr _pComWeakRef;
+            internal readonly long   _wrapperId;
+
+            internal object? Resolve()
+            {
+                return ComWeakRefToObject(_pComWeakRef, _wrapperId);
+            }
+
+            internal static ComWeakReference? FromObject(object target)
+            {
+                IntPtr pComWeakRef = ObjectToComWeakRef(target, out long wrapperId);
+                if (pComWeakRef == 0)
+                    return null;
+
+                return new ComWeakReference(pComWeakRef, wrapperId);
+            }
+
+            internal ComWeakReference(IntPtr pComWeakRef, long wrapperId)
+            {
+                Debug.Assert(pComWeakRef != IntPtr.Zero);
+
+                _pComWeakRef = pComWeakRef;
+                _wrapperId = wrapperId;
+            }
+
+            ~ComWeakReference()
+            {
+                Debug.Assert(_pComWeakRef != 0);
+                Marshal.Release(_pComWeakRef);
+            }
+        }
+
+        // if object is an IWeakReference, associates the managed weak reference with the COM weak reference
+        public static bool SetComTarget(object weakReference, object target)
+        {
+            Debug.Assert(weakReference != null);
+
+            // Check if this weakReference is already associated with a native target.
+            if (s_ComWeakReferenceTable.TryGetValue(weakReference, out _))
+            {
+                // Remove the previous target.
+                // We do not have to release the native ComWeakReference since it will be done as part of the finalizer.
+                s_ComWeakReferenceTable.Remove(weakReference);
+            }
+
+            if ((target as __ComObject) == null)
+                return false;
+
+            ComWeakReference? comWeakRef = ComWeakReference.FromObject(target);
+            if (comWeakRef == null)
+                return false;
+
+            // Since we have already checked s_COMWeakReferenceTable for the weak reference, we can simply add the entry w/o checking.
+            s_ComWeakReferenceTable.Add(weakReference, comWeakRef);
+            return true;
+        }
+
+        // if the weak reference is associated with a COM weak reference, retrieve the target from the COM weak reference
+        public static object? GetComTarget(object weakReference)
+        {
+            Debug.Assert(weakReference != null);
+
+            ComWeakReference? comWeakRef;
+            if (s_ComWeakReferenceTable.TryGetValue(weakReference, out comWeakRef))
+            {
+                return comWeakRef.Resolve();
+            }
+
+            return null;
+        }
+    }
+}
+
+#endif
 
 namespace System
 {
@@ -17,11 +118,39 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-        // the handle field is effectively readonly until the object is finalized.
         private IntPtr _handleAndKind;
+
+        // the lowermost 3 bits are used for tagging.
+        private const nint HandleTagBits = 7;
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
         private const nint TracksResurrectionBit = 1;
+
+#if CORECLR
+        // the next bit is used to indicate whether there is an associated com weak reference
+        private const nint IsComWeakReferenceBit = 2;
+
+        private void TrySetComTarget(object? target)
+        {
+            if (target != null)
+            {
+                if (ComWeakReferenceHelpers.SetComTarget(this, target))
+                {
+                    _handleAndKind |= IsComWeakReferenceBit;
+                }
+            }
+        }
+
+        private object? TryGetComTarget()
+        {
+            if ((_handleAndKind & IsComWeakReferenceBit) != 0)
+            {
+                return ComWeakReferenceHelpers.GetComTarget(this);
+            }
+
+            return null;
+        }
+#endif
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -64,13 +193,17 @@ namespace System
             _handleAndKind = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
+
+#if CORECLR
+            TrySetComTarget(target);
+#endif
         }
 
         // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         // or just until they're finalized (false).
         private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
 
-        internal IntPtr Handle => _handleAndKind & ~TracksResurrectionBit;
+        internal IntPtr Handle => _handleAndKind & ~HandleTagBits;
 
         // Determines whether or not this instance of WeakReference still refers to an object
         // that has not been collected.
@@ -119,6 +252,9 @@ namespace System
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
 
+#if CORECLR
+                target ??= TryGetComTarget();
+#endif
                 return target;
             }
 
@@ -134,6 +270,10 @@ namespace System
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
+
+#if CORECLR
+                TrySetComTarget(value);
+#endif
             }
         }
 

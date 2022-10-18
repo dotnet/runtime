@@ -352,6 +352,23 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
 
 //************************************************************************
 
+FCIMPL2(Object*, WeakReferenceNative::ComWeakRefToObject, void* pComWeakReference, INT64 wrapperId)
+{
+    FCALL_CONTRACT;
+
+    return NULL;
+}
+FCIMPLEND
+
+FCIMPL2(void*, WeakReferenceNative::ObjectToComWeakRef, Object* pTarget, INT64* pWrapperId)
+{
+    FCALL_CONTRACT;
+
+    pWrapperId = 0;
+    return NULL;
+}
+FCIMPLEND
+
 //
 // Spinlock implemented by overloading the WeakReference::m_Handle field that protects against races between setting
 // the target and finalization
@@ -548,50 +565,13 @@ void FinalizeWeakReference(Object * obj)
     }
     CONTRACTL_END;
 
-    WEAKREFERENCEREF pThis((WeakReferenceObject *)(obj));
+    //TODO: VS make m_Handle uintptr_t and rename. Make 7 a const (in NativeAot too)
 
-    // The suspension state of the runtime must be prevented from changing while in this function in order for this to be safe.
-    OBJECTHANDLE handle = ThreadSuspend::SysIsSuspended() ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
-    OBJECTHANDLE handleToDestroy = NULL;
-    bool isWeakNativeComHandle = false;
-
-    // Check for not yet constructed or already finalized handle
-    if ((handle != NULL) && !IS_SPECIAL_HANDLE(handle))
-    {
-        handleToDestroy = GetHandleValue(handle);
-
-        // Cache the old handle value
-        HandleType handleType = GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handleToDestroy);
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-        _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT || handleType == HNDTYPE_WEAK_NATIVE_COM);
-        isWeakNativeComHandle = handleType == HNDTYPE_WEAK_NATIVE_COM;
-#else // !FEATURE_COMINTEROP && !FEATURE_COMWRAPPERS
-        _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-        handle = (handleType == HNDTYPE_WEAK_LONG) ?
-            SPECIAL_HANDLE_FINALIZED_LONG : SPECIAL_HANDLE_FINALIZED_SHORT;
-    }
-
-    // Release the spin lock
-    // This is necessary even when the spin lock is not acquired
-    // (i.e. When ThreadSuspend::SysIsSuspended() == true)
-    // so that the new handle value is set.
-    ReleaseWeakHandleSpinLock(pThis, handle);
-
-    if (handleToDestroy != NULL)
-    {
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-        if (isWeakNativeComHandle)
-        {
-            DestroyNativeComWeakHandle(handleToDestroy);
-        }
-        else
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-        {
-            DestroyTypedHandle(handleToDestroy);
-        }
-    }
+    WeakReferenceObject* weakRefObj = (WeakReferenceObject*)obj;
+    OBJECTHANDLE handle = (OBJECTHANDLE)((uintptr_t)weakRefObj->m_Handle & ~(uintptr_t)7);
+    HandleType handleType = ((uintptr_t)weakRefObj->m_Handle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    (uintptr_t&)weakRefObj->m_Handle &= (uintptr_t)1;
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
 }
 
 FCIMPL1(void, WeakReferenceNative::Finalize, WeakReferenceObject * pThis)
@@ -641,7 +621,7 @@ static FORCEINLINE OBJECTREF GetWeakReferenceTarget(WEAKREFERENCEREF pThis)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE rawHandle = pThis->m_Handle.LoadWithoutBarrier();
+    OBJECTHANDLE rawHandle = pThis->m_Handle;
     OBJECTHANDLE handle = GetHandleValue(rawHandle);
 
     if (handle == NULL)
@@ -667,7 +647,7 @@ static FORCEINLINE OBJECTREF GetWeakReferenceTarget(WEAKREFERENCEREF pThis)
         // so we double check m_handle here. Note that the reading of the handle
         // value has to take memory barrier for this to work, but reading of m_handle does not.
         //
-        if (rawHandle == pThis->m_Handle.LoadWithoutBarrier())
+        if (rawHandle == pThis->m_Handle)
         {
             return OBJECTREF(pSpeculativeTarget);
         }
