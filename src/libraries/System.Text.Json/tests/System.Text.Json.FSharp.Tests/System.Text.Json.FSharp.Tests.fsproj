@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="EnumTests.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="EnumTests.fs" />
     <Compile Include="OptionTests.fs" />
     <Compile Include="ValueOptionTests.fs" />
     <Compile Include="CollectionTests.fs" />

@@ -56,6 +56,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions serializerOptions)
         {
+            // If enum contains special char, make it failed to serialize or deserialize.
+            if (s_containsSpecialChar)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
             _nameCacheForWriting = new ConcurrentDictionary<ulong, JsonEncodedText>();
@@ -112,12 +118,6 @@ namespace System.Text.Json.Serialization.Converters
 #endif
                 {
                     return value;
-                }
-
-                // If enum contains special char, fail before passing bogus tokens into the naming policy.
-                if (s_containsSpecialChar)
-                {
-                    ThrowHelper.ThrowJsonException();
                 }
 
 #if NETCOREAPP
@@ -196,12 +196,6 @@ namespace System.Text.Json.Serialization.Converters
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
-                // If enum contains special char, fail instead of write wrong json string.
-                if (s_containsSpecialChar)
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
-
                 ulong key = ConvertToUInt64(value);
 
                 if (_nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
