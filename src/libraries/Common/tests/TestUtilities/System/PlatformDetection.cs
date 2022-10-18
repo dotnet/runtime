@@ -49,6 +49,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
