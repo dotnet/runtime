@@ -214,21 +214,6 @@ frame_data_allocator_pop (FrameDataAllocator *stack, InterpFrame *frame)
 	}
 }
 
-#if PROFILE_INTERP
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000;
-
-static
-inline
-int64_t
-system_time_to_int64 (
-	time_t sec,
-	long nsec)
-{
-	return ((int64_t)sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS + (nsec / 100);
-}
-#endif
-
 /*
  * reinit_frame:
  *
@@ -243,10 +228,7 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->retval = (stackval*)retval;
 	frame->state.ip = NULL;
 #if PROFILE_INTERP
-	struct timespec time;
-	g_assert (clock_gettime (CLOCK_REALTIME, &time) == 0);
-	frame->timestamp_before_entry = system_time_to_int64 (time.tv_sec, time.tv_nsec);
-	frame->has_logged_entry = FALSE;
+	frame->timestamp_before_entry = mono_wasm_timestamp();
 #endif
 }
 
@@ -7383,13 +7365,14 @@ exit_frame:
 	g_assert_checked (frame->imethod);
 
 #if PROFILE_INTERP
-	struct timespec time;
+	/*struct timespec time;
 	g_assert (clock_gettime (CLOCK_REALTIME, &time) == 0);
 	int64_t now = system_time_to_int64 (time.tv_sec, time.tv_nsec);
 	int64_t duration = now - frame->timestamp_before_entry;
 	char *method_name = mono_method_get_name_full (frame->imethod->method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_IL);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Measure %s %d", method_name, duration);
-	g_free (method_name);
+	g_free (method_name);*/
+	mono_wasm_measure (frame->imethod->method, frame->timestamp_before_entry);
 #endif
 
 	if (frame->parent && frame->parent->state.ip) {

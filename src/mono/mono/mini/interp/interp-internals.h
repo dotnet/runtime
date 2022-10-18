@@ -221,8 +221,7 @@ struct InterpFrame {
 	/* This is valid if state.ip != NULL */
 	InterpState state;
 #if PROFILE_INTERP
-	int64_t timestamp_before_entry;
-	gboolean has_logged_entry;
+	double timestamp_before_entry;
 #endif
 };
 

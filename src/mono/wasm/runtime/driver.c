@@ -42,7 +42,8 @@
 void core_initialize_internals ();
 #endif
 
-// extern void mono_wasm_measure (MonoMethod *method, long start, long end);
+extern double mono_wasm_timestamp ();
+extern void mono_wasm_measure (MonoMethod *method, double start);
 
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
@@ -1479,4 +1480,10 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 	*destination = (int64_t)value;
 	return I52_ERROR_NONE;
+}
+
+//extern const char* mono_method_get_full_name (MonoMethod *method);
+
+EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
+	return mono_method_get_full_name(method);
 }
