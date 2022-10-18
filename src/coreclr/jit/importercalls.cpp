@@ -1297,7 +1297,7 @@ DONE:
         //    have to check for anything that might introduce a recursive tail call.
         // * We only instrument root method blocks in OSR methods,
         //
-        if (opts.IsInstrumentedOptimized() && !compIsForInlining())
+        if ((opts.IsInstrumentedOptimized() || opts.IsOSR()) && !compIsForInlining())
         {
             // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
@@ -1323,7 +1323,7 @@ DONE:
 
             // Only schedule importation if we're not currently importing.
             //
-            if (opts.IsInstrumentedOptimized() && mustImportEntryBlock && (compCurBB != entryBb))
+            if ((opts.IsInstrumentedOptimized() || opts.IsOSR()) && mustImportEntryBlock && (compCurBB != entryBb))
             {
                 JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
