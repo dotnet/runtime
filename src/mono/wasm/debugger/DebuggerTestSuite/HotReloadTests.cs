@@ -573,15 +573,19 @@ namespace DebuggerTests
             var pause_location = await LoadAssemblyAndTestHotReload(asm_file, pdb_file, asm_file_hot_reload, "AddInstanceFields", "StaticMethod1",
                                                                     expectBpResolvedEvent: false, sourcesToWait: new string [] { "MethodBody2.cs" });
             var frame = pause_location["callFrames"][0];
-            var c_props = await GetObjectOnFrame (frame, "c");
+            var locals = await GetProperties(frame["callFrameId"].Value<string>());
+            await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+            //var c_props = await GetObjectOnFrame (frame, "c");
+            //_testOutput.WriteLine ("aleksey cprops ---- {0}", c_props.ToString());
+            //await CheckProps (c_props, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields.C"), "c", num_fields: 0);
             _testOutput.WriteLine ("aleksey 234");
-#if false
-            await CheckProps (c_props, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 0);
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
-                                           var c_props1 = await GetObjectOnFrame (locals, "c");
-                                           await CheckProps (c_props1, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c1", num_fields: 1);
+                                           //var c_props1 = await GetObjectOnFrame (locals, "c");
+                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", locals);
+                                           await CheckProps (locals, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 1);
                                        });
+#if false
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
                                            var c_props2 = await GetObjectOnFrame (locals, "c");
