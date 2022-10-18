@@ -438,7 +438,7 @@ GlobalMemoryStatusEx(
         {
             // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
             // if we have failed to access the file or the file didn't contain the MemAvailable value.
-            tryReadMemInfo = ReadMemAvailable(&lpBuffer->ullAvailPhys);
+            tryReadMemInfo = ReadMemAvailable((uint64_t*)&lpBuffer->ullAvailPhys);
         }
 
         if (!tryReadMemInfo)

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 
 #ifndef INFINITY
@@ -31,13 +32,6 @@ class MapViewHolder
 {
     void* whatever;
 };
-
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#ifdef HOST_WINDOWS
-typedef long long int64_t;
-#endif
-typedef size_t uint64_t;
 
 bool IsInCantAllocStressLogRegion()
 {

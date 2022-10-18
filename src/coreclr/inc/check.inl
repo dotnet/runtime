@@ -220,6 +220,14 @@ inline CHECK CheckOverflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
+#if defined(HOST_UNIX) && defined(HOST_64BIT)
+inline CHECK CheckOverflow(const void *address, SIZE_T offset)
+{
+    CHECK((UINT64) address + offset >= (UINT64) address);
+
+    CHECK_OK;
+}
+#endif // HOST_UNIX && HOST_BIT64
 
 inline CHECK CheckUnderflow(UINT value1, UINT value2)
 {
