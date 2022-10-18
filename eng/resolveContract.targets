@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup>
-    <!-- Use implementation referencepath if no contract dependency path is set.
-         This item transform is executed at the time this property is evaluated in the API Compat targets. -->
-    <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
-    <!-- Fall back to the targeting pack dir for NetCoreAppCurrent to avoid passing through dependencies from ref to src. -->
-    <ContractDependencyPaths Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(ContractDependencyPaths);$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
-  </PropertyGroup>
+    <ApiCompatContractItemName>ResolvedMatchingContract</ApiCompatContractItemName>
+    <ApiCompatStrictMode Condition="'$(ApiCompatStrictMode)' == ''">true</ApiCompatStrictMode>
+    <_ApiCompatCaptureGroupPattern>.+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)</_ApiCompatCaptureGroupPattern>
+    <_ApiCompatRuntimePrefixPattern>(.+)/(net%5Cd.%5Cd)-(.+)/(.+)</_ApiCompatRuntimePrefixPattern>
+    <_ApiCompatLibReplacementString>lib/$1/$2</_ApiCompatLibReplacementString>
+    <!-- CoreLib source projects have different output paths. -->
+    <_ApiCompatLibReplacementString Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'">lib/$(NetCoreAppCurrent)/$2</_ApiCompatLibReplacementString>
 
-  <PropertyGroup>
     <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
     <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
@@ -15,15 +15,38 @@
     <ProjectForGenAPIDocIdGeneration Condition="'$(IsSourceProject)' == 'true' and '$(ProjectForGenAPIDocIdGeneration)' == ''">$(CoreLibProject)</ProjectForGenAPIDocIdGeneration>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Transform the API Compat assemblies passed in to log-able strings. -->
+    <ApiCompatLeftAssembliesTransformationPattern Include="$(_ApiCompatCaptureGroupPattern)" ReplacementString="ref/$1/$2" />
+    <ApiCompatLeftAssembliesTransformationPattern Include="$(_ApiCompatRuntimePrefixPattern)" ReplacementString="runtimes/$3/$1/$2/$4" />
+    <ApiCompatLeftAssembliesTransformationPattern Include="runtimes/windows/" ReplacementString="runtimes/win/" />
+
+    <ApiCompatRightAssembliesTransformationPattern Include="$(_ApiCompatCaptureGroupPattern)" ReplacementString="$(_ApiCompatLibReplacementString)" />
+    <ApiCompatRightAssembliesTransformationPattern Include="$(_ApiCompatRuntimePrefixPattern)" ReplacementString="runtimes/$3/$1/$2/$4" />
+    <ApiCompatRightAssembliesTransformationPattern Include="runtimes/windows/" ReplacementString="runtimes/win/" />
+
+    <!-- Fall back to the targeting pack dir for NetCoreAppCurrent to avoid passing through dependencies from ref to src. -->
+    <ApiCompatContractAssemblyReferences Include="$(MicrosoftNetCoreAppRefPackRefDir)"
+                                         Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
-    <!-- Disable API compat if the project doesn't have reference assembly -->
-    <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <!-- Disable API compat if the project doesn't have reference assembly -->
+    <ApiCompatValidateAssemblies Condition="'$(HasMatchingContract)' != 'true'">false</ApiCompatValidateAssemblies>
+    <!-- TODO: Move into Microsoft.DotNet.GenFacadesNotSupported.targets. -->
+    <!-- Not supported sources are created from the ref assembly, we currently don't produce finalizers in dummy assemblies, so we disable ApiCompat to not fail. -->
+    <ApiCompatValidateAssemblies Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</ApiCompatValidateAssemblies>
+  </PropertyGroup>
+
+    <!-- Use the apicompat task package instead of the in-built SDK functionality to consume newer features. -->
+  <ItemGroup Condition="'$(EnablePackageValidation)' == 'true' or
+                        '$(ApiCompatValidateAssemblies)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != '' and '@(ResolvedMatchingContract)' == ''">
