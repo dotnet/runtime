@@ -214,6 +214,21 @@ frame_data_allocator_pop (FrameDataAllocator *stack, InterpFrame *frame)
 	}
 }
 
+#if PROFILE_INTERP
+static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+static const int64_t SECS_TO_100NS = 10000000;
+
+static
+inline
+int64_t
+system_time_to_int64 (
+	time_t sec,
+	long nsec)
+{
+	return ((int64_t)sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS + (nsec / 100);
+}
+#endif
+
 /*
  * reinit_frame:
  *
@@ -227,7 +242,14 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->stack = (stackval*)stack;
 	frame->retval = (stackval*)retval;
 	frame->state.ip = NULL;
+#if PROFILE_INTERP
+	struct timespec time;
+	g_assert (clock_gettime (CLOCK_REALTIME, &time) == 0);
+	frame->timestamp_before_entry = system_time_to_int64 (time.tv_sec, time.tv_nsec);
+	frame->has_logged_entry = FALSE;
+#endif
 }
+
 
 #define STACK_ADD_BYTES(sp,bytes) ((stackval*)((char*)(sp) + ALIGN_TO(bytes, MINT_STACK_SLOT_SIZE)))
 #define STACK_SUB_BYTES(sp,bytes) ((stackval*)((char*)(sp) - ALIGN_TO(bytes, MINT_STACK_SLOT_SIZE)))
@@ -3484,9 +3506,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 #if DEBUG_INTERP
 	debug_enter (frame, out_tracing);
 #endif
-#if PROFILE_INTERP
-	frame->imethod->calls++;
-#endif
 
 	*out_ex = NULL;
 	if (!G_UNLIKELY (frame->imethod->transformed)) {
@@ -3523,10 +3542,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	ip = _clause_args ? ((FrameClauseArgs *)_clause_args)->start_with_ip : (frame)->imethod->code; \
 	locals = (unsigned char *)(frame)->stack; \
 	} while (0)
-
-#if PROFILE_INTERP
-static long total_executed_opcodes;
-#endif
 
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
 
@@ -3617,10 +3632,6 @@ main_loop:
 	 * but it may be useful for debug
 	 */
 	while (1) {
-#if PROFILE_INTERP
-		frame->imethod->opcounts++;
-		total_executed_opcodes++;
-#endif
 		MintOpcode opcode;
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
@@ -7371,6 +7382,16 @@ resume:
 exit_frame:
 	g_assert_checked (frame->imethod);
 
+#if PROFILE_INTERP
+	struct timespec time;
+	g_assert (clock_gettime (CLOCK_REALTIME, &time) == 0);
+	int64_t now = system_time_to_int64 (time.tv_sec, time.tv_nsec);
+	int64_t duration = now - frame->timestamp_before_entry;
+	char *method_name = mono_method_get_name_full (frame->imethod->method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_IL);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Measure %s %d", method_name, duration);
+	g_free (method_name);
+#endif
+
 	if (frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */
 		//printf ("R: %s -> %s %p\n", mono_method_get_full_name (frame->imethod->method), mono_method_get_full_name (frame->parent->imethod->method), frame->parent->state.ip);
@@ -7972,52 +7993,7 @@ interp_print_op_count (void)
 }
 #endif
 
-#if PROFILE_INTERP
 
-static InterpMethod **imethods;
-static int num_methods;
-const int opcount_threshold = 100000;
-
-static void
-interp_add_imethod (gpointer method, gpointer user_data)
-{
-	InterpMethod *imethod = (InterpMethod*) method;
-	if (imethod->opcounts > opcount_threshold)
-		imethods [num_methods++] = imethod;
-}
-
-static int
-imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
-{
-	long diff = (*(InterpMethod**)m2)->opcounts > (*(InterpMethod**)m1)->opcounts;
-	if (diff > 0)
-		return 1;
-	else if (diff < 0)
-		return -1;
-	else
-		return 0;
-}
-
-static void
-interp_print_method_counts (void)
-{
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-
-	jit_mm_lock (jit_mm);
-	imethods = (InterpMethod**) malloc (jit_mm->interp_code_hash.num_entries * sizeof (InterpMethod*));
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_add_imethod, NULL);
-	jit_mm_unlock (jit_mm);
-
-	qsort (imethods, num_methods, sizeof (InterpMethod*), imethod_opcount_comparer);
-
-	printf ("Total executed opcodes %ld\n", total_executed_opcodes);
-	long cumulative_executed_opcodes = 0;
-	for (int i = 0; i < num_methods; i++) {
-		cumulative_executed_opcodes += imethods [i]->opcounts;
-		printf ("%d%% Opcounts %ld, calls %ld, Method %s, imethod ptr %p\n", (int)(cumulative_executed_opcodes * 100 / total_executed_opcodes), imethods [i]->opcounts, imethods [i]->calls, mono_method_full_name (imethods [i]->method, TRUE), imethods [i]);
-	}
-}
-#endif
 
 static void
 interp_set_optimizations (guint32 opts)
@@ -8156,9 +8132,6 @@ interp_cleanup (void)
 {
 #if COUNT_OPS
 	interp_print_op_count ();
-#endif
-#if PROFILE_INTERP
-	interp_print_method_counts ();
 #endif
 }
 

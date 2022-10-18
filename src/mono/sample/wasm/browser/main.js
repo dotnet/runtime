@@ -9,6 +9,8 @@ function displayMeaning(meaning) {
 
 try {
     const { setModuleImports } = await dotnet
+        .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        .withEnvironmentVariable("MONO_LOG_MASK", "profiler")
         .withElementOnExit()
         .create();
 

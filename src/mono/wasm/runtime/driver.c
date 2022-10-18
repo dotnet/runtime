@@ -42,6 +42,8 @@
 void core_initialize_internals ();
 #endif
 
+// extern void mono_wasm_measure (MonoMethod *method, long start, long end);
+
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
