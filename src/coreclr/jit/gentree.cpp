@@ -2482,9 +2482,18 @@ AGAIN:
                         return false;
                     }
                     break;
+
                 case GT_BLK:
                 case GT_OBJ:
-                    if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
+                    {
+                        return false;
+                    }
+                    FALLTHROUGH;
+
+                case GT_IND:
+                case GT_NULLCHECK:
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
                     {
                         return false;
                     }
