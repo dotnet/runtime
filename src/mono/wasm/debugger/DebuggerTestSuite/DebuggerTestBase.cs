@@ -37,11 +37,18 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
-#if WASM_ENABLE_THREADS
-        public static bool WasmEnableThreads = true;
-#else
-        public static bool WasmEnableThreads = false;
-#endif
+
+        public static bool WasmEnableThreads 
+        {
+            get
+            {
+                var envVar = Environment.GetEnvironmentVariable("WASM_TESTS_USING_VARIANT");
+                if (envVar == "multithreaded")
+                    return true;
+                return false;
+            }
+        }
+
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
         public const int FirefoxProxyPort = 6002;
@@ -138,15 +145,17 @@ namespace DebuggerTests
         {
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
-                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
                  var init_cmds = new List<(string, Task<Result>)>
                  {
-                    getInitCmdFn("Profiler.enable"),
-                    getInitCmdFn("Runtime.enable"),
-                    getInitCmdFn("Debugger.enable"),
-                    getInitCmdFn("Runtime.runIfWaitingForDebugger")
+                    getInitCmdFn("Profiler.enable", null),
+                    getInitCmdFn("Runtime.enable", null),
+                    getInitCmdFn("Debugger.enable", null),
+                    getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
+                    getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32})),
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true}))
+                    //getInitCmdFn("ServiceWorker.enable", null)
                  };
-
                  return init_cmds;
              };
 

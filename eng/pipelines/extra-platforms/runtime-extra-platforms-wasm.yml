@@ -218,7 +218,7 @@ jobs:
       platforms:
         - Browser_wasm
         - Browser_wasm_win
-      extraBuildArgs: /p:WasmEnableThreads=true
+      extraBuildArgs: /p:WasmEnableThreads=true /e:WASM_TESTS_USING_VARIANT=multithreaded
       nameSuffix: DebuggerTests_MultiThreaded
       alwaysRun: true # always run when invoked manually
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}

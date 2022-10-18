@@ -199,6 +199,16 @@ namespace DebuggerTests
             bool fail = false;
             switch (method)
             {
+                case "Target.attachedToTarget":
+                {
+                    var sessionId = new SessionId(args["sessionId"]?.Value<string>());
+                    await Client.SendCommand(sessionId, "Profiler.enable", null, token);
+                    await Client.SendCommand(sessionId, "Runtime.enable", null, token);
+                    await Client.SendCommand(sessionId, "Debugger.enable", null, token);
+                    await Client.SendCommand(sessionId, "Runtime.runIfWaitingForDebugger", null, token);
+                    await Client.SendCommand(sessionId, "Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32}), token);
+                    break;
+                }
                 case "Debugger.paused":
                     NotifyOf(PAUSE, args);
                     break;

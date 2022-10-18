@@ -1042,6 +1042,7 @@ namespace DebuggerTests
         public async Task TestDebugUsingMultiThreadedRuntime()
         {
             //TODO WRITE HERE A TEST LIKE THE SAMPLE AND CHECK IF IT'S PAUSING IN ALL THREADS CORRECTLY
+            Assert.Equal(1, 2);
             await Task.Delay(1);
         }
     }

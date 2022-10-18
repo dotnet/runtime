@@ -90,6 +90,9 @@ namespace DebuggerTests
                 @params = args
             });
 
+            if (sessionId != SessionId.Null)
+                o.Add("sessionId", sessionId.sessionId);
+
             var tcs = new TaskCompletionSource<Result>();
             pending_cmds[new MessageId(sessionId.sessionId, id)] = tcs;
 
