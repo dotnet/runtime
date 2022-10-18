@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -58,6 +58,25 @@
     <None Update="TestCases\Dependencies\PInvokesExpectations.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RepoRoot">
+      <Value>$(RepoRoot)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
+      <Value>$(Configuration)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
+      <Value>$(ArtifactsDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
+      <Value>$(ArtifactsBinDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
+      <Value>$(LinkerTestDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetArchitecture">
+      <Value>$(TargetArchitecture)</Value>
+    </RuntimeHostConfigurationOption>
   </ItemGroup>
 
 </Project>

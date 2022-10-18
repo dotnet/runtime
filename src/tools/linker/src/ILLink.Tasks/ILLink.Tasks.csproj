@@ -6,7 +6,9 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>MSBuild tasks for running the IL Linker</Description>
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
+    <!-- Removing the package id to be able to build the linker inside runtime 
+         This will become unnecessary once we use live bits -->
+    <!-- PackageId>Microsoft.NET.ILLink.Tasks</PackageId -->
     <!-- We want to package the tasks package together with its
          transitive dependencies and the linker, without marking them
          as dependencies in the tasks package. -->
@@ -35,7 +37,7 @@
     <Content Include="sdk/Sdk.props" PackagePath="Sdk/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="build/$(PackageId).props" PackagePath="build/">
+    <Content Include="build/Microsoft.NET.ILLink.Tasks.props" PackagePath="build/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- Note: this should not match the package name, because we don't want the targets
