@@ -2326,7 +2326,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
