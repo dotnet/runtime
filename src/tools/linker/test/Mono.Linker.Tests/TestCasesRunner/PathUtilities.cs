@@ -6,16 +6,16 @@ using System.Runtime.CompilerServices;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public static class PathUtilities
-	{
+    public static class PathUtilities
+    {
 #if DEBUG
-		public const string ConfigDirectoryName = "Debug";
+        public const string ConfigDirectoryName = "Debug";
 #else
 		public const string ConfigDirectoryName = "Release";
 #endif
 
 #if NET7_0
-		public const string TFMDirectoryName = "net7.0";
+        public const string TFMDirectoryName = "net7.0";
 #elif NET6_0
 		public const string TFMDirectoryName = "net6.0";
 #elif NET5_0
@@ -28,28 +28,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #error "Unknown TFM"
 #endif
 
-		public static string GetTestsSourceRootDirectory ([CallerFilePath] string thisFile = null)
-		{
+        public static string GetTestsSourceRootDirectory([CallerFilePath] string thisFile = null)
+        {
 #if NETCOREAPP
-			// Deterministic builds sanitize source paths, so CallerFilePathAttribute gives an incorrect path.
-			// Instead, get the testcase dll based on the working directory of the test runner.
+            // Deterministic builds sanitize source paths, so CallerFilePathAttribute gives an incorrect path.
+            // Instead, get the testcase dll based on the working directory of the test runner.
 
-			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
-			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
-			return Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test"));
+            // working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
+            var artifactsBinDir = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..");
+            return Path.GetFullPath(Path.Combine(artifactsBinDir, "..", "..", "test"));
 #else
 			var thisDirectory = Path.GetDirectoryName (thisFile);
 			return Path.GetFullPath (Path.Combine (thisDirectory, "..", ".."));
 #endif
-		}
+        }
 
-		public static string GetTestAssemblyPath (string assemblyName)
-		{
+        public static string GetTestAssemblyPath(string assemblyName)
+        {
 #if NETCOREAPP
-			return Path.GetFullPath (Path.Combine (GetTestsSourceRootDirectory (), "..", "artifacts", "bin", assemblyName, ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
+            return Path.GetFullPath(Path.Combine(GetTestsSourceRootDirectory(), "..", "artifacts", "bin", assemblyName, ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
 #else
 			return Path.GetFullPath (Path.Combine (GetTestsSourceRootDirectory (), assemblyName, "bin", ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
 #endif
-		}
-	}
+        }
+    }
 }

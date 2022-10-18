@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 
 namespace Mono.Linker.Tests.Cases.DataFlow.Dependencies
 {
-	public class UnresolvedType
-	{
-		public static void Method () { }
-	}
+    public class UnresolvedType
+    {
+        public static void Method() { }
+    }
 }

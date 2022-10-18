@@ -9,12 +9,12 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial record ArrayValue : SingleValue
-	{
-		static ValueSetLattice<SingleValue> MultiValueLattice => default;
+    sealed partial record ArrayValue : SingleValue
+    {
+        static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
-		public readonly SingleValue Size;
+        public readonly SingleValue Size;
 
-		public partial bool TryGetValueByIndex (int index, out MultiValue value);
-	}
+        public partial bool TryGetValueByIndex(int index, out MultiValue value);
+    }
 }

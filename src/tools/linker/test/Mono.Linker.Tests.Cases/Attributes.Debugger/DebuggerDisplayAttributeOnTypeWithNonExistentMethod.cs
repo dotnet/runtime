@@ -15,25 +15,25 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), ".ctor(System.String)")]
 #endif
-	public class DebuggerDisplayAttributeOnTypeWithNonExistentMethod
-	{
-		public static void Main ()
-		{
-			var bar = new Bar ();
-		}
+    public class DebuggerDisplayAttributeOnTypeWithNonExistentMethod
+    {
+        public static void Main()
+        {
+            var bar = new Bar();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
-		[DebuggerDisplay ("{Method()}")]
-		class Bar
-		{
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptAttributeAttribute(typeof(DebuggerDisplayAttribute))]
+        [DebuggerDisplay("{Method()}")]
+        class Bar
+        {
 #if !FLAG
 			public int Method ()
 			{
 				return 1;
 			}
 #endif
-		}
-	}
+        }
+    }
 }

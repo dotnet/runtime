@@ -10,23 +10,23 @@ using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-[module: UnconditionalSuppressMessage ("Test", "IL2026", Scope = "module", Target = null)]
+[module: UnconditionalSuppressMessage("Test", "IL2026", Scope = "module", Target = null)]
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SkipKeptItemsValidation]
-	[LogDoesNotContain ("IL2026")]
-	class ModuleSuppressionWithModuleScopeNullTarget
-	{
-		static void Main ()
-		{
-			TriggerWarning ();
-		}
+    [SkipKeptItemsValidation]
+    [LogDoesNotContain("IL2026")]
+    class ModuleSuppressionWithModuleScopeNullTarget
+    {
+        static void Main()
+        {
+            TriggerWarning();
+        }
 
-		[RequiresUnreferencedCode ("TriggerWarning")]
-		public static Type TriggerWarning ()
-		{
-			return typeof (ModuleSuppressionWithModuleScopeNullTarget);
-		}
-	}
+        [RequiresUnreferencedCode("TriggerWarning")]
+        public static Type TriggerWarning()
+        {
+            return typeof(ModuleSuppressionWithModuleScopeNullTarget);
+        }
+    }
 }

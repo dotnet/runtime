@@ -5,12 +5,12 @@ using Mono.Cecil;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public partial record ThisParameterReferenceValue (MethodDefinition MethodDefinition)
-	: ReferenceValue (MethodDefinition.DeclaringType)
-	{
-		public override SingleValue DeepCopy ()
-		{
-			return this;
-		}
-	}
+    public partial record ThisParameterReferenceValue(MethodDefinition MethodDefinition)
+    : ReferenceValue(MethodDefinition.DeclaringType)
+    {
+        public override SingleValue DeepCopy()
+        {
+            return this;
+        }
+    }
 }

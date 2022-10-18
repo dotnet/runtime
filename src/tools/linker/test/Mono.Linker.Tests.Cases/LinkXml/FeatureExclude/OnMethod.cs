@@ -3,22 +3,22 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml.FeatureExclude
 {
-	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "--exclude-feature is not supported on .NET Core")]
-	[SetupLinkerArgument ("--exclude-feature", "one")]
-	[SetupLinkerDescriptorFile ("OnMethod.xml")]
-	public class OnMethod
-	{
-		public static void Main ()
-		{
-		}
+    [TestCaseRequirements(TestRunCharacteristics.TargetingNetFramework, "--exclude-feature is not supported on .NET Core")]
+    [SetupLinkerArgument("--exclude-feature", "one")]
+    [SetupLinkerDescriptorFile("OnMethod.xml")]
+    public class OnMethod
+    {
+        public static void Main()
+        {
+        }
 
-		public void FeatureOne ()
-		{
-		}
+        public void FeatureOne()
+        {
+        }
 
-		[Kept]
-		public void FeatureTwo ()
-		{
-		}
-	}
+        [Kept]
+        public void FeatureTwo()
+        {
+        }
+    }
 }

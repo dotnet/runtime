@@ -11,82 +11,84 @@ using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	// This class is responsible for the interprocedural analysis of local variables.
-	// It substitutes type arguments into the generic forward dataflow analysis,
-	// creating a simpler abstraction that can track the values of local variables using Roslyn APIs.
-	// The kinds of values tracked are still left as unspecified generic parameters TValue and TLattice.
-	public abstract class LocalDataFlowAnalysis<TValue, TLattice, TTransfer>
-		: ForwardDataFlowAnalysis<
-			LocalState<TValue>,
-			LocalDataFlowState<TValue, TLattice>,
-			LocalStateLattice<TValue, TLattice>,
-			BlockProxy,
-			RegionProxy,
-			ControlFlowGraphProxy,
-			TTransfer
-		>
-		where TValue : struct, IEquatable<TValue>
-		where TLattice : ILattice<TValue>, new()
-		where TTransfer : LocalDataFlowVisitor<TValue, TLattice>
-	{
-		protected readonly LocalStateLattice<TValue, TLattice> Lattice;
+    // This class is responsible for the interprocedural analysis of local variables.
+    // It substitutes type arguments into the generic forward dataflow analysis,
+    // creating a simpler abstraction that can track the values of local variables using Roslyn APIs.
+    // The kinds of values tracked are still left as unspecified generic parameters TValue and TLattice.
+    public abstract class LocalDataFlowAnalysis<TValue, TLattice, TTransfer>
+        : ForwardDataFlowAnalysis<
+            LocalState<TValue>,
+            LocalDataFlowState<TValue, TLattice>,
+            LocalStateLattice<TValue, TLattice>,
+            BlockProxy,
+            RegionProxy,
+            ControlFlowGraphProxy,
+            TTransfer
+        >
+        where TValue : struct, IEquatable<TValue>
+        where TLattice : ILattice<TValue>, new()
+        where TTransfer : LocalDataFlowVisitor<TValue, TLattice>
+    {
+        protected readonly LocalStateLattice<TValue, TLattice> Lattice;
 
-		protected readonly OperationBlockAnalysisContext Context;
+        protected readonly OperationBlockAnalysisContext Context;
 
-		readonly IOperation OperationBlock;
+        readonly IOperation OperationBlock;
 
-		protected LocalDataFlowAnalysis (OperationBlockAnalysisContext context, IOperation operationBlock)
-		{
-			Lattice = new (new TLattice ());
-			Context = context;
-			OperationBlock = operationBlock;
-		}
+        protected LocalDataFlowAnalysis(OperationBlockAnalysisContext context, IOperation operationBlock)
+        {
+            Lattice = new(new TLattice());
+            Context = context;
+            OperationBlock = operationBlock;
+        }
 
-		public void InterproceduralAnalyze ()
-		{
-			var methodGroupLattice = new ValueSetLattice<MethodBodyValue> ();
-			var hoistedLocalLattice = new DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>> ();
-			var interproceduralStateLattice = new InterproceduralStateLattice<TValue, TLattice> (
-				methodGroupLattice, hoistedLocalLattice);
-			var interproceduralState = interproceduralStateLattice.Top;
+        public void InterproceduralAnalyze()
+        {
+            var methodGroupLattice = new ValueSetLattice<MethodBodyValue>();
+            var hoistedLocalLattice = new DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>>();
+            var interproceduralStateLattice = new InterproceduralStateLattice<TValue, TLattice>(
+                methodGroupLattice, hoistedLocalLattice);
+            var interproceduralState = interproceduralStateLattice.Top;
 
-			var oldInterproceduralState = interproceduralState.Clone ();
+            var oldInterproceduralState = interproceduralState.Clone();
 
-			if (Context.OwningSymbol is not IMethodSymbol owningMethod)
-				return;
+            if (Context.OwningSymbol is not IMethodSymbol owningMethod)
+                return;
 
-			Debug.Assert (owningMethod.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
-			var startMethod = new MethodBodyValue (owningMethod, Context.GetControlFlowGraph (OperationBlock));
-			interproceduralState.TrackMethod (startMethod);
+            Debug.Assert(owningMethod.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
+            var startMethod = new MethodBodyValue(owningMethod, Context.GetControlFlowGraph(OperationBlock));
+            interproceduralState.TrackMethod(startMethod);
 
-			while (!interproceduralState.Equals (oldInterproceduralState)) {
-				oldInterproceduralState = interproceduralState.Clone ();
+            while (!interproceduralState.Equals(oldInterproceduralState))
+            {
+                oldInterproceduralState = interproceduralState.Clone();
 
-				foreach (var method in oldInterproceduralState.Methods) {
-					if (method.Method.IsInRequiresUnreferencedCodeAttributeScope ())
-						continue;
+                foreach (var method in oldInterproceduralState.Methods)
+                {
+                    if (method.Method.IsInRequiresUnreferencedCodeAttributeScope())
+                        continue;
 
-					AnalyzeMethod (method, ref interproceduralState);
-				}
-			}
-		}
+                    AnalyzeMethod(method, ref interproceduralState);
+                }
+            }
+        }
 
-		void AnalyzeMethod (MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
-		{
-			var cfg = method.ControlFlowGraph;
-			var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures (cfg);
-			var visitor = GetVisitor (method.Method, cfg, lValueFlowCaptures, interproceduralState);
-			Fixpoint (new ControlFlowGraphProxy (cfg), Lattice, visitor);
+        void AnalyzeMethod(MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
+        {
+            var cfg = method.ControlFlowGraph;
+            var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures(cfg);
+            var visitor = GetVisitor(method.Method, cfg, lValueFlowCaptures, interproceduralState);
+            Fixpoint(new ControlFlowGraphProxy(cfg), Lattice, visitor);
 
-			// The interprocedural state struct is stored as a field of the visitor and modified
-			// in-place there, but we also need those modifications to be reflected here.
-			interproceduralState = visitor.InterproceduralState;
-		}
+            // The interprocedural state struct is stored as a field of the visitor and modified
+            // in-place there, but we also need those modifications to be reflected here.
+            interproceduralState = visitor.InterproceduralState;
+        }
 
-		protected abstract TTransfer GetVisitor (
-			IMethodSymbol method,
-			ControlFlowGraph methodCFG,
-			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
-			InterproceduralState<TValue, TLattice> interproceduralState);
-	}
+        protected abstract TTransfer GetVisitor(
+            IMethodSymbol method,
+            ControlFlowGraph methodCFG,
+            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            InterproceduralState<TValue, TLattice> interproceduralState);
+    }
 }

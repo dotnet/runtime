@@ -7,12 +7,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 [assembly: KeptAttributeAttribute (typeof (DebuggerTypeProxyAttribute))]
 #endif
 
-[assembly: DebuggerTypeProxy (typeof (DebuggerTypeProxyAttributeOnAssemblyUsingTarget.Foo.FooDebugView), Target = typeof (DebuggerTypeProxyAttributeOnAssemblyUsingTarget.Foo))]
+[assembly: DebuggerTypeProxy(typeof(DebuggerTypeProxyAttributeOnAssemblyUsingTarget.Foo.FooDebugView), Target = typeof(DebuggerTypeProxyAttributeOnAssemblyUsingTarget.Foo))]
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
 #if NETCOREAPP
-	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
+    [SetupLinkAttributesFile("DebuggerAttributesRemoved.xml")]
 #else
 	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
@@ -22,34 +22,34 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerTypeProxyAttribute), ".ctor(System.Type)")]
 #endif
-	public class DebuggerTypeProxyAttributeOnAssemblyUsingTarget
-	{
-		public static void Main ()
-		{
-			var foo = new Foo ();
-			foo.Property = 1;
-		}
+    public class DebuggerTypeProxyAttributeOnAssemblyUsingTarget
+    {
+        public static void Main()
+        {
+            var foo = new Foo();
+            foo.Property = 1;
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		public class Foo
-		{
-			[Kept]
-			[KeptBackingField]
-			public int Property { get; [Kept] set; }
+        [Kept]
+        [KeptMember(".ctor()")]
+        public class Foo
+        {
+            [Kept]
+            [KeptBackingField]
+            public int Property { get; [Kept] set; }
 
 #if !NETCOREAPP
 			[Kept]
 #endif
-			internal class FooDebugView
-			{
-				private Foo _foo;
+            internal class FooDebugView
+            {
+                private Foo _foo;
 
-				public FooDebugView (Foo foo)
-				{
-					_foo = foo;
-				}
-			}
-		}
-	}
+                public FooDebugView(Foo foo)
+                {
+                    _foo = foo;
+                }
+            }
+        }
+    }
 }

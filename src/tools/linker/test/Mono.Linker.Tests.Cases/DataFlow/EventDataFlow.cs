@@ -9,40 +9,40 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class EventDataFlow
-	{
-		public static void Main ()
-		{
-			AssignToEvent.Test ();
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    public class EventDataFlow
+    {
+        public static void Main()
+        {
+            AssignToEvent.Test();
+        }
 
-		class AssignToEvent
-		{
-			static event EventHandler MyEvent;
+        class AssignToEvent
+        {
+            static event EventHandler MyEvent;
 
-			static void HandleMyEvent (object sender, EventArgs args) => throw null;
+            static void HandleMyEvent(object sender, EventArgs args) => throw null;
 
-			static void HandleMyEvent2 (object sender, EventArgs args) => throw null;
+            static void HandleMyEvent2(object sender, EventArgs args) => throw null;
 
-			public static void TestAssignEvent ()
-			{
-				MyEvent = HandleMyEvent;
-			}
+            public static void TestAssignEvent()
+            {
+                MyEvent = HandleMyEvent;
+            }
 
-			public static void TestAssignCapturedEvent (bool b = false)
-			{
-				MyEvent = b ? HandleMyEvent : HandleMyEvent2;
-			}
+            public static void TestAssignCapturedEvent(bool b = false)
+            {
+                MyEvent = b ? HandleMyEvent : HandleMyEvent2;
+            }
 
-			// No dataflow warnings are involved, but the event assignment should not
-			// crash the analyzer.
-			public static void Test ()
-			{
-				TestAssignEvent ();
-				TestAssignCapturedEvent ();
-			}
-		}
-	}
+            // No dataflow warnings are involved, but the event assignment should not
+            // crash the analyzer.
+            public static void Test()
+            {
+                TestAssignEvent();
+                TestAssignCapturedEvent();
+            }
+        }
+    }
 }

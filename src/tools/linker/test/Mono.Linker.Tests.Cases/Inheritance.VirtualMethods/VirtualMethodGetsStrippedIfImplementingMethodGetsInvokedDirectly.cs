@@ -2,30 +2,30 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
 {
-	class VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly
-	{
-		public static void Main ()
-		{
-			new A ().Foo ();
-		}
+    class VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly
+    {
+        public static void Main()
+        {
+            new A().Foo();
+        }
 
-		[KeptMember (".ctor()")]
-		class B
-		{
-			[Kept] // TODO: Would be nice to be removed
-			public virtual void Foo ()
-			{
-			}
-		}
+        [KeptMember(".ctor()")]
+        class B
+        {
+            [Kept] // TODO: Would be nice to be removed
+            public virtual void Foo()
+            {
+            }
+        }
 
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (B))]
-		class A : B
-		{
-			[Kept]
-			public override void Foo ()
-			{
-			}
-		}
-	}
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(B))]
+        class A : B
+        {
+            [Kept]
+            public override void Foo()
+            {
+            }
+        }
+    }
 }

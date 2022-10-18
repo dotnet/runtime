@@ -7,37 +7,38 @@ using Mono.Linker;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal readonly partial struct TypeProxy
-	{
-		public TypeProxy (TypeDefinition type) => Type = type;
+    internal readonly partial struct TypeProxy
+    {
+        public TypeProxy(TypeDefinition type) => Type = type;
 
-		public static implicit operator TypeProxy (TypeDefinition type) => new (type);
+        public static implicit operator TypeProxy(TypeDefinition type) => new(type);
 
-		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
-		{
-			if (!Type.HasGenericParameters)
-				return ImmutableArray<GenericParameterProxy>.Empty;
+        internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
+        {
+            if (!Type.HasGenericParameters)
+                return ImmutableArray<GenericParameterProxy>.Empty;
 
-			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (Type.GenericParameters.Count);
-			foreach (var genericParameter in Type.GenericParameters) {
-				builder.Add (new GenericParameterProxy (genericParameter));
-			}
+            var builder = ImmutableArray.CreateBuilder<GenericParameterProxy>(Type.GenericParameters.Count);
+            foreach (var genericParameter in Type.GenericParameters)
+            {
+                builder.Add(new GenericParameterProxy(genericParameter));
+            }
 
-			return builder.ToImmutableArray ();
-		}
+            return builder.ToImmutableArray();
+        }
 
-		public TypeDefinition Type { get; }
+        public TypeDefinition Type { get; }
 
-		public string Name { get => Type.Name; }
+        public string Name { get => Type.Name; }
 
-		public string? Namespace { get => Type.Namespace; }
+        public string? Namespace { get => Type.Namespace; }
 
-		public bool IsTypeOf (string @namespace, string name) => Type.IsTypeOf (@namespace, name);
+        public bool IsTypeOf(string @namespace, string name) => Type.IsTypeOf(@namespace, name);
 
-		public bool IsTypeOf (WellKnownType wellKnownType) => Type.IsTypeOf (wellKnownType);
+        public bool IsTypeOf(WellKnownType wellKnownType) => Type.IsTypeOf(wellKnownType);
 
-		public string GetDisplayName () => Type.GetDisplayName ();
+        public string GetDisplayName() => Type.GetDisplayName();
 
-		public override string ToString () => Type.ToString ();
-	}
+        public override string ToString() => Type.ToString();
+    }
 }

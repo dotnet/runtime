@@ -19,28 +19,28 @@ using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Depe
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	class UnusedInterfacesInPreservedScope
-	{
-		[Kept]
-		public static void Main ()
-		{
-			Test ();
-		}
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    class UnusedInterfacesInPreservedScope
+    {
+        [Kept]
+        public static void Main()
+        {
+            Test();
+        }
 
-		[Kept]
-		class MyType : IStaticInterfaceWithDefaultImpls
-		{
-			public static int Property { get => 0; set => _ = value; }
-			public static int Method () => 0;
-			public int InstanceMethod () => 0;
-		}
+        [Kept]
+        class MyType : IStaticInterfaceWithDefaultImpls
+        {
+            public static int Property { get => 0; set => _ = value; }
+            public static int Method() => 0;
+            public int InstanceMethod() => 0;
+        }
 
-		[Kept]
-		static void Test ()
-		{
-			var x = typeof (MyType); // The only use of MyType
-		}
-	}
+        [Kept]
+        static void Test()
+        {
+            var x = typeof(MyType); // The only use of MyType
+        }
+    }
 }

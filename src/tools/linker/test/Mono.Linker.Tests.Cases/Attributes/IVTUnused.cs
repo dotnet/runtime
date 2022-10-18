@@ -10,11 +10,11 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
-	[Define ("IVT")]
-	class IVTUnused
-	{
-		static void Main ()
-		{
-		}
-	}
+    [Define("IVT")]
+    class IVTUnused
+    {
+        static void Main()
+        {
+        }
+    }
 }

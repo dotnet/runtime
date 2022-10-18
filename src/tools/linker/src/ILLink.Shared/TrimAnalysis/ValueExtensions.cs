@@ -11,49 +11,51 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	static partial class ValueExtensions
-	{
-		internal static string ValueToString (this SingleValue value, params object[] args)
-		{
-			if (value == null)
-				return "<null>";
+    static partial class ValueExtensions
+    {
+        internal static string ValueToString(this SingleValue value, params object[] args)
+        {
+            if (value == null)
+                return "<null>";
 
-			StringBuilder sb = new ();
-			sb.Append (value.GetType ().Name);
-			sb.Append ("(");
-			if (args != null) {
-				for (int i = 0; i < args.Length; i++) {
-					if (i > 0)
-						sb.Append (",");
-					sb.Append (args[i] == null ? "<null>" : args[i].ToString ());
-				}
-			}
-			sb.Append (")");
-			return sb.ToString ();
-		}
+            StringBuilder sb = new();
+            sb.Append(value.GetType().Name);
+            sb.Append("(");
+            if (args != null)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(",");
+                    sb.Append(args[i] == null ? "<null>" : args[i].ToString());
+                }
+            }
+            sb.Append(")");
+            return sb.ToString();
+        }
 
-		internal static int? AsConstInt (this SingleValue value)
-		{
-			if (value is ConstIntValue constInt)
-				return constInt.Value;
+        internal static int? AsConstInt(this SingleValue value)
+        {
+            if (value is ConstIntValue constInt)
+                return constInt.Value;
 
-			return null;
-		}
+            return null;
+        }
 
-		internal static int? AsConstInt (this in MultiValue value)
-		{
-			if (value.AsSingleValue () is ConstIntValue constInt)
-				return constInt.Value;
+        internal static int? AsConstInt(this in MultiValue value)
+        {
+            if (value.AsSingleValue() is ConstIntValue constInt)
+                return constInt.Value;
 
-			return null;
-		}
+            return null;
+        }
 
-		internal static SingleValue? AsSingleValue (this in MultiValue node)
-		{
-			if (node.Count () != 1)
-				return null;
+        internal static SingleValue? AsSingleValue(this in MultiValue node)
+        {
+            if (node.Count() != 1)
+                return null;
 
-			return node.Single ();
-		}
-	}
+            return node.Single();
+        }
+    }
 }

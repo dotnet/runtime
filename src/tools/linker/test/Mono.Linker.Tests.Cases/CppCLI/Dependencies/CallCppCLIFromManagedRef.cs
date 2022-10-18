@@ -3,10 +3,10 @@
 
 namespace Mono.Linker.Tests.Cases.CppCLI.Dependencies
 {
-	public static class CallCppCLIFromManaged
-	{
-		public static void TriggerWarning ()
-		{
-		}
-	}
+    public static class CallCppCLIFromManaged
+    {
+        public static void TriggerWarning()
+        {
+        }
+    }
 }

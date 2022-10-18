@@ -8,14 +8,14 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresDynamicCodeAnalyzer,
-	ILLink.CodeFix.RequiresDynamicCodeCodeFixProvider>;
+    ILLink.RoslynAnalyzer.RequiresDynamicCodeAnalyzer,
+    ILLink.CodeFix.RequiresDynamicCodeCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public class RequiresDynamicCodeAnalyzerTests
-	{
-		static readonly string dynamicCodeAttribute = @"
+    public class RequiresDynamicCodeAnalyzerTests
+    {
+        static readonly string dynamicCodeAttribute = @"
 #nullable enable
 
 namespace System.Diagnostics.CodeAnalysis
@@ -34,35 +34,37 @@ namespace System.Diagnostics.CodeAnalysis
 	}
 }";
 
-		static Task VerifyRequiresDynamicCodeCodeFix (
-			string source,
-			string fixedSource,
-			DiagnosticResult[] baselineExpected,
-			DiagnosticResult[] fixedExpected,
-			int? numberOfIterations = null)
-		{
-			var test = new VerifyCS.Test {
-				TestCode = source + dynamicCodeAttribute,
-				FixedCode = fixedSource + dynamicCodeAttribute,
-				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
-			};
-			test.ExpectedDiagnostics.AddRange (baselineExpected);
-			test.TestState.AnalyzerConfigFiles.Add (
-						("/.editorconfig", SourceText.From (@$"
+        static Task VerifyRequiresDynamicCodeCodeFix(
+            string source,
+            string fixedSource,
+            DiagnosticResult[] baselineExpected,
+            DiagnosticResult[] fixedExpected,
+            int? numberOfIterations = null)
+        {
+            var test = new VerifyCS.Test
+            {
+                TestCode = source + dynamicCodeAttribute,
+                FixedCode = fixedSource + dynamicCodeAttribute,
+                ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+            };
+            test.ExpectedDiagnostics.AddRange(baselineExpected);
+            test.TestState.AnalyzerConfigFiles.Add(
+                        ("/.editorconfig", SourceText.From(@$"
 is_global = true
 build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
-			if (numberOfIterations != null) {
-				test.NumberOfIncrementalIterations = numberOfIterations;
-				test.NumberOfFixAllIterations = numberOfIterations;
-			}
-			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
-			return test.RunAsync ();
-		}
+            if (numberOfIterations != null)
+            {
+                test.NumberOfIncrementalIterations = numberOfIterations;
+                test.NumberOfFixAllIterations = numberOfIterations;
+            }
+            test.FixedState.ExpectedDiagnostics.AddRange(fixedExpected);
+            return test.RunAsync();
+        }
 
-		[Fact]
-		public async Task SimpleDiagnosticFix ()
-		{
-			var test = $$"""
+        [Fact]
+        public async Task SimpleDiagnosticFix()
+        {
+            var test = $$"""
 			using System.Diagnostics.CodeAnalysis;
 
 			public class C
@@ -90,7 +92,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			}
 			""";
 
-			var fixtest = $$"""
+            var fixtest = $$"""
 			using System.Diagnostics.CodeAnalysis;
 
 			public class C
@@ -122,10 +124,10 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			}
 			""";
 
-			await VerifyRequiresDynamicCodeCodeFix (
-				source: test,
-				fixedSource: fixtest,
-				baselineExpected: new[] {
+            await VerifyRequiresDynamicCodeCodeFix(
+                source: test,
+                fixedSource: fixtest,
+                baselineExpected: new[] {
 					// /0/Test0.cs(8,14): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(8, 14, 8, 18).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(12,24): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
@@ -134,18 +136,18 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(16, 25, 16, 31).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(23,25): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(23, 25, 23, 31).WithArguments("C.M1()", " message.", "")
-				},
-				fixedExpected: new[] {
+                },
+                fixedExpected: new[] {
 				// /0/Test0.cs(26,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
 				DiagnosticResult.CompilerError("CS7036").WithSpan(26, 10, 26, 31).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)"),
-				});
-		}
+                });
+        }
 
 
-		[Fact]
-		public Task FixInLambda ()
-		{
-			var src = $$"""
+        [Fact]
+        public Task FixInLambda()
+        {
+            var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -160,19 +162,19 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				}
 			}
 			""";
-			var diag = new[] {
+            var diag = new[] {
 				// /0/Test0.cs(11,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 16, 11, 20).WithArguments("C.M1()", " message.", "")
-			};
-			// No fix available inside a lambda, requires manual code change since attribute cannot
-			// be applied
-			return VerifyRequiresDynamicCodeCodeFix (src, src, diag, diag);
-		}
+            };
+            // No fix available inside a lambda, requires manual code change since attribute cannot
+            // be applied
+            return VerifyRequiresDynamicCodeCodeFix(src, src, diag, diag);
+        }
 
-		[Fact]
-		public Task FixInLocalFunc ()
-		{
-			var src = $$"""
+        [Fact]
+        public Task FixInLocalFunc()
+        {
+            var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -188,7 +190,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				}
 			}
 			""";
-			var fix = $$"""
+            var fix = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -205,25 +207,25 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				}
 			}
 			""";
-			// Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
-			return VerifyRequiresDynamicCodeCodeFix (
-				source: src,
-				fixedSource: fix,
-				baselineExpected: new[] {
+            // Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
+            return VerifyRequiresDynamicCodeCodeFix(
+                source: src,
+                fixedSource: fix,
+                baselineExpected: new[] {
 					// /0/Test0.cs(11,22): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(11, 22, 11, 26).WithArguments("C.M1()", " message.", "")
-				},
-				fixedExpected: Array.Empty<DiagnosticResult> (),
-				// The default iterations for the codefix is the number of diagnostics (1 in this case)
-				// but since the codefixer introduces a new diagnostic in the first iteration, it needs
-				// to run twice, so we need to set the number of iterations to 2.
-				numberOfIterations: 2);
-		}
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>(),
+                // The default iterations for the codefix is the number of diagnostics (1 in this case)
+                // but since the codefixer introduces a new diagnostic in the first iteration, it needs
+                // to run twice, so we need to set the number of iterations to 2.
+                numberOfIterations: 2);
+        }
 
-		[Fact]
-		public Task FixInCtor ()
-		{
-			var src = $$"""
+        [Fact]
+        public Task FixInCtor()
+        {
+            var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -235,7 +237,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				public C() => M1();
 			}
 			""";
-			var fix = $$"""
+            var fix = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -248,24 +250,24 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			    public C() => M1();
 			}
 			""";
-			// Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
-			return VerifyRequiresDynamicCodeCodeFix (
-				source: src,
-				fixedSource: fix,
-				baselineExpected: new[] {
+            // Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
+            return VerifyRequiresDynamicCodeCodeFix(
+                source: src,
+                fixedSource: fix,
+                baselineExpected: new[] {
 					// /0/Test0.cs(9,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 16, 9, 20).WithArguments("C.M1()", " message.", "")
-				},
-				fixedExpected: new[] {
+                },
+                fixedExpected: new[] {
 					// /0/Test0.cs(9,6): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
 					DiagnosticResult.CompilerError("CS7036").WithSpan(9, 6, 9, 27).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)")
-				});
-		}
+                });
+        }
 
-		[Fact]
-		public Task FixInPropertyDecl ()
-		{
-			var src = $$"""
+        [Fact]
+        public Task FixInPropertyDecl()
+        {
+            var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -277,18 +279,18 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				int M2 => M1();
 			}
 			""";
-			var diag = new[] {
+            var diag = new[] {
 				// /0/Test0.cs(9,12): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 12, 9, 16).WithArguments("C.M1()", " message.", "")
-			};
-			// Can't apply RDC on properties at the moment
-			return VerifyRequiresDynamicCodeCodeFix (src, src, diag, diag);
-		}
+            };
+            // Can't apply RDC on properties at the moment
+            return VerifyRequiresDynamicCodeCodeFix(src, src, diag, diag);
+        }
 
-		[Fact]
-		public Task FixInPropertyAccessor ()
-		{
-			var src = $$"""
+        [Fact]
+        public Task FixInPropertyAccessor()
+        {
+            var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -305,7 +307,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				}
 			}
 			""";
-			var fix = $$"""
+            var fix = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 
@@ -325,13 +327,13 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				}
 			}
 			""";
-			var diag = new[] {
+            var diag = new[] {
 				// /0/Test0.cs(12,16): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
 				// /0/Test0.cs(13,17): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
-			};
-			return VerifyRequiresDynamicCodeCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
-		}
-	}
+            };
+            return VerifyRequiresDynamicCodeCodeFix(src, fix, diag, Array.Empty<DiagnosticResult>());
+        }
+    }
 }

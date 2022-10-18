@@ -11,29 +11,29 @@ using TypeDefinition = Mono.Cecil.TypeDefinition;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// Return value from a method
-	/// </summary>
-	partial record MethodReturnValue : IValueWithStaticType
-	{
-		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			StaticType = staticType;
-			Method = method;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// Return value from a method
+    /// </summary>
+    partial record MethodReturnValue : IValueWithStaticType
+    {
+        public MethodReturnValue(TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            StaticType = staticType;
+            Method = method;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly MethodDefinition Method;
+        public readonly MethodDefinition Method;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName(Method) };
 
-		public TypeDefinition? StaticType { get; }
+        public TypeDefinition? StaticType { get; }
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString() => this.ValueToString(Method, DynamicallyAccessedMemberTypes);
+    }
 }

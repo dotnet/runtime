@@ -6,21 +6,21 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SetupLinkAttributesFile ("AddSuppressionsBeforeAttributeRemoval.xml")]
+    [SetupLinkAttributesFile("AddSuppressionsBeforeAttributeRemoval.xml")]
 
-	[ExpectedNoWarnings]
-	public class AddSuppressionsBeforeAttributeRemoval
-	{
-		[Kept]
-		public static Type TriggerUnrecognizedPattern ()
-		{
-			return typeof (AddedPseudoAttributeAttribute);
-		}
+    [ExpectedNoWarnings]
+    public class AddSuppressionsBeforeAttributeRemoval
+    {
+        [Kept]
+        public static Type TriggerUnrecognizedPattern()
+        {
+            return typeof(AddedPseudoAttributeAttribute);
+        }
 
-		[UnconditionalSuppressMessage ("ILLinker", "IL2072")]
-		public static void Main ()
-		{
-			Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-		}
-	}
+        [UnconditionalSuppressMessage("ILLinker", "IL2072")]
+        public static void Main()
+        {
+            Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+        }
+    }
 }

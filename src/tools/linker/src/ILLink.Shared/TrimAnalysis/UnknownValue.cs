@@ -8,16 +8,16 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed record UnknownValue : SingleValue
-	{
-		private UnknownValue ()
-		{
-		}
+    sealed record UnknownValue : SingleValue
+    {
+        private UnknownValue()
+        {
+        }
 
-		public static UnknownValue Instance { get; } = new UnknownValue ();
+        public static UnknownValue Instance { get; } = new UnknownValue();
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString ();
-	}
+        public override string ToString() => this.ValueToString();
+    }
 }

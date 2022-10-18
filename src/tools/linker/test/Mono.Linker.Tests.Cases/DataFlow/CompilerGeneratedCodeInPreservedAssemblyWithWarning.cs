@@ -10,64 +10,66 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// Similar to CompilerGeneratedCodeInPreservedAssembly, but with warnings
-	// produced while marking the compiler generated code.
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	[SetupLinkerDescriptorFile ("CompilerGeneratedCodeInPreservedAssembly.xml")]
-	class CompilerGeneratedCodeInPreservedAssemblyWithWarning
-	{
-		[ExpectedWarning ("IL2026", "--" + nameof (Inner) + "." + nameof (Inner.WithLocalFunctionInner) + "--")]
-		[ExpectedWarning ("IL2026", "--" + nameof (WithLocalFunction) + "--")]
-		public static void Main ()
-		{
-			Inner.WithLocalFunctionInner ();
-			WithLocalFunction ();
-		}
+    // Similar to CompilerGeneratedCodeInPreservedAssembly, but with warnings
+    // produced while marking the compiler generated code.
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    [SetupLinkerArgument("--enable-opt", "ipconstprop")]
+    [SetupLinkerDescriptorFile("CompilerGeneratedCodeInPreservedAssembly.xml")]
+    class CompilerGeneratedCodeInPreservedAssemblyWithWarning
+    {
+        [ExpectedWarning("IL2026", "--" + nameof(Inner) + "." + nameof(Inner.WithLocalFunctionInner) + "--")]
+        [ExpectedWarning("IL2026", "--" + nameof(WithLocalFunction) + "--")]
+        public static void Main()
+        {
+            Inner.WithLocalFunctionInner();
+            WithLocalFunction();
+        }
 
-		class Inner
-		{
-			// In this case the compiler generated state will see the modified body,
-			// and will not associate the local function with the user method.
-			// Generic argument warnings from the local function will not be suppressed
-			// by RUC on the user method.
-			[RequiresUnreferencedCode ("--" + nameof (Inner) + "." + nameof (WithLocalFunctionInner) + "--")]
-			public static void WithLocalFunctionInner ()
-			{
-				if (AlwaysFalse) {
-					LocalWithWarning<int> ();
-				}
+        class Inner
+        {
+            // In this case the compiler generated state will see the modified body,
+            // and will not associate the local function with the user method.
+            // Generic argument warnings from the local function will not be suppressed
+            // by RUC on the user method.
+            [RequiresUnreferencedCode("--" + nameof(Inner) + "." + nameof(WithLocalFunctionInner) + "--")]
+            public static void WithLocalFunctionInner()
+            {
+                if (AlwaysFalse)
+                {
+                    LocalWithWarning<int>();
+                }
 
-				// https://github.com/dotnet/linker/issues/2937
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
-				void LocalWithWarning<T> ()
-				{
-					// Warning!
-					RequiresAllOnT<T> ();
-				}
-			}
-		}
+                // https://github.com/dotnet/linker/issues/2937
+                [ExpectedWarning("IL2091", ProducedBy = ProducedBy.Trimmer)]
+                void LocalWithWarning<T>()
+                {
+                    // Warning!
+                    RequiresAllOnT<T>();
+                }
+            }
+        }
 
-		// In this case the compiler generated state will see the original body,
-		// and will associate the local function with the user method.
-		// Generic argument warnings from the local function will be suppressed
-		// by RUC on the user method.
-		[RequiresUnreferencedCode ("--" + nameof (WithLocalFunction) + "--")]
-		public static void WithLocalFunction ()
-		{
-			if (AlwaysFalse) {
-				LocalWithWarning<int> ();
-			}
+        // In this case the compiler generated state will see the original body,
+        // and will associate the local function with the user method.
+        // Generic argument warnings from the local function will be suppressed
+        // by RUC on the user method.
+        [RequiresUnreferencedCode("--" + nameof(WithLocalFunction) + "--")]
+        public static void WithLocalFunction()
+        {
+            if (AlwaysFalse)
+            {
+                LocalWithWarning<int>();
+            }
 
-			// https://github.com/dotnet/linker/issues/2937
-			void LocalWithWarning<T> ()
-			{
-				// No warning
-				RequiresAllOnT<T> ();
-			}
-		}
-		public static bool AlwaysFalse => false;
-		static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
-	}
+            // https://github.com/dotnet/linker/issues/2937
+            void LocalWithWarning<T>()
+            {
+                // No warning
+                RequiresAllOnT<T>();
+            }
+        }
+        public static bool AlwaysFalse => false;
+        static void RequiresAllOnT<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() { }
+    }
 }
