@@ -9529,7 +9529,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
                                 CORINFO_CLASS_HANDLE innerFieldClsHnd;
-                                var_types            filedVarType = JITtype2varType(
+                                var_types            fieldVarType = JITtype2varType(
                                     info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
 
                                 // Technically, we can support frozen gc refs here and maybe floating point in future
