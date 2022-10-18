@@ -153,9 +153,12 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(IntPtr validatorPtr, SslAuthenticationOptions authOptions)
         {
+            // TODO pass enabled ssl protocols to the SSLStream factory
+            // TODO what else do I need to configure the SSLStream (&friends) correctly?
+
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr, authOptions.EnabledSslProtocols);
+                return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -175,7 +178,7 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(validatorPtr, authOptions.EnabledSslProtocols, keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(validatorPtr, keyBytes, algorithm, ptrs);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)

@@ -29,12 +29,11 @@ internal static partial class Interop
         };
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
-        internal static partial SafeSslHandle SSLStreamCreate(IntPtr trustManagerProxyHandle, SslProtocols enabledSslProtocols);
+        internal static partial SafeSslHandle SSLStreamCreate(IntPtr trustManagerProxyHandle);
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates")]
         private static partial SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr trustManagerProxyHandle,
-            SslProtocols enabledSslProtocols,
             ref byte pkcs8PrivateKey,
             int pkcs8PrivateKeyLen,
             PAL_KeyAlgorithm algorithm,
@@ -42,14 +41,12 @@ internal static partial class Interop
             int certsLen);
         internal static SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr trustManagerProxyHandle,
-            SslProtocols enabledSslProtocols,
             ReadOnlySpan<byte> pkcs8PrivateKey,
             PAL_KeyAlgorithm algorithm,
             IntPtr[] certificates)
         {
             return SSLStreamCreateWithCertificates(
                 trustManagerProxyHandle,
-                enabledSslProtocols,
                 ref MemoryMarshal.GetReference(pkcs8PrivateKey),
                 pkcs8PrivateKey.Length,
                 algorithm,
