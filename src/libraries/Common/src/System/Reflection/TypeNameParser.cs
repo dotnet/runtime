@@ -15,7 +15,7 @@ namespace System.Reflection
         private TypeNameParser(ReadOnlySpan<char> name)
         {
             _input = name;
-            _index = 0;
+            _errorIndex = _index = 0;
         }
 
         //
@@ -23,34 +23,44 @@ namespace System.Reflection
         //
         private Type? Parse()
         {
-            TypeName typeName = ParseNonQualifiedTypeName();
+            TypeName? typeName = ParseNonQualifiedTypeName();
+            if (typeName is null)
+                return null;
+
             string? assemblyName = null;
 
             TokenType token = GetNextToken();
             if (token != TokenType.End)
             {
-                if (_prohibitAssemblyQualifiedName)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                TopLevelAssemblyQualifiedName();
 
                 if (token != TokenType.Comma)
-                    throw new ArgumentException();
+                {
+                    ParseError();
+                    return null;
+                }
 
                 assemblyName = GetNextAssemblyName();
-                token = Peek;
-                if (token != TokenType.End)
-                    throw new ArgumentException();
+                Debug.Assert(Peek == TokenType.End);
             }
 
             return typeName.ResolveType(ref this, assemblyName);
         }
 
         //
+        // Notify that the parser encountered top-level assembly qualified name
+        //
+        partial void TopLevelAssemblyQualifiedName();
+
+        //
         // Parses a type name without any assembly name qualification.
         //
-        private TypeName ParseNonQualifiedTypeName()
+        private TypeName? ParseNonQualifiedTypeName()
         {
             // Parse the named type or constructed generic type part first.
-            TypeName typeName = ParseNamedOrConstructedGenericTypeName();
+            TypeName? typeName = ParseNamedOrConstructedGenericTypeName();
+            if (typeName is null)
+                return null;
 
             // Iterate through any "has-element" qualifiers ([], &, *).
             while (true)
@@ -91,7 +101,10 @@ namespace System.Reflection
                             typeName = new ModifierTypeName(typeName, rank);
                     }
                     if (token != TokenType.CloseSqBracket)
-                        throw new ArgumentException();
+                    {
+                        ParseError();
+                        return null;
+                    }
                 }
                 else
                 {
@@ -104,44 +117,60 @@ namespace System.Reflection
         //
         // Foo or Foo+Inner or Foo[String] or Foo+Inner[String]
         //
-        private TypeName ParseNamedOrConstructedGenericTypeName()
+        private TypeName? ParseNamedOrConstructedGenericTypeName()
         {
-            TypeName namedType = ParseNamedTypeName();
+            TypeName? namedType = ParseNamedTypeName();
+            if (namedType is null)
+                return null;
+
             // Because "[" is used both for generic arguments and array indexes, we must peek two characters deep.
             if (!(Peek == TokenType.OpenSqBracket && (PeekSecond == TokenType.Other || PeekSecond == TokenType.OpenSqBracket)))
                 return namedType;
-            else
-            {
-                Skip();
-                TypeName[] typeArguments = new TypeName[2];
-                int typeArgumentsCount = 0;
-                while (true)
-                {
-                    TypeName typeArgument = ParseGenericTypeArgument();
-                    if (typeArgumentsCount >= typeArguments.Length)
-                        Array.Resize(ref typeArguments, 2 * typeArgumentsCount);
-                    typeArguments[typeArgumentsCount++] = typeArgument;
-                    TokenType token = GetNextToken();
-                    if (token == TokenType.CloseSqBracket)
-                        break;
-                    if (token != TokenType.Comma)
-                        throw new ArgumentException();
-                }
 
-                return new GenericTypeName(namedType, typeArguments, typeArgumentsCount);
+            Skip();
+
+            TypeName[] typeArguments = new TypeName[2];
+            int typeArgumentsCount = 0;
+            while (true)
+            {
+                TypeName? typeArgument = ParseGenericTypeArgument();
+                if (typeArgument is null)
+                    return null;
+                if (typeArgumentsCount >= typeArguments.Length)
+                    Array.Resize(ref typeArguments, 2 * typeArgumentsCount);
+                typeArguments[typeArgumentsCount++] = typeArgument;
+                TokenType token = GetNextToken();
+                if (token == TokenType.CloseSqBracket)
+                    break;
+                if (token != TokenType.Comma)
+                {
+                    ParseError();
+                    return null;
+                }
             }
+
+            return new GenericTypeName(namedType, typeArguments, typeArgumentsCount);
         }
 
         //
         // Foo or Foo+Inner
         //
-        private TypeName ParseNamedTypeName()
+        private TypeName? ParseNamedTypeName()
         {
-            TypeName namedType = new NamespaceTypeName(GetNextIdentifier());
+            string? nextIdentifier = GetNextIdentifier();
+            if (nextIdentifier is null)
+                return null;
+
+            TypeName namedType = new NamespaceTypeName(nextIdentifier);
             while (Peek == TokenType.Plus)
             {
                 Skip();
-                namedType = new NestedTypeName(GetNextIdentifier(), namedType);
+
+                nextIdentifier = GetNextIdentifier();
+                if (nextIdentifier is null)
+                    return null;
+
+                namedType = new NestedTypeName(nextIdentifier, namedType);
             }
             return namedType;
         }
@@ -149,33 +178,36 @@ namespace System.Reflection
         //
         // Parse a generic argument. In particular, generic arguments can take the special form [<typename>,<assemblyname>].
         //
-        private TypeName ParseGenericTypeArgument()
+        private TypeName? ParseGenericTypeArgument()
         {
             TokenType token = GetNextToken();
             if (token == TokenType.Other)
             {
-                TypeName nonQualifiedTypeName = ParseNonQualifiedTypeName();
-                return nonQualifiedTypeName;
+                return ParseNonQualifiedTypeName();
             }
-            else if (token == TokenType.OpenSqBracket)
+            if (token != TokenType.OpenSqBracket)
             {
-                string? assemblyName = null;
-                TypeName typeName = ParseNonQualifiedTypeName();
-                token = GetNextToken();
-                if (token == TokenType.Comma)
-                {
-                    assemblyName = GetNextEmbeddedAssemblyName();
-                    token = GetNextToken();
-                }
-                if (token != TokenType.CloseSqBracket)
-                    throw new ArgumentException();
-                if (assemblyName == null)
-                    return typeName;
-                else
-                    return new AssemblyQualifiedTypeName(typeName, assemblyName);
+                ParseError();
+                return null;
             }
-            else
-                throw new ArgumentException();
+            string? assemblyName = null;
+            TypeName? typeName = ParseNonQualifiedTypeName();
+            if (typeName is null)
+                return null;
+
+            token = GetNextToken();
+            if (token == TokenType.Comma)
+            {
+                assemblyName = GetNextEmbeddedAssemblyName();
+                token = GetNextToken();
+            }
+            if (token != TokenType.CloseSqBracket)
+            {
+                ParseError();
+                return null;
+            }
+
+            return (assemblyName != null) ? new AssemblyQualifiedTypeName(typeName, assemblyName) : typeName;
         }
 
         //
@@ -216,6 +248,8 @@ namespace System.Reflection
         // or the token is not a reserved token.
         private TokenType GetNextToken()
         {
+            _errorIndex = _index;
+
             TokenType tokenType = Peek;
             if (tokenType == TokenType.End || tokenType == TokenType.Other)
                 return tokenType;
@@ -230,14 +264,14 @@ namespace System.Reflection
         //
         // Terminated by the first non-escaped reserved character ('[', ']', '+', '&', '*' or ',')
         //
-        private string GetNextIdentifier()
+        private string? GetNextIdentifier()
         {
             SkipWhiteSpace();
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
             int src = _index;
-            for (; ; )
+            while (true)
             {
                 if (src >= _input.Length)
                     break;
@@ -248,17 +282,30 @@ namespace System.Reflection
                 src++;
                 if (c == '\\')
                 {
+                    // Update error location
+                    _errorIndex = src - 1;
+
                     c = (src < _input.Length) ? _input[src++] : '\0';
 
                     if (!NeedsEscapingInTypeName(c))
                     {
                         // If we got here, a backslash was used to escape a character that is not legal to escape inside a type name.
-                        throw new ArgumentException();
+                        ParseError();
+                        return null;
                     }
                 }
                 sb.Append(c);
             }
             _index = src;
+
+            if (sb.Length == 0)
+            {
+                // The identifier has to be non-empty
+                _errorIndex = src;
+                ParseError();
+                return null;
+            }
+
             return sb.ToString();
         }
 
@@ -270,18 +317,9 @@ namespace System.Reflection
         {
             SkipWhiteSpace();
 
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
-
-            int src = _index;
-            for (; ; )
-            {
-                if (src >= _input.Length)
-                    break;
-                char c = _input[src++];
-                sb.Append(c);
-            }
-            _index = src;
-            return sb.ToString();
+            string assemblyName = new string(_input.Slice(_index));
+            _index = _input.Length;
+            return assemblyName;
         }
 
         //
@@ -289,17 +327,20 @@ namespace System.Reflection
         //
         // Terminated by an unescaped ']'.
         //
-        private string GetNextEmbeddedAssemblyName()
+        private string? GetNextEmbeddedAssemblyName()
         {
             SkipWhiteSpace();
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
             int src = _index;
-            for (; ; )
+            while (true)
             {
                 if (src >= _input.Length)
-                    throw new ArgumentException();
+                {
+                    ParseError();
+                    return null;
+                }
                 char c = _input[src];
                 if (c == ']')
                     break;
@@ -314,6 +355,15 @@ namespace System.Reflection
                 sb.Append(c);
             }
             _index = src;
+
+            if (sb.Length == 0)
+            {
+                // The assembly name has to be non-empty
+                _errorIndex = src;
+                ParseError();
+                return null;
+            }
+
             return sb.ToString();
         }
 
@@ -546,6 +596,12 @@ namespace System.Reflection
             }
 
             return sb.ToString();
+        }
+
+        private void ParseError()
+        {
+            if (_throwOnError)
+                throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{_errorIndex}");
         }
     }
 }

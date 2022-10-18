@@ -12,6 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static bool ResolveType(string name, ModuleDesc callingModule, TypeSystemContext context, out TypeDesc type, out ModuleDesc referenceModule)
         {
+            // !!!
             // This can do enough resolution to resolve "Foo" or "Foo, Assembly, PublicKeyToken=...".
             // The reflection resolution rules are complicated. This is only needed for a heuristic,
             // not for correctness, so this shortcut is okay.

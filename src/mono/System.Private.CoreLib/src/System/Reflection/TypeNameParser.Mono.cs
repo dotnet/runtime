@@ -15,12 +15,12 @@ namespace System.Reflection
     {
         private ReadOnlySpan<char> _input;
         private int _index;
+        private int _errorIndex; // Position for error reporting
 
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
         private bool _ignoreCase;
-        private bool _prohibitAssemblyQualifiedName;
         private void* _stackMark;
 
         [RequiresUnreferencedCode("The type might be removed")]

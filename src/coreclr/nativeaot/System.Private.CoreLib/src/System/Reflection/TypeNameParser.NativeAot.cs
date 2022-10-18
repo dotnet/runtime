@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Runtime.Assemblies;
@@ -16,12 +17,14 @@ namespace System.Reflection
     {
         private ReadOnlySpan<char> _input;
         private int _index;
+        private int _errorIndex; // Position for error reporting
 
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
         private bool _ignoreCase;
-        private bool _prohibitAssemblyQualifiedName;
+        private bool _extensibleParser;
+        private Assembly _topLevelAssembly;
         private IList<string> _defaultAssemblyNames;
 
         // [RequiresUnreferencedCode("The type might be removed")]
@@ -31,7 +34,8 @@ namespace System.Reflection
             Func<Assembly?, string, bool, Type?>? typeResolver = null,
             bool throwOnError = false,
             bool ignoreCase = false,
-            bool prohibitAssemblyQualifiedName = false,
+            bool extensibleParser = false,
+            Assembly topLevelAssembly = null,
             IList<string> defaultAssemblyNames = null)
         {
             ArgumentNullException.ThrowIfNull(typeName);
@@ -52,14 +56,20 @@ namespace System.Reflection
                 _typeResolver = typeResolver,
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
-                _prohibitAssemblyQualifiedName = prohibitAssemblyQualifiedName,
+                _extensibleParser = extensibleParser,
+                _topLevelAssembly = topLevelAssembly,
                 _defaultAssemblyNames = defaultAssemblyNames
             }.Parse();
         }
 
+        partial void TopLevelAssemblyQualifiedName()
+        {
+            if (_topLevelAssembly != null)
+                throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+        }
+
         private Assembly? ResolveAssembly(string assemblyName)
         {
-            // TODO: Check behavior for invalid assembly names w/ throwOnError
             Assembly? assembly;
             if (_assemblyResolver != null)
             {
@@ -67,7 +77,6 @@ namespace System.Reflection
             }
             else
             {
-                // !!! TODO: Check behavior for empty names
                 assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(assemblyName));
             }
 
@@ -109,13 +118,15 @@ namespace System.Reflection
             }
             else
             {
+                assembly ??= _topLevelAssembly;
+
                 if (assembly != null)
                 {
-                    return assembly.GetTypeCore(name, ignoreCase: _ignoreCase);
+                    return assembly.GetTypeCore(name, throwOnError: true, ignoreCase: _ignoreCase);
                 }
                 else
                 {
-                    // TODO: Default assembly names for _prohibitAssemblyQualifiedName?
+                    Debug.Assert(_defaultAssemblyNames != null);
 
                     foreach (string defaultAssemblyName in _defaultAssemblyNames)
                     {
@@ -123,15 +134,17 @@ namespace System.Reflection
                         RuntimeAssemblyInfo defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
                         if (defaultAssembly == null)
                             continue;
-                        Type resolvedType = defaultAssembly.GetTypeCore(name, ignoreCase: _ignoreCase);
+                        Type resolvedType = defaultAssembly.GetTypeCore(name, throwOnError: false, ignoreCase: _ignoreCase);
                         if (resolvedType != null)
                             return resolvedType;
                     }
 
-                    if (_throwOnError && _defaultAssemblyNames.Count > 0)
+                    if (_throwOnError)
                     {
-                        // Though we don't have to throw a TypeLoadException exception (that's our caller's job), we can throw a more specific exception than he would so just do it.
-                        throw Helpers.CreateTypeLoadException(name, _defaultAssemblyNames[0]);
+                        if (_defaultAssemblyNames.Count > 0)
+                            throw Helpers.CreateTypeLoadException(name, _defaultAssemblyNames[0]);
+                        else
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, name));
                     }
                     return null;
                 }
@@ -145,10 +158,25 @@ namespace System.Reflection
         private Type? GetNestedType(Type declaringType, string name)
         {
             BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
-            if (_ignoreCase)
+            if (_ignoreCase && _extensibleParser)
                 bindingFlags |= BindingFlags.IgnoreCase;
 
             Type? type = declaringType.GetNestedType(name, bindingFlags);
+
+            // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
+            if (type == null && _ignoreCase && !_extensibleParser)
+            {
+                // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
+                string lowerName = name.ToLowerInvariant();
+                foreach (Type nt in declaringType.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public))
+                {
+                    if (nt.Name.ToLowerInvariant() == lowerName)
+                    {
+                        type = nt;
+                        break;
+                    }
+                }
+            }
 
             if (type == null && _throwOnError)
                 throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType, name, declaringType.Name));

@@ -97,12 +97,12 @@ namespace System.Reflection.Runtime.General
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Calling Assembly.GetType on a third-party Assembly class.")]
-        public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
+        public static Type GetTypeCore(this Assembly assembly, string name, bool throwOnError, bool ignoreCase)
         {
             if (assembly is RuntimeAssemblyInfo runtimeAssembly)
             {
                 // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
-                return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
+                return runtimeAssembly.GetTypeCore(name, throwOnError: throwOnError, ignoreCase: ignoreCase);
             }
             else
             {
@@ -110,7 +110,7 @@ namespace System.Reflection.Runtime.General
                 // method. This is wasteful because it'll probably reparse a type string that we've already parsed
                 // but it can't be helped.
                 string escapedName = name.EscapeTypeNameIdentifier();
-                return assembly.GetType(escapedName, throwOnError: false, ignoreCase: ignoreCase);
+                return assembly.GetType(escapedName, throwOnError: throwOnError, ignoreCase: ignoreCase);
             }
         }
 

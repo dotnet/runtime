@@ -15,23 +15,35 @@ namespace System.Reflection
     {
         private ReadOnlySpan<char> _input;
         private int _index;
+        private int _errorIndex; // Position for error reporting
 
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
         private bool _ignoreCase;
-        private bool _prohibitAssemblyQualifiedName;
+        private bool _extensibleParser;
         private void* _stackMark;
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            ref StackCrawlMark stackMark,
+            bool throwOnError = false,
+            bool ignoreCase = false)
+        {
+            return GetType(typeName, assemblyResolver: null, typeResolver: null, ref stackMark,
+                throwOnError: throwOnError, ignoreCase: ignoreCase, extensibleParser: false);
+        }
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
-            bool throwOnError,
-            bool ignoreCase,
-            bool prohibitAssemblyQualifiedName,
-            ref StackCrawlMark stackMark)
+            ref StackCrawlMark stackMark,
+            bool throwOnError = false,
+            bool ignoreCase = false,
+            bool extensibleParser = true)
         {
             ArgumentNullException.ThrowIfNull(typeName);
 
@@ -51,7 +63,7 @@ namespace System.Reflection
                 _typeResolver = typeResolver,
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
-                _prohibitAssemblyQualifiedName = prohibitAssemblyQualifiedName,
+                _extensibleParser = extensibleParser,
                 _stackMark = Unsafe.AsPointer(ref stackMark)
             }.Parse();
         }
@@ -98,14 +110,14 @@ namespace System.Reflection
         {
             Assembly? assembly = (assemblyNameIfAny != null) ? ResolveAssembly(assemblyNameIfAny) : null;
 
-            // Both the external type resolver and the default type resolvers expect escaped type names
-            string escapedTypeName = EscapeTypeName(name);
-
             Type? type;
 
             // Resolve the top level type.
             if (_typeResolver != null)
             {
+                // The external type resolver expects escaped type names
+                string escapedTypeName = EscapeTypeName(name);
+
                 type = _typeResolver(assembly, escapedTypeName, _ignoreCase);
 
                 if (type == null && _throwOnError)
@@ -119,15 +131,19 @@ namespace System.Reflection
             }
             else
             {
+                // TODO: Call into runtime type loader to avoid escaping and parsing the name again
+                name = EscapeTypeName(name);
+
                 if (assembly == null)
                 {
                     ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
 
-                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref stackMark);
+                    type = RuntimeTypeHandle.GetTypeByName(
+                        name, _throwOnError, _ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
                 }
                 else
                 {
-                    type = assembly.GetType(escapedTypeName, _throwOnError, _ignoreCase);
+                    type = assembly.GetType(name, _throwOnError, _ignoreCase);
                 }
             }
 
@@ -138,11 +154,41 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetNestedType(Type declaringType, string name)
         {
-            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
-            if (_ignoreCase)
-                bindingFlags |= BindingFlags.IgnoreCase;
+            Type? type;
 
-            Type? type = declaringType.GetNestedType(name, bindingFlags);
+            if (_extensibleParser)
+            {
+                BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
+                if (_ignoreCase)
+                    bindingFlags |= BindingFlags.IgnoreCase;
+
+                type = declaringType.GetNestedType(name, bindingFlags);
+            }
+            else
+            {
+                // TODO: Call into runtime type loader instead!
+
+                if (_ignoreCase)
+                {
+                    type = null;
+
+                    // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
+                    // Unfortunately, compat prevents us from just throwing AmbiguousMatchException.
+                    string lowerName = name.ToLowerInvariant();
+                    foreach (Type nt in declaringType.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public))
+                    {
+                        if (nt.Name.ToLowerInvariant() == lowerName)
+                        {
+                            type = nt;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    type = declaringType.GetNestedType(name, BindingFlags.NonPublic | BindingFlags.Public);
+                }
+            }
 
             if (type == null && _throwOnError)
                 throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType, name, declaringType.Name));

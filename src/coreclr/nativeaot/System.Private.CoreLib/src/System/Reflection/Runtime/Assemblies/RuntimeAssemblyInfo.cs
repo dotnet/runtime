@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.Assemblies
             return TypeNameParser.GetType(name,
                 throwOnError: throwOnError,
                 ignoreCase: ignoreCase,
-                prohibitAssemblyQualifiedName: true);
+                topLevelAssembly: this);
         }
 
 #pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
@@ -102,9 +102,7 @@ namespace System.Reflection.Runtime.Assemblies
                 Exception exception = TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
                 if (exception == null)
                 {
-                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
-                    if (type == null)
-                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, throwOnError: true, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
                 }
 
                 Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
@@ -155,12 +153,12 @@ namespace System.Reflection.Runtime.Assemblies
         ///
         /// Returns null if the type does not exist. Throws for all other error cases.
         /// </summary>
-        internal RuntimeTypeInfo GetTypeCore(string fullName, bool ignoreCase)
+        internal RuntimeTypeInfo GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
         {
-            if (ignoreCase)
-                return GetTypeCoreCaseInsensitive(fullName);
-            else
-                return GetTypeCoreCaseSensitive(fullName);
+            RuntimeTypeInfo type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
+            if (type == null && throwOnError)
+                throw Helpers.CreateTypeLoadException(fullName, this.FullName);
+            return type;
         }
 
         // Types that derive from RuntimeAssembly must implement the following public surface area members

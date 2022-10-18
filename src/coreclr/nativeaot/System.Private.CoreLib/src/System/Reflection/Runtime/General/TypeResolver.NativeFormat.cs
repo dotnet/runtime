@@ -206,7 +206,7 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, ignoreCase: false);
+                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);
