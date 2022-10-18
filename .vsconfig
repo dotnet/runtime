@@ -1,10 +1,12 @@
 {
   "version": "1.0",
   "components": [
+    "Component.CPython39.x64",
+    "Microsoft.Component.CodeAnalysis.SDK",
+    "Microsoft.VisualStudio.Component.VC.CMake.Project",
     "Microsoft.VisualStudio.Component.Roslyn.Compiler",
     "Microsoft.VisualStudio.Component.Roslyn.LanguageServices",
     "Microsoft.Component.MSBuild",
-    "Microsoft.Net.Component.4.5.2.TargetingPack",
     "Microsoft.VisualStudio.Component.SQL.LocalDB.Runtime",
     "Microsoft.VisualStudio.Component.SQL.CLR",
     "Microsoft.VisualStudio.Component.CoreEditor",
@@ -46,7 +48,7 @@
     "Microsoft.VisualStudio.Component.Git",
     "Microsoft.VisualStudio.Component.LinqToSql",
     "Microsoft.NetCore.Component.Runtime.3.1",
-    "Microsoft.NetCore.Component.Runtime.5.0",
+    "Microsoft.NetCore.Component.Runtime.6.0",
     "Microsoft.Net.Component.4.6.2.SDK",
     "Microsoft.Net.Component.4.7.SDK"
   ]
