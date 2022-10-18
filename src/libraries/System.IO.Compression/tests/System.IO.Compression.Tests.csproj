@@ -24,6 +24,7 @@
     <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
     <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
     <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
+    <Compile Include="ZipArchive\zip_LargeFiles.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.Comments.cs" />
