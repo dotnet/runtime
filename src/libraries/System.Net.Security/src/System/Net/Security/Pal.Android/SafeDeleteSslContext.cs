@@ -37,7 +37,10 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SslStream sslStream, SslAuthenticationOptions authOptions)
+        public SafeDeleteSslContext(
+            SslStream sslStream,
+            SslAuthenticationOptions authOptions,
+            X509Certificate2? clientCertificate)
             : base(IntPtr.Zero)
         {
             var verifier = new RemoteCertificateVerification(sslStream, authOptions, securityContext: this);
@@ -45,7 +48,7 @@ namespace System.Net
 
             try
             {
-                _sslContext = CreateSslContext(_trustManagerProxy.Handle, authOptions);
+                _sslContext = CreateSslContext(_trustManagerProxy, authOptions, clientCertificate);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -151,11 +154,11 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(IntPtr validatorPtr, SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(TrustManagerProxy trustManagerProxy, SslAuthenticationOptions authOptions, X509Certificate2? clientCertificate)
         {
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr, authOptions.EnabledSslProtocols);
+                return Interop.AndroidCrypto.SSLStreamCreate(trustManagerProxy.Handle, authOptions.EnabledSslProtocols, clientCertificate);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -175,7 +178,7 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(validatorPtr, authOptions.EnabledSslProtocols, keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(trustManagerProxy.Handle, authOptions.EnabledSslProtocols, keyBytes, algorithm, ptrs, clientCertificate);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)

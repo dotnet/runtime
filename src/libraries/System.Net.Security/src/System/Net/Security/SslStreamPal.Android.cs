@@ -45,7 +45,8 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(sslStream, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            Debug.Assert(clientCertificateSelectionCallback is not null);
+            return HandshakeInternal(sslStream, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
         public static SecurityStatusPal Renegotiate(
@@ -175,7 +176,8 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions)
+            SslAuthenticationOptions sslAuthenticationOptions,
+            SelectClientCertificate? clientCertificateSelectionCallback = null)
         {
             try
             {
@@ -183,7 +185,8 @@ namespace System.Net.Security
 
                 if ((context == null) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(sslStream, sslAuthenticationOptions);
+                    var clientCertificate = clientCertificateSelectionCallback?.Invoke(out _);
+                    context = new SafeDeleteSslContext(sslStream, sslAuthenticationOptions, clientCertificate);
                     sslContext = context;
                 }
 

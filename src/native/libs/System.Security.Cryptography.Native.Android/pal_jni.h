@@ -189,11 +189,16 @@ extern jclass    g_TrustAnchorClass;
 extern jclass    g_TrustAnchorCtor;
 extern jmethodID g_TrustAnchorGetTrustedCert;
 
+// javax/security/auth/x500/X500Principal
+extern jclass    g_X500PrincipalClass;
+extern jmethodID g_X500PrincipalGetName;
+
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
 extern jmethodID g_X509CertEquals;
 extern jmethodID g_X509CertGetEncoded;
 extern jmethodID g_X509CertGetPublicKey;
+extern jmethodID g_X509CertGetSubjectX500Principal;
 
 // java/security/cert/X509CertSelector
 extern jclass    g_X509CertSelectorClass;
