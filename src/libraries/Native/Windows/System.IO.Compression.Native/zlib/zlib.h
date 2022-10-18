@@ -1,5 +1,5 @@
 /* zlib.h -- interface of the 'zlib' general purpose compression library
-  version 1.2.13, October 13th, 2022
+  version 1.2.11, January 15th, 2017
 
   Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
 
@@ -37,11 +37,11 @@
 extern "C" {
 #endif
 
-#define ZLIB_VERSION "1.2.13"
-#define ZLIB_VERNUM 0x12d0
+#define ZLIB_VERSION "1.2.11"
+#define ZLIB_VERNUM 0x12b0
 #define ZLIB_VER_MAJOR 1
 #define ZLIB_VER_MINOR 2
-#define ZLIB_VER_REVISION 13
+#define ZLIB_VER_REVISION 11
 #define ZLIB_VER_SUBREVISION 0
 
 /*
@@ -276,7 +276,7 @@ ZEXTERN int ZEXPORT deflate OF((z_streamp strm, int flush));
   == 0), or after each call of deflate().  If deflate returns Z_OK and with
   zero avail_out, it must be called again after making room in the output
   buffer because there might be more output pending. See deflatePending(),
-  which can be used if desired to determine whether or not there is more output
+  which can be used if desired to determine whether or not there is more ouput
   in that case.
 
     Normally the parameter flush is set to Z_NO_FLUSH, which allows deflate to
@@ -661,7 +661,7 @@ ZEXTERN int ZEXPORT deflateGetDictionary OF((z_streamp strm,
    to dictionary.  dictionary must have enough space, where 32768 bytes is
    always enough.  If deflateGetDictionary() is called with dictionary equal to
    Z_NULL, then only the dictionary length is returned, and nothing is copied.
-   Similarly, if dictLength is Z_NULL, then it is not set.
+   Similary, if dictLength is Z_NULL, then it is not set.
 
      deflateGetDictionary() may return a length less than the window size, even
    when more than the window size in input has been provided. It may return up
@@ -913,7 +913,7 @@ ZEXTERN int ZEXPORT inflateGetDictionary OF((z_streamp strm,
    to dictionary.  dictionary must have enough space, where 32768 bytes is
    always enough.  If inflateGetDictionary() is called with dictionary equal to
    Z_NULL, then only the dictionary length is returned, and nothing is copied.
-   Similarly, if dictLength is Z_NULL, then it is not set.
+   Similary, if dictLength is Z_NULL, then it is not set.
 
      inflateGetDictionary returns Z_OK on success, or Z_STREAM_ERROR if the
    stream state is inconsistent.
@@ -1435,12 +1435,12 @@ ZEXTERN z_size_t ZEXPORT gzfread OF((voidp buf, z_size_t size, z_size_t nitems,
 
      In the event that the end of file is reached and only a partial item is
    available at the end, i.e. the remaining uncompressed data length is not a
-   multiple of size, then the final partial item is nevertheless read into buf
+   multiple of size, then the final partial item is nevetheless read into buf
    and the end-of-file flag is set.  The length of the partial item read is not
    provided, but could be inferred from the result of gztell().  This behavior
    is the same as the behavior of fread() implementations in common libraries,
    but it prevents the direct use of gzfread() to read a concurrently written
-   file, resetting and retrying on end-of-file, when size is not 1.
+   file, reseting and retrying on end-of-file, when size is not 1.
 */
 
 ZEXTERN int ZEXPORT gzwrite OF((gzFile file,
@@ -1890,7 +1890,7 @@ ZEXTERN int            ZEXPORT inflateSyncPoint OF((z_streamp));
 ZEXTERN const z_crc_t FAR * ZEXPORT get_crc_table    OF((void));
 ZEXTERN int            ZEXPORT inflateUndermine OF((z_streamp, int));
 ZEXTERN int            ZEXPORT inflateValidate OF((z_streamp, int));
-ZEXTERN unsigned long  ZEXPORT inflateCodesUsed OF((z_streamp));
+ZEXTERN unsigned long  ZEXPORT inflateCodesUsed OF ((z_streamp));
 ZEXTERN int            ZEXPORT inflateResetKeep OF((z_streamp));
 ZEXTERN int            ZEXPORT deflateResetKeep OF((z_streamp));
 #if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(Z_SOLO)

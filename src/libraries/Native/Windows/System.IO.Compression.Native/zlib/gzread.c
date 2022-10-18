@@ -157,9 +157,11 @@ local int gz_look(state)
        the output buffer is larger than the input buffer, which also assures
        space for gzungetc() */
     state->x.next = state->out;
-    memcpy(state->x.next, strm->next_in, strm->avail_in);
-    state->x.have = strm->avail_in;
-    strm->avail_in = 0;
+    if (strm->avail_in) {
+        memcpy(state->x.next, strm->next_in, strm->avail_in);
+        state->x.have = strm->avail_in;
+        strm->avail_in = 0;
+    }
     state->how = COPY;
     state->direct = 1;
     return 0;
