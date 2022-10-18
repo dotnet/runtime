@@ -352,20 +352,128 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
 
 //************************************************************************
 
-FCIMPL2(Object*, WeakReferenceNative::ComWeakRefToObject, void* pComWeakReference, INT64 wrapperId)
+FCIMPL2(Object*, WeakReferenceNative::ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId)
 {
     FCALL_CONTRACT;
 
-    return NULL;
+    _ASSERTE(pComWeakReference != nullptr);
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+    // If the weak reference was in a state that it had an IWeakReference* for us to use, then we need to find the IUnknown
+    // identity of the underlying COM object (assuming that object is still alive).
+    OBJECTREF rcwRef = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(rcwRef);
+
+    SafeComHolder<IUnknown> pTargetIdentity = nullptr;
+
+    {
+        GCX_PREEMP();
+        // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
+        // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
+        SafeComHolderPreemp<IInspectable> pTarget = nullptr;
+        if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
+        {
+            if (!pTarget.IsNull())
+            {
+                // Get the IUnknown identity for the underlying object
+                SafeQueryInterfacePreemp(pTarget, IID_IUnknown, &pTargetIdentity);
+            }
+        }
+    }
+
+    // If we were able to get an IUnknown identity for the object, then we can find or create an associated RCW for it.
+    if (!pTargetIdentity.IsNull())
+    {
+        if (wrapperId != ComWrappersNative::InvalidWrapperId)
+        {
+            // Try the global COM wrappers
+            if (GlobalComWrappersForTrackerSupport::IsRegisteredInstance(wrapperId))
+            {
+                (void)GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(pTargetIdentity, &rcwRef);
+            }
+            else if (GlobalComWrappersForMarshalling::IsRegisteredInstance(wrapperId))
+            {
+                (void)GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pTargetIdentity, ObjFromComIP::NONE, &rcwRef);
+            }
+        }
+#ifdef FEATURE_COMINTEROP
+        else
+        {
+            // If the original RCW was not created through ComWrappers, fall back to the built-in system.
+            GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
+        }
+#endif // FEATURE_COMINTEROP
+    }
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(rcwRef);
+
+#else  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+    return nullptr;
+#endif
 }
 FCIMPLEND
 
-FCIMPL2(void*, WeakReferenceNative::ObjectToComWeakRef, Object* pTarget, INT64* pWrapperId)
+FCIMPL2(IWeakReference*, WeakReferenceNative::ObjectToComWeakRef, Object* pObject, INT64* pWrapperId)
 {
     FCALL_CONTRACT;
 
-    pWrapperId = 0;
-    return NULL;
+    _ASSERTE(pObject != nullptr);
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+    IWeakReference* pWeakReference = nullptr;
+    *pWrapperId = ComWrappersNative::InvalidWrapperId;
+
+    OBJECTREF objRef = ObjectToOBJECTREF(pObject);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
+
+    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
+
+    // If the object is not an RCW, then we do not want to use a native COM weak reference to it
+    // If the object is a managed type deriving from a COM type, then we also do not want to use a native COM
+    // weak reference to it.  (Otherwise, we'll wind up resolving IWeakReference-s back into the CLR
+    // when we don't want to have reentrancy).
+#ifdef FEATURE_COMINTEROP
+    MethodTable* pMT = pObject->GetMethodTable();
+    if (pMT->IsComObjectType()
+        && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
+    {
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
+    }
+    else
+#endif
+    {
+#ifdef FEATURE_COMWRAPPERS
+        bool isAggregated = false;
+        pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(&objRef, IID_IWeakReferenceSource, pWrapperId, &isAggregated));
+        if (isAggregated)
+        {
+            // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown as the outer IUnknown wraps the managed object.
+            // In this case, don't create a weak reference backed by a COM weak reference.
+            pWeakReferenceSource = nullptr;
+        }
+#endif
+    }
+
+    if (pWeakReferenceSource != nullptr)
+    {
+        GCX_PREEMP();
+        SafeComHolderPreemp<IWeakReference> weakReferenceHolder;
+        if (!FAILED(pWeakReferenceSource->GetWeakReference(&weakReferenceHolder)))
+        {
+            weakReferenceHolder.SuppressRelease();
+            pWeakReference = weakReferenceHolder.GetValue();
+        }
+    }
+
+    HELPER_METHOD_FRAME_END();
+
+    return pWeakReference;
+
+#else  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+    return nullptr;
+#endif
 }
 FCIMPLEND
 
@@ -565,10 +673,12 @@ void FinalizeWeakReference(Object * obj)
     }
     CONTRACTL_END;
 
-    //TODO: VS make m_Handle uintptr_t and rename. Make 7 a const (in NativeAot too)
+    // the lowermost 3 bits are reserved for storing additional info about the handle
+    // we can use these bits because handle is at least 32bit aligned
+    const uintptr_t HandleTagBits = 7;
 
     WeakReferenceObject* weakRefObj = (WeakReferenceObject*)obj;
-    OBJECTHANDLE handle = (OBJECTHANDLE)((uintptr_t)weakRefObj->m_Handle & ~(uintptr_t)7);
+    OBJECTHANDLE handle = (OBJECTHANDLE)((uintptr_t)weakRefObj->m_Handle & ~HandleTagBits);
     HandleType handleType = ((uintptr_t)weakRefObj->m_Handle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
     (uintptr_t&)weakRefObj->m_Handle &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);

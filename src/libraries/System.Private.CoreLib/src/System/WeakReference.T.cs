@@ -15,21 +15,50 @@ namespace System
     public sealed partial class WeakReference<T> : ISerializable
         where T : class?
     {
-        // If you fix bugs here, please fix them in WeakReference<T> at the same time.
+        // If you fix bugs here, please fix them in WeakReference at the same time.
 
         // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-        // the handle field is effectively readonly until the object is finalized.
         private IntPtr _handleAndKind;
+
+        // the lowermost 3 bits are reserved for storing additional info about the handle
+        // we can use these bits because handle is at least 32bit aligned
+        private const nint HandleTagBits = 7;
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
         private const nint TracksResurrectionBit = 1;
 
+#if CORECLR
+        // the next bit is used to indicate whether there is an associated com weak reference
+        private const nint IsComWeakReferenceBit = 2;
+        private bool IsComWeakReference() => (_handleAndKind & IsComWeakReferenceBit) != 0;
+
+        private void TrySetComTarget(object? target)
+        {
+            if (target != null || IsComWeakReference())
+            {
+                if (ComWeakReferenceHelpers.SetComTarget(this, target))
+                {
+                    _handleAndKind |= IsComWeakReferenceBit;
+                }
+            }
+        }
+
+        private object? TryGetComTarget()
+        {
+            if (IsComWeakReference())
+            {
+                return ComWeakReferenceHelpers.GetComTarget(this);
+            }
+
+            return null;
+        }
+#endif
+
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
-        //
         public WeakReference(T target)
             : this(target, false)
         {
@@ -64,6 +93,11 @@ namespace System
         {
             // Call the worker method that has more performant but less user friendly signature.
             T? o = this.Target;
+
+#if CORECLR
+            o ??= Unsafe.As<T?>(TryGetComTarget());
+#endif
+
             target = o!;
             return o != null;
         }
@@ -87,9 +121,13 @@ namespace System
             _handleAndKind = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
+
+#if CORECLR
+            TrySetComTarget(target);
+#endif
         }
 
-        private IntPtr Handle => _handleAndKind & ~TracksResurrectionBit;
+        private IntPtr Handle => _handleAndKind & ~HandleTagBits;
 
         public void SetTarget(T target)
         {
@@ -104,6 +142,10 @@ namespace System
 
             // must keep the instance alive as long as we use the handle.
             GC.KeepAlive(this);
+
+#if CORECLR
+            TrySetComTarget(target);
+#endif
         }
 
         private T? Target
@@ -122,6 +164,10 @@ namespace System
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
+
+#if CORECLR
+                target ??= Unsafe.As<T?>(TryGetComTarget());
+#endif
 
                 return target;
             }

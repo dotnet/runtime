@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices
         }
 
         // if object is an IWeakReference, associates the managed weak reference with the COM weak reference
-        public static bool SetComTarget(object weakReference, object target)
+        public static bool SetComTarget(object weakReference, object? target)
         {
             Debug.Assert(weakReference != null);
 
@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices
                 s_ComWeakReferenceTable.Remove(weakReference);
             }
 
-            if ((target as __ComObject) == null)
+            if (target == null)
                 return false;
 
             ComWeakReference? comWeakRef = ComWeakReference.FromObject(target);
@@ -120,7 +120,8 @@ namespace System
 
         private IntPtr _handleAndKind;
 
-        // the lowermost 3 bits are used for tagging.
+        // the lowermost 3 bits are reserved for storing additional info about the handle
+        // we can use these bits because handle is at least 32bit aligned
         private const nint HandleTagBits = 7;
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
