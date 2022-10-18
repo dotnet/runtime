@@ -4095,7 +4095,7 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     }
     else if (tier1)
     {
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        if (opts.IsOSR())
         {
             return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }

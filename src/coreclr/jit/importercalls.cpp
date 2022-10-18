@@ -1297,7 +1297,7 @@ DONE:
         //    have to check for anything that might introduce a recursive tail call.
         // * We only instrument root method blocks in OSR methods,
         //
-        if (opts.IsOSR() && !compIsForInlining())
+        if (opts.IsInstrumentedOptimized() && !compIsForInlining())
         {
             // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
@@ -1319,14 +1319,16 @@ DONE:
             const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
                                               actualCall->IsGuardedDevirtualizationCandidate();
 
+            BasicBlock* entryBb = opts.IsOSR() ? fgEntryBB : fgFirstBB;
+
             // Only schedule importation if we're not currently importing.
             //
-            if (mustImportEntryBlock && (compCurBB != fgEntryBB))
+            if (opts.IsInstrumentedOptimized() && mustImportEntryBlock && (compCurBB != entryBb))
             {
-                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
-                        dspTreeID(call), fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
+                        dspTreeID(call), entryBb->bbNum);
+                impImportBlockPending(entryBb);
             }
         }
     }
