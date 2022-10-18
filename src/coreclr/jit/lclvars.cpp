@@ -8287,7 +8287,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
     if (bFirstPass)
     {
-        // Ignore locals that alreay have field appearances
+        // Ignore locals that already have field appearances
         if (lcl->OperIs(GT_LCL_FLD, GT_LCL_FLD_ADDR))
         {
             varDsc->lvNoLclFldStress = true;
