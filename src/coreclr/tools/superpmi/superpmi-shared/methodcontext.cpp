@@ -5664,6 +5664,34 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     return result;
 }
 
+// The following are from <pgo_formatprocessing.h> which we can't include.
+
+static ICorJitInfo::PgoInstrumentationKind operator&(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
+{
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+static unsigned InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+    {
+        case ICorJitInfo::PgoInstrumentationKind::None:
+            return 0;
+        case ICorJitInfo::PgoInstrumentationKind::FourByte:
+            return 4;
+        case ICorJitInfo::PgoInstrumentationKind::EightByte:
+            return 8;
+        case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+            return sizeof(uintptr_t);
+        default:
+            LogError("Unexpedted pgo schema data size (kind = %d)", kind);
+            return 0;
+    }
+}
+
+// End of pseudo-include
+
 void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
                                                     ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                     UINT32* pCountSchemaItems,
@@ -5683,13 +5711,14 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     size_t maxOffset = 0;
     for (UINT32 i = 0; i < (*pCountSchemaItems); i++)
     {
-        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * sizeof(uintptr_t));
-
         agnosticSchema[i].Offset              = (DWORDLONG)pInSchema[i].Offset;
         agnosticSchema[i].InstrumentationKind = (DWORD)pInSchema[i].InstrumentationKind;
         agnosticSchema[i].ILOffset            = (DWORD)pInSchema[i].ILOffset;
         agnosticSchema[i].Count               = (DWORD)pInSchema[i].Count;
         agnosticSchema[i].Other               = (DWORD)pInSchema[i].Other;
+
+        unsigned const dataSize = InstrumentationKindToSize(pInSchema[i].InstrumentationKind);
+        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * dataSize);
     }
     value.schema_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
     free(agnosticSchema);
