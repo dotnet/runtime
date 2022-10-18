@@ -97,7 +97,11 @@ typedef enum {
 	IMETHOD_CODE_UNKNOWN
 } InterpMethodCodeType;
 
+#ifdef HOST_WASM
 #define PROFILE_INTERP 1
+#else
+#define PROFILE_INTERP 0
+#endif
 
 #define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
 #define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)

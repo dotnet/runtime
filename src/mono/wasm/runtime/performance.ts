@@ -17,7 +17,7 @@ export const enum MeasuredBlock {
     callCsFunction = "mono.callCsFunction:",
     getAssemblyExports = "mono.getAssemblyExports:",
     instantiateAsset = "mono.instantiateAsset:",
-    interp = "mono.interp:",
+    interp = "interp:",
 }
 
 let uniqueId = 0;

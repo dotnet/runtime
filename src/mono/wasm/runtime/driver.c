@@ -70,6 +70,7 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int signature);
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -1485,5 +1486,5 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 //extern const char* mono_method_get_full_name (MonoMethod *method);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
-	return mono_method_get_full_name(method);
+	return mono_method_full_name(method, 0);
 }

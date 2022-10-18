@@ -228,8 +228,10 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->retval = (stackval*)retval;
 	frame->state.ip = NULL;
 #if PROFILE_INTERP
+#ifdef HOST_WASM
 	frame->timestamp_before_entry = mono_wasm_timestamp();
-#endif
+#endif /* HOST_WASM */
+#endif /* PROFILE_INTERP */
 }
 
 
@@ -7365,15 +7367,10 @@ exit_frame:
 	g_assert_checked (frame->imethod);
 
 #if PROFILE_INTERP
-	/*struct timespec time;
-	g_assert (clock_gettime (CLOCK_REALTIME, &time) == 0);
-	int64_t now = system_time_to_int64 (time.tv_sec, time.tv_nsec);
-	int64_t duration = now - frame->timestamp_before_entry;
-	char *method_name = mono_method_get_name_full (frame->imethod->method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_IL);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Measure %s %d", method_name, duration);
-	g_free (method_name);*/
+#ifdef HOST_WASM
 	mono_wasm_measure (frame->imethod->method, frame->timestamp_before_entry);
-#endif
+#endif /* HOST_WASM */
+#endif /* PROFILE_INTERP */
 
 	if (frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */
