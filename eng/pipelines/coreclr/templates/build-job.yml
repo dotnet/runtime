@@ -7,7 +7,6 @@ parameters:
   condition: true
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   disableClrTest: false
   isOfficialBuild: false
@@ -70,7 +69,6 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
     variables:

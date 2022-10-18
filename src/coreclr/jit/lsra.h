@@ -1396,7 +1396,7 @@ private:
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
     char             indentFormat[MAX_FORMAT_CHARS];
-    static const int MAX_LEGEND_FORMAT_CHARS = 25;
+    static const int MAX_LEGEND_FORMAT_CHARS = 34;
     char             bbRefPosFormat[MAX_LEGEND_FORMAT_CHARS];
     char             legendFormat[MAX_LEGEND_FORMAT_CHARS];
 
@@ -1422,6 +1422,8 @@ private:
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
     // Print the number of spaces occupied by a dumpRefPositionShort()
     void dumpEmptyRefPosition();
+    // Print the number of spaces occupied by tree ID.
+    void dumpEmptyTreeID();
     // A dump of Referent, in exactly regColumnWidth characters
     void dumpIntervalName(Interval* interval);
 
@@ -1563,6 +1565,12 @@ private:
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 
+#ifdef DEBUG
+    // Tracks the GenTree* for which intervals are being
+    // built. Use for displaying in allocation table.
+    GenTree* currBuildNode;
+#endif
+
     // True if there are any register candidate lclVars available for allocation.
     bool enregisterLocalVars;
 
@@ -1586,10 +1594,29 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
+    // Register mask of argument registers currently occupied because we saw a
+    // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
+    // CALL node and is used to avoid preferring these registers for locals
+    // which would otherwise force a spill.
+    regMaskTP placedArgRegs;
+
+    struct PlacedLocal
+    {
+        unsigned  VarIndex;
+        regNumber Reg;
+    };
+
+    // Locals that are currently placed in registers via PUTARG_REG. These
+    // locals are available due to the special PUTARG treatment, and we keep
+    // track of them between the PUTARG_REG and CALL to ensure we keep the
+    // register they are placed in in the preference set.
+    PlacedLocal placedArgLocals[REG_COUNT];
+    size_t      numPlacedArgLocals;
+
     // The set of all register candidates. Note that this may be a subset of tracked vars.
     VARSET_TP registerCandidateVars;
     // Current set of live register candidate vars, used during building of RefPositions to determine
-    // whether to preference to callee-save.
+    // whether to give preference to callee-save.
     VARSET_TP currentLiveVars;
     // Set of variables that may require resolution across an edge.
     // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
@@ -1823,6 +1850,7 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
+    void UpdatePreferencesOfDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
@@ -2300,9 +2328,16 @@ public:
     // The unique RefPosition number, equal to its index in the
     // refPositions list. Only used for debugging dumps.
     unsigned rpNum;
+
+    // Tracks the GenTree* for which this refposition was built.
+    // Use for displaying in allocation table.
+    GenTree* buildNode;
 #endif // DEBUG
 
-    RefPosition(unsigned int bbNum, LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
+    RefPosition(unsigned int bbNum,
+                LsraLocation nodeLocation,
+                GenTree*     treeNode,
+                RefType refType DEBUG_ARG(GenTree* buildNode))
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
@@ -2326,6 +2361,7 @@ public:
 #ifdef DEBUG
         , minRegCandidateCount(1)
         , rpNum(0)
+        , buildNode(buildNode)
 #endif
     {
     }

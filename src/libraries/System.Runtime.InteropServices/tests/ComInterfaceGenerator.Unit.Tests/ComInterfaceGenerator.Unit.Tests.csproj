@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <LangVersion>Preview</LangVersion>
+    <Nullable>enable</Nullable>
+    <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
+             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="..\Common\TestUtils.cs"
+            Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs"
+            Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs"
+            Link="Common\CustomStructMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
+            Link="ICustomMarshallingSignatureTestProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

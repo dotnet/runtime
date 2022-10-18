@@ -539,6 +539,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     ValidateICUDataCanLoad();
 
     InitializeVariableMaxAndTopPointers(symbolVersion);
+    InitializeUColClonePointers(symbolVersion);
 }
 
 #undef PER_FUNCTION_BLOCK

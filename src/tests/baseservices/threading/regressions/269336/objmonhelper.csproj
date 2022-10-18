@@ -4,17 +4,9 @@
     <CLRTestPriority>1</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_FastGCStress=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_FastGCStress=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="objmonhelper.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_FastGCStress" Value="1" />
   </ItemGroup>
 </Project>

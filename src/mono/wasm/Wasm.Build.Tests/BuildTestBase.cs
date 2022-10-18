@@ -472,9 +472,6 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
                 """
                 <Project>
-                  <ItemGroup>
-                      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
-                  </ItemGroup>
                   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                       <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
                   </Target>
@@ -786,6 +783,23 @@ namespace Wasm.Build.Tests
             return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
         }
 
+        protected string CreateProjectWithNativeReference(string id)
+        {
+            CreateBlazorWasmTemplateProject(id);
+
+            string extraItems = @$"
+                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
+
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+                <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
+            ";
+            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
+            AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
+
+            return projectFile;
+        }
+
         public static (int exitCode, string buildOutput) RunProcess(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
@@ -1032,4 +1046,6 @@ namespace Wasm.Build.Tests
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor
     );
+
+    public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
