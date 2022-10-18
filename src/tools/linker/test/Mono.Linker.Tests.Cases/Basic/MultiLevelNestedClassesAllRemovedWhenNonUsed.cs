@@ -2,24 +2,24 @@
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	class MultiLevelNestedClassesAllRemovedWhenNonUsed
-	{
-		public static void Main ()
-		{
-		}
+    class MultiLevelNestedClassesAllRemovedWhenNonUsed
+    {
+        public static void Main()
+        {
+        }
 
-		public class A
-		{
-			public class AB
-			{
-				public class ABC
-				{
-				}
+        public class A
+        {
+            public class AB
+            {
+                public class ABC
+                {
+                }
 
-				public class ABD
-				{
-				}
-			}
-		}
-	}
+                public class ABD
+                {
+                }
+            }
+        }
+    }
 }

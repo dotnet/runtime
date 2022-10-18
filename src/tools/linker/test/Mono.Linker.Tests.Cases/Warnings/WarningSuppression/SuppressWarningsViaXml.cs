@@ -7,28 +7,28 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	[SetupLinkAttributesFile ("SuppressWarningsViaXml.xml")]
-	public class SuppressWarningsViaXml
-	{
-		public static void Main ()
-		{
-			SuppressedOnMethod ();
-			var t = typeof (SuppressedOnType);
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    [SetupLinkAttributesFile("SuppressWarningsViaXml.xml")]
+    public class SuppressWarningsViaXml
+    {
+        public static void Main()
+        {
+            SuppressedOnMethod();
+            var t = typeof(SuppressedOnType);
+        }
 
-		static void SuppressedOnMethod ()
-		{
-			TriggerWarning ();
-		}
+        static void SuppressedOnMethod()
+        {
+            TriggerWarning();
+        }
 
-		class SuppressedOnType : TriggerWarningType { }
+        class SuppressedOnType : TriggerWarningType { }
 
-		[RequiresUnreferencedCode ("--TriggerWarning--")]
-		static void TriggerWarning () { }
+        [RequiresUnreferencedCode("--TriggerWarning--")]
+        static void TriggerWarning() { }
 
-		[RequiresUnreferencedCode ("--TriggerWarningType--")]
-		class TriggerWarningType { }
-	}
+        [RequiresUnreferencedCode("--TriggerWarningType--")]
+        class TriggerWarningType { }
+    }
 }

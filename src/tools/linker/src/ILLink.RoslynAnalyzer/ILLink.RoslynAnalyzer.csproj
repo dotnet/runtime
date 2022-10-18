@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
@@ -17,7 +17,7 @@
     <None Include="Microsoft.NET.ILLink.Analyzers.props" CopyToOutputDirectory="PreserveNewest" />
     <!-- The repo CodeAnalyis version is ahead of what is shipped with Visual Studio, so that version breaks the analyzers when used in .Net Framework builds -->
     <!-- Once Visual Studio ships with a version >= $MicrosoftCodeAnalysisVersion, this should be changed to use the property -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0-2.final" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
     <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->

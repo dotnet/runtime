@@ -3,7 +3,7 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	public abstract class EnableLoggerAttribute : BaseExpectedLinkedBehaviorAttribute
-	{
-	}
+    public abstract class EnableLoggerAttribute : BaseExpectedLinkedBehaviorAttribute
+    {
+    }
 }

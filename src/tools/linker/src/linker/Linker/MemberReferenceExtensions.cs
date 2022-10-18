@@ -7,37 +7,38 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class MemberReferenceExtensions
-	{
-		public static string GetDisplayName (this MemberReference member)
-		{
-			switch (member) {
-			case TypeReference type:
-				return type.GetDisplayName ();
+    public static class MemberReferenceExtensions
+    {
+        public static string GetDisplayName(this MemberReference member)
+        {
+            switch (member)
+            {
+                case TypeReference type:
+                    return type.GetDisplayName();
 
-			case MethodReference method:
-				return method.GetDisplayName ();
+                case MethodReference method:
+                    return method.GetDisplayName();
 
-			case IMemberDefinition memberDef:
-				var sb = new StringBuilder ();
-				if (memberDef.DeclaringType != null)
-					sb.Append (memberDef.DeclaringType.GetDisplayName ()).Append ('.');
-				sb.Append (memberDef.Name);
-				return sb.ToString ();
+                case IMemberDefinition memberDef:
+                    var sb = new StringBuilder();
+                    if (memberDef.DeclaringType != null)
+                        sb.Append(memberDef.DeclaringType.GetDisplayName()).Append('.');
+                    sb.Append(memberDef.Name);
+                    return sb.ToString();
 
-			default:
-				Debug.Assert (false, "The display name should not use cecil's signature format.");
-				return member.FullName;
-			}
-		}
+                default:
+                    Debug.Assert(false, "The display name should not use cecil's signature format.");
+                    return member.FullName;
+            }
+        }
 
-		public static string GetNamespaceDisplayName (this MemberReference member)
-		{
-			var type = member is TypeReference typeReference ? typeReference : member.DeclaringType;
-			while (type.DeclaringType != null)
-				type = type.DeclaringType;
+        public static string GetNamespaceDisplayName(this MemberReference member)
+        {
+            var type = member is TypeReference typeReference ? typeReference : member.DeclaringType;
+            while (type.DeclaringType != null)
+                type = type.DeclaringType;
 
-			return type.Namespace;
-		}
-	}
+            return type.Namespace;
+        }
+    }
 }

@@ -13,28 +13,28 @@ using TypeDefinition = Mono.Cecil.TypeDefinition;
 namespace ILLink.Shared.TrimAnalysis
 {
 
-	/// <summary>
-	/// A value that came from the implicit this parameter of a method
-	/// </summary>
-	partial record MethodThisParameterValue : IValueWithStaticType
-	{
-		public MethodThisParameterValue (MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			Method = method;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// A value that came from the implicit this parameter of a method
+    /// </summary>
+    partial record MethodThisParameterValue : IValueWithStaticType
+    {
+        public MethodThisParameterValue(MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            Method = method;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly MethodDefinition Method;
+        public readonly MethodDefinition Method;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { Method.GetDisplayName () };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { Method.GetDisplayName() };
 
-		public TypeDefinition? StaticType => Method.DeclaringType;
+        public TypeDefinition? StaticType => Method.DeclaringType;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString() => this.ValueToString(Method, DynamicallyAccessedMemberTypes);
+    }
 }

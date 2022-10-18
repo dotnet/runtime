@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
 #if NETCOREAPP
-	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
+    [SetupLinkAttributesFile("DebuggerAttributesRemoved.xml")]
 #else
 	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
@@ -15,31 +15,31 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerTypeProxyAttribute), ".ctor(System.Type)")]
 #endif
-	public class DebuggerTypeProxyAttributeOnType
-	{
-		public static void Main ()
-		{
-			var foo = new Foo ();
-		}
+    public class DebuggerTypeProxyAttributeOnType
+    {
+        public static void Main()
+        {
+            var foo = new Foo();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
+        [Kept]
+        [KeptMember(".ctor()")]
 #if !NETCOREAPP
 		[KeptAttributeAttribute (typeof (DebuggerTypeProxyAttribute))]
 #endif
-		[DebuggerTypeProxy (typeof (FooDebugView))]
-		class Foo
-		{
-		}
+        [DebuggerTypeProxy(typeof(FooDebugView))]
+        class Foo
+        {
+        }
 
 #if !NETCOREAPP
 		[Kept]
 #endif
-		class FooDebugView
-		{
-			public FooDebugView (Foo foo)
-			{
-			}
-		}
-	}
+        class FooDebugView
+        {
+            public FooDebugView(Foo foo)
+            {
+            }
+        }
+    }
 }

@@ -6,36 +6,36 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ObjectFactory
-	{
-		public virtual TestCaseSandbox CreateSandbox (TestCase testCase)
-		{
-			return new TestCaseSandbox (testCase);
-		}
+    public class ObjectFactory
+    {
+        public virtual TestCaseSandbox CreateSandbox(TestCase testCase)
+        {
+            return new TestCaseSandbox(testCase);
+        }
 
-		public virtual TestCaseCompiler CreateCompiler (TestCaseSandbox sandbox, TestCaseCompilationMetadataProvider metadataProvider)
-		{
-			return new TestCaseCompiler (sandbox, metadataProvider);
-		}
+        public virtual TestCaseCompiler CreateCompiler(TestCaseSandbox sandbox, TestCaseCompilationMetadataProvider metadataProvider)
+        {
+            return new TestCaseCompiler(sandbox, metadataProvider);
+        }
 
-		public virtual LinkerDriver CreateLinker ()
-		{
-			return new LinkerDriver ();
-		}
+        public virtual LinkerDriver CreateLinker()
+        {
+            return new LinkerDriver();
+        }
 
-		public virtual TestCaseMetadataProvider CreateMetadataProvider (TestCase testCase, AssemblyDefinition expectationsAssemblyDefinition)
-		{
-			return new TestCaseMetadataProvider (testCase, expectationsAssemblyDefinition);
-		}
+        public virtual TestCaseMetadataProvider CreateMetadataProvider(TestCase testCase, AssemblyDefinition expectationsAssemblyDefinition)
+        {
+            return new TestCaseMetadataProvider(testCase, expectationsAssemblyDefinition);
+        }
 
-		public virtual TestCaseCompilationMetadataProvider CreateCompilationMetadataProvider (TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
-		{
-			return new TestCaseCompilationMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
-		}
+        public virtual TestCaseCompilationMetadataProvider CreateCompilationMetadataProvider(TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
+        {
+            return new TestCaseCompilationMetadataProvider(testCase, fullTestCaseAssemblyDefinition);
+        }
 
-		public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder (TestCaseMetadataProvider metadataProvider)
-		{
-			return new LinkerArgumentBuilder (metadataProvider);
-		}
-	}
+        public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder(TestCaseMetadataProvider metadataProvider)
+        {
+            return new LinkerArgumentBuilder(metadataProvider);
+        }
+    }
 }

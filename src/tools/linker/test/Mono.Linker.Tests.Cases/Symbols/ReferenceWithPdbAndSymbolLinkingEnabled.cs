@@ -5,34 +5,34 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
-	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
-	[SetupLinkerLinkSymbols ("true")]
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [Reference("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
+    [ReferenceDependency("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
+    [SetupLinkerLinkSymbols("true")]
 
 #if WIN32
 	[KeptSymbols ("LibraryWithPdb.dll")]
 #else
-	[RemovedSymbols ("LibraryWithPdb.dll")]
+    [RemovedSymbols("LibraryWithPdb.dll")]
 #endif
-	[KeptMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "SomeMethod()")]
-	[RemovedMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "NotUsed()")]
-	class ReferenceWithPdbAndSymbolLinkingEnabled
-	{
-		static void Main ()
-		{
-			// Use some stuff so that we can verify that the linker output correct results
-			SomeMethod ();
-			LibraryWithPdb.SomeMethod ();
-		}
+    [KeptMemberInAssembly("LibraryWithPdb.dll", typeof(LibraryWithPdb), "SomeMethod()")]
+    [RemovedMemberInAssembly("LibraryWithPdb.dll", typeof(LibraryWithPdb), "NotUsed()")]
+    class ReferenceWithPdbAndSymbolLinkingEnabled
+    {
+        static void Main()
+        {
+            // Use some stuff so that we can verify that the linker output correct results
+            SomeMethod();
+            LibraryWithPdb.SomeMethod();
+        }
 
-		[Kept]
-		static void SomeMethod ()
-		{
-		}
+        [Kept]
+        static void SomeMethod()
+        {
+        }
 
-		static void NotUsed ()
-		{
-		}
-	}
+        static void NotUsed()
+        {
+        }
+    }
 }

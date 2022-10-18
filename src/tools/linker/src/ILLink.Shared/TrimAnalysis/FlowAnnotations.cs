@@ -9,23 +9,23 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	// Shared helpers to go from MethodProxy to dataflow values.
-	partial class FlowAnnotations
-	{
-		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method);
+    // Shared helpers to go from MethodProxy to dataflow values.
+    partial class FlowAnnotations
+    {
+        internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method);
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method);
 
-		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter);
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter);
 
-		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodThisParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method);
+        internal partial MethodThisParameterValue GetMethodThisParameterValue(MethodProxy method);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, SourceParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, SourceParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, SourceParameterIndex parameterIndex);
-	}
+        internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, SourceParameterIndex parameterIndex);
+    }
 }
