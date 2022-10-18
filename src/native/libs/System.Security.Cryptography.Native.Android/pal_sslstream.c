@@ -798,6 +798,31 @@ cleanup:
     return ret;
 }
 
+static jobject getPeerCertificates(JNIEnv* env, SSLStream* sslStream)
+{
+    jobject certificates = NULL;
+
+    INIT_LOCALS(loc, sslSession);
+
+    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLession.
+
+    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    bool isHandshaking = IsHandshaking(handshakeStatus);
+
+    loc[sslSession] = isHandshaking
+        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+        : sslStream->sslSession;
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    certificates = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return certificates;
+}
+
 jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream)
 {
     abort_if_invalid_pointer_argument (sslStream);
@@ -806,13 +831,11 @@ jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLS
     jobject ret = NULL;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
-    // out = certs[0];
-    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
-
-    // If there are no peer certificates, getPeerCertificates will throw. Return null to indicate no certificate.
-    if (TryClearJNIExceptions(env))
+    jobjectArray certs = getPeerCertificates(env, sslStream);
+    if (certs == NULL)
         goto cleanup;
 
+    // out = certs[0];
     jsize len = (*env)->GetArrayLength(env, certs);
     if (len > 0)
     {
@@ -837,15 +860,13 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
     *outLen = 0;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
+    jobjectArray certs = getPeerCertificates(env, sslStream);
+    if (certs == NULL)
+        goto cleanup;
+
     // for (int i = 0; i < certs.length; i++) {
     //     out[i] = certs[i];
     // }
-    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
-
-    // If there are no peer certificates, getPeerCertificates will throw. Return null and length of zero to indicate no certificates.
-    if (TryClearJNIExceptions(env))
-        goto cleanup;
-
     jsize len = (*env)->GetArrayLength(env, certs);
     *outLen = len;
     if (len > 0)
@@ -975,12 +996,11 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     bool ret = false;
     INIT_LOCALS(loc, name, verifier);
 
-    // During the initial handshake our sslStream->sslSession doesn't have access
-    // to the peer certificates which we need for hostname verification
-    // and we need to access the handshake SSLSession from the SSLEngine
+    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLession.
 
     int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
-    bool isHandshaking = handshakeStatus != HANDSHAKE_STATUS__FINISHED;
+    bool isHandshaking = IsHandshaking(handshakeStatus);
 
     jobject sslSession = isHandshaking
         ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
@@ -997,9 +1017,8 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslSession);
 
     RELEASE_LOCALS(loc, env);
-    if (isHandshaking) {
+    if (isHandshaking)
         ReleaseLRef(env, sslSession);
-    }
 
     return ret;
 }
