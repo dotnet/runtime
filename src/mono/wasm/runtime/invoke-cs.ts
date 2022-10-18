@@ -25,7 +25,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
         const args_count = get_signature_argument_count(signature);
         const js_fqn = conv_string_root(fqn_root)!;
-        startMeasure(MeasuredBlock.bindCsFunction + js_fqn);
+        const mark = startMeasure(MeasuredBlock.bindCsFunction, js_fqn);
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
         if (runtimeHelpers.diagnosticTracing) {
@@ -62,6 +62,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
         const closure: BindingClosure = {
             method,
+            fqn: js_fqn,
             args_count,
             arg_marshalers,
             res_converter,
@@ -86,7 +87,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
-        endMeasure(MeasuredBlock.bindCsFunction + js_fqn);
+        endMeasure(mark);
     }
     catch (ex: any) {
         Module.printErr(ex.toString());
@@ -181,8 +182,10 @@ function bind_fn(closure: BindingClosure) {
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
     const method = closure.method;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
+        const mark = startMeasure(MeasuredBlock.callCsFunction, fqn);
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2 + args_count);
@@ -203,11 +206,13 @@ function bind_fn(closure: BindingClosure) {
             }
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark);
         }
     };
 }
 
 type BindingClosure = {
+    fqn: string,
     args_count: number,
     method: MonoMethod,
     arg_marshalers: (BoundMarshalerToCs)[],
@@ -257,12 +262,12 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     const result = exportsByAssembly.get(assembly);
     if (!result) {
-        startMeasure(MeasuredBlock.getAssemblyExports + assembly);
+        const mark = startMeasure(MeasuredBlock.getAssemblyExports, assembly);
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
         cwraps.mono_wasm_runtime_run_module_cctor(asm);
-        endMeasure(MeasuredBlock.getAssemblyExports + assembly);
+        endMeasure(mark);
     }
 
     return exportsByAssembly.get(assembly) || {};

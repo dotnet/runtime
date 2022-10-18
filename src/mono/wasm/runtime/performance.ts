@@ -1,27 +1,35 @@
 export const enum MeasuredBlock {
-    emscriptenStartup = "emscriptenStartup",
-    instantiateWasm = "instantiateWasm",
-    preInit = "preInit",
-    preRun = "preRun",
-    onRuntimeInitialized = "onRuntimeInitialized",
-    postRun = "postRun",
-    loadRuntime = "loadRuntime",
-    bindingsInit = "bindingsInit",
-    bindJsFunction = "bindJsFunction:",
-    bindCsFunction = "bindCsFunction:",
-    getAssemblyExports = "getAssemblyExports:",
-    loadDataArchive = "loadDataArchive:",
+    emscriptenStartup = "mono.emscriptenStartup",
+    instantiateWasm = "mono.instantiateWasm",
+    preInit = "mono.preInit",
+    preRun = "mono.preRun",
+    onRuntimeInitialized = "mono.onRuntimeInitialized",
+    postRun = "mono.postRun",
+    loadRuntime = "mono.loadRuntime",
+    bindingsInit = "mono.bindingsInit",
+    bindJsFunction = "mono.bindJsFunction:",
+    bindCsFunction = "mono.bindCsFunction:",
+    callJsFunction = "mono.callJsFunction:",
+    callCsFunction = "mono.callCsFunction:",
+    getAssemblyExports = "mono.getAssemblyExports:",
+    instantiateAsset = "mono.instantiateAsset:",
 }
 
-export function startMeasure(block: string) {
-    if (performance) {
-        performance.mark("start-" + block);
+let uniqueId = 0;
+export function startMeasure(block: string, id?: string): PerformanceMark {
+    if (performance && performance.mark) {
+        if (id) {
+            uniqueId++;
+            return performance.mark(`[${uniqueId}]${block}${id}`);
+        }
+        return performance.mark(block);
     }
+    return undefined as any;
 }
 
-export function endMeasure(block: string) {
-    if (performance) {
-        performance.mark("end-" + block);
-        performance.measure(block, "start-" + block, "end-" + block);
+export function endMeasure(start: PerformanceMark) {
+    if (start) {
+        performance.measure(start.name, start.name);
+        performance.clearMarks(start.name);
     }
 }

@@ -25,7 +25,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const js_function_name = conv_string_root(function_name_root)!;
-        startMeasure(MeasuredBlock.bindJsFunction + js_function_name);
+        const mark = startMeasure(MeasuredBlock.bindJsFunction, js_function_name);
         const js_module_name = conv_string_root(module_name_root)!;
         if (runtimeHelpers.diagnosticTracing) {
             console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
@@ -57,6 +57,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const closure: BindingClosure = {
             fn,
+            fqn: js_module_name + ":" + js_function_name,
             args_count,
             arg_marshalers,
             res_converter,
@@ -84,7 +85,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
         setI32(function_js_handle, <any>fn_handle);
-        endMeasure(MeasuredBlock.bindJsFunction + js_function_name);
+        endMeasure(mark);
     } catch (ex: any) {
         Module.printErr(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
@@ -165,8 +166,10 @@ function bind_fn(closure: BindingClosure) {
     const arg_cleanup = closure.arg_cleanup;
     const has_cleanup = closure.has_cleanup;
     const fn = closure.fn;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
+        const mark = startMeasure(MeasuredBlock.callCsFunction, fqn);
         try {
             const js_args = new Array(args_count);
             for (let index = 0; index < args_count; index++) {
@@ -193,11 +196,15 @@ function bind_fn(closure: BindingClosure) {
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
         }
+        finally {
+            endMeasure(mark);
+        }
     };
 }
 
 type BindingClosure = {
     fn: Function,
+    fqn: string,
     args_count: number,
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
