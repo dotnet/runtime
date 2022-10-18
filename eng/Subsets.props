@@ -126,6 +126,8 @@
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
+    <SubsetName Include="Tools.Linker" Description="The project that procude the linker and analyzer packages for trimming" />
+    <SubsetName Include="Tools.LinkerTests" OnDemand="true" Description="The project that procude the linker and analyzer packages for trimming" />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
@@ -324,6 +326,32 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.linker+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\linker\Mono.Linker.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\analyzer\analyzer.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\linker\ref\Mono.Linker.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\tlens\tlens.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\src\ILLink.Shared\ILLink.Shared.shproj" Category="tools" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.linkertests+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.Tasks.Tests\ILLink.Tasks.Tests.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.RoslynAnalyzer.Tests\ILLink.RoslynAnalyzer.Tests.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
