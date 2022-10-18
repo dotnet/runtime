@@ -11,20 +11,6 @@ namespace System.Formats.Tar
     {
         private static readonly Lazy<UnixFileMode> s_umask = new Lazy<UnixFileMode>(DetermineUMask);
 
-        internal const UnixFileMode ValidUnixFileModes =
-            UnixFileMode.UserRead |
-            UnixFileMode.UserWrite |
-            UnixFileMode.UserExecute |
-            UnixFileMode.GroupRead |
-            UnixFileMode.GroupWrite |
-            UnixFileMode.GroupExecute |
-            UnixFileMode.OtherRead |
-            UnixFileMode.OtherWrite |
-            UnixFileMode.OtherExecute |
-            UnixFileMode.StickyBit |
-            UnixFileMode.SetGroup |
-            UnixFileMode.SetUser;
-
         private static UnixFileMode DetermineUMask()
         {
             // To determine the umask, we'll create a file with full permissions and see
