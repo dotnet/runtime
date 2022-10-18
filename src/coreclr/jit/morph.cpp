@@ -5531,8 +5531,6 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
     {
-        inlCandInfo = call->gtInlineCandidateInfo;
-
         InlineContext* createdContext = nullptr;
         // Attempt the inline
         fgMorphCallInlineHelper(call, inlineResult, &createdContext);
