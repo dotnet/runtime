@@ -707,15 +707,8 @@ private:
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
             InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
-            GenTree* const             retExpr    = inlineInfo->retExpr;
 
-            // Sanity check the ret expr if non-null: it should refer to the original call.
-            if (retExpr != nullptr)
-            {
-                assert(retExpr->AsRetExpr()->gtInlineCandidate == origCall);
-            }
-
-            if (origCall->TypeGet() != TYP_VOID)
+            if (!origCall->TypeIs(TYP_VOID))
             {
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
@@ -763,12 +756,12 @@ private:
 
                 GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
 
-                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                JITDUMP("Linking GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(inlineInfo->retExpr),
                         returnTemp);
 
-                retExpr->ReplaceWith(tempTree, compiler);
+                inlineInfo->retExpr->gtSubstExpr = tempTree;
             }
-            else if (retExpr != nullptr)
+            else if (inlineInfo->retExpr != nullptr)
             {
                 // We still oddly produce GT_RET_EXPRs for some void
                 // returning calls. Just bash the ret expr to a NOP.
@@ -777,8 +770,9 @@ private:
                 // benefit they provide is stitching back larger trees for failed inlines
                 // of void-returning methods. But then the calls likely sit in commas and
                 // the benefit of a larger tree is unclear.
-                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
-                retExpr->gtBashToNOP();
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
             else
             {
@@ -918,7 +912,7 @@ private:
 
                 // Re-establish this call as an inline candidate.
                 //
-                GenTree* oldRetExpr              = inlineInfo->retExpr;
+                GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHnd      = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
@@ -927,24 +921,24 @@ private:
                 // If there was a ret expr for this call, we need to create a new one
                 // and append it just after the call.
                 //
-                // Note the original GT_RET_EXPR has been bashed to a temp.
+                // Note the original GT_RET_EXPR has been linked to a temp.
                 // we set all this up in FixupRetExpr().
                 if (oldRetExpr != nullptr)
                 {
-                    GenTree* retExpr =
-                        compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet(), thenBlock->bbFlags);
-                    inlineInfo->retExpr = retExpr;
+                    inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
+
+                    GenTree* newRetExpr = inlineInfo->retExpr;
 
                     if (returnTemp != BAD_VAR_NUM)
                     {
-                        retExpr = compiler->gtNewTempAssign(returnTemp, retExpr);
+                        newRetExpr = compiler->gtNewTempAssign(returnTemp, newRetExpr);
                     }
                     else
                     {
                         // We should always have a return temp if we return results by value
                         assert(origCall->TypeGet() == TYP_VOID);
                     }
-                    compiler->fgNewStmtAtEnd(thenBlock, retExpr);
+                    compiler->fgNewStmtAtEnd(thenBlock, newRetExpr);
                 }
             }
         }

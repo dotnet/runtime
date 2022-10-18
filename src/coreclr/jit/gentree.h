@@ -7234,11 +7234,18 @@ protected:
 
 struct GenTreeRetExpr : public GenTree
 {
-    GenTree* gtInlineCandidate;
+    GenTreeCall* gtInlineCandidate;
 
-    BasicBlockFlags bbFlags;
+    // Expression representing gtInlineCandidate's value (e.g. spill temp or
+    // expression from inlinee, or call itself for unsuccessful inlines).
+    // Substituted by UpdateInlineReturnExpressionPlaceHolder.
+    // This tree is nullptr during the import that created the GenTreeRetExpr and is set later
+    // when handling the actual inline candidate.
+    GenTree* gtSubstExpr;
 
-    CORINFO_CLASS_HANDLE gtRetClsHnd;
+    // The basic block that gtSubstExpr comes from, to enable propagating mandatory flags.
+    // nullptr for cases where gtSubstExpr is not a tree from the inlinee.
+    BasicBlock* gtSubstBB;
 
     GenTreeRetExpr(var_types type) : GenTree(GT_RET_EXPR, type)
     {

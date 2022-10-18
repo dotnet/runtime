@@ -100,7 +100,7 @@ public:
 
         if (tree->OperIs(GT_RET_EXPR))
         {
-            UpdateInlineReturnExpressionPlaceHolder(tree, user);
+            UpdateInlineReturnExpressionPlaceHolder(use, user);
         }
 
 #if FEATURE_MULTIREG_RET
@@ -121,9 +121,10 @@ public:
             {
                 GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
 
-                noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
-                             !m_compiler->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtRetClsHnd,
-                                                                 CorInfoCallConvExtension::Managed));
+                noway_assert(
+                    !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
+                    !m_compiler->IsMultiRegReturnedType(effectiveValue->AsRetExpr()->gtInlineCandidate->gtRetClsHnd,
+                                                        CorInfoCallConvExtension::Managed));
             }
         }
 
@@ -144,8 +145,8 @@ private:
     // inline return expression placeholder if there is one.
     //
     // Arguments:
-    //    pTree -- pointer to tree to examine for updates
-    //    data  -- context data for the tree walk
+    //    use -- edge for the tree that is a GT_RET_EXPR node
+    //    parent -- node containing the edge
     //
     // Returns:
     //    fgWalkResult indicating the walk should continue; that
@@ -175,30 +176,31 @@ private:
     //    the functions makes necessary updates. It could happen if there was
     //    an implicit conversion in the inlinee body.
     //
-    void UpdateInlineReturnExpressionPlaceHolder(GenTree* tree, GenTree* parent)
+    void UpdateInlineReturnExpressionPlaceHolder(GenTree** use, GenTree* parent)
     {
         CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
 
-        while (tree->OperIs(GT_RET_EXPR))
+        while ((*use)->OperIs(GT_RET_EXPR))
         {
+            GenTree* tree = *use;
             // We are going to copy the tree from the inlinee,
             // so record the handle now.
             //
             if (varTypeIsStruct(tree))
             {
-                retClsHnd = tree->AsRetExpr()->gtRetClsHnd;
+                retClsHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
             }
 
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
             //
-            BasicBlockFlags bbFlags;
-            GenTree*        inlineCandidate = tree;
+            BasicBlock* inlineeBB;
+            GenTree*    inlineCandidate = tree;
             do
             {
                 GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
-                inlineCandidate         = retExpr->gtInlineCandidate;
-                bbFlags                 = retExpr->bbFlags;
+                inlineCandidate         = retExpr->gtSubstExpr;
+                inlineeBB               = retExpr->gtSubstBB;
             } while (inlineCandidate->OperIs(GT_RET_EXPR));
 
             // We might as well try and fold the return value. Eg returns of
@@ -235,9 +237,13 @@ private:
                 }
             }
 
-            tree->ReplaceWith(inlineCandidate, m_compiler);
+            *use          = inlineCandidate;
             m_madeChanges = true;
-            m_compiler->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
+
+            if (inlineeBB != nullptr)
+            {
+                m_compiler->compCurBB->bbFlags |= (inlineeBB->bbFlags & BBF_SPLIT_GAINED);
+            }
 
 #ifdef DEBUG
             if (m_compiler->verbose)
@@ -281,7 +287,7 @@ private:
                     else
                     {
                         // Just assign the inlinee to a variable to keep it simple.
-                        tree->ReplaceWith(AssignStructInlineeToVar(tree, retClsHnd), m_compiler);
+                        *use = AssignStructInlineeToVar(tree, retClsHnd);
                     }
                     m_madeChanges = true;
                 }
@@ -853,8 +859,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.iciStmt                = fgMorphStmt;
     inlineInfo.iciBlock               = compCurBB;
     inlineInfo.thisDereferencedFirst  = false;
-    inlineInfo.retExpr                = nullptr;
-    inlineInfo.retBB                  = nullptr;
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
@@ -1006,12 +1010,12 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     }
 #endif // DEBUG
 
-    // If there is non-NULL return, but we haven't set the pInlineInfo->retExpr,
+    // If there is non-NULL return, but we haven't set the substExpr,
     // That means we haven't imported any BB that contains CEE_RET opcode.
     // (This could happen for example for a BBJ_THROW block fall through a BBJ_RETURN block which
     // causes the BBJ_RETURN block not to be imported at all.)
     // Fail the inlining attempt
-    if (inlineCandidateInfo->fncRetType != TYP_VOID && inlineInfo.retExpr == nullptr)
+    if ((inlineCandidateInfo->fncRetType != TYP_VOID) && (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
     {
 #ifdef DEBUG
         if (verbose)
@@ -1384,40 +1388,6 @@ _Done:
         gsCookieDummy->lvType        = TYP_INT;
         gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
         lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-    }
-
-    // If there is non-NULL return, replace the GT_CALL with its return value expression,
-    // so later it will be picked up by the GT_RET_EXPR node.
-    if ((pInlineInfo->inlineCandidateInfo->fncRetType != TYP_VOID) || (iciCall->gtReturnType == TYP_STRUCT))
-    {
-        noway_assert(pInlineInfo->retExpr);
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nReturn expression for call at ");
-            printTreeID(iciCall);
-            printf(" is\n");
-            gtDispTree(pInlineInfo->retExpr);
-        }
-#endif // DEBUG
-
-        // Replace the call with the return expression. Note that iciCall won't be part of the IR
-        // but may still be referenced from a GT_RET_EXPR node. We will replace GT_RET_EXPR node
-        // in UpdateInlineReturnExpressionPlaceHolder. At that time we will also update the flags
-        // on the basic block of GT_RET_EXPR node.
-        if (iciCall->gtInlineCandidateInfo->retExpr->OperGet() == GT_RET_EXPR)
-        {
-            // Save the basic block flags from the retExpr basic block.
-            iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
-        }
-
-        if (bottomBlock != nullptr)
-        {
-            // We've split the iciblock into two and the RET_EXPR was possibly moved to the bottomBlock
-            // so let's update its flags with retBB's ones
-            bottomBlock->bbFlags |= pInlineInfo->retBB->bbFlags & BBF_COMPACT_UPD;
-        }
-        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 
     //
@@ -1839,6 +1809,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
     InlLclVarInfo*       lclVarInfo        = inlineInfo->lclVarInfo;
     unsigned             gcRefLclCnt       = inlineInfo->numberOfGcRefLocals;
     const unsigned       argCnt            = inlineInfo->argCnt;
+    InlineCandidateInfo* inlCandInfo       = inlineInfo->inlineCandidateInfo;
 
     for (unsigned lclNum = 0; lclNum < lclCnt; lclNum++)
     {
@@ -1873,10 +1844,9 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         // Does the local we're about to null out appear in the return
         // expression?  If so we somehow messed up and didn't properly
         // spill the return value. See impInlineFetchLocal.
-        GenTree* retExpr = inlineInfo->retExpr;
-        if (retExpr != nullptr)
+        if ((inlCandInfo->retExpr != nullptr) && (inlCandInfo->retExpr->gtSubstExpr != nullptr))
         {
-            const bool interferesWithReturn = gtHasRef(inlineInfo->retExpr, tmpNum);
+            const bool interferesWithReturn = gtHasRef(inlCandInfo->retExpr->gtSubstExpr, tmpNum);
             noway_assert(!interferesWithReturn);
         }
 

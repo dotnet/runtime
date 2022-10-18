@@ -5526,9 +5526,13 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 {
     bool inliningFailed = false;
 
+    InlineCandidateInfo* inlCandInfo = call->gtInlineCandidateInfo;
+
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
     {
+        inlCandInfo = call->gtInlineCandidateInfo;
+
         InlineContext* createdContext = nullptr;
         // Attempt the inline
         fgMorphCallInlineHelper(call, inlineResult, &createdContext);
@@ -5582,6 +5586,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             // Detach the GT_CALL tree from the original statement by
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
             // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
+            inlCandInfo->retExpr->gtSubstExpr = call;
 
             noway_assert(fgMorphStmt->GetRootNode() == call);
             fgMorphStmt->SetRootNode(gtNewNothingNode());
@@ -5685,23 +5690,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
         }
 
         lvaCount = startVars;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            // printf("Inlining failed. Restore lvaCount to %d.\n", lvaCount);
-        }
-#endif
-
-        return;
     }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        // printf("After inlining lvaCount=%d.\n", lvaCount);
-    }
-#endif
 }
 
 //------------------------------------------------------------------------

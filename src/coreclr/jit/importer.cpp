@@ -11294,13 +11294,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 #endif
 
+            InlineCandidateInfo* inlCandInfo = impInlineInfo->inlineCandidateInfo;
+            GenTreeRetExpr*      inlRetExpr  = inlCandInfo->retExpr;
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = impInlineInfo->inlineCandidateInfo->fncRetType;
+            var_types originalCallType = inlCandInfo->fncRetType;
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
-                originalCallType = impNormStructType(impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass);
+                originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
             }
 
             if (returnType != originalCallType)
@@ -11370,7 +11372,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         bool                 isNonNull    = false;
                         CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
 
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // This is the first return, so best known type is the type
                             // of this return value.
@@ -11394,12 +11396,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     op2 = tmpOp2;
 #ifdef DEBUG
-                    if (impInlineInfo->retExpr)
+                    if (inlRetExpr->gtSubstExpr != nullptr)
                     {
                         // Some other block(s) have seen the CEE_RET first.
                         // Better they spilled to the same temp.
-                        assert(impInlineInfo->retExpr->gtOper == GT_LCL_VAR);
-                        assert(impInlineInfo->retExpr->AsLclVarCommon()->GetLclNum() ==
+                        assert(inlRetExpr->gtSubstExpr->gtOper == GT_LCL_VAR);
+                        assert(inlRetExpr->gtSubstExpr->AsLclVarCommon()->GetLclNum() ==
                                op2->AsLclVarCommon()->GetLclNum());
                     }
 #endif
@@ -11414,7 +11416,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
 
                 // Report the return expression
-                impInlineInfo->retExpr = op2;
+                inlRetExpr->gtSubstExpr = op2;
+                inlRetExpr->gtSubstBB   = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
             }
             else
             {
@@ -11440,16 +11443,17 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = op2;
+                        inlRetExpr->gtSubstExpr = op2;
+                        inlRetExpr->gtSubstBB   = compCurBB;
                     }
                 }
                 else // The struct was to be returned via a return buffer.
@@ -11460,23 +11464,19 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     if (fgNeedReturnSpillTemp())
                     {
                         // If this is the first return we have seen set the retExpr.
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
                                                    retClsHnd, CHECK_SPILL_ALL);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
+                        inlRetExpr->gtSubstExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
+                        inlRetExpr->gtSubstBB   = compCurBB;
                     }
                 }
-            }
-
-            if (impInlineInfo->retExpr != nullptr)
-            {
-                impInlineInfo->retBB = compCurBB;
             }
         }
     }
