@@ -52,6 +52,9 @@
   <Target Name="_GenerateRunSettingsFile" AfterTargets="Build" BeforeTargets="Test">
     <Message Text="*** Generating .runsettings file in $(RunSettingsFilePath)" Importance="High" />
     <PropertyGroup>
+      <DotNetForTests Condition="'$(DotNetForTests)' == '' and  $([System.IO.Path]::IsPathRooted($(DotNetTool)))">$(DotNetTool)</DotNetForTests>
+      <DotNetForTests Condition="'$(DotNetForTests)' == ''">$([System.IO.Path]::Combine($(DotNetRoot), $(DotNetTool)))</DotNetForTests>
+
       <_RunSettingsInputFilePath>$(RepositoryEngineeringDir)testing\.runsettings</_RunSettingsInputFilePath>
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(_RunSettingsInputFilePath)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
@@ -64,7 +67,7 @@
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
                                                       .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
-                                                      .Replace('$$DOTNETHOSTPATH$$', '$(DotNetTool)'))</RunSettingsFileContent>
+                                                      .Replace('$$DOTNETHOSTPATH$$', '$(DotNetForTests)'))</RunSettingsFileContent>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(RunSettingsFilePath)"
