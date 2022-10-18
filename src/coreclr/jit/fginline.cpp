@@ -281,13 +281,13 @@ private:
                     if (parent->OperIs(GT_ASG))
                     {
                         // The inlinee can only be the RHS.
-                        assert(parent->gtGetOp2() == tree);
+                        assert(parent->gtGetOp2() == *use);
                         AttachStructInlineeToAsg(parent->AsOp(), retClsHnd);
                     }
                     else
                     {
                         // Just assign the inlinee to a variable to keep it simple.
-                        *use = AssignStructInlineeToVar(tree, retClsHnd);
+                        *use = AssignStructInlineeToVar(*use, retClsHnd);
                     }
                     m_madeChanges = true;
                 }
