@@ -284,8 +284,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 #ifdef FEATURE_PGO
     if (g_pConfig->TieredPGO())
     {
-        if (currentNativeCodeVersion.IsDefaultVersion() &&
-            currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+        if (currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
             g_pConfig->TieredPGO_InstrumentOnlyHotCode())
         {
             if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
@@ -302,6 +301,9 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // 2) Better profile since we'll be able to instrument inlinees
                 // 3) Unoptimized instrumented tier is faster to produce and wire up
                 nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+
+                // NOTE: we might consider using OptimizationTierInstrumentedOptimized if the previous Tier0
+                // made it to Tier1-OSR.
             }
         }
     }

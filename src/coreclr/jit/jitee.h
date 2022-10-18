@@ -157,11 +157,6 @@ public:
         return m_jitFlags == 0;
     }
 
-    unsigned __int64 GetRawFlags() const
-    {
-        return m_jitFlags;
-    }
-
     void SetFromFlags(CORJIT_FLAGS flags)
     {
         // We don't want to have to check every one, so we assume it is exactly the same values as the JitFlag
