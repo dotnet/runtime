@@ -630,11 +630,11 @@ In this app Tier1 code occupies 8.22mb in the loader heap (we can add a few mega
 
 | Metric           | Number of methods | Share, % | Total size, Mb | Share, % |
 |------------------|-------------------|----------|----------------|----------|
-| **Tier0**        |             19968 |   79.09% |           4.58 |   84.69% |
-| **Tier1**        |              4978 |   19.72% |           **0.75** |   13.90% |
-| **FullOpts**     |               300 |    1.19% |           0.08 |    1.39% |
-| **Contains OSR** |                 2 |    0.01% |           0.00 |    0.02% |
-| **Total jitted** |             25248 |  100.00% |           5.41 |  100.00% |
+| **Tier0**        |              4713 |   62.45% |           0.84 |   58.34% |
+| **Tier1**        |              2516 |   33.34% |           0.56 |   38.75% |
+| **FullOpts**     |               318 |    4.21% |           0.04 |    2.92% |
+| **Contains OSR** |                 0 |    0.00% |           0.00 |    0.00% |
+| **Total jitted** |              7547 |  100.00% |           1.44 |  100.00% |
 
 In case of AvaloniaILSpy, Instrumented tiers add around 1Mb (stubs included) to the working set and around 5k of new jit compilations.
 
