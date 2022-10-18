@@ -133,6 +133,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
