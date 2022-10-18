@@ -200,6 +200,15 @@ namespace BasicEventSourceTests
 
                     #endregion
 
+                    #region Validate "null" arguments
+
+                    log.EventS(null);
+                    Assert.Equal(8, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Null((string)LoudListener.t_lastEvent.Payload[0]);
+
+                    #endregion
+
                     #region Validate DateTime
                     Test_WriteEvent_ArgsBasicTypes_Etw_Validate_DateTime(log);
                     #endregion
