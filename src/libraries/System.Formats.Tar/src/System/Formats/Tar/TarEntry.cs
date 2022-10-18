@@ -138,10 +138,10 @@ namespace System.Formats.Tar
         /// <remarks>The value in this field has no effect on Windows platforms.</remarks>
         public UnixFileMode Mode
         {
-            get => (UnixFileMode)_header._mode;
+            get => (UnixFileMode)(_header._mode & 0xFFF); // mask to only keep least significant 12-bits
             set
             {
-                if ((int)value is < 0 or > 4095) // 4095 in decimal is 7777 in octal
+                if ((int)value is < 0 or > 0xFFF) // 0xFFF (4095) in decimal is 7777 in octal
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
