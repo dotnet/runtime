@@ -23,6 +23,9 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
+    <ProjectReference Include="..\external\LibObjectFile\src\LibObjectFile\LibObjectFile.csproj" />
+    <ProjectReference Include="..\external\Melanzana\Melanzana.MachO\Melanzana.MachO.csproj" />
+
     <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
