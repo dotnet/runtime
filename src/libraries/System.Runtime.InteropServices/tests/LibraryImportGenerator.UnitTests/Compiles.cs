@@ -641,33 +641,30 @@ namespace LibraryImportGenerator.UnitTests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToCompileToValidateAllowUnsafeBlocks()
+        public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
         {
-            yield return new object[] { ID(), CodeSnippets.TrivialClassDeclarations, TestTargetFramework.Net, true };
-
-            {
-                string source = @"
+            string source = @"
 using System.Runtime.InteropServices;
 public class Basic { }
 ";
-                yield return new object[] { ID(), source, TestTargetFramework.Standard, false };
-                yield return new object[] { ID(), source, TestTargetFramework.Framework, false };
-                yield return new object[] { ID(), source, TestTargetFramework.Net, false };
-            }
+            yield return new object[] { ID(), source, TestTargetFramework.Standard };
+            yield return new object[] { ID(), source, TestTargetFramework.Framework };
+            yield return new object[] { ID(), source, TestTargetFramework.Net };
         }
 
         [Theory]
-        [MemberData(nameof(CodeSnippetsToCompileToValidateAllowUnsafeBlocks))]
-        public async Task ValidateRequireAllowUnsafeBlocksDiagnosticNoTrigger(string id, string source, TestTargetFramework framework, bool allowUnsafe)
+        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
+        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: allowUnsafe);
+            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            // Assert we didn't generate any syntax trees, even empty ones
+            Assert.Same(comp, newComp);
         }
     }
 }
