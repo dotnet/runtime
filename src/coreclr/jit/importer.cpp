@@ -9516,36 +9516,44 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     goto NONFOLDABLE_FIELD;
                                 }
 
-                                const int bufferSize         = TARGET_POINTER_SIZE;
-                                uint8_t   buffer[bufferSize] = {0};
-                                unsigned  totalSize          = info.compCompHnd->getClassSize(fieldClsHnd);
-
-                                if ((totalSize == 0) || (totalSize > bufferSize) ||
-                                    !info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
-                                                                                   totalSize))
-                                {
-                                    goto NONFOLDABLE_FIELD;
-                                }
-
                                 CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
                                 CORINFO_CLASS_HANDLE innerFieldClsHnd;
                                 var_types            fieldVarType = JITtype2varType(
                                     info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
 
                                 // Technically, we can support frozen gc refs here and maybe floating point in future
-                                if (!varTypeIsIntegral(filedVarType))
+                                if (!varTypeIsIntegral(fieldVarType))
                                 {
                                     goto NONFOLDABLE_FIELD;
                                 }
 
-                                unsigned fldOffset     = info.compCompHnd->getFieldOffset(innerField);
+                                unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+                                unsigned fldOffset = info.compCompHnd->getFieldOffset(innerField);
+
+                                if ((fldOffset != 0) || (totalSize != info.compCompHnd->getClassSize(fieldClsHnd)) ||
+                                    (totalSize == 0))
+                                {
+                                    // The field is expected to be of the exact size as the struct with 0 offset
+                                    goto NONFOLDABLE_FIELD;
+                                }
+
+                                const int bufferSize         = TARGET_POINTER_SIZE;
+                                uint8_t   buffer[bufferSize] = {0};
+
+                                if ((totalSize > bufferSize) ||
+                                    !info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
+                                                                                   totalSize))
+                                {
+                                    goto NONFOLDABLE_FIELD;
+                                }
+
                                 unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld struct"));
                                 lvaSetStruct(structTempNum, fieldClsHnd, false);
 
-                                GenTree* constValTree = impImportStaticReadOnlyField(buffer, filedVarType);
+                                GenTree* constValTree = impImportStaticReadOnlyField(buffer, fieldVarType);
                                 assert(constValTree != nullptr);
 
-                                GenTreeLclFld* fieldTree    = gtNewLclFldNode(structTempNum, filedVarType, fldOffset);
+                                GenTreeLclFld* fieldTree    = gtNewLclFldNode(structTempNum, fieldVarType, fldOffset);
                                 GenTree*       fieldAsgTree = gtNewAssignNode(fieldTree, constValTree);
                                 impAppendTree(fieldAsgTree, CHECK_SPILL_NONE, impCurStmtDI);
 
