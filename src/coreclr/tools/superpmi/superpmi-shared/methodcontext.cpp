@@ -5685,7 +5685,7 @@ static unsigned InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind ki
         case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
             return sizeof(uintptr_t);
         default:
-            LogError("Unexpedted pgo schema data size (kind = %d)", kind);
+            LogError("Unexpected pgo schema data size (kind = %d)", kind);
             return 0;
     }
 }
