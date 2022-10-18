@@ -491,18 +491,6 @@ namespace System.Net.Mail.Tests
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "This test only fails on Unix-like")]
-        public async Task SendMailAsync_CanBssseCanceled_CancellationToken_Loop()
-        {
-            
-            for (int i = 0; i < 1000; ++i)
-            {
-                await SendMailAsync_CanBeCanceled_CancellationToken();
-            }
-        }
-
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
         [Theory]
