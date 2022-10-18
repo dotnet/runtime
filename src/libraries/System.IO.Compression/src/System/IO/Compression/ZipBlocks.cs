@@ -199,28 +199,30 @@ namespace System.IO.Compression
                 if (extraField.Size < sizeof(long))
                     return true;
 
-                long value64 = reader.ReadInt64();
+                bool readAllFields = extraField.Size == sizeof(long) + sizeof(long) + sizeof(long) + sizeof(int);
+
+                long value64 = readUncompressedSize || readAllFields ? reader.ReadInt64() : -1;
                 if (readUncompressedSize)
                     zip64Block._uncompressedSize = value64;
 
                 if (ms.Position > extraField.Size - sizeof(long))
                     return true;
 
-                value64 = reader.ReadInt64();
+                value64 = readCompressedSize || readAllFields ? reader.ReadInt64() : -1;
                 if (readCompressedSize)
                     zip64Block._compressedSize = value64;
 
                 if (ms.Position > extraField.Size - sizeof(long))
                     return true;
 
-                value64 = reader.ReadInt64();
+                value64 = readLocalHeaderOffset || readAllFields ? reader.ReadInt64() : -1;
                 if (readLocalHeaderOffset)
                     zip64Block._localHeaderOffset = value64;
 
                 if (ms.Position > extraField.Size - sizeof(int))
                     return true;
 
-                int value32 = reader.ReadInt32();
+                int value32 = readStartDiskNumber || readAllFields ? reader.ReadInt32() : -1;
                 if (readStartDiskNumber)
                     zip64Block._startDiskNumber = value32;
 
