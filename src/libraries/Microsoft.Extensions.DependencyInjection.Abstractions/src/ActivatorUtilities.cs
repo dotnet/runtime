@@ -141,6 +141,35 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// and/or from an <see cref="IServiceProvider"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to activate</typeparam>
+        /// <param name="argumentTypes">
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// </param>
+        /// <returns>
+        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// </returns>
+        public static ObjectFactory<T>
+            CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
+                Type[] argumentTypes)
+        {
+            FindApplicableConstructor(typeof(T), argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+
+            ParameterExpression? provider = Expression.Parameter(typeof(IServiceProvider), "provider");
+            ParameterExpression? argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
+            Expression? factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
+
+            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+                factoryExpressionBody, provider, argumentArray);
+
+            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
+            return result.Invoke;
+        }
+
+        /// <summary>
         /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
         /// <typeparam name="T">The type to activate</typeparam>
