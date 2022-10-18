@@ -37,7 +37,7 @@ The warning suppression could present a challenge to the software development li
     }
 ```
 
-If we keep the warning suppression on this trimmer-compatible code, we will end up with a potentially dangerous case. Should we later add some trimmer-incompatible code within the scope of the suppression which triggers the suppressed warning, we will not be informed about it during the trimming process. That is, the warning issued by the linker will be silenced by the suppression we left over and it will not be displayed. This may result in a scenario in which the trimming completes with no warnings, yet errors occur at runtime. 
+If we keep the warning suppression on this trimmer-compatible code, we will end up with a potentially dangerous case. Should we later add some trimmer-incompatible code within the scope of the suppression which triggers the suppressed warning, we will not be informed about it during the trimming process. That is, the warning issued by the linker will be silenced by the suppression we left over and it will not be displayed. This may result in a scenario in which the trimming completes with no warnings, yet errors occur at runtime.
 
 This can be illustrated with the following example. Let us extend the above code to also print the value of `suffix` field.
 
@@ -59,13 +59,13 @@ Now the code is again trimmer-incompatible, the `GetField("suffix")` call will t
 
 In order to avoid the above scenario, we would like to have an option to detect and report the warning suppressions which are not tied to any warnings caused by trim-incompatible patterns.
 
-This may be achieved by extending the linker tool functionality to check which suppression do in fact suppress warnings and reporting those which do not. 
+This may be achieved by extending the linker tool functionality to check which suppression do in fact suppress warnings and reporting those which do not.
 
 Running the tool with the redundant warning suppressions detection enabled will report all of the warning suppressions which do not suppress any warnings. The way to turn it on is TBD.
 
 ***NOTE:*** We will only process suppressions produced by the linker, other suppressions will be ignored.
 ### Example:
-Let us again consider the example of the trimmer-compatible code with a redundant warning suppression. 
+Let us again consider the example of the trimmer-compatible code with a redundant warning suppression.
 
 ```csharp
     [UnconditionalSuppressMessage("trim", "IL2070", Justification = "DynamicDependency attribute will instruct the linker to keep the public methods on NameProvider.")] // This should be removed
