@@ -4323,6 +4323,12 @@ inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
 
+#ifdef HOST_64BIT
+inline __int64 abs(SSIZE_T _X) {
+    return llabs((__int64)_X);
+}
+#endif
+
 }
 #endif
 
