@@ -238,16 +238,11 @@ jclass    g_TrustAnchorClass;
 jclass    g_TrustAnchorCtor;
 jmethodID g_TrustAnchorGetTrustedCert;
 
-// javax/security/auth/x500/X500Principal
-jclass    g_X500PrincipalClass;
-jmethodID g_X500PrincipalGetName;
-
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
 jmethodID g_X509CertEquals;
 jmethodID g_X509CertGetEncoded;
 jmethodID g_X509CertGetPublicKey;
-jmethodID g_X509CertGetSubjectX500Principal;
 
 // java/security/cert/X509CertSelector
 jclass    g_X509CertSelectorClass;
@@ -825,14 +820,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_TrustAnchorCtor =             GetMethod(env, false, g_TrustAnchorClass, "<init>", "(Ljava/security/cert/X509Certificate;[B)V");
     g_TrustAnchorGetTrustedCert =   GetMethod(env, false, g_TrustAnchorClass, "getTrustedCert", "()Ljava/security/cert/X509Certificate;");
 
-    g_X500PrincipalClass = GetClassGRef(env, "javax/security/auth/x500/X500Principal");
-    g_X500PrincipalGetName = GetMethod(env, false, g_X500PrincipalClass, "getName", "(Ljava/lang/String;)Ljava/lang/String;");
-
     g_X509CertClass =           GetClassGRef(env, "java/security/cert/X509Certificate");
     g_X509CertEquals =          GetMethod(env, false, g_X509CertClass, "equals", "(Ljava/lang/Object;)Z");
     g_X509CertGetEncoded =      GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
     g_X509CertGetPublicKey =    GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
-    g_X509CertGetSubjectX500Principal =    GetMethod(env, false, g_X509CertClass, "getSubjectX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
 
     g_X509CertSelectorClass =           GetClassGRef(env, "java/security/cert/X509CertSelector");
     g_X509CertSelectorCtor =            GetMethod(env, false, g_X509CertSelectorClass, "<init>", "()V");

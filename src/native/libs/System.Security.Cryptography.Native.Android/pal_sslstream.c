@@ -331,81 +331,38 @@ static jobject GetSSLContextInstance(JNIEnv* env, int enabledSslProtocolsFlags)
     return sslContext;
 }
 
-static jobject GetKeyStoreInstance(JNIEnv* env, uint8_t* rawClientCertificate, int32_t rawClientCertificateLength)
+static jobject GetKeyStoreInstance(JNIEnv* env)
 {
     jobject keyStore = NULL;
-
-    INIT_LOCALS(loc, ksType, keyStoreTmp, principal, principalName, alias);
-    jobject certificate = NULL; // AndroidCryptoNative_X509Decode returns a global reference
+    jstring ksType = NULL;
 
     // String ksType = KeyStore.getDefaultType();
     // KeyStore keyStore = KeyStore.getInstance(ksType);
-    loc[ksType] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
-    loc[keyStoreTmp] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[ksType]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
     // keyStore.load(null, null);
-    (*env)->CallVoidMethod(env, loc[keyStoreTmp], g_KeyStoreLoad, NULL, NULL);
+    ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    if (rawClientCertificate != NULL)
-    {
-        certificate = AndroidCryptoNative_X509Decode(rawClientCertificate, rawClientCertificateLength);
-        if (certificate == NULL)
-            goto cleanup;
-
-        // X500Principal principal = certificate.getSubjectX500Principal();
-        // string clientCertificateAlias = principal.getName("RFC2253");
-        loc[principal] = (*env)->CallObjectMethod(env, certificate, g_X509CertGetSubjectX500Principal);
-        loc[principalName] = make_java_string(env, "RFC2253");
-        loc[alias] = (*env)->CallObjectMethod(env, loc[principal], g_X500PrincipalGetName, loc[principalName]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        // keyStore.setCertificateEntry(principal, certificate);
-        (*env)->CallVoidMethod(env, loc[keyStoreTmp], g_KeyStoreSetCertificateEntry, loc[alias], certificate);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    }
-
-    keyStore = loc[keyStoreTmp];
-    loc[keyStoreTmp] = NULL;
+    (*env)->CallVoidMethod(env, keyStore, g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
 cleanup:
-    RELEASE_LOCALS(loc, env);
-    ReleaseGRef(env, certificate);
+    ReleaseLRef(env, ksType);
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(
-    intptr_t dotnetRemoteCertificateValidatorHandle,
-    int enabledSslProtocolsFlags,
-    uint8_t* rawClientCertificate,
-    int32_t rawClientCertificateLength)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle, int enabledSslProtocolsFlags)
 {
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
-    INIT_LOCALS(loc, sslContext, keyStore, kmfType, kmf, keyManagers, trustManagers);
+    INIT_LOCALS(loc, sslContext, keyStore, trustManagers);
 
     loc[sslContext] = GetSSLContextInstance(env, enabledSslProtocolsFlags);
     if (loc[sslContext] == NULL)
         goto cleanup;
 
-    // Init key managers if there's a client certificate
-    if (rawClientCertificate != NULL)
-    {
-        loc[keyStore] = GetKeyStoreInstance(env, rawClientCertificate, rawClientCertificateLength);
-        loc[kmfType] = make_java_string(env, "PKIX");
-        loc[kmf] = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, loc[kmfType]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        // kmf.init(keyStore, null);
-        (*env)->CallVoidMethod(env, loc[kmf], g_KeyManagerFactoryInit, loc[keyStore], NULL);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        // KeyManager[] keyManagers = kmf.getKeyManagers();
-        loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    }
+    // We only need to init the key store, we don't use it
+    IGNORE_RETURN(GetKeyStoreInstance(env));
 
     // Init trust managers
     if (dotnetRemoteCertificateValidatorHandle != 0)
@@ -416,7 +373,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
     }
 
     // Init the SSLContext
-    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, NULL, loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     sslStream = xcalloc(1, sizeof(SSLStream));
@@ -497,9 +454,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
                                                                jobject* /*X509Certificate[]*/ certs,
-                                                               int32_t certsLen,
-                                                               uint8_t* rawClientCertificate,
-                                                               int32_t rawClientCertificateLength)
+                                                               int32_t certsLen)
 {
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
@@ -511,7 +466,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     if (loc[sslContext] == NULL)
         goto cleanup;
 
-    loc[keyStore] = GetKeyStoreInstance(env, rawClientCertificate, rawClientCertificateLength); // TODO should that be here ??!!
+    loc[keyStore] = GetKeyStoreInstance(env);
     if (loc[keyStore] == NULL)
         goto cleanup;
 
@@ -522,7 +477,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
 
     // String kmfType = "PKIX";
     // KeyManagerFactory kmf = KeyManagerFactory.getInstance(kmfType);
-    loc[kmfType] = make_java_string(env, "X509"); // PKIX
+    loc[kmfType] = make_java_string(env, "PKIX");
     loc[kmf] = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, loc[kmfType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -869,36 +824,6 @@ cleanup:
     return ret;
 }
 
-static jobjectArray getPeerCertificates(JNIEnv* env, SSLStream* sslStream)
-{
-    jobjectArray certs = NULL;
-    bool isHandshaking = false;
-    jobject sslSession = NULL;
-
-    // During the initial handshake our sslStream->sslSession doesn't have access
-    // to the peer certificates which we need for hostname verification
-    // and we need to access the handshake SSLSession from the SSLEngine
-
-    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    isHandshaking = IsHandshaking(handshakeStatus);
-    LOG_INFO("handshakeStatus=%d, is handshaking = %s", handshakeStatus, (isHandshaking ? "true" : "false"));
-    sslSession = isHandshaking
-        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
-        : sslStream->sslSession;
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    certs = (*env)->CallObjectMethod(env, sslSession, g_SSLSessionGetPeerCertificates);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-cleanup:
-    if (isHandshaking)
-        ReleaseLRef(env, sslSession);
-
-    return certs;
-}
-
 jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream)
 {
     abort_if_invalid_pointer_argument (sslStream);
@@ -906,13 +831,14 @@ jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLS
     JNIEnv* env = GetJNIEnv();
     jobject ret = NULL;
 
-    // If there are no peer certificates, return null to indicate no certificate.
     // Certificate[] certs = sslSession.getPeerCertificates();
-    jobjectArray certs = getPeerCertificates(env, sslStream);
-    if (certs == NULL)
+    // out = certs[0];
+    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
+
+    // If there are no peer certificates, getPeerCertificates will throw. Return null to indicate no certificate.
+    if (TryClearJNIExceptions(env))
         goto cleanup;
 
-    // out = certs[0];
     jsize len = (*env)->GetArrayLength(env, certs);
     if (len > 0)
     {
@@ -937,15 +863,14 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
     *outLen = 0;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
-    jobjectArray certs = getPeerCertificates(env, sslStream);
-
-    // If there are no peer certificates, return null and length of zero to indicate no certificates.
-    if (certs == NULL)
-        goto cleanup;
-
     // for (int i = 0; i < certs.length; i++) {
     //     out[i] = certs[i];
     // }
+    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
+
+    // If there are no peer certificates, getPeerCertificates will throw. Return null and length of zero to indicate no certificates.
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
 
     jsize len = (*env)->GetArrayLength(env, certs);
     *outLen = len;
@@ -1081,7 +1006,8 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     // and we need to access the handshake SSLSession from the SSLEngine
 
     int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
-    bool isHandshaking = IsHandshaking(handshakeStatus);
+    bool isHandshaking = handshakeStatus != HANDSHAKE_STATUS__FINISHED;
+
     jobject sslSession = isHandshaking
         ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
         : sslStream->sslSession;

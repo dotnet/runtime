@@ -44,11 +44,7 @@ Create an SSL context
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(
-    intptr_t dotnetRemoteCertificateValidatorHandle,
-    int enabledSslProtocolsFlags,
-    uint8_t* rawClientCertificate,
-    int32_t rawClientCertificateLength);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle, int enabledSslProtocolsFlags);
 
 /*
 Create an SSL context with the specified certificates
@@ -61,9 +57,7 @@ PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_
                                                                          int32_t pkcs8PrivateKeyLen,
                                                                          PAL_KeyAlgorithm algorithm,
                                                                          jobject* /*X509Certificate[]*/ certs,
-                                                                         int32_t certsLen,
-                                                                         uint8_t* rawClientCertificate,
-                                                                         int32_t rawClientCertificateLength);
+                                                                         int32_t certsLen);
 
 /*
 Initialize an SSL context

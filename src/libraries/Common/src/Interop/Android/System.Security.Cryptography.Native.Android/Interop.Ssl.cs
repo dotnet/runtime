@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Net.Security;
@@ -30,19 +29,7 @@ internal static partial class Interop
         };
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
-        private static unsafe partial SafeSslHandle SSLStreamCreate(
-            IntPtr trustManagerProxyHandle,
-            SslProtocols enabledSslProtocols,
-            ref byte rawClientCertificate,
-            int rawClientCertificateLength);
-        internal static unsafe SafeSslHandle SSLStreamCreate(
-            IntPtr trustManagerProxyHandle,
-            SslProtocols enabledSslProtocols,
-            X509Certificate2? clientCertificate)
-        {
-            ReadOnlySpan<byte> rawData = clientCertificate?.RawData;
-            return SSLStreamCreate(trustManagerProxyHandle, enabledSslProtocols, ref MemoryMarshal.GetReference(rawData), rawData.Length);
-        }
+        internal static partial SafeSslHandle SSLStreamCreate(IntPtr trustManagerProxyHandle, SslProtocols enabledSslProtocols);
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates")]
         private static partial SafeSslHandle SSLStreamCreateWithCertificates(
@@ -52,18 +39,14 @@ internal static partial class Interop
             int pkcs8PrivateKeyLen,
             PAL_KeyAlgorithm algorithm,
             IntPtr[] certs,
-            int certsLen,
-            ref byte rawClientCertificate,
-            int rawClientCertificateLength);
+            int certsLen);
         internal static SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr trustManagerProxyHandle,
             SslProtocols enabledSslProtocols,
             ReadOnlySpan<byte> pkcs8PrivateKey,
             PAL_KeyAlgorithm algorithm,
-            IntPtr[] certificates,
-            X509Certificate2? clientCertificate)
+            IntPtr[] certificates)
         {
-            ReadOnlySpan<byte> rawData = clientCertificate?.RawData;
             return SSLStreamCreateWithCertificates(
                 trustManagerProxyHandle,
                 enabledSslProtocols,
@@ -71,9 +54,7 @@ internal static partial class Interop
                 pkcs8PrivateKey.Length,
                 algorithm,
                 certificates,
-                certificates.Length,
-                ref MemoryMarshal.GetReference(rawData),
-                rawData.Length);
+                certificates.Length);
         }
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterTrustManagerValidationCallback")]

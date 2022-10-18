@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -56,18 +55,16 @@ namespace System.Net
             int* certificateLengths,
             byte** rawCertificates)
         {
-            TrustManagerProxy? proxy = (TrustManagerProxy?)GCHandle.FromIntPtr(proxyPtr).Target;
-            Debug.Assert(proxy != null);
+            TrustManagerProxy proxy = GCHandle.FromIntPtr(proxyPtr).Target as TrustManagerProxy ?? throw new ObjectDisposedException(nameof(TrustManagerProxy));
+            X509Certificate2[] certificates = Convert(certificatesCount, certificateLengths, rawCertificates);
 
-            X509Certificate2[] certificates = ConvertCertificates(certificatesCount, certificateLengths, rawCertificates);
             try
             {
                 return proxy.Validate(certificates);
             }
             catch (Exception exception)
             {
-                Debug.WriteLine($"Remote certificate verification has thrown an exception: {exception}");
-                Debug.WriteLine(exception.StackTrace);
+                Console.WriteLine($"Remote certificate verification has thrown an exception: {exception}");
                 return false;
             }
             finally
@@ -90,14 +87,17 @@ namespace System.Net
             return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain, out _, out _);
         }
 
-        private static unsafe X509Certificate2[] ConvertCertificates(int count, int* lengths, byte** rawData)
+        private static unsafe X509Certificate2[] Convert(
+            int certificatesCount,
+            int* certificateLengths,
+            byte** rawCertificates)
         {
-            var certificates = new X509Certificate2[count];
+            var certificates = new X509Certificate2[certificatesCount];
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < certificatesCount; i++)
             {
-                var rawCertificate = new ReadOnlySpan<byte>(rawData[i], lengths[i]);
-                certificates[i] = new X509Certificate2(rawCertificate);
+                var rawData = new ReadOnlySpan<byte>(rawCertificates[i], certificateLengths[i]);
+                certificates[i] = new X509Certificate2(rawData);
             }
 
             return certificates;
