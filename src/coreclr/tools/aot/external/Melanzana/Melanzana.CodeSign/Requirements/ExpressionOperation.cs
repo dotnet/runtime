@@ -1,0 +1,30 @@
+namespace Melanzana.CodeSign.Requirements
+{
+    public enum ExpressionOperation : int
+    {
+        False,
+        True,
+        Ident,
+        AppleAnchor,
+        AnchorHash,
+        InfoKeyValue,
+        And,
+        Or,
+        CDHash,
+        Not,
+        InfoKeyField,
+        CertField,
+        TrustedCert,
+        TrustedCerts,
+        CertGeneric,
+        AppleGenericAnchor,
+        EntitlementField,
+        CertPolicy,
+        NamedAnchor,
+        NamedCode,
+        Platform,
+        Notarized,
+        CertFieldDate,
+        LegacyDevID,
+    }
+}
