@@ -35,7 +35,11 @@ namespace System
         // the lowermost 2 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
         // we also reserve the sign bit
+#if CORECLR
         private const nint_t HandleTagBits = nint_t.MinValue | 3;
+#else
+        private const nint_t HandleTagBits = 1;
+#endif
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
         private const nint_t TracksResurrectionBit = 1;
