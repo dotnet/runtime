@@ -247,6 +247,13 @@ private:
             // flags from the second-to-last inlinee's BB. Remove this once we
             // can take these changes. We still need to propagate the mandatory
             // "IR-presence" flags.
+            // Furthermore, we should really only propagate BBF_COPY_PROPAGATE
+            // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
+            // propagating that has the effect that inlining a tree from a hot
+            // block into a block without profile weights means we suddenly
+            // start to see the inliner block as hot and treat future inline
+            // candidates more aggressively.
+            //
             BasicBlockFlags newBBFlags = BBF_EMPTY;
             if (prevInlineeBB != nullptr)
             {
