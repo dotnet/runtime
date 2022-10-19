@@ -29,18 +29,15 @@ namespace DebuggerTests
 
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
-        public const string NON_WASM_PAGE_READY = "non-wasm-page-ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
         public bool DetectAndFailOnAssertions { get; set; } = true;
-        public void NotifyOfNonWasmIsLoading(bool value) => _nonWasmIsLoading = value;
 
         private CancellationTokenSource _cancellationTokenSource;
         private Exception? _isFailingWithException;
         private bool _gotRuntimeReady = false;
         private bool _gotAppReady = false;
-        private bool _nonWasmIsLoading = false;
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
             LoggerFactory.Create(builder =>
@@ -202,13 +199,6 @@ namespace DebuggerTests
             bool fail = false;
             switch (method)
             {
-                case "Runtime.executionContextCreated":
-                    if (_nonWasmIsLoading)
-                    {
-                        _nonWasmIsLoading = false;
-                        NotifyOf(NON_WASM_PAGE_READY, args);
-                    }
-                    break;
                 case "Debugger.paused":
                     NotifyOf(PAUSE, args);
                     break;
