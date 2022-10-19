@@ -271,9 +271,8 @@ export function invokeStructClassRecords(arg1) {
     ];
 }
 
-export async function echopromise(arg1) {
-    await new Promise(resolve => setTimeout(resolve, 0));
-    return arg1;
+export function echopromise(arg1) {
+    return new Promise(resolve => setTimeout(() => resolve(arg1), 0);
 }
 
 export async function awaitvoid(arg1) {
