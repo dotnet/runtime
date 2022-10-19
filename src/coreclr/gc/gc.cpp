@@ -1839,9 +1839,9 @@ uint8_t* gc_heap::pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignm
 
 //CLR_SIZE  is the max amount of bytes from gen0 that is set to 0 in one chunk
 #ifdef SERVER_GC
-#define CLR_SIZE ((size_t)(8*1024))
+#define CLR_SIZE ((size_t)(8*1024+32))
 #else //SERVER_GC
-#define CLR_SIZE ((size_t)(8*1024))
+#define CLR_SIZE ((size_t)(8*1024+32))
 #endif //SERVER_GC
 
 #define END_SPACE_AFTER_GC (loh_size_threshold + MAX_STRUCTALIGN)
@@ -11488,6 +11488,8 @@ bool gc_heap::is_region_demoted (uint8_t* obj)
     return demoted_p;
 }
 
+static GCSpinLock write_barrier_spin_lock;
+
 inline
 void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
 {
@@ -11510,8 +11512,6 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
     {
         if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
         {
-            static GCSpinLock write_barrier_spin_lock;
-
             while (true)
             {
                 if (Interlocked::CompareExchange(&write_barrier_spin_lock.lock, 0, -1) < 0)

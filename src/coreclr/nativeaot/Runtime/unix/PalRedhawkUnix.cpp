@@ -20,6 +20,7 @@
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "cgroupcpu.h"
+#include "threadstore.h"
 
 #define _T(s) s
 #include "RhConfig.h"
@@ -46,26 +47,6 @@
 #if HAVE_LWP_SELF
 #include <lwp.h>
 #endif
-
-#if HAVE_SYS_VMPARAM_H
-#include <sys/vmparam.h>
-#endif  // HAVE_SYS_VMPARAM_H
-
-#if HAVE_MACH_VM_TYPES_H
-#include <mach/vm_types.h>
-#endif // HAVE_MACH_VM_TYPES_H
-
-#if HAVE_MACH_VM_PARAM_H
-#include <mach/vm_param.h>
-#endif  // HAVE_MACH_VM_PARAM_H
-
-#ifdef __APPLE__
-#include <mach/vm_statistics.h>
-#include <mach/mach_types.h>
-#include <mach/mach_init.h>
-#include <mach/mach_host.h>
-#include <mach/mach_port.h>
-#endif // __APPLE__
 
 #if HAVE_CLOCK_GETTIME_NSEC_NP
 #include <time.h>
@@ -346,11 +327,6 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
-#if !HAVE_THREAD_LOCAL
-extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
-extern "C" void *__dso_handle;
-#endif
-
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
 void ConfigureSignals()
@@ -406,6 +382,10 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
+#ifdef TARGET_LINUX
+static pthread_key_t key;
+#endif
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -430,11 +410,17 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     InitializeCurrentProcessCpuCount();
 
+#ifdef TARGET_LINUX
+    if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
+    {
+        return false;
+    }
+#endif
+
     return true;
 }
 
-#if HAVE_THREAD_LOCAL
-
+#ifndef TARGET_LINUX
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -456,8 +442,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-
-#endif // HAVE_THREAD_LOCAL
+#endif
 
 // This thread local variable is used for delegate marshalling
 DECLSPEC_THREAD intptr_t tls_thunkData;
@@ -481,10 +466,14 @@ EXTERN_C intptr_t RhGetCurrentThunkContext()
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-#if HAVE_THREAD_LOCAL
-    tls_destructionMonitor.SetThread(thread);
+#ifdef TARGET_LINUX
+    if (pthread_setspecific(key, thread) != 0)
+    {
+        _ASSERTE(!"pthread_setspecific failed");
+        RhFailFast();
+    }
 #else
-    __cxa_thread_atexit(RuntimeThreadShutdown, thread, &__dso_handle);
+    tls_destructionMonitor.SetThread(thread);
 #endif
 }
 
@@ -943,16 +932,13 @@ extern "C" UInt32_BOOL ResetEvent(HANDLE event)
 
 extern "C" uint32_t GetEnvironmentVariableA(const char * name, char * buffer, uint32_t size)
 {
-    // Using std::getenv instead of getenv since it is guaranteed to be thread safe w.r.t. other
-    // std::getenv calls in C++11
-    const char* value = std::getenv(name);
+    const char* value = getenv(name);
     if (value == NULL)
     {
         return 0;
     }
 
     size_t valueLen = strlen(value);
-
     if (valueLen < size)
     {
         strcpy(buffer, value);

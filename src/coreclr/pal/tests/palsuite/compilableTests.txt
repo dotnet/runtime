@@ -33,8 +33,6 @@ c_runtime/exp/test1/paltest_exp_test1
 c_runtime/expf/test1/paltest_expf_test1
 c_runtime/fabs/test1/paltest_fabs_test1
 c_runtime/fabsf/test1/paltest_fabsf_test1
-c_runtime/fclose/test1/paltest_fclose_test1
-c_runtime/fclose/test2/paltest_fclose_test2
 c_runtime/ferror/test1/paltest_ferror_test1
 c_runtime/ferror/test2/paltest_ferror_test2
 c_runtime/fflush/test1/paltest_fflush_test1
@@ -82,9 +80,6 @@ c_runtime/free/test1/paltest_free_test1
 c_runtime/fseek/test1/paltest_fseek_test1
 c_runtime/ftell/test1/paltest_ftell_test1
 c_runtime/fwrite/test1/paltest_fwrite_test1
-c_runtime/getenv/test1/paltest_getenv_test1
-c_runtime/getenv/test2/paltest_getenv_test2
-c_runtime/getenv/test3/paltest_getenv_test3
 c_runtime/ilogb/test1/paltest_ilogb_test1
 c_runtime/ilogbf/test1/paltest_ilogbf_test1
 c_runtime/isalnum/test1/paltest_isalnum_test1
@@ -315,7 +310,6 @@ c_runtime/wcstoul/test4/paltest_wcstoul_test4
 c_runtime/wcstoul/test5/paltest_wcstoul_test5
 c_runtime/wcstoul/test6/paltest_wcstoul_test6
 c_runtime/_alloca/test1/paltest_alloca_test1
-c_runtime/_fdopen/test1/paltest_fdopen_test1
 c_runtime/_finite/test1/paltest_finite_test1
 c_runtime/_finitef/test1/paltest_finitef_test1
 c_runtime/_isnan/test1/paltest_isnan_test1
@@ -450,12 +444,6 @@ filemapping_memmgt/MapViewOfFile/test3/paltest_mapviewoffile_test3
 filemapping_memmgt/MapViewOfFile/test4/paltest_mapviewoffile_test4
 filemapping_memmgt/MapViewOfFile/test5/paltest_mapviewoffile_test5
 filemapping_memmgt/MapViewOfFile/test6/paltest_mapviewoffile_test6
-filemapping_memmgt/OpenFileMappingA/test1/paltest_openfilemappinga_test1
-filemapping_memmgt/OpenFileMappingA/test2/paltest_openfilemappinga_test2
-filemapping_memmgt/OpenFileMappingA/test3/paltest_openfilemappinga_test3
-filemapping_memmgt/OpenFileMappingW/test1/paltest_openfilemappingw_test1
-filemapping_memmgt/OpenFileMappingW/test2/paltest_openfilemappingw_test2
-filemapping_memmgt/OpenFileMappingW/test3/paltest_openfilemappingw_test3
 filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1
 filemapping_memmgt/ProbeMemory/test1/paltest_probememory_test1
 filemapping_memmgt/UnmapViewOfFile/test1/paltest_unmapviewoffile_test1
@@ -501,8 +489,6 @@ file_io/CopyFileW/test2/paltest_copyfilew_test2
 file_io/CopyFileW/test3/paltest_copyfilew_test3
 file_io/CreateFileA/test1/paltest_createfilea_test1
 file_io/CreateFileW/test1/paltest_createfilew_test1
-file_io/DeleteFileA/test1/paltest_deletefilea_test1
-file_io/DeleteFileW/test1/paltest_deletefilew_test1
 file_io/errorpathnotfound/test1/paltest_errorpathnotfound_test1
 file_io/errorpathnotfound/test2/paltest_errorpathnotfound_test2
 file_io/FILECanonicalizePath/paltest_filecanonicalizepath_test1
@@ -515,8 +501,6 @@ file_io/FindNextFileW/test1/paltest_findnextfilew_test1
 file_io/FindNextFileW/test2/paltest_findnextfilew_test2
 file_io/FlushFileBuffers/test1/paltest_flushfilebuffers_test1
 file_io/GetConsoleOutputCP/test1/paltest_getconsoleoutputcp_test1
-file_io/GetCurrentDirectoryA/test1/paltest_getcurrentdirectorya_test1
-file_io/GetCurrentDirectoryW/test1/paltest_getcurrentdirectoryw_test1
 file_io/GetFileAttributesA/test1/paltest_getfileattributesa_test1
 file_io/GetFileAttributesExW/test1/paltest_getfileattributesexw_test1
 file_io/GetFileAttributesExW/test2/paltest_getfileattributesexw_test2
@@ -543,18 +527,11 @@ file_io/GetTempFileNameW/test2/paltest_gettempfilenamew_test2
 file_io/GetTempFileNameW/test3/paltest_gettempfilenamew_test3
 file_io/gettemppatha/test1/paltest_gettemppatha_test1
 file_io/GetTempPathW/test1/paltest_gettemppathw_test1
-file_io/MoveFileExA/test1/paltest_movefileexa_test1
-file_io/MoveFileExW/test1/paltest_movefileexw_test1
 file_io/ReadFile/test1/paltest_readfile_test1
 file_io/ReadFile/test2/paltest_readfile_test2
 file_io/ReadFile/test3/paltest_readfile_test3
 file_io/ReadFile/test4/paltest_readfile_test4
 file_io/SearchPathW/test1/paltest_searchpathw_test1
-file_io/SetEndOfFile/test1/paltest_setendoffile_test1
-file_io/SetEndOfFile/test2/paltest_setendoffile_test2
-file_io/SetEndOfFile/test3/paltest_setendoffile_test3
-file_io/SetEndOfFile/test4/paltest_setendoffile_test4
-file_io/SetEndOfFile/test5/paltest_setendoffile_test5
 file_io/SetFilePointer/test1/paltest_setfilepointer_test1
 file_io/SetFilePointer/test2/paltest_setfilepointer_test2
 file_io/SetFilePointer/test3/paltest_setfilepointer_test3
@@ -589,7 +566,6 @@ locale_info/WideCharToMultiByte/test5/paltest_widechartomultibyte_test5
 miscellaneous/CGroup/test1/paltest_cgroup_test1
 miscellaneous/CloseHandle/test1/paltest_closehandle_test1
 miscellaneous/CloseHandle/test2/paltest_closehandle_test2
-miscellaneous/CreatePipe/test1/paltest_createpipe_test1
 miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1
 miscellaneous/FormatMessageW/test1/paltest_formatmessagew_test1
 miscellaneous/FormatMessageW/test2/paltest_formatmessagew_test2
@@ -671,7 +647,6 @@ threading/CreateThread/test2/paltest_createthread_test2
 threading/CreateThread/test3/paltest_createthread_test3
 threading/CriticalSectionFunctions/test1/paltest_criticalsectionfunctions_test1
 threading/CriticalSectionFunctions/test2/paltest_criticalsectionfunctions_test2
-threading/CriticalSectionFunctions/test3/paltest_criticalsectionfunctions_test3
 threading/CriticalSectionFunctions/test4/paltest_criticalsectionfunctions_test4
 threading/CriticalSectionFunctions/test5/paltest_criticalsectionfunctions_test5
 threading/CriticalSectionFunctions/test6/paltest_criticalsectionfunctions_test6
@@ -684,8 +659,6 @@ threading/DuplicateHandle/test12/paltest_duplicatehandle_test12
 threading/DuplicateHandle/test2/paltest_duplicatehandle_test2
 threading/DuplicateHandle/test3/paltest_duplicatehandle_test3
 threading/DuplicateHandle/test4/paltest_duplicatehandle_test4
-threading/DuplicateHandle/test5/paltest_duplicatehandle_test5
-threading/DuplicateHandle/test6/paltest_duplicatehandle_test6
 threading/DuplicateHandle/test7/paltest_duplicatehandle_test7
 threading/DuplicateHandle/test8/paltest_duplicatehandle_test8
 threading/DuplicateHandle/test9/paltest_duplicatehandle_test9
@@ -700,7 +673,6 @@ threading/GetCurrentThread/test1/paltest_getcurrentthread_test1
 threading/GetCurrentThread/test2/paltest_getcurrentthread_test2
 threading/GetCurrentThreadId/test1/paltest_getcurrentthreadid_test1
 threading/GetExitCodeProcess/test1/paltest_getexitcodeprocess_test1
-threading/GetThreadTimes/test1/paltest_getthreadtimes_test1
 threading/NamedMutex/test1/paltest_namedmutex_test1
 threading/OpenEventW/test1/paltest_openeventw_test1
 threading/OpenEventW/test2/paltest_openeventw_test2

@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -1231,6 +1233,165 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(null, 63 * 1024)]
+        [InlineData(null, 65 * 1024)]
+        [InlineData(1, 100)]
+        [InlineData(1, 1024)]
+        public async Task LargeStatusLine_ThrowsException(int? maxResponseHeadersLength, int statusLineLengthEstimate)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                if (maxResponseHeadersLength.HasValue)
+                {
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
+
+                using HttpClient client = CreateHttpClient(handler);
+
+                if (statusLineLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
+                {
+                    await client.GetAsync(uri);
+                }
+                else
+                {
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    if (!IsWinHttpHandler)
+                    {
+                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                    }
+                }
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK{new string('a', statusLineLengthEstimate)}\r\n\r\n");
+                }
+                catch { }
+            });
+        }
+
+        public static IEnumerable<object[]> TripleBoolValues() =>
+            from trailing in BoolValues
+            from async in BoolValues
+            from lineFolds in BoolValues
+            select new object[] { trailing, async, lineFolds };
+
+        [Theory]
+        [MemberData(nameof(TripleBoolValues))]
+        public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
+        {
+            Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
+                ? "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nLong-Header: "
+                : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
+
+            bool streamDisposed = false;
+            bool responseComplete = false;
+            int readCount = 0;
+            int fastFillLength = 64 * 1024 * 1024; // 64 MB
+
+            Func<Memory<byte>, int> readFunc = memory =>
+            {
+                if (streamDisposed)
+                {
+                    throw new ObjectDisposedException("Foo");
+                }
+
+                if (responseComplete)
+                {
+                    return 0;
+                }
+
+                Span<byte> buffer = memory.Span;
+
+                if (!responsePrefix.IsEmpty)
+                {
+                    int toCopy = Math.Min(responsePrefix.Length, buffer.Length);
+                    responsePrefix.Span.Slice(0, toCopy).CopyTo(buffer);
+                    responsePrefix = responsePrefix.Slice(toCopy);
+                    return toCopy;
+                }
+
+                if (fastFillLength > 0)
+                {
+                    int toFill = Math.Min(fastFillLength, buffer.Length);
+                    buffer.Slice(0, toFill).Fill((byte)'a');
+                    fastFillLength -= toFill;
+                    if (lineFolds)
+                    {
+                        for (int i = 0; i < toFill / 10; i++)
+                        {
+                            buffer[i * 10 + 8] = (byte)'\n';
+                            buffer[i * 10 + 9] = (byte)' ';
+                        }
+                    }
+                    return toFill;
+                }
+
+                if (++readCount < 500_000)
+                {
+                    // Slowly trickle data over 500 thousand read calls.
+                    // If the implementation scans the whole buffer after every read, it will have to sift through 32 TB of data.
+                    // As that is not achievable on current hardware within the PassingTestTimeout window, the test would fail.
+                    if (lineFolds && readCount % 10 == 0)
+                    {
+                        buffer[0] = (byte)'\n';
+                        buffer[1] = (byte)' ';
+                        return 2;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)'a';
+                        return 1;
+                    }
+                }
+
+                responseComplete = true;
+
+                Debug.Assert(buffer.Length >= 4);
+                return Encoding.ASCII.GetBytes("\r\n\r\n", buffer);
+            };
+
+            var responseStream = new DelegateDelegatingStream(Stream.Null)
+            {
+                ReadAsyncMemoryFunc = (memory, _) => new ValueTask<int>(readFunc(memory)),
+                ReadFunc = (array, offset, length) => readFunc(array.AsMemory(offset, length)),
+                ReadSpanFunc = buffer =>
+                {
+                    byte[] arrayBuffer = new byte[buffer.Length];
+                    int read = readFunc(arrayBuffer);
+                    arrayBuffer.AsSpan(0, read).CopyTo(buffer);
+                    return read;
+                },
+                DisposeFunc = _ => streamDisposed = true
+            };
+
+            using var client = new HttpClient(new SocketsHttpHandler
+            {
+                ConnectCallback = (_, _) => new ValueTask<Stream>(responseStream),
+                MaxResponseHeadersLength = 1024 * 1024 // 1 GB
+            })
+            {
+                Timeout = TestHelper.PassingTestTimeout
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://foo");
+
+            using HttpResponseMessage response = async
+                ? await client.SendAsync(request)
+                : client.Send(request);
+
+            response.EnsureSuccessStatusCode();
+
+            HttpHeaders headers = trailingHeaders
+                ? response.TrailingHeaders
+                : response.Headers;
+            Assert.True(headers.NonValidated.Contains("Long-Header"));
+        }
     }
 
     [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
@@ -3518,6 +3679,24 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task ResponseHeaders_ExtraWhitespace_Trimmed()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues value));
+                Assert.Equal("bar", Assert.Single(value));
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("foo  ", " \t bar  \r\n ") });
+            });
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
