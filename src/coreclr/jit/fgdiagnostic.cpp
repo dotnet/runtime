@@ -427,7 +427,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 namespace
 {
     template<typename T>
-    class release_t
+    class release_t final
     {
         T* _mem;
     public:
@@ -450,21 +450,16 @@ namespace
             free(_mem);
             _mem = nullptr;
         }
-
-        operator T*()
-        {
-            return _mem;
-        }
     };
 
     using CharRelease = release_t<char>;
 
     char* NarrowString(LPCWSTR wideString, CharRelease& mem)
     {
-        int len = wcslen(wideString) + 1;
+        size_t len = wcslen(wideString) + 1;
         char* alloc = (char*)malloc(sizeof(char) * len);
         mem.set(alloc);
-        for (int i = 0; i < len; ++i)
+        for (size_t i = 0; i < len; ++i)
         {
             assert(((unsigned)wideString[i]) <= 0x7f);
             alloc[i] = (char)wideString[i];
