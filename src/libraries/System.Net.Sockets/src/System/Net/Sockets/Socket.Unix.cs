@@ -140,7 +140,6 @@ namespace System.Net.Sockets
             SafeSocketHandle newHandle;
             SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out newHandle);
             _handle.TransferTrackedState(newHandle);
-            _handle.Dispose();
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
@@ -160,7 +159,9 @@ namespace System.Net.Sockets
             if (newHandle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
             if (newHandle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
 
+            SafeSocketHandle oldHandle = _handle;
             Volatile.Write(ref _handle, newHandle);
+            oldHandle.Dispose();
 
             if (Volatile.Read(ref _disposed) != 0)
             {
