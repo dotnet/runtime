@@ -57,8 +57,19 @@ namespace LibObjectFile.Dwarf
 
         protected override void Write(DwarfWriter writer)
         {
-            writer.WriteAddress(DwarfRelocationTarget.Code, Start);
-            writer.WriteAddress(DwarfRelocationTarget.Code, End);
+            bool isBaseAddress =
+                (writer.AddressSize == DwarfAddressSize.Bit64 && Start == ulong.MaxValue) ||
+                (writer.AddressSize == DwarfAddressSize.Bit32 && Start == uint.MaxValue);
+            if (isBaseAddress)
+            {
+                writer.WriteUInt(Start);
+                writer.WriteAddress(DwarfRelocationTarget.Code, End);
+            }
+            else
+            {
+                writer.WriteAddress(DwarfRelocationTarget.Code, Start);
+                writer.WriteAddress(DwarfRelocationTarget.Code, End);
+            }
 
             if (Expression != null)
             {
