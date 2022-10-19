@@ -199,7 +199,10 @@ namespace System.IO.Compression
                 if (extraField.Size < sizeof(long))
                     return true;
 
-                bool readAllFields = extraField.Size == sizeof(long) + sizeof(long) + sizeof(long) + sizeof(int);
+                // Advancing the stream (by reading from it) is possible only when:
+                // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true, #77159).
+                // 2. When the size indicates that all the information is available ("slightly invalid files", #49580).
+                bool readAllFields = extraField.Size >= sizeof(long) + sizeof(long) + sizeof(long) + sizeof(int);
 
                 long value64 = readUncompressedSize || readAllFields ? reader.ReadInt64() : -1;
                 if (readUncompressedSize)
