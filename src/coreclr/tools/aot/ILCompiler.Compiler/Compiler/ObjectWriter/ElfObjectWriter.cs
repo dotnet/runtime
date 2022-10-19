@@ -44,12 +44,14 @@ namespace ILCompiler.ObjectWriter
         private ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
-            if (factory.Target.Architecture != TargetArchitecture.X64)
+            ElfArch arch = factory.Target.Architecture switch
             {
-                throw new NotSupportedException("Unsupported architecture");
-            }
+                TargetArchitecture.X64 => ElfArch.X86_64,
+                TargetArchitecture.ARM64 => ElfArch.AARCH64,
+                _ => throw new NotSupportedException("Unsupported architecture")
+            };
 
-            _objectFile = new ElfObjectFile(ElfArch.X86_64);
+            _objectFile = new ElfObjectFile(arch);
 
             var stringSection = new ElfStringTable();
             _symbolTable = new ElfSymbolTable { Link = stringSection };
@@ -83,7 +85,8 @@ namespace ILCompiler.ObjectWriter
                 ElfSection elfSection = new ElfBinarySection(sectionStream)
                 {
                     Name = sectionName,
-                    Type = section.Name == ".eh_frame" ? (ElfSectionType)ElfNative.SHT_IA_64_UNWIND : ElfSectionType.ProgBits,
+                    Type = section.Name == ".eh_frame" && _objectFile.Arch == ElfArch.X86_64 ?
+                        (ElfSectionType)ElfNative.SHT_IA_64_UNWIND : ElfSectionType.ProgBits,
                     Flags =
                         section.Type == SectionType.Executable ? ElfSectionFlags.Alloc | ElfSectionFlags.Executable :
                         (section.Type == SectionType.Writeable ? ElfSectionFlags.Alloc | ElfSectionFlags.Write :
@@ -125,6 +128,17 @@ namespace ILCompiler.ObjectWriter
                 var a = BinaryPrimitives.ReadUInt64LittleEndian(data);
                 addend += checked((int)a);
                 BinaryPrimitives.WriteUInt64LittleEndian(data, 0);
+            }
+            else if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
+                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 ||
+                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+            {
+                // NOTE: Zero addend in code is currently always used for these.
+                // R2R object writer has the same assumption.
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported relocation: {relocType}");
             }
             relocationList.Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
@@ -168,6 +182,58 @@ namespace ILCompiler.ObjectWriter
         }
 
         protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            switch ((ElfArch)_objectFile.Arch)
+            {
+                case ElfArch.X86_64:
+                    EmitRelocationsX64(sectionIndex, relocationList);
+                    break;
+                case ElfArch.AARCH64:
+                    EmitRelocationsARM64(sectionIndex, relocationList);
+                    break;
+                default:
+                    Debug.Fail("Unsupported architecture");
+                    break;
+            }
+        }
+
+        private void EmitRelocationsARM64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            var elfSection = _sectionIndexToElfSection[sectionIndex];
+            if (_sectionToRelocationTable.TryGetValue(elfSection, out var relocationTable))
+            {
+                foreach (var symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+
+                    ElfRelocationType type = symbolicRelocation.Type switch {
+                        RelocType.IMAGE_REL_BASED_DIR64 => ElfRelocationType.R_AARCH64_ABS64,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfRelocationType.R_AARCH64_ABS32,
+                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfRelocationType.R_AARCH64_PREL32,
+                        RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => ElfRelocationType.R_AARCH64_CALL26,
+                        RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ElfRelocationType.R_AARCH64_ADR_PREL_PG_HI21,
+                        RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ElfRelocationType.R_AARCH64_ADD_ABS_LO12_NC,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    var addend = symbolicRelocation.Addend;
+
+                    relocationTable.Entries.Add(new ElfRelocation
+                    {
+                        SymbolIndex = symbolIndex,
+                        Type = type,
+                        Offset = (ulong)symbolicRelocation.Offset,
+                        Addend = addend
+                    });
+                }
+            }
+            else
+            {
+                Debug.Assert(relocationList.Count == 0);
+            }
+        }
+
+        private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             var elfSection = _sectionIndexToElfSection[sectionIndex];
             if (_sectionToRelocationTable.TryGetValue(elfSection, out var relocationTable))
@@ -293,12 +359,28 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            CopyRelocationsX64(dwarfFile.InfoSection, debugInfoRelocation);
-            CopyRelocationsX64(dwarfFile.AddressRangeTable, debugAddressRangeRelocation);
-            CopyRelocationsX64(dwarfFile.LineSection, debugLineRelocation);
-            CopyRelocationsX64(dwarfFile.LocationSection, debugLocationRelocation);
+            ElfRelocationType reloc32, reloc64;
 
-            void CopyRelocationsX64(DwarfRelocatableSection dwarfRelocSection, ElfRelocationTable relocTable)
+            switch ((ElfArch)_objectFile.Arch)
+            {
+                case ElfArch.X86_64:
+                    reloc32 = ElfRelocationType.R_X86_64_32;
+                    reloc64 = ElfRelocationType.R_X86_64_64;
+                    break;
+                case ElfArch.AARCH64:
+                    reloc32 = ElfRelocationType.R_AARCH64_ABS32;
+                    reloc64 = ElfRelocationType.R_AARCH64_ABS64;
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported architecture");
+            }
+
+            CopyRelocations(dwarfFile.InfoSection, debugInfoRelocation);
+            CopyRelocations(dwarfFile.AddressRangeTable, debugAddressRangeRelocation);
+            CopyRelocations(dwarfFile.LineSection, debugLineRelocation);
+            CopyRelocations(dwarfFile.LocationSection, debugLocationRelocation);
+
+            void CopyRelocations(DwarfRelocatableSection dwarfRelocSection, ElfRelocationTable relocTable)
             {
                 relocTable.Entries.Clear();
 
@@ -306,7 +388,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     if (reloc.Target != DwarfRelocationTarget.Code)
                     {
-                        var relocType = reloc.Size == DwarfAddressSize.Bit64 ? ElfRelocationType.R_X86_64_64 : ElfRelocationType.R_X86_64_32;
+                        var relocType = reloc.Size == DwarfAddressSize.Bit64 ? reloc64 : reloc32;
 
                         switch (reloc.Target)
                         {
@@ -337,7 +419,7 @@ namespace ILCompiler.ObjectWriter
                             if (reloc.Target == DwarfRelocationTarget.Code &&
                                 reloc.Addend >= elfSection.Offset && reloc.Addend < elfSection.Offset + elfSection.Size)
                             {
-                                var relocType = reloc.Size == DwarfAddressSize.Bit64 ? ElfRelocationType.R_X86_64_64 : ElfRelocationType.R_X86_64_32;
+                                var relocType = reloc.Size == DwarfAddressSize.Bit64 ? reloc64 : reloc32;
                                 relocTable.Entries.Add(new ElfRelocation(reloc.Offset, relocType, symbolIndex, (long)(reloc.Addend - elfSection.Offset)));
                             }
                         }
