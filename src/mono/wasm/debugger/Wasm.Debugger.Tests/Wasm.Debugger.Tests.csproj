@@ -56,6 +56,7 @@
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
 
       <RunScriptCommand>$(_DotnetCommand) test DebuggerTestSuite/DebuggerTestSuite.dll</RunScriptCommand>
+      <RunScriptCommand Condition="'$(WasmEnableThreads)' == 'true'">$(RunScriptCommand) /e:WASM_TESTS_USING_VARIANT=multithreaded</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;$TEST_LOG_PATH&quot;</RunScriptCommand>

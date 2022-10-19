@@ -211,7 +211,6 @@ namespace DebuggerTests
                 }
                 case "Debugger.paused":
                 {
-                    Console.WriteLine($"debugger.paused - {sessionId}");
                     NotifyOf(PAUSE, sessionId, args);
                     break;
                 }
