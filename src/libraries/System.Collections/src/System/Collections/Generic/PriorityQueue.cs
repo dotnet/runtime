@@ -200,13 +200,15 @@ namespace System.Collections.Generic
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
 
-            int currentSize = _size++;
+            int currentSize = _size;
             _version++;
 
             if (_nodes.Length == currentSize)
             {
                 Grow(currentSize + 1);
             }
+
+            _size = currentSize + 1;
 
             if (_comparer == null)
             {
@@ -404,7 +406,7 @@ namespace System.Collections.Generic
             var collection = items as ICollection<(TElement Element, TPriority Priority)>;
             if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
             {
-                Grow(_size + count);
+                Grow(checked(_size + count));
             }
 
             if (_size == 0)
@@ -464,10 +466,10 @@ namespace System.Collections.Generic
             ArgumentNullException.ThrowIfNull(elements);
 
             int count;
-            if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
+            if (elements is ICollection<TElement> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
             {
-                Grow(_size + count);
+                Grow(checked(_size + count));
             }
 
             if (_size == 0)
