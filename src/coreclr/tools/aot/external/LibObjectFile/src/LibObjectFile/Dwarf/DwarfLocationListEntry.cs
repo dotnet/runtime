@@ -57,8 +57,8 @@ namespace LibObjectFile.Dwarf
 
         protected override void Write(DwarfWriter writer)
         {
-            writer.WriteUInt(Start);
-            writer.WriteUInt(End);
+            writer.WriteAddress(DwarfRelocationTarget.Code, Start);
+            writer.WriteAddress(DwarfRelocationTarget.Code, End);
 
             if (Expression != null)
             {

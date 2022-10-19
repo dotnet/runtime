@@ -52,9 +52,7 @@ namespace ILCompiler.ObjectWriter
             _objectFile = new ElfObjectFile(ElfArch.X86_64);
 
             var stringSection = new ElfStringTable();
-            _objectFile.AddSection(stringSection);
             _symbolTable = new ElfSymbolTable { Link = stringSection };
-            _objectFile.AddSection(_symbolTable);
         }
 
         protected override void CreateSection(ObjectNodeSection section, out Stream sectionStream)
@@ -213,32 +211,154 @@ namespace ILCompiler.ObjectWriter
             isExecutable = elfSection.Flags.HasFlag(ElfSectionFlags.Executable);
         }
 
+        protected override ulong GetSectionVirtualAddress(int sectionIndex)
+        {
+            // Use file offset
+            return _sectionIndexToElfSection[sectionIndex].Offset;
+        }
+
         protected override void EmitDebugSections(DwarfFile dwarfFile)
         {
-            // TODO: Pretty much broken in all possible ways since we have multiple
-            // code sections and no LowPC relocations
-
-            var elfDiagnostics = new DiagnosticBag();
-            _objectFile.UpdateLayout(elfDiagnostics);
-
             foreach (var unit in dwarfFile.InfoSection.Units)
             {
+                var rootDIE = (DwarfDIECompileUnit)unit.Root;
                 dwarfFile.AddressRangeTable.AddressSize = unit.AddressSize;
                 dwarfFile.AddressRangeTable.Unit = unit;
-                dwarfFile.AddressRangeTable.Ranges.Add(new DwarfAddressRange(0, 0, _objectFile.Layout.TotalSize));
+                ulong lowPC = ulong.MaxValue;
+                ulong highPC = 0;
+                foreach (var elfSection in _objectFile.Sections)
+                {
+                    if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable))
+                    {
+                        dwarfFile.AddressRangeTable.Ranges.Add(new DwarfAddressRange(0, elfSection.Offset, elfSection.Size));
+                        lowPC = Math.Max(lowPC, elfSection.Offset);
+                        highPC = Math.Max(highPC, elfSection.Offset + elfSection.Size);
+                    }
+                }
+                rootDIE.LowPC = 0u;
+                rootDIE.HighPC = (int)highPC;
             }
 
-            var dwarfElfContext = new DwarfElfContext(_objectFile);
-            dwarfFile.WriteToElf(dwarfElfContext);
+            var outputContext = new DwarfWriterContext
+            {
+                IsLittleEndian = _objectFile.Encoding == ElfEncoding.Lsb,
+                EnableRelocation = true,
+                AddressSize = _objectFile.FileClass == ElfFileClass.Is64 ? DwarfAddressSize.Bit64 : DwarfAddressSize.Bit32,
+                DebugLineStream = new MemoryStream(),
+                DebugAbbrevStream = new MemoryStream(),
+                DebugStringStream = new MemoryStream(),
+                DebugAddressRangeStream = new MemoryStream(),
+                DebugInfoStream = new MemoryStream(),
+                DebugLocationStream = new MemoryStream(),
+            };
+
+            dwarfFile.Write(outputContext);
+
+            var debugInfoSection = new ElfBinarySection(outputContext.DebugInfoStream) { Name = ".debug_info", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugInfoRelocation = new ElfRelocationTable { Name = ".rela.debug_info", Link = _symbolTable, Info = debugInfoSection, Alignment = 8 };
+            var debugAbbrevSection = new ElfBinarySection(outputContext.DebugAbbrevStream) { Name = ".debug_abbrev", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugAddressRangeSection = new ElfBinarySection(outputContext.DebugAddressRangeStream) { Name = ".debug_aranges", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugAddressRangeRelocation = new ElfRelocationTable { Name = ".rela.debug_aranges", Link = _symbolTable, Info = debugAddressRangeSection, Alignment = 8 };
+            var debugStringSection = new ElfBinarySection(outputContext.DebugStringStream) { Name = ".debug_str", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugLineSection = new ElfBinarySection(outputContext.DebugLineStream) { Name = ".debug_line", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugLineRelocation = new ElfRelocationTable { Name = ".rela.debug_line", Link = _symbolTable, Info = debugLineSection, Alignment = 8 };
+            var debugLocationSection = new ElfBinarySection(outputContext.DebugLocationStream) { Name = ".debug_loc", Type = ElfSectionType.ProgBits, Alignment = 8 };
+            var debugLocationRelocation = new ElfRelocationTable { Name = ".rela.debug_loc", Link = _symbolTable, Info = debugLocationSection, Alignment = 8 };
+
+            _objectFile.AddSection(debugInfoSection);
+            _objectFile.AddSection(debugInfoRelocation);
+            _objectFile.AddSection(debugAbbrevSection);
+            _objectFile.AddSection(debugAddressRangeSection);
+            _objectFile.AddSection(debugAddressRangeRelocation);
+            _objectFile.AddSection(debugStringSection);
+            _objectFile.AddSection(debugLineSection);
+            _objectFile.AddSection(debugLineRelocation);
+            _objectFile.AddSection(debugLocationSection);
+            _objectFile.AddSection(debugLocationRelocation);
+
+            uint stringSectionIndex = (uint)_symbolTable.Entries.Count;
+            _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = debugStringSection });
+            uint abbrevSectionIndex = (uint)_symbolTable.Entries.Count;
+            _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = debugAbbrevSection });
+            uint infoSectionIndex = (uint)_symbolTable.Entries.Count;
+            _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = debugInfoSection });
+
+            Dictionary<ElfSection, uint> codeSectionToSymbolIndex = new();
+            foreach (var elfSection in _objectFile.Sections)
+            {
+                if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable))
+                {
+                    codeSectionToSymbolIndex[elfSection] = (uint)_symbolTable.Entries.Count;
+                    _symbolTable.Entries.Add(new ElfSymbol() { Type = ElfSymbolType.Section, Section = elfSection });
+                }
+            }
+
+            CopyRelocationsX64(dwarfFile.InfoSection, debugInfoRelocation);
+            CopyRelocationsX64(dwarfFile.AddressRangeTable, debugAddressRangeRelocation);
+            CopyRelocationsX64(dwarfFile.LineSection, debugLineRelocation);
+            CopyRelocationsX64(dwarfFile.LocationSection, debugLocationRelocation);
+
+            void CopyRelocationsX64(DwarfRelocatableSection dwarfRelocSection, ElfRelocationTable relocTable)
+            {
+                relocTable.Entries.Clear();
+
+                foreach (var reloc in dwarfRelocSection.Relocations)
+                {
+                    if (reloc.Target != DwarfRelocationTarget.Code)
+                    {
+                        var relocType = reloc.Size == DwarfAddressSize.Bit64 ? ElfRelocationType.R_X86_64_64 : ElfRelocationType.R_X86_64_32;
+
+                        switch (reloc.Target)
+                        {
+                            case DwarfRelocationTarget.DebugString:
+                                relocTable.Entries.Add(new ElfRelocation(reloc.Offset, relocType, stringSectionIndex, (long)reloc.Addend));
+                                break;
+                            case DwarfRelocationTarget.DebugAbbrev:
+                                relocTable.Entries.Add(new ElfRelocation(reloc.Offset, relocType, abbrevSectionIndex, (long)reloc.Addend));
+                                break;
+                            case DwarfRelocationTarget.DebugInfo:
+                                relocTable.Entries.Add(new ElfRelocation(reloc.Offset, relocType, infoSectionIndex, (long)reloc.Addend));
+                                break;
+                            default:
+                                Debug.Fail("Unknown relocation");
+                                break;
+                        }
+                    }
+                }
+
+                // TODO: Sort the relocations and then linerly walk the relocation and section list at the same time
+                foreach (var elfSection in _objectFile.Sections)
+                {
+                    if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable))
+                    {
+                        uint symbolIndex = codeSectionToSymbolIndex[elfSection];
+                        foreach (var reloc in dwarfRelocSection.Relocations)
+                        {
+                            if (reloc.Target == DwarfRelocationTarget.Code &&
+                                reloc.Addend >= elfSection.Offset && reloc.Addend < elfSection.Offset + elfSection.Size)
+                            {
+                                var relocType = reloc.Size == DwarfAddressSize.Bit64 ? ElfRelocationType.R_X86_64_64 : ElfRelocationType.R_X86_64_32;
+                                relocTable.Entries.Add(new ElfRelocation(reloc.Offset, relocType, symbolIndex, (long)(reloc.Addend - elfSection.Offset)));
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         protected override void EmitSectionsAndLayout()
         {
+            _objectFile.AddSection(_symbolTable.Link.Section);
+            _objectFile.AddSection(_symbolTable);
             _objectFile.AddSection(new ElfSectionHeaderStringTable());
             if (_bssStream != null)
             {
                 _sectionIndexToElfSection[_bssSectionIndex].Size = (ulong)_bssStream.Length;
             }
+
+            var elfDiagnostics = new DiagnosticBag();
+            _objectFile.UpdateLayout(elfDiagnostics);
+            Debug.Assert(!elfDiagnostics.HasErrors);
         }
 
         protected override void EmitObjectFile(string objectFilePath)
