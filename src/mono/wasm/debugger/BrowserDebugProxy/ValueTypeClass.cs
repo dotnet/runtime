@@ -99,15 +99,15 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
                 FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
-                fieldValue["__section"] = attr == FieldAttributes.Private ? "private" : "result";
+                fieldValue[InternalUseFieldName.Section.Name] = attr == FieldAttributes.Private ? "private" : "result";
 
                 if (field.IsBackingField)
                 {
-                    fieldValue["__isBackingField"] = true;
+                    fieldValue[InternalUseFieldName.IsBackingField.Name] = true;
                     return fieldValue;
                 }
                 typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                fieldValue["__state"] = state?.ToString();
+                fieldValue[InternalUseFieldName.State.Name] = state?.ToString();
                 return fieldValue;
             }
         }
@@ -253,7 +253,7 @@ namespace BrowserDebugProxy
             JArray visibleFields = new();
             foreach (JObject field in fields)
             {
-                if (!Enum.TryParse(field["__state"]?.Value<string>(), out DebuggerBrowsableState state))
+                if (!Enum.TryParse(field[InternalUseFieldName.State.Name]?.Value<string>(), out DebuggerBrowsableState state))
                 {
                     visibleFields.Add(field);
                     continue;
