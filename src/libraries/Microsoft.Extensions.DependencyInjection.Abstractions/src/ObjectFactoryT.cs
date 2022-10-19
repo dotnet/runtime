@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// The result of <see cref="ActivatorUtilities.CreateFactory{T}"/>.
+    /// The result of <see cref="ActivatorUtilities.CreateFactory{T}"/>. A delegate to specify a factory method to call to instantiate an instance of type `T`
     /// </summary>
     /// <typeparam name="T">The type of the instance being returned</typeparam>
     /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to get service arguments from.</param>
