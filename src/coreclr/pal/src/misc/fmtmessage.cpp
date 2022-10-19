@@ -73,7 +73,18 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         }
         else
         {
-            swprintf_s(lpRetVal, MAX_ERROR_STRING_LENGTH, W("Error %u"), dwErrCode);
+            WCHAR msg[] = W("Error ");
+            PAL_wcscpy(lpRetVal, msg);
+            LPWSTR curr = lpRetVal + ARRAY_SIZE(msg) - 1;
+
+            char u32String[sizeof("4294967295")];
+            int cnt = sprintf_s(u32String, sizeof(u32String), "%u", dwErrCode);
+            cnt++; // +1 for null terminator
+
+            // Widening characters is okay here because they are the
+            // same in both char and WCHAR.
+            for (int i = 0; i < cnt; ++i)
+                curr[i] = (WCHAR)u32String[i];
         }
     }
     else
