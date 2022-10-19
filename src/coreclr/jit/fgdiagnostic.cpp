@@ -424,50 +424,23 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
 }
 
+#ifdef DEBUG
 namespace
 {
-    template<typename T>
-    class release_t final
+    const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
     {
-        T* _mem;
-    public:
-        release_t() : _mem{ nullptr }
-        { }
+        int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+        if (utf8Len == 0)
+            return nullptr;
 
-        ~release_t()
-        {
-            reset();
-        }
-
-        void set(T* mem)
-        {
-            reset();
-            _mem = mem;
-        }
-
-        void reset()
-        {
-            free(_mem);
-            _mem = nullptr;
-        }
-    };
-
-    using CharRelease = release_t<char>;
-
-    char* NarrowString(LPCWSTR wideString, CharRelease& mem)
-    {
-        size_t len = wcslen(wideString) + 1;
-        char* alloc = (char*)malloc(sizeof(char) * len);
-        mem.set(alloc);
-        for (size_t i = 0; i < len; ++i)
-        {
-            assert(((unsigned)wideString[i]) <= 0x7f);
-            alloc[i] = (char)wideString[i];
-        }
+        char* alloc = (char*)allocator.allocate<char>(utf8Len);
+        if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+            return nullptr;
 
         return alloc;
     }
 }
+#endif
 
 //------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
@@ -513,15 +486,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
-    CharRelease filenameMem;
-    CharRelease pathnameMem;
-    filename     = NarrowString(JitConfig.JitDumpFgFile(), filenameMem);
-    pathname     = NarrowString(JitConfig.JitDumpFgDir(), pathnameMem);
 
-    CharRelease prePhasePatternMem;
-    CharRelease postPhasePatternMem;
-    prePhasePattern  = NarrowString(JitConfig.JitDumpFgPrePhase(), prePhasePatternMem);
-    postPhasePattern = NarrowString(JitConfig.JitDumpFgPhase(), postPhasePatternMem);
+    CompAllocator allocator = getAllocatorDebugOnly();
+    filename                = ConvertToUtf8(JitConfig.JitDumpFgFile(), allocator);
+    pathname                = ConvertToUtf8(JitConfig.JitDumpFgDir(), allocator);
+    prePhasePattern         = ConvertToUtf8(JitConfig.JitDumpFgPrePhase(), allocator);
+    postPhasePattern        = ConvertToUtf8(JitConfig.JitDumpFgPhase(), allocator);
 #endif // DEBUG
 
     if (!dumpFunction)
