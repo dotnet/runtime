@@ -723,7 +723,7 @@ get_mov_for_type (int mt, gboolean needs_sext)
 	case MINT_TYPE_I2:
 	case MINT_TYPE_U2:
 		if (needs_sext)
-			return MINT_MOV_I1 + mt;
+			return MINT_MOV_I4_I1 + mt;
 		else
 			return MINT_MOV_4;
 	case MINT_TYPE_I4:
@@ -8666,7 +8666,7 @@ retry:
 
 			// We always store to the full i4, except as part of STIND opcodes. These opcodes can be
 			// applied to a local var only if that var has LDLOCA applied to it
-			if ((opcode >= MINT_MOV_I1 && opcode <= MINT_MOV_U2) && !td->locals [sregs [0]].indirects) {
+			if ((opcode >= MINT_MOV_I4_I1 && opcode <= MINT_MOV_I4_U2) && !td->locals [sregs [0]].indirects) {
 				ins->opcode = MINT_MOV_4;
 				opcode = MINT_MOV_4;
 			}
