@@ -287,20 +287,17 @@ namespace System.Text.Json
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
                 {
-                    if (left is null || right is null)
-                    {
-                        return left is null == right is null;
-                    }
+                    int leftCount = left is null ? 0 : left.Count;
+                    int rightCount = right is null ? 0 : right.Count;
 
-                    int n;
-                    if ((n = left.Count) != right.Count)
+                    if (leftCount != rightCount)
                     {
                         return false;
                     }
 
-                    for (int i = 0; i < n; i++)
+                    for (int i = 0; i < leftCount; i++)
                     {
-                        if (left[i] != right[i])
+                        if (left![i] != right![i])
                         {
                             return false;
                         }
