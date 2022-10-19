@@ -19,7 +19,6 @@ namespace System.Net.Security
     {
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
-        private RemoteCertificateVerification? _remoteCertificateVerifier;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -946,6 +945,7 @@ namespace System.Net.Security
             return status;
         }
 
+#if !TARGET_ANDROID
         /*++
             VerifyRemoteCertificate - Validates the content of a Remote Certificate
 
@@ -972,9 +972,9 @@ namespace System.Net.Security
             }
 
             _remoteCertificate = certificate;
-            _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
 
-            bool success = _remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+            var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
+            bool success = remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
             if (!success)
             {
                 alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);
@@ -1026,6 +1026,7 @@ namespace System.Net.Security
 
             return GenerateAlertToken();
         }
+#endif
 
         private ProtocolToken? CreateShutdownToken()
         {
