@@ -175,7 +175,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
-        internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
+        internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAuto(s);
 
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
