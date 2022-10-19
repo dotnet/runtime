@@ -724,6 +724,11 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
+#ifdef MADV_DODUMP
+    // Include committed memory in coredump.
+    madvise(address, size, MADV_DODUMP);
+#endif
+
 #if HAVE_NUMA_H
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
