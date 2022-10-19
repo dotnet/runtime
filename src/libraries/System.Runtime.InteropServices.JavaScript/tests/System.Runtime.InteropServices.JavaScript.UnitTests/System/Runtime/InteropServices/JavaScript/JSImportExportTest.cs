@@ -1489,7 +1489,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
         }
 
-
         [Fact]
         public async Task JsImportThenVoid()
         {
