@@ -369,7 +369,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         [JSImport("echopromise", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Error>>]
-        internal static partial Task<Exception> echopromise_Object([JSMarshalAs<JSType.Error>] Exception value);
+        internal static partial Task<Exception> echopromise_Exception([JSMarshalAs<JSType.Error>] Exception value);
         #endregion Exception
 
         #region Task

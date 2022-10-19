@@ -1481,11 +1481,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportTaskTypes()
         {
             object a = new object();
-            object e = new Exception();
+            Exception e = new Exception();
             JSObject j = JSHost.GlobalThis;
             Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
             Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
-            Assert.Same(e, await JavaScriptTestHelper.echopromise_Object(e));
+            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
             Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
         }
 
