@@ -191,7 +191,7 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 // We do not do this optimization in X86 as it is not recommended.
 #if TARGET_X86
     return nullptr;
-#else  // !TARGET_X86
+#endif  // TARGET_X86
 
     LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
     op1 = ReplaceWithLclVar(op1Use);
@@ -232,7 +232,6 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     ContainCheckShiftRotate(node->gtGetOp1()->AsOp());
 
     return node;
-#endif // !TARGET_X86
 }
 
 //------------------------------------------------------------------------

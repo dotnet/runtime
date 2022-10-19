@@ -11,120 +11,121 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint UInt32_MultiplyWithUInt32MaxValue(uint value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: neg [[REG0]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: neg [[REG0]]
             return value * UInt32.MaxValue;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWithUInt32MaxValue(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 32
-            // X64-FULL-LINE-NEXT: sub [[REG0]], [[REG1]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 32
+            // X64-NEXT: sub [[REG0]], [[REG1]]
             return value * (ulong)UInt32.MaxValue;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWithUInt32MaxValuePlusOne(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 32
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 32
             return value * ((ulong)UInt32.MaxValue + 1);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWithUInt32MaxValuePlusTwo(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 32
-            // X64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 32
+            // X64-NEXT: add [[REG0]], [[REG1]]
             return value * ((ulong)UInt32.MaxValue + 2);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith2(ulong value)
         {
-            // X64-FULL-LINE: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+[[REG1]]{{\]}}
+            // X64: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+[[REG1]]{{\]}}
             return value * 2;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith3(ulong value)
         {
-            // X64-FULL-LINE: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+2*[[REG1]]{{\]}}
+            // X64: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+2*[[REG1]]{{\]}}
             return value * 3;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith4(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 2
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 2
             return value * 4;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith5(ulong value)
         {
-            // X64-FULL-LINE: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+4*[[REG1]]{{\]}}
+            // X64: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+4*[[REG1]]{{\]}}
             return value * 5;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith6(ulong value)
         {
-            // X64-FULL-LINE: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+2*[[REG1]]{{\]}}
+            // X64:      lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+2*[[REG1]]{{\]}}
+            // X64-NEXT: add [[REG0]], [[REG0]]
             return value * 6;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith7(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 3
-            // X64-FULL-LINE-NEXT: sub [[REG0]], [[REG1]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 3
+            // X64-NEXT: sub [[REG0]], [[REG1]]
             return value * 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith8(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 3
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 3
             return value * 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith9(ulong value)
         {
-            // X64-FULL-LINE: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+8*[[REG1]]{{\]}}
+            // X64: lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+8*[[REG1]]{{\]}}
             return value * 9;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith15(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 4
-            // X64-FULL-LINE-NEXT: sub [[REG0]], [[REG1]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 4
+            // X64-NEXT: sub [[REG0]], [[REG1]]
             return value * 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith16(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 4
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 4
             return value * 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith17(ulong value)
         {
-            // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-            // X64-FULL-LINE-NEXT: shl [[REG0]], 4
-            // X64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
+            // X64:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+            // X64-NEXT: shl [[REG0]], 4
+            // X64-NEXT: add [[REG0]], [[REG1]]
             return value * 17;
         }
 
