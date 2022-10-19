@@ -15,17 +15,17 @@ import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { wrap_error_root } from "./invoke-js";
-import { startMeasure, MeasuredBlock, endMeasure } from "./performance";
+import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    const mark = startMeasure();
     try {
         const version = get_signature_version(signature);
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const args_count = get_signature_argument_count(signature);
         const js_fqn = conv_string_root(fqn_root)!;
-        const mark = startMeasure(MeasuredBlock.bindCsFunction, js_fqn);
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
         if (runtimeHelpers.diagnosticTracing) {
@@ -87,7 +87,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
-        endMeasure(mark);
+        endMeasure(mark, MeasuredBlock.bindCsFunction, js_fqn);
     }
     catch (ex: any) {
         Module.printErr(ex.toString());
@@ -101,7 +101,9 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
     (<any>closure) = null;
+    const fqn = closure.fqn;
     return function bound_fn_0V() {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2);
@@ -109,6 +111,7 @@ function bind_fn_0V(closure: BindingClosure) {
             invoke_method_and_handle_exception(method, args);
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -116,8 +119,10 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -127,6 +132,7 @@ function bind_fn_1V(closure: BindingClosure) {
             invoke_method_and_handle_exception(method, args);
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -135,8 +141,10 @@ function bind_fn_1R(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -149,6 +157,7 @@ function bind_fn_1R(closure: BindingClosure) {
             return js_result;
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -158,8 +167,10 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -173,6 +184,7 @@ function bind_fn_2R(closure: BindingClosure) {
             return js_result;
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -185,7 +197,7 @@ function bind_fn(closure: BindingClosure) {
     const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
-        const mark = startMeasure(MeasuredBlock.callCsFunction, fqn);
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2 + args_count);
@@ -206,7 +218,7 @@ function bind_fn(closure: BindingClosure) {
             }
         } finally {
             Module.stackRestore(sp);
-            endMeasure(mark);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -262,12 +274,12 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     const result = exportsByAssembly.get(assembly);
     if (!result) {
-        const mark = startMeasure(MeasuredBlock.getAssemblyExports, assembly);
+        const mark = startMeasure();
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
         cwraps.mono_wasm_runtime_run_module_cctor(asm);
-        endMeasure(mark);
+        endMeasure(mark, MeasuredBlock.getAssemblyExports, assembly);
     }
 
     return exportsByAssembly.get(assembly) || {};

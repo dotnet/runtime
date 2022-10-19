@@ -22,7 +22,7 @@ import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diag
 import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
 import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_measure, mono_wasm_timestamp } from "./performance";
+import { mono_wasm_measure, mono_wasm_timestamp } from "./profiler";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
