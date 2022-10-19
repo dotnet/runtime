@@ -3,8 +3,8 @@
 //
 
 /*
-set COMPlus_JitNoRegLoc=1
-set COMPlus_JitSched=2
+set DOTNET_JitNoRegLoc=1
+set DOTNET_JitSched=2
 */
 namespace Test
 {

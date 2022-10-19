@@ -15423,12 +15423,11 @@ GenTree* Compiler::gtNewTempAssign(
     CORINFO_CLASS_HANDLE valStructHnd = gtGetStructHandleIfPresent(val);
     if (varTypeIsStruct(varDsc) && (valStructHnd == NO_CLASS_HANDLE) && !varTypeIsSIMD(valTyp))
     {
-        // There are 2 special cases:
-        // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
-        //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
-        // in these cases, we can use the type of the merge return for the assignment.
-        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
+        // There are some cases where we do not have a struct handle on the return value:
+        // 1. Handle-less IND/BLK/LCL_FLD<struct> nodes.
+        // 2. The zero constant created by local assertion propagation.
+        // In these cases, we can use the type of the merge return for the assignment.
+        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_BLK, GT_LCL_FLD, GT_CNS_INT));
         assert(tmp == genReturnLocal);
         valStructHnd = lvaGetStruct(genReturnLocal);
         assert(valStructHnd != NO_CLASS_HANDLE);
