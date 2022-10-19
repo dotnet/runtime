@@ -24,8 +24,6 @@ class DotnetProxyTrustManager implements X509TrustManager {
     public void checkServerTrusted(X509Certificate[] chain, String authType)
         throws CertificateException
     {
-        // TODO should I use the internalTrust manager or can I drop it completely?
-
         if (!validateRemoteCertificate(dotnetValidatorHandle, chain)) {
             throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
         }

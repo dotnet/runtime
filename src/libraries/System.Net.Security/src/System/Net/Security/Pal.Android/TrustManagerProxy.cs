@@ -16,13 +16,17 @@ namespace System.Net
         private static bool s_initialized;
 
         private readonly RemoteCertificateVerification _remoteCertificateVerifier;
+        private readonly SafeDeleteSslContext _securityContext;
         private GCHandle? _handle;
 
-        public unsafe TrustManagerProxy(RemoteCertificateVerification remoteCertificateVerifier)
+        public unsafe TrustManagerProxy(
+            RemoteCertificateVerification remoteCertificateVerifier,
+            SafeDeleteSslContext securityContext)
         {
-            EnsureTrustManagerValidationCallbackIsRegistered();
+            RegisterTrustManagerValidationCallbackIfNeeded();
 
             _remoteCertificateVerifier = remoteCertificateVerifier;
+            _securityContext = securityContext;
             _handle = GCHandle.Alloc(this);
         }
 
@@ -31,7 +35,7 @@ namespace System.Net
                 ? GCHandle.ToIntPtr(handle)
                 : throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
-        private static unsafe void EnsureTrustManagerValidationCallbackIsRegistered()
+        private static unsafe void RegisterTrustManagerValidationCallbackIfNeeded()
         {
             lock (s_initializationLock)
             {
@@ -89,7 +93,7 @@ namespace System.Net
 
             try
             {
-                return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, ref chain, out _, out _);
+                return _remoteCertificateVerifier.VerifyRemoteCertificate(_securityContext, certificate, trust: null, ref chain, out _, out _);
             }
             finally
             {

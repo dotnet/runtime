@@ -504,7 +504,7 @@ namespace System.Net.Security
             }
 
 #if !TARGET_ANDROID
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+            if (!VerifyRemoteCertificate(ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;

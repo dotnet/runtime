@@ -15,19 +15,17 @@ namespace System.Net.Security
 
         private readonly SslStream _sslStream;
         private readonly SslAuthenticationOptions _sslAuthenticationOptions;
-        private readonly SafeDeleteSslContext _securityContext;
 
         public RemoteCertificateVerification(
             SslStream sslStream,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            SafeDeleteSslContext securityContext)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             _sslStream = sslStream;
             _sslAuthenticationOptions = sslAuthenticationOptions;
-            _securityContext = securityContext;
         }
 
         internal bool VerifyRemoteCertificate(
+            SafeDeleteSslContext securityContext,
             X509Certificate2? remoteCertificate,
             SslCertificateTrust? trust,
             ref X509Chain? chain,
@@ -80,7 +78,7 @@ namespace System.Net.Security
                 }
 
                 sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
-                    _securityContext,
+                    securityContext,
                     chain,
                     remoteCertificate,
                     _sslAuthenticationOptions.CheckCertName,

@@ -37,11 +37,10 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SslStream sslStream, SslAuthenticationOptions authOptions)
+        public SafeDeleteSslContext(RemoteCertificateVerification verifier, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            var verifier = new RemoteCertificateVerification(sslStream, authOptions, securityContext: this);
-            _trustManagerProxy = new TrustManagerProxy(verifier);
+            _trustManagerProxy = new TrustManagerProxy(verifier, securityContext: this);
 
             try
             {

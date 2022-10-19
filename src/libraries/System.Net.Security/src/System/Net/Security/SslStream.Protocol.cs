@@ -19,6 +19,7 @@ namespace System.Net.Security
     {
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
+        private RemoteCertificateVerification? _remoteCertificateVerifier;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -806,10 +807,16 @@ namespace System.Net.Security
                         }
                     }
 
+#if TARGET_ANDROID
+                    _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
+#endif
+
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
-                                      sslStream: this,
+#if TARGET_ANDROID
+                                      _remoteCertificateVerifier,
+#endif
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -819,7 +826,9 @@ namespace System.Net.Security
                     else
                     {
                         status = SslStreamPal.InitializeSecurityContext(
-                                       sslStream: this,
+#if TARGET_ANDROID
+                                       _remoteCertificateVerifier,
+#endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
@@ -954,7 +963,7 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatusFlags)
+        internal bool VerifyRemoteCertificate(ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatusFlags)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatusFlags = X509ChainStatusFlags.NoError;
@@ -977,9 +986,9 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
+                _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
 
-                var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
-                success = remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                success = _remoteCertificateVerifier.VerifyRemoteCertificate(_securityContext!, _remoteCertificate, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
                 if (!success)
                 {
                     alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);

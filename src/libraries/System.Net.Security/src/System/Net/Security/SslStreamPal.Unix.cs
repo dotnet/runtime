@@ -25,7 +25,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
-            SslStream sslStream,
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -36,7 +35,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            SslStream sslStream,
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
