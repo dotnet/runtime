@@ -109,7 +109,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     }
     internal override async Task<JObject> EvaluateAndCheck(
                                     string expression, string script_loc, int line, int column, string function_name,
-                                    Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
+                                    Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null)
     {
         return await SendCommandAndCheck(
                     CreateEvaluateArgs(expression),
@@ -181,7 +181,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     }
 
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE, string sessionIdStr = null)
     {
         switch (method)
         {
@@ -215,7 +215,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
             try
             {
-                await locals_fn(locals);
+                await locals_fn(locals, sessionIdStr);
             }
             catch (System.AggregateException ex)
             {
@@ -313,7 +313,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     }
 
     /* @fn_args is for use with `Runtime.callFunctionOn` only */
-    internal override async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+    internal override async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true, string sessionIdStr = null)
     {
         if (id.StartsWith("dotnet:scope:"))
         {
@@ -357,7 +357,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     }
 
     internal override async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
-    Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
+    Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null, int times = 1, string sessionIdStr = null)
     {
         JObject resumeLimit = null;
 
@@ -424,7 +424,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         return bp1_res;
     }
 
-    internal override async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
+    internal override async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true, string sessionIdStr = null)
     {
         var o = CreateEvaluateArgs(expression);
         var res = await cli.SendCommand("evaluateJSAsync", o, token);
@@ -452,7 +452,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override bool SkipProperty(string propertyName) => propertyName == "isEnum";
 
-    internal override async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "") => await Task.CompletedTask;
+    internal override async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "", string sessionIdStr = null) => await Task.CompletedTask;
 
     internal override string EvaluateCommand() => "evaluateJSAsync";
 

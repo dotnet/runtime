@@ -2843,7 +2843,11 @@ wait_for_suspend (void)
 static gboolean
 is_suspended (void)
 {
+#ifdef HOST_WASM
+	return true;
+#else	
 	return count_threads_to_wait_for () == 0;
+#endif	
 }
 
 static void

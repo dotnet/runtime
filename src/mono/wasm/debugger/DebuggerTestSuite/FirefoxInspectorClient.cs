@@ -111,7 +111,7 @@ class FirefoxInspectorClient : InspectorClient
         if (res["type"]?.Value<string>() == "newSource")
         {
             var method = res["type"]?.Value<string>();
-            return onEvent(method, res, token);
+            return onEvent("", method, res, token);
         }
 
         if (res["type"]?.Value<string>() == "target-available-form" && res["target"] is JObject target)
@@ -178,7 +178,7 @@ class FirefoxInspectorClient : InspectorClient
                     break;
                 }
             }
-            return onEvent(method, res, token);
+            return onEvent("", method, res, token);
         }
         return null;
     }

@@ -38,7 +38,7 @@ namespace DebuggerTests
             => WasmHost.Firefox;
 #endif
 
-        public static bool WasmEnableThreads 
+        public static bool WasmMultiThreaded
         {
             get
             {
@@ -48,6 +48,7 @@ namespace DebuggerTests
                 return false;
             }
         }
+        public static bool WasmSingleThreaded => !WasmMultiThreaded;
 
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
@@ -200,7 +201,7 @@ namespace DebuggerTests
         }
 
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
-            Func<JToken, Task> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
+            Func<JToken, string, Task> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -223,10 +224,10 @@ namespace DebuggerTests
                    else
                        await Task.CompletedTask;
                },
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     if (test_fn != null)
-                        await test_fn(locals);
+                        await test_fn(locals, sessionIdStr);
                 }
             );
         }
@@ -287,7 +288,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Func<JToken, string, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -304,7 +305,7 @@ namespace DebuggerTests
                 Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
 
             Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
+        
             var top_frame = pause_location!["callFrames"]?[0];
 
             var scope = top_frame?["scopeChain"]?[0];
@@ -314,8 +315,8 @@ namespace DebuggerTests
 
             if (locals_fn != null)
             {
-                var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
-                await locals_fn(locals);
+                var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>(), sessionIdStr : pause_location?["sessionId"]?.Value<string>());
+                await locals_fn(locals, pause_location?["sessionId"]?.Value<string>());
             }
         }
 
@@ -332,6 +333,12 @@ namespace DebuggerTests
         internal virtual void CheckLocationLine(JToken location, int line)
         {
             Assert.Equal(location["lineNumber"].Value<int>(), line);
+        }
+
+        internal virtual void CheckLocationLineColumn(JToken location, int line, int col)
+        {
+            CheckLocationLine(location, line);
+            Assert.Equal(location["columnNumber"].Value<int>(), col);
         }
 
         internal void CheckNumber<T>(JToken locals, string name, T value)
@@ -400,24 +407,24 @@ namespace DebuggerTests
             return l;
         }
 
-        internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
+        internal async Task CheckDateTime(JToken value, DateTime expected, string label = "", string sessionIdStr = null)
         {
             await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
-            await CheckDateTimeValue(value, expected, label);
+            await CheckDateTimeValue(value, expected, label, sessionIdStr);
         }
 
-        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label = "")
+        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label = "", string sessionIdStr = null)
         {
             var obj = GetAndAssertObjectWithName(locals, name, label);
-            await CheckDateTimeValue(obj["value"], expected, label);
+            await CheckDateTimeValue(obj["value"], expected, label, sessionIdStr);
         }
 
-        async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label = "")
+        async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label = "", string sessionIdStr = null)
         {
             AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
             AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
 
-            var members = await GetProperties(v["objectId"]?.Value<string>());
+            var members = await GetProperties(v["objectId"]?.Value<string>(), sessionIdStr : sessionIdStr);
 
             // not checking everything
             CheckNumber(members, "Year", exp_dt.Year);
@@ -428,17 +435,17 @@ namespace DebuggerTests
             CheckNumber(members, "Second", exp_dt.Second);
         }
 
-        internal virtual async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "")
+        internal virtual async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "", string sessionIdStr = null)
         {
-            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
-            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
+            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date", sessionIdStr: sessionIdStr);
+            await CheckDateTimeMembers(res.Value["result"], expected.Date, label, sessionIdStr);
         }
 
-        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label = "")
+        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label = "", string sessionIdStr = null)
         {
-            await CheckDateTimeMembers(value, expected, label);
+            await CheckDateTimeMembers(value, expected, label, sessionIdStr);
 
-            await CheckDateTimeGetter(value, expected, label);
+            await CheckDateTimeGetter(value, expected, label, sessionIdStr);
         }
 
         internal async Task<JToken> CheckBool(JToken locals, string name, bool expected)
@@ -524,7 +531,7 @@ namespace DebuggerTests
             return wait_res;
         }
 
-        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}", bool expect_ok = true, bool? returnByValue = null)
+        internal async Task<Result> InvokeGetter(JToken obj, object arguments, string fn = "function(e){return this[e]}", bool expect_ok = true, bool? returnByValue = null, string sessionIdStr = null)
         {
             var req = JObject.FromObject(new
             {
@@ -535,7 +542,7 @@ namespace DebuggerTests
             if (returnByValue != null)
                 req["returnByValue"] = returnByValue.Value;
 
-            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
+            var res = await cli.SendCommand(new SessionId(sessionIdStr), "Runtime.callFunctionOn", req, token);
             Assert.True(expect_ok == res.IsOk, $"InvokeGetter failed for {req} with {res}");
 
             return res;
@@ -557,23 +564,24 @@ namespace DebuggerTests
         }
 
         internal virtual async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null, int times = 1, string sessionIdStr = null)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
             for (int i = 0; i < times - 1; i++)
             {
-                await SendCommandAndCheck(null, method, null, -1, -1, null);
+                await SendCommandAndCheck(null, method, null, -1, -1, null, sessionIdStr : sessionIdStr);
             }
 
             // Check for method/line etc only at the last step
             return await SendCommandAndCheck(
                 null, method, script_loc, line, column, function_name,
                 wait_for_event_fn: wait_for_event_fn,
-                locals_fn: locals_fn);
+                locals_fn: locals_fn, 
+                sessionIdStr : sessionIdStr);
         }
 
-        internal async Task<JObject> SetNextIPAndCheck(string script_id, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, bool expected_error = false)
+        internal async Task<JObject> SetNextIPAndCheck(string sessionIdStr, string script_id, string script_loc, int line, int column, string function_name,
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null, bool expected_error = false)
         {
             var setNextIPArgs = JObject.FromObject(new
                 {
@@ -587,17 +595,18 @@ namespace DebuggerTests
                 return await SendCommandAndCheck(
                     JObject.FromObject(new { location = setNextIPArgs }), "DotnetDebugger.setNextIP", script_loc, line, column, function_name,
                     wait_for_event_fn: wait_for_event_fn,
-                    locals_fn: locals_fn);
+                    locals_fn: locals_fn,
+                    sessionIdStr: sessionIdStr);
             }
 
-            var res = await cli.SendCommand("DotnetDebugger.setNextIP", JObject.FromObject(new { location = setNextIPArgs }), token);
+            var res = await cli.SendCommand(new SessionId(sessionIdStr), "DotnetDebugger.setNextIP", JObject.FromObject(new { location = setNextIPArgs }), token);
             Assert.False(res.IsOk);
             return JObject.FromObject(res);
         }
 
         internal virtual async Task<JObject> EvaluateAndCheck(
                                         string expression, string script_loc, int line, int column, string function_name,
-                                        Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
+                                        Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null)
             => await SendCommandAndCheck(
                         CreateEvaluateArgs(expression),
                         "Runtime.evaluate", script_loc, line, column, function_name,
@@ -605,9 +614,9 @@ namespace DebuggerTests
                         locals_fn: locals_fn);
 
         internal virtual async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, string, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE, string sessionIdStr = null)
         {
-            var res = await cli.SendCommand(method, args, token);
+            var res = await cli.SendCommand(new SessionId(sessionIdStr), method, args, token);
             if (!res.IsOk)
             {
                 _testOutput.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
@@ -629,10 +638,10 @@ namespace DebuggerTests
 
             if (locals_fn != null)
             {
-                var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
+                var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr : wait_res["sessionId"].Value<string>());
                 try
                 {
-                    await locals_fn(locals);
+                    await locals_fn(locals, sessionIdStr);
                 }
                 catch (System.AggregateException ex)
                 {
@@ -693,7 +702,7 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task CheckCustomType(JToken actual_val, JToken exp_val, string label)
+        internal async Task CheckCustomType(JToken actual_val, JToken exp_val, string label, string sessionIdStr = null)
         {
             var ctype = exp_val["__custom_type"].Value<string>();
             switch (ctype)
@@ -755,7 +764,7 @@ namespace DebuggerTests
                 case "datetime":
                     {
                         var dateTime = DateTime.FromBinary(exp_val["binary"].Value<long>());
-                        await CheckDateTime(actual_val, dateTime, label);
+                        await CheckDateTime(actual_val, dateTime, label, sessionIdStr : sessionIdStr);
                         break;
                     }
 
@@ -768,7 +777,7 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1, bool skip_num_fields_check = false)
+        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1, bool skip_num_fields_check = false, string sessionIdStr = null)
         {
             if (exp_o.GetType().IsArray || exp_o is JArray)
             {
@@ -841,7 +850,7 @@ namespace DebuggerTests
                 }
                 else
                 {
-                    await CheckValue(actual_obj["value"], exp_val, $"{label}#{exp_name}");
+                    await CheckValue(actual_obj["value"], exp_val, $"{label}#{exp_name}", sessionIdStr: sessionIdStr);
                 }
             }
         }
@@ -851,11 +860,11 @@ namespace DebuggerTests
             return false;
         }
 
-        internal async Task CheckValue(JToken actual_val, JToken exp_val, string label)
+        internal async Task CheckValue(JToken actual_val, JToken exp_val, string label, string sessionIdStr = null)
         {
             if (exp_val["__custom_type"] != null)
             {
-                await CheckCustomType(actual_val, exp_val, label);
+                await CheckCustomType(actual_val, exp_val, label, sessionIdStr : sessionIdStr);
                 return;
             }
 
@@ -940,8 +949,9 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+        internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true, string sessionIdStr = null)
         {
+            var sessionId = new SessionId(sessionIdStr);
             if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
                 var fn_decl = "function () { return this; }";
@@ -953,7 +963,7 @@ namespace DebuggerTests
                 if (fn_args != null)
                     cfo_args["arguments"] = fn_args;
 
-                var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+                var result = await cli.SendCommand(sessionId, "Runtime.callFunctionOn", cfo_args, token);
                 AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString()}, with Result: {result}");
                 if (!result.IsOk)
                     return null;
@@ -973,7 +983,7 @@ namespace DebuggerTests
                 get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
             }
 
-            var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
+            var frame_props = await cli.SendCommand(sessionId,"Runtime.getProperties", get_prop_req, token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
             if (!frame_props.IsOk)
                 return null;
@@ -1060,7 +1070,7 @@ namespace DebuggerTests
             return (locals, locals_private);
         }
 
-        internal virtual async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
+        internal virtual async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true, string sessionIdStr = null)
         {
             var evaluate_req = JObject.FromObject(new
             {
@@ -1068,7 +1078,7 @@ namespace DebuggerTests
                 expression = expression
             });
 
-            var res = await cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, token);
+            var res = await cli.SendCommand(new SessionId(sessionIdStr), "Debugger.evaluateOnCallFrame", evaluate_req, token);
             AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
             if (res.IsOk)
                 return (res.Value["result"], res);
@@ -1172,11 +1182,11 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
+        internal async Task EvaluateOnCallFrameAndCheck(string call_frame_id, string sessionIdStr, params (string expression, JObject expected)[] args)
         {
             foreach (var arg in args)
             {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression).ConfigureAwait(false);
+                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression, sessionIdStr : sessionIdStr).ConfigureAwait(false);
                 try
                 {
                     await CheckValue(eval_val, arg.expected, arg.expression);

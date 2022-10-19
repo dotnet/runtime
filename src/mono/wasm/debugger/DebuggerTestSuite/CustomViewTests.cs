@@ -65,7 +65,7 @@ namespace DebuggerTests
             props = await GetObjectOnFrame(frame, "openWith");
             Assert.Equal(1, props.Count());
 
-            await EvaluateOnCallFrameAndCheck(frame["callFrameId"].Value<string>(),
+            await EvaluateOnCallFrameAndCheck(frame["callFrameId"].Value<string>(), sessionIdStr : pause_location["sessionId"].Value<string>(),
                 ("listToTestToList.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11")));
 
         }
@@ -119,7 +119,7 @@ namespace DebuggerTests
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                    await EvaluateOnCallFrameAndCheck(id,
+                    await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                         ("a", TObject("ToStringOverriden", description:"helloToStringOverriden")),
                         ("b", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
                         ("c", TObject("ToStringOverriden.ToStringOverridenD", description:"helloToStringOverridenD")),

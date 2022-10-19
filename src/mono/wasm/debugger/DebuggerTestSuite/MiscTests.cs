@@ -68,7 +68,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd",
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 use_cfo: use_cfo,
-                test_fn: async (locals) =>
+                test_fn: async (locals, sessionIdStr) =>
                 {
                     CheckNumber(locals, "a", 10);
                     CheckNumber(locals, "b", 20);
@@ -84,7 +84,7 @@ namespace DebuggerTests
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "Math.PrimitiveTypesTest",
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
-                test_fn: async (locals) =>
+                test_fn: async (locals, sessionIdStr) =>
                 {
                     await CheckSymbol(locals, "c0", '€');
                     await CheckSymbol(locals, "c1", 'A');
@@ -98,7 +98,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Fancy.Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
-                test_fn: async (locals) =>
+                test_fn: async (locals, sessionIdStr) =>
                 {
                     CheckNumber(locals, "dPI", Math.PI);
                     CheckNumber(locals, "fPI", (float)Math.PI);
@@ -204,7 +204,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 74, 8, "Math.GenericTypesTest",
                 "window.setTimeout(function() { invoke_generic_types_test (); }, 1);",
                 use_cfo: use_cfo,
-                test_fn: async (locals) =>
+                test_fn: async (locals, sessionIdStr) =>
                 {
                     await CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     await CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
@@ -867,7 +867,7 @@ namespace DebuggerTests
             $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr: pause_location["sessionId"].Value<string>());
                 CheckNumber(locals, "a", 10);
 
                 var t_props = await GetObjectOnLocals(locals, "t");
@@ -885,7 +885,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] MainPage:CallSetValue'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 758, 16,
                 "MainPage.set_SomeValue",
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     CheckNumber(locals, "view", 150);
                     await Task.CompletedTask;
@@ -1034,7 +1034,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 1258, 8,
                 $"InspectIntPtr.Run",
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     await CheckValueType(locals, "myInt", "System.IntPtr");
                     await CheckValueType(locals, "myInt2", "System.IntPtr");
@@ -1058,7 +1058,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", line, 8,
                 $"{class_name}.CallMethod",
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     var this_props = await GetObjectOnLocals(locals, "this");
                     if (jmc)
@@ -1117,13 +1117,13 @@ namespace DebuggerTests
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                    await EvaluateOnCallFrameAndCheck(id,
+                    await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                         ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
                     );
                 }
             );
             await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
                 }

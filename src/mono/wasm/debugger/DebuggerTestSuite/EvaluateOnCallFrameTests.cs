@@ -56,7 +56,7 @@ namespace DebuggerTests
                foreach (var pad in new[] { String.Empty, "  " })
                {
                    var padded_prefix = pad + prefix;
-                   await EvaluateOnCallFrameAndCheck(id,
+                   await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        ($"{padded_prefix}a", TNumber(4)),
 
                        // fields
@@ -87,7 +87,7 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                var DTProp = new DateTime(2010, 9, 8, 7, 6, 5).AddMinutes(10);
                _testOutput.WriteLine ($"------- test running the bits..");
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("g", TNumber(400)),
                    ("h", TNumber(123)),
                    ("valString", TString("just a test")),
@@ -114,7 +114,7 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                var dt = new DateTime(2025, 3, 5, 7, 9, 11);
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("  d ", TNumber(401)),
                    ("d", TNumber(401)),
                    (" d", TNumber(401)),
@@ -137,7 +137,7 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("f_s.c", TNumber(4)),
                    ("f_s", TValueType("DebuggerTests.EvaluateTestsStructWithProperties")),
 
@@ -169,7 +169,7 @@ namespace DebuggerTests
                        PointWithCustomGetter = TGetter("PointWithCustomGetter")
                    }, "sc_arg_props#1");
 
-                   await EvaluateOnCallFrameAndCheck(id,
+                   await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        ("(sc_arg.PointWithCustomGetter.X)", TNumber(100)),
                        ("sc_arg.Id + \"_foo\"", TString($"sc#Id_foo")),
                        ("sc_arg.Id + (sc_arg.X==10 ? \"_is_ten\" : \"_not_ten\")", TString($"sc#Id_is_ten")));
@@ -190,7 +190,7 @@ namespace DebuggerTests
                        Color = TEnum("DebuggerTests.RGB", "Red"),
                        Value = TNumber(0)
                    }, "local_gs_props#1");
-                   await EvaluateOnCallFrameAndCheck(id, ("(local_gs.Id)", TString(null)));
+                   await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(), ("(local_gs.Id)", TString(null)));
                }
            });
 
@@ -207,7 +207,7 @@ namespace DebuggerTests
                var dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
                var DTProp = dateTime.AddMinutes(10);
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ($"{prefix}a + 5", TNumber(9)),
                    ($"10 + {prefix}IntProp", TNumber(19)),
                    ($" {prefix}IntProp  +  {prefix}DTProp.Second", TNumber(9 + DTProp.Second)),
@@ -232,7 +232,7 @@ namespace DebuggerTests
                foreach (var pad in new[] { String.Empty, "  " })
                {
                    var padded_prefix = pad + prefix;
-                   await EvaluateOnCallFrameAndCheck(id,
+                   await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        // overridden
                        ($"{padded_prefix}FirstName + \"_foo\"", TString("DerivedClass#FirstName_foo")),
                        ($"{padded_prefix}DateTimeForOverride.Date.Year", TNumber(2190)),
@@ -261,7 +261,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    // "((this))", TObject("foo")); //FIXME:
                    // "((dt))", TObject("foo")); //FIXME:
 
@@ -303,7 +303,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("a", TString("hello")),
                    ("this.a", TNumber(4)));
 
@@ -312,7 +312,7 @@ namespace DebuggerTests
 
                async Task CheckExpressions(string prefix, DateTime dateTime)
                {
-                   await EvaluateOnCallFrameAndCheck(id,
+                   await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        (prefix + "dateTime", TDateTime(dateTime)),
                        (prefix + "dateTime.TimeOfDay.Minutes", TNumber(dateTime.TimeOfDay.Minutes)),
                        (prefix + "dateTime.TimeOfDay", TValueType("System.TimeSpan", dateTime.TimeOfDay.ToString())));
@@ -333,22 +333,22 @@ namespace DebuggerTests
                // At EvaluateShadow
                {
                    var id0 = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                   await EvaluateOnCallFrameAndCheck(id0,
+                   await EvaluateOnCallFrameAndCheck(id0, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        ("dateTime", TDateTime(dt_local)),
                        ("this.dateTime", TDateTime(dt_this))
                    );
 
-                   await EvaluateOnCallFrameFail(id0, ("obj.IntProp", "ReferenceError"));
+                   await EvaluateOnCallFrameFail(id0, sessionIdStr : pause_location["sessionId"].Value<string>(), ("obj.IntProp", "ReferenceError"));
                }
 
                {
                    var id1 = pause_location["callFrames"][1]["callFrameId"].Value<string>();
-                   await EvaluateOnCallFrameFail(id1,
+                   await EvaluateOnCallFrameFail(id1, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        ("dateTime", "ReferenceError"),
                        ("this.dateTime", "ReferenceError"));
 
                    // obj available only on the -1 frame
-                   await EvaluateOnCallFrameAndCheck(id1, ("obj.IntProp", TNumber(7)));
+                   await EvaluateOnCallFrameAndCheck(id1, sessionIdStr : pause_location["sessionId"].Value<string>(), ("obj.IntProp", TNumber(7)));
                }
 
                await SetBreakpointInMethod("debugger-test.dll", type_name, "SomeMethod", 1);
@@ -363,7 +363,7 @@ namespace DebuggerTests
                    var id0 = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                    // 'me' and 'dateTime' are reversed in this method
-                   await EvaluateOnCallFrameAndCheck(id0,
+                   await EvaluateOnCallFrameAndCheck(id0, sessionIdStr : pause_location["sessionId"].Value<string>(),
                       ("dateTime", is_valuetype ? TValueType(type_name) : TObject(type_name)),
                       ("this.dateTime", TDateTime(dt_this)),
                       ("me", TDateTime(dt_local)),
@@ -374,14 +374,14 @@ namespace DebuggerTests
                       // access field via `this.`
                       ("this.DTProp", TDateTime(dt_this.AddMinutes(10))));
 
-                   await EvaluateOnCallFrameFail(id0, ("obj", "ReferenceError"));
+                   await EvaluateOnCallFrameFail(id0, sessionIdStr : pause_location["sessionId"].Value<string>(), ("obj", "ReferenceError"));
                }
 
                // check frame1
                {
                    var id1 = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
-                   await EvaluateOnCallFrameAndCheck(id1,
+                   await EvaluateOnCallFrameAndCheck(id1, sessionIdStr : pause_location["sessionId"].Value<string>(),
                        // 'me' and 'dateTime' are reversed in this method
                        ("dateTime", TDateTime(dt_local)),
                        ("this.dateTime", TDateTime(dt_this)),
@@ -393,7 +393,7 @@ namespace DebuggerTests
                        // access field via `this.`
                        ("this.DTProp", TDateTime(dt_this.AddMinutes(10))));
 
-                   await EvaluateOnCallFrameFail(id1, ("obj", "ReferenceError"));
+                   await EvaluateOnCallFrameFail(id1, sessionIdStr : pause_location["sessionId"].Value<string>(), ("obj", "ReferenceError"));
                }
 
                // check frame2
@@ -401,12 +401,12 @@ namespace DebuggerTests
                    var id2 = pause_location["callFrames"][2]["callFrameId"].Value<string>();
 
                    // Only obj should be available
-                   await EvaluateOnCallFrameFail(id2,
+                   await EvaluateOnCallFrameFail(id2, sessionIdStr : pause_location["sessionId"].Value<string>(),
                       ("dateTime", "ReferenceError"),
                       ("this.dateTime", "ReferenceError"),
                       ("me", "ReferenceError"));
 
-                   await EvaluateOnCallFrameAndCheck(id2, ("obj", is_valuetype ? TValueType(type_name) : TObject(type_name)));
+                   await EvaluateOnCallFrameAndCheck(id2, sessionIdStr : pause_location["sessionId"].Value<string>(), ("obj", is_valuetype ? TValueType(type_name) : TObject(type_name)));
                }
            });
 
@@ -425,7 +425,7 @@ namespace DebuggerTests
 
             var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-            await EvaluateOnCallFrameFail(id,
+            await EvaluateOnCallFrameFail(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                 ("me.foo", null),
                 ("obj.foo.bar", null));
 
@@ -441,7 +441,7 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                // Use '.' on a primitive member
-               await EvaluateOnCallFrameFail(id,
+               await EvaluateOnCallFrameFail(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                   //BUG: TODO:
                   //("a)", "CompilationError"),
 
@@ -467,7 +467,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameFail(id,
+               await EvaluateOnCallFrameFail(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("me.foo", "ReferenceError"),
                    ("this", "CompilationError"),
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
@@ -481,14 +481,14 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id, ("this.PropertyThrowException", TString("System.Exception: error")));
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(), ("this.PropertyThrowException", TString("System.Exception: error")));
             });
 
-        async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
+        async Task EvaluateOnCallFrameFail(string call_frame_id, string sessionIdStr, params (string expression, string class_name)[] args)
         {
             foreach (var arg in args)
             {
-                var (_, res) = await EvaluateOnCallFrame(call_frame_id, arg.expression, expect_ok: false);
+                var (_, res) = await EvaluateOnCallFrame(call_frame_id, arg.expression, expect_ok: false, sessionIdStr: sessionIdStr);
                 if (arg.class_name != null)
                     AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
             }
@@ -531,7 +531,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("this.CallMethod()", TNumber(1)),
                     ("this.CallMethod()", TNumber(1)),
                     ("this.CallMethodReturningChar()", TChar('A')),
@@ -549,7 +549,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("this.CallMethodWithParm(10)", TNumber(11)),
                     ("this.CallMethodWithMultipleParms(10, 10)", TNumber(21)),
                     ("this.CallMethodWithParmBool(true)", TString("TRUE")),
@@ -573,7 +573,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("this.CallMethodWithParm(this.a)", TNumber(2)),
                     ("this.CallMethodWithMultipleParms(this.a, 10)", TNumber(12)),
                     ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
@@ -604,7 +604,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("f.numList[0]", TNumber(1)),
                    ("f.textList[1]", TString("2")),
                    ("f.numArray[1]", TNumber(2)),
@@ -619,7 +619,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("f.numList[i]", TNumber(1)),
                    ("f.textList[j]", TString("2")),
                    ("f.numArray[j]", TNumber(2)),
@@ -634,7 +634,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("f.numList[i + 1]", TNumber(2)),
                     ("f.textList[(2 * j) - 1]", TString("2")),
                     ("f.textList[j - 1]", TString("1")),
@@ -650,7 +650,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("f.numArray2D[0, j - 1]", TNumber(1)), // 0, 0
                     ("f.numArray2D[f.idx1, i + j]", TNumber(4)), // 1, 1
                     ("f.numArray2D[(f.idx1 - j) * 5, i + j]", TNumber(2)), // 0, 1
@@ -690,7 +690,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("f.idx0", TNumber(0)),
                    ("f.idx1", TNumber(1)),
                    ("f.numList[f.idx0]", TNumber(1)),
@@ -707,7 +707,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("f.idx0", TNumber(0)),
                    ("f.numList[f.numList[f.idx0]]", TNumber(2)),
                    ("f.textList[f.numList[f.idx0]]", TString("2")),
@@ -724,7 +724,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("j", TNumber(1)),
                    ("f.idx1", TNumber(1)),
                    ("f.numArray2D[0, 0]", TNumber(1)),
@@ -789,7 +789,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("j", TNumber(1)),
                    ("f.idx1", TNumber(1)),
                    ("f.numArrayOfArrays[1][1]", TNumber(2)),
@@ -819,7 +819,7 @@ namespace DebuggerTests
                var props = await GetObjectOnFrame(frame, "this");
                CheckNumber(props, "a", 1);
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("this.CallMethodChangeValue()", TObject("object", is_null : true)));
 
                frame = pause_location["callFrames"][0];
@@ -845,7 +845,7 @@ namespace DebuggerTests
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     foreach (var pad in new[] { String.Empty, "  " })
                     {
-                        await EvaluateOnCallFrameAndCheck(id,
+                        await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                             ($"{pad}{namespaceName}.{className}.StaticField", TNumber(expectedInt * 10)),
                             ($"{pad}{namespaceName}{pad}.{className}.{pad}StaticProperty", TString($"StaticProperty{expectedInt}")),
                             ($"{namespaceName}.{pad}{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
@@ -868,7 +868,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 foreach (var pad in new[] { String.Empty, "  " })
                 {
-                    await EvaluateOnCallFrameAndCheck(id,
+                    await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                         ($"{pad}DebuggerTests{pad}.EvaluateStaticFieldsInStaticClass.NestedClass1.{pad}NestedClass2.NestedClass3.{pad}StaticField", TNumber(3)),
                         ($"{pad}DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty", TString("StaticProperty3")),
                         ($"{pad}{pad}DebuggerTests.{pad}EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.{pad}StaticPropertyWithError", TString("System.Exception: not implemented 3")),
@@ -887,7 +887,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 foreach (var pad in new[] { String.Empty, "  " })
                 {
-                    await EvaluateOnCallFrameAndCheck(id,
+                    await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                         ($"{pad}NoNamespaceClass.NestedClass1.NestedClass2.{pad}NestedClass3.StaticField", TNumber(30)),
                         ($"NoNamespaceClass.NestedClass1.{pad}NestedClass2.NestedClass3.StaticProperty", TString("StaticProperty30")),
                         ($"NoNamespaceClass.{pad}NestedClass1.NestedClass2.NestedClass3.{pad}StaticPropertyWithError", TString("System.Exception: not implemented 30")));
@@ -903,7 +903,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 foreach (var pad in new[] { String.Empty, "  " })
                 {
-                    await EvaluateOnCallFrameAndCheck(id,
+                    await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                         ($"{pad}NestedWithSameNames", TNumber(90)),
                         ($"B.{pad}NestedWithSameNames", TNumber(90)),
                         ($"{pad}B.{pad}StaticField", TNumber(40)),
@@ -943,7 +943,7 @@ namespace DebuggerTests
 
                     foreach (var pad in new[] { String.Empty, "  " })
                     {
-                        await EvaluateOnCallFrameAndCheck(id_top,
+                        await EvaluateOnCallFrameAndCheck(id_top, sessionIdStr : pause_location["sessionId"].Value<string>(),
                             ($"{pad}StaticField", TNumber(20)),
                             ($"{pad}{namespaceName}.{pad}{className}.StaticField{pad}", TNumber(expectedInt * 10)),
                             ($"{pad}StaticProperty", TString($"StaticProperty2")),
@@ -954,14 +954,14 @@ namespace DebuggerTests
 
                         if (!isFromDifferentNamespace)
                         {
-                            await EvaluateOnCallFrameAndCheck(id_top,
+                            await EvaluateOnCallFrameAndCheck(id_top, sessionIdStr : pause_location["sessionId"].Value<string>(),
                                 ($"{pad}{className}.StaticField", TNumber(expectedInt * 10)),
                                 ($"{className}{pad}.StaticProperty{pad}", TString($"StaticProperty{expectedInt}")),
                                 ($"{className}{pad}.{pad}StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}"))
                             );
                         }
 
-                        await EvaluateOnCallFrameAndCheck(id_second,
+                        await EvaluateOnCallFrameAndCheck(id_second, sessionIdStr : pause_location["sessionId"].Value<string>(),
                             ($"{pad}{namespaceName}.{pad}{className}.{pad}StaticField", TNumber(expectedInt * 10)),
                             ($"{pad}{className}.StaticField", TNumber(expectedIntInPrevFrame * 10)),
                             ($"{namespaceName}{pad}.{pad}{className}.StaticProperty", TString($"StaticProperty{expectedInt}")),
@@ -1000,15 +1000,15 @@ namespace DebuggerTests
            "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
            wait_for_event_fn: async (pause_location) =>
            {
-               var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+               var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr: pause_location["sessionId"].Value<string>());
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+               await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ($"t.Status", TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion")),
                    ($"  t.Status", TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"))
                );
 
-               await EvaluateOnCallFrameFail(id,
+               await EvaluateOnCallFrameFail(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("str", "ReferenceError"),
                    ("  str", "ReferenceError")
                );
@@ -1266,7 +1266,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("test.GetByte()", TNumber(1)),
                    ("test.GetSByte()", TNumber(1)),
                    ("test.GetByteNullable()", TNumber(1)),
@@ -1324,7 +1324,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
                    );
             });
@@ -1339,7 +1339,7 @@ namespace DebuggerTests
 
                 // we have no way of returning int? for null values,
                 // so we return the last non-null class name
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("list.Count", TNumber(1)),
                    ("list!.Count", TNumber(1)),
                    ("list?.Count", TNumber(1)),
@@ -1395,7 +1395,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("test.propInt.ToString()", TString("12")),
                     ("test.propUint.ToString()", TString("12")),
                     ("test.propLong.ToString()", TString("12")),
@@ -1434,7 +1434,7 @@ namespace DebuggerTests
 
                 // expected value depends on the debugger's user culture and is equal to
                 // description of the number that also respects user's culture settings
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("test.propFloat.ToString()", TString(floatMemberVal["description"]?.Value<string>())),
                     ("test.propDouble.ToString()", TString(doubleMemberVal["description"]?.Value<string>())),
 
@@ -1472,7 +1472,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("localString", TString($"{pauseMethod}()")),
                     ("this", TObject("DIMClass")),
                     ("this.dimClassMember", TNumber(123)));
@@ -1488,7 +1488,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                     ("localString", TString($"{pauseMethod}()")),
                     ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")),
                     ("defaultInterfaceMember", TString("defaultInterfaceMember"))
@@ -1502,7 +1502,7 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id, sessionIdStr : pause_location["sessionId"].Value<string>(),
                    ("localString.Length", TNumber(5)),
                    ("localString[1]", TChar('B')),
                    ("instance.str.Length", TNumber(5)),

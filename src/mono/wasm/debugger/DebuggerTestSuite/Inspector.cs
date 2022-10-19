@@ -101,13 +101,13 @@ namespace DebuggerTests
                 notifications.Remove(what, out _);
         }
 
-        void NotifyOf(string what, JObject args)
+        void NotifyOf(string what, string sessionId, JObject args)
         {
+            args.Add("sessionId", sessionId);
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
             {
                 if (tcs.Task.IsCompleted)
                     throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
-
                 notifications[what].SetResult(args);
                 notifications.Remove(what, out _);
             }
@@ -194,31 +194,34 @@ namespace DebuggerTests
             return ($"console.{type}: {output}", type);
         }
 
-        async Task OnMessage(string method, JObject args, CancellationToken token)
+        async Task OnMessage(string sessionId, string method, JObject args, CancellationToken token)
         {
             bool fail = false;
             switch (method)
             {
                 case "Target.attachedToTarget":
                 {
-                    var sessionId = new SessionId(args["sessionId"]?.Value<string>());
-                    await Client.SendCommand(sessionId, "Profiler.enable", null, token);
-                    await Client.SendCommand(sessionId, "Runtime.enable", null, token);
-                    await Client.SendCommand(sessionId, "Debugger.enable", null, token);
-                    await Client.SendCommand(sessionId, "Runtime.runIfWaitingForDebugger", null, token);
-                    await Client.SendCommand(sessionId, "Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32}), token);
+                    var sessionIdNewTarget = new SessionId(args["sessionId"]?.Value<string>());
+                    await Client.SendCommand(sessionIdNewTarget, "Profiler.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Runtime.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Debugger.enable", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Runtime.runIfWaitingForDebugger", null, token);
+                    await Client.SendCommand(sessionIdNewTarget, "Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32}), token);
                     break;
                 }
                 case "Debugger.paused":
-                    NotifyOf(PAUSE, args);
+                {
+                    Console.WriteLine($"debugger.paused - {sessionId}");
+                    NotifyOf(PAUSE, sessionId, args);
                     break;
+                }
                 case "Mono.runtimeReady":
                 {
                     _gotRuntimeReady = true;
                     if (_gotAppReady || !DebuggerTestBase.RunningOnChrome)
                     {
                         // got both the events
-                        NotifyOf(APP_READY, args);
+                        NotifyOf(APP_READY, sessionId, args);
                     }
                     break;
                 }
@@ -242,7 +245,7 @@ namespace DebuggerTests
                         if (_gotRuntimeReady)
                         {
                             // got both the events
-                            NotifyOf(APP_READY, args);
+                            NotifyOf(APP_READY, sessionId, args);
                         }
                     }
 

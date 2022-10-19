@@ -589,7 +589,7 @@ namespace DebuggerTests
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
-            locals_fn: async (locals) =>
+            locals_fn: async (locals, sessionIdStr) =>
             {
                 var this_obj = GetAndAssertObjectWithName(locals, "this");
                 var this_obj_id = this_obj["value"]?["objectId"]?.Value<string>();

@@ -1148,6 +1148,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         else if (event_kind == EventKind.Breakpoint)
                             context.PauseKind = "breakpoint";
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        if (bp == null && context.ParentContext != null)
+                        {
+                            bp = context.ParentContext.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        }
                         if (request_id == context.TempBreakpointForSetNextIP)
                         {
                             context.TempBreakpointForSetNextIP = -1;

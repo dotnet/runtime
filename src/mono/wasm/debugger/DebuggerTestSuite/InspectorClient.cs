@@ -18,7 +18,7 @@ namespace DebuggerTests
     internal class InspectorClient : DevToolsClient
     {
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        protected Func<string, JObject, CancellationToken, Task> onEvent;
+        protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
 
         public InspectorClient(ILogger logger) : base(logger) { }
@@ -34,7 +34,7 @@ namespace DebuggerTests
             var res = JObject.Parse(msg);
 
             if (res["id"] == null)
-                return onEvent(res["method"].Value<string>(), res["params"] as JObject, token);
+                return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
@@ -51,7 +51,7 @@ namespace DebuggerTests
 
         public virtual async Task Connect(
             Uri uri,
-            Func<string, JObject, CancellationToken, Task> onEvent,
+            Func<string, string, JObject, CancellationToken, Task> onEvent,
             CancellationTokenSource cts)
         {
             this.onEvent = onEvent;

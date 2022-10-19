@@ -57,7 +57,7 @@ namespace DebuggerTests
 
             // 1) check un-assigned variables
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, methodName,
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     int numLocals = locals.Count();
                     if (numLocals != 2)
@@ -69,7 +69,7 @@ namespace DebuggerTests
 
             // 2) check assigned variables
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, methodName, times: 3,
-                locals_fn: async (locals) =>
+                locals_fn: async (locals, sessionIdStr) =>
                 {
                     int numLocals = locals.Count();
                     if (numLocals != 2)
