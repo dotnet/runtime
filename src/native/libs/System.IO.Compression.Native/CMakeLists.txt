@@ -109,11 +109,11 @@ else ()
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)
+        add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
         add_library(System.IO.Compression.Native
             SHARED
             ${NATIVECOMPRESSION_SOURCES}
             System.IO.Compression.Native.def
-            # This will add versioning to the library
             ${VERSION_FILE_RC_PATH}
         )
     endif ()

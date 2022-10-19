@@ -2940,7 +2940,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 {
                     GenTree* notNode   = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
                     op1->AsOp()->gtOp1 = notNode;
-                    BlockRange().InsertBefore(andOp2, notNode);
+                    BlockRange().InsertAfter(andOp1, notNode);
                 }
 
                 cmpUse.ReplaceWith(op1);
@@ -3719,6 +3719,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             }
             break;
 
+        case GT_BLK:
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
             FALLTHROUGH;

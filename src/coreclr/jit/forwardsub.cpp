@@ -660,33 +660,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // We may sometimes lose or change a type handle. Avoid substituting if so.
-    //
-    // However, we allow free substitution of hardware SIMD types.
-    //
-    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
-    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
-    if (fwdHnd != useHnd)
-    {
-        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
-        {
-            JITDUMP(" would add/remove struct handle (substitution)\n");
-            return false;
-        }
-
-#ifdef FEATURE_SIMD
-        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
-#else
-        const bool bothHWSIMD = false;
-#endif
-
-        if (!bothHWSIMD)
-        {
-            JITDUMP(" would change struct handle (substitution)\n");
-            return false;
-        }
-    }
-
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //

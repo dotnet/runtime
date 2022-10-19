@@ -2273,7 +2273,8 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
 		if (mono_class_is_interface (iface_class)) {
-			ioffset = mono_class_interface_offset (info->klass, iface_class);
+			gboolean variance_used;
+			ioffset = mono_class_interface_offset_with_variance (info->klass, iface_class, &variance_used);
 			g_assert (ioffset != -1);
 		} else {
 			ioffset = 0;

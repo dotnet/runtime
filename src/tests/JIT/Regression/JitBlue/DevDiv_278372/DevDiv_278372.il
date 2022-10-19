@@ -12,7 +12,7 @@
 // In this case, genFnProlog was attempting to zero-init V on the stack.
 //
 // It was difficult to construct a repro; this repro requires that the test
-// be run with COMPlus_JitStressRegs=0x200 (which changes the location of
+// be run with DOTNET_JitStressRegs=0x200 (which changes the location of
 // variables at block boundaries).
 
 
