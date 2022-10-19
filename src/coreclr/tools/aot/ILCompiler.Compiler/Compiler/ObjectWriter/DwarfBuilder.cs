@@ -32,7 +32,7 @@ namespace ILCompiler.ObjectWriter
         private List<DwarfDIESubprogram> _memberFunctions = new();
         private Dictionary<TypeFlags, uint> _primitiveDwarfTypes = new();
         private Dictionary<(uint, uint), uint> _simpleArrayDwarfTypes = new(); // (elementTypeIndex, size) -> arrayTypeIndex
-        //std::vector<DwarfClassTypeInfo*> ClassesWithStaticFields;
+        private List<(DwarfDIEMember, StaticDataFieldDescriptor)> _staticFields = new();
 
         public DwarfFile DwarfFile => _dwarfFile;
 
@@ -146,11 +146,22 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                _rootDIE.AddChild(new DwarfDIEPointerType
+                if (pointerDescriptor.IsReference == 1)
                 {
-                    Type = _rootDIE.Children[(int)pointerDescriptor.ElementType - 1],
-                    ByteSize = pointerDescriptor.Is64Bit == 1 ? 8 : 4,
-                });
+                    _rootDIE.AddChild(new DwarfDIEReferenceType
+                    {
+                        Type = _rootDIE.Children[(int)pointerDescriptor.ElementType - 1],
+                        ByteSize = pointerDescriptor.Is64Bit == 1 ? 8 : 4,
+                    });
+                }
+                else
+                {
+                    _rootDIE.AddChild(new DwarfDIEPointerType
+                    {
+                        Type = _rootDIE.Children[(int)pointerDescriptor.ElementType - 1],
+                        ByteSize = pointerDescriptor.Is64Bit == 1 ? 8 : 4,
+                    });
+                }
             }
 
             return (uint)_rootDIE.Children.Count;
@@ -297,19 +308,30 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
+            int staticIndex = 0;
             foreach (DataFieldDescriptor fieldDescriptor in fields)
             {
+                _dwarfFile.StringTable.GetOrCreateString(fieldDescriptor.Name);
+
+                var member = new DwarfDIEMember
+                {
+                    Name = fieldDescriptor.Name,
+                    Type = _rootDIE.Children[(int)fieldDescriptor.FieldTypeIndex - 1],
+                };
+
                 if (fieldDescriptor.Offset != 0xFFFFFFFFu)
                 {
-                    _dwarfFile.StringTable.GetOrCreateString(fieldDescriptor.Name);
-
-                    classType.AddChild(new DwarfDIEMember
-                    {
-                        Name = fieldDescriptor.Name,
-                        Type = _rootDIE.Children[(int)fieldDescriptor.FieldTypeIndex - 1],
-                        DataMemberLocation = new DwarfLocation((int)fieldDescriptor.Offset),
-                    });
+                    member.DataMemberLocation = new DwarfLocation((int)fieldDescriptor.Offset);
                 }
+                else
+                {
+                    member.Declaration = true;
+                    member.AddAttribute(new DwarfAttribute { Kind = DwarfAttributeKind.External, ValueAsU64 = 1 });
+                    _staticFields.Add((member, statics[staticIndex]));
+                    staticIndex++;
+                }
+
+                classType.AddChild(member);
             }
 
             // TODO: static members
@@ -646,10 +668,6 @@ namespace ILCompiler.ObjectWriter
                             Expression = e,
                         });
                     }
-                    else
-                    {
-                        Console.WriteLine("F: " + metadataInfo.Name);
-                    }
                 }
                 _dwarfFile.LocationSection.AddLocationList(locationList);
                 location = locationList;
@@ -807,6 +825,49 @@ namespace ILCompiler.ObjectWriter
                     Column = (uint)sequencePoint.ColNumber,
                     Line = (uint)sequencePoint.LineNumber,
                 });
+            }
+        }
+
+        public void EmitStaticVars(Func<string, ulong> resolveNameToAddress)
+        {
+            foreach (var (memberSpec, staticVarInfo) in _staticFields)
+            {
+                var staticAddress = resolveNameToAddress(staticVarInfo.StaticDataName);
+
+                if (staticAddress == 0)
+                {
+                    continue;
+                }
+
+                var expression = new DwarfExpression();
+                expression.AddOperation(new DwarfOperation
+                {
+                    Kind = DwarfOperationKind.Addr,
+                    Operand1 = { U64 = staticAddress },
+                });
+
+                if (staticVarInfo.IsStaticDataInObject == 1)
+                {
+                    expression.AddOperation(new DwarfOperation { Kind = DwarfOperationKind.Deref });
+                    expression.AddOperation(new DwarfOperation { Kind = DwarfOperationKind.Deref });
+                }
+
+                if (staticVarInfo.StaticOffset != 0)
+                {
+                    expression.AddOperation(new DwarfOperation
+                    {
+                        Kind = DwarfOperationKind.PlusUconst,
+                        Operand1 = { U64 = staticVarInfo.StaticOffset },
+                    });
+                }
+
+                var variable = new DwarfDIEVariable
+                {
+                    Specification = memberSpec,
+                    Location = new DwarfLocation(expression),
+                };
+
+                _rootDIE.AddChild(variable);
             }
         }
     }
