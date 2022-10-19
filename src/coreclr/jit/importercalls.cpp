@@ -6558,9 +6558,22 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     return false;
 }
 
-/*****************************************************************************
- */
-
+//------------------------------------------------------------------------
+// impCheckCanInline: do more detailed checks to determine if a method can
+//   be inlined, and collect information that will be needed later
+//
+// Arguments:
+//   call - inline candidate
+//   fncHandle - method that will be called
+//   methAttr - attributes for the method
+//   exactContextHnd - exact context for the method
+//   ppInlineCandidateInfo [out] - information needed later for inlining
+//   inlineResult - result of ongoing inline evaluation
+//
+// Notes:
+//   Will update inlineResult with observations and possible failure
+//   status (if method cannot be inlined)
+//
 void Compiler::impCheckCanInline(GenTreeCall*           call,
                                  CORINFO_METHOD_HANDLE  fncHandle,
                                  unsigned               methAttr,
@@ -6570,7 +6583,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 {
     // Either EE or JIT might throw exceptions below.
     // If that happens, just don't inline the method.
-
+    //
     struct Param
     {
         Compiler*              pThis;
@@ -6593,94 +6606,90 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
     bool success = eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
-            CorInfoInitClassResult initClassResult;
+
+            // Cache some frequently accessed state.
+            //
+            Compiler* const       compiler     = pParam->pThis;
+            COMP_HANDLE           compCompHnd  = compiler->info.compCompHnd;
+            CORINFO_METHOD_HANDLE ftn          = pParam->fncHandle;
+            InlineResult* const   inlineResult = pParam->result;
 
 #ifdef DEBUG
-            const char* methodName;
-            const char* className;
-            methodName = pParam->pThis->eeGetMethodName(pParam->fncHandle, &className);
-
             if (JitConfig.JitNoInline())
             {
-                pParam->result->NoteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
-                goto _exit;
+                inlineResult->NoteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
+                return;
             }
 #endif
 
-            /* Try to get the code address/size for the method */
-
+            // Fetch method info. This may fail, if the method doesn't have IL.
+            //
             CORINFO_METHOD_INFO methInfo;
-            if (!pParam->pThis->info.compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo))
             {
-                pParam->result->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
-                goto _exit;
+                inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
+                return;
             }
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
-            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE,
-                                     pParam->pThis->fgHaveSufficientProfileData());
+            //
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, compiler->fgHaveSufficientProfileData());
 
-            bool forceInline;
-            forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);
+            bool const forceInline = (pParam->methAttr & CORINFO_FLG_FORCEINLINE) != 0;
 
-            pParam->pThis->impCanInlineIL(pParam->fncHandle, &methInfo, forceInline, pParam->result);
+            compiler->impCanInlineIL(ftn, &methInfo, forceInline, inlineResult);
 
-            if (pParam->result->IsFailure())
+            if (inlineResult->IsFailure())
             {
-                assert(pParam->result->IsNever());
-                goto _exit;
+                assert(inlineResult->IsNever());
+                return;
             }
 
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
-            initClassResult =
-                pParam->pThis->info.compCompHnd->initClass(nullptr /* field */, pParam->fncHandle /* method */,
-                                                           pParam->exactContextHnd /* context */);
+            CorInfoInitClassResult const initClassResult =
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLSITE_CANT_CLASS_INIT);
-                goto _exit;
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_CLASS_INIT);
+                return;
             }
 
-            // Given the EE the final say in whether to inline or not.
+            // Given the VM the final say in whether to inline or not.
             // This should be last since for verifiable code, this can be expensive
-
-            /* VM Inline check also ensures that the method is verifiable if needed */
-            CorInfoInline vmResult;
-            vmResult = pParam->pThis->info.compCompHnd->canInline(pParam->pThis->info.compMethodHnd, pParam->fncHandle);
+            //
+            CorInfoInline const vmResult = compCompHnd->canInline(compiler->info.compMethodHnd, ftn);
 
             if (vmResult == INLINE_FAIL)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLSITE_IS_VM_NOINLINE);
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_VM_NOINLINE);
             }
             else if (vmResult == INLINE_NEVER)
             {
-                pParam->result->NoteFatal(InlineObservation::CALLEE_IS_VM_NOINLINE);
+                inlineResult->NoteFatal(InlineObservation::CALLEE_IS_VM_NOINLINE);
             }
 
-            if (pParam->result->IsFailure())
+            if (inlineResult->IsFailure())
             {
-                // Do not report this as a failure. Instead report as a "VM failure"
-                pParam->result->SetVMFailure();
-                goto _exit;
+                // The VM already self-reported this failure, so mark it specially
+                // so the JIT doesn't also try reporting it.
+                //
+                inlineResult->SetVMFailure();
+                return;
             }
 
-            /* Get the method properties */
+            // Get the method's class properties
+            //
+            CORINFO_CLASS_HANDLE clsHandle = compCompHnd->getMethodClass(ftn);
+            unsigned const       clsAttr   = compCompHnd->getClassAttribs(clsHandle);
 
-            CORINFO_CLASS_HANDLE clsHandle;
-            clsHandle = pParam->pThis->info.compCompHnd->getMethodClass(pParam->fncHandle);
-            unsigned clsAttr;
-            clsAttr = pParam->pThis->info.compCompHnd->getClassAttribs(clsHandle);
-
-            /* Get the return type */
-
-            var_types fncRetType;
-            fncRetType = pParam->call->TypeGet();
+            // Return type
+            //
+            var_types const fncRetType = pParam->call->TypeGet();
 
 #ifdef DEBUG
-            var_types fncRealRetType;
-            fncRealRetType = JITtype2varType(methInfo.args.retType);
+            var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
 
             assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
                    // <BUGNUM> VSW 288602 </BUGNUM>
@@ -6705,6 +6714,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pInfo = new (pParam->pThis, CMK_Inlining) InlineCandidateInfo;
 
                 // Null out bits we don't use when we're just inlining
+                //
                 pInfo->guardedClassHandle              = nullptr;
                 pInfo->guardedMethodHandle             = nullptr;
                 pInfo->guardedMethodUnboxedEntryHandle = nullptr;
@@ -6727,15 +6737,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Note exactContextNeedsRuntimeLookup is reset later on,
             // over in impMarkInlineCandidate.
-
+            //
             *(pParam->ppInlineCandidateInfo) = pInfo;
-
-        _exit:;
         },
         &param);
+
     if (!success)
     {
-        param.result->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
 }
 

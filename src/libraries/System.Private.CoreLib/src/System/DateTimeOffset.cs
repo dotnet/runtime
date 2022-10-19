@@ -123,7 +123,7 @@ namespace System
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -145,7 +145,7 @@ namespace System
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -167,7 +167,7 @@ namespace System
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;

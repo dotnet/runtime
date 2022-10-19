@@ -15,7 +15,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 #endif // !TARGET_UNIX
 
-#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Framework IL disassembler\0"
+#define FX_VER_FILEDESCRIPTION_STR ".NET IL Disassembler"
 
 #include <fxver.h>
 #include <fxver.rc>

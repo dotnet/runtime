@@ -9,13 +9,13 @@
       $(CLRTestBatchPreCommands)
       set DOTNET_TieredCompilation=0
       set DOTNET_GCStress=0x3
-      set DOTNET_COMPlus_GCSegmentSize=8000
+      set DOTNET_GCSegmentSize=8000
       ]]></CLRTestBatchPreCommands>
           <BashCLRTestPreCommands><![CDATA[
       $(BashCLRTestPreCommands)
       export DOTNET_TieredCompilation=0
       export DOTNET_GCStress=0x3
-      export DOTNET_COMPlus_GCSegmentSize=8000
+      export DOTNET_GCSegmentSize=8000
       ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
