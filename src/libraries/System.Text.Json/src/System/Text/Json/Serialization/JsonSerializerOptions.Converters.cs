@@ -20,7 +20,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        public IList<JsonConverter> Converters => _converters;
+        public IList<JsonConverter> Converters => _converters ??= new ConverterList(this);
 
         /// <summary>
         /// Returns the converter for the specified type.
@@ -66,11 +66,14 @@ namespace System.Text.Json
 
         internal JsonConverter? GetConverterFromList(Type typeToConvert)
         {
-            foreach (JsonConverter item in _converters)
+            if (_converters != null)
             {
-                if (item.CanConvert(typeToConvert))
+                foreach (JsonConverter item in _converters)
                 {
-                    return item;
+                    if (item.CanConvert(typeToConvert))
+                    {
+                        return item;
+                    }
                 }
             }
 

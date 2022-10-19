@@ -58,7 +58,7 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
-        private ConfigurationList<JsonConverter> _converters;
+        private ConfigurationList<JsonConverter>? _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
@@ -80,7 +80,6 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            _converters = new ConverterList(this);
             TrackOptionsInstance(this);
         }
 
@@ -102,7 +101,7 @@ namespace System.Text.Json
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
-            _converters = new ConverterList(this, options._converters);
+            _converters = options._converters is null ? null : new ConverterList(this, options._converters);
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -120,9 +119,6 @@ namespace System.Text.Json
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
-
-            // _cachingContext is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
-            // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
 
             TrackOptionsInstance(this);
         }

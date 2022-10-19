@@ -284,9 +284,14 @@ namespace System.Text.Json
                     left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
-                static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
+                static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
                 {
+                    if (left is null || right is null)
+                    {
+                        return left is null == right is null;
+                    }
+
                     int n;
                     if ((n = left.Count) != right.Count)
                     {
@@ -331,12 +336,15 @@ namespace System.Text.Json
 
                 return hc.ToHashCode();
 
-                static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
+                static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue>? list)
                 {
-                    int n = list.Count;
-                    for (int i = 0; i < n; i++)
+                    if (list != null)
                     {
-                        AddHashCode(ref hc, list[i]);
+                        int n = list.Count;
+                        for (int i = 0; i < n; i++)
+                        {
+                            AddHashCode(ref hc, list[i]);
+                        }
                     }
                 }
 
