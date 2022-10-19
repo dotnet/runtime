@@ -427,18 +427,18 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 #ifdef DEBUG
 namespace
 {
-    const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
-    {
-        int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
-        if (utf8Len == 0)
-            return nullptr;
+const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
+{
+    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+    if (utf8Len == 0)
+        return nullptr;
 
-        char* alloc = (char*)allocator.allocate<char>(utf8Len);
-        if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
-            return nullptr;
+    char* alloc = (char*)allocator.allocate<char>(utf8Len);
+    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+        return nullptr;
 
-        return alloc;
-    }
+    return alloc;
+}
 }
 #endif
 
@@ -473,7 +473,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 {
     FILE*       fgxFile;
     const char* prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
-    const char* postPhasePattern = "*";  // post-phase: default (used in Release) is dump all phases
+    const char* postPhasePattern = "*";     // post-phase: default (used in Release) is dump all phases
     bool        dumpFunction     = true;    // default (used in Release) is always dump
     const char* filename         = nullptr;
     const char* pathname         = nullptr;
@@ -610,7 +610,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         const size_t phasePositionStringLen = strlen(phasePositionString);
         const char*  tierName               = compGetTieringName(true);
         size_t       charCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + strlen(phaseName) + 1 +
-                            strlen(tierName) + strlen("~999") + 1 + strlen(type) + 1;
+                           strlen(tierName) + strlen("~999") + 1 + strlen(type) + 1;
 
         if (charCount > MaxFileNameLength)
         {
@@ -633,13 +633,13 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
         if (pathname != nullptr)
         {
-            sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN, pathname, escapedString,
-                       phasePositionString, phaseName, tierName, type);
+            sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN, pathname, escapedString, phasePositionString,
+                      phaseName, tierName, type);
         }
         else
         {
             sprintf_s((char*)filename, charCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
-                       tierName, type);
+                      tierName, type);
         }
         fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
         if (fgxFile == nullptr)
@@ -649,13 +649,13 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             {
                 if (pathname != nullptr)
                 {
-                    sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN_WITH_NUMBER, pathname,
-                               escapedString, phasePositionString, phaseName, tierName, i, type);
+                    sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN_WITH_NUMBER, pathname, escapedString,
+                              phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
                     sprintf_s((char*)filename, charCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
-                               phasePositionString, phaseName, tierName, i, type);
+                              phasePositionString, phaseName, tierName, i, type);
                 }
                 fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
                 if (fgxFile != nullptr)
@@ -684,7 +684,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     else
     {
         const char* origFilename = filename;
-        size_t  charCount   = strlen(origFilename) + strlen(type) + 2;
+        size_t      charCount    = strlen(origFilename) + strlen(type) + 2;
         if (pathname != nullptr)
         {
             charCount += strlen(pathname) + 1;
