@@ -452,6 +452,7 @@ private:
     CLREvent        m_SemEvent;
 
     DWORD m_waiterStarvationStartTimeMs;
+    int m_emittedLockCreatedEvent;
 
     static const DWORD WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters = 100;
 
@@ -465,7 +466,8 @@ private:
           m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
-          m_waiterStarvationStartTimeMs(0)
+          m_waiterStarvationStartTimeMs(0),
+          m_emittedLockCreatedEvent(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -604,11 +606,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_HoldingThread;
     }
-
-private:
-    static bool IsContentionKeywordEnabled();
-public:
-    void FireLockCreatedEvent() const;
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1153,12 +1150,6 @@ class SyncBlock
     {
         LIMITED_METHOD_CONTRACT;
         // We've already destructed.  But retain the memory.
-    }
-
-    void FireLockCreatedEvent() const
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Monitor.FireLockCreatedEvent();
     }
 
     void EnterMonitor()
