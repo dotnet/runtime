@@ -304,7 +304,7 @@ namespace ILCompiler.ObjectWriter
                         debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                         clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-                    _dwarfBuilder.EmitLineInfo(lowPC, debugNode.GetNativeSequencePoints());
+                    _dwarfBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
                 }
             }
         }
@@ -430,15 +430,6 @@ namespace ILCompiler.ObjectWriter
 
             EmitSectionsAndLayout();
 
-            EmitSymbolTable();
-
-            int relocSectionIndex = 0;
-            foreach (var relocationList in _sectionIndexToRelocations)
-            {
-                EmitRelocations(relocSectionIndex, relocationList);
-                relocSectionIndex++;
-            }
-
             if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
             {
                 foreach (DependencyNode depNode in nodes)
@@ -453,6 +444,15 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 EmitDebugSections(_dwarfBuilder.DwarfFile);
+            }
+
+            EmitSymbolTable();
+
+            int relocSectionIndex = 0;
+            foreach (var relocationList in _sectionIndexToRelocations)
+            {
+                EmitRelocations(relocSectionIndex, relocationList);
+                relocSectionIndex++;
             }
 
             EmitObjectFile(objectFilePath);

@@ -25,7 +25,7 @@ namespace ILCompiler.ObjectWriter
         private DwarfFile _dwarfFile;
         private DwarfDIECompileUnit _rootDIE;
         private DwarfLineProgramTable _lineTable;
-        private DwarfLineSequence _lineSequence;
+        private Dictionary<int, DwarfLineSequence> _lineSequences = new();
         private Dictionary<string, DwarfFileName> _emittedFileName;
 
         private List<DwarfMemberFunctionTypeInfo> _memberFunctionTypeInfos = new();
@@ -58,11 +58,8 @@ namespace ILCompiler.ObjectWriter
 
             _dwarfFile = new DwarfFile();
 
-            _lineSequence = new DwarfLineSequence();
-
             _lineTable = new DwarfLineProgramTable();
             _lineTable.AddressSize = _targetPointerSize == 8 ? DwarfAddressSize.Bit64 : DwarfAddressSize.Bit32;
-            _lineTable.AddLineSequence(_lineSequence);
 
             _rootDIE = new DwarfDIECompileUnit
             {
@@ -460,14 +457,66 @@ namespace ILCompiler.ObjectWriter
             }
         };
 
+        // TODO: Clean-up and share with R2R code
+        private enum RegNumAmd64 : int
+        {
+            REGNUM_RAX,
+            REGNUM_RCX,
+            REGNUM_RDX,
+            REGNUM_RBX,
+            REGNUM_RSP,
+            REGNUM_RBP,
+            REGNUM_RSI,
+            REGNUM_RDI,
+            REGNUM_R8,
+            REGNUM_R9,
+            REGNUM_R10,
+            REGNUM_R11,
+            REGNUM_R12,
+            REGNUM_R13,
+            REGNUM_R14,
+            REGNUM_R15,
+            REGNUM_COUNT,
+            REGNUM_SP = REGNUM_RSP,
+            REGNUM_FP = REGNUM_RBP
+        };
+
         private int DwarfRegNum(int regNum)
         {
-            _ = _architecture;
-            if (regNum >= 33)
-                regNum = regNum - 33 + 64; // FP
-            // ARM64
-            // FIXME: FP regs
-            return regNum;
+            if (_architecture == TargetArchitecture.ARM64)
+            {
+                // Normal registers are directly mapped
+                if (regNum >= 33)
+                    regNum = regNum - 33 + 64; // FP
+                return regNum;
+            }
+            else if (_architecture == TargetArchitecture.X64)
+            {
+                return (RegNumAmd64)regNum switch
+                {
+                    RegNumAmd64.REGNUM_RAX => 0,
+                    RegNumAmd64.REGNUM_RDX => 1,
+                    RegNumAmd64.REGNUM_RCX => 2,
+                    RegNumAmd64.REGNUM_RBX => 3,
+                    RegNumAmd64.REGNUM_RSI => 4,
+                    RegNumAmd64.REGNUM_RDI => 5,
+                    RegNumAmd64.REGNUM_RBP => 6,
+                    RegNumAmd64.REGNUM_RSP => 7,
+                    RegNumAmd64.REGNUM_R8 => 8,
+                    RegNumAmd64.REGNUM_R9 => 9,
+                    RegNumAmd64.REGNUM_R10 => 10,
+                    RegNumAmd64.REGNUM_R11 => 11,
+                    RegNumAmd64.REGNUM_R12 => 12,
+                    RegNumAmd64.REGNUM_R13 => 13,
+                    RegNumAmd64.REGNUM_R14 => 14,
+                    RegNumAmd64.REGNUM_R15 => 15,
+                    _ => regNum - (int)RegNumAmd64.REGNUM_COUNT + 17 // FP registers
+                };
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
 
@@ -723,8 +772,19 @@ namespace ILCompiler.ObjectWriter
             _rootDIE.AddChild(subprogram);
         }
 
-        public void EmitLineInfo(ulong methodPCStart, IEnumerable<NativeSequencePoint> sequencePoints)
+        public void EmitLineInfo(int sectionIndex, ulong methodPCStart, IEnumerable<NativeSequencePoint> sequencePoints)
         {
+            DwarfLineSequence lineSequence;
+
+            // Create line sequence for every section so they can get the
+            // base address relocated properly.
+            if (!_lineSequences.TryGetValue(sectionIndex, out lineSequence))
+            {
+                lineSequence = new DwarfLineSequence();
+                _lineTable.AddLineSequence(lineSequence);
+                _lineSequences.Add(sectionIndex, lineSequence);
+            }
+
             foreach (var sequencePoint in sequencePoints)
             {
                 DwarfFileName dwarfFileName;
@@ -740,7 +800,7 @@ namespace ILCompiler.ObjectWriter
                     _lineTable.FileNames.Add(dwarfFileName);
                 }
 
-                _lineSequence.Add(new DwarfLine
+                lineSequence.Add(new DwarfLine
                 {
                     File = dwarfFileName,
                     Address = methodPCStart + (ulong)sequencePoint.NativeOffset,

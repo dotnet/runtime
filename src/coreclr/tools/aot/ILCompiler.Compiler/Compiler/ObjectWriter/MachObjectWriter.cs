@@ -33,9 +33,6 @@ namespace ILCompiler.ObjectWriter
         private MachObjectFile _objectFile;
         private MachSegment _segment;
 
-        // Standard sections
-        private Dictionary<int, MachSection> _sectionIndexToMachSection = new();
-
         // Exception handling sections
         private MachSection _compactUnwindSection;
         private List<CompactUnwindCode> _compactUnwindCodes = new();
@@ -159,7 +156,6 @@ namespace ILCompiler.ObjectWriter
                 Attributes = attributes,
             };
 
-            _sectionIndexToMachSection[_segment.Sections.Count] = machSection;
             sectionStream = machSection.GetWriteStream();
             _segment.Sections.Add(machSection);
         }
