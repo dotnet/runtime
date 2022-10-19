@@ -98,8 +98,6 @@ add_executable_clr(paltests
   c_runtime/expf/test1/test1.cpp
   c_runtime/fabs/test1/test1.cpp
   c_runtime/fabsf/test1/test1.cpp
-  c_runtime/fclose/test1/test1.cpp
-  c_runtime/fclose/test2/test2.cpp
   c_runtime/ferror/test1/test1.cpp
   c_runtime/ferror/test2/test2.cpp
   c_runtime/fflush/test1/test1.cpp
@@ -147,9 +145,6 @@ add_executable_clr(paltests
   c_runtime/fseek/test1/test1.cpp
   c_runtime/ftell/test1/ftell.cpp
   c_runtime/fwrite/test1/test1.cpp
-  c_runtime/getenv/test1/test1.cpp
-  c_runtime/getenv/test2/test2.cpp
-  c_runtime/getenv/test3/test3.cpp
   c_runtime/ilogb/test1/test1.cpp
   c_runtime/ilogbf/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -382,7 +377,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_alloca/test1/test1.cpp
-  c_runtime/_fdopen/test1/test1.cpp
   c_runtime/_finite/test1/test1.cpp
   c_runtime/_finitef/test1/test1.cpp
   #c_runtime/_gcvt/test1/_gcvt.cpp
@@ -544,9 +538,6 @@ add_executable_clr(paltests
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
   filemapping_memmgt/MapViewOfFile/test5/mapviewoffile.cpp
   filemapping_memmgt/MapViewOfFile/test6/mapviewoffile.cpp
-  filemapping_memmgt/OpenFileMappingW/test1/OpenFileMappingW.cpp
-  filemapping_memmgt/OpenFileMappingW/test2/OpenFileMappingW.cpp
-  filemapping_memmgt/OpenFileMappingW/test3/OpenFileMappingW.cpp
   filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/ProbeMemory_neg.cpp
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
   filemapping_memmgt/UnmapViewOfFile/test1/UnmapViewOfFile.cpp
@@ -592,8 +583,6 @@ add_executable_clr(paltests
   file_io/CopyFileW/test3/test3.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
-  file_io/DeleteFileA/test1/DeleteFileA.cpp
-  file_io/DeleteFileW/test1/DeleteFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
   file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
@@ -606,8 +595,6 @@ add_executable_clr(paltests
   file_io/FindNextFileW/test2/findnextfilew.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
   file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
-  file_io/GetCurrentDirectoryA/test1/GetCurrentDirectoryA.cpp
-  file_io/GetCurrentDirectoryW/test1/GetCurrentDirectoryW.cpp
   file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
   file_io/GetFileAttributesExW/test1/test1.cpp
   file_io/GetFileAttributesExW/test2/test2.cpp
@@ -634,18 +621,11 @@ add_executable_clr(paltests
   file_io/GetTempFileNameW/test3/gettempfilenamew.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
-  file_io/MoveFileExA/test1/MoveFileExA.cpp
-  file_io/MoveFileExW/test1/MoveFileExW.cpp
   file_io/ReadFile/test1/ReadFile.cpp
   file_io/ReadFile/test2/ReadFile.cpp
   file_io/ReadFile/test3/ReadFile.cpp
   file_io/ReadFile/test4/readfile.cpp
   file_io/SearchPathW/test1/SearchPathW.cpp
-  file_io/SetEndOfFile/test1/SetEndOfFile.cpp
-  file_io/SetEndOfFile/test2/SetEndOfFile.cpp
-  file_io/SetEndOfFile/test3/SetEndOfFile.cpp
-  file_io/SetEndOfFile/test4/setendoffile.cpp
-  file_io/SetEndOfFile/test5/test5.cpp
   file_io/SetFilePointer/test1/SetFilePointer.cpp
   file_io/SetFilePointer/test2/SetFilePointer.cpp
   file_io/SetFilePointer/test3/SetFilePointer.cpp
@@ -688,7 +668,6 @@ add_executable_clr(paltests
   miscellaneous/CGroup/test1/test.cpp
   miscellaneous/CloseHandle/test1/test.cpp
   miscellaneous/CloseHandle/test2/test.cpp
-  miscellaneous/CreatePipe/test1/test1.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
   miscellaneous/FormatMessageW/test1/test.cpp
   miscellaneous/FormatMessageW/test2/test.cpp
@@ -778,7 +757,6 @@ add_executable_clr(paltests
   threading/CreateThread/test3/test3.cpp
   threading/CriticalSectionFunctions/test1/InitializeCriticalSection.cpp
   threading/CriticalSectionFunctions/test2/test2.cpp
-  threading/CriticalSectionFunctions/test3/test3.cpp
   threading/CriticalSectionFunctions/test4/test4.cpp
   threading/CriticalSectionFunctions/test5/test5.cpp
   threading/CriticalSectionFunctions/test6/test6.cpp
@@ -792,8 +770,6 @@ add_executable_clr(paltests
   threading/DuplicateHandle/test2/test2.cpp
   threading/DuplicateHandle/test3/test3.cpp
   threading/DuplicateHandle/test4/test4.cpp
-  threading/DuplicateHandle/test5/test5.cpp
-  threading/DuplicateHandle/test6/test6.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
 #  threading/DuplicateHandle/test9/test9.cpp
@@ -810,7 +786,6 @@ add_executable_clr(paltests
   threading/GetCurrentThreadId/test1/threadId.cpp
   threading/GetExitCodeProcess/test1/childProcess.cpp
   threading/GetExitCodeProcess/test1/test1.cpp
-  threading/GetThreadTimes/test1/test1.cpp
   threading/NamedMutex/test1/namedmutex.cpp
   threading/NamedMutex/test1/nopal.cpp
   threading/OpenEventW/test1/test1.cpp

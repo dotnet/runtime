@@ -14,8 +14,8 @@
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <CLRTestBashEnvironmentVariable Include="export CORE_LIBRARIES=$CORE_LIBRARIES:$%28pwd)/Subdirectory" />
-    <CLRTestBatchEnvironmentVariable Include="set CORE_LIBRARIES=$CORE_LIBRARIES%3B%25cd%\\Subdirectory" />
+    <CLRTestBashEnvironmentVariable Include="CORE_LIBRARIES" Value="$CORE_LIBRARIES:$%28pwd)/Subdirectory" />
+    <CLRTestBatchEnvironmentVariable Include="CORE_LIBRARIES" Value="$CORE_LIBRARIES%3B%25cd%\\Subdirectory" />
   </ItemGroup>
   <PropertyGroup>
     <PathEnvSetupCommands><![CDATA[

@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -1196,7 +1196,7 @@ namespace System.Text.RegularExpressions
         public static bool DifferByOneBit(char a, char b, out int mask)
         {
             mask = a ^ b;
-            return mask != 0 && (mask & (mask - 1)) == 0;
+            return BitOperations.IsPow2(mask);
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>

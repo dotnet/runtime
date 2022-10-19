@@ -1,7 +1,9 @@
 # System.Reflection.TypeExtensions
 This is a facade assembly that has extension methods for common reflection types.
 
-## Status: [Legacy](../../libraries/README.md#development-statuses)
+## Contribution Bar
+- [x] [We only consider fixes that unblock critical issues](../../libraries/README.md#primary-bar)
+
 This package was used in the past to expose common functionality across different runtimes in a uniform way. It continues to ship as part of the shared framework, but it is frozen for compatibility.
 
 ## Deployment
