@@ -1695,10 +1695,17 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                     indir                                   = methodTestInfo->delegateAddressIndir;
                 }
 
+                JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
+                DISPSTMT(stmt);
+
                 indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
                 indir->gtFlags &= ~GTF_EXCEPT;
                 assert(!fgStmtListThreaded);
                 gtUpdateStmtSideEffects(stmt);
+
+                JITDUMP("After:\n");
+                DISPSTMT(stmt);
+
                 break;
             }
 
