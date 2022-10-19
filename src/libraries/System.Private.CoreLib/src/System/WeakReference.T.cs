@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System
 {
@@ -21,7 +22,7 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-        private IntPtr _handleAndKind;
+        private nint _handleAndKind;
 
         // the lowermost 3 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
@@ -31,24 +32,29 @@ namespace System
         private const nint TracksResurrectionBit = 1;
 
 #if CORECLR
-        // the next bit is used to indicate whether there is an associated com weak reference
-        private const nint IsComWeakReferenceBit = 2;
-        private bool IsComWeakReference() => (_handleAndKind & IsComWeakReferenceBit) != 0;
+        // the next bit is used to indicate whether there is an associated COM weak reference
+        private const nint HasComWeakReferenceBit = 2;
+        private bool HasComWeakReference() => (_handleAndKind & HasComWeakReferenceBit) != 0;
+
+        // one more bit to coordinate exclusive Set operations
+        // because of COM interop a Set may change two values, so we must ensure two Sets are not running concurrently
+        private const nint ExclusiveSetAccessBit = 4;
 
         private void TrySetComTarget(object? target)
         {
-            if (target != null || IsComWeakReference())
+            if (target != null || HasComWeakReference())
             {
-                if (ComWeakReferenceHelpers.SetComTarget(this, target))
+                if (ComWeakReferenceHelpers.SetComTarget(this, target, HasComWeakReference()))
                 {
-                    _handleAndKind |= IsComWeakReferenceBit;
+                    _handleAndKind |= HasComWeakReferenceBit;
                 }
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private object? TryGetComTarget()
         {
-            if (IsComWeakReference())
+            if (HasComWeakReference())
             {
                 return ComWeakReferenceHelpers.GetComTarget(this);
             }
@@ -117,7 +123,7 @@ namespace System
         // Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            nint h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             _handleAndKind = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
@@ -127,15 +133,27 @@ namespace System
 #endif
         }
 
-        private IntPtr Handle => _handleAndKind & ~HandleTagBits;
+        private nint Handle => _handleAndKind & ~HandleTagBits;
 
         public void SetTarget(T target)
         {
-            IntPtr h = Handle;
+#if CORECLR
+            // simple spinlock to ensure that two Sets are not runing concurrently
+            SpinWait sw = default;
+            nint hk = _handleAndKind;
+            while ((hk & ExclusiveSetAccessBit) != 0 ||
+                    Interlocked.CompareExchange(ref _handleAndKind, hk | ExclusiveSetAccessBit, hk) != hk)
+            {
+                sw.SpinOnce();
+                hk = _handleAndKind;
+            }
+#endif
+
+            nint h = Handle;
             // Should only happen for corner cases, like using a WeakReference from a finalizer.
             // GC can finalize the instance if it becomes F-Reachable.
             // That, however, cannot happen while we use the instance.
-            if (default(IntPtr) == h)
+            if (h == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
 
             GCHandle.InternalSet(h, target);
@@ -145,6 +163,8 @@ namespace System
 
 #if CORECLR
             TrySetComTarget(target);
+            // release the lock
+            Volatile.Write(ref _handleAndKind, _handleAndKind & ~ExclusiveSetAccessBit);
 #endif
         }
 
@@ -152,11 +172,11 @@ namespace System
         {
             get
             {
-                IntPtr h = Handle;
+                nint h = Handle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
-                if (default(IntPtr) == h)
+                if (h == 0)
                     return default;
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
