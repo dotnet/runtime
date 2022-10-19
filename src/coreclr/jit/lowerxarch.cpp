@@ -135,9 +135,6 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     if (op1->isContained() || op2->isContained())
         return nullptr;
 
-    if (!op1->OperIs(GT_LCL_VAR))
-        return nullptr;
-
     if (!op2->IsCnsIntOrI())
         return nullptr;
 
@@ -164,6 +161,9 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
         LIR::Use use;
         if (BlockRange().TryGetUse(node, &use))
         {
+            LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+            op1 = ReplaceWithLclVar(op1Use);
+
             // We will use the LEA instruction to perform this multiply
             // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
             unsigned int scale = (unsigned int)(cnsVal - 1);
@@ -192,6 +192,9 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 #if TARGET_X86
     return nullptr;
 #else  // !TARGET_X86
+
+    LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+    op1 = ReplaceWithLclVar(op1Use);
 
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
