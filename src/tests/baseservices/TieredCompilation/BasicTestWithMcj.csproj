@@ -22,8 +22,12 @@
 $(CLRTestBatchPreCommands)
 mkdir r2r
 
-REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+REM Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
 setlocal
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
 set "COMPlus_GCName="
 set "COMPlus_GCStress="
 set "COMPlus_HeapVerify="
@@ -38,11 +42,13 @@ set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 $(BashCLRTestPreCommands)
 mkdir r2r
 
-# Suppress some COMPlus variables for the duration of Crossgen2 execution
+# Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 
 "$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll
 
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"

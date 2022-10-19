@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="LoopsToProcess.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitAggressiveInlining" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitAggressiveInlining" Value="1" />
   </ItemGroup>
 </Project>
