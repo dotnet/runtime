@@ -560,8 +560,6 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitDebugSections(DwarfFile dwarfFile)
         {
-            _objectFile.UpdateLayout();
-
             ulong highPC = 0;
             foreach (var machSection in _segment.Sections)
             {
@@ -609,6 +607,8 @@ namespace ILCompiler.ObjectWriter
             _segment.Sections.Add(debugStringSection);
             _segment.Sections.Add(debugLineSection);
             _segment.Sections.Add(debugLocationSection);
+
+            _objectFile.UpdateLayout();
         }
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
