@@ -8439,11 +8439,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
             rhsVNPair.SetBoth(initObjVN);
         }
-        else if (lhs->OperIs(GT_LCL_VAR) && lhsVarDsc->CanBeReplacedWithItsField(this))
-        {
-            // TODO-CQ: remove this zero-diff quirk.
-            rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(lhsVarDsc->lvFieldLclStart)->TypeGet()));
-        }
         else
         {
             assert(tree->OperIsCopyBlkOp());
