@@ -264,7 +264,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     try
                     {
-                        GetMembersResult scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
+                        await proxy.GetScopeProperties(sessionId, scopeId, token);
                     }
                     catch (Exception ex)
                     {

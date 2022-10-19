@@ -756,6 +756,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 switch (objectId.Scheme)
                 {
+                    // ToDo: fix Exception types here
                     case "scope":
                         GetMembersResult resScope = await GetScopeProperties(id, objectId.Value, token);
                         resScope.CleanUp();
