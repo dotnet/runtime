@@ -419,13 +419,6 @@ namespace ILCompiler.ObjectWriter
                 {
                     EmitUnwindInfo(sectionIndex, methodStart, nodeWithCodeInfo);
                 }
-
-                // Emit debug type information
-                if (node is ConstructedEETypeNode MethodTable &&
-                    _options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
-                {
-                    _userDefinedTypeDescriptor.GetTypeIndex(MethodTable.Type, needsCompleteType: true);
-                }
             }
 
             EmitSectionsAndLayout();
@@ -440,8 +433,23 @@ namespace ILCompiler.ObjectWriter
                         continue;
                     }
 
+                    // Emit debug type information
+                    if (node is ConstructedEETypeNode methodTable)
+                    {
+                        _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
+                    }
+
                     EmitDebugFunctionInfo(node);
                 }
+
+                _dwarfBuilder.EmitStaticVars(
+                    symbolName =>
+                    {
+                        if (_definedSymbols.TryGetValue(ExternCName(symbolName), out var symbolDef))
+                            return GetSectionVirtualAddress(symbolDef.SectionIndex) + (ulong)symbolDef.Value;
+                        return 0;
+                    }
+                );
 
                 EmitDebugSections(_dwarfBuilder.DwarfFile);
             }
