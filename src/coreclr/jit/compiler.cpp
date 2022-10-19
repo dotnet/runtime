@@ -2257,28 +2257,34 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-    // The VM will set the ISA flags depending on actual hardware support
-    // and any specified config switches specified by the user. The exception
-    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
-    // don't actually exist. The JIT is in charge of adding those and ensuring
-    // the total sum of flags is still valid.
-
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
+    // The VM will set the ISA flags depending on actual hardware support
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+    }
+#elif defined(TARGET_ARM64)
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
 #endif // TARGET_ARM64
 
-    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
     opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
