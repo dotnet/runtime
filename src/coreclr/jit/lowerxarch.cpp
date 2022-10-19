@@ -193,9 +193,6 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     return nullptr;
 #endif  // TARGET_X86
 
-    LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
-    op1 = ReplaceWithLclVar(op1Use);
-
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
 
@@ -203,6 +200,9 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 
     if (!useSub && !isPow2(cnsValMinusOne))
         return nullptr;
+
+    LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+    op1 = ReplaceWithLclVar(op1Use);
 
     if (useSub)
     {
