@@ -7840,10 +7840,6 @@ const char* PhaseEnums[] = {
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseEnumsW[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
-#include "compphases.h"
-};
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
