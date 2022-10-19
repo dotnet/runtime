@@ -1181,9 +1181,10 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     // Managed code should not be running.
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
 
-    // the lowermost 3 bits are reserved for storing additional info about the handle
+    // the lowermost 2 bits are reserved for storing additional info about the handle
     // we can use these bits because handle is at least 32bit aligned
-    const uintptr_t HandleTagBits = 7;
+    // we also reserve the sign bit
+    const uintptr_t HandleTagBits = ((uintptr_t)-1 ^ (uintptr_t)-1 >> 1) | 3;
 
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_HandleAndKind & ~HandleTagBits);

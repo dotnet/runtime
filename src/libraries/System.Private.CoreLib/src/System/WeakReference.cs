@@ -7,6 +7,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+
+#if TARGET_64BIT
+using nint_t = System.Int64;
+#else
+using nint_t = System.Int32;
+#endif
+
 #if CORECLR
 namespace System.Runtime.InteropServices
 {
@@ -116,23 +124,24 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-        private nint _handleAndKind;
+        private nint_t _handleAndKind;
 
-        // the lowermost 3 bits are reserved for storing additional info about the handle
+        // the lowermost 2 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
-        private const nint HandleTagBits = 7;
+        // we also reserve the sign bit
+        private const nint_t HandleTagBits = nint_t.MinValue | 3;
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private const nint TracksResurrectionBit = 1;
+        private const nint_t TracksResurrectionBit = 1;
 
 #if CORECLR
         // the next bit is used to indicate whether there is an associated COM weak reference
-        private const nint HasComWeakReferenceBit = 2;
+        private const nint_t HasComWeakReferenceBit = 2;
         private bool HasComWeakReference() => (_handleAndKind & HasComWeakReferenceBit) != 0;
 
         // one more bit to coordinate exclusive Set operations
         // because of COM interop a Set may change two values, so we must ensure two Sets are not running concurrently
-        private const nint ExclusiveSetAccessBit = 4;
+        private const nint_t ExclusiveSetAccessBit = nint_t.MinValue;
 
         private void TrySetComTarget(object? target)
         {
@@ -198,7 +207,7 @@ namespace System
 
         private void Create(object? target, bool trackResurrection)
         {
-            nint h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            nint_t h = (nint_t)GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             _handleAndKind = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
@@ -212,7 +221,7 @@ namespace System
         // or just until they're finalized (false).
         private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
 
-        internal nint Handle => _handleAndKind & ~HandleTagBits;
+        internal nint Handle => (nint)(_handleAndKind & ~HandleTagBits);
 
         // Determines whether or not this instance of WeakReference still refers to an object
         // that has not been collected.
@@ -272,7 +281,7 @@ namespace System
 #if CORECLR
                 // simple spinlock to ensure that two Sets are not runing concurrently
                 SpinWait sw = default;
-                nint hk = _handleAndKind;
+                nint_t hk = _handleAndKind;
                 while ((hk & ExclusiveSetAccessBit) != 0 ||
                         Interlocked.CompareExchange(ref _handleAndKind, hk | ExclusiveSetAccessBit, hk) != hk)
                 {
