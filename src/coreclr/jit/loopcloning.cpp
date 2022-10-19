@@ -1678,8 +1678,29 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                 break;
             case LcOptInfo::LcTypeTest:
             case LcOptInfo::LcMethodAddrTest:
-                // We could optimize here. For now, let downstream opts clean this up.
+            {
+                Statement*    stmt;
+                GenTreeIndir* indir;
+
+                if (optInfo->GetOptType() == LcOptInfo::LcTypeTest)
+                {
+                    LcTypeTestOptInfo* typeTestInfo = optInfo->AsLcTypeTestOptInfo();
+                    stmt                            = typeTestInfo->stmt;
+                    indir                           = typeTestInfo->methodTableIndir;
+                }
+                else
+                {
+                    LcMethodAddrTestOptInfo* methodTestInfo = optInfo->AsLcMethodAddrTestOptInfo();
+                    stmt                                    = methodTestInfo->stmt;
+                    indir                                   = methodTestInfo->delegateAddressIndir;
+                }
+
+                indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
+                indir->gtFlags &= ~GTF_EXCEPT;
+                assert(!fgStmtListThreaded);
+                gtUpdateStmtSideEffects(stmt);
                 break;
+            }
 
             default:
                 break;
@@ -2795,11 +2816,13 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
             return WALK_CONTINUE;
         }
 
+        GenTreeIndir* indir     = relopOp1->AsIndir();
+        GenTree*      indirAddr = indir->Addr();
+
         if (relopOp2->IsIconHandle(GTF_ICON_CLASS_HDL))
         {
             // The indir addr must be loop invariant TYP_REF local
             //
-            GenTree* const indirAddr = relopOp1->AsIndir()->Addr();
 
             if (!indirAddr->TypeIs(TYP_REF))
             {
@@ -2836,13 +2859,11 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
                 assert(compCurBB->lastStmt() == info->stmt);
                 info->context->EnsureLoopOptInfo(info->loopNum)
-                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(lclNum, clsHnd));
+                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(info->stmt, indir, lclNum, clsHnd));
             }
         }
         else if (optIsHandleOrIndirOfHandle(relopOp2, GTF_ICON_FTN_ADDR))
         {
-            GenTree* indirAddr = relopOp1->AsIndir()->Addr();
-
             //  ▌  JTRUE     void
             //  └──▌  NE        int
             //     ├──▌  CNS_INT(h) long   0x7ffdb1fa4a08 ftn
@@ -2919,7 +2940,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 assert(iconHandle->IsIconHandle(GTF_ICON_FTN_ADDR));
                 assert(compCurBB->lastStmt() == info->stmt);
                 LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
-                    LcMethodAddrTestOptInfo(lclNum, (void*)iconHandle->IconValue(),
+                    LcMethodAddrTestOptInfo(info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
                                                             (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
                 info->context->EnsureLoopOptInfo(info->loopNum)->Push(optInfo);

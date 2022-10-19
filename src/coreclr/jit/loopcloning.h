@@ -320,19 +320,27 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
 //
 struct LcTypeTestOptInfo : public LcOptInfo
 {
+    // statement where the opportunity occurs
+    Statement* stmt;
+    // indir for the method table
+    GenTreeIndir* methodTableIndir;
     // local whose method table is tested
     unsigned lclNum;
     // handle being tested for
     CORINFO_CLASS_HANDLE clsHnd;
 
-    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
-        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd)
+    LcTypeTestOptInfo(Statement* stmt, GenTreeIndir* methodTableIndir, unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
+        : LcOptInfo(LcTypeTest), stmt(stmt), methodTableIndir(methodTableIndir), lclNum(lclNum), clsHnd(clsHnd)
     {
     }
 };
 
 struct LcMethodAddrTestOptInfo : public LcOptInfo
 {
+    // statement where the opportunity occurs
+    Statement* stmt;
+    // indir on the delegate
+    GenTreeIndir* delegateAddressIndir;
     // Invariant local whose target field(s) are tested
     unsigned delegateLclNum;
     // Invariant tree representing method address on the other side of the test
@@ -342,10 +350,14 @@ struct LcMethodAddrTestOptInfo : public LcOptInfo
     CORINFO_METHOD_HANDLE targetMethHnd;
 #endif
 
-    LcMethodAddrTestOptInfo(unsigned delegateLclNum,
-                            void*    methAddr,
+    LcMethodAddrTestOptInfo(Statement*    stmt,
+                            GenTreeIndir* delegateAddressIndir,
+                            unsigned      delegateLclNum,
+                            void*         methAddr,
                             bool isSlot DEBUG_ARG(CORINFO_METHOD_HANDLE targetMethHnd))
         : LcOptInfo(LcMethodAddrTest)
+        , stmt(stmt)
+        , delegateAddressIndir(delegateAddressIndir)
         , delegateLclNum(delegateLclNum)
         , methAddr(methAddr)
         , isSlot(isSlot) DEBUG_ARG(targetMethHnd(targetMethHnd))
