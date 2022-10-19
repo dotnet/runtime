@@ -628,6 +628,48 @@ namespace DebuggerTests
            });
 
         [Fact]
+        public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f.numList[i + 1]", TNumber(2)),
+                    ("f.textList[(2 * j) - 1]", TString("2")),
+                    ("f.textList[j - 1]", TString("1")),
+                    ("f.numArray[f.numList[j - 1]]", TNumber(2))
+                );
+            });
+
+        [Fact]
+        public async Task EvaluateIndexingByExpressionMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f.numArray2D[0, j - 1]", TNumber(1)), // 0, 0
+                    ("f.numArray2D[f.idx1, i + j]", TNumber(4)), // 1, 1
+                    ("f.numArray2D[(f.idx1 - j) * 5, i + j]", TNumber(2)), // 0, 1
+                    ("f.numArray2D[i + j, f.idx1 - 1]", TNumber(3)) // 1, 0
+                );
+            });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingByExpressionNegative() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                // indexing with expression of a wrong type
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
+            });
+
+        [Fact]
         public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",

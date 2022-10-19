@@ -72,6 +72,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
 
+            public ISet<string> ISetNoSetter { get; } = new HashSet<string>();
+
             public HashSet<string> InstantiatedHashSetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] {"existing1", "existing2"});
 
@@ -660,6 +662,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.NonInstantiatedISet.Count);
             Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindISetNoSetter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ISetNoSetter:0", "Yo1"},
+                {"ISetNoSetter:1", "Yo2"},
+                {"ISetNoSetter:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.ISetNoSetter.Count);
+            Assert.Equal("Yo1", options.ISetNoSetter.ElementAt(0));
+            Assert.Equal("Yo2", options.ISetNoSetter.ElementAt(1));
         }
 
 #if NETCOREAPP

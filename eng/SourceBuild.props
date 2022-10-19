@@ -39,6 +39,8 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:EnablePackageValidation=false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:DisableSourceLink=false</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -298,6 +299,216 @@ namespace System.Formats.Tar.Tests
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.ChangeTime);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void WriteLongName(TarEntryFormat format)
+        {
+            var r = new Random();
+            foreach (int length in new[] { 99, 100, 101, 199, 200, 201, 254, 255, 256 })
+            {
+                string name = string.Concat(Enumerable.Range(0, length).Select(_ => (char)('a' + r.Next(26))));
+                WriteLongNameCore(format, name);
+            }
+        }
+
+        private void WriteLongNameCore(TarEntryFormat format, string maxPathComponent)
+        {
+            TarEntry entry;
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, true))
+            {
+                TarEntryType entryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
+                writer.WriteEntry(entry);
+
+                entry = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
+                writer.WriteEntry(entry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+
+            entry = reader.GetNextEntry();
+            string expectedName = GetExpectedNameForFormat(format, maxPathComponent);
+            Assert.Equal(expectedName, entry.Name);
+
+            entry = reader.GetNextEntry();
+            expectedName = GetExpectedNameForFormat(format, Path.Join(maxPathComponent, maxPathComponent));
+            Assert.Equal(expectedName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+
+            string GetExpectedNameForFormat(TarEntryFormat format, string expectedName)
+            {
+                if (format is TarEntryFormat.V7 && expectedName.Length > 100) // V7 truncates names at 100 characters.
+                {
+                    return expectedName.Substring(0, 100);
+                }
+                return expectedName;
+            }
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongName_Throws_TheoryData()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+            {
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
+                {
+                    TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
+                    yield return new object[] { TarEntryFormat.V7, v7EntryType, name };
+                }
+
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
+                {
+                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongName_Throws_TheoryData))]
+        public void WriteEntry_TooLongName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string name)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongLinkName_Throws_TheoryData()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
+            {
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
+                {
+                    yield return new object[] { TarEntryFormat.V7, entryType, name };
+                }
+
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
+                {
+                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_TheoryData))]
+        public void WriteEntry_TooLongLinkName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            entry.LinkName = linkName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongUserGroupName_Throws_TheoryData()
+        {
+            // Not testing Pax as it supports unlimited size uname/gname.
+            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Gnu })
+            {
+                // Last character doesn't fit fully.
+                yield return new object[] { entryFormat, Repeat(OneByteCharacter, 32 + 1) };
+                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 / 2 + 1) };
+                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 / 4 + 1) };
+
+                // Last character doesn't fit by one byte.
+                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 - 2 + 1) + TwoBytesCharacter };
+                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 - 4 + 1) + FourBytesCharacter };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryData))]
+        public void WriteEntry_TooLongUserName_Throws(TarEntryFormat entryFormat, string userName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.UserName = userName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryData))]
+        public void WriteEntry_TooLongGroupName_Throws(TarEntryFormat entryFormat, string groupName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.GroupName = groupName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData()
+        {
+            foreach (var entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                foreach (var entryType in new[] { entryFormat == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, TarEntryType.Directory, TarEntryType.SymbolicLink })
+                {
+                    foreach (bool unseekableStream in new[] { false, true })
+                    {
+                        yield return new object[] { entryFormat, entryType, unseekableStream };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData))]
+        public void WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream)
+        {
+            MemoryStream msSource = new();
+            MemoryStream msDestination = new();
+
+            WriteTarArchiveWithOneEntry(msSource, entryFormat, entryType);
+            msSource.Position = 0;
+
+            Stream source = new WrappedStream(msSource, msSource.CanRead, msSource.CanWrite, canSeek: !unseekableStream);
+            Stream destination = new WrappedStream(msDestination, msDestination.CanRead, msDestination.CanWrite, canSeek: !unseekableStream);
+
+            using (TarReader reader = new(source))
+            using (TarWriter writer = new(destination))
+            {
+                TarEntry entry;
+                while ((entry = reader.GetNextEntry()) != null)
+                {
+                    writer.WriteEntry(entry);
+                }
+            }
+
+            AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public void WriteEntry_FileSizeOverLegacyLimit_Throws(TarEntryFormat entryFormat, bool unseekableStream)
+        {
+            const long FileSizeOverLimit = LegacyMaxFileSize + 1;
+
+            MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using TarWriter writer = new(s);
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
+
+            Assert.Equal(FileSizeOverLimit, writeEntry.Length);
+
+            Assert.Throws<ArgumentException>(() => writer.WriteEntry(writeEntry));
         }
     }
 }

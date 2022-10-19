@@ -98,9 +98,7 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
                 FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
-                fieldValue["__section"] = attr == FieldAttributes.Public
-                    ? "public" :
-                    attr == FieldAttributes.Private ? "private" : "internal";
+                fieldValue["__section"] = attr == FieldAttributes.Private ? "private" : "result";
 
                 if (field.IsBackingField)
                 {
@@ -218,7 +216,6 @@ namespace BrowserDebugProxy
                 result = _combinedResult.Clone();
                 RemovePropertiesFrom(result.Result);
                 RemovePropertiesFrom(result.PrivateMembers);
-                RemovePropertiesFrom(result.OtherMembers);
             }
 
             if (result == null)
@@ -293,7 +290,7 @@ namespace BrowserDebugProxy
                     typeId,
                     className,
                     Buffer,
-                    autoExpand,
+                    autoExpand ? GetObjectCommandOptions.AutoExpandable : GetObjectCommandOptions.None,
                     Id,
                     isValueType: true,
                     isOwn: i == 0,

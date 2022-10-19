@@ -168,14 +168,15 @@ jobs:
         - Browser_wasm
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm_firefox
-      browser: firefox
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      # ff tests are unstable currently
-      shouldContinueOnError: true
+  # Known to be unstable so disabled for 7.0 on PRs
+  #- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm_firefox
+      #browser: firefox
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      ## ff tests are unstable currently
+      #shouldContinueOnError: true
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml

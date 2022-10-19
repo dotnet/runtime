@@ -6,7 +6,7 @@
   </PropertyGroup>
 
    <PropertyGroup>
-     <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+     <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
    </PropertyGroup>
 
    <PropertyGroup>

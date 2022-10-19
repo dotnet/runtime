@@ -1370,65 +1370,46 @@ FOUND_AM:
 
     if (rv2)
     {
-        /* Make sure a GC address doesn't end up in 'rv2' */
-
+        // Make sure a GC address doesn't end up in 'rv2'
         if (varTypeIsGC(rv2->TypeGet()))
         {
             noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
-            tmp = rv1;
-            rv1 = rv2;
-            rv2 = tmp;
-
+            std::swap(rv1, rv2);
             rev = !rev;
         }
 
-        /* Special case: constant array index (that is range-checked) */
-
+        // Special case: constant array index (that is range-checked)
         if (fold)
         {
-            ssize_t  tmpMul;
-            GenTree* index;
+            // By default, assume index is rv2 and indexScale is mul (or 1 if mul is zero)
+            GenTree* index      = rv2;
+            ssize_t  indexScale = mul == 0 ? 1 : mul;
 
-            if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
+            if (rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
             {
-                /* For valuetype arrays where we can't use the scaled address
-                   mode, rv2 will point to the scaled index. So we have to do
-                   more work */
-
-                tmpMul = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
-                if (mul)
-                {
-                    tmpMul *= mul;
-                }
-            }
-            else
-            {
-                /* May be a simple array. rv2 will points to the actual index */
-
-                index  = rv2;
-                tmpMul = mul;
+                indexScale *= compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
             }
 
-            /* Get hold of the array index and see if it's a constant */
-            if (index->IsIntCnsFitsInI32())
+            // "index * 0" means index is zero
+            if (indexScale == 0)
             {
-                /* Get hold of the index value */
-                ssize_t ixv = index->AsIntConCommon()->IconValue();
-
-                /* Scale the index if necessary */
-                if (tmpMul)
+                mul = 0;
+                rv2 = nullptr;
+            }
+            else if (index->IsIntCnsFitsInI32())
+            {
+                ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
+                if (constantIndex == 0)
                 {
-                    ixv *= tmpMul;
+                    // while scale is a non-zero constant, the actual index is zero so drop it
+                    mul = 0;
+                    rv2 = nullptr;
                 }
-
-                if (FitsIn<INT32>(cns + ixv))
+                else if (FitsIn<INT32>(cns + constantIndex))
                 {
-                    /* Add the scaled index to the offset value */
-
-                    cns += ixv;
-
-                    /* There is no scaled operand any more */
+                    // Add the constant index to the accumulated offset value
+                    cns += constantIndex;
+                    // and get rid of index
                     mul = 0;
                     rv2 = nullptr;
                 }

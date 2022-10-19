@@ -322,5 +322,115 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongName_Throws_Async_TheoryData()
+            => TarWriter_WriteEntry_Tests.WriteEntry_TooLongName_Throws_TheoryData();
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongName_Throws_Async_TheoryData))]
+        public async Task WriteEntry_TooLongName_Throws_Async(TarEntryFormat entryFormat, TarEntryType entryType, string name)
+        {
+            await using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongLinkName_Throws_Async_TheoryData()
+            => TarWriter_WriteEntry_Tests.WriteEntry_TooLongLinkName_Throws_TheoryData();
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_Async_TheoryData))]
+        public async Task WriteEntry_TooLongLinkName_Throws_Async(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
+        {
+            await using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            entry.LinkName = linkName;
+
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongUserGroupName_Throws_Async_TheoryData()
+            => TarWriter_WriteEntry_Tests.WriteEntry_TooLongUserGroupName_Throws_TheoryData();
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_Async_TheoryData))]
+        public async Task WriteEntry_TooLongUserName_Throws_Async(TarEntryFormat entryFormat, string userName)
+        {
+            await using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.UserName = userName;
+
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(entry));
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_Async_TheoryData))]
+        public async Task WriteEntry_TooLongGroupName_Throws_Async(TarEntryFormat entryFormat, string groupName)
+        {
+            await using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.GroupName = groupName;
+
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_Async_TheoryData()
+            => TarWriter_WriteEntry_Tests.WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData();
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_Async_TheoryData))]
+        public async Task WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_Async(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream)
+        {
+            using MemoryStream msSource = new();
+            using MemoryStream msDestination = new();
+
+            WriteTarArchiveWithOneEntry(msSource, entryFormat, entryType);
+            msSource.Position = 0;
+
+            Stream source = new WrappedStream(msSource, msSource.CanRead, msSource.CanWrite, canSeek: !unseekableStream);
+            Stream destination = new WrappedStream(msDestination, msDestination.CanRead, msDestination.CanWrite, canSeek: !unseekableStream);
+
+            await using (TarReader reader = new(source))
+            await using (TarWriter writer = new(destination))
+            {
+                TarEntry entry;
+                while ((entry = await reader.GetNextEntryAsync()) != null)
+                {
+                    await writer.WriteEntryAsync(entry);
+                }
+            }
+
+            AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public async Task WriteEntry_FileSizeOverLegacyLimit_Throws_Async(TarEntryFormat entryFormat, bool unseekableStream)
+        {
+            const long FileSizeOverLimit = LegacyMaxFileSize + 1;
+
+            MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            string tarFilePath = GetTestFilePath();
+            await using TarWriter writer = new(File.Create(tarFilePath));
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
+
+            Assert.Equal(FileSizeOverLimit, writeEntry.Length);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => writer.WriteEntryAsync(writeEntry));
+        }
     }
 }

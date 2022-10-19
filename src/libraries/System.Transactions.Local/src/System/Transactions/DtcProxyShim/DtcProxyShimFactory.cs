@@ -21,6 +21,11 @@ internal sealed class DtcProxyShimFactory
     // at the same time.
     private static readonly object _proxyInitLock = new();
 
+    // This object will perform the actual distributed transaction connection.
+    // It will be set only if TransactionManager.ImplicitDefaultTransactions
+    // is set to true, allowing the relevant code to be trimmed otherwise.
+    internal static ITransactionConnector? s_transactionConnector;
+
     // Lock to protect access to listOfNotifications.
     private readonly object _notificationLock = new();
 
@@ -29,6 +34,8 @@ internal sealed class DtcProxyShimFactory
     private readonly ConcurrentQueue<ITransactionOptions> _cachedOptions = new();
     private readonly ConcurrentQueue<ITransactionTransmitter> _cachedTransmitters = new();
     private readonly ConcurrentQueue<ITransactionReceiver> _cachedReceivers = new();
+
+    private static readonly int s_maxCachedInterfaces = Environment.ProcessorCount * 2;
 
     private readonly EventWaitHandle _eventHandle;
 
@@ -39,6 +46,7 @@ internal sealed class DtcProxyShimFactory
 
     // https://docs.microsoft.com/previous-versions/windows/desktop/ms678898(v=vs.85)
     [DllImport(Interop.Libraries.Xolehlp, CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+    [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
     private static extern void DtcGetTransactionManagerExW(
         [MarshalAs(UnmanagedType.LPWStr)] string? pszHost,
         [MarshalAs(UnmanagedType.LPWStr)] string? pszTmName,
@@ -47,7 +55,10 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
-    [UnconditionalSuppressMessage("Trimming", "IL2050", Justification = "Leave me alone")]
+    [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
+    private static void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) =>
+        DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser);
+
     public void ConnectToProxy(
         string? nodeName,
         Guid resourceManagerIdentifier,
@@ -58,12 +69,36 @@ internal sealed class DtcProxyShimFactory
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
-            throw new PlatformNotSupportedException(SR.DistributedNotSupportOn32Bits);
+            throw new PlatformNotSupportedException(SR.DistributedNotSupportedOn32Bits);
         }
 
+        lock (TransactionManager.s_implicitDistributedTransactionsLock)
+        {
+            if (s_transactionConnector is null)
+            {
+                // We set TransactionManager.ImplicitDistributedTransactionsInternal, so that any attempt to change it
+                // later will cause an exception.
+                TransactionManager.s_implicitDistributedTransactions = false;
+
+                throw new NotSupportedException(SR.ImplicitDistributedTransactionsDisabled);
+            }
+        }
+
+        s_transactionConnector.ConnectToProxyCore(this, nodeName, resourceManagerIdentifier, managedIdentifier, out nodeNameMatches, out whereabouts, out resourceManagerShim);
+    }
+
+    [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
+    private void ConnectToProxyCore(
+        string? nodeName,
+        Guid resourceManagerIdentifier,
+        object managedIdentifier,
+        out bool nodeNameMatches,
+        out byte[] whereabouts,
+        out ResourceManagerShim resourceManagerShim)
+    {
         lock (_proxyInitLock)
         {
-            DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
+            DtcGetTransactionManager(nodeName, out ITransactionDispenser? localDispenser);
 
             // Check to make sure the node name matches.
             if (nodeName is not null)
@@ -333,7 +368,15 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedTransmitter(ITransactionTransmitter transmitter)
-        => _cachedTransmitters.Enqueue(transmitter);
+    {
+        // Note that due to race conditions, we may end up enqueuing above s_maxCachedInterfaces.
+        // This is benign, as this is only a best-effort cache, and there are no negative consequences.
+        if (_cachedTransmitters.Count < s_maxCachedInterfaces)
+        {
+            transmitter.Reset();
+            _cachedTransmitters.Enqueue(transmitter);
+        }
+    }
 
     internal ITransactionReceiver GetCachedReceiver()
     {
@@ -349,5 +392,47 @@ internal sealed class DtcProxyShimFactory
     }
 
     internal void ReturnCachedReceiver(ITransactionReceiver receiver)
-        => _cachedReceivers.Enqueue(receiver);
+    {
+        // Note that due to race conditions, we may end up enqueuing above s_maxCachedInterfaces.
+        // This is benign, as this is only a best-effort cache, and there are no negative consequences.
+        if (_cachedReceivers.Count < s_maxCachedInterfaces)
+        {
+            receiver.Reset();
+            _cachedReceivers.Enqueue(receiver);
+        }
+    }
+
+    internal interface ITransactionConnector
+    {
+        void ConnectToProxyCore(
+            DtcProxyShimFactory proxyShimFactory,
+            string? nodeName,
+            Guid resourceManagerIdentifier,
+            object managedIdentifier,
+            out bool nodeNameMatches,
+            out byte[] whereabouts,
+            out ResourceManagerShim resourceManagerShim);
+    }
+
+    [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
+    internal sealed class DtcTransactionConnector : ITransactionConnector
+    {
+        public void ConnectToProxyCore(
+            DtcProxyShimFactory proxyShimFactory,
+            string? nodeName,
+            Guid resourceManagerIdentifier,
+            object managedIdentifier,
+            out bool nodeNameMatches,
+            out byte[] whereabouts,
+            out ResourceManagerShim resourceManagerShim)
+        {
+            proxyShimFactory.ConnectToProxyCore(
+                nodeName,
+                resourceManagerIdentifier,
+                managedIdentifier,
+                out nodeNameMatches,
+                out whereabouts,
+                out resourceManagerShim);
+        }
+    }
 }

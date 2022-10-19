@@ -60,12 +60,16 @@
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
+    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
+    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -105,6 +109,8 @@
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
 
     <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) %AOT_BUILD_ARGS%</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">$(_AOTBuildCommand) %24AOT_BUILD_ARGS</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>

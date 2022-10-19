@@ -937,6 +937,7 @@ namespace System.Data
         public override decimal GetDecimal(int ordinal) { throw null; }
         public override double GetDouble(int ordinal) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetFieldType(int ordinal) { throw null; }
         public override float GetFloat(int ordinal) { throw null; }
         public override System.Guid GetGuid(int ordinal) { throw null; }
@@ -945,6 +946,7 @@ namespace System.Data
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int ordinal) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
@@ -2315,6 +2317,7 @@ namespace System.Data.Common
         public abstract double GetDouble(int ordinal);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract System.Collections.IEnumerator GetEnumerator();
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int ordinal);
         public System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal) { throw null; }
         public virtual System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -2327,6 +2330,7 @@ namespace System.Data.Common
         public abstract string GetName(int ordinal);
         public abstract int GetOrdinal(string name);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public virtual System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
@@ -2373,6 +2377,7 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DbDataReader GetDbDataReader(int i) { throw null; }
         public abstract decimal GetDecimal(int i);
         public abstract double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int i);
         public abstract float GetFloat(int i);
         public abstract System.Guid GetGuid(int i);
