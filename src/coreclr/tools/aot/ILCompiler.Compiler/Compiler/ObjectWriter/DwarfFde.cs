@@ -105,7 +105,18 @@ namespace ILCompiler.ObjectWriter
                         while (temp > 0);
                         break;
 
-                    // TODO: CFI_DEF_CFA
+                    case CFI_OPCODE.CFI_DEF_CFA:
+                        cfiCode[cfiCodeOffset++] = (byte)DW_CFA_def_cfa;
+                        cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
+                        cfaOffset = cfiOffset;
+                        temp = (uint)(cfaOffset);
+                        do
+                        {
+                            cfiCode[cfiCodeOffset++] = (byte)((temp & 0x7f) | ((temp >= 0x80) ? 0x80u : 0));
+                            temp >>= 7;
+                        }
+                        while (temp > 0);
+                        break;
                 }
             }
 
