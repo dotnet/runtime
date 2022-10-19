@@ -9,37 +9,34 @@ namespace System.IO.Compression.Tests
 {
     public class zip_LargeFiles : ZipFileTestBase
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))] // don't run it on slower runtimes
-        [OuterLoop("It takes more than 10 minutes")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+        [OuterLoop("It requires almost 12 GB of free disk space")]
         public static void UnzipOver4GBZipFile()
         {
-            Random random = new (12345); // use const seed for reproducible results
-            byte[] buffer = new byte[1_000_000]; // 1 MB
-            Dictionary<string, byte[]> entiresContent = new();
+            byte[] buffer = new byte[1_000_000_000]; // 1 GB
 
             string zipArchivePath = Path.Combine("ZipTestData", "over4GB.zip");
             DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine("ZipTestData", "over4GB"));
 
             try
             {
-                for (int i = 0; i < 4_500; i++)
+                for (byte i = 0; i < 6; i++)
                 {
-                    random.NextBytes(buffer);
+                    buffer.AsSpan().Fill(i);
 
                     string entryName = $"{i}.test";
                     File.WriteAllBytes(Path.Combine(tempDir.FullName, entryName), buffer);
-                    entiresContent.Add(entryName, buffer.ToArray());
                 }
 
-                ZipFile.CreateFromDirectory(tempDir.FullName, zipArchivePath);
+                ZipFile.CreateFromDirectory(tempDir.FullName, zipArchivePath, CompressionLevel.NoCompression, includeBaseDirectory: false);
 
                 using ZipArchive zipArchive = ZipFile.OpenRead(zipArchivePath);
                 foreach (ZipArchiveEntry entry in zipArchive.Entries)
                 {
                     using Stream entryStream = entry.Open();
+
                     Assert.True(entryStream.CanRead);
-                    entryStream.ReadExactly(buffer);
-                    Assert.Equal(entiresContent[entry.Name], buffer);
+                    Assert.Equal(buffer.Length, entryStream.Length);
                 }
             }
             finally
