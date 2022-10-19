@@ -1518,7 +1518,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
         printer.Truncate(0);
-        printer.Printf("hackishClassName");
+        printer.Append("hackishClassName");
     }
 
     return printer.GetBuffer();
@@ -1615,33 +1615,31 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-const WCHAR* Compiler::eeGetCPString(size_t strHandle)
+void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t handle)
 {
-#ifdef HOST_UNIX
-    return nullptr;
-#else
-    char buff[512 + sizeof(CORINFO_String)];
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = 0;
 
-    // make this bulletproof, so it works even if we are wrong.
-    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize); });
+
+    if (!success)
     {
-        return (nullptr);
+        return;
     }
 
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
-
-    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
+    for (size_t i = 0; i < actualLen; i++)
     {
-        return (nullptr);
+        // Replace \n and \r symbols with whitespaces
+        if (str[i] == '\n' || str[i] == '\r')
+        {
+            str[i] = ' ';
+        }
     }
 
-    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
-    {
-        return nullptr;
-    }
-
-    return (WCHAR*)(asString->chars);
-#endif // HOST_UNIX
+    printf("%s '%s'\n", prefix, str);
 }
 #else  // DEBUG
 void jitprintf(const char* fmt, ...)

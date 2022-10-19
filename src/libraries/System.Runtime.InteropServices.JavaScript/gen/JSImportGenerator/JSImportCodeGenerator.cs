@@ -27,7 +27,8 @@ namespace Microsoft.Interop.JavaScript
         private readonly JSSignatureContext _signatureContext;
 
         public JSImportCodeGenerator(
-            StubEnvironment environment,
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSImportData attributeData,
             JSSignatureContext signatureContext,
@@ -35,13 +36,13 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
+            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnNativeIdentifier);
+                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSImportCodeContext(attributeData, innerContext);
                 _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             }
@@ -77,7 +78,7 @@ namespace Microsoft.Interop.JavaScript
         public BlockSyntax GenerateJSImportBody()
         {
             StatementSyntax invoke = InvokeSyntax();
-            JSGeneratedStatements statements = JSGeneratedStatements.Create(_marshallers, _context, invoke);
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
 
@@ -96,8 +97,9 @@ namespace Microsoft.Interop.JavaScript
 
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
+            tryStatements.AddRange(statements.PinnedMarshal);
 
-            tryStatements.AddRange(statements.InvokeStatements);
+            tryStatements.Add(invoke);
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,

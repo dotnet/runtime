@@ -8,6 +8,7 @@
   
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AddConsoleFormatterTests.cs" />
+    <TestConsoleAppSourceFiles Include="JsonFormattingTests.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

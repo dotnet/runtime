@@ -2821,9 +2821,6 @@ namespace System.ComponentModel
         {
             private readonly TypeDescriptionProvider _comNativeDescriptor;
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-                Justification = "The trimmer can't find the ComNativeDescriptor type when System.Windows.Forms isn't available. " +
-                "When System.Windows.Forms is available, the type will be seen by the trimmer and the ctor will be preserved.")]
             public ComNativeDescriptorProxy()
             {
                 Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true)!;

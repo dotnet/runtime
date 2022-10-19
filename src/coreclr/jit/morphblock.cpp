@@ -19,7 +19,8 @@ protected:
     virtual void TrySpecialCases();
     virtual void MorphStructCases();
 
-    void PropagateAssertions();
+    void PropagateBlockAssertions();
+    void PropagateExpansionAssertions();
 
     virtual const char* GetHelperName() const
     {
@@ -55,8 +56,8 @@ protected:
         FieldByField,
         OneAsgBlock,
         StructBlock,
-        SkipCallSrc,
-        SkipMultiRegIntrinsicSrc,
+        SkipMultiRegSrc,
+        SkipSingleRegCallSrc,
         Nop
     };
 
@@ -127,7 +128,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     PrepareDst();
     PrepareSrc();
-    PropagateAssertions();
+    PropagateBlockAssertions();
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -149,6 +150,8 @@ GenTree* MorphInitBlockHelper::Morph()
             MorphStructCases();
         }
     }
+
+    PropagateExpansionAssertions();
 
     assert(m_transformationDecision != BlockTransformation::Undefined);
     assert(m_result != nullptr);
@@ -278,7 +281,7 @@ void MorphInitBlockHelper::PrepareDst()
 }
 
 //------------------------------------------------------------------------
-// PropagateAssertions: propagate assertions based on the original tree
+// PropagateBlockAssertions: propagate assertions based on the original tree
 //
 // Notes:
 //    Once the init or copy tree is morphed, assertion gen can no
@@ -286,9 +289,27 @@ void MorphInitBlockHelper::PrepareDst()
 //
 //    So we generate assertions based on the original tree.
 //
-void MorphInitBlockHelper::PropagateAssertions()
+void MorphInitBlockHelper::PropagateBlockAssertions()
 {
     if (m_comp->optLocalAssertionProp)
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
+}
+
+//------------------------------------------------------------------------
+// PropagateExpansionAssertions: propagate assertions based on the
+//   expanded tree
+//
+// Notes:
+//    After the copy/init is expanded, we may see additional expansions
+//    to generate.
+//
+void MorphInitBlockHelper::PropagateExpansionAssertions()
+{
+    // Consider doing this for FieldByField as well
+    //
+    if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneAsgBlock))
     {
         m_comp->optAssertionGen(m_asg);
     }
@@ -342,7 +363,7 @@ void MorphInitBlockHelper::MorphStructCases()
         if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
             assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet());
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD
@@ -634,18 +655,15 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 break;
             case TYP_REF:
             case TYP_BYREF:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType, CORINFO_TYPE_FLOAT);
-                break;
 #endif // FEATURE_SIMD
+                assert(initPattern == 0);
+                src = m_comp->gtNewZeroConNode(fieldType);
+                break;
             default:
                 unreached();
         }
@@ -782,61 +800,25 @@ void MorphCopyBlockHelper::PrepareSrc()
 // TrySpecialCases: check special cases that require special transformations.
 //    The current special cases include assignments with calls in RHS.
 //
-// Notes:
-//    It could change multiReg flags or change m_dst node.
-//
 void MorphCopyBlockHelper::TrySpecialCases()
 {
-#ifdef FEATURE_HW_INTRINSICS
-    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (m_src->IsMultiRegNode())
     {
-        assert(m_src->IsMultiRegNode());
-        JITDUMP("Not morphing a multireg intrinsic\n");
-        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        assert(m_dst->OperIs(GT_LCL_VAR));
+
+        // This will exclude field locals (if any) from SSA: we do not have a way to
+        // associate multiple SSA definitions (SSA numbers) with one store.
+        m_dstVarDsc->lvIsMultiRegRet = true;
+
+        JITDUMP("Not morphing a multireg node return\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
         m_result                 = m_asg;
     }
-#endif // FEATURE_HW_INTRINSICS
-
-#if FEATURE_MULTIREG_RET
-    // If this is a multi-reg return, we will not do any morphing of this node.
-    if (m_src->IsMultiRegCall())
+    else if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
     {
-        assert(m_dst->OperGet() == GT_LCL_VAR);
-        JITDUMP("Not morphing a multireg call return\n");
-        m_transformationDecision = BlockTransformation::SkipCallSrc;
+        JITDUMP("Not morphing a single reg call return\n");
+        m_transformationDecision = BlockTransformation::SkipSingleRegCallSrc;
         m_result                 = m_asg;
-    }
-    else if (m_dst->IsMultiRegLclVar() && !m_src->IsMultiRegNode())
-    {
-        m_dst->AsLclVar()->ClearMultiReg();
-    }
-#endif // FEATURE_MULTIREG_RET
-
-    if (m_transformationDecision == BlockTransformation::Undefined)
-    {
-        if (m_src->IsCall())
-        {
-            if (m_dst->OperIs(GT_OBJ))
-            {
-                GenTreeLclVar* lclVar = m_comp->fgMorphTryFoldObjAsLclVar(m_dst->AsObj());
-                if (lclVar != nullptr)
-                {
-                    m_dst        = lclVar;
-                    m_asg->gtOp1 = lclVar;
-                }
-            }
-            if (m_dst->OperIs(GT_LCL_VAR))
-            {
-                LclVarDsc* varDsc = m_comp->lvaGetDesc(m_dst->AsLclVar());
-                if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(m_comp))
-                {
-                    m_dst->gtFlags |= GTF_DONT_CSE;
-                    JITDUMP("Not morphing a single reg call return\n");
-                    m_transformationDecision = BlockTransformation::SkipCallSrc;
-                    m_result                 = m_asg;
-                }
-            }
-        }
     }
 }
 
@@ -1126,12 +1108,6 @@ void MorphCopyBlockHelper::MorphStructCases()
         {
             // Mark it as DoNotEnregister.
             m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-        else if (m_dst->IsMultiRegLclVar())
-        {
-            // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
-            // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
-            m_dstVarDsc->lvIsMultiRegRet = true;
         }
     }
 
@@ -1428,7 +1404,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             (m_srcVarDsc->lvType == TYP_STRUCT) ? m_srcVarDsc->lvExactSize : genTypeSize(m_srcVarDsc);
                         if (destSize == srcSize)
                         {
-                            m_srcLclNode->gtFlags |= GTF_VAR_CAST;
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
                             m_srcLclNode->gtType = destType;
                             m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));

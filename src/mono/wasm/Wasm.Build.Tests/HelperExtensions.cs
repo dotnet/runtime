@@ -5,9 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Diagnostics;
 using System.Text;
-using System.Collections;
-using Xunit.Abstractions;
 
 #nullable enable
 
@@ -120,6 +119,19 @@ namespace Wasm.Build.Tests
 
                 dict[filename] = (oldValue.fullPath, unchanged);
             }
+        }
+
+        public static ProcessStartInfo RemoveEnvironmentVariables(this ProcessStartInfo psi, params string[] names)
+        {
+            var env = psi.Environment;
+            foreach (string name in names)
+            {
+                string? key = env.Keys.FirstOrDefault(k => string.Compare(k, name, StringComparison.OrdinalIgnoreCase) == 0);
+                if (key is not null)
+                    env.Remove("MSBuildSDKsPath");
+            }
+
+            return psi;
         }
     }
 }

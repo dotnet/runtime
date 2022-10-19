@@ -233,6 +233,13 @@ inline unsigned genLog2(unsigned __int64 value)
 #endif
 }
 
+#if defined(HOST_UNIX) && defined(HOST_64BIT)
+inline unsigned genLog2(size_t value)
+{
+    return genLog2((unsigned __int64)value);
+}
+#endif // HOST_UNIX && HOST_BIT64
+
 /*****************************************************************************
  *
  *  Return the lowest bit that is set in the given register mask.
@@ -830,42 +837,23 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-/*****************************************************************************/
-
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications)
+inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
-    if (doSimplifications)
+    if (oper == GT_ADDR)
     {
-        // We do some simplifications here. If this gets to be too many, try a switch...
-        if (oper == GT_IND)
+        if (op1->OperIsIndir())
         {
-            // IND(ADDR(IND(x)) == IND(x)
-            if (op1->OperIs(GT_ADDR))
-            {
-                GenTree* indir = op1->AsUnOp()->gtGetOp1();
-                if (indir->OperIs(GT_IND))
-                {
-                    op1 = indir->AsIndir()->Addr();
-                }
-            }
+            assert(op1->IsValue());
+            return op1->AsIndir()->Addr();
         }
-        else if (oper == GT_ADDR)
-        {
-            if (op1->OperIs(GT_IND))
-            {
-                return op1->AsOp()->gtOp1;
-            }
-            else
-            {
-                // Addr source can't be CSE-ed.
-                op1->SetDoNotCSE();
-            }
-        }
+
+        assert(op1->OperIsLocalRead() || op1->OperIs(GT_FIELD));
+        op1->SetDoNotCSE();
     }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
@@ -1339,8 +1327,6 @@ inline void GenTree::gtBashToNOP()
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
-/*****************************************************************************/
-
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
 {
     return gtNewOperNode(GT_COMMA, TYP_VOID, expr, gtNewNothingNode());
@@ -1557,7 +1543,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
     static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
                           std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, double>::value));
+                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
+
     static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
 
     var_types typeOfValue = TYP_UNDEF;
@@ -1617,7 +1604,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
-            AsDblCon()->gtDconVal = static_cast<double>(value);
+            AsDblCon()->SetDconValue(static_cast<double>(value));
             break;
 
         default:
@@ -3762,7 +3749,7 @@ inline ArenaAllocator* Compiler::compGetArenaAllocator()
     return compArenaAllocator;
 }
 
-inline bool Compiler::compIsProfilerHookNeeded()
+inline bool Compiler::compIsProfilerHookNeeded() const
 {
 #ifdef PROFILING_SUPPORTED
     return compProfilerHookNeeded
@@ -3794,30 +3781,6 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
 }
 
-/*****************************************************************************
- *
- *  Check to see if the delegate is created using "LDFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 6 && // LDFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_PREFIX1 && delegateCreateStart[1] == (CEE_LDFTN & 0xFF));
-}
-
-/*****************************************************************************
- *
- *  Check to see if the delegate is created using "DUP LDVIRTFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 7 && // DUP LDVIRTFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_DUP && delegateCreateStart[1] == CEE_PREFIX1 &&
-            delegateCreateStart[2] == (CEE_LDVIRTFTN & 0xFF));
-}
 /*****************************************************************************
  *
  * Returns true if the compiler instance is created for import only (verification).

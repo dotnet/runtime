@@ -73,6 +73,7 @@ C_FUNC(\Name):
 #if defined(__APPLE__)
         adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
         ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  \HelperReg, [\HelperReg]
 #else
         adrp \HelperReg, C_FUNC(\Name)
         ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
@@ -82,7 +83,8 @@ C_FUNC(\Name):
 .macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
 #if defined(__APPLE__)
         adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  w\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  w\HelperReg, [x\HelperReg]
 #else
         adrp x\HelperReg, C_FUNC(\Name)
         ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
@@ -182,6 +184,10 @@ C_FUNC(\Name):
     .endif
 
     stp     x0, lr, [sp,#-0x10]!
+#if defined(__APPLE__)
+    // Apple's tls_get_var trashes xip0 (and possibly xip1)
+    stp     xip0, xip1, [sp,#-0x10]!
+#endif
 
     // This sequence of instructions is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
@@ -206,6 +212,9 @@ C_FUNC(\Name):
     add     \target, \target, x0
 #endif
 
+#if defined(__APPLE__)
+    ldp     xip0, xip1, [sp],#0x10
+#endif
     ldp     x0, lr, [sp],#0x10
 .endm
 

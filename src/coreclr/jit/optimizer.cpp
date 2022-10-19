@@ -398,7 +398,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         LoopDsc& loop = optLoopTable[loopNum];
 
         // Some loops may have been already removed by loop unrolling or conditional folding.
-        if (loop.lpFlags & LPFLG_REMOVED)
+        if (loop.lpIsRemoved())
         {
             continue;
         }
@@ -613,7 +613,7 @@ void Compiler::optPrintLoopInfo(const LoopDsc* loop, bool printVerbose /* = fals
     assert(lnum < optLoopCount);
     assert(&optLoopTable[lnum] == loop);
 
-    if (loop->lpFlags & LPFLG_REMOVED)
+    if (loop->lpIsRemoved())
     {
         // If a loop has been removed, it might be dangerous to print its fields (e.g., loop unrolling
         // nulls out the lpHead field).
@@ -2869,7 +2869,7 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
 {
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
-        if ((optLoopTable[loopInd].lpFlags & LPFLG_REMOVED) != 0)
+        if (optLoopTable[loopInd].lpIsRemoved())
         {
             continue;
         }
@@ -2951,10 +2951,38 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
     bool              modified = false;
-    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock*       h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const t        = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+
+    // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
+    // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
+    // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
+    // head block. See FindEntry() for the logic that allows this.
+    if ((h->bbJumpKind == BBJ_ALWAYS) && (h->bbJumpDest == t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    {
+        // Insert new head
+
+        BasicBlock* const newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+        newH->inheritWeight(h);
+        newH->bbNatLoopNum = h->bbNatLoopNum;
+        h->bbJumpDest      = newH;
+
+        fgRemoveRefPred(t, h);
+        fgAddRefPred(newH, h);
+        fgAddRefPred(t, newH);
+
+        optUpdateLoopHead(loopInd, h, newH);
+
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
+                " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
+                ". Replacing with new BBJ_NONE head " FMT_BB ".",
+                loopInd, h->bbNum, t->bbNum, newH->bbNum);
+
+        h        = newH;
+        modified = true;
+    }
 
     // Look for case (1)
     //
@@ -4201,11 +4229,17 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-            // Otherwise unroll only if limit is Vector_.Length
-            // (as a heuristic, not for correctness/structural reasons)
-            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
+            // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+            // We can unroll this
+        }
+        else
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
             continue;
         }
 
@@ -5850,12 +5884,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
-
-                    /* Make sure we don't mess up the variable type */
-                    if ((oper == GT_LCL_VAR) || (oper == GT_LCL_FLD))
-                    {
-                        tree->gtFlags |= GTF_VAR_CAST;
-                    }
                 }
 
                 return true;
@@ -6493,7 +6521,7 @@ PhaseStatus Compiler::optHoistLoopCode()
     LoopHoistContext hoistCtxt(this);
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
     {
-        if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
+        if (optLoopTable[lnum].lpIsRemoved())
         {
             JITDUMP("\nLoop " FMT_LP " was removed\n", lnum);
             continue;
@@ -6615,7 +6643,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
     /* If loop was removed continue */
 
-    if (pLoopDsc->lpFlags & LPFLG_REMOVED)
+    if (pLoopDsc->lpIsRemoved())
     {
         JITDUMP("   ... not hoisting " FMT_LP ": removed\n", lnum);
         return false;
@@ -6947,7 +6975,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 
     // If the loop was removed, then record the dependence in the nearest enclosing loop, if any.
     //
-    while ((optLoopTable[updateLoopNum].lpFlags & LPFLG_REMOVED) != 0)
+    while (optLoopTable[updateLoopNum].lpIsRemoved())
     {
         unsigned const updateParentLoopNum = optLoopTable[updateLoopNum].lpParent;
 
@@ -8271,7 +8299,7 @@ bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
 {
     for (unsigned lnum = blk->bbNatLoopNum; lnum != BasicBlock::NOT_IN_LOOP; lnum = optLoopTable[lnum].lpParent)
     {
-        if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
+        if (optLoopTable[lnum].lpIsRemoved())
         {
             continue;
         }
@@ -8296,7 +8324,7 @@ void Compiler::optComputeLoopSideEffects()
 
     for (lnum = 0; lnum < optLoopCount; lnum++)
     {
-        if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
+        if (optLoopTable[lnum].lpIsRemoved())
         {
             continue;
         }
@@ -8860,9 +8888,10 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
 //
 struct OptTestInfo
 {
-    GenTree* testTree; // The root node of basic block with GT_JTRUE or GT_RETURN type to check boolean condition on
-    GenTree* compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool     isBool;   // If the compTree is boolean expression
+    Statement* testStmt; // Last statement of the basic block
+    GenTree*   testTree; // The root node of the testStmt (GT_JTRUE or GT_RETURN).
+    GenTree*   compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
+    bool       isBool;   // If the compTree is boolean expression
 };
 
 //-----------------------------------------------------------------------------
@@ -9202,7 +9231,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         m_t3 = testTree3;
     }
 
+    m_testInfo1.testStmt = s1;
     m_testInfo1.testTree = testTree1;
+    m_testInfo2.testStmt = s2;
     m_testInfo2.testTree = testTree2;
 
     return s1;
@@ -9244,16 +9275,14 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
         return false;
 #endif
     // The second condition must not contain side effects
-
+    //
     if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
-
-    m_comp->gtPrepareCost(m_c2);
-
+    //
     if (m_c2->GetCostEx() > 12)
     {
         return false;
@@ -9324,6 +9353,14 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     cmpOp1->gtRequestSetFlags();
 #endif
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
+        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
+    }
 
     if (!optReturnBlock)
     {
@@ -9416,6 +9453,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
+
+    // Update IL range of first block
+    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }
 
 //-----------------------------------------------------------------------------
@@ -9584,11 +9624,13 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     }
 
     assert(m_b1->bbJumpKind == BBJ_COND);
-    GenTree* cond = m_b1->lastStmt()->GetRootNode();
+    Statement* const stmt = m_b1->lastStmt();
+    GenTree* const   cond = stmt->GetRootNode();
 
     assert(cond->gtOper == GT_JTRUE);
 
     OptTestInfo test;
+    test.testStmt = stmt;
     test.testTree = cond;
 
     GenTree* comparand = optIsBoolComp(&test);
@@ -9615,6 +9657,14 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     // morphing it into a TYP_I_IMPL.
     noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(test.testStmt);
+        m_comp->fgSetStmtSeq(test.testStmt);
+    }
 }
 
 #endif
@@ -10163,7 +10213,7 @@ bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
          l != BasicBlock::NOT_IN_LOOP;                             //
          l = optLoopTable[l].lpSibling)
     {
-        if ((optLoopTable[l].lpFlags & LPFLG_REMOVED) == 0)
+        if (!optLoopTable[l].lpIsRemoved())
         {
             return true;
         }
@@ -10192,10 +10242,17 @@ bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
 //
 void Compiler::optMarkLoopRemoved(unsigned loopNum)
 {
-    JITDUMP("Marking loop " FMT_LP " removed\n", loopNum);
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Marking loop " FMT_LP " removed\n", loopNum);
+        optPrintLoopTable();
+    }
+#endif
 
     assert(loopNum < optLoopCount);
     LoopDsc& loop = optLoopTable[loopNum];
+    assert(!loop.lpIsRemoved());
 
     for (BasicBlock* const auxBlock : loop.LoopBlocks())
     {
@@ -10207,20 +10264,148 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
         }
     }
 
-    // Stop referring this loop as a parent of child loops
-    // TODO: As `optAnyChildNotRemoved()` points out, child loops should
-    // be live if parent is getting removed, but until we fix it, this will
-    // at least guarantee that the loopTable is somewhat accurate and up to
-    // date.
-    for (BasicBlock::loopNumber l = loop.lpChild; //
-         l != BasicBlock::NOT_IN_LOOP;            //
-         l = optLoopTable[l].lpSibling)
+    if (loop.lpParent != BasicBlock::NOT_IN_LOOP)
     {
-        if ((optLoopTable[l].lpFlags & LPFLG_REMOVED) == 0)
+        // If there is a parent loop, we need to update two things for removed loop `loopNum`:
+        // 1. Update its siblings so that they no longer point to the `loopNum`.
+        // 2. Update the children loops to make them point to the parent loop instead.
+        //
+        // When we move all the child loops of current loop `loopNum` to its parent, we insert
+        // those child loops at the same spot where `loopnum` was present in the child chain of
+        // its parent loop. This is accomplished by updating the existing siblings of `loopNum`
+        // to now point to the child loops.
+        //
+        // If L02 is removed:
+        //   1. L01's sibling is updated from L02 to L03.
+        //   2. L03 and L06's parents is updated from L02 to L00.
+        //   3. L06's sibling is updated from NOT_IN_LOOP to L07.
+        //
+        //   L00                           L00
+        //      L01                           L01
+        //      L02              =>           L03
+        //         L03                           L04
+        //            L04                        L05
+        //            L05                     L06
+        //         L06                        L07
+        //      L07
+        //
+        LoopDsc&               parentLoop     = optLoopTable[loop.lpParent];
+        BasicBlock::loopNumber firstChildLoop = loop.lpChild;
+        BasicBlock::loopNumber lastChildLoop  = BasicBlock::NOT_IN_LOOP;
+        BasicBlock::loopNumber prevSibling    = BasicBlock::NOT_IN_LOOP;
+        BasicBlock::loopNumber nextSibling    = BasicBlock::NOT_IN_LOOP;
+        for (BasicBlock::loopNumber l = parentLoop.lpChild; l != BasicBlock::NOT_IN_LOOP; l = optLoopTable[l].lpSibling)
         {
-            JITDUMP("Resetting parent of loop number " FMT_LP " from " FMT_LP " to " FMT_LP ".\n", l,
-                    optLoopTable[l].lpParent, loop.lpParent);
-            optLoopTable[l].lpParent = loop.lpParent;
+            // We shouldn't see removed loop in loop table.
+            assert(!optLoopTable[l].lpIsRemoved());
+
+            nextSibling = optLoopTable[l].lpSibling;
+            if (l == loopNum)
+            {
+                // This condition is not in for-loop just in case there is bad state of loopTable and we
+                // end up spining infinitely.
+                break;
+            }
+            prevSibling = l;
+        }
+
+        if (firstChildLoop == BasicBlock::NOT_IN_LOOP)
+        {
+            // There are no child loops in `loop`.
+            // Just update `loop`'s siblings and parentLoop's lpChild, if applicable.
+
+            if (parentLoop.lpChild == loopNum)
+            {
+                // If `loop` was the first child
+                assert(prevSibling == BasicBlock::NOT_IN_LOOP);
+
+                JITDUMP(FMT_LP " has no child loops but is the first child of its parent loop " FMT_LP
+                               ". Update first child to " FMT_LP ".\n",
+                        loopNum, loop.lpParent, nextSibling);
+
+                parentLoop.lpChild = nextSibling;
+            }
+            else
+            {
+                // `loop` was non-first child
+                assert(prevSibling != BasicBlock::NOT_IN_LOOP);
+
+                JITDUMP(FMT_LP " has no child loops. Update sibling link " FMT_LP " -> " FMT_LP ".\n", loopNum,
+                        prevSibling, nextSibling);
+
+                optLoopTable[prevSibling].lpSibling = nextSibling;
+            }
+        }
+        else
+        {
+            // There are child loops in `loop` that needs to be moved
+            // under `loop`'s parents.
+
+            if (parentLoop.lpChild == loopNum)
+            {
+                // If `loop` was the first child
+                assert(prevSibling == BasicBlock::NOT_IN_LOOP);
+
+                JITDUMP(FMT_LP " has child loops and is also the first child of its parent loop " FMT_LP
+                               ". Update parent's first child to " FMT_LP ".\n",
+                        loopNum, loop.lpParent, firstChildLoop);
+
+                parentLoop.lpChild = firstChildLoop;
+            }
+            else
+            {
+                // `loop` was non-first child
+                assert(prevSibling != BasicBlock::NOT_IN_LOOP);
+
+                JITDUMP(FMT_LP " has child loops. Update sibling link " FMT_LP " -> " FMT_LP ".\n", loopNum,
+                        prevSibling, firstChildLoop);
+
+                optLoopTable[prevSibling].lpSibling = firstChildLoop;
+            }
+
+            // Update lpParent of all child loops
+            for (BasicBlock::loopNumber l = firstChildLoop; l != BasicBlock::NOT_IN_LOOP; l = optLoopTable[l].lpSibling)
+            {
+                assert(!optLoopTable[l].lpIsRemoved());
+
+                if (optLoopTable[l].lpSibling == BasicBlock::NOT_IN_LOOP)
+                {
+                    lastChildLoop = l;
+                }
+
+                JITDUMP("Resetting parent of loop number " FMT_LP " from " FMT_LP " to " FMT_LP ".\n", l,
+                        optLoopTable[l].lpParent, loop.lpParent);
+                optLoopTable[l].lpParent = loop.lpParent;
+            }
+
+            if (lastChildLoop != BasicBlock::NOT_IN_LOOP)
+            {
+                JITDUMP(FMT_LP " has child loops. Update sibling link " FMT_LP " -> " FMT_LP ".\n", loopNum,
+                        lastChildLoop, nextSibling);
+
+                optLoopTable[lastChildLoop].lpSibling = nextSibling;
+            }
+            else
+            {
+                assert(!"There is atleast one loop, but found none.");
+            }
+
+            // Finally, convey that there are no children of `loopNum`
+            loop.lpChild = BasicBlock::NOT_IN_LOOP;
+        }
+    }
+    else
+    {
+        // If there are no top-level loops, then all the child loops,
+        // become the top-level loops.
+        for (BasicBlock::loopNumber l = loop.lpChild; //
+             l != BasicBlock::NOT_IN_LOOP;            //
+             l = optLoopTable[l].lpSibling)
+        {
+            assert(!optLoopTable[l].lpIsRemoved());
+
+            JITDUMP("Marking loop number " FMT_LP " from " FMT_LP " as top level loop.\n", l, optLoopTable[l].lpParent);
+            optLoopTable[l].lpParent = BasicBlock::NOT_IN_LOOP;
         }
     }
 
@@ -10237,6 +10422,12 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     if (optAnyChildNotRemoved(loopNum))
     {
         JITDUMP("Removed loop " FMT_LP " has one or more live children\n", loopNum);
+    }
+
+    if (verbose)
+    {
+        printf("Removed " FMT_LP "\n", loopNum);
+        optPrintLoopTable();
     }
 
 // Note: we can't call `fgDebugCheckLoopTable()` here because if there are live children, it will assert.

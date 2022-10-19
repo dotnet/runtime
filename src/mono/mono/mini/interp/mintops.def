@@ -24,6 +24,11 @@ OPDEF(MINT_RET_LOCALLOC, "ret.localloc", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_RET_VOID_LOCALLOC, "ret.void.localloc", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_RET_VT_LOCALLOC, "ret.vt.localloc", 3, 0, 1, MintOpShortInt)
 
+OPDEF(MINT_RET_I1, "ret.i1", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_U1, "ret.u1", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_I2, "ret.i2", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_U2, "ret.u2", 2, 0, 1, MintOpNoArgs)
+
 OPDEF(MINT_LDC_I4_M1, "ldc.i4.m1", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_0, "ldc.i4.0", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_1, "ldc.i4.1", 2, 1, 0, MintOpNoArgs)
@@ -102,7 +107,8 @@ OPDEF(MINT_STSFLD_W, "stsfld.w", 8, 0, 1, MintOpTwoInts)
 OPDEF(MINT_LDSFLDA, "ldsflda", 4, 1, 0, MintOpTwoShorts)
 OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
 
-OPDEF(MINT_MOV_OFF, "mov.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
 
 OPDEF(MINT_MOV_I1, "mov.i1", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_U1, "mov.u1", 3, 1, 1, MintOpNoArgs)
@@ -405,7 +411,6 @@ OPDEF(MINT_STELEM_REF, "stelem.ref", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_LDLEN_SPAN, "ldlen.span", 4, 1, 1, MintOpShortInt)
 
 OPDEF(MINT_GETITEM_SPAN, "getitem.span", 7, 1, 2, MintOpTwoShorts)
 

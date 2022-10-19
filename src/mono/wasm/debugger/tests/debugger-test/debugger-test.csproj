@@ -20,6 +20,7 @@
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssembly2\ApplyUpdateReferencedAssembly2.csproj" />
     <ProjectReference Include="..\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-chinese-char-in-path-ㄨ\debugger-test-chinese-char-in-path-ㄨ.csproj" ReferenceOutputAssembly="false" />

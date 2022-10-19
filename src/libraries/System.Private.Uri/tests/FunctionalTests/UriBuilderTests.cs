@@ -387,7 +387,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [InlineData(@"user/\?#@name", "", "http://user%2F%5C%3F%23%40name@localhost/")]
-        [InlineData(@"user/\?#@name", @"pass/\?#@word", "http://user%2F%5C%3F%23%40name:pass%2F%5C%3F%23%40word@localhost/")]
+        [InlineData(@"user/\?#@name", @"/\?#@", "http://user%2F%5C%3F%23%40name:%2F%5C%3F%23%40@localhost/")]
         public void ToString_EncodingUserInfo(string username, string password, string expectedToString)
         {
             var uriBuilder = new UriBuilder

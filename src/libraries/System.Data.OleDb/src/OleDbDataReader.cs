@@ -55,10 +55,10 @@ namespace System.Data.OleDb
         private bool _singleRow;
 
         // cached information for Reading (rowhandles/status)
-        private IntPtr _rowHandleFetchCount; // (>1 fails against jet)
+        private nint _rowHandleFetchCount; // (>1 fails against jet)
         private RowHandleBuffer? _rowHandleNativeBuffer;
 
-        private IntPtr _rowFetchedCount;
+        private nint _rowFetchedCount;
         private int _currentRow;
 
         private DataTable? _dbSchemaTable;
@@ -103,7 +103,7 @@ namespace System.Data.OleDb
             // if from ADODB, connection will be null
             if ((null == _connection) || (ChapterHandle.DB_NULL_HCHAPTER != chapterHandle))
             {
-                _rowHandleFetchCount = new IntPtr(1);
+                _rowHandleFetchCount = 1;
             }
 
             Initialize();
@@ -470,8 +470,8 @@ namespace System.Data.OleDb
             }
 
             OleDbHResult hr;
-            IntPtr columnCount = ADP.PtrZero; // column count
-            IntPtr columnInfos = ADP.PtrZero; // ptr to byvalue tagDBCOLUMNINFO[]
+            nint columnCount = 0; // column count
+            IntPtr columnInfos = IntPtr.Zero; // ptr to byvalue tagDBCOLUMNINFO[]
 
             using (DualCoTaskMem safehandle = new DualCoTaskMem(icolumnsInfo, out columnCount, out columnInfos, out hr))
             {
@@ -479,9 +479,9 @@ namespace System.Data.OleDb
                 {
                     ProcessResults(hr);
                 }
-                if (0 < (int)columnCount)
+                if (0 < checked((int)columnCount))
                 {
-                    BuildSchemaTableInfoTable(columnCount.ToInt32(), columnInfos, filterITypeInfo, filterChapters);
+                    BuildSchemaTableInfoTable((int)columnCount, columnInfos, filterITypeInfo, filterChapters);
                 }
             }
         }
@@ -502,7 +502,7 @@ namespace System.Data.OleDb
             for (int i = 0, offset = 0; i < columnCount; ++i, offset += ODB.SizeOf_tagDBCOLUMNINFO)
             {
                 Marshal.PtrToStructure(ADP.IntPtrOffset(columnInfos, offset), dbColumnInfo);
-                if ((ODB.IsRunningOnX86 && 0 >= (int)dbColumnInfo.iOrdinal) || (!ODB.IsRunningOnX86 && 0 >= (long)dbColumnInfo.iOrdinal))
+                if (0 >= dbColumnInfo.iOrdinal)
                 {
                     continue;
                 }
@@ -532,15 +532,8 @@ namespace System.Data.OleDb
                 info.columnName = dbColumnInfo.pwszName;
                 info.type = dbType;
                 info.ordinal = dbColumnInfo.iOrdinal;
-                if (ODB.IsRunningOnX86)
-                {
-                    info.size = (int)dbColumnInfo.ulColumnSize;
-                }
-                else
-                {
-                    long maxsize = (long)dbColumnInfo.ulColumnSize;
-                    info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
-                }
+                nint maxsize = dbColumnInfo.ulColumnSize;
+                info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
                 info.flags = dbColumnInfo.dwFlags;
                 info.precision = dbColumnInfo.bPrecision;
                 info.scale = dbColumnInfo.bScale;
@@ -567,7 +560,7 @@ namespace System.Data.OleDb
                         break;
                     case ODB.DBKIND_GUID_NAME:
                     case ODB.DBKIND_NAME:
-                        if (ADP.PtrZero != dbColumnInfo.columnid.ulPropid)
+                        if (IntPtr.Zero != dbColumnInfo.columnid.ulPropid)
                         {
                             info.idname = Marshal.PtrToStringUni(dbColumnInfo.columnid.ulPropid);
                         }
@@ -577,7 +570,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        info.propid = ADP.PtrZero;
+                        info.propid = IntPtr.Zero;
                         break;
                 }
                 metainfo[rowCount] = info;
@@ -618,7 +611,7 @@ namespace System.Data.OleDb
                 using (DualCoTaskMem prgOptColumns = new DualCoTaskMem(icolumnsRowset, out cOptColumns, out hr))
                 {
                     Debug.Assert((0 == hr) || prgOptColumns.IsInvalid, "GetAvailableCOlumns: unexpected return");
-                    hr = icolumnsRowset.GetColumnsRowset(ADP.PtrZero, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, ADP.PtrZero, out rowset);
+                    hr = icolumnsRowset.GetColumnsRowset(IntPtr.Zero, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
                 }
 
                 Debug.Assert((0 <= hr) || (null == rowset), "if GetColumnsRowset failed, rowset should be null");
@@ -767,7 +760,7 @@ namespace System.Data.OleDb
             }
 
             _currentRow = 0;
-            _rowFetchedCount = IntPtr.Zero;
+            _rowFetchedCount = 0;
 
             _dbSchemaTable = null;
             _visibleFieldCount = 0;
@@ -1200,32 +1193,17 @@ namespace System.Data.OleDb
             { throw e; }
         }
 
-        private static IntPtr AddRecordsAffected(IntPtr recordsAffected, IntPtr affected)
+        private static nint AddRecordsAffected(nint recordsAffected, nint affected)
         {
-            if (ODB.IsRunningOnX86)
+            if (0 <= affected)
             {
-                if (0 <= (int)affected)
+                if (0 <= recordsAffected)
                 {
-                    if (0 <= (int)recordsAffected)
-                    {
-                        return (IntPtr)((int)recordsAffected + (int)affected);
-                    }
-                    return affected;
+                    return recordsAffected + affected;
                 }
-                return recordsAffected;
+                return affected;
             }
-            else
-            {
-                if (0 <= (long)affected)
-                {
-                    if (0 <= (long)recordsAffected)
-                    {
-                        return (IntPtr)((long)recordsAffected + (long)affected);
-                    }
-                    return affected;
-                }
-                return recordsAffected;
-            }
+            return recordsAffected;
         }
 
         public override int VisibleFieldCount
@@ -1255,7 +1233,7 @@ namespace System.Data.OleDb
             List<OleDbException>? exceptions = null;
             if (null != imultipleResults)
             {
-                IntPtr affected;
+                nint affected;
                 OleDbHResult hr;
 
                 // MSOLAP provider doesn't move onto the next result when calling GetResult with IID_NULL, but does return S_OK with 0 affected records.
@@ -1266,7 +1244,7 @@ namespace System.Data.OleDb
                     {
                         break;
                     }
-                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
+                    hr = imultipleResults.GetResult(IntPtr.Zero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
@@ -1357,7 +1335,7 @@ namespace System.Data.OleDb
                         Close();
                         break;
                     }
-                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
+                    hr = imultipleResults.GetResult(IntPtr.Zero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
 
                     if ((0 <= hr) && (null != result))
                     {
@@ -1456,7 +1434,7 @@ namespace System.Data.OleDb
 
             // making the check if (null != irowset) unnecessary
             // if necessary, get next group of row handles
-            if (IntPtr.Zero == _rowFetchedCount)
+            if (0 == _rowFetchedCount)
             { // starts at (-1 <= 0)
                 Debug.Assert(0 == _currentRow, "incorrect state for _currentRow");
                 Debug.Assert(0 <= _metadata.Length, "incorrect state for fieldCount");
@@ -1511,25 +1489,25 @@ namespace System.Data.OleDb
                 }
             }
 
-            if (IntPtr.Zero == _rowHandleFetchCount)
+            if (0 == _rowHandleFetchCount)
             {
-                _rowHandleFetchCount = new IntPtr(1);
+                _rowHandleFetchCount = 1;
 
                 object? maxRows = GetPropertyValue(ODB.DBPROP_MAXROWS);
-                if (maxRows is int)
+                if (maxRows is int intValue)
                 {
-                    _rowHandleFetchCount = new IntPtr((int)maxRows);
-                    if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (int)_rowHandleFetchCount))
+                    _rowHandleFetchCount = intValue;
+                    if ((0 == _rowHandleFetchCount) || (20 <= _rowHandleFetchCount))
                     {
-                        _rowHandleFetchCount = new IntPtr(20);
+                        _rowHandleFetchCount = 20;
                     }
                 }
-                else if (maxRows is long)
+                else if (maxRows is long longValue)
                 {
-                    _rowHandleFetchCount = new IntPtr((long)maxRows);
-                    if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (long)_rowHandleFetchCount))
+                    _rowHandleFetchCount = (nint)longValue;
+                    if ((0 == _rowHandleFetchCount) || (20 <= _rowHandleFetchCount))
                     {
-                        _rowHandleFetchCount = new IntPtr(20);
+                        _rowHandleFetchCount = 20;
                     }
                 }
             }
@@ -1634,7 +1612,7 @@ namespace System.Data.OleDb
                 {
                     if (info.type.islong)
                     {
-                        maxLen = ADP.PtrSize;
+                        maxLen = IntPtr.Size;
                         getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                     }
                     else if (-1 == maxLen)
@@ -1644,14 +1622,14 @@ namespace System.Data.OleDb
                             || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
                             bindings.MemOwner = DBMemOwner.ProviderOwned;
 
-                            bindings.MaxLen = ADP.PtrSize;
+                            bindings.MaxLen = IntPtr.Size;
                             bindings.DbType = (short) (getType | DbType.BYREF);
                         }
                         else*/
 
                         if (ODB.LargeDataSize < info.size)
                         {
-                            maxLen = ADP.PtrSize;
+                            maxLen = IntPtr.Size;
                             getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                         }
                         else if ((NativeDBType.WSTR == getType) && (-1 != info.size))
@@ -1671,7 +1649,7 @@ namespace System.Data.OleDb
                         || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
                         bindings.MemOwner = DBMemOwner.ProviderOwned;
                     }*/
-                    maxLen = ADP.PtrSize;
+                    maxLen = IntPtr.Size;
                     getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                 }
 
@@ -1762,7 +1740,7 @@ namespace System.Data.OleDb
                 ProcessResults(hr);
             }
             _isRead = ((OleDbHResult.DB_S_ENDOFROWSET != hr) || (0 < (int)_rowFetchedCount));
-            _rowFetchedCount = (IntPtr)Math.Max((int)_rowFetchedCount, 0);
+            _rowFetchedCount = Math.Max((int)_rowFetchedCount, 0);
         }
 
         private void GetRowDataFromHandle()
@@ -1809,7 +1787,7 @@ namespace System.Data.OleDb
 
             OleDbHResult hr;
             UnsafeNativeMethods.IRowset irowset = IRowset();
-            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, ADP.PtrZero, ADP.PtrZero, ADP.PtrZero);
+            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
             if (hr < 0)
             {
@@ -1817,7 +1795,7 @@ namespace System.Data.OleDb
                 //ProcessFailure(hr);
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
             }
-            _rowFetchedCount = IntPtr.Zero;
+            _rowFetchedCount = 0;
             _currentRow = 0;
             _isRead = false;
         }
@@ -2344,24 +2322,17 @@ namespace System.Data.OleDb
                         info.columnName = "";
                     }
 
-                    if (4 == ADP.PtrSize)
+                    if (4 == IntPtr.Size)
                     {
-                        info.ordinal = (IntPtr)columnordinal.columnBinding.Value_UI4();
-                    }
-                    else
-                    {
-                        info.ordinal = (IntPtr)columnordinal.columnBinding.Value_UI8();
-                    }
-                    short wType = unchecked((short)dbtype.columnBinding.Value_UI2());
-
-                    if (4 == ADP.PtrSize)
-                    {
+                        info.ordinal = (nint)columnordinal.columnBinding.Value_UI4();
                         info.size = unchecked((int)columnsize.columnBinding.Value_UI4());
                     }
                     else
                     {
-                        info.size = ADP.IntPtrToInt32((IntPtr)unchecked((long)columnsize.columnBinding.Value_UI8()));
+                        info.ordinal = (nint)columnordinal.columnBinding.Value_UI8();
+                        info.size = ADP.IntPtrToInt32((nint)columnsize.columnBinding.Value_UI8());
                     }
+                    short wType = unchecked((short)dbtype.columnBinding.Value_UI2());
 
                     binding = numericprecision.columnBinding;
                     if (!binding.IsValueNull())
@@ -2498,7 +2469,7 @@ namespace System.Data.OleDb
                     info.isHidden = true;
                     visibleCount--;
                 }
-                else if ((ODB.IsRunningOnX86 && 0 >= (int)info.ordinal) || (!ODB.IsRunningOnX86 && 0 >= (long)info.ordinal))
+                else if (0 >= info.ordinal)
                 {
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
@@ -2590,7 +2561,7 @@ namespace System.Data.OleDb
 
         internal NativeDBType type = null!; // Late-initialized
 
-        internal IntPtr ordinal;
+        internal nint ordinal;
         internal int size;
 
         internal int flags;
@@ -2610,15 +2581,15 @@ namespace System.Data.OleDb
 
         int IComparable.CompareTo(object? obj)
         {
-            if (isHidden == (obj as MetaData)!.isHidden)
+            if (obj is MetaData m && isHidden == m.isHidden)
             {
                 if (ODB.IsRunningOnX86)
                 {
-                    return ((int)ordinal - (int)(obj as MetaData)!.ordinal);
+                    return (int)ordinal - (int)m.ordinal;
                 }
                 else
                 {
-                    long v = ((long)ordinal - (long)(obj as MetaData)!.ordinal);
+                    long v = (long)ordinal - (long)m.ordinal;
                     return ((0 < v) ? 1 : ((v < 0) ? -1 : 0));
                 }
             }

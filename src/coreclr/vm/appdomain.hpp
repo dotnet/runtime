@@ -40,6 +40,7 @@ class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
+class FrozenObjectHeapManager;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
@@ -1093,6 +1094,12 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    static CrstStatic* GetMethodTableExposedClassObjectLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_MethodTableExposedClassObjectCrst;
+    }
+
     void AssertLoadLockHeld()
     {
         _ASSERTE(m_FileLoadLock.HasLock());
@@ -1134,7 +1141,7 @@ protected:
 #endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics
-    static CrstStatic   m_SpecialStaticsCrst;
+    static CrstStatic m_MethodTableExposedClassObjectCrst;
 
 public:
     // Only call this routine when you can guarantee there are no
@@ -2388,6 +2395,7 @@ public:
     void Init();
     void Stop();
     static void LazyInitGlobalStringLiteralMap();
+    static void LazyInitFrozenObjectsHeap();
 
     //****************************************************************************************
     //
@@ -2459,6 +2467,15 @@ public:
 
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (m_FrozenObjectHeapManager == NULL)
+        {
+            LazyInitFrozenObjectsHeap();
+        }
+        return m_FrozenObjectHeapManager;
     }
 #endif // DACCESS_COMPILE
 
@@ -2629,6 +2646,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
+    static FrozenObjectHeapManager *m_FrozenObjectHeapManager;
 #endif // DACCESS_COMPILE
 
 public:

@@ -51,10 +51,6 @@ typedef enum {
 
 NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 
-#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
-#define SGEN_POSIX_STW 1
-#endif
-
 /*
  * The nursery section uses this struct.
  */
