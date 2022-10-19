@@ -95,7 +95,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("CRASH", TestPlatforms.Android)]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", TestPlatforms.OSX)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {

@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [SkipOnPlatform(TestPlatforms.Android, "Host name is not sent on Android")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
