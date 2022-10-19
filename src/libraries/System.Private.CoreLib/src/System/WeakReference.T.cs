@@ -48,6 +48,10 @@ namespace System
                 {
                     _handleAndKind |= HasComWeakReferenceBit;
                 }
+                else
+                {
+                    _handleAndKind &= ~HasComWeakReferenceBit;
+                }
             }
         }
 
