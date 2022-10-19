@@ -960,27 +960,49 @@ namespace System.Net.Security
             chainStatusFlags = X509ChainStatusFlags.NoError;
 
             X509Chain? chain = null;
-            X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
-            if (_remoteCertificate != null &&
-                certificate != null &&
-                certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
-            {
-                // This is renegotiation or TLS 1.3 and the certificate did not change.
-                // There is no reason to process callback again as we already established trust.
-                certificate.Dispose();
-                return true;
-            }
+            bool success = false;
 
-            _remoteCertificate = certificate;
-
-            var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
-            bool success = remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
-            if (!success)
+            try
             {
-                alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);
-                foreach (X509ChainStatus status in chainStatus)
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
+
+                if (_remoteCertificate != null &&
+                    certificate != null &&
+                    certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
-                    chainStatusFlags |= status.Status;
+                    // This is renegotiation or TLS 1.3 and the certificate did not change.
+                    // There is no reason to process callback again as we already established trust.
+                    certificate.Dispose();
+                    return true;
+                }
+
+                _remoteCertificate = certificate;
+
+                var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions, _securityContext!);
+                success = remoteCertificateVerifier.VerifyRemoteCertificate(_remoteCertificate, trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                if (!success)
+                {
+                    alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);
+                    foreach (X509ChainStatus status in chainStatus)
+                    {
+                        chainStatusFlags |= status.Status;
+                    }
+                }
+            }
+            finally
+            {
+                // At least on Win2k server the chain is found to have dependencies on the original cert context.
+                // So it should be closed first.
+
+                if (chain != null)
+                {
+                    int elementsCount = chain.ChainElements.Count;
+                    for (int i = 0; i < elementsCount; i++)
+                    {
+                        chain.ChainElements[i].Certificate.Dispose();
+                    }
+
+                    chain.Dispose();
                 }
             }
 

@@ -153,9 +153,6 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(IntPtr validatorPtr, SslAuthenticationOptions authOptions)
         {
-            // TODO pass enabled ssl protocols to the SSLStream factory
-            // TODO what else do I need to configure the SSLStream (&friends) correctly?
-
             if (authOptions.CertificateContext == null)
             {
                 return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr);

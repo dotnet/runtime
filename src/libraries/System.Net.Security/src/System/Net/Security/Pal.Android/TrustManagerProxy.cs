@@ -87,7 +87,23 @@ namespace System.Net
                 chain.ChainPolicy.ExtraStore.AddRange(certificates[1..]);
             }
 
-            return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, chain, out _, out _);
+            try
+            {
+                return _remoteCertificateVerifier.VerifyRemoteCertificate(certificate, trust: null, ref chain, out _, out _);
+            }
+            finally
+            {
+                if (chain != null)
+                {
+                    int elementsCount = chain.ChainElements.Count;
+                    for (int i = 0; i < elementsCount; i++)
+                    {
+                        chain.ChainElements[i].Certificate.Dispose();
+                    }
+
+                    chain.Dispose();
+                }
+            }
         }
 
         private static unsafe X509Certificate2[] ConvertCertificates(int count, int* lengths, byte** rawData)
