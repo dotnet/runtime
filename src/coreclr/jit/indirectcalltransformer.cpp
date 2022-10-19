@@ -1106,10 +1106,10 @@ private:
             unsigned       chainLikelihood   = 0;
             GenTreeCall*   chainedCall       = nullptr;
 
-            // Helper class to check a statement for uncloneable nodes and count
+            // Helper class to check/fix a statement for clonability and count
             // the total number of nodes
             //
-            class UnclonableVisitor final : public GenTreeVisitor<UnclonableVisitor>
+            class ClonabilityVisitor final : public GenTreeVisitor<ClonabilityVisitor>
             {
             public:
                 enum
@@ -1120,8 +1120,8 @@ private:
                 GenTree* m_unclonableNode;
                 unsigned m_nodeCount;
 
-                UnclonableVisitor(Compiler* compiler)
-                    : GenTreeVisitor<UnclonableVisitor>(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
+                ClonabilityVisitor(Compiler* compiler)
+                    : GenTreeVisitor(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
                 {
                 }
 
@@ -1141,6 +1141,16 @@ private:
                     }
                     else if (node->OperIs(GT_RET_EXPR))
                     {
+                        // If this is a RET_EXPR that we already know how to substitute then it is the
+                        // "fixed-up" RET_EXPR from a previous GDV candidate. In that case we can
+                        // substitute it right here to make it eligibile for cloning.
+                        if (node->AsRetExpr()->gtSubstExpr != nullptr)
+                        {
+                            assert(node->AsRetExpr()->gtInlineCandidate->IsGuarded());
+                            *use = node->AsRetExpr()->gtSubstExpr;
+                            return fgWalkResult::WALK_CONTINUE;
+                        }
+
                         m_unclonableNode = node;
                         return fgWalkResult::WALK_ABORT;
                     }
@@ -1186,19 +1196,20 @@ private:
 
                 // See if this statement's tree is one that we can clone.
                 //
-                UnclonableVisitor unclonableVisitor(compiler);
-                unclonableVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+                ClonabilityVisitor clonabilityVisitor(compiler);
+                clonabilityVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-                if (unclonableVisitor.m_unclonableNode != nullptr)
+                if (clonabilityVisitor.m_unclonableNode != nullptr)
                 {
-                    JITDUMP("  node [%06u] can't be cloned\n", compiler->dspTreeID(unclonableVisitor.m_unclonableNode));
+                    JITDUMP("  node [%06u] can't be cloned\n",
+                            compiler->dspTreeID(clonabilityVisitor.m_unclonableNode));
                     break;
                 }
 
                 // Looks like we can clone this, so keep scouting.
                 //
                 chainStatementDup++;
-                chainNodeDup += unclonableVisitor.m_nodeCount;
+                chainNodeDup += clonabilityVisitor.m_nodeCount;
             }
         }
 

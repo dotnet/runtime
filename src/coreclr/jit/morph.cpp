@@ -5585,7 +5585,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
             // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
             inlCandInfo->retExpr->gtSubstExpr = call;
-            inlCandInfo->retExpr->gtSubstBB = compCurBB;
+            inlCandInfo->retExpr->gtSubstBB   = compCurBB;
 
             noway_assert(fgMorphStmt->GetRootNode() == call);
             fgMorphStmt->SetRootNode(gtNewNothingNode());

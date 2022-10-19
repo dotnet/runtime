@@ -11480,10 +11480,16 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
         {
-            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
-            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
-            printTreeID(associatedTree);
+            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(for ");
+            printTreeID(inlineCand);
             printf(")");
+
+            if (tree->AsRetExpr()->gtSubstExpr != nullptr)
+            {
+                printf(" -> ");
+                printTreeID(tree->AsRetExpr()->gtSubstExpr);
+            }
         }
         break;
 

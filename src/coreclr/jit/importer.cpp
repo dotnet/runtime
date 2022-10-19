@@ -11417,7 +11417,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                 // Report the return expression
                 inlRetExpr->gtSubstExpr = op2;
-                inlRetExpr->gtSubstBB   = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
             }
             else
             {
@@ -11453,7 +11452,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     else
                     {
                         inlRetExpr->gtSubstExpr = op2;
-                        inlRetExpr->gtSubstBB   = compCurBB;
                     }
                 }
                 else // The struct was to be returned via a return buffer.
@@ -11474,10 +11472,27 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     else
                     {
                         inlRetExpr->gtSubstExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
-                        inlRetExpr->gtSubstBB   = compCurBB;
                     }
                 }
             }
+
+            // TODO-Inlining: Setting gtSubstBB unconditionally here does not
+            // make sense. The intention is to be able to propagate BB flags in
+            // UpdateInlineReturnExpressionPlaceHolder, but we only need to
+            // propagate the mandatory flags in case gtSubstExpr is a tree
+            // (e.g. GT_ARR_LENGTH in gtSubstExpr means we need to set
+            // BBF_HAS_IDX_LEN on the final BB that the substituted expression
+            // ends up in -- so we should not need to set this for the spill
+            // temp cases above).
+            //
+            // However, during substitution we actually propagate all
+            // BBF_SPLIT_GAINED flags which includes BBF_PROF_WEIGHT. The net
+            // effect of this is that if we inline a tree from a hot block into
+            // a block without profile data we suddenly start to believe the
+            // inliner block is hot, and then future inline candidates are
+            // treated more aggressively. Changing this leads to large diffs.
+            assert(inlRetExpr->gtSubstExpr != nullptr);
+            inlRetExpr->gtSubstBB = compCurBB;
         }
     }
 
