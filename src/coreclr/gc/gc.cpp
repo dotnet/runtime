@@ -25189,7 +25189,7 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
         return;
 
 #if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!(is_in_bookkeeping_range (o)))
+    if (!is_in_bookkeeping_range (o))
     {
         return;
     }
@@ -35960,7 +35960,7 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
         return;
 
 #if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
-    if (!(is_in_bookkeeping_range (o)))
+    if (!is_in_bookkeeping_range (o))
     {
         return;
     }
@@ -45895,6 +45895,13 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
     if (o == 0)
         return;
 
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!gc_heap::is_in_bookkeeping_range (o))
+    {
+        return;
+    }
+#endif
+
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
@@ -45906,7 +45913,7 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
     gc_heap* hp = gc_heap::heap_of (o);
 
 #ifdef USE_REGIONS
-    if (!gc_heap::is_in_bookkeeping_range (o) || !gc_heap::is_in_condemned_gc (o))
+    if (!gc_heap::is_in_condemned_gc (o))
 #else //USE_REGIONS
     if ((o < hp->gc_low) || (o >= hp->gc_high))
 #endif //USE_REGIONS
@@ -45966,11 +45973,11 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
     dprintf (3, ("R: %Ix", (size_t)ppObject));
 
     if (!object 
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && defined(FEATURE_CONSERVATIVE_GC)
         || !gc_heap::is_in_bookkeeping_range (object))
-#else //USE_REGIONS
+#else //USE_REGIONS && FEATURE_CONSERVATIVE_GC
         || !((object >= g_gc_lowest_address) && (object < g_gc_highest_address)))
-#endif //USE_REGIONS
+#endif //USE_REGIONS && FEATURE_CONSERVATIVE_GC
         return;
 
     gc_heap* hp = gc_heap::heap_of (object);
@@ -46422,20 +46429,21 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 {
     uint8_t *o = (uint8_t*)pInteriorPtr;
 
-    gc_heap* hp = gc_heap::heap_of (o);
-
-#ifdef USE_REGIONS
-    if (gc_heap::is_in_bookkeeping_range (o))
-    {
-        if (fCollectedGenOnly && !gc_heap::is_in_condemned_gc (o))
-        {
-            return NULL;
-        }
-    }
-    else
+#if defined(FEATURE_CONSERVATIVE_GC) && defined(USE_REGIONS)
+    if (!gc_heap::is_in_bookkeeping_range (o))
     {
         return NULL;
     }
+#endif
+
+    gc_heap* hp = gc_heap::heap_of (o);
+
+#ifdef USE_REGIONS
+    if (fCollectedGenOnly && !gc_heap::is_in_condemned_gc (o))
+    {
+        return NULL;
+    }
+
 #else //USE_REGIONS
 
     uint8_t* lowest = (fCollectedGenOnly ? hp->gc_low : hp->lowest_address);
