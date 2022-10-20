@@ -305,13 +305,13 @@ namespace Mono.Linker
 			return fullTypeName.Replace ('+', '/');
 		}
 
-		public static bool HasDefaultConstructor (this TypeDefinition type)
+		public static bool HasDefaultConstructor (this TypeDefinition type, LinkContext context)
 		{
 			foreach (var m in type.Methods) {
 				if (m.HasParameters)
 					continue;
 
-				var definition = m.Resolve ();
+				var definition = context.Resolve (m);
 				if (definition?.IsDefaultConstructor () == true)
 					return true;
 			}
@@ -319,14 +319,14 @@ namespace Mono.Linker
 			return false;
 		}
 
-		public static MethodReference GetDefaultInstanceConstructor (this TypeDefinition type)
+		public static MethodReference GetDefaultInstanceConstructor (this TypeDefinition type, LinkContext context)
 		{
 			foreach (var m in type.Methods) {
 				if (m.HasParameters)
 					continue;
 
-				var definition = m.Resolve ();
-				if (!definition.IsDefaultConstructor ())
+				var definition = context.Resolve (m);
+				if (definition?.IsDefaultConstructor () != true)
 					continue;
 
 				return m;

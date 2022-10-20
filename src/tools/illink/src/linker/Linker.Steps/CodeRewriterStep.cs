@@ -166,7 +166,7 @@ namespace Mono.Linker.Steps
 				if (baseType is null)
 					return body;
 
-				MethodReference base_ctor = baseType.GetDefaultInstanceConstructor ();
+				MethodReference base_ctor = baseType.GetDefaultInstanceConstructor (Context);
 				if (base_ctor == null)
 					throw new NotSupportedException ($"Cannot replace constructor for '{method.DeclaringType}' when no base default constructor exists");
 

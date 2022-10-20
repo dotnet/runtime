@@ -1,4 +1,6 @@
 T:Mono.Cecil.Cil.ILProcessor;Use LinkerILProcessor instead
 M:Mono.Cecil.TypeReference.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
+M:Mono.Cecil.MethodReference.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
+M:Mono.Cecil.ExportedType.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
 P:Mono.Collections.Generic.Collection`1{Mono.Cecil.ParameterDefinition}.Item(System.Int32); use x
 P:Mono.Cecil.ParameterDefinitionCollection.Item(System.Int32); use x

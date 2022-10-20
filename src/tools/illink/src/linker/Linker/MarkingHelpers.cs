@@ -19,7 +19,7 @@ namespace Mono.Linker
 			if (typeToMatch == null || assembly == null)
 				return;
 
-			if (assembly.MainModule.GetMatchingExportedType (typeToMatch, out var exportedType))
+			if (assembly.MainModule.GetMatchingExportedType (typeToMatch, _context, out var exportedType))
 				MarkExportedType (exportedType, assembly.MainModule, reason, origin);
 		}
 
@@ -40,7 +40,7 @@ namespace Mono.Linker
 				var assembly = _context.Resolve (typeReference.Scope);
 				if (assembly != null &&
 					_context.TryResolve (typeReference) is TypeDefinition typeDefinition &&
-					assembly.MainModule.GetMatchingExportedType (typeDefinition, out var exportedType))
+					assembly.MainModule.GetMatchingExportedType (typeDefinition, _context, out var exportedType))
 					MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, typeReference), origin);
 			}
 		}

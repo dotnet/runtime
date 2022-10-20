@@ -460,10 +460,12 @@ namespace Mono.Linker.Steps
 				//	ov is in a `link` scope and is unmarked
 				//		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
 				//		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+#pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
 				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
 					method.Overrides.RemoveAt (i);
 				else
 					i++;
+#pragma warning restore RS0030
 			}
 		}
 
@@ -603,9 +605,9 @@ namespace Mono.Linker.Steps
 				// But the cache doesn't know that, it would still "resolve" the type-ref to now defunct type-def.
 				// For this reason we can't use the context resolution here, and must force Cecil to perform
 				// real type resolution again (since it can fail, and that's OK).
-#pragma warning disable RS0030 // Do not used banned APIs
+#pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph isn't stable
 				TypeDefinition td = type.Resolve ();
-#pragma warning restore RS0030 // Do not used banned APIs
+#pragma warning restore RS0030
 				if (td == null) {
 					//
 					// This can happen when not all assembly refences were provided and we
@@ -627,7 +629,9 @@ namespace Mono.Linker.Steps
 
 			protected override void ProcessExportedType (ExportedType exportedType)
 			{
-				TypeDefinition td = exportedType.Resolve ();
+#pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph is unstable
+				TypeDefinition? td = exportedType.Resolve ();
+#pragma warning restore RS0030
 				if (td == null) {
 					// Forwarded type cannot be resolved but it was marked
 					// linker is running in --skip-unresolved true mode
