@@ -59,7 +59,7 @@ static HRESULT RunAndroidCmd(char* c_android_adb_path, char* c_command_to_execut
     LPWSTR w_android_run_adb_command = (LPWSTR)malloc(2048 * sizeof(WCHAR));
     char* c_android_run_adb_command = (char*)malloc(2048 * sizeof(char));
 
-    sprintf_s(c_android_run_adb_command, 2048, W("%s %s"), c_android_adb_path, c_command_to_execute);
+    sprintf_s(c_android_run_adb_command, 2048, "%s %s", c_android_adb_path, c_command_to_execute);
 
     MultiByteToWideChar(CP_UTF8, 0, c_android_run_adb_command, -1, w_android_run_adb_command, 2048);
     BOOL result = CreateProcessW(
