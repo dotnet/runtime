@@ -1104,14 +1104,11 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(md))
                 throw new RequiresRuntimeJitException($"{md} passed to getFunctionFixedEntryPoint is not in version bubble");
 
-            // This function is only used for delegate GDV and the runtime
-            // generally does not profile delegates involving instantiating
-            // stubs. The only time we can see this should thus be due to stale
-            // PGO data.
-            if (md.IsSharedByGenericInstantiations)
-                throw new RequiresRuntimeJitException($"{md} is shared, cannot get fixed entry point");
+            // TODO: Currently generic instantiations are not supported.
+            if (!md.IsTypicalMethodDefinition)
+                throw new RequiresRuntimeJitException($"Cannot currently resolve entry point for generic method {md}");
 
-            if (md.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+            if (md is not EcmaMethod ecmaMethod)
                 throw new RequiresRuntimeJitException($"{md} is not in metadata");
 
             ModuleToken module = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
