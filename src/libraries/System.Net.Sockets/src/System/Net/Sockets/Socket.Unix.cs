@@ -109,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -137,36 +137,36 @@ namespace System.Net.Sockets
             if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) ttl = Ttl;
 
             // Then replace the handle with a new one
-            SafeSocketHandle newHandle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out newHandle);
-            _handle.TransferTrackedState(newHandle);
+            SafeSocketHandle oldHandle = _handle;
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
+            oldHandle.TransferTrackedState(_handle);
+            oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
             }
 
-            // And put back the copied settings.  For DualMode, we use the value stored in the _handle
-            // rather than querying the socket itself, as on Unix stacks binding a dual-mode socket to
-            // an IPv6 address may cause the IPv6Only setting to revert to true.
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.DualMode)) DualMode = _handle.DualMode;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.DontFragment)) DontFragment = dontFragment;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) EnableBroadcast = broadcast;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger!;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.NoDelay)) NoDelay = noDelay;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) ReceiveBufferSize = receiveSize;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) ReceiveTimeout = receiveTimeout;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.SendBufferSize)) SendBufferSize = sendSize;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
-            if (newHandle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
-
-            SafeSocketHandle oldHandle = _handle;
-            Volatile.Write(ref _handle, newHandle);
-            oldHandle.Dispose();
-
             if (Volatile.Read(ref _disposed) != 0)
             {
                 _handle.Dispose();
+                ThrowIfDisposed();
             }
+
+            // And put back the copied settings.  For DualMode, we use the value stored in the _handle
+            // rather than querying the socket itself, as on Unix stacks binding a dual-mode socket to
+            // an IPv6 address may cause the IPv6Only setting to revert to true.
+            if (_handle.IsTrackedOption(TrackedSocketOptions.DualMode)) DualMode = _handle.DualMode;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) DontFragment = dontFragment;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) EnableBroadcast = broadcast;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger!;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.NoDelay)) NoDelay = noDelay;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) ReceiveBufferSize = receiveSize;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) ReceiveTimeout = receiveTimeout;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.SendBufferSize)) SendBufferSize = sendSize;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
 
             return SocketError.Success;
         }
