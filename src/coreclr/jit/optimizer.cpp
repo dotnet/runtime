@@ -4620,9 +4620,9 @@ PhaseStatus Compiler::optUnrollLoops()
 // if (x < 7) { a = 5; }
 //
 // This is represented in IR by two basic blocks. The first block (block) ends with
-// a JTRUE statement which conditionally jumps to the second block (middleBlock).
+// a JTRUE statement which conditionally jumps to the second block (asgBlock).
 // The second block just contains a single assign statement. Both blocks then jump
-// to the same destination (middleNext).  Note that the first block may contain
+// to the same destination (finalBlock).  Note that the first block may contain
 // additional statements prior to the JTRUE statement.
 //
 // For example:
@@ -4695,10 +4695,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    BasicBlock* middleBlock = nullptr;
-    BasicBlock* middleNext  = block->bbNext;
-    GenTree*    asgNode     = nullptr;
-    Statement*  asgStmt     = nullptr;
+    // Block where the flows merge.
+    BasicBlock* finalBlock = block->bbNext;
+    // The node, statement and block of the assignment.
+    GenTree*    asgNode  = nullptr;
+    Statement*  asgStmt  = nullptr;
+    BasicBlock* asgBlock = nullptr;
 
     // Check the block is followed by a block or chain of blocks that only contain NOPs and
     // a single ASG statement. The destination of the final block must point to the same as the
@@ -4706,17 +4708,17 @@ bool Compiler::optIfConvert(BasicBlock* block)
     bool foundMiddle = false;
     while (!foundMiddle)
     {
-        middleBlock = middleNext;
+        BasicBlock* middleBlock = finalBlock;
         noway_assert(middleBlock != nullptr);
 
         // middleBlock should have a single successor.
-        middleNext = middleBlock->GetUniqueSucc();
-        if (middleNext == nullptr)
+        finalBlock = middleBlock->GetUniqueSucc();
+        if (finalBlock == nullptr)
         {
             return false;
         }
 
-        if (middleNext == block->bbJumpDest)
+        if (finalBlock == block->bbJumpDest)
         {
             // This is our final middle block.
             foundMiddle = true;
@@ -4764,8 +4766,9 @@ bool Compiler::optIfConvert(BasicBlock* block)
                         return false;
                     }
 
-                    asgNode = tree;
-                    asgStmt = stmt;
+                    asgNode  = tree;
+                    asgStmt  = stmt;
+                    asgBlock = middleBlock;
                     break;
                 }
 
@@ -4792,8 +4795,9 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
-        for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
+        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", asgBlock->bbNum, block->bbNum);
+        fgDumpBlock(block);
+        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             fgDumpBlock(dumpBlock);
         }
@@ -4864,8 +4868,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     gtSetEvalOrder(last);
     fgSetStmtSeq(block->lastStmt());
 
-    // Before moving anything, fix up any SSAs in the middle block
-    for (Statement* const stmt : middleBlock->Statements())
+    // Before moving anything, fix up any SSAs in the asgBlock
+    for (Statement* const stmt : asgBlock->Statements())
     {
         for (GenTree* const node : stmt->TreeList())
         {
@@ -4877,7 +4881,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
                 if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
                     LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-                    if (ssaDef->GetBlock() == middleBlock)
+                    if (ssaDef->GetBlock() == asgBlock)
                     {
                         JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum,
                                 ssaDef->GetBlock()->bbNum, block->bbNum);
@@ -4890,13 +4894,13 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     // Move the Asg to the end of the original block
     Statement* stmtList1 = block->firstStmt();
-    Statement* stmtList2 = middleBlock->firstStmt();
+    Statement* stmtList2 = asgBlock->firstStmt();
     Statement* stmtLast1 = block->lastStmt();
-    Statement* stmtLast2 = middleBlock->lastStmt();
+    Statement* stmtLast2 = asgBlock->lastStmt();
     stmtLast1->SetNextStmt(stmtList2);
     stmtList2->SetPrevStmt(stmtLast1);
     stmtList1->SetPrevStmt(stmtLast2);
-    middleBlock->bbStmtList = nullptr;
+    asgBlock->bbStmtList = nullptr;
 
     // Update the flow from the original block.
     fgRemoveAllRefPreds(block->bbNext, block);
@@ -4906,7 +4910,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     if (verbose)
     {
         JITDUMP("\nAfter if conversion\n");
-        for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
+        fgDumpBlock(block);
+        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             fgDumpBlock(dumpBlock);
         }
