@@ -251,7 +251,11 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
+<<<<<<< HEAD
         GenTree* replacementNode = TryLowerMulWithConstant(mul);
+=======
+        GenTree* replacementNode = TryLowerMulToLshSubOrLshAdd(mul);
+>>>>>>> upstream/main
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
