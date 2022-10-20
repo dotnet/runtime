@@ -30,21 +30,24 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly TrustManagerProxy _trustManagerProxy;
+        private readonly TrustManagerProxy? _trustManagerProxy;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(RemoteCertificateVerification verifier, SslAuthenticationOptions authOptions)
+        public SafeDeleteSslContext(RemoteCertificateVerification? verifier, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            _trustManagerProxy = new TrustManagerProxy(verifier, securityContext: this);
+            if (verifier is not null)
+            {
+                _trustManagerProxy = new TrustManagerProxy(verifier, securityContext: this);
+            }
 
             try
             {
-                _sslContext = CreateSslContext(_trustManagerProxy.Handle, authOptions);
+                _sslContext = CreateSslContext(_trustManagerProxy?.Handle, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -150,11 +153,11 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(IntPtr validatorPtr, SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(IntPtr? validatorPtr, SslAuthenticationOptions authOptions)
         {
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr);
+                return Interop.AndroidCrypto.SSLStreamCreate(validatorPtr ?? IntPtr.Zero);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -174,7 +177,7 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(validatorPtr, keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(validatorPtr ?? IntPtr.Zero, keyBytes, algorithm, ptrs);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)

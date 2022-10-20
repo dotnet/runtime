@@ -16,17 +16,15 @@ namespace System.Net.Security
         private readonly SslStream _sslStream;
         private readonly SslAuthenticationOptions _sslAuthenticationOptions;
 
-        public RemoteCertificateVerification(
-            SslStream sslStream,
-            SslAuthenticationOptions sslAuthenticationOptions)
+        public RemoteCertificateVerification(SslStream sslStream, SslAuthenticationOptions sslAuthenticationOptions)
         {
             _sslStream = sslStream;
             _sslAuthenticationOptions = sslAuthenticationOptions;
         }
 
-        internal bool VerifyRemoteCertificate(
-            SafeDeleteSslContext securityContext,
+        internal bool Verify(
             X509Certificate2? remoteCertificate,
+            SafeDeleteSslContext securityContext,
             SslCertificateTrust? trust,
             ref X509Chain? chain,
             out SslPolicyErrors sslPolicyErrors,

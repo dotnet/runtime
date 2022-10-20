@@ -988,7 +988,7 @@ namespace System.Net.Security
                 _remoteCertificate = certificate;
                 _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
 
-                success = _remoteCertificateVerifier.VerifyRemoteCertificate(_securityContext!, _remoteCertificate, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                success = _remoteCertificateVerifier.Verify(_remoteCertificate, _securityContext!, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
                 if (!success)
                 {
                     alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);

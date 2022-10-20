@@ -327,8 +327,6 @@ cleanup:
 
 SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle)
 {
-    abort_unless(dotnetRemoteCertificateValidatorHandle != 0, "invalid pointer to the .NET remote certificate validator");
-
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
@@ -341,10 +339,13 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateV
     // We only need to init the key store, we don't use it
     IGNORE_RETURN(GetKeyStoreInstance(env));
 
-    // Init trust managers
-    loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
-    if (loc[trustManagers] == NULL)
-        goto cleanup;
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        // Init trust managers
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
 
     // Init the SSLContext
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, NULL, loc[trustManagers], NULL);
@@ -429,8 +430,6 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
                                                                jobject* /*X509Certificate[]*/ certs,
                                                                int32_t certsLen)
 {
-    abort_unless(dotnetRemoteCertificateValidatorHandle != 0, "invalid pointer to the .NET remote certificate validator");
-
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
@@ -461,14 +460,18 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRe
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // KeyManager[] keyManagers = kmf.getKeyManagers();
-    // TrustManager[] trustMangers = initTrustManagersWithCustomValidatorProxy(dotnetRemoteCertificateValidatorHandle);
-    // sslContext.init(keyManagers, trustManagers, null);
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
-    if (loc[trustManagers] == NULL)
-        goto cleanup;
 
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        // TrustManager[] trustMangers = initTrustManagersWithCustomValidatorProxy(dotnetRemoteCertificateValidatorHandle);
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
+
+    // sslContext.init(keyManagers, trustManagers, null);
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 

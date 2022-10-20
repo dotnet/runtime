@@ -93,7 +93,7 @@ namespace System.Net
 
             try
             {
-                return _remoteCertificateVerifier.VerifyRemoteCertificate(_securityContext, certificate, trust: null, ref chain, out _, out _);
+                return _remoteCertificateVerifier.Verify(certificate, _securityContext, trust: null, ref chain, out _, out _);
             }
             finally
             {
