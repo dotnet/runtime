@@ -195,7 +195,11 @@ extern "C" {
 // they must be either signed or unsigned) and we want to be able to use
 // __int64 as though it were intrinsic
 
+#if defined(HOST_64BIT) && !defined(__APPLE__)
+#define __int64     long
+#else // HOST_64BIT && !__APPLE__
 #define __int64     long long
+#endif // HOST_64BIT && !__APPLE__
 #define __int32     int
 #define __int16     short int
 #define __int8      char        // assumes char is signed
