@@ -11271,7 +11271,7 @@ void gc_heap::clear_region_info (heap_segment* region)
         clear_brick_table (heap_segment_mem (region), heap_segment_reserved (region));
     }
 
-    clear_card_for_addresses (get_region_start (region), heap_segment_allocated (region));
+    clear_card_for_addresses (get_region_start (region), heap_segment_reserved (region));
 
 #ifdef BACKGROUND_GC
     ::record_changed_seg ((uint8_t*)region, heap_segment_reserved (region),
@@ -11709,7 +11709,7 @@ void gc_heap::clear_gen1_cards()
         heap_segment* region = generation_start_segment (generation_of (1));
         while (region)
         {
-            clear_card_for_addresses (get_region_start (region), heap_segment_allocated (region));
+            clear_card_for_addresses (get_region_start (region), heap_segment_reserved (region));
             region = heap_segment_next (region);
         }
 #else //USE_REGIONS
