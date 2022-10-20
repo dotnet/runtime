@@ -5925,7 +5925,7 @@ int HotColdMappingLookupTable::LookupMappingForMethod(ReadyToRunInfo* pInfo, ULO
         return -1;
     }
 
-    // Casting the lookup table's size to an int is safe:
+    // Casting the lookup table size to an int is safe:
     // We index the RUNTIME_FUNCTION table with ints, and the lookup table
     // contains a subset of the indices in the RUNTIME_FUNCTION table.
     // Thus, |lookup table| <= |RUNTIME_FUNCTION table|.
@@ -6335,7 +6335,7 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     ULONG UMethodIndex = (ULONG)MethodIndex;
 
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
-    if ((lookupIndex != -1) && ((lookupIndex % 2) == 1))
+    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
     {
         // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
         MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
@@ -6376,7 +6376,7 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         }
         else
         {
-            pCodeInfo->m_relOffset = (DWORD)(RelativePc - RUNTIME_FUNCTION__BeginAddress(FunctionEntry));
+            pCodeInfo->m_relOffset = (DWORD)(currentInstr - methodRegionInfo.hotStartAddress);
         }
     }
 
@@ -6470,7 +6470,7 @@ BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
 
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, methodIndex);
 
-    if ((lookupIndex != -1) && ((lookupIndex % 2) == 1))
+    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
     {
         // This maps to a hot entry in the lookup table, so check its unwind info
         SIZE_T unwindSize;
@@ -6569,7 +6569,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
 #ifdef TARGET_X86
     _ASSERTE(!"hot cold splitting is not supported for x86");
 #else
-    _ASSERTE((lookupIndex % 2) == 0);
+    _ASSERTE((lookupIndex & 1) == 0);
     ULONG coldMethodIndex = pInfo->m_pHotColdMap[lookupIndex];
     PTR_RUNTIME_FUNCTION pColdRuntimeFunction = pRuntimeFunctions + coldMethodIndex;
     methodRegionInfo->coldStartAddress = JitTokenToModuleBase(MethodToken)

@@ -839,7 +839,7 @@ namespace ILCompiler
 
                         CorInfoImpl corInfoImpl = _corInfoImpls[compileThreadId];
                         corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
-                        if (corInfoImpl.HasColdCode())
+                        if (corInfoImpl.HasColdCode)
                         {
                             generatedColdCode = true;
                         }

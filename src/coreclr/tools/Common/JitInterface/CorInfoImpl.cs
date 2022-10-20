@@ -484,7 +484,7 @@ namespace Internal.JitInterface
                     alignment,
                     new ISymbolDefinitionNode[] { _methodColdCodeNode });
                 _methodColdCodeNode.SetCode(coldObjectData);
-                _methodCodeNode.SetColdCodeNode(_methodColdCodeNode);
+                _methodCodeNode.ColdCodeNode = _methodColdCodeNode;
             }
 #endif
 

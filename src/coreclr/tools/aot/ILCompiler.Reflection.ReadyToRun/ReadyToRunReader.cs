@@ -521,7 +521,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     for (int i = 0; i < count; i++)
                     {
                         mHotColdMap.Add(new List<int> { NativeReader.ReadInt32(Image, ref hotColdMapOffset), NativeReader.ReadInt32(Image, ref hotColdMapOffset) });
-
                     }
 
                     for (int i = 0; i < count - 1; i++)
@@ -1143,22 +1142,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
+                if (runtimeFunctionId == -1)
+                {
+                    continue;
+                }
+                int count = 0;
+                int i = runtimeFunctionId;
+                do
+                {
+                    count++;
+                    i++;
+                } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
+                
                 if (dHotColdMap.ContainsKey(runtimeFunctionId))
                 {
                     int coldSize = dHotColdMap[runtimeFunctionId].Length;
-                    if (runtimeFunctionId == -1)
-                    {
-                        continue;
-                    }
-
-                    int count = 0;
-                    int i = runtimeFunctionId;
-                    do
-                    {
-                        count++;
-                        i++;
-                    } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
-
                     method.ColdRuntimeFunctionId = dHotColdMap[runtimeFunctionId][0];
                     method.RuntimeFunctionCount = count + coldSize;
                     method.ColdRuntimeFunctionCount = coldSize;
@@ -1166,16 +1164,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 else
                 {
                     Debug.Assert(runtimeFunctionId < firstColdRuntimeFunction);
-                    if (runtimeFunctionId == -1)
-                        continue;
-
-                    int count = 0;
-                    int i = runtimeFunctionId;
-                    do
-                    {
-                        count++;
-                        i++;
-                    } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
                     method.RuntimeFunctionCount = count;
                 }
             }

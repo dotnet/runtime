@@ -563,9 +563,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             int coldOffset = runtimeFunctionOffset + coldRuntimeFunctionId * runtimeFunctionSize;
             int codeOffset = 0;
 
+            int hotRuntimeFunctionCount = RuntimeFunctionCount - ColdRuntimeFunctionCount;
+
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
-                if (i == (RuntimeFunctionCount - ColdRuntimeFunctionCount))
+                if (i == hotRuntimeFunctionCount)
                 {
                     curOffset = coldOffset;
                     runtimeFunctionId = coldRuntimeFunctionId;

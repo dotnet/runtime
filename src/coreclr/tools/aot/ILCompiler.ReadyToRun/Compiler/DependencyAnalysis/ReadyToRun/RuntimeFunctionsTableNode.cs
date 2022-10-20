@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint runtimeFunctionIndex = 0;
             List<uint> mapping = new List<uint>();
 
-            for (int hot = 0; hot < 2; hot++)
+            for (int cold = 0; cold < 2; cold++)
             {
                 foreach (MethodWithGCInfo method in _methodNodes)
                 {
@@ -82,12 +82,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int startIndex;
                     int endIndex;
 
-                    if (hot == 0)
+                    if (cold == 0)
                     {
                         startIndex = 0;
                         endIndex = method.FrameInfos.Length;
                     }
-                    else if (method.GetColdCodeNode() == null)
+                    else if (method.ColdCodeNode == null)
                     {
                         continue;
                     }
@@ -106,7 +106,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if (frameIndex >= method.FrameInfos.Length)
                         {
                             frameInfo = method.ColdFrameInfos[frameIndex - method.FrameInfos.Length];
-                            symbol = method.GetColdCodeNode();
+                            symbol = method.ColdCodeNode;
 
                             if (frameIndex == method.FrameInfos.Length)
                             {
@@ -120,15 +120,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        // StartOffset of the runtime function
-                        int codeDelta = 0;
-                        if (Target.Architecture == TargetArchitecture.ARM)
-                        {
-                            // THUMB_CODE
-                            codeDelta = 1;
-                        }
-
-                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + codeDelta);
+                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + Target.CodeDelta);
                         if (!relocsOnly && Target.Architecture == TargetArchitecture.X64)
                         {
                             // On Amd64, the 2nd word contains the EndOffset of the runtime function
@@ -144,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // HotColdMap should not be null if there is cold code
             if (_nodeFactory.HotColdMap != null)
             {
-                _nodeFactory.HotColdMap.mapping = mapping.ToArray();
+                _nodeFactory.HotColdMap.Mapping = mapping.ToArray();
             }
             else
             {

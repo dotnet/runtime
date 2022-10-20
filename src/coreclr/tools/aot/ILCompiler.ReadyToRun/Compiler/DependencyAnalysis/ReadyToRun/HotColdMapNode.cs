@@ -4,16 +4,27 @@
 using System;
 
 using Internal.Text;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class HotColdMapNode : HeaderTableNode
     {
-        public uint[] mapping;
+        private uint[] _mapping;
 
         public HotColdMapNode(NodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
+        }
+
+        public uint[] Mapping
+        {
+            get => _mapping;
+            set
+            {
+                Debug.Assert(_mapping == null);
+                _mapping = value;
+            }
         }
 
         public override int ClassCode => 28963035;
@@ -32,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            foreach (uint m in this.mapping)
+            foreach (uint m in this._mapping)
             {
                 builder.EmitUInt(m);
             }
