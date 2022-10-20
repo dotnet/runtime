@@ -4140,7 +4140,7 @@ enum GenTreeCallFlags : unsigned int
                                                      // a Pinvoke but not as an unmanaged call. See impCheckForPInvokeCall() to
                                                      // know when these flags are set.
 
-    GTF_CALL_M_R2R_REL_INDIRECT        = 0x00002000, // ready to run call is indirected through a relative address
+    GTF_CALL_M_R2R_CALL                = 0x00002000, // ready to run call that might need indir cell
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00004000, // call does not return
     GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00008000, // call is in wrapper delegate
     GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // NativeAOT managed calli needs transformation, that checks
@@ -5215,18 +5215,6 @@ struct GenTreeCall final : public GenTree
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
 
-    bool IsR2ROrVirtualStubRelativeIndir()
-    {
-#if defined(FEATURE_READYTORUN)
-        if (IsR2RRelativeIndir())
-        {
-            return true;
-        }
-#endif
-
-        return IsVirtualStubRelativeIndir();
-    }
-
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
     int GetNonStandardAddedArgCount(Compiler* compiler) const;
 
@@ -5396,10 +5384,10 @@ struct GenTreeCall final : public GenTree
         return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
-    bool IsR2RRelativeIndir() const
+    bool IsR2RCall() const
     {
 #ifdef FEATURE_READYTORUN
-        return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0;
+        return (gtCallMoreFlags & GTF_CALL_M_R2R_CALL) != 0;
 #else
         return false;
 #endif
@@ -5408,10 +5396,6 @@ struct GenTreeCall final : public GenTree
     void setEntryPoint(const CORINFO_CONST_LOOKUP& entryPoint)
     {
         gtEntryPoint = entryPoint;
-        if (gtEntryPoint.accessType == IAT_PVALUE)
-        {
-            gtCallMoreFlags |= GTF_CALL_M_R2R_REL_INDIRECT;
-        }
     }
 #endif // FEATURE_READYTORUN
 
@@ -5536,17 +5520,26 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
+        // TODO-R2R: Today we assume that a IAT_PVALUE entry point
+        // returned by R2R in all cases but getFunctionFixedEntryPoint
+        // means it needs indir cell. Clean this up so that R2R actually
+        // just tells us explicitly when an indir cell is needed.
+        // We optimize delegate invokes manually in lowering and do not need
+        // indir cells for them.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef FEATURE_READYTORUN
+        if (IsR2RCall() && !IsDelegateInvoke() && (gtEntryPoint.accessType == IAT_PVALUE))
+        {
 #if defined(TARGET_ARMARCH)
-        // For ARM architectures, we always use an indirection cell for R2R calls.
-        if (IsR2RRelativeIndir() && !IsDelegateInvoke())
-        {
+            // For ARM architectures we always use an indirection cell for R2R calls.
             return WellKnownArg::R2RIndirectionCell;
-        }
 #elif defined(TARGET_XARCH)
-        // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
-        if (IsR2RRelativeIndir() && IsFastTailCall())
-        {
-            return WellKnownArg::R2RIndirectionCell;
+            // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
+            if (IsFastTailCall())
+            {
+                return WellKnownArg::R2RIndirectionCell;
+            }
+#endif
         }
 #endif
 

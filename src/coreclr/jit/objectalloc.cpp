@@ -475,6 +475,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     {
         assert(comp->opts.IsReadyToRun());
         helperCall->AsCall()->setEntryPoint(entryPoint);
+        helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
     }
     else
     {

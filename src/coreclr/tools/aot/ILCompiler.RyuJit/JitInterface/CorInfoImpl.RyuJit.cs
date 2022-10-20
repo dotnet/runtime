@@ -786,6 +786,11 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        {
+            getFunctionEntryPoint(ftn, ref pResult, CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_LDFTN);
+        }
+
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
         {
             // Assume we can tail call unless proved otherwise

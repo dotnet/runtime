@@ -450,10 +450,18 @@ private:
 
     class GuardedDevirtualizationTransformer final : public Transformer
     {
+#ifdef FEATURE_READYTORUN
+        CORINFO_CONST_LOOKUP m_r2rEntryPoint;
+#endif
+
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
         {
+#ifdef FEATURE_READYTORUN
+            m_r2rEntryPoint.accessType = IAT_VALUE;
+            m_r2rEntryPoint.addr       = nullptr;
+#endif
         }
 
         //------------------------------------------------------------------------
@@ -607,6 +615,9 @@ private:
                 // path.
                 if (origCall->IsVirtualVtable())
                 {
+                    // In R2R all virtual vtable calls should go through VSD, so we should not get here.
+                    assert(!compiler->opts.IsReadyToRun() || compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
                     GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
@@ -628,6 +639,11 @@ private:
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &lookup);
+
+#ifdef FEATURE_READYTORUN
+                    // For R2R we also need to store the entry point on the direct call node.
+                    m_r2rEntryPoint = lookup;
+#endif
 
                     GenTree* compareTarTree = CreateTreeForLookup(methHnd, lookup);
                     compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree);
@@ -821,8 +837,14 @@ private:
                 call->gtCallType                = CT_USER_FUNC;
                 call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
                 call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-                // TODO-GDV: To support R2R we need to get the entry point
-                // here. We should unify with the tail of impDevirtualizeCall.
+
+#ifdef FEATURE_READYTORUN
+                // We should have set this in CreateCheck.
+                assert(m_r2rEntryPoint.accessType != IAT_VALUE || m_r2rEntryPoint.addr != nullptr);
+                call->setEntryPoint(m_r2rEntryPoint);
+                // Call through fixed entry point does not need special R2R handling.
+                call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_CALL;
+#endif
 
                 if (origCall->IsVirtual())
                 {

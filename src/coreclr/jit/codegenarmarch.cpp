@@ -3144,21 +3144,21 @@ void CodeGen::genCall(GenTreeCall* call)
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
-        else if (call->IsR2ROrVirtualStubRelativeIndir())
+        else
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
-            assert(call->gtControlExpr == nullptr);
+            regNumber indirCellReg = getCallIndirectionCellReg(call);
+            if (indirCellReg != REG_NA)
+            {
+                assert(call->gtControlExpr == nullptr);
 
-            regNumber tmpReg = call->GetSingleTempReg();
-            // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
+                regNumber tmpReg = call->GetSingleTempReg();
+                // Register where we save call address in should not be overridden by epilog.
+                assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
 
-            regNumber callAddrReg =
-                call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
-            // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, indirCellReg);
+                // We will use this again when emitting the jump in genCallInstruction in the epilog
+                call->gtRsvdRegs |= genRegMask(tmpReg);
+            }
         }
 #endif
 
@@ -3409,7 +3409,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (callThroughIndirReg != REG_NA)
         {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
             regNumber targetAddrReg = call->GetSingleTempReg();
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())

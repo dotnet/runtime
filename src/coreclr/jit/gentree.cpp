@@ -9997,9 +9997,9 @@ void Compiler::gtDispNodeName(GenTree* tree)
             gtfType = " stub";
         }
 #ifdef FEATURE_READYTORUN
-        else if (tree->AsCall()->IsR2RRelativeIndir())
+        else if (tree->AsCall()->IsR2RCall())
         {
-            gtfType = " r2r_ind";
+            gtfType = " r2rcall";
         }
 #endif // FEATURE_READYTORUN
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)

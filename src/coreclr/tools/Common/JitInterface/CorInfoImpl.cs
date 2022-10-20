@@ -3210,9 +3210,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
-        { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
-
 #pragma warning disable CA1822 // Mark members as static
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
 #pragma warning restore CA1822 // Mark members as static

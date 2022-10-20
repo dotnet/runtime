@@ -1097,6 +1097,37 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException(HandleToObject(ftn).ToString());
         }
 
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        {
+            MethodDesc md = HandleToObject(ftn);
+
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(md))
+                throw new RequiresRuntimeJitException($"{md} passed to getFunctionFixedEntryPoint is not in version bubble");
+
+            // This function is only used for delegate GDV and the runtime
+            // generally does not profile delegates involving instantiating
+            // stubs. The only time we can see this should thus be due to stale
+            // PGO data.
+            if (md.IsSharedByGenericInstantiations)
+                throw new RequiresRuntimeJitException($"{md} is shared, cannot get fixed entry point");
+
+            if (md.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                throw new RequiresRuntimeJitException($"{md} is not in metadata");
+
+            ModuleToken module = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+            MethodWithToken mt = new MethodWithToken(md, module, null, false, null);
+
+            PrepareForUseAsAFunctionPointer(md);
+
+            pResult =
+                CreateConstLookupToSymbol(
+                    _compilation.NodeFactory.MethodEntrypoint(
+                        mt,
+                        isInstantiatingStub: false,
+                        isPrecodeImportRequired: true,
+                        isJumpableImportRequired: false));
+        }
+
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
         {
             if (!fIsTailPrefix)

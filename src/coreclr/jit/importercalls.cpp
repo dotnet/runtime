@@ -474,6 +474,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (opts.IsReadyToRun())
                 {
                     call->AsCall()->setEntryPoint(callInfo->codePointerLookup.constLookup);
+                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
                 }
 #endif
                 break;
@@ -4643,13 +4644,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned                numberOfMethods = 0;
 
-    // TODO-GDV: R2R support requires additional work to reacquire the
-    // entrypoint, similar to what happens at the end of impDevirtualizeCall.
-    // As part of supporting this we should merge the tail of
-    // impDevirtualizeCall and what happens in
-    // GuardedDevirtualizationTransformer::CreateThen for method GDV.
-    //
-    if (!opts.IsReadyToRun() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    if (call->IsVirtualVtable() || call->IsDelegateInvoke())
     {
         numberOfMethods =
             getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
@@ -6258,8 +6253,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
+        call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
     }
 #endif // FEATURE_READYTORUN
 }

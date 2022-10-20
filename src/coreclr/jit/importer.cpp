@@ -1904,6 +1904,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
     GenTreeCall* op1 = gtNewHelperCallNode(helper, type, arg1);
 
     op1->setEntryPoint(lookup);
+    op1->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
 
     return op1;
 }
@@ -3388,6 +3389,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
 
             call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
+            call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
 
             return call;
         }
@@ -4421,6 +4423,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+                op1->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
             }
             else
 #endif
@@ -4454,6 +4457,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             op1->gtFlags |= callFlags;
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+            op1->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
             op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
 #else
             unreached();
