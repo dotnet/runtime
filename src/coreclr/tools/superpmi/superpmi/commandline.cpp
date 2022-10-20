@@ -136,12 +136,12 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -jitoption [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf(" -jit2option [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
