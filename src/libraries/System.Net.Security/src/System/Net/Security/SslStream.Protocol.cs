@@ -807,16 +807,9 @@ namespace System.Net.Security
                         }
                     }
 
-#if TARGET_ANDROID
-                    _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
-#endif
-
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
-#if TARGET_ANDROID
-                                      _remoteCertificateVerifier,
-#endif
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -825,6 +818,9 @@ namespace System.Net.Security
                     }
                     else
                     {
+#if TARGET_ANDROID
+                        _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
+#endif
                         status = SslStreamPal.InitializeSecurityContext(
 #if TARGET_ANDROID
                                        _remoteCertificateVerifier,
@@ -954,7 +950,6 @@ namespace System.Net.Security
             return status;
         }
 
-#if !TARGET_ANDROID
         /*++
             VerifyRemoteCertificate - Validates the content of a Remote Certificate
 
@@ -1057,7 +1052,6 @@ namespace System.Net.Security
 
             return GenerateAlertToken();
         }
-#endif
 
         private ProtocolToken? CreateShutdownToken()
         {
