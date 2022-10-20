@@ -659,12 +659,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-    }
-
 #ifdef MADV_DONTDUMP
-    // Do not include reserved memory in coredump.
-    madvise(pRetVal, size, MADV_DONTDUMP);
+        // Do not include reserved memory in coredump.
+        madvise(pRetVal, size, MADV_DONTDUMP);
 #endif
+    }
 
     return pRetVal;
 }
@@ -777,7 +776,7 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     madvise(address, size, MADV_DONTDUMP);
 #endif
 
-    return  (bRetVal != NULL);
+    return  (bRetVal != MAP_FAILED);
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
@@ -809,8 +808,8 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     }
 
 #ifdef MADV_DONTDUMP
-        // Do not include reset memory in coredump.
-        madvise(address, size, MADV_DONTDUMP);
+    // Do not include reset memory in coredump.
+    madvise(address, size, MADV_DONTDUMP);
 #endif
 
     return (st == 0);
