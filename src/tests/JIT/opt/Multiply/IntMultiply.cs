@@ -129,6 +129,24 @@ namespace CodeGenTests
             return value * 17;
         }
 
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong UInt64_MultiplyWith5_AddressExposed(ulong value)
+        {
+            // X64:      mov [[REG0:[a-z]+]], qword ptr
+            // X64-NOT:  mov
+            // X64-NEXT: lea [[REG1:[a-z]+]], {{\[}}[[REG0:[a-z]+]]+4*[[REG0]]{{\]}}
+            var value2 = value * 5;
+            UInt64_AddressExposed(ref value);
+            return value2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void UInt64_AddressExposed(ref ulong value)
+        {
+
+        }
+
         static int Main()
         {
             if (UInt32_MultiplyWithUInt32MaxValue(1) != UInt32.MaxValue)
@@ -174,6 +192,9 @@ namespace CodeGenTests
                 return 0;
 
             if (UInt64_MultiplyWith17(1) != 17)
+                return 0;
+
+            if (UInt64_MultiplyWith5_AddressExposed(1) != 5)
                 return 0;
 
             return 100;
