@@ -176,9 +176,9 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 
             if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
             {
-                unsigned lclNumTmp  = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
+                unsigned lclNumTmp     = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
                 GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, op1);
-                GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, op1->TypeGet());
+                GenTree* tmpTree       = comp->gtNewLclvNode(lclNumTmp, op1->TypeGet());
 
                 GenTree* lea = OffsetByIndexWithScale(tmpTree, comp->gtClone(tmpTree), scale);
 
