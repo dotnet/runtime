@@ -206,10 +206,7 @@
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
-      <RuntimePackNativeLibs
-        Condition="'$(TargetOS)' == 'Android'"
-        Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dex" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dex" />
       <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
