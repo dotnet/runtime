@@ -4917,8 +4917,10 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                     // Avoid redundant bitcasts for the common case of a full definition.
                     fieldStoreType = fieldVarDsc->TypeGet();
                 }
+
+                ssize_t      fieldValueOffset = max(0, fieldVarDsc->lvFldOffset - offset);
                 ValueNumPair fieldStoreValue =
-                    vnStore->VNPairForLoad(value, storeSize, fieldStoreType, offset, fieldStoreSize);
+                    vnStore->VNPairForLoad(value, storeSize, fieldStoreType, fieldValueOffset, fieldStoreSize);
 
                 processDef(fieldLclNum, lclDefNode->GetSsaNum(this, index), fieldStoreOffset, fieldStoreSize,
                            fieldStoreValue);
