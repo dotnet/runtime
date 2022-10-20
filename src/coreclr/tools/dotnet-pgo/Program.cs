@@ -256,11 +256,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerDumpMain();
             }
-            if (_inputFilesToMerge != null)
+            if (_inputFilesToMerge.Count > 0)
             {
                 return InnerMergeMain();
             }
-            if (_inputFilesToCompare != null)
+            if (_inputFilesToCompare.Length > 0)
             {
                 return InnerCompareMibcMain();
             }
