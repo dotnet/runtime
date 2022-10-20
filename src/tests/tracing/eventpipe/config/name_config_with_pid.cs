@@ -54,9 +54,9 @@ class NameConfigWithPid
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardError = true;
 
-            process.StartInfo.Environment.Add("COMPlus_EnableEventPipe", "1");
-            process.StartInfo.Environment.Add("COMPlus_EventPipeConfig", "Microsoft-Windows-DotNETRuntime:4c14fccbd:4");
-            process.StartInfo.Environment.Add("COMPlus_EventPipeOutputPath", outputPathPattern);
+            process.StartInfo.Environment.Add("DOTNET_EnableEventPipe", "1");
+            process.StartInfo.Environment.Add("DOTNET_EventPipeConfig", "Microsoft-Windows-DotNETRuntime:4c14fccbd:4");
+            process.StartInfo.Environment.Add("DOTNET_EventPipeOutputPath", outputPathPattern);
             process.StartInfo.Environment.Add("CORE_ROOT", coreRoot);
 
             Console.WriteLine($"Starting process '{process.StartInfo.FileName}' '{process.StartInfo.Arguments}'");

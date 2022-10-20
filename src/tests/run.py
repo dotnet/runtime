@@ -220,8 +220,8 @@ class DebugEnv:
         dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
-            "COMPlus_AssertOnNYI": "1",
-            "COMPlus_ContinueOnAssert": "0"
+            "DOTNET_AssertOnNYI": "1",
+            "DOTNET_ContinueOnAssert": "0"
         }
 
         if self.env is not None:
@@ -394,7 +394,7 @@ def create_and_use_test_env(_os, env, func):
 
     Args:
         _os(str)                        : OS name
-        env(defaultdict(lambda: None))  : complus variables, key,value dict
+        env(defaultdict(lambda: None))  : DOTNET variables, key,value dict
         func(lambda)                    : lambda to call, after creating the
                                         : test_env
 
@@ -408,15 +408,15 @@ def create_and_use_test_env(_os, env, func):
 
     ret_code = 0
 
-    complus_vars = defaultdict(lambda: None)
+    dotnet_vars = defaultdict(lambda: None)
 
     for key in env:
         value = env[key]
-        if "complus" in key.lower() or "superpmi" in key.lower():
-            complus_vars[key] = value
+        if "dotnet" in key.lower() or "superpmi" in key.lower():
+            dotnet_vars[key] = value
 
-    if len(list(complus_vars.keys())) > 0:
-        print("Found COMPlus variables in the current environment")
+    if len(list(dotnet_vars.keys())) > 0:
+        print("Found DOTNET variables in the current environment")
         print("")
 
         contents = ""
@@ -451,15 +451,15 @@ def create_and_use_test_env(_os, env, func):
             test_env.write(file_header)
             contents += file_header
 
-            for key in complus_vars:
-                value = complus_vars[key]
+            for key in dotnet_vars:
+                value = dotnet_vars[key]
                 command = None
                 if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
 
-                if key.lower() == "complus_gcstress":
+                if key.lower() == "dotnet_gcstress":
                     gc_stress = True
 
                 print("Unset %s" % key)
@@ -500,10 +500,10 @@ def create_and_use_test_env(_os, env, func):
     return ret_code
 
 def get_environment(test_env=None):
-    """ Get all the COMPlus_* Environment variables
+    """ Get all the DOTNET_* Environment variables
 
     Notes:
-        All COMPlus variables need to be captured as a test_env script to avoid
+        All DOTNET variables need to be captured as a test_env script to avoid
         influencing the test runner.
 
         On Windows, os.environ keys (the environment variable names) are all upper case,
@@ -511,14 +511,14 @@ def get_environment(test_env=None):
     """
     global gc_stress
 
-    complus_vars = defaultdict(lambda: "")
+    dotnet_vars = defaultdict(lambda: "")
 
     for key in os.environ:
-        if "complus" in key.lower():
-            complus_vars[key] = os.environ[key]
+        if "dotnet" in key.lower():
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
         elif "superpmi" in key.lower():
-            complus_vars[key] = os.environ[key]
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
 
     # Get the env from the test_env
@@ -541,15 +541,15 @@ def get_environment(test_env=None):
                 except:
                     pass
 
-                complus_vars[key] = value
+                dotnet_vars[key] = value
 
                 # Supoort looking up case insensitive.
-                complus_vars[key.lower()] = value
+                dotnet_vars[key.lower()] = value
 
-        if "complus_gcstress" in complus_vars:
+        if "dotnet_gcstress" in dotnet_vars:
             gc_stress = True
 
-    return complus_vars
+    return dotnet_vars
 
 def call_msbuild(args):
     """ Call msbuild to run the tests built.
