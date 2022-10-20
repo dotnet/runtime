@@ -753,7 +753,11 @@ namespace Mono.Linker
 		readonly Dictionary<MethodReference, MethodDefinition?> methodresolveCache = new ();
 		readonly Dictionary<FieldReference, FieldDefinition?> fieldresolveCache = new ();
 		readonly Dictionary<TypeReference, TypeDefinition?> typeresolveCache = new ();
+		readonly Dictionary<ExportedType, TypeDefinition?> exportedTypeResolveCache = new ();
 
+		/// <summary>
+		/// Tries to resolve the MethodReference to a MethodDefinition and logs a warning if it can't
+		/// </summary>
 		public MethodDefinition? Resolve (MethodReference methodReference)
 		{
 			if (methodReference is MethodDefinition methodDefinition)
@@ -765,7 +769,9 @@ namespace Mono.Linker
 			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md))
 				return md;
 
+#pragma warning disable RS0030 // Cecil's resolve is banned -- this provides the wrapper
 			md = methodReference.Resolve ();
+#pragma warning restore RS0030
 			if (md == null && !IgnoreUnresolved)
 				ReportUnresolved (methodReference);
 
@@ -773,6 +779,9 @@ namespace Mono.Linker
 			return md;
 		}
 
+		/// <summary>
+		/// Tries to resolve the MethodReference to a MethodDefinition and returns null if it can't
+		/// </summary>
 		public MethodDefinition? TryResolve (MethodReference methodReference)
 		{
 			if (methodReference is MethodDefinition methodDefinition)
@@ -784,11 +793,16 @@ namespace Mono.Linker
 			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md))
 				return md;
 
+#pragma warning disable RS0030 // Cecil's resolve is banned -- this method provides the wrapper
 			md = methodReference.Resolve ();
+#pragma warning restore RS0030
 			methodresolveCache.Add (methodReference, md);
 			return md;
 		}
 
+		/// <summary>
+		/// Tries to resolve the FieldReference to a FieldDefinition and logs a warning if it can't
+		/// </summary>
 		public FieldDefinition? Resolve (FieldReference fieldReference)
 		{
 			if (fieldReference is FieldDefinition fieldDefinition)
@@ -808,6 +822,9 @@ namespace Mono.Linker
 			return fd;
 		}
 
+		/// <summary>
+		/// Tries to resolve the FieldReference to a FieldDefinition and returns null if it can't
+		/// </summary>
 		public FieldDefinition? TryResolve (FieldReference fieldReference)
 		{
 			if (fieldReference is FieldDefinition fieldDefinition)
@@ -824,6 +841,9 @@ namespace Mono.Linker
 			return fd;
 		}
 
+		/// <summary>
+		/// Tries to resolve the TypeReference to a TypeDefinition and logs a warning if it can't
+		/// </summary>
 		public TypeDefinition? Resolve (TypeReference typeReference)
 		{
 			if (typeReference is TypeDefinition typeDefinition)
@@ -851,6 +871,9 @@ namespace Mono.Linker
 			return td;
 		}
 
+		/// <summary>
+		/// Tries to resolve the TypeReference to a TypeDefinition and returns null if it can't
+		/// </summary>
 		public TypeDefinition? TryResolve (TypeReference typeReference)
 		{
 			if (typeReference is TypeDefinition typeDefinition)
@@ -881,6 +904,33 @@ namespace Mono.Linker
 			return td;
 		}
 
+		/// <summary>
+		/// Tries to resolve the ExportedType to a TypeDefinition and logs a warning if it can't
+		/// </summary>
+		public TypeDefinition? Resolve (ExportedType et)
+		{
+			if (TryResolve (et) is not TypeDefinition td) {
+				ReportUnresolved (et);
+				return null;
+			}
+			return td;
+		}
+
+		/// <summary>
+		/// Tries to resolve the ExportedType to a TypeDefinition and returns null if it can't
+		/// </summary>
+		public TypeDefinition? TryResolve (ExportedType et)
+		{
+			if (exportedTypeResolveCache.TryGetValue (et, out var td)) {
+				return td;
+			}
+#pragma warning disable RS0030 // Cecil's Resolve is banned -- this method provides the wrapper
+			td = et.Resolve ();
+#pragma warning restore RS0030
+			exportedTypeResolveCache.Add (et, td);
+			return td;
+		}
+
 		public TypeDefinition? TryResolve (AssemblyDefinition assembly, string typeNameString)
 		{
 			// It could be cached if it shows up on fast path
@@ -890,6 +940,8 @@ namespace Mono.Linker
 		}
 
 		readonly HashSet<MemberReference> unresolved_reported = new ();
+
+		readonly HashSet<ExportedType> unresolved_exported_types_reported = new ();
 
 		protected virtual void ReportUnresolved (FieldReference fieldReference)
 		{
@@ -907,6 +959,12 @@ namespace Mono.Linker
 		{
 			if (unresolved_reported.Add (typeReference))
 				LogError (string.Format (SharedStrings.FailedToResolveTypeElementMessage, typeReference.GetDisplayName ()), (int) DiagnosticId.FailedToResolveMetadataElement);
+		}
+
+		protected virtual void ReportUnresolved (ExportedType et)
+		{
+			if (unresolved_exported_types_reported.Add (et))
+				LogError (string.Format (SharedStrings.FailedToResolveTypeElementMessage, et.Name), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 	}
 

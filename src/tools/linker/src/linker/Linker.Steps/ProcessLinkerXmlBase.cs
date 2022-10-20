@@ -191,7 +191,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => exported.Resolve ();
+		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => _context.TryResolve (exported);
 
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
 		{
