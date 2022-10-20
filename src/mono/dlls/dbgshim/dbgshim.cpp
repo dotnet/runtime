@@ -45,7 +45,7 @@ typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
     HMODULE hmodTargetCLR,
     IUnknown **ppCordb);
 
-static HRESULT RunAndroidCmd(char* c_android_adb_path, char* c_command_to_execute)
+static HRESULT RunAndroidCmd(char* c_android_adb_path, char const* c_command_to_execute)
 {
     PROCESS_INFORMATION processInfo;
     STARTUPINFOW startupInfo;
@@ -75,11 +75,11 @@ static HRESULT RunAndroidCmd(char* c_android_adb_path, char* c_command_to_execut
         &processInfo);
 
     if (!result) {
+        free(c_android_run_adb_command);
         free(w_android_run_adb_command);
-        free(w_android_adb_path);
         return HRESULT_FROM_WIN32(GetLastError());
     }
-    free(w_android_adb_path);
+    free(c_android_run_adb_command);
     free(w_android_run_adb_command);
     return S_OK;
 }
