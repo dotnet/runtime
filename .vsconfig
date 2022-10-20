@@ -4,7 +4,6 @@
     "Component.CPython39.x64",
     "Microsoft.Component.CodeAnalysis.SDK",
     "Microsoft.Component.MSBuild",
-    "Microsoft.ComponentGroup.Blend",
     "Microsoft.ComponentGroup.ClickOnce.Publish",
     "Microsoft.Net.Component.4.6.1.TargetingPack",
     "Microsoft.Net.Component.4.6.2.SDK",
