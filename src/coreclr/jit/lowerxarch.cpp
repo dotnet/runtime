@@ -170,15 +170,15 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
             LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
             op1 = ReplaceWithLclVar(op1Use);
 
+            // We will use the LEA instruction to perform this multiply
+            // Note that an LEA with base=x, index=x and scale=(cnsVal-1) computes x*cnsVal when cnsVal=3,5 or 9.
+            unsigned int scale = (unsigned int)(cnsVal - 1);
+
             if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
             {
                 unsigned lclNumTmp  = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
                 GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, op1);
                 GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, op1->TypeGet());
-
-                // We will use the LEA instruction to perform this multiply
-                // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
-                unsigned int scale = (unsigned int)(cnsVal - 1);
 
                 GenTree* lea = OffsetByIndexWithScale(tmpTree, comp->gtClone(tmpTree), scale);
 
@@ -198,10 +198,6 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
             }
             else
             {
-                // We will use the LEA instruction to perform this multiply
-                // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
-                unsigned int scale = (unsigned int)(cnsVal - 1);
-
                 GenTree* lea = OffsetByIndexWithScale(op1, comp->gtClone(op1), scale);
 
                 BlockRange().Remove(cns);

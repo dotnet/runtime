@@ -1087,14 +1087,18 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
     {
         ssize_t imm = immOp->AsIntConCommon()->IconValue();
 
-        if (!requiresOverflowCheck && rmOp->isUsedFromReg() && ((imm == 3) || (imm == 5) || (imm == 9)))
+        // Only do these optimizations if min-opts is enabled.
+        // Otherwise, lowering will do them.
+        if (compiler->opts.MinOpts() && !requiresOverflowCheck && rmOp->isUsedFromReg() &&
+            ((imm == 3) || (imm == 5) || (imm == 9)))
         {
             // We will use the LEA instruction to perform this multiply
             // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
             unsigned int scale = (unsigned int)(imm - 1);
             GetEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->GetRegNum(), rmOp->GetRegNum(), scale, 0);
         }
-        else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && (imm == genFindLowestBit(imm)) && (imm != 0))
+        else if (compiler->opts.MinOpts() && !requiresOverflowCheck && rmOp->isUsedFromReg() &&
+                 (imm == genFindLowestBit(imm)) && (imm != 0))
         {
             // Use shift for constant multiply when legal
             uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(imm));
