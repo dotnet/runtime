@@ -117,7 +117,7 @@ bool GCToOSInterface::Initialize()
     g_pageSizeUnixInl = GetOsPageSize();
 
     uint32_t currentProcessCpuCount = PAL_GetLogicalCpuCountFromOS();
-    if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, g_processAffinitySet.GetBitsetData()))
+    if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, (UINT_PTR *)g_processAffinitySet.GetBitsetData()))
     {
         _ASSERTE(currentProcessCpuCount == g_processAffinitySet.Count());
     }

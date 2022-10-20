@@ -1467,6 +1467,9 @@ MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
 
 /* LLVM only, compare 2 vectors for equality, set dreg to 1/0 */
 MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
+#if defined(TARGET_ARM64)
+MINI_OP(OP_XEQUAL_ARM64_V128_FAST, "arm64_xequal_v128", IREG, XREG, XREG)
+#endif
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)

@@ -1042,7 +1042,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     else
 #endif // FEATURE_HW_INTRINSICS
     {
-        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
                            GT_COMMA, GT_CNS_VEC) ||
                ((src->TypeGet() != TYP_STRUCT) && (src->OperIsSIMD() || src->OperIs(GT_BITCAST))));
     }
@@ -4135,11 +4135,110 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     return node;
 }
 
-GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType)
+//------------------------------------------------------------------------
+// impImportStaticReadOnlyField: Tries to import 'static readonly' field
+//    as a constant if the host type is statically initialized.
+//
+// Arguments:
+//    field    - 'static readonly' field
+//    ownerCls - class handle of the type the given field defined in
+//
+// Return Value:
+//    The tree representing the constant value of the statically initialized
+//    readonly tree.
+//
+GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls)
 {
-    // We plan to support larger values (for structs), for now let's keep it 64 bit
-    assert(bufferSize == sizeof(INT64));
+    if (!opts.OptimizationEnabled())
+    {
+        return nullptr;
+    }
 
+    CORINFO_CLASS_HANDLE fieldClsHnd;
+    var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls));
+
+    const int bufferSize         = sizeof(uint64_t);
+    uint8_t   buffer[bufferSize] = {0};
+    if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType == TYP_REF))
+    {
+        assert(bufferSize >= genTypeSize(fieldType));
+        if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, genTypeSize(fieldType)))
+        {
+            GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
+            if (cnsValue != nullptr)
+            {
+                return cnsValue;
+            }
+        }
+    }
+    else if (fieldType == TYP_STRUCT)
+    {
+
+        if (info.compCompHnd->getClassNumInstanceFields(fieldClsHnd) != 1)
+        {
+            // Only single-field structs are supported here to avoid potential regressions where
+            // Metadata-driven struct promotion leads to regressions.
+            return nullptr;
+        }
+
+        CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
+        CORINFO_CLASS_HANDLE innerFieldClsHnd;
+        var_types            fieldVarType =
+            JITtype2varType(info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
+
+        // Technically, we can support frozen gc refs here and maybe floating point in future
+        if (!varTypeIsIntegral(fieldVarType))
+        {
+            return nullptr;
+        }
+
+        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+        unsigned fldOffset = info.compCompHnd->getFieldOffset(innerField);
+
+        if ((fldOffset != 0) || (totalSize != info.compCompHnd->getClassSize(fieldClsHnd)) || (totalSize == 0))
+        {
+            // The field is expected to be of the exact size as the struct with 0 offset
+            return nullptr;
+        }
+
+        const int bufferSize         = TARGET_POINTER_SIZE;
+        uint8_t   buffer[bufferSize] = {0};
+
+        if ((totalSize > bufferSize) || !info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+        {
+            return nullptr;
+        }
+
+        unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld struct"));
+        lvaSetStruct(structTempNum, fieldClsHnd, false);
+
+        GenTree* constValTree = impImportCnsTreeFromBuffer(buffer, fieldVarType);
+        assert(constValTree != nullptr);
+
+        GenTreeLclFld* fieldTree    = gtNewLclFldNode(structTempNum, fieldVarType, fldOffset);
+        GenTree*       fieldAsgTree = gtNewAssignNode(fieldTree, constValTree);
+        impAppendTree(fieldAsgTree, CHECK_SPILL_NONE, impCurStmtDI);
+
+        JITDUMP("Folding 'static readonly %s' field to an ASG(LCL, CNS) node\n", eeGetClassName(fieldClsHnd));
+
+        return impCreateLocalNode(structTempNum DEBUGARG(0));
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// impImportCnsTreeFromBuffer: read value of the given type from the
+//    given buffer to create a tree representing that constant.
+//
+// Arguments:
+//    buffer    - array of bytes representing the value
+//    valueType - type of the value
+//
+// Return Value:
+//    The tree representing the constant from the given buffer
+//
+GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType)
+{
     GenTree* tree = nullptr;
     switch (valueType)
     {
@@ -9489,21 +9588,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL))
                         {
-                            const int bufferSize         = sizeof(uint64_t);
-                            uint8_t   buffer[bufferSize] = {0};
-                            if (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF))
+                            GenTree* newTree = impImportStaticReadOnlyField(resolvedToken.hField, resolvedToken.hClass);
+
+                            if (newTree != nullptr)
                             {
-                                assert(bufferSize >= genTypeSize(lclTyp));
-                                if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
-                                                                                  genTypeSize(lclTyp)))
-                                {
-                                    GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
-                                    if (cnsValue != nullptr)
-                                    {
-                                        op1 = cnsValue;
-                                        goto FIELD_DONE;
-                                    }
-                                }
+                                op1 = newTree;
+                                goto FIELD_DONE;
                             }
                         }
                         FALLTHROUGH;
@@ -13111,13 +13201,15 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 
-/*****************************************************************************
- This method makes STATIC inlining decision based on the IL code.
- It should not make any inlining decision based on the context.
- If forceInline is true, then the inlining decision should not depend on
- performance heuristics (code size, etc.).
- */
-
+//------------------------------------------------------------------------
+// impCanInlineIL: screen inline candate based on info from the method header
+//
+// Arguments:
+//   fncHandle -- inline candidate method
+//   methInfo -- method info from VN
+//   forceInline -- true if method is marked with AggressiveInlining
+//   inlineResult -- ongoing inline evaluation
+//
 void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
                               CORINFO_METHOD_INFO*  methInfo,
                               bool                  forceInline,

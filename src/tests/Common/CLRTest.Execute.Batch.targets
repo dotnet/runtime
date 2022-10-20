@@ -60,8 +60,8 @@ WARNING:   When setting properties based on their current state (for example:
       <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%COMPlus_GCStress%"=="" (
-  ECHO SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+IF NOT "%DOTNET_GCStress%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE DOTNET_GCStress IS SET
   popd
   Exit /b 0
 )
@@ -97,21 +97,21 @@ REM tests. The following cannot run the test.
 REM
 REM     TieredCompilation=1
 REM     TieredCompilation=
-IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMinOpts%"=="" IF "%COMPlus_TailcallStress%"=="" goto :Compatible
-  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress, COMPlus_TieredCompilation) IS SET
+IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_JITMinOpts%"=="" IF "%DOTNET_TailcallStress%"=="" goto :Compatible
+  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress, DOTNET_TieredCompilation) IS SET
   popd
   Exit /b 0
 :Compatible
-IF "%COMPlus_TieredCompilation%"=="0" goto :TieredCompilationDisabledCorrectly
-  ECHO SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive
+IF "%DOTNET_TieredCompilation%"=="0" goto :TieredCompilationDisabledCorrectly
+  ECHO SKIPPING EXECUTION BECAUSE DOTNET_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive
   popd
   Exit /b 0
 :TieredCompilationDisabledCorrectly
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%COMPlus_HeapVerify%"=="" (
-  ECHO SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+IF NOT "%DOTNET_HeapVerify%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
   popd
   Exit /b 0
 )

@@ -10,6 +10,6 @@
          so is fine to keep it in the inner loop -->
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="0x3" />
-    <CLRTestEnvironmentVariable Include="DOTNET_COMPlus_GCSegmentSize" Value="8000" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCSegmentSize" Value="8000" />
   </ItemGroup>
 </Project>

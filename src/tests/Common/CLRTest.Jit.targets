@@ -226,14 +226,21 @@ IF NOT DEFINED DoLink (
 
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
+<<<<<<< HEAD
       <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBashPreCommands)
 if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
+=======
+
+      <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+$(BashCLRTestPreCommands)
+if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOTNET_TailcallStress" ) && ( "$DOTNET_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
+>>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
-    export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
-    export COMPlus_JitDiffableDasm=1
-    export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
+    export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
+    export DOTNET_JitDiffableDasm=1
+    export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
     if [[ $ERRORLEVEL -ne 0 ]]
     then
       echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
@@ -243,9 +250,15 @@ fi
 ]]>
       </CLRTestBashPreCommands>
 
+<<<<<<< HEAD
       <CLRTestBashPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBashPostCommands)
 if [[ -n $COMPlus_JitDisasm ]]; then
+=======
+      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
+      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+if [[ -n $DOTNET_JitDisasm ]]; then
+>>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BashDisasmOutputFile)"
     ERRORLEVEL=$?
     if [[ $ERRORLEVEL -ne 0 ]]
@@ -267,24 +280,38 @@ fi
 
       <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
       <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
+<<<<<<< HEAD
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBatchPreCommands)
 IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_TailcallStress%"=="" IF NOT "%COMPlus_TieredPGO%" == "1" IF NOT "%RunCrossGen2%" == "1" (
+=======
+
+      <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
+<![CDATA[
+      $(CLRTestBatchPreCommands)
+IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_TailcallStress%"=="" IF NOT "%DOTNET_TieredPGO%" == "1" IF NOT "%RunCrossGen2%" == "1" (
+>>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
       ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
       Exit /b 1
     )', '%0d%0a')
-    for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set COMPlus_JitDisasm=%%g
-    set COMPlus_JitDiffableDasm=1
-    set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
+    for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
+    set DOTNET_JitDiffableDasm=1
+    set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
 )
 ]]>
       </CLRTestBatchPreCommands>
 
+<<<<<<< HEAD
       <CLRTestBatchPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBatchPostCommands)
 IF NOT "%COMPlus_JitDisasm%" == "" (
+=======
+      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
+      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+IF NOT "%DOTNET_JitDisasm%" == "" (
+>>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BatchDisasmOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
       ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
@@ -326,8 +353,8 @@ then
   export spmi_jitlib=$CORE_ROOT/libclrjit.$spmi_file_extension
   export SuperPMIShimLogPath=$spmi_collect_dir
   export SuperPMIShimPath=$spmi_jitlib
-  export COMPlus_EnableExtraSuperPmiQueries=1
-  export COMPlus_JitPath=$CORE_ROOT/libsuperpmi-shim-collector.$spmi_file_extension
+  export DOTNET_EnableExtraSuperPmiQueries=1
+  export DOTNET_JitPath=$CORE_ROOT/libsuperpmi-shim-collector.$spmi_file_extension
 fi
 ]]>
       </SuperPMICollectionBashScript>
@@ -346,8 +373,8 @@ if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%
 set spmi_jitlib=%CORE_ROOT%\clrjit.dll
 set SuperPMIShimLogPath=%spmi_collect_dir%
 set SuperPMIShimPath=%spmi_jitlib%
-set COMPlus_EnableExtraSuperPmiQueries=1
-set COMPlus_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
+set DOTNET_EnableExtraSuperPmiQueries=1
+set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 :skip_spmi_enable_collection
 ]]>
       </SuperPMICollectionBatchScript>
@@ -362,7 +389,7 @@ set COMPlus_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 
   <ItemGroup>
     <CLRTestEnvironmentVariable Condition="'$(RunWithGcStress)' != ''"
-      Include="COMPlus_GCStress" Value="$(RunWithGcStress)" />
+      Include="DOTNET_GCStress" Value="$(RunWithGcStress)" />
   </ItemGroup>
 
 </Project> 

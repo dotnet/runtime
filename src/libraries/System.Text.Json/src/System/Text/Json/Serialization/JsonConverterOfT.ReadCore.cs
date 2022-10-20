@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json.Serialization.Metadata;
-
 namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
@@ -58,7 +56,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? value);
+                bool success = TryRead(ref reader, state.Current.JsonTypeInfo.Type, options, ref state, out T? value);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.
