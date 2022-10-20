@@ -1506,3 +1506,27 @@ public class ToStringOverriden
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public class MultiThreadedTest
+{
+    public static void Run()
+    {
+        System.Collections.Generic.List<System.Threading.Thread> myThreads = new();
+        for (int i = 0 ; i < 3; i++)
+        {
+            var t = new System.Threading.Thread (() => Write("y"));
+            myThreads.Add(t);
+            t.Start();
+        }
+
+        foreach (System.Threading.Thread curThread in myThreads)
+        {
+            curThread.Join();
+        }
+    }
+    static void Write(string input) 
+    { 
+        var currentThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        Console.WriteLine($"Thread:{currentThread} - {input}"); 
+    } 
+}

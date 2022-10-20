@@ -437,7 +437,7 @@ namespace DebuggerTests
                 GetK = TGetter("GetK", TNumber(30)),
                 GetD = TGetter("GetD", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))
             }, "test_props");
-            await EvaluateOnCallFrameAndCheck(frame_id, sessionIdStr : pause_location["sessionId"].Value<string>(),
+            await EvaluateOnCallFrameAndCheck(frame_id,
                 ($"test.GetJ", TNumber(20)),
                 ($"test.GetI", TNumber(50)),
                 ($"test.GetK", TNumber(30))

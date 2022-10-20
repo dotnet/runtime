@@ -30,14 +30,14 @@ namespace DebuggerTests
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr : pause_location["sessionId"].Value<string>());
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(frame_locals, new
                 {
                     t = TObject("System.Threading.Tasks.Task.DelayPromise"),
                     code = TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"),
                     @this = TObject("DebuggerTests.AsyncTests.ContinueWithTests.<>c"),
                     dt = TDateTime(new DateTime(4513, 4, 5, 6, 7, 8))
-                }, "locals", sessionIdStr : pause_location["sessionId"].Value<string>());
+                }, "locals");
 
                 var res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "t"), "Status");
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
@@ -49,20 +49,20 @@ namespace DebuggerTests
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
-                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr : pause_location["sessionId"].Value<string>());
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(frame_locals, new
                 {
                     t = TObject("System.Threading.Tasks.Task.DelayPromise"),
                     code = TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"),
                     dt = TDateTime(new DateTime(4513, 4, 5, 6, 7, 8)),
                     @this = TObject("DebuggerTests.AsyncTests.ContinueWithTests")
-                }, "locals", sessionIdStr : pause_location["sessionId"].Value<string>());
+                }, "locals");
 
-                var res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "t"), "Status", sessionIdStr : pause_location["sessionId"].Value<string>());
+                var res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "t"), "Status");
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
 
-                res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "this"), "Date", sessionIdStr : pause_location["sessionId"].Value<string>());
-                await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date", sessionIdStr : pause_location["sessionId"].Value<string>());
+                res = await InvokeGetter(GetAndAssertObjectWithName(frame_locals, "this"), "Date");
+                await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date");
              });
 
          [Fact] // NestedContinueWith
@@ -71,7 +71,7 @@ namespace DebuggerTests
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
               wait_for_event_fn: async (pause_location) =>
               {
-                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>(), sessionIdStr : pause_location["sessionId"].Value<string>());
+                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                  await CheckProps(frame_locals, new
                  {
                      t = TObject("System.Threading.Tasks.Task.DelayPromise"),
@@ -79,7 +79,7 @@ namespace DebuggerTests
                      str = TString("foobar"),
                      @this = TObject("DebuggerTests.AsyncTests.ContinueWithTests.<>c__DisplayClass4_0"),
                      ncs_dt0 = TDateTime(new DateTime(3412, 4, 6, 8, 0, 2))
-                 }, "locals", sessionIdStr : pause_location["sessionId"].Value<string>());
+                 }, "locals");
               });
     }
 }

@@ -21,6 +21,8 @@ namespace DebuggerTests
         protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
 
+        public SessionId CurrentSessionId { get; set; } = new SessionId(null);
+
         public InspectorClient(ILogger logger) : base(logger) { }
 
         protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
@@ -75,7 +77,7 @@ namespace DebuggerTests
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
-            => SendCommand(new SessionId(null), method, args, token);
+            => SendCommand(CurrentSessionId, method, args, token);
 
         public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
@@ -92,7 +94,6 @@ namespace DebuggerTests
 
             if (sessionId != SessionId.Null)
                 o.Add("sessionId", sessionId.sessionId);
-
             var tcs = new TaskCompletionSource<Result>();
             pending_cmds[new MessageId(sessionId.sessionId, id)] = tcs;
 

@@ -26,7 +26,7 @@ namespace DebuggerTests
 
         ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
         ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
-
+        ConcurrentQueue<JObject> nextNotifications = new ();
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
         public CancellationToken Token { get; }
@@ -81,11 +81,19 @@ namespace DebuggerTests
             {
                 if (tcs.Task.IsCompleted)
                 {
+                    Client.CurrentSessionId = new SessionId(tcs.Task.Result["sessionId"]?.Value<string>());
                     notifications.Remove(what, out _);
                     return tcs.Task;
                 }
 
                 throw new Exception($"Invalid internal state, waiting for {what} while another wait is already setup");
+            }
+            else if (nextNotifications.TryDequeue(out var notification))
+            {
+                var n = new TaskCompletionSource<JObject>();
+                Client.CurrentSessionId = new SessionId(notification["sessionId"]?.Value<string>());
+                n.SetResult(notification);
+                return n.Task;
             }
             else
             {
@@ -101,13 +109,17 @@ namespace DebuggerTests
                 notifications.Remove(what, out _);
         }
 
-        void NotifyOf(string what, string sessionId, JObject args)
+        void NotifyOf(string what, JObject args)
         {
-            args.Add("sessionId", sessionId);
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
             {
                 if (tcs.Task.IsCompleted)
-                    throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
+                {
+                    nextNotifications.Enqueue(args);
+                    return;
+                    //throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
+                }
+                Client.CurrentSessionId = new SessionId(args["sessionId"]?.Value<string>());
                 notifications[what].SetResult(args);
                 notifications.Remove(what, out _);
             }
@@ -211,7 +223,9 @@ namespace DebuggerTests
                 }
                 case "Debugger.paused":
                 {
-                    NotifyOf(PAUSE, sessionId, args);
+                    if (sessionId != "")
+                        args.Add("sessionId", sessionId);
+                    NotifyOf(PAUSE, args);
                     break;
                 }
                 case "Mono.runtimeReady":
@@ -220,7 +234,7 @@ namespace DebuggerTests
                     if (_gotAppReady || !DebuggerTestBase.RunningOnChrome)
                     {
                         // got both the events
-                        NotifyOf(APP_READY, sessionId, args);
+                        NotifyOf(APP_READY, args);
                     }
                     break;
                 }
@@ -244,7 +258,7 @@ namespace DebuggerTests
                         if (_gotRuntimeReady)
                         {
                             // got both the events
-                            NotifyOf(APP_READY, sessionId, args);
+                            NotifyOf(APP_READY, args);
                         }
                     }
 

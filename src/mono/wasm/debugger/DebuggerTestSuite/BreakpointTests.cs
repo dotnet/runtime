@@ -270,35 +270,35 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
                 "UserBreak.BreakOnDebuggerBreakCommand",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "UserBreak.BreakOnDebuggerBreakCommand",
-            locals_fn: async (locals, sessionIdStr) =>
+            locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "UserBreak.BreakOnDebuggerBreakCommand",
-            locals_fn: async (locals, sessionIdStr) =>
+            locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 20);
                     await Task.CompletedTask;
                 }
             );
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "UserBreak.BreakOnDebuggerBreakCommand",
-            locals_fn: async (locals, sessionIdStr) =>
+            locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 50);
                     await Task.CompletedTask;
                 }
             );
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "UserBreak.BreakOnDebuggerBreakCommand",
-            locals_fn: async (locals, sessionIdStr) =>
+            locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 100);
                     await Task.CompletedTask;
@@ -346,7 +346,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 3);
                     await Task.CompletedTask;
@@ -371,7 +371,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 0);
                     await Task.CompletedTask;
@@ -383,7 +383,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 3);
                     await Task.CompletedTask;
@@ -394,7 +394,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 6);
                     await Task.CompletedTask;
@@ -405,7 +405,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 9);
                     await Task.CompletedTask;
@@ -442,7 +442,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 0);
                     await Task.CompletedTask;
@@ -454,7 +454,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 1);
                     await Task.CompletedTask;
@@ -465,7 +465,7 @@ namespace DebuggerTests
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopClass.LoopToBreak",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 2);
                     await Task.CompletedTask;

@@ -36,7 +36,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -47,7 +47,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 23, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue);
                     await Task.CompletedTask;
@@ -59,7 +59,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=overflowValue}) }), false);
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 24, 8, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue);
                     await Task.CompletedTask;
@@ -75,7 +75,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -86,7 +86,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 23, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue);
                     await Task.CompletedTask;
@@ -98,7 +98,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue2}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 24, 8, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue2);
                     await Task.CompletedTask;
@@ -114,7 +114,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -125,7 +125,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 23, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue);
                     await Task.CompletedTask;
@@ -137,7 +137,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue2}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 24, 8, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue2);
                     await Task.CompletedTask;
@@ -164,7 +164,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.SetVariableLocals:run');}}, 1);",
                 "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 22, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumberAsString(locals, variableName, originalValue.ToString());
                     await Task.CompletedTask;
@@ -175,7 +175,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 23, 12, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumberAsString(locals, variableName, newValue.ToString());
                     await Task.CompletedTask;
@@ -187,7 +187,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue2}) }));
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-set-variable-value-test.cs", 24, 8, "DebuggerTests.SetVariableLocals.run",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumberAsString(locals, variableName, newValue2.ToString());
                     await Task.CompletedTask;
@@ -206,7 +206,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -217,7 +217,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 8, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, newValue);
                     await Task.CompletedTask;
@@ -236,7 +236,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -247,7 +247,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=invalidValue}) }), false);
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 8, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, variableName, originalValue);
                     await Task.CompletedTask;
@@ -263,7 +263,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     await CheckBool(locals, variableName, originalValue);
                 }
@@ -273,7 +273,7 @@ namespace DebuggerTests
             await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 4, "Math.IntAdd",
-                locals_fn: async (locals, sessionIdStr) =>
+                locals_fn: async (locals) =>
                 {
                     await CheckBool(locals, variableName, newValue);
                 }
