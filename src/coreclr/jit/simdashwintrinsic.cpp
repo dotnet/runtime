@@ -51,7 +51,8 @@ const SimdAsHWIntrinsicInfo& SimdAsHWIntrinsicInfo::lookup(NamedIntrinsic id)
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and classId
-NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
+NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
+                                               CORINFO_SIG_INFO* sig,
                                                const char*       className,
                                                const char*       methodName,
                                                const char*       enclosingClassName,
@@ -71,6 +72,11 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
     {
         numArgs++;
         isInstanceMethod = true;
+    }
+
+    if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+    {
+        return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
     }
 
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
@@ -211,8 +217,15 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else if (numArgs != 0)
     {
-        argClass        = info.compCompHnd->getArgClass(sig, sig->args);
-        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
+        if (sig->hasThis() && (retType == TYP_VOID))
+        {
+            simdBaseJitType = strip(info.compCompHnd->getArgType(sig, sig->args, &argClass));
+        }
+        else
+        {
+            argClass        = info.compCompHnd->getArgClass(sig, sig->args);
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
+        }
     }
 
     if (sig->hasThis())
@@ -553,7 +566,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_AllBitsSet:
                 case NI_VectorT256_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
+                    return gtNewAllBitsSetConNode(retType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -570,7 +583,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_One:
                 case NI_VectorT256_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -648,12 +661,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_Zero:
                 case NI_VectorT256_get_Zero:
                 {
-                    return gtNewZeroConNode(retType, simdBaseJitType);
+                    return gtNewZeroConNode(retType);
                 }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
+                    return gtNewAllBitsSetConNode(retType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -668,7 +681,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_One:
                 case NI_VectorT128_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -745,7 +758,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_Zero:
                 case NI_VectorT128_get_Zero:
                 {
-                    return gtNewZeroConNode(retType, simdBaseJitType);
+                    return gtNewZeroConNode(retType);
                 }
 #else
 #error Unsupported platform
@@ -924,16 +937,29 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             (newobjThis == nullptr ? 2 : 1)DEBUGARG(
+                                                 "Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = isInstanceMethod ? simdType
-                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
+            bool implicitConstructor = isInstanceMethod && (newobjThis == nullptr) && (retType == TYP_VOID);
+
+            if (implicitConstructor)
+            {
+                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
+            }
+            else
+            {
+                argType = isInstanceMethod
+                              ? simdType
+                              : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+
+                op1 = getArgForHWIntrinsic(argType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                           newobjThis);
+            }
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 

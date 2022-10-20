@@ -94,6 +94,7 @@ struct FrameClauseArgs {
 	const guint16 *end_at_ip;
 	/* Frame that is executing this clause */
 	InterpFrame *exec_frame;
+	gboolean run_until_end;
 };
 
 /*
@@ -3595,6 +3596,13 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 
 	INIT_INTERP_STATE (frame, clause_args);
 
+	if (clause_args && clause_args->run_until_end)
+		/*
+		 * Called from run_with_il_state to run the method until the end.
+		 * Clear this out so it doesn't confuse the rest of the code.
+		 */
+		clause_args = NULL;
+
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
 #endif
@@ -4091,6 +4099,18 @@ call:
 		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I1)
+			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U1)
+			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I2)
+			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U2)
+			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
@@ -6030,15 +6050,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDLEN_SPAN) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			// FIXME What's the point of this opcode ? It's just a LDFLD
-			gsize offset_length = (gsize)(gint16)ip [3];
-			LOCAL_VAR (ip [1], mono_u) = *(gint32 *) ((guint8 *) o + offset_length);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_GETCHR) {
 			MonoString *s = LOCAL_VAR (ip [2], MonoString*);
 			NULL_CHECK (s);
@@ -7067,7 +7078,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_TIER_ENTER_METHOD) {
 			frame->imethod->entry_count++;
-			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
 				ip = mono_interp_tier_up_frame_enter (frame, context);
 			else
 				ip++;
@@ -7075,7 +7086,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
 			frame->imethod->entry_count++;
-			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
 				ip = mono_interp_tier_up_frame_patchpoint (frame, context, ip [1]);
 			else
 				ip += 2;
@@ -7087,7 +7098,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_MOV_OFF)
+		MINT_IN_CASE(MINT_MOV_SRC_OFF)
+		MINT_IN_CASE(MINT_MOV_DST_OFF)
 			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
@@ -7656,10 +7668,13 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		clause_args.start_with_ip = (const guint16*)ei->data.filter;
 	else
 		clause_args.start_with_ip = (const guint16*)ei->handler_start;
-	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
-		clause_args.end_at_ip = (const guint16*)clause_args.start_with_ip + 0xffffff;
-	else
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		/* Run until the end */
+		clause_args.end_at_ip = NULL;
+		clause_args.run_until_end = TRUE;
+	} else {
 		clause_args.end_at_ip = (const guint16*)ei->data.handler_end;
+	}
 	clause_args.exec_frame = &frame;
 
 	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)

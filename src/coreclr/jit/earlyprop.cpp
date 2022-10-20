@@ -349,7 +349,6 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
         return nullptr;
     }
 
-    SSAName  ssaName(lclNum, ssaNum);
     GenTree* value = nullptr;
 
     // Bound the recursion with a hard limit.
@@ -372,12 +371,12 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     {
         assert(ssaDefAsg->OperIs(GT_ASG));
 
+        GenTree* treeLhs = ssaDefAsg->gtGetOp1();
         GenTree* treeRhs = ssaDefAsg->gtGetOp2();
 
-        if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()) &&
-            treeRhs->AsLclVarCommon()->HasSsaName())
+        // Recursively track the Rhs for "entire" stores.
+        if (treeLhs->OperIs(GT_LCL_VAR) && (treeLhs->AsLclVar()->GetLclNum() == lclNum) && treeRhs->OperIs(GT_LCL_VAR))
         {
-            // Recursively track the Rhs
             unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();
             unsigned rhsSsaNum = treeRhs->AsLclVarCommon()->GetSsaNum();
 

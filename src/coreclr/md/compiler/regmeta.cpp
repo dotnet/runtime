@@ -17,7 +17,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"

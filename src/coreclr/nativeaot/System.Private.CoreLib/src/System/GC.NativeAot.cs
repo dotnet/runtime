@@ -86,7 +86,7 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? obj = RuntimeImports.RhHandleGet(wo.m_handle);
+            object? obj = RuntimeImports.RhHandleGet(wo.Handle);
             if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));
@@ -623,7 +623,7 @@ namespace System
 
                 case RuntimeImports.GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }

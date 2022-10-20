@@ -2951,10 +2951,38 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
     bool              modified = false;
-    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock*       h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const t        = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+
+    // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
+    // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
+    // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
+    // head block. See FindEntry() for the logic that allows this.
+    if ((h->bbJumpKind == BBJ_ALWAYS) && (h->bbJumpDest == t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    {
+        // Insert new head
+
+        BasicBlock* const newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+        newH->inheritWeight(h);
+        newH->bbNatLoopNum = h->bbNatLoopNum;
+        h->bbJumpDest      = newH;
+
+        fgRemoveRefPred(t, h);
+        fgAddRefPred(newH, h);
+        fgAddRefPred(t, newH);
+
+        optUpdateLoopHead(loopInd, h, newH);
+
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
+                " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
+                ". Replacing with new BBJ_NONE head " FMT_BB ".",
+                loopInd, h->bbNum, t->bbNum, newH->bbNum);
+
+        h        = newH;
+        modified = true;
+    }
 
     // Look for case (1)
     //
@@ -4201,11 +4229,17 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-            // Otherwise unroll only if limit is Vector_.Length
-            // (as a heuristic, not for correctness/structural reasons)
-            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
+            // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+            // We can unroll this
+        }
+        else
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
             continue;
         }
 
@@ -5850,12 +5884,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
-
-                    /* Make sure we don't mess up the variable type */
-                    if ((oper == GT_LCL_VAR) || (oper == GT_LCL_FLD))
-                    {
-                        tree->gtFlags |= GTF_VAR_CAST;
-                    }
                 }
 
                 return true;
@@ -7249,7 +7277,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // To be invariant a LclVar node must not be the LHS of an assignment ...
                 bool isInvariant = !user->OperIs(GT_ASG) || (user->AsOp()->gtGetOp1() != tree);
                 // and the variable must be in SSA ...
-                isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
+                isInvariant = isInvariant && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
@@ -8440,7 +8468,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = arg->AsLclVar();
-                        if (lvaInSsa(argLcl->GetLclNum()) && argLcl->HasSsaName())
+                        if (argLcl->HasSsaName())
                         {
                             ValueNum argVN =
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
@@ -8518,7 +8546,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (rhsVN != ValueNumStore::NoVN)
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
-                        if (lvaInSsa(lhsLcl->GetLclNum()) && lhsLcl->HasSsaName())
+                        if (lhsLcl->HasSsaName())
                         {
                             lvaTable[lhsLcl->GetLclNum()]
                                 .GetPerSsaData(lhsLcl->GetSsaNum())
@@ -8860,9 +8888,10 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
 //
 struct OptTestInfo
 {
-    GenTree* testTree; // The root node of basic block with GT_JTRUE or GT_RETURN type to check boolean condition on
-    GenTree* compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool     isBool;   // If the compTree is boolean expression
+    Statement* testStmt; // Last statement of the basic block
+    GenTree*   testTree; // The root node of the testStmt (GT_JTRUE or GT_RETURN).
+    GenTree*   compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
+    bool       isBool;   // If the compTree is boolean expression
 };
 
 //-----------------------------------------------------------------------------
@@ -9226,7 +9255,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         m_t3 = testTree3;
     }
 
+    m_testInfo1.testStmt = s1;
     m_testInfo1.testTree = testTree1;
+    m_testInfo2.testStmt = s2;
     m_testInfo2.testTree = testTree2;
 
     return s1;
@@ -9268,16 +9299,14 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
         return false;
 #endif
     // The second condition must not contain side effects
-
+    //
     if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
-
-    m_comp->gtPrepareCost(m_c2);
-
+    //
     if (m_c2->GetCostEx() > 12)
     {
         return false;
@@ -9348,6 +9377,14 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     cmpOp1->gtRequestSetFlags();
 #endif
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
+        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
+    }
 
     if (!optReturnBlock)
     {
@@ -9440,6 +9477,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
+
+    // Update IL range of first block
+    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }
 
 //-----------------------------------------------------------------------------
@@ -9628,11 +9668,13 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     }
 
     assert(m_b1->bbJumpKind == BBJ_COND);
-    GenTree* cond = m_b1->lastStmt()->GetRootNode();
+    Statement* const stmt = m_b1->lastStmt();
+    GenTree* const   cond = stmt->GetRootNode();
 
     assert(cond->gtOper == GT_JTRUE);
 
     OptTestInfo test;
+    test.testStmt = stmt;
     test.testTree = cond;
 
     GenTree* comparand = optIsBoolComp(&test);
@@ -9659,6 +9701,14 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     // morphing it into a TYP_I_IMPL.
     noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(test.testStmt);
+        m_comp->fgSetStmtSeq(test.testStmt);
+    }
 }
 
 #endif

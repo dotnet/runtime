@@ -99,12 +99,12 @@ namespace System
 
         public override string ToString()
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
@@ -1172,6 +1172,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

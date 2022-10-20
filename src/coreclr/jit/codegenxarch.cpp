@@ -104,32 +104,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // a GC object pointed by RDX will not be collected.
     if (!pushReg)
     {
-        // Handle multi-reg return type values
-        if (compiler->compMethodReturnsMultiRegRetType())
-        {
-            ReturnTypeDesc retTypeDesc;
-            if (varTypeIsLong(compiler->info.compRetNativeType))
-            {
-                retTypeDesc.InitializeLongReturnType();
-            }
-            else // we must have a struct return type
-            {
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       compiler->info.compCallConv);
-            }
-
-            const unsigned regCount = retTypeDesc.GetReturnRegCount();
-
-            // Only x86 and x64 Unix ABI allows multi-reg return and
-            // number of result regs should be equal to MAX_RET_REG_COUNT.
-            assert(regCount == MAX_RET_REG_COUNT);
-
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
-            }
-        }
-        else if (compiler->compMethodReturnsRetBufAddr())
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
             // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
@@ -139,21 +114,15 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
             gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
         }
-        // ... all other cases.
         else
         {
-#ifdef TARGET_AMD64
-            // For x64, structs that are not returned in registers are always
-            // returned in implicit RetBuf. If we reached here, we should not have
-            // a RetBuf and the return type should not be a struct.
-            assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
-            assert(!varTypeIsStruct(compiler->info.compRetNativeType));
-#endif // TARGET_AMD64
+            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
 
-            // For x86 Windows we can't make such assertions since we generate code for returning of
-            // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
-            // compRetNativeType could be TYP_STRUCT.
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+            }
         }
     }
 
@@ -5282,10 +5251,81 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained()
-                                              ? INS_movbe
-                                              : ins_Store(data->TypeGet()),
-                                          emitTypeSize(tree), tree);
+            instruction ins  = INS_invalid;
+            emitAttr    attr = emitTypeSize(tree);
+
+            if (data->isContained())
+            {
+                if (data->OperIs(GT_BSWAP, GT_BSWAP16))
+                {
+                    ins = INS_movbe;
+                }
+#if defined(FEATURE_HW_INTRINSICS)
+                else if (data->OperIsHWIntrinsic())
+                {
+                    GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+                    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+                    var_types           baseType    = hwintrinsic->GetSimdBaseType();
+
+                    switch (intrinsicId)
+                    {
+                        case NI_SSE2_ConvertToInt32:
+                        case NI_SSE2_ConvertToUInt32:
+                        case NI_SSE2_X64_ConvertToInt64:
+                        case NI_SSE2_X64_ConvertToUInt64:
+                        case NI_AVX2_ConvertToInt32:
+                        case NI_AVX2_ConvertToUInt32:
+                        {
+                            // These intrinsics are "ins reg/mem, xmm"
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            attr = emitActualTypeSize(baseType);
+                            break;
+                        }
+
+                        case NI_SSE2_Extract:
+                        case NI_SSE41_Extract:
+                        case NI_SSE41_X64_Extract:
+                        case NI_AVX_ExtractVector128:
+                        case NI_AVX2_ExtractVector128:
+                        {
+                            // These intrinsics are "ins reg/mem, xmm, imm8"
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
+
+                            if (intrinsicId == NI_SSE2_Extract)
+                            {
+                                // The encoding that supports containment is SSE4.1 only
+                                ins = INS_pextrw_sse41;
+                            }
+
+                            // The hardware intrinsics take unsigned bytes between [0, 255].
+                            // However, the emitter expects "fits in byte" to always be signed
+                            // and therefore we need [128, 255] to be sign extended up to fill
+                            // the entire constant value.
+
+                            GenTreeIntCon* op2  = hwintrinsic->Op(2)->AsIntCon();
+                            ssize_t        ival = op2->IconValue();
+
+                            assert((ival >= 0) && (ival <= 255));
+                            op2->gtIconVal = static_cast<int8_t>(ival);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+#endif // FEATURE_HW_INTRINSICS
+            }
+
+            if (ins == INS_invalid)
+            {
+                ins = ins_Store(data->TypeGet());
+            }
+
+            GetEmitter()->emitInsStoreInd(ins, attr, tree);
         }
     }
 }

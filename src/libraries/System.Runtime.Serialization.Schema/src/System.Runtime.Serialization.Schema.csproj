@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsPackable>true</IsPackable>
     <!-- TODO: Remove this setting when the package shipped with .NET 7. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>

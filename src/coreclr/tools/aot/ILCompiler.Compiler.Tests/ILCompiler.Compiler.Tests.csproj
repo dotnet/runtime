@@ -8,7 +8,7 @@
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <!-- xunit.runner.visualstudio is restored for .NET Framework instead of Core-->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be 
+    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be
          included in compilation of this project -->
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platforms>x86;x64</Platforms>
@@ -16,7 +16,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>    
+  <ItemGroup>
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
