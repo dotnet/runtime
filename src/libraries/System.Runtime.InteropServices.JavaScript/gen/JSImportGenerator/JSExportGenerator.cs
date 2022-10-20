@@ -244,10 +244,8 @@ namespace Microsoft.Interop.JavaScript
 
             if (methods.IsEmpty) return NamespaceDeclaration(IdentifierName(generatedNamespace));
 
-            var registerStatements = new List<StatementSyntax>
-            {
-                JSExportCodeGenerator.GenerateJSExportArchitectureCheck()
-            };
+            var registerStatements = new List<StatementSyntax>();
+            registerStatements.AddRange(JSExportCodeGenerator.GenerateJSExportArchitectureCheck());
 
             var attributes = new List<AttributeListSyntax>
             {
@@ -258,6 +256,11 @@ namespace Microsoft.Interop.JavaScript
                 registerStatements.Add(m.Registration);
                 attributes.Add(m.Attribute);
             }
+
+            FieldDeclarationSyntax field = FieldDeclaration(VariableDeclaration(PredefinedType(Token(SyntaxKind.BoolKeyword)))
+                            .WithVariables(SingletonSeparatedList(
+                                VariableDeclarator(Identifier("initialized")))))
+                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)));
 
             MemberDeclarationSyntax method = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(initializerMethod))
                             .WithAttributeLists(List(attributes))
@@ -270,7 +273,7 @@ namespace Microsoft.Interop.JavaScript
                                 ClassDeclaration(initializerClass)
                                 .WithModifiers(TokenList(new SyntaxToken[]{
                                     Token(SyntaxKind.UnsafeKeyword)}))
-                                .WithMembers(SingletonList(method))
+                                .WithMembers(List(new[] { field, method }))
                                 ));
 
             return ns;

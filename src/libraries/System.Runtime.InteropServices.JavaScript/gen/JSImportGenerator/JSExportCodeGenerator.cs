@@ -123,13 +123,21 @@ namespace Microsoft.Interop.JavaScript
             return Block(allStatements);
         }
 
-        public static StatementSyntax GenerateJSExportArchitectureCheck()
+        public static StatementSyntax[] GenerateJSExportArchitectureCheck()
         {
-            return IfStatement(
-                    BinaryExpression(SyntaxKind.NotEqualsExpression,
-                        IdentifierName(Constants.OSArchitectureGlobal),
-                        IdentifierName(Constants.ArchitectureWasmGlobal)),
-                    ReturnStatement());
+            return new StatementSyntax[]{
+                IfStatement(
+                    BinaryExpression(SyntaxKind.LogicalOrExpression,
+                        IdentifierName("initialized"),
+                        BinaryExpression(SyntaxKind.NotEqualsExpression,
+                            IdentifierName(Constants.OSArchitectureGlobal),
+                            IdentifierName(Constants.ArchitectureWasmGlobal))),
+                    ReturnStatement()),
+                ExpressionStatement(
+                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName("initialized"),
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))),
+            };
         }
 
         public StatementSyntax GenerateJSExportRegistration()
