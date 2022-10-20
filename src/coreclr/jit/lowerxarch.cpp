@@ -107,6 +107,9 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 
 //----------------------------------------------------------------------------------------------
 // Lowering::TryLowerMulWithConstant:
+//    Lowers a tree MUL(X, CNS) to LSH(X, CNS_SHIFT)
+//    or
+//    Lowers a tree MUL(X, CNS) to LEA(X, X
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -123,9 +126,9 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
-    //// Do not do this optimization with min-opts.
-    //// Codegen has similar optimizations, though limited,
-    //// so it might be able to do the optimization even with min-opts.
+    // Do not do this optimization with min-opts enabled as
+    // this could create more tmp locals that need to be optimized
+    // in LSRA.
     if (comp->opts.MinOpts())
         return nullptr;
 
@@ -170,10 +173,13 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
             LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
             op1 = ReplaceWithLclVar(op1Use);
 
-            // We will use the LEA instruction to perform this multiply
             // Note that an LEA with base=x, index=x and scale=(cnsVal-1) computes x*cnsVal when cnsVal=3,5 or 9.
             unsigned int scale = (unsigned int)(cnsVal - 1);
 
+            // If the local is not enregisterable, create a new tmp local
+            // that only gets used as the index and base of GT_LEA.
+            // LSRA should optimize this to ensure that index and base will
+            // be in the same register.
             if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
             {
                 unsigned lclNumTmp     = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));

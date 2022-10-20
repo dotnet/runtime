@@ -1087,34 +1087,9 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
     {
         ssize_t imm = immOp->AsIntConCommon()->IconValue();
 
-        // Only do these optimizations if min-opts is enabled.
-        // Otherwise, lowering will do them.
-        if (compiler->opts.MinOpts() && !requiresOverflowCheck && rmOp->isUsedFromReg() &&
-            ((imm == 3) || (imm == 5) || (imm == 9)))
-        {
-            // We will use the LEA instruction to perform this multiply
-            // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
-            unsigned int scale = (unsigned int)(imm - 1);
-            GetEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->GetRegNum(), rmOp->GetRegNum(), scale, 0);
-        }
-        else if (compiler->opts.MinOpts() && !requiresOverflowCheck && rmOp->isUsedFromReg() &&
-                 (imm == genFindLowestBit(imm)) && (imm != 0))
-        {
-            // Use shift for constant multiply when legal
-            uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(imm));
-            unsigned int shiftAmount = genLog2(zextImm);
-
-            // Copy reg src to dest register
-            inst_Mov(targetType, targetReg, rmOp->GetRegNum(), /* canSkip */ true);
-
-            inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
-        }
-        else
-        {
-            // use the 3-op form with immediate
-            ins = GetEmitter()->inst3opImulForReg(targetReg);
-            emit->emitInsBinary(ins, size, rmOp, immOp);
-        }
+        // use the 3-op form with immediate
+        ins = GetEmitter()->inst3opImulForReg(targetReg);
+        emit->emitInsBinary(ins, size, rmOp, immOp);
     }
     else // we have no contained immediate operand
     {
