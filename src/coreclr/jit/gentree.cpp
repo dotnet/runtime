@@ -17399,7 +17399,7 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
 //    size              - Size of the store in bytes
 //    pFieldStoreOffset - [out] parameter for the store's offset relative
 //                        to the field local itself
-//    pFileStoreSize    - [out] parameter for the amount of the field's
+//    pFieldStoreSize   - [out] parameter for the amount of the field's
 //                        local's bytes affected by the store
 //
 // Return Value:
@@ -17407,7 +17407,7 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
 //    otherwise.
 //
 bool Compiler::gtStoreDefinesField(
-    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize)
+    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize)
 {
     ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
     unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
@@ -17417,7 +17417,7 @@ bool Compiler::gtStoreDefinesField(
     if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
     {
         *pFieldStoreOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
-        *pFileStoreSize    = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
+        *pFieldStoreSize   = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
 
         return true;
     }
