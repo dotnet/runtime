@@ -3843,7 +3843,7 @@ namespace Internal.JitInterface
 
         private MemoryStream _cachedMemoryStream = new MemoryStream();
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null, Func<MethodDesc, bool> methodFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
             instrumentationData.SetLength(0);
@@ -3887,11 +3887,11 @@ namespace Internal.JitInterface
 
                             if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
                             {
-                                ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
+                                ptrVal = objectToHandle(typeVal.AsType);
                             }
-                            else if (typeVal.AsMethod != null)
+                            else if (typeVal.AsMethod != null && (methodFilter == null || methodFilter(typeVal.AsMethod)))
                             {
-                                ptrVal = (IntPtr)objectToHandle(typeVal.AsMethod);
+                                ptrVal = objectToHandle(typeVal.AsMethod);
                             }
                             else
                             {
@@ -3925,13 +3925,16 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
-                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
-#if !READYTORUN
-                        , _compilation.CanConstructType
+                    Func<TypeDesc, bool> typeFilter = null;
+                    Func<MethodDesc, bool> methodFilter = null;
+
+#if READYTORUN
+                    methodFilter = CanGetEntryPoint;
+#else
+                    typeFilter = _compilation.CanConstructType;
 #endif
-                        );
-#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+
+                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream, typeFilter, methodFilter);
 
                     var instrumentationData = _cachedMemoryStream.ToArray();
                     pgoResults.pInstrumentationData = (byte*)GetPin(instrumentationData);

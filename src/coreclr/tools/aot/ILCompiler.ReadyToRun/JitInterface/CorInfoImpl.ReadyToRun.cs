@@ -1092,6 +1092,21 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
+        private bool CanGetEntryPoint(MethodDesc md)
+        {
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(md))
+                return false;
+
+            // TODO: Currently generic instantiations are not supported.
+            if (!md.IsTypicalMethodDefinition)
+                return false;
+
+            if (md is not EcmaMethod ecmaMethod)
+                return false;
+
+            return true;
+        }
+
         // Used to get entry points for methods for delegate GDV, so we only
         // expect to see these used rarely. JIT needs both the prestub that is
         // stored in the delegate and the R2R entry point that it can put on
@@ -1103,15 +1118,14 @@ namespace Internal.JitInterface
         {
             MethodDesc md = HandleToObject(ftn);
 
-            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(md))
-                throw new RequiresRuntimeJitException($"{md} passed to GetFunctionEntryPoint is not in version bubble");
+            if (!CanGetEntryPoint(md))
+            {
+                // We do not expect JIT to call this except for for delegate
+                // GDV methods, and we prefilter the PGO data we pass to JIT.
+                throw new RequiresRuntimeJitException($"Cannot get entry point for {md}");
+            }
 
-            // TODO: Currently generic instantiations are not supported.
-            if (!md.IsTypicalMethodDefinition)
-                throw new RequiresRuntimeJitException($"Cannot currently resolve entry point for generic method {md}");
-
-            if (md is not EcmaMethod ecmaMethod)
-                throw new RequiresRuntimeJitException($"{md} is not in metadata");
+            EcmaMethod ecmaMethod = (EcmaMethod)md;
 
             ModuleToken module = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken mt = new MethodWithToken(md, module, null, false, null);
