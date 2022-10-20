@@ -6607,6 +6607,13 @@ PhaseStatus Compiler::fgTailMerge()
     bool      madeChanges = false;
     int const mergeLimit  = 50;
 
+    const bool isEnabled = JitConfig.JitEnableTailMerge() > 0;
+    if (!isEnabled)
+    {
+        JITDUMP("Tail merge disabled by JitEnableTailMerge\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
 #ifdef DEBUG
     static ConfigMethodRange JitEnableTailMergeRange;
     JitEnableTailMergeRange.EnsureInit(JitConfig.JitEnableTailMergeRange());
