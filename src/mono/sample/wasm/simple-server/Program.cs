@@ -166,6 +166,11 @@ namespace HttpServer
 
                 context.Response.ContentLength64 = buffer.Length;
                 context.Response.AppendHeader("cache-control", "public, max-age=31536000");
+
+                // make sure we can load with threads and more precise performance.now()
+                context.Response.AppendHeader("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.AppendHeader("Cross-Origin-Embedder-Policy", "require-corp");
+
                 var stream = context.Response.OutputStream;
                 try
                 {

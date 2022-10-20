@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- don't need to run this on helix -->
+    <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>simple-main.js</WasmMainJSPath>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
+  <Target Name="RunSample" />
+
+</Project>

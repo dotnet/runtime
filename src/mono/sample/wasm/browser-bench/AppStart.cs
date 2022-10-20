@@ -22,6 +22,7 @@ namespace Sample
             measurements = new Measurement[] {
                 new PageShow(),
                 new ReachManaged(),
+                new SimpleReachManaged(),
             };
         }
 
@@ -54,12 +55,26 @@ namespace Sample
             }
         }
 
+        class SimpleReachManaged : BenchTask.Measurement
+        {
+            public override string Name => "Simple reach managed";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.SimpleReachedManaged();
+            }
+        }
+
         public partial class MainApp
         {
             [JSImport("globalThis.mainApp.PageShow")]
             public static partial Task PageShow();
             [JSImport("globalThis.mainApp.FrameReachedManaged")]
             public static partial Task FrameReachedManaged();
+            [JSImport("globalThis.mainApp.SimpleReachedManaged")]
+            public static partial Task SimpleReachedManaged();
         }
 
         public partial class FrameApp

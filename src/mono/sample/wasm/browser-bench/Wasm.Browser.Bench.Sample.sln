@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31625.145
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.Sample", "Wasm.Browser.Bench.Sample.csproj", "{3C87C8E2-2D72-495A-8BB5-B9A503603121}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.SimpleApp", "SimpleApp\Wasm.Browser.Bench.SimpleApp.csproj", "{2FB4221B-EEDC-4F5A-8D92-45CC0C8D6A94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FB4221B-EEDC-4F5A-8D92-45CC0C8D6A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FB4221B-EEDC-4F5A-8D92-45CC0C8D6A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FB4221B-EEDC-4F5A-8D92-45CC0C8D6A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FB4221B-EEDC-4F5A-8D92-45CC0C8D6A94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

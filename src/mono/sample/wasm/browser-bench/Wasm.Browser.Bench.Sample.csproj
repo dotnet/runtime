@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->
@@ -7,13 +7,27 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Console\**" />
+    <Compile Remove="SimpleApp\**" />
+    <EmbeddedResource Remove="Console\**" />
+    <EmbeddedResource Remove="SimpleApp\**" />
+    <None Remove="Console\**" />
+    <None Remove="SimpleApp\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="appstart-frame.html" />
     <WasmExtraFilesToDeploy Include="frame-main.js" />
+    <WasmExtraFilesToDeploy Include="SimpleApp/appstart-simple.html" />
+    <WasmExtraFilesToDeploy Include="SimpleApp/simple-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="SimpleApp\Wasm.Browser.Bench.SimpleApp.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -22,5 +36,9 @@
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
+  <ItemGroup>
+    <None Remove="C:\Dev\runtime\src\mono\sample\wasm\browser-bench\Console\Console.cs" />
+  </ItemGroup>
 
 </Project>

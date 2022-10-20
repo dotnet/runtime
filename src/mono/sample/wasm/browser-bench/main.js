@@ -119,7 +119,7 @@ class MainApp {
 
     async pageShow() {
         try {
-            await this.waitFor('pageshow');
+            await this.waitFor('pageshow', 'appstart-frame.html');
         } finally {
             this.removeFrame();
         }
@@ -127,18 +127,26 @@ class MainApp {
 
     async frameReachedManaged() {
         try {
-            await this.waitFor('reached');
+            await this.waitFor('reached', 'appstart-frame.html');
         } finally {
             this.removeFrame();
         }
     }
 
-    async waitFor(eventName) {
+    async simpleReachedManaged() {
+        try {
+            await this.waitFor('reached', 'appstart-simple.html');
+        } finally {
+            this.removeFrame();
+        }
+    }
+
+    async waitFor(eventName, src) {
         try {
             let promise;
             let promiseResolve;
             this._frame = document.createElement('iframe');
-            this._frame.src = 'appstart-frame.html';
+            this._frame.src = src;
 
             promise = new Promise(resolve => { promiseResolve = resolve; })
             window.resolveAppStartEvent = function (event) {
@@ -163,6 +171,7 @@ class MainApp {
 try {
     globalThis.mainApp = new MainApp();
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
+    globalThis.mainApp.SimpleReachedManaged = globalThis.mainApp.simpleReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
     const runtime = await dotnet
