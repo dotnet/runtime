@@ -123,27 +123,27 @@ namespace Microsoft.Interop.JavaScript
             return Block(allStatements);
         }
 
-        public BlockSyntax GenerateJSExportRegistration()
+        public static StatementSyntax GenerateJSExportArchitectureCheck()
         {
-            var registrationStatements = new List<StatementSyntax>();
-            registrationStatements.Add(IfStatement(
-                BinaryExpression(SyntaxKind.NotEqualsExpression,
-                    IdentifierName(Constants.OSArchitectureGlobal),
-                    IdentifierName(Constants.ArchitectureWasmGlobal)),
-                ReturnStatement()));
+            return IfStatement(
+                    BinaryExpression(SyntaxKind.NotEqualsExpression,
+                        IdentifierName(Constants.OSArchitectureGlobal),
+                        IdentifierName(Constants.ArchitectureWasmGlobal)),
+                    ReturnStatement());
+        }
 
-            var signatureArgs = new List<ArgumentSyntax>();
+        public StatementSyntax GenerateJSExportRegistration()
+        {
+            var signatureArgs = new List<ArgumentSyntax>
+            {
+                Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_signatureContext.QualifiedMethodName))),
+                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_signatureContext.TypesHash))),
+                CreateSignaturesSyntax()
+            };
 
-            signatureArgs.Add(Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_signatureContext.QualifiedMethodName))));
-            signatureArgs.Add(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_signatureContext.TypesHash))));
-
-            signatureArgs.Add(CreateSignaturesSyntax());
-
-            registrationStatements.Add(ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName(Constants.BindCSFunctionMethod)))
-                .WithArgumentList(ArgumentList(SeparatedList(signatureArgs)))));
-
-            return Block(List(registrationStatements));
+                .WithArgumentList(ArgumentList(SeparatedList(signatureArgs))));
         }
 
         private ArgumentSyntax CreateSignaturesSyntax()
