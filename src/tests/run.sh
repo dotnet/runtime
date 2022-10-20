@@ -18,12 +18,12 @@ function print_usage {
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
-    echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
-    echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
-    echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
-    echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
-    echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
-    echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
+    echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
+    echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
+    echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
+    echo '  --jitforcerelocs                 : Runs the tests with DOTNET_ForceRelocs=1'
+    echo '  --gcname=<n>                     : Runs the tests with DOTNET_GCName=n'
+    echo '  --gcstresslevel=<n>              : Runs the tests with DOTNET_GCStress=n'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
@@ -113,16 +113,16 @@ do
             printLastResultsOnly=1
             ;;
         --jitstress=*)
-            export COMPlus_JitStress=${i#*=}
+            export DOTNET_JitStress=${i#*=}
             ;;
         --jitstressregs=*)
-            export COMPlus_JitStressRegs=${i#*=}
+            export DOTNET_JitStressRegs=${i#*=}
             ;;
         --jitminopts)
-            export COMPlus_JITMinOpts=1
+            export DOTNET_JITMinOpts=1
             ;;
         --jitforcerelocs)
-            export COMPlus_ForceRelocs=1
+            export DOTNET_ForceRelocs=1
             ;;
         --link=*)
             export ILLINK=${i#*=}
@@ -156,10 +156,10 @@ do
             testEnv=${i#*=}
             ;;
         --gcstresslevel=*)
-            export COMPlus_GCStress=${i#*=}
+            export DOTNET_GCStress=${i#*=}
             ;;
         --gcname=*)
-            export COMPlus_GCName=${i#*=}
+            export DOTNET_GCName=${i#*=}
             ;;
         --limitedDumpGeneration)
             limitedCoreDumps=ON
@@ -187,11 +187,11 @@ done
 ################################################################################
 
 if ((eventLogging == 1)); then
-    export COMPlus_EnableEventLog=1
+    export DOTNET_EnableEventLog=1
 fi
 
 if ((serverGC != 0)); then
-    export COMPlus_gcServer="$serverGC"
+    export DOTNET_gcServer="$serverGC"
 fi
 
 ################################################################################

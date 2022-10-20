@@ -5,7 +5,7 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- add OpenGL emulation -->
-    <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL</EmccExtraLDFlags>
+    <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot;</_ServeHeaders>
   </PropertyGroup>

@@ -7,7 +7,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- This test requires GCStress to trigger the regression. Set COMPlus_GCStress here. However,
+    <!-- This test requires GCStress to trigger the regression. Set DOTNET_GCStress here. However,
          not all CI platforms support GCStress. In particular, macOS and Alpine do not (currently).
          All Windows support GCStress. We don't have any way (currently) to determine if we're
          running on a platform that supports GCStress. So, don't set GCStress for non-Windows (Bash).
@@ -16,7 +16,7 @@
     -->
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_GCStress=0xc
+set DOTNET_GCStress=0xc
 ]]></CLRTestBatchPreCommands>
   </PropertyGroup>
   <ItemGroup>

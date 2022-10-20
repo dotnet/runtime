@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitStressModeNames" Value="STRESS_RANDOM_INLINE STRESS_DBL_ALN" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_RANDOM_INLINE STRESS_DBL_ALN" />
   </ItemGroup>
 </Project>
