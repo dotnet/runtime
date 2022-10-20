@@ -23490,10 +23490,10 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
             return SsaNumInfo(COMPOSITE_ENCODING_BIT | ssaNumEncoded);
         }
 
-        return SsaNumInfo(ssaNumEncoded | baseNum.m_value);
+        return SsaNumInfo(ssaNumEncoded | (baseNum.m_value & ~(SIMPLE_NUM_MASK << (index * BITS_PER_SIMPLE_NUM))));
     }
 
-    if (!baseNum.IsInvalid())
+    if (!baseNum.IsInvalid() && !baseNum.HasCompactFormat())
     {
         *baseNum.GetOutlinedNumSlot(compiler, index) = ssaNum;
         return baseNum;
@@ -23507,11 +23507,23 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
     }
 
     // Allocate a new chunk for the field numbers. Once allocated, it cannot be expanded.
-    int                            count              = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
-    JitExpandArrayStack<unsigned>* table              = compiler->m_outlinedCompositeSsaNums;
-    int                            outIdx             = table->Size();
-    unsigned*                      pLastSlot          = &table->GetRef(outIdx + count - 1); // This will grow the table.
-    pLastSlot[-(count - 1) + static_cast<int>(index)] = ssaNum;
+    int                            count      = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
+    JitExpandArrayStack<unsigned>* table      = compiler->m_outlinedCompositeSsaNums;
+    int                            outIdx     = table->Size();
+    unsigned*                      pLastSlot  = &table->GetRef(outIdx + count - 1); // This will grow the table.
+    unsigned*                      pFirstSlot = pLastSlot - count + 1;
+
+    // Copy over all of the already encoded numbers.
+    if (!baseNum.IsInvalid())
+    {
+        for (int i = 0; i < SIMPLE_NUM_COUNT; i++)
+        {
+            pFirstSlot[i] = baseNum.GetNum(compiler, i);
+        }
+    }
+
+    // Copy the one being set last to overwrite any previous values.
+    pFirstSlot[index] = ssaNum;
 
     // Split the index if it does not fit into a small encoding.
     if ((outIdx & ~OUTLINED_INDEX_LOW_MASK) != 0)
