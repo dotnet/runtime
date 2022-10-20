@@ -474,7 +474,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (opts.IsReadyToRun())
                 {
                     call->AsCall()->setEntryPoint(callInfo->codePointerLookup.constLookup);
-                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
                 }
 #endif
                 break;
@@ -6253,8 +6252,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
-        call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
     }
 #endif // FEATURE_READYTORUN
 }

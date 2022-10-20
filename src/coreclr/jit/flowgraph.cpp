@@ -1150,7 +1150,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers);
                     call->setEntryPoint(pLookup.constLookup);
-                    call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
                 }
                 else
                 {
@@ -1162,7 +1161,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
                     call->setEntryPoint(genericLookup);
-                    call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
                 }
             }
             else
@@ -1184,7 +1182,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                                               clsHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
-            call->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
         }
         else
         {

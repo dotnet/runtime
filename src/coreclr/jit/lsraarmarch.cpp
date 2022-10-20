@@ -186,10 +186,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
-    else if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
-        // If we have indirection cell then we will load call address into the
-        // temp register from this register.
+        // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
+        // and will load call address into the temp register from this register.
         regMaskTP candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {

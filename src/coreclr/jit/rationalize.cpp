@@ -188,7 +188,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
 #ifdef FEATURE_READYTORUN
     call->AsCall()->setEntryPoint(entryPoint);
-    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_R2R_CALL;
 #endif
 
     call = comp->fgMorphArgs(call);

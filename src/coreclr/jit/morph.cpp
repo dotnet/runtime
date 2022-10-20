@@ -2115,8 +2115,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // That's ok; after making something a tailcall, we will invalidate this information
     // and reconstruct it if necessary. The tailcalling decision does not change since
     // this is a non-standard arg in a register.
+    bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
+#if defined(TARGET_XARCH)
+    needsIndirectionCell &= call->IsFastTailCall();
+#endif
 
-    if (call->GetIndirectionCellArgKind() == WellKnownArg::R2RIndirectionCell)
+    if (needsIndirectionCell)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
@@ -5936,8 +5940,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     }
 
 #ifdef TARGET_ARM
-    if ((callee->GetIndirectionCellArgKind() == WellKnownArg::R2RIndirectionCell) ||
-        callee->HasNonStandardAddedArgs(this))
+    if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this))
     {
         reportFastTailCallDecision(
             "Method with non-standard args passed in callee saved register cannot be tail called");
@@ -6661,7 +6664,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // For R2R we might need a different entry point for this call if we are doing a tailcall.
     // The reason is that the normal delay load helper uses the return address to find the indirection
     // cell in xarch, but now the JIT is expected to leave the indirection cell in REG_R2R_INDIRECT_PARAM:
-    if (call->IsR2RCall() && canFastTailCall && !fastTailCallToLoop)
+    // We optimize delegate invocations manually in the JIT so skip this for those.
+    if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
     {
         info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
 
