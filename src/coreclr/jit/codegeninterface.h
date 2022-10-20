@@ -697,9 +697,11 @@ public:
             bool           hasVariableLiveRangeOpen() const;
             LiveRangeList* getLiveRanges() const;
 
-            void startLiveRangeFromEmitter(CodeGenInterface::siVarLoc varLocation, emitter* emit) const;
+            void startLiveRangeFromEmitter(CodeGenInterface::siVarLoc varLocation, emitter* emit);
             void endLiveRangeAtEmitter(emitter* emit) const;
-            void updateLiveRangeAtEmitter(CodeGenInterface::siVarLoc varLocation, emitter* emit) const;
+            void updateLiveRangeAtEmitter(CodeGenInterface::siVarLoc varLocation, emitter* emit);
+            bool isLastRangeEmpty() const;
+            void removeLastRange();
 
 #ifdef DEBUG
             void dumpAllRegisterLiveRangesForBlock(emitter* emit, const CodeGenInterface* codeGen) const;
@@ -738,6 +740,7 @@ public:
         void siUpdateVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum);
         void siEndAllVariableLiveRange(VARSET_VALARG_TP varsToClose);
         void siEndAllVariableLiveRange();
+        void siRemoveEmptyRanges(); // Remove empty variable live ranges
 
         LiveRangeList* getLiveRangesForVarForBody(unsigned int varNum) const;
         LiveRangeList* getLiveRangesForVarForProlog(unsigned int varNum) const;

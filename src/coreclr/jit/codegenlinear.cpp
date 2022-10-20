@@ -859,6 +859,8 @@ void CodeGen::genCodeForBBlist()
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
+    // No more code is generated so we can safely remove empty variable debug info ranges
+    getVariableLiveKeeper()->siRemoveEmptyRanges();
 
     /* Finalize the spill  tracking logic */
 

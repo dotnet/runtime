@@ -8721,7 +8721,7 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableL
 //  beginning and exclusive of the end.
 //
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRangeFromEmitter(
-    CodeGenInterface::siVarLoc varLocation, emitter* emit) const
+    CodeGenInterface::siVarLoc varLocation, emitter* emit)
 {
     noway_assert(emit != nullptr);
 
@@ -8740,6 +8740,10 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     }
     else
     {
+        if (!m_VariableLiveRanges->empty() && isLastRangeEmpty())
+        {
+            removeLastRange();
+        }
         JITDUMP("New debug range: %s\n",
                 m_VariableLiveRanges->empty()
                     ? "first"
@@ -8761,6 +8765,29 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // startEmitLocationendEmitLocation has to be Valid and endEmitLocationendEmitLocation  not
     noway_assert(m_VariableLiveRanges->back().m_StartEmitLocation.Valid());
     noway_assert(!m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
+}
+
+//------------------------------------------------------------------------
+// isLastRangeEmpty: Returns whether the last live range [A,B) is empty,
+//  meaning A == B.
+//
+bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::isLastRangeEmpty() const
+{
+    return !m_VariableLiveRanges->empty() &&
+           m_VariableLiveRanges->back().m_StartEmitLocation == m_VariableLiveRanges->back().m_EndEmitLocation;
+}
+
+//------------------------------------------------------------------------
+// removeLastRange: Removes last live range from list.
+//
+// Assumptions:
+//  There should be at least one live range reported for the variable.
+//
+void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::removeLastRange()
+{
+    noway_assert(!m_VariableLiveRanges->empty());
+    JITDUMP("Removing last entry");
+    m_VariableLiveRanges->erase(m_VariableLiveRanges->backPosition());
 }
 
 //------------------------------------------------------------------------
@@ -8807,7 +8834,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeA
 //  beginning and exclusive of the end.
 //
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::updateLiveRangeAtEmitter(
-    CodeGenInterface::siVarLoc varLocation, emitter* emit) const
+    CodeGenInterface::siVarLoc varLocation, emitter* emit)
 {
     // This variable is changing home so it has been started before during this block
     noway_assert(m_VariableLiveRanges != nullptr && !m_VariableLiveRanges->empty());
@@ -8893,6 +8920,27 @@ CodeGenInterface::VariableLiveKeeper* CodeGenInterface::getVariableLiveKeeper() 
 {
     return varLiveKeeper;
 };
+
+//------------------------------------------------------------------------
+// siRemoveEmptyRanges: Removes all last variable ranges that are empty
+//
+// Notes:
+//    After finishing generating code, the last variable range reported for
+//    a variable can be empty. This happens when a variable becomes alive
+//    and die before the following instruction is emitted, e.g. if the death
+//    takes place in the operands of the next instruction.
+//
+void CodeGenInterface::VariableLiveKeeper::siRemoveEmptyRanges()
+{
+    for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
+    {
+        VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
+        if (varLiveDsc->isLastRangeEmpty())
+        {
+            varLiveDsc->removeLastRange();
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // VariableLiveKeeper: Create an instance of the object in charge of managing
