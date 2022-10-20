@@ -595,6 +595,7 @@
     <Compile Include="Compiler\ObjectWriter\DwarfFde.cs" />
     <Compile Include="Compiler\ObjectWriter\DwarfNative.cs" />
     <Compile Include="Compiler\ObjectWriter\LlvmObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.cs" />
