@@ -123,6 +123,12 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
+    //// Do not do this optimization with min-opts.
+    //// Codegen has similar optimizations, though limited,
+    //// so it might be able to do the optimization even with min-opts.
+    if (comp->opts.MinOpts())
+        return nullptr;
+
     if (!varTypeIsIntegral(node))
         return nullptr;
 
@@ -164,23 +170,52 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
             LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
             op1 = ReplaceWithLclVar(op1Use);
 
-            // We will use the LEA instruction to perform this multiply
-            // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
-            unsigned int scale = (unsigned int)(cnsVal - 1);
+            if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
+            {
+                unsigned lclNumTmp  = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
+                GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, op1);
+                GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, op1->TypeGet());
 
-            GenTree* lea = OffsetByIndexWithScale(op1, comp->gtClone(op1), scale);
+                // We will use the LEA instruction to perform this multiply
+                // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
+                unsigned int scale = (unsigned int)(cnsVal - 1);
 
-            BlockRange().Remove(cns);
-            BlockRange().Remove(op1);
-            BlockRange().InsertBefore(node, lea->gtGetOp2());
-            BlockRange().InsertBefore(node, lea->gtGetOp1());
-            BlockRange().InsertBefore(node, lea);
+                GenTree* lea = OffsetByIndexWithScale(tmpTree, comp->gtClone(tmpTree), scale);
 
-            use.ReplaceWith(lea);
+                BlockRange().Remove(cns);
+                BlockRange().Remove(op1);
+                BlockRange().InsertBefore(node, op1);
+                BlockRange().InsertBefore(node, lclvNodeStore);
+                BlockRange().InsertBefore(node, lea->gtGetOp2());
+                BlockRange().InsertBefore(node, lea->gtGetOp1());
+                BlockRange().InsertBefore(node, lea);
 
-            BlockRange().Remove(node);
+                use.ReplaceWith(lea);
 
-            return lea;
+                BlockRange().Remove(node);
+
+                return lea;
+            }
+            else
+            {
+                // We will use the LEA instruction to perform this multiply
+                // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
+                unsigned int scale = (unsigned int)(cnsVal - 1);
+
+                GenTree* lea = OffsetByIndexWithScale(op1, comp->gtClone(op1), scale);
+
+                BlockRange().Remove(cns);
+                BlockRange().Remove(op1);
+                BlockRange().InsertBefore(node, lea->gtGetOp2());
+                BlockRange().InsertBefore(node, lea->gtGetOp1());
+                BlockRange().InsertBefore(node, lea);
+
+                use.ReplaceWith(lea);
+
+                BlockRange().Remove(node);
+
+                return lea;
+            }
         }
         else
         {
@@ -251,11 +286,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
-<<<<<<< HEAD
         GenTree* replacementNode = TryLowerMulWithConstant(mul);
-=======
-        GenTree* replacementNode = TryLowerMulToLshSubOrLshAdd(mul);
->>>>>>> upstream/main
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
