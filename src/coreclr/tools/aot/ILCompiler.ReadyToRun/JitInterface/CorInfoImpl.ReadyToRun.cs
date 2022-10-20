@@ -1092,17 +1092,19 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
-        private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
-        {
-            throw new RequiresRuntimeJitException(HandleToObject(ftn).ToString());
-        }
-
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        // Used to get entry points for methods for delegate GDV, so we only
+        // expect to see these used rarely. JIT needs both the prestub that is
+        // stored in the delegate and the R2R entry point that it can put on
+        // the devirtualized call.
+        // We could give it the prestub in both cases but in case the
+        // devirtualized call is not inlined the R2R entry point has better
+        // steady state performance.
+        private CORINFO_CONST_LOOKUP GetFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool prestub)
         {
             MethodDesc md = HandleToObject(ftn);
 
             if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(md))
-                throw new RequiresRuntimeJitException($"{md} passed to getFunctionFixedEntryPoint is not in version bubble");
+                throw new RequiresRuntimeJitException($"{md} passed to GetFunctionEntryPoint is not in version bubble");
 
             // TODO: Currently generic instantiations are not supported.
             if (!md.IsTypicalMethodDefinition)
@@ -1116,13 +1118,23 @@ namespace Internal.JitInterface
 
             PrepareForUseAsAFunctionPointer(md);
 
-            pResult =
+            return
                 CreateConstLookupToSymbol(
                     _compilation.NodeFactory.MethodEntrypoint(
                         mt,
                         isInstantiatingStub: false,
-                        isPrecodeImportRequired: true,
+                        isPrecodeImportRequired: prestub,
                         isJumpableImportRequired: false));
+        }
+
+        private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
+        {
+            pResult = GetFunctionEntryPoint(ftn, prestub: false);
+        }
+
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        {
+            pResult = GetFunctionEntryPoint(ftn, prestub: true);
         }
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
