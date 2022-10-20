@@ -12,6 +12,8 @@ Wasm App Host allows to use `dotnet run` to start a wasm application.
 
 Wasm App Host supports starting the application on various engines, like browser, node js or v8. These engines has configuration in the `runtimeconfig.template.json` under `wasmHostProperties/perHostConfig`. Each of the configuration in this array has a name that can be passed as a command-line argument `--host` or `-h` when starting the application. If it's not specified, a first one is used. 
 
+> To use JavaScript engines, need to be present in the `PATH`
+
 Depending on the engine, various properties can be set. 
 
 ### Browser (`host: browser`)
@@ -26,3 +28,10 @@ Depending on the engine, various properties can be set.
 
 - **js-path**: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
+### SpiderMonkey
+
+TBD
+
+### JavaScriptCore
+
+TBD
