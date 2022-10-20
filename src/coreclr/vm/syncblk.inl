@@ -636,10 +636,10 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         return AwareLock::EnterHelperResult_Contention;
     }
 
-    // The header is transitioning - treat this as if the lock was taken
+    // The header is transitioning - use the slow path
     if (oldValue & BIT_SBLK_SPIN_LOCK)
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult_UseSlowPath;
     }
 
     // Here we know we have the "thin lock" layout, but the lock is not free.
