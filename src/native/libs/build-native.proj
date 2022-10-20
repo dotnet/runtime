@@ -56,19 +56,21 @@
   </Target>
 
   <UsingTask TaskName="AndroidDexBuilderTask"
-             AssemblyFile="$(AndroidDexBuilderTasksAssemblyPath)" />
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
   <Target Name="BuildAndroid"
           BeforeTargets="BuildNativeUnix"
           Condition="'$(TargetOS)' == 'Android'">
-      <ItemGroup>
-        <_JavaFile Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android/DotnetProxyTrustManager.java" />
-      </ItemGroup>
+    <ItemGroup>
+      <_JavaFile Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android/DotnetProxyTrustManager.java" />
+    </ItemGroup>
 
-      <AndroidDexBuilderTask
-        JavaFiles="@(_JavaFile)"
-        DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
-        OutputDir="$(MSBuildThisFileDirectory)../../../artifacts/bin/native/$(_BuildNativeOutConfig)">
-        <Output TaskParameter="DexFilePath" PropertyName="DexFilePath" />
+    <AndroidDexBuilderTask
+      JavaFiles="@(_JavaFile)"
+      DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
+      OutputDir="$(MSBuildThisFileDirectory)../../../artifacts/bin/native/$(_BuildNativeOutConfig)">
+      <Output TaskParameter="DexFilePath" PropertyName="DexFilePath" />
     </AndroidDexBuilderTask>
+
+    <Message Text="Built $(DexFilePath)" />
   </Target>
 </Project>
