@@ -191,7 +191,7 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 // We do not do this optimization in X86 as it is not recommended.
 #if TARGET_X86
     return nullptr;
-#endif  // TARGET_X86
+#endif // TARGET_X86
 
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
