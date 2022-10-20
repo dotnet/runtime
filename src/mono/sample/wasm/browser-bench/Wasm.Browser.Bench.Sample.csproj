@@ -23,11 +23,10 @@
     <WasmExtraFilesToDeploy Include="SimpleApp/appstart-simple.html" />
     <WasmExtraFilesToDeploy Include="SimpleApp/simple-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
-    <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="SimpleApp\Wasm.Browser.Bench.SimpleApp.csproj" />
+    <ProjectReference Include="SimpleApp\Wasm.Browser.Bench.SimpleApp.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -36,9 +35,5 @@
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
-
-  <ItemGroup>
-    <None Remove="C:\Dev\runtime\src\mono\sample\wasm\browser-bench\Console\Console.cs" />
-  </ItemGroup>
 
 </Project>
