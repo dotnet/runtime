@@ -109,7 +109,8 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 // Lowering::TryLowerMulWithConstant:
 //    Lowers a tree MUL(X, CNS) to LSH(X, CNS_SHIFT)
 //    or
-//    Lowers a tree MUL(X, CNS) to LEA(X, X
+//    Lowers a tree MUL(X, CNS) to LEA(X, X, CNS_MINUS_ONE)
+//    or
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -173,12 +174,11 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
             LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
             op1 = ReplaceWithLclVar(op1Use);
 
-            // Note that an LEA with base=x, index=x and scale=(cnsVal-1) computes x*cnsVal when cnsVal=3,5 or 9.
             unsigned int scale = (unsigned int)(cnsVal - 1);
 
             // If the local is not enregisterable, create a new tmp local
             // that only gets used as the index and base of GT_LEA.
-            // LSRA should optimize this to ensure that index and base will
+            // LSRA should optimize this to ensure that the index and base will
             // be in the same register.
             if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
             {
