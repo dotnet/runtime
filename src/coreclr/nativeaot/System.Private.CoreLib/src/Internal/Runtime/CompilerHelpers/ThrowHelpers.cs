@@ -9,7 +9,7 @@ namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
     /// These methods are used to throw exceptions from generated code. The type and methods
-    /// need to be public as they constitute a public contract with the .NET Native toolchain.
+    /// need to be public as they constitute a public contract with the NativeAOT toolchain.
     /// </summary>
     public static class ThrowHelpers
     {

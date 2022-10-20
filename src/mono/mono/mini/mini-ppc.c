@@ -3782,23 +3782,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_addis (code, ppc_r12, cfg->frame_reg, ppc_ha(cfg->stack_usage));
 				ppc_addi (code, ppc_r12, ppc_r12, cfg->stack_usage);
 			}
-			if (!cfg->method->save_lmf) {
-				pos = 0;
-				for (i = 31; i >= 13; --i) {
-					if (cfg->used_int_regs & (1 << i)) {
-						pos += sizeof (target_mgreg_t);
-						ppc_ldptr (code, i, -pos, ppc_r12);
-					}
-				}
-			} else {
-				/* FIXME restore from MonoLMF: though this can't happen yet */
-			}
 
 			/* Copy arguments on the stack to our argument area */
 			if (call->stack_usage) {
 				code = emit_memcpy (code, call->stack_usage, ppc_r12, PPC_STACK_PARAM_OFFSET, ppc_sp, PPC_STACK_PARAM_OFFSET);
 				/* r12 was clobbered */
-				g_assert (cfg->frame_reg == ppc_sp);
 				if (ppc_is_imm16 (cfg->stack_usage)) {
 					ppc_addi (code, ppc_r12, cfg->frame_reg, cfg->stack_usage);
 				} else {
@@ -3808,6 +3796,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					ppc_addi (code, ppc_r12, ppc_r12, cfg->stack_usage);
 				}
 			}
+
+			if (!cfg->method->save_lmf) {
+                                pos = 0;
+                                for (i = 31; i >= 13; --i) {
+                                        if (cfg->used_int_regs & (1 << i)) {
+                                                pos += sizeof (target_mgreg_t);
+                                                ppc_ldptr (code, i, -pos, ppc_r12);
+                                        }
+                                }
+                        } else {
+                                /* FIXME restore from MonoLMF: though this can't happen yet */
+                        }
 
 			ppc_mr (code, ppc_sp, ppc_r12);
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
@@ -3837,7 +3837,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			ppc_ldptr (code, ppc_r0, 0, ins->sreg1);
+			ppc_lbz (code, ppc_r0, 0, ins->sreg1);
 			break;
 		case OP_ARGLIST: {
 			long cookie_offset = cfg->sig_cookie + cfg->stack_usage;

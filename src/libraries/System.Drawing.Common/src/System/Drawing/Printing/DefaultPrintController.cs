@@ -22,13 +22,13 @@ namespace System.Drawing.Printing
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
-            Debug.Assert(_modeHandle != null);
 
             base.OnStartPrint(document, e);
             // the win32 methods below SuppressUnmanagedCodeAttributes so assertin on UnmanagedCodePermission is redundant
             if (!document.PrinterSettings.IsValid)
                 throw new InvalidPrinterException(document.PrinterSettings);
 
+            Debug.Assert(_modeHandle != null, "_modeHandle should have been set by PrintController.OnStartPrint");
             _dc = document.PrinterSettings.CreateDeviceContext(_modeHandle);
             Interop.Gdi32.DOCINFO info = new Interop.Gdi32.DOCINFO();
             info.lpszDocName = document.DocumentName;

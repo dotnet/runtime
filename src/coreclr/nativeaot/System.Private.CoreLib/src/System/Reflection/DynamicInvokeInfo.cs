@@ -235,11 +235,15 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 StackAllocatedByRefs byrefStorage = default;
 
+#pragma warning disable 8500
                 CheckArguments(ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
+#pragma warning restore 8500
 
                 try
                 {
+#pragma warning disable 8500
                     ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
+#pragma warning restore 8500
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
                 catch (Exception e) when (wrapInTargetInvocationException)
@@ -268,7 +272,9 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-            ByReference* pByRefStorage = (ByReference*)(pStorage + argCount);
+#pragma warning disable 8500
+            void* pByRefStorage = (ByReference*)(pStorage + argCount);
+#pragma warning restore 8500
 
             RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
             RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
@@ -326,7 +332,7 @@ namespace System.Reflection
 
         private unsafe void CheckArguments(
             ref object copyOfParameters,
-            ByReference* byrefParameters,
+            void* byrefParameters,
             object?[] parameters,
             BinderBundle binderBundle)
         {
@@ -398,8 +404,10 @@ namespace System.Reflection
 
                 Unsafe.Add(ref copyOfParameters, i) = arg!;
 
-                byrefParameters[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
+#pragma warning disable 8500, 9094
+                ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object, byte>(ref Unsafe.Add(ref copyOfParameters, i)) : ref arg.GetRawData());
+#pragma warning restore 8500, 9094
             }
         }
 

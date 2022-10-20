@@ -63,22 +63,17 @@ namespace BrowserDebugProxy
                 // for backing fields, we are getting it from the properties
                 typePropertiesBrowsableInfo.TryGetValue(field.Name, out state);
             }
-            fieldValue["__state"] = state?.ToString();
-
-            fieldValue["__section"] = field.Attributes switch
-            {
-                FieldAttributes.Private => "private",
-                FieldAttributes.Public => "result",
-                _ => "internal"
-            };
+            fieldValue[InternalUseFieldName.State.Name] = state?.ToString();
+            fieldValue[InternalUseFieldName.Section.Name] = field.Attributes.HasFlag(FieldAttributes.Private)
+                ? "private" : "result";
 
             if (field.IsBackingField)
             {
-                fieldValue["__isBackingField"] = true;
-                fieldValue["__parentTypeId"] = parentTypeId;
+                fieldValue[InternalUseFieldName.IsBackingField.Name] = true;
+                fieldValue[InternalUseFieldName.ParentTypeId.Name] = parentTypeId;
             }
             if (field.Attributes.HasFlag(FieldAttributes.Static))
-                fieldValue["__isStatic"] = true;
+                fieldValue[InternalUseFieldName.IsStatic.Name] = true;
 
             if (getObjectOptions.HasFlag(GetObjectCommandOptions.WithSetter))
             {
@@ -241,7 +236,7 @@ namespace BrowserDebugProxy
                 if (typeInfo.Info.IsNonUserCode && getCommandOptions.HasFlag(GetObjectCommandOptions.JustMyCode) && field.Attributes.HasFlag(FieldAttributes.Private))
                     continue;
 
-                if (!Enum.TryParse(fieldValue["__state"].Value<string>(), out DebuggerBrowsableState fieldState)
+                if (!Enum.TryParse(fieldValue[InternalUseFieldName.State.Name].Value<string>(), out DebuggerBrowsableState fieldState)
                     || fieldState == DebuggerBrowsableState.Collapsed)
                 {
                     fieldValues.Add(fieldValue);
@@ -301,11 +296,9 @@ namespace BrowserDebugProxy
 
             JArray GetHiddenElement()
             {
-                return new JArray(JObject.FromObject(new
-                {
-                    name = namePrefix,
-                    __hidden = true
-                }));
+                var emptyHidden = JObject.FromObject(new { name = namePrefix });
+                emptyHidden.Add(InternalUseFieldName.Hidden.Name, true);
+                return new JArray(emptyHidden);
             }
         }
 
@@ -366,14 +359,14 @@ namespace BrowserDebugProxy
                     continue;
                 }
 
-                bool isExistingMemberABackingField = existingMember["__isBackingField"]?.Value<bool>() == true;
+                bool isExistingMemberABackingField = existingMember[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() == true;
                 if (isOwn && !isExistingMemberABackingField)
                 {
                     // repeated propname on the same type! cannot happen
                     throw new Exception($"Internal Error: should not happen. propName: {propName}. Existing all members: {string.Join(",", allMembers.Keys)}");
                 }
 
-                bool isExistingMemberABackingFieldOwnedByThisType = isExistingMemberABackingField && existingMember["__owner"]?.Value<string>() == typeName;
+                bool isExistingMemberABackingFieldOwnedByThisType = isExistingMemberABackingField && existingMember[InternalUseFieldName.Owner.Name]?.Value<string>() == typeName;
                 if (isExistingMemberABackingField && (isOwn || isExistingMemberABackingFieldOwnedByThisType))
                 {
                     // this is the property corresponding to the backing field in *this* type
@@ -387,8 +380,8 @@ namespace BrowserDebugProxy
                 {
                     // this has `new` keyword if it is newSlot but direct child was not a newSlot:
                     var child = allMembers.FirstOrDefault(
-                        kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value["__parentTypeId"]?.Value<int>() == typeId).Value;
-                    bool wasOverriddenByDerivedType = child != null && child["__isNewSlot"]?.Value<bool>() != true;
+                        kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value[InternalUseFieldName.ParentTypeId.Name]?.Value<int>() == typeId).Value;
+                    bool wasOverriddenByDerivedType = child != null && child[InternalUseFieldName.IsNewSlot.Name]?.Value<bool>() != true;
                     if (wasOverriddenByDerivedType)
                     {
                         /*
@@ -414,7 +407,7 @@ namespace BrowserDebugProxy
                  */
 
                 JObject backingFieldForHiddenProp = allMembers.GetValueOrDefault(overriddenOrHiddenPropName);
-                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp["__isBackingField"]?.Value<bool>() != true)
+                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() != true)
                 {
                     // hiding with a non-auto property, so nothing to adjust
                     // add the new property
@@ -429,13 +422,12 @@ namespace BrowserDebugProxy
 
             async Task UpdateBackingFieldWithPropertyAttributes(JObject backingField, string autoPropName, MethodAttributes getterMemberAccessAttrs, DebuggerBrowsableState? state)
             {
-                backingField["__section"] = getterMemberAccessAttrs switch
+                backingField[InternalUseFieldName.Section.Name] = getterMemberAccessAttrs switch
                 {
                     MethodAttributes.Private => "private",
-                    MethodAttributes.Public => "result",
-                    _ => "internal"
+                    _ => "result"
                 };
-                backingField["__state"] = state?.ToString();
+                backingField[InternalUseFieldName.State.Name] = state?.ToString();
 
                 if (state is null)
                     return;
@@ -478,17 +470,16 @@ namespace BrowserDebugProxy
                 }
 
                 propRet["isOwn"] = isOwn;
-                propRet["__section"] = getterAttrs switch
+                propRet[InternalUseFieldName.Section.Name] = getterAttrs switch
                 {
                     MethodAttributes.Private => "private",
-                    MethodAttributes.Public => "result",
-                    _ => "internal"
+                    _ => "result"
                 };
-                propRet["__state"] = state?.ToString();
+                propRet[InternalUseFieldName.State.Name] = state?.ToString();
                 if (parentTypeId != -1)
                 {
-                    propRet["__parentTypeId"] = parentTypeId;
-                    propRet["__isNewSlot"] = isNewSlot;
+                    propRet[InternalUseFieldName.ParentTypeId.Name] = parentTypeId;
+                    propRet[InternalUseFieldName.IsNewSlot.Name] = isNewSlot;
                 }
 
                 string namePrefix = GetNamePrefixForValues(propNameWithSufix, typeName, isOwn, state);
@@ -593,7 +584,7 @@ namespace BrowserDebugProxy
                     if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                     {
                         foreach (var f in allFields)
-                            f["__hidden"] = true;
+                            f[InternalUseFieldName.Hidden.Name] = true;
                     }
                     AddOnlyNewFieldValuesByNameTo(allFields, allMembers, typeName, isOwn);
                 }
@@ -639,8 +630,8 @@ namespace BrowserDebugProxy
                     if (valuesDict.TryAdd(name, item as JObject))
                     {
                         // new member
-                        if (item["__isBackingField"]?.Value<bool>() == true)
-                            item["__owner"] = typeName;
+                        if (item[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() == true)
+                            item[InternalUseFieldName.Owner.Name] = typeName;
                         continue;
                     }
 
@@ -659,25 +650,21 @@ namespace BrowserDebugProxy
 
     internal sealed class GetMembersResult
     {
-        // public:
+        // public / protected / internal:
         public JArray Result { get; set; }
         // private:
         public JArray PrivateMembers { get; set; }
-        // protected / internal:
-        public JArray OtherMembers { get; set; }
 
         public JObject JObject => JObject.FromObject(new
         {
             result = Result,
-            privateProperties = PrivateMembers,
-            internalProperties = OtherMembers
+            privateProperties = PrivateMembers
         });
 
         public GetMembersResult()
         {
             Result = new JArray();
             PrivateMembers = new JArray();
-            OtherMembers = new JArray();
         }
 
         public GetMembersResult(JArray value, bool sortByAccessLevel)
@@ -685,7 +672,33 @@ namespace BrowserDebugProxy
             var t = FromValues(value, sortByAccessLevel);
             Result = t.Result;
             PrivateMembers = t.PrivateMembers;
-            OtherMembers = t.OtherMembers;
+        }
+
+        public void CleanUp()
+        {
+            JProperty[] toRemoveInObject = new JProperty[InternalUseFieldName.Count];
+
+            CleanUpJArray(Result);
+            CleanUpJArray(PrivateMembers);
+
+            void CleanUpJArray(JArray arr)
+            {
+                foreach (JToken item in arr)
+                {
+                    if (item is not JObject jobj || jobj.Count == 0)
+                        continue;
+
+                    int removeCount = 0;
+                    foreach (JProperty jp in jobj.Properties())
+                    {
+                        if (InternalUseFieldName.IsKnown(jp.Name))
+                            toRemoveInObject[removeCount++] = jp;
+                    }
+
+                    for (int i = 0; i < removeCount; i++)
+                        toRemoveInObject[i].Remove();
+                }
+            }
         }
 
         public static GetMembersResult FromValues(IEnumerable<JToken> values, bool splitMembersByAccessLevel = false) =>
@@ -706,10 +719,10 @@ namespace BrowserDebugProxy
 
         private void Split(JToken member)
         {
-            if (member["__hidden"]?.Value<bool>() == true)
+            if (member[InternalUseFieldName.Hidden.Name]?.Value<bool>() == true)
                 return;
 
-            if (member["__section"]?.Value<string>() is not string section)
+            if (member[InternalUseFieldName.Section.Name]?.Value<string>() is not string section)
             {
                 Result.Add(member);
                 return;
@@ -719,9 +732,6 @@ namespace BrowserDebugProxy
             {
                 case "private":
                     PrivateMembers.Add(member);
-                    return;
-                case "internal":
-                    OtherMembers.Add(member);
                     return;
                 default:
                     Result.Add(member);
@@ -733,7 +743,6 @@ namespace BrowserDebugProxy
         {
             Result = (JArray)Result.DeepClone(),
             PrivateMembers = (JArray)PrivateMembers.DeepClone(),
-            OtherMembers = (JArray)OtherMembers.DeepClone()
         };
 
         public IEnumerable<JToken> Where(Func<JToken, bool> predicate)
@@ -752,26 +761,17 @@ namespace BrowserDebugProxy
                     yield return item;
                 }
             }
-            foreach (var item in OtherMembers)
-            {
-                if (predicate(item))
-                {
-                    yield return item;
-                }
-            }
         }
 
         internal JToken FirstOrDefault(Func<JToken, bool> p)
             => Result.FirstOrDefault(p)
-            ?? PrivateMembers.FirstOrDefault(p)
-            ?? OtherMembers.FirstOrDefault(p);
+            ?? PrivateMembers.FirstOrDefault(p);
 
         internal JArray Flatten()
         {
             var result = new JArray();
             result.AddRange(Result);
             result.AddRange(PrivateMembers);
-            result.AddRange(OtherMembers);
             return result;
         }
         public override string ToString() => $"{JObject}\n";

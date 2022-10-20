@@ -186,9 +186,13 @@ namespace System.Tests
         {
             Version version = Environment.OSVersion.Version;
 
-            // verify that the Environment.OSVersion.Version matches the current RID
-            // As of 12.0, only major version numbers are included in the RID
-            Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
+            // NativeAOT hard-codes the runtime identifier at build time
+            if (!PlatformDetection.IsNativeAot)
+            {
+                // verify that the Environment.OSVersion.Version matches the current RID
+                // As of 12.0, only major version numbers are included in the RID
+                Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
+            }
 
             Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
@@ -332,19 +336,21 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]
-        public void GetFolderPath_Unix_PersonalExists()
+        public void GetFolderPath_Unix_UserProfileExists()
         {
-            Assert.True(Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Personal)));
+            Assert.True(Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
-        public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
+        public void GetFolderPath_Unix_PersonalIsDocumentsAndUserProfile()
         {
             if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
             {
-                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
-                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                Assert.Equal(Path.Combine(Environment.GetEnvironmentVariable("HOME"), "Documents"),
+                             Environment.GetFolderPath(Environment.SpecialFolder.Personal,  Environment.SpecialFolderOption.DoNotVerify));
+                Assert.Equal(Path.Combine(Environment.GetEnvironmentVariable("HOME"), "Documents"),
+                             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments,  Environment.SpecialFolderOption.DoNotVerify));
             }
 
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
@@ -357,6 +363,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.Desktop)]
         [InlineData(Environment.SpecialFolder.DesktopDirectory)]
         [InlineData(Environment.SpecialFolder.Fonts)]
+        [InlineData(Environment.SpecialFolder.MyDocuments)]
         [InlineData(Environment.SpecialFolder.MyMusic)]
         [InlineData(Environment.SpecialFolder.MyPictures)]
         [InlineData(Environment.SpecialFolder.MyVideos)]
@@ -391,7 +398,7 @@ namespace System.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
-        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)] // MyDocuments == Personal
+        [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.DoNotVerify)] // MyDocuments == Personal
         [InlineData(Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolderOption.None)]
         [InlineData(Environment.SpecialFolder.CommonTemplates, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)]

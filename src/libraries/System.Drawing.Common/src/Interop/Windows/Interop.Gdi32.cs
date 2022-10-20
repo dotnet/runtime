@@ -52,7 +52,7 @@ internal static partial class Interop
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef hDC, DOCINFO lpDocInfo);
+            HandleRef hDC, in DOCINFO lpDocInfo);
 
         [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial int StartPage(
@@ -179,13 +179,15 @@ internal static partial class Interop
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal sealed class DOCINFO
+        internal struct DOCINFO
         {
             internal int cbSize = 20;
             internal string? lpszDocName;
             internal string? lpszOutput;
             internal string? lpszDatatype;
             internal int fwType;
+
+            public DOCINFO() { }
 
 #if NET7_0_OR_GREATER
             [CustomMarshaller(typeof(DOCINFO), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]

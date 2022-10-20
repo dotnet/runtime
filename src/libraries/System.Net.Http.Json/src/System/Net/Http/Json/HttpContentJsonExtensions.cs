@@ -17,9 +17,17 @@ namespace System.Net.Http.Json
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
         internal const string SerializationDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext.";
 
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as JSON in an asynchronous operation.
+        /// </summary>
+        /// <param name="content">The content to read from.</param>
+        /// <param name="type">The type of the object to deserialize to and return.</param>
+        /// <param name="options">Options to control the behavior during deserialization.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (content is null)
             {
@@ -31,9 +39,31 @@ namespace System.Net.Http.Json
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as JSON in an asynchronous operation.
+        /// </summary>
+        /// <param name="content">The content to read from.</param>
+        /// <param name="type">The type of the object to deserialize to and return.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, CancellationToken cancellationToken = default)
+        {
+            return ReadFromJsonAsync(content, type, options: null, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as JSON in an asynchronous operation.
+        /// </summary>
+        /// <param name="content">The content to read from.</param>
+        /// <param name="options">Options to control the behavior during deserialization.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <typeparam name="T">The target type to deserialize to.</typeparam>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (content is null)
             {
@@ -43,6 +73,20 @@ namespace System.Net.Http.Json
             Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as JSON in an asynchronous operation.
+        /// </summary>
+        /// <param name="content">The content to read from.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <typeparam name="T">The target type to deserialize to.</typeparam>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, CancellationToken cancellationToken = default)
+        {
+            return ReadFromJsonAsync<T>(content, options: null, cancellationToken: cancellationToken);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]

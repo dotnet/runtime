@@ -386,7 +386,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 }
 
 void
-mono_wasm_register_bundled_satellite_assemblies ()
+mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {

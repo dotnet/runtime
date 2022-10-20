@@ -380,7 +380,7 @@ mono_get_root_domain (void)
  * \returns the current domain
  */
 MonoDomain *
-mono_domain_get ()
+mono_domain_get (void)
 {
 	return GET_APPDOMAIN ();
 }

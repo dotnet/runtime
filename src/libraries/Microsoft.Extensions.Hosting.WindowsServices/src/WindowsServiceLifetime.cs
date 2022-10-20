@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
 {
+    /// <summary>
+    /// Listens for shutdown signal and tracks the status of the Windows service.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
@@ -18,11 +21,26 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
 
+        /// <summary>
+        /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
+        /// </summary>
+        /// <param name="environment">Information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor)
             : this(environment, applicationLifetime, loggerFactory, optionsAccessor, Options.Options.Create(new WindowsServiceLifetimeOptions()))
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WindowsServiceLifetime"/> class.
+        /// </summary>
+        /// <param name="environment">Information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        /// <param name="optionsAccessor">The <see cref="IOptions{HostOptions}"/> containing options for the service.</param>
+        /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
             ThrowHelper.ThrowIfNull(environment);
@@ -85,14 +103,17 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         // Called by base.Run when the service is ready to start.
+        /// <inheritdoc />
         protected override void OnStart(string[] args)
         {
             _delayStart.TrySetResult(null);
             base.OnStart(args);
         }
 
-        // Called by base.Stop. This may be called multiple times by service Stop, ApplicationStopping, and StopAsync.
-        // That's OK because StopApplication uses a CancellationTokenSource and prevents any recursion.
+        /// <summary>
+        /// Raises the Stop event to stop the <see cref="WindowsServiceLifetime"/>.
+        /// </summary>
+        /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
             ApplicationLifetime.StopApplication();
@@ -101,6 +122,9 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             base.OnStop();
         }
 
+        /// <summary>
+        /// Raises the Shutdown event.
+        /// </summary>
         protected override void OnShutdown()
         {
             ApplicationLifetime.StopApplication();
@@ -109,6 +133,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             base.OnShutdown();
         }
 
+        /// <summary>
+        /// Releases the resources used by the <see cref="WindowsServiceLifetime"/>.
+        /// </summary>
+        /// <param name="disposing"><see langword="true" /> only when called from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false" />.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)

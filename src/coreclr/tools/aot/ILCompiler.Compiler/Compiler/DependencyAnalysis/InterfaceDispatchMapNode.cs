@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             // Pointer arrays also follow the same path
             Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
             Debug.Assert(MightHaveInterfaceDispatchMap(type, factory));
+            Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);
 
             _type = type;
         }

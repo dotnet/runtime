@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace BrowserDebugProxy
 {
@@ -98,17 +99,15 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
                 FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
-                fieldValue["__section"] = attr == FieldAttributes.Public
-                    ? "public" :
-                    attr == FieldAttributes.Private ? "private" : "internal";
+                fieldValue[InternalUseFieldName.Section.Name] = attr == FieldAttributes.Private ? "private" : "result";
 
                 if (field.IsBackingField)
                 {
-                    fieldValue["__isBackingField"] = true;
+                    fieldValue[InternalUseFieldName.IsBackingField.Name] = true;
                     return fieldValue;
                 }
                 typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                fieldValue["__state"] = state?.ToString();
+                fieldValue[InternalUseFieldName.State.Name] = state?.ToString();
                 return fieldValue;
             }
         }
@@ -118,11 +117,11 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
-                if (methodIds == null)
-                    throw new InternalErrorException($"Cannot find method 'ToString' on typeId = {TypeId}");
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
-                description = retMethod["value"]?["value"].Value<string>();
+                var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                if (toString == null)
+                    sdbAgent.logger.LogDebug($"Error while evaluating ToString method on typeId = {TypeId}");
+                else
+                    description = toString;
                 if (className.Equals("System.Guid"))
                     description = description.ToUpperInvariant(); //to keep the old behavior
             }
@@ -130,7 +129,15 @@ namespace BrowserDebugProxy
             {
                 string displayString = await sdbAgent.GetValueFromDebuggerDisplayAttribute(Id, TypeId, token);
                 if (displayString != null)
+                {
                     description = displayString;
+                }
+                else
+                {
+                    var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                    if (toString != null)
+                        description = toString;
+                }
             }
             return JObjectValueCreator.Create(
                 IsEnum ? fields[0]["value"] : null,
@@ -218,7 +225,6 @@ namespace BrowserDebugProxy
                 result = _combinedResult.Clone();
                 RemovePropertiesFrom(result.Result);
                 RemovePropertiesFrom(result.PrivateMembers);
-                RemovePropertiesFrom(result.OtherMembers);
             }
 
             // 4 - fields + properties
@@ -247,7 +253,7 @@ namespace BrowserDebugProxy
             JArray visibleFields = new();
             foreach (JObject field in fields)
             {
-                if (!Enum.TryParse(field["__state"]?.Value<string>(), out DebuggerBrowsableState state))
+                if (!Enum.TryParse(field[InternalUseFieldName.State.Name]?.Value<string>(), out DebuggerBrowsableState state))
                 {
                     visibleFields.Add(field);
                     continue;
