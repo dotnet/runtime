@@ -6661,8 +6661,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // For R2R we might need a different entry point for this call if we are doing a tailcall.
     // The reason is that the normal delay load helper uses the return address to find the indirection
     // cell in xarch, but now the JIT is expected to leave the indirection cell in REG_R2R_INDIRECT_PARAM:
-    if ((call->GetIndirectionCellArgKind() == WellKnownArg::R2RIndirectionCell) && canFastTailCall &&
-        !fastTailCallToLoop)
+    if (call->IsR2RCall() && canFastTailCall && !fastTailCallToLoop)
     {
         info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
 
