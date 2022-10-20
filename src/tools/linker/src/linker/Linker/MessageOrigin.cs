@@ -81,7 +81,8 @@ namespace Mono.Linker
         {
             int sourceLine = SourceLine, sourceColumn = SourceColumn;
             string? fileName = FileName;
-            if (Provider is MethodDefinition method &&
+            var method = Provider as MethodDefinition;
+            if (method is not null &&
                 method.DebugInformation.HasSequencePoints)
             {
                 var offset = ILOffset ?? method.DebugInformation.SequencePoints[0].Offset;

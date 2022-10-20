@@ -9,9 +9,9 @@ namespace Mono.Linker.Tests.Cases.Logging
     [SkipKeptItemsValidation]
     [SetupCompileArgument("/debug:full")]
     [ExpectedNoWarnings]
-    [ExpectedWarning("IL2074", FileName = "", SourceLine = 39, SourceColumn = 4)]
-    [ExpectedWarning("IL2074", FileName = "", SourceLine = 38, SourceColumn = 4)]
-    [ExpectedWarning("IL2089", FileName = "", SourceLine = 50, SourceColumn = 36)]
+    [ExpectedWarning("IL2074", FileName = "", SourceLine = 38, SourceColumn = 13)]
+    [ExpectedWarning("IL2074", FileName = "", SourceLine = 39, SourceColumn = 13)]
+    [ExpectedWarning("IL2089", FileName = "", SourceLine = 50, SourceColumn = 44)]
     public class SourceLines
     {
         public static void Main()

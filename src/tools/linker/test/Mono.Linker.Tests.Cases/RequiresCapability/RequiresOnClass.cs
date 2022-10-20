@@ -942,6 +942,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [AttributeWithRequires(PropertyOnAttribute = 42)]
         [ExpectedWarning("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
+        [ExpectedWarning("IL2026", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Analyzer)]
+        [ExpectedWarning("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Analyzer)]
         static void KeepFieldOnAttribute() { }
 

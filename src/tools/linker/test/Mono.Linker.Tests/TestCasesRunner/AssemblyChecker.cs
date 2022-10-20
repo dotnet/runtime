@@ -49,7 +49,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 return s.FullName;
             }), StringComparer.Ordinal);
-
+            linkedMembers.Remove("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
+            linkedMembers.Remove("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
+            linkedMembers.Remove("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
             var membersToAssert = originalAssembly.MainModule.Types;
             foreach (var originalMember in membersToAssert)
             {
@@ -95,6 +97,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual void VerifyTypeDefinition(TypeDefinition original, TypeDefinition linked)
         {
+            verifiedGeneratedTypes.Add("Microsoft.CodeAnalysis.EmbeddedAttribute");
+            verifiedGeneratedTypes.Add("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
             if (linked != null && verifiedGeneratedTypes.Contains(linked.FullName))
                 return;
 
@@ -901,6 +905,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
                     case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
                     case "System.Runtime.CompilerServices.IsReadOnlyAttribute":
+                    case "System.Runtime.CompilerServices.RefSafetyRulesAttribute":
                         continue;
 
                     // When mcs is used to compile the test cases, backing fields end up with this attribute on them
