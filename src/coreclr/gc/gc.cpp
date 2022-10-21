@@ -11821,7 +11821,11 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifndef USE_REGIONS
     bool existing_region_p = false;
 #endif //!USE_REGIONS
+#ifdef BACKGROUND_GC
     seg->flags = existing_region_p ? (seg->flags & heap_segment_flags_ma_committed) : 0;
+#else
+    seg->flags = 0;
+#endif
     heap_segment_next (seg) = 0;
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
@@ -30864,7 +30868,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                 }
                                 region = heap_segment_next (region);
                             }
-
+#ifdef BACKGROUND_GC
                             if (oh == soh)
                             {
                                 heap_segment* freeable = hp->freeable_soh_segment;
@@ -30886,6 +30890,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                     freeable = heap_segment_next (freeable);
                                 }
                             }
+#endif //BACKGROUND_GC
                         }
                         if (i >= max_generation)
                         {
@@ -44440,6 +44445,7 @@ void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
             heap_hard_limit)
         {
             int oh = i - max_generation;
+#ifdef BACKGROUND_GC
             if (oh == soh)
             {
                 heap_segment* freeable = freeable_soh_segment;
@@ -44461,6 +44467,7 @@ void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
                     freeable = heap_segment_next (freeable);
                 }
             }
+#endif //BACKGROUND_GC
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
             size_t total_accounted = committed_by_oh_per_heap[i - max_generation];
@@ -47587,6 +47594,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
 
     int stop_gen_index = max_generation;
 
+#ifdef BACKGROUND_GC
     if (gc_heap::current_c_gc_state == c_gc_state_planning)
     {
         // During BGC sweep since we can be deleting SOH segments, we avoid walking the segment
@@ -47595,6 +47603,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
         totsize = pGenGCHeap->background_soh_size_end_mark - generation_free_list_space (oldest_gen) - generation_free_obj_space (oldest_gen);
         stop_gen_index--;
     }
+#endif //BACKGROUND_GC
 
     for (int i = (max_generation - 1); i <= stop_gen_index; i++)
     {
