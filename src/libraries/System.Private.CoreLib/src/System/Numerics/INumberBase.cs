@@ -125,7 +125,7 @@ namespace System.Numerics
         /// <summary>Determines if a value represents a complex value.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a complex number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where either <c>a</c> or <c>b</c> are zero. In other words, it excludes real numbers and pure imaginary numbers.</remarks>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where either <c>a</c> or <c>b</c> is zero. In other words, it excludes real numbers and pure imaginary numbers.</remarks>
         static abstract bool IsComplexNumber(TSelf value);
 
         /// <summary>Determines if a value represents an even integral value.</summary>
