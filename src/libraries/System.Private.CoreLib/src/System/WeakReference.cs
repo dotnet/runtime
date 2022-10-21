@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-
 #if FEATURE_COMINTEROP
 namespace System.Runtime.InteropServices
 {
@@ -145,8 +143,11 @@ namespace System
             GCHandle.InternalFree(_weakHandle);
         }
     }
+}
 #endif
 
+namespace System
+{
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class WeakReference : ISerializable
