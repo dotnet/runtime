@@ -26,9 +26,6 @@ public:
     static FCDECL2(void, SetTarget, WeakReferenceObject * pThis, Object * pTarget);
     static FCDECL1(FC_BOOL_RET, IsTrackResurrection, WeakReferenceObject * pThis);
     static FCDECL1(FC_BOOL_RET, IsAlive, WeakReferenceObject * pThis);
-
-    static FCDECL2(Object*, ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId);
-    static FCDECL2(IWeakReference*, ObjectToComWeakRef, Object* pObject, INT64* pWrapperId);
 };
 
 class WeakReferenceOfTNative
@@ -39,6 +36,13 @@ public:
     static FCDECL1(Object *, GetTarget, WeakReferenceObject * pThis);
     static FCDECL2(void, SetTarget, WeakReferenceObject * pThis, Object * pTarget);
     static FCDECL1(FC_BOOL_RET, IsTrackResurrection, WeakReferenceObject * pThis);
+};
+
+class ComAwareWeakReferenceNative
+{
+public:
+    static FCDECL2(Object*, ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId);
+    static FCDECL2(IWeakReference*, ObjectToComWeakRef, Object* pObject, INT64* pWrapperId);
 };
 
 #endif // _WEAKREFERENCENATIVE_H

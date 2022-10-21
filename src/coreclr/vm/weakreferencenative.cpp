@@ -352,7 +352,7 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
 
 //************************************************************************
 
-FCIMPL2(Object*, WeakReferenceNative::ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId)
+FCIMPL2(Object*, ComAwareWeakReferenceNative::ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId)
 {
     FCALL_CONTRACT;
 
@@ -415,7 +415,7 @@ FCIMPL2(Object*, WeakReferenceNative::ComWeakRefToObject, IWeakReference* pComWe
 }
 FCIMPLEND
 
-FCIMPL2(IWeakReference*, WeakReferenceNative::ObjectToComWeakRef, Object* pObject, INT64* pWrapperId)
+FCIMPL2(IWeakReference*, ComAwareWeakReferenceNative::ObjectToComWeakRef, Object* pObject, INT64* pWrapperId)
 {
     FCALL_CONTRACT;
 

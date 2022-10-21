@@ -133,6 +133,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ComAwareWeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />

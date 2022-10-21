@@ -169,6 +169,7 @@
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
+    <Compile Include="System\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
