@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetValue(
             this ICacheEntry entry,
-            object value)
+            object? value)
         {
             entry.Value = value;
             return entry;
