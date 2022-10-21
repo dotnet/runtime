@@ -6201,17 +6201,6 @@ GenTree* Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
 
-#ifdef TARGET_XARCH
-    if (shift->OperIs(GT_LSH))
-    {
-        GenTree* replacementNode = TryLowerLshWithConstant(shift);
-        if (replacementNode != nullptr)
-        {
-            return replacementNode->gtNext;
-        }
-    }
-#endif // TARGET_XARCH
-
     ContainCheckShiftRotate(shift);
 
 #ifdef TARGET_ARM64
