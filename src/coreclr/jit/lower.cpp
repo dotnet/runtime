@@ -5409,30 +5409,16 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
             BlockRange().Remove(unused);
 
-            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_LEA, GT_LCL_VAR))
+            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH))
             {
                 // Push the first operand and loop back to process the second one.
                 // This minimizes the stack depth because the second one tends to be
                 // a constant so it gets processed and then the first one gets popped.
-                if (unused->OperIs(GT_LEA))
-                {
-                    assert(unused->gtGetOp2()->OperIs(GT_LCL_VAR));
-                    BlockRange().Remove(unused->gtGetOp2());
-                    unused = nullptr;
-                }
-                else if (unused->OperIs(GT_LCL_VAR))
-                {
-                    unused = nullptr;
-                }
-                else
-                {
-                    unusedStack.Push(unused->AsOp()->gtGetOp1());
-                    unused = unused->AsOp()->gtGetOp2();
-                }
+                unusedStack.Push(unused->AsOp()->gtGetOp1());
+                unused = unused->AsOp()->gtGetOp2();
             }
             else
             {
-                assert(!unused->OperIs(GT_LCL_VAR));
                 assert(unused->OperIs(GT_CNS_INT));
                 break;
             }
