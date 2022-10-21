@@ -36,9 +36,23 @@ namespace DebuggerTests
     {
         WithProxy wp;
 
+        public TheProxy () { }
+
+        public TheProxy (string text, int num)
+        {
+            Console.WriteLine($"I'm an empty TheProxy constructor with two params: 1: {text}, 2: {num}");
+        }
+
         public TheProxy (WithProxy wp)
         {
             this.wp = wp;
+        }
+
+        public TheProxy (string wpType)
+        {
+            Type type = Type.GetType(wpType);
+            var wp = Activator.CreateInstance(type);
+            this.wp = (WithProxy)wp;
         }
 
         public string Val2 {
@@ -95,7 +109,7 @@ namespace DebuggerTests
         {
             List<int> myList = new List<int> ();
             List<int> myList2 = new List<int> ();
-            
+
             myList.Add(1);
             myList.Add(2);
             myList.Add(3);
