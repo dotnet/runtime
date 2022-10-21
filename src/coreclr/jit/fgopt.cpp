@@ -6631,6 +6631,9 @@ PhaseStatus Compiler::fgTailMerge()
 
     struct PredInfo
     {
+        PredInfo(BasicBlock* block, Statement* stmt) : m_block(block), m_stmt(stmt)
+        {
+        }
         BasicBlock* m_block;
         Statement*  m_stmt;
     };
@@ -6689,10 +6692,7 @@ PhaseStatus Compiler::fgTailMerge()
                 //
                 if ((lastStmt != nullptr) && !lastStmt->IsPhiDefnStmt())
                 {
-                    PredInfo info;
-                    info.m_block = predBlock;
-                    info.m_stmt  = lastStmt;
-                    predInfo.Push(info);
+                    predInfo.Emplace(predBlock, lastStmt);
                 }
             }
         }
@@ -6723,7 +6723,7 @@ PhaseStatus Compiler::fgTailMerge()
         while (i < (predInfo.Height() - 1))
         {
             matchedPredInfo.Reset();
-            matchedPredInfo.Push(predInfo.TopRef(i));
+            matchedPredInfo.Emplace(predInfo.TopRef(i));
             Statement* const baseStmt = predInfo.TopRef(i).m_stmt;
             for (int j = i + 1; j < predInfo.Height(); j++)
             {
@@ -6731,9 +6731,9 @@ PhaseStatus Compiler::fgTailMerge()
 
                 // Consider: compute and cache hashes to make this faster
                 //
-                if (GenTree::Compare(baseStmt->GetRootNode(), otherStmt->GetRootNode(), true))
+                if (GenTree::Compare(baseStmt->GetRootNode(), otherStmt->GetRootNode()))
                 {
-                    matchedPredInfo.Push(predInfo.TopRef(j));
+                    matchedPredInfo.Emplace(predInfo.TopRef(j));
                 }
             }
 
