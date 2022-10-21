@@ -4444,11 +4444,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
             }
         }
+        // Optimize "X<<2" to "lea [reg*4]" - we only do this when the dst and src registers are different since it will remove a 'mov'.
         else if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(2) &&
                  tree->GetRegNum() != operandReg)
         {
             GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), REG_NA, operandReg, 4, 0);
         }
+        // Optimize "X<<2" to "lea [reg*8]" - we only do this when the dst and src registers are different since it will remove a 'mov'.
         else if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(3) &&
                  tree->GetRegNum() != operandReg)
         {
