@@ -35,7 +35,7 @@ namespace Microsoft.NET.HostModel.Bundle
             Arch = arch ?? RuntimeInformation.OSArchitecture;
             FrameworkVersion = targetFrameworkVersion ?? net60;
 
-            Debug.Assert(IsLinux || IsOSX || IsWindows);
+            Debug.Assert(IsLinux || IsOSX || IsWindows || IsFreeBSD);
 
             if (FrameworkVersion.CompareTo(net60) >= 0)
             {
@@ -79,7 +79,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsLinux ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
+            return IsLinux ? ElfUtils.IsElfImage(filePath) : IsFreeBSD ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)
@@ -91,17 +91,18 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public override string ToString()
         {
-            string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
+            string os = IsWindows ? "win" : IsLinux ? "linux" : IsFreeBSD ? "freebsd" : "osx";
             string arch = Arch.ToString().ToLowerInvariant();
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
         private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
-                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : OSPlatform.Windows;
+                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatform.FreeBSD : OSPlatform.Windows;
 
         public bool IsLinux => OS.Equals(OSPlatform.Linux);
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);
+        public bool IsFreeBSD => OS.Equals(OSPlatform.FreeBSD);
 
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.

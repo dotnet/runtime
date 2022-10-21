@@ -9,5 +9,6 @@
     <OfficialBuildRID Include="osx-x64" Platform="x64" />
     <OfficialBuildRID Include="win-arm64" Platform="arm64" />
     <OfficialBuildRID Include="win-x64" Platform="x64" />
+    <OfficialBUildRID Include="freebsd-x64" Platform="x64" />
   </ItemGroup>
 </Project>

@@ -160,7 +160,7 @@ check_c_source_compiles(
   #include <sched.h>
   int main(void)
   {
-    CPU_COUNT((void *) 0);
+    CPU_COUNT((cpuset_t *) 0);
     return 0;
   }
   "
