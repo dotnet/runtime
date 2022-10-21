@@ -306,7 +306,7 @@ namespace DebuggerTests
                 Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
 
             Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-        
+
             var top_frame = pause_location!["callFrames"]?[0];
 
             var scope = top_frame?["scopeChain"]?[0];
