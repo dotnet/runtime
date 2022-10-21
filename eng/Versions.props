@@ -189,6 +189,7 @@
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
+    <FluentAssertionsVersion>6.7.0</FluentAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <!-- Android gRPC client tests -->
     <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
