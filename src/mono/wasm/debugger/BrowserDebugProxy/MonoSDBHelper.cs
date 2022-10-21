@@ -2225,24 +2225,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                     typeProxyTypeId = genericTypeId;
                 }
                 int[] constructorIds = await GetMethodIdsByName(typeProxyTypeId, ".ctor", BindingFlags.DeclaredOnly, token);
-                if (constructorIds?.Length > 1)
+                if (constructorIds is null)
+                    throw new InternalErrorException($"Could not find any constructor for DebuggerProxy type: {originalClassName}");
+
+                if (constructorIds.Length == 1)
+                    return constructorIds[0];
+
+                string expectedConstructorParamType = await GetTypeName(typeId, token);
+                foreach (var methodId in constructorIds)
                 {
-                    foreach (var methodId in constructorIds)
-                    {
-                        var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
-                        var ps = methodInfoFromRuntime.Info.GetParametersInfo();
-                        if (ps.Length != 1)
-                            continue;
-                        // FIXME: we should check if the param's type == monoParamTypeId (or just ValueTypeId.Type - we don't support strings yet) but there is too little info
-                        // ParameterInfo does not know anything about the type. Even not about TypeCode. It's only populated for default params
-                        // ParameterInfo thisParam = ps[0];
-                        // logger.LogInformation($"\tmethodId: {methodId}, name: {methodInfoFromRuntime.Name}, token: {methodInfoFromRuntime.Info.Token:X}, params: {ps.Length}");
+                    var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
+                    // avoid calling to runtime if possible
+                    var ps = methodInfoFromRuntime.Info.GetParametersInfo();
+                    if (ps.Length != 1)
+                        continue;
+                    string parameters = await GetParameters(methodId, token);
+                    if (string.IsNullOrEmpty(parameters))
+                        throw new InternalErrorException($"Could not get method's parameter types. MethodId = {methodId}.");
+                    if (parameters == $"({expectedConstructorParamType})")
                         return methodId;
-                    }
                 }
-                return constructorIds?.Length > 1
-                        ? throw new InternalErrorException($"FIXME: Got more than one .ctor for {originalClassName}")
-                        : constructorIds[0];
+                throw new InternalErrorException($"Could not find a matching constructor for DebuggerProxy type: {originalClassName}");
             }
             catch (Exception e)
             {
