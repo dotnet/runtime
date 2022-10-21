@@ -219,25 +219,23 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("c == 15", 79, 3, 79, 11, "dotnet.worker.js")]
-        [InlineData("c == 17", 79, 3, 80, 11, "debugger-driver.html")]
-        [InlineData("g == 17", 79, 3, 80, 11, "debugger-driver.html")]
-        [InlineData("true", 79, 3, 79, 11, "dotnet.worker.js")]
-        [InlineData("\"false\"", 79, 3, 79, 11, "dotnet.worker.js")]
-        [InlineData("\"true\"", 79, 3, 79, 11, "dotnet.worker.js")]
-        [InlineData("5", 79, 3, 79, 11, "dotnet.worker.js")]
-        [InlineData("p", 79, 3, 80, 11, "debugger-driver.html")]
-        [InlineData("0.0", 79, 3, 80, 11, "debugger-driver.html")]
-        public async Task JSConditionalBreakpoint(string condition, int line_bp, int column_bp, int line_expected, int column_expected, string file_name)
+        [InlineData("c == 15", 79, 3, 79, 11)]
+        [InlineData("c == 17", 79, 3, 80, 11)]
+        [InlineData("g == 17", 79, 3, 80, 11)]
+        [InlineData("true", 79, 3, 79, 11)]
+        [InlineData("\"false\"", 79, 3, 79, 11)]
+        [InlineData("\"true\"", 79, 3, 79, 11)]
+        [InlineData("5", 79, 3, 79, 11)]
+        [InlineData("p", 79, 3, 80, 11)]
+        [InlineData("0.0", 79, 3, 80, 11)]
+        public async Task JSConditionalBreakpoint(string condition, int line_bp, int column_bp, int line_expected, int column_expected)
         {
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 80, 11);
 
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
-                "", -1, -1, "conditional_breakpoint_test");
-
-            CheckLocationLineColumn(pause_location["callFrames"]?[0]["location"], line_expected, column_expected);
+                "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
 
         [Theory]

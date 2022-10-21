@@ -286,6 +286,8 @@ namespace DebuggerTests
             if (eventListeners.TryGetValue(method, out Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>? listener)
                     && listener != null)
             {
+                if (sessionId != "")
+                    args.Add("sessionId", sessionId);
                 ProtocolEventHandlerReturn result = await listener(args, token).ConfigureAwait(false);
                 if (result is ProtocolEventHandlerReturn.RemoveHandler)
                     eventListeners.Remove(method, out _);

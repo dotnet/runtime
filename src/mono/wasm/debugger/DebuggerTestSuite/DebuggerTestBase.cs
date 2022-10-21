@@ -182,6 +182,7 @@ namespace DebuggerTests
         {
             var script_id = args?["scriptId"]?.Value<string>();
             var url = args["url"]?.Value<string>();
+            script_id += args["sessionId"]?.Value<string>();
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args["dotNetUrl"]?.Value<string>();
@@ -322,7 +323,7 @@ namespace DebuggerTests
 
         internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
-            var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
+            var loc_str = $"{ scripts[location["scriptId"].Value<string>()+cli.CurrentSessionId.sessionId] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
                 $"#{ location["columnNumber"].Value<int>() }";
 
@@ -333,12 +334,6 @@ namespace DebuggerTests
         internal virtual void CheckLocationLine(JToken location, int line)
         {
             Assert.Equal(location["lineNumber"].Value<int>(), line);
-        }
-
-        internal virtual void CheckLocationLineColumn(JToken location, int line, int col)
-        {
-            CheckLocationLine(location, line);
-            Assert.Equal(location["columnNumber"].Value<int>(), col);
         }
 
         internal void CheckNumber<T>(JToken locals, string name, T value)
