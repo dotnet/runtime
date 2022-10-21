@@ -8775,12 +8775,14 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
 
 //------------------------------------------------------------------------
 // isLastRangeEmpty: Returns whether the last live range [A,B) is empty,
-//  meaning A == B.
+//  meaning A == B. This is an approximation as instructions may be removed
+//  after being emitted.
 //
 bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::isLastRangeEmpty() const
 {
     return !m_VariableLiveRanges->empty() &&
-           m_VariableLiveRanges->back().m_StartEmitLocation == m_VariableLiveRanges->back().m_EndEmitLocation;
+           m_VariableLiveRanges->back().m_StartEmitLocation.noDistanceWith(
+               m_VariableLiveRanges->back().m_EndEmitLocation);
 }
 
 //------------------------------------------------------------------------
