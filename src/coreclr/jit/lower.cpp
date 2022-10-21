@@ -297,7 +297,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_RSH:
         case GT_RSZ:
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-            return LowerShift(node->AsOp());
+            LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
 #endif
