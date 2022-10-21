@@ -109,8 +109,6 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 // Lowering::TryLowerMulWithConstant:
 //    Lowers a tree MUL(X, CNS) to LSH(X, CNS_SHIFT)
 //    or
-//    Lowers a tree MUL(X, CNS) to LEA(X, X, CNS_MINUS_ONE)
-//    or
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -151,6 +149,11 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     GenTreeIntConCommon* cns    = op2->AsIntConCommon();
     ssize_t              cnsVal = cns->IconValue();
 
+    // Use GT_LEA if cnsVal is 3, 5, or 9.
+    // These are handled in codegen.
+    if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
+        return nullptr;
+
     // Use GT_LSH if cnsVal is a power of two.
     if (isPow2(cnsVal))
     {
@@ -163,66 +166,6 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
         ContainCheckShiftRotate(node);
 
         return node;
-    }
-
-    // Use GT_LEA if cnsVal is 3, 5, or 9.
-    if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
-    {
-        LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
-            op1 = ReplaceWithLclVar(op1Use);
-
-            unsigned int scale = (unsigned int)(cnsVal - 1);
-
-            // If the local is not enregisterable, create a new tmp local
-            // that only gets used as the index and base of GT_LEA.
-            // LSRA should optimize this to ensure that the index and base will
-            // be in the same register.
-            if (!comp->lvaGetDesc(op1->AsLclVar())->IsEnregisterableLcl())
-            {
-                unsigned lclNumTmp     = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
-                GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, op1);
-                GenTree* tmpTree       = comp->gtNewLclvNode(lclNumTmp, op1->TypeGet());
-
-                GenTree* lea = OffsetByIndexWithScale(tmpTree, comp->gtClone(tmpTree), scale);
-
-                BlockRange().Remove(cns);
-                BlockRange().Remove(op1);
-                BlockRange().InsertBefore(node, op1);
-                BlockRange().InsertBefore(node, lclvNodeStore);
-                BlockRange().InsertBefore(node, lea->gtGetOp2());
-                BlockRange().InsertBefore(node, lea->gtGetOp1());
-                BlockRange().InsertBefore(node, lea);
-
-                use.ReplaceWith(lea);
-
-                BlockRange().Remove(node);
-
-                return lea;
-            }
-            else
-            {
-                GenTree* lea = OffsetByIndexWithScale(op1, comp->gtClone(op1), scale);
-
-                BlockRange().Remove(cns);
-                BlockRange().Remove(op1);
-                BlockRange().InsertBefore(node, lea->gtGetOp2());
-                BlockRange().InsertBefore(node, lea->gtGetOp1());
-                BlockRange().InsertBefore(node, lea);
-
-                use.ReplaceWith(lea);
-
-                BlockRange().Remove(node);
-
-                return lea;
-            }
-        }
-        else
-        {
-            return nullptr;
-        }
     }
 
 // We do not do this optimization in X86 as it is not recommended.
