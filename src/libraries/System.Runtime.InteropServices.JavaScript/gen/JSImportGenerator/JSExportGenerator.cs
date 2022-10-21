@@ -115,7 +115,8 @@ namespace Microsoft.Interop.JavaScript
                 .Collect();
 
             IncrementalValueProvider<string> registration = regSyntax
-                .Select(static (data, ct) => GenerateRegSource(data))
+                .Combine(stubEnvironment)
+                .Select(static (data, ct) => GenerateRegSource(data.Left, data.Right.Compilation.AssemblyName))
                 .Select(static (data, ct) => data.NormalizeWhitespace().ToFullString());
 
             IncrementalValueProvider<ImmutableArray<(string, string)>> generated = generateSingleStub
@@ -236,11 +237,13 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static NamespaceDeclarationSyntax GenerateRegSource(
-            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods)
+            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods,
+            string assemblyName)
         {
             const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
             const string initializerClass = "__GeneratedInitializer";
             const string initializerMethod = "__Register_";
+            const string keepMethod = "__KeepAlive_";
 
             if (methods.IsEmpty) return NamespaceDeclaration(IdentifierName(generatedNamespace));
 
@@ -249,7 +252,7 @@ namespace Microsoft.Interop.JavaScript
 
             var attributes = new List<AttributeListSyntax>
             {
-                AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.ModuleInitializerAttributeGlobal))))
+                //
             };
             foreach (var m in methods)
             {
@@ -264,8 +267,25 @@ namespace Microsoft.Interop.JavaScript
 
             MemberDeclarationSyntax method = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(initializerMethod))
                             .WithAttributeLists(List(attributes))
-                            .WithModifiers(TokenList(new[] { Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword) }))
+                            .WithModifiers(TokenList(new[] { Token(SyntaxKind.StaticKeyword) }))
                             .WithBody(Block(registerStatements));
+
+            MemberDeclarationSyntax dummyMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(keepMethod))
+                            .WithAttributeLists(List(new[]{
+                                    AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.ModuleInitializerAttributeGlobal)))),
+                                    AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.DynamicDependencyAttributeGlobal))
+                                        .WithArgumentList(AttributeArgumentList(SeparatedList(new[]{
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(initializerMethod))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatedNamespace + "." + initializerClass))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(assemblyName))),
+                                        })))
+                                    ))
+                                }))
+                            .WithModifiers(TokenList(new[] {
+                                Token(SyntaxKind.StaticKeyword),
+                                Token(SyntaxKind.InternalKeyword)
+                            }))
+                            .WithBody(Block());
 
             var ns = NamespaceDeclaration(IdentifierName(generatedNamespace))
                         .WithMembers(
@@ -273,7 +293,7 @@ namespace Microsoft.Interop.JavaScript
                                 ClassDeclaration(initializerClass)
                                 .WithModifiers(TokenList(new SyntaxToken[]{
                                     Token(SyntaxKind.UnsafeKeyword)}))
-                                .WithMembers(List(new[] { field, method }))
+                                .WithMembers(List(new[] { field, dummyMethod, method }))
                                 ));
 
             return ns;
@@ -304,7 +324,9 @@ namespace Microsoft.Interop.JavaScript
             AttributeListSyntax registrationAttribute = AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.DynamicDependencyAttributeGlobal))
                     .WithArgumentList(AttributeArgumentList(SeparatedList(new[]{
                         AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(wrapperName))),
-                        AttributeArgument(TypeOfExpression(ParseTypeName(incrementalContext.SignatureContext.StubTypeFullName)))}
+                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.StubTypeFullName))),
+                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.AssemblyName))),
+                    }
                     )))));
 
             return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, wrapper, wrapperName),

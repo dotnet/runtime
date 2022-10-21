@@ -67,7 +67,8 @@ namespace Microsoft.Interop.JavaScript
                 StubTypeFullName = stubTypeFullName,
                 MethodName = fullName,
                 QualifiedMethodName = qualifiedName,
-                BindingName = "__signature_" + method.Name + "_" + typesHash
+                BindingName = "__signature_" + method.Name + "_" + typesHash,
+                AssemblyName = env.Compilation.AssemblyName,
             };
         }
 
@@ -87,6 +88,7 @@ namespace Microsoft.Interop.JavaScript
         public string MethodName { get; init; }
         public string QualifiedMethodName { get; init; }
         public string BindingName { get; init; }
+        public string AssemblyName { get; init; }
 
         public override int GetHashCode()
         {
