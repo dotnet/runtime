@@ -8996,6 +8996,17 @@ retry:
 					}
 					needs_retry = TRUE;
 				}
+			} else if (opcode == MINT_GETITEM_SPAN) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					// Allow ldloca instruction to be killed
+					local_ref_count [sregs [0]]--;
+					// Instead of loading from the indirect pointer pass directly the vt var
+					ins->opcode = MINT_GETITEM_LOCALSPAN;
+					sregs [0] = local;
+					needs_retry = TRUE;
+				}
 			}
 			ins_index++;
 		}
