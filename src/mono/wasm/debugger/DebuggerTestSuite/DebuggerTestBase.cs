@@ -38,16 +38,8 @@ namespace DebuggerTests
             => WasmHost.Firefox;
 #endif
 
-        public static bool WasmMultiThreaded
-        {
-            get
-            {
-                var envVar = Environment.GetEnvironmentVariable("WASM_TESTS_USING_VARIANT");
-                if (envVar == "multithreaded")
-                    return true;
-                return false;
-            }
-        }
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
 
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
