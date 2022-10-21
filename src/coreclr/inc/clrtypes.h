@@ -338,14 +338,14 @@ inline UINT64 AlignUp(UINT64 value, UINT alignment)
     return (value+alignment-1)&~(UINT64)(alignment-1);
 }
 
-#if defined(HOST_UNIX) && defined(HOST_64BIT)
+#ifdef __APPLE__
 inline SIZE_T AlignUp(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value+alignment-1)&~(SIZE_T)(alignment-1);
 }
-#endif // HOST_UNIX && HOST_BIT64
+#endif // __APPLE__
 
 inline UINT AlignDown(UINT value, UINT alignment)
 {
@@ -390,13 +390,13 @@ inline UINT AlignmentPad(UINT64 value, UINT alignment)
     return (UINT) (AlignUp(value, alignment) - value);
 }
 
-#if defined(HOST_UNIX) && defined(HOST_64BIT)
+#ifdef __APPLE__
 inline UINT AlignmentPad(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;
     return (UINT) (AlignUp(value, alignment) - value);
 }
-#endif // HOST_UNIX && HOST_BIT64
+#endif // __APPLE__
 
 inline UINT AlignmentTrim(UINT value, UINT alignment)
 {
@@ -423,13 +423,13 @@ inline UINT AlignmentTrim(UINT64 value, UINT alignment)
     return ((UINT)value)&(alignment-1);
 }
 
-#if defined(HOST_UNIX) && defined(HOST_64BIT)
+#ifdef __APPLE__
 inline UINT AlignmentTrim(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return ((UINT)value)&(alignment-1);
 }
-#endif // HOST_UNIX && HOST_BIT64
+#endif // __APPLE__
 
 #endif  // CLRTYPES_H_
