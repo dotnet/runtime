@@ -7,16 +7,15 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+using static System.WeakReferenceHandleTags;
+
 namespace System
 {
     internal sealed partial class ComAwareWeakReference
     {
         private readonly nint _weakHandle;
         private ComInfo? _comInfo;
-
-        private const nint TracksResurrectionBit = 1;
-        private const nint ComAwareBit = 2;
-        private const nint HandleTagBits = 3;
 
         internal sealed class ComInfo
         {

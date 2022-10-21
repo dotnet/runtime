@@ -1186,6 +1186,7 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
 
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
+    _ASSERTE((weakRefObj->m_taggedHandle & 2) == 0);
     HandleType handleType = (weakRefObj->m_taggedHandle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
     // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
     weakRefObj->m_taggedHandle &= (uintptr_t)1;

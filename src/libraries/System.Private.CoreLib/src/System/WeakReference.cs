@@ -5,10 +5,27 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Threading;
+
+using static System.WeakReferenceHandleTags;
 
 namespace System
 {
+    internal static class WeakReferenceHandleTags
+    {
+        // the lowermost bit is used to indicate whether the handle is tracking resurrection
+        // handles are at least 16bit aligned, so we can use one bit for tagging
+        internal const nint TracksResurrectionBit = 1;
+
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+        // one more bit is used to track whether the handle refers to an instance of ComAwareWeakReference
+        // we can use this bit because on COM-supporting platforms a handle is at least 32bit aligned
+        internal const nint ComAwareBit = 2;
+        internal const nint HandleTagBits = TracksResurrectionBit | ComAwareBit;
+#else
+        internal const nint HandleTagBits = TracksResurrectionBit;
+#endif
+    }
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class WeakReference : ISerializable
@@ -20,18 +37,6 @@ namespace System
         // handling a cached value of the handle then the handle could be freed and reused).
 
         private nint _taggedHandle;
-
-#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-        // the lowermost 2 bits are reserved for storing additional info about the handle
-        // we can use these bits because handle is at least 32bit aligned
-        private const nint HandleTagBits = 3;
-#else
-        // the lowermost 1 bit is reserved for storing additional info about the handle
-        private const nint HandleTagBits = 1;
-#endif
-
-        // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private const nint TracksResurrectionBit = 1;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)

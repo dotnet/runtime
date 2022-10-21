@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 
+using static System.WeakReferenceHandleTags;
+
 namespace System
 {
     [Serializable]
@@ -21,18 +23,6 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
         private nint _taggedHandle;
-
-#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-        // the lowermost 2 bits are reserved for storing additional info about the handle
-        // we can use these bits because handle is at least 32bit aligned
-        private const nint HandleTagBits = 3;
-#else
-        // the lowermost 1 bit is reserved for storing additional info about the handle
-        private const nint HandleTagBits = 1;
-#endif
-
-        // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private const nint TracksResurrectionBit = 1;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
