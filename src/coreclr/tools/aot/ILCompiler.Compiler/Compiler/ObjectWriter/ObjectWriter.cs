@@ -211,7 +211,14 @@ namespace ILCompiler.ObjectWriter
         {
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection, out _, out _);
-            GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection, out _, out _);
+            if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
+            {
+                GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection, out _, out _);
+            }
+            else
+            {
+                GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection, out _, out _);
+            }
 
             // Create sections for exception handling
             CreateEhSections();

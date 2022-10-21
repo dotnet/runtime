@@ -111,6 +111,8 @@ namespace ILCompiler
                 LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else if (NodeFactory.Target.OperatingSystem == TargetOS.OSX)
                 MachObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            else if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
+                CoffObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else if (NodeFactory.Target.OperatingSystem == TargetOS.Linux)
                 ElfObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else
