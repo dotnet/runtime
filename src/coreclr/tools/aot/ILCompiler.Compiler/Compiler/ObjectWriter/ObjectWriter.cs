@@ -249,10 +249,11 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
+                    bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
                     var symbolDefinition = new SymbolDefinition(
                         sectionIndex,
                         methodStart + n.Offset,
-                        n.Offset == 0 ? nodeContents.Data.Length : 0);
+                        isMethod ? nodeContents.Data.Length : 0);
                     EmitSymbolDefinition(ExternCName(n.GetMangledName(_nodeFactory.NameMangler)), symbolDefinition);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
