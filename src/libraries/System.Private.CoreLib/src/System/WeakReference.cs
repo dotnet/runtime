@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 namespace System.Runtime.InteropServices
 {
     // UNDONE: will move the type definition to appropriate location before merging
@@ -160,7 +160,7 @@ namespace System
 
         private nint _taggedHandle;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         // the lowermost 2 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
         private const nint HandleTagBits = 3;
@@ -209,12 +209,12 @@ namespace System
 
         private void Create(object? target, bool trackResurrection)
         {
-            nint h = (nint)GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            nint h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             _taggedHandle = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
             ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
             if (comInfo != null)
             {
@@ -234,7 +234,7 @@ namespace System
             {
                 nint th = _taggedHandle;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 ComAwareWeakReference? cr = ComAwareWeakReference.GetComAwareReference(th);
                 if (cr != null)
                 {
@@ -289,7 +289,7 @@ namespace System
 
                 object? target = GCHandle.InternalGet(wh);
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 target ??= ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target;
 #endif
                 // must keep the instance alive as long as we use the handle.
@@ -308,7 +308,7 @@ namespace System
 
                 GCHandle.InternalSet(wh, value);
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(value);
                 ComAwareWeakReference? fr = comInfo == null ?
                     ComAwareWeakReference.GetComAwareReference(_taggedHandle) :

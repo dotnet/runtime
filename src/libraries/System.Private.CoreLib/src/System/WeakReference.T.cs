@@ -22,7 +22,7 @@ namespace System
         // handling a cached value of the handle then the handle could be freed and reused).
         private nint _taggedHandle;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         // the lowermost 2 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
         private const nint HandleTagBits = 3;
@@ -71,7 +71,7 @@ namespace System
             // Call the worker method that has more performant but less user friendly signature.
             T? o = this.Target;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
             o ??= Unsafe.As<T?>(ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target);
             // must keep the instance alive as long as we use the handle.
             GC.KeepAlive(this);
@@ -96,12 +96,12 @@ namespace System
         // Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            nint h = (nint)GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            nint h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             _taggedHandle = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
             ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
             if (comInfo != null)
             {
@@ -117,7 +117,7 @@ namespace System
             {
                 nint th = _taggedHandle;
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 ComAwareWeakReference? cr = ComAwareWeakReference.GetComAwareReference(th);
                 if (cr != null)
                 {
@@ -130,16 +130,16 @@ namespace System
 
         public void SetTarget(T target)
         {
-            nint h = WeakHandle;
+            nint wh = WeakHandle;
             // Should only happen for corner cases, like using a WeakReference from a finalizer.
             // GC can finalize the instance if it becomes F-Reachable.
             // That, however, cannot happen while we use the instance.
-            if (h == 0)
+            if (wh == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            GCHandle.InternalSet(h, target);
+            GCHandle.InternalSet(wh, target);
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
             ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
             ComAwareWeakReference? fr = comInfo == null ?
                 ComAwareWeakReference.GetComAwareReference(_taggedHandle) :
@@ -156,17 +156,17 @@ namespace System
         {
             get
             {
-                nint h = WeakHandle;
+                nint wh = WeakHandle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
-                if (h == 0)
+                if (wh == 0)
                     return default;
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                T? target = Unsafe.As<T?>(GCHandle.InternalGet(h));
+                T? target = Unsafe.As<T?>(GCHandle.InternalGet(wh));
 
-#if FEATURE_COMINTEROP
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 target ??= Unsafe.As<T?>(ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target);
 #endif
 
