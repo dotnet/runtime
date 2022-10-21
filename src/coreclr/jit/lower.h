@@ -210,6 +210,12 @@ private:
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
     }
 
+    GenTree* IndexWithScale(GenTree* index, unsigned scale)
+    {
+        var_types resultType = (index->TypeGet() == TYP_REF) ? TYP_BYREF : index->TypeGet();
+        return new (comp, GT_LEA) GenTreeAddrMode(resultType, nullptr, index, scale, 0);
+    }
+
     GenTree* OffsetByIndex(GenTree* base, GenTree* index)
     {
         var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
@@ -320,6 +326,7 @@ private:
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
+    GenTree* TryLowerLshWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -344,7 +351,7 @@ private:
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
-    void LowerShift(GenTreeOp* shift);
+    GenTree* LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
     void LowerSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD

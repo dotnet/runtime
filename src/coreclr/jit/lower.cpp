@@ -297,7 +297,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_RSH:
         case GT_RSZ:
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-            LowerShift(node->AsOp());
+            return LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
 #endif
@@ -5409,16 +5409,30 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
             BlockRange().Remove(unused);
 
-            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH))
+            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_LEA, GT_LCL_VAR))
             {
                 // Push the first operand and loop back to process the second one.
                 // This minimizes the stack depth because the second one tends to be
                 // a constant so it gets processed and then the first one gets popped.
-                unusedStack.Push(unused->AsOp()->gtGetOp1());
-                unused = unused->AsOp()->gtGetOp2();
+                if (unused->OperIs(GT_LEA))
+                {
+                    assert(unused->gtGetOp2()->OperIs(GT_LCL_VAR));
+                    BlockRange().Remove(unused->gtGetOp2());
+                    unused = nullptr;
+                }
+                else if (unused->OperIs(GT_LCL_VAR))
+                {
+                    unused = nullptr;
+                }
+                else
+                {
+                    unusedStack.Push(unused->AsOp()->gtGetOp1());
+                    unused = unused->AsOp()->gtGetOp2();
+                }
             }
             else
             {
+                assert(!unused->OperIs(GT_LCL_VAR));
                 assert(unused->OperIs(GT_CNS_INT));
                 break;
             }
@@ -6159,11 +6173,14 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 // Arguments:
 //    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
 //
+// Return Value:
+//    The next node to lower.
+//
 // Notes:
 //    Remove unnecessary shift count masking, xarch shift instructions
 //    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
 
-void Lowering::LowerShift(GenTreeOp* shift)
+GenTree* Lowering::LowerShift(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
 
@@ -6198,6 +6215,17 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
 
+#ifdef TARGET_XARCH
+    if (shift->OperIs(GT_LSH))
+    {
+        GenTree* replacementNode = TryLowerLshWithConstant(shift);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
+    }
+#endif // TARGET_XARCH
+
     ContainCheckShiftRotate(shift);
 
 #ifdef TARGET_ARM64
@@ -6228,6 +6256,8 @@ void Lowering::LowerShift(GenTreeOp* shift)
         }
     }
 #endif
+
+    return shift->gtNext;
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)

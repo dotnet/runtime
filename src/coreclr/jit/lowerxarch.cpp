@@ -271,6 +271,67 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     return node;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerLshWithConstant:
+//    Lowers a tree LSH(X, CNS) to LEA(X, CNS)
+//
+// Arguments:
+//    node - GT_LSH node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerLshWithConstant(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_LSH));
+
+    if (comp->opts.MinOpts())
+        return nullptr;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (op1->isContained() || op2->isContained())
+        return nullptr;
+
+    if (!op2->IsCnsIntOrI())
+        return nullptr;
+
+    GenTreeIntConCommon* cns    = op2->AsIntConCommon();
+    ssize_t              cnsVal = cns->IconValue();
+
+    if (cnsVal == 2)
+    {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+            op1 = ReplaceWithLclVar(op1Use);
+
+            GenTree* lea = IndexWithScale(op1, static_cast<unsigned int>(cnsVal * 2));
+
+            BlockRange().Remove(cns);
+            BlockRange().Remove(op1);
+            BlockRange().InsertBefore(node, lea->gtGetOp2());
+            BlockRange().InsertBefore(node, lea);
+
+            use.ReplaceWith(lea);
+
+            BlockRange().Remove(node);
+
+            return lea;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 // LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
 //
