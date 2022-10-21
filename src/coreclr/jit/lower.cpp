@@ -6159,14 +6159,11 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 // Arguments:
 //    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
 //
-// Return Value:
-//    The next node to lower.
-//
 // Notes:
 //    Remove unnecessary shift count masking, xarch shift instructions
 //    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
 
-GenTree* Lowering::LowerShift(GenTreeOp* shift)
+void Lowering::LowerShift(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
 
@@ -6231,8 +6228,6 @@ GenTree* Lowering::LowerShift(GenTreeOp* shift)
         }
     }
 #endif
-
-    return shift->gtNext;
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)

@@ -350,7 +350,7 @@ private:
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
-    GenTree* LowerShift(GenTreeOp* shift);
+    void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
     void LowerSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
