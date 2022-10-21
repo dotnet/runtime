@@ -66,7 +66,8 @@ namespace System.Formats.Tar
             entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
             entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
 
-            entry._header._mode = status.Mode & 4095; // First 12 bits
+            // This mask only keeps the least significant 12 bits valid for UnixFileModes
+            entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;
 
             // Uid and UName
             entry._header._uid = (int)status.Uid;
