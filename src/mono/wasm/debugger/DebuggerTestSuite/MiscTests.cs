@@ -1136,31 +1136,24 @@ namespace DebuggerTests
             var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
             var expression = $"{{ invoke_static_method('[debugger-test] MultiThreadedTest:Run'); }}";
 
-            await EvaluateAndCheck(
+            var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 1529, 8,
-                "MultiThreadedTest.Write",
-                wait_for_event_fn: async (pause_location) =>
-                {
-                    var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                    Assert.Equal(locals[1]["value"]["type"], "number");
-                    Assert.Equal(locals[1]["name"], "currentThread");
-                    await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1529, 8, "MultiThreadedTest.Write",
-                    wait_for_event_fn: async (pause_location) =>
-                    {
-                        var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                        Assert.Equal(locals[1]["value"]["type"], "number");
-                        Assert.Equal(locals[1]["name"], "currentThread");
-                        await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1529, 8, "MultiThreadedTest.Write",
-                        wait_for_event_fn: async (pause_location) =>
-                        {
-                            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                            Assert.Equal(locals[1]["value"]["type"], "number");
-                            Assert.Equal(locals[1]["name"], "currentThread");
-                        });
-                    });
-                }
-            );
+                "MultiThreadedTest.Write");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1529, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1529, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
         }
     }
 }
