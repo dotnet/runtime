@@ -151,7 +151,7 @@ namespace System.Net.Sockets
             if (Volatile.Read(ref _disposed) != 0)
             {
                 _handle.Dispose();
-                ThrowIfDisposed();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
