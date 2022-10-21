@@ -4,18 +4,13 @@
 #
 # NOTE: some scripts source this file and rely on stdout being empty, make sure to not output anything here!
 
-if [ "$#" -lt 3 ]; then
+if [ -z "$build_arch" ] || [ -z "$compiler" ]; then
   echo "Usage..."
-  echo "init-compiler.sh <script directory> <Architecture> <compiler>"
-  echo "Specify the script directory."
+  echo "build_arch=<ARCH> compiler=<NAME> init-compiler.sh"
   echo "Specify the target architecture."
   echo "Specify the name of compiler (clang or gcc)."
   exit 1
 fi
-
-nativescriptroot="$1"
-build_arch="$2"
-compiler="$3"
 
 case "$compiler" in
     clang*|-clang*|--clang*)
@@ -24,7 +19,7 @@ case "$compiler" in
         majorVersion="${version%%.*}"
         [ -z "${version##*.*}" ] && minorVersion="${version#*.}"
 
-        if [ -z "$minorVersion" ] && [ "$majorVersion" -le 6 ]; then
+        if [ -z "$minorVersion" ] && [ -n "$majorVersion" ] && [ "$majorVersion" -le 6 ]; then
             minorVersion=0;
         fi
         compiler=clang
@@ -40,8 +35,6 @@ case "$compiler" in
 esac
 
 cxxCompiler="$compiler++"
-
-. "$nativescriptroot"/../pipeline-logging-functions.sh
 
 # clear the existing CC and CXX from environment
 CC=
@@ -83,23 +76,23 @@ if [ -z "$CLR_CC" ]; then
         if [ -z "$majorVersion" ]; then
             if command -v "$compiler" > /dev/null; then
                 if [ "$(uname)" != "Darwin" ]; then
-                    Write-PipelineTelemetryError -category "Build" -type "warning" "Specific version of $compiler not found, falling back to use the one in PATH."
+                    echo "Warning: Specific version of $compiler not found, falling back to use the one in PATH."
                 fi
                 CC="$(command -v "$compiler")"
                 CXX="$(command -v "$cxxCompiler")"
             else
-                Write-PipelineTelemetryError -category "Build" "No usable version of $compiler found."
+                echo "No usable version of $compiler found."
                 exit 1
             fi
         else
             if [ "$compiler" = "clang" ] && [ "$majorVersion" -lt 5 ]; then
                 if [ "$build_arch" = "arm" ] || [ "$build_arch" = "armel" ]; then
                     if command -v "$compiler" > /dev/null; then
-                        Write-PipelineTelemetryError -category "Build" -type "warning" "Found clang version $majorVersion which is not supported on arm/armel architectures, falling back to use clang from PATH."
+                        echo "Warning: Found clang version $majorVersion which is not supported on arm/armel architectures, falling back to use clang from PATH."
                         CC="$(command -v "$compiler")"
                         CXX="$(command -v "$cxxCompiler")"
                     else
-                        Write-PipelineTelemetryError -category "Build" "Found clang version $majorVersion which is not supported on arm/armel architectures, and there is no clang in PATH."
+                        echo "Found clang version $majorVersion which is not supported on arm/armel architectures, and there is no clang in PATH."
                         exit 1
                     fi
                 fi
@@ -108,7 +101,7 @@ if [ -z "$CLR_CC" ]; then
     else
         desired_version="$(check_version_exists "$majorVersion" "$minorVersion")"
         if [ "$desired_version" = "-1" ]; then
-            Write-PipelineTelemetryError -category "Build" "Could not find specific version of $compiler: $majorVersion $minorVersion."
+            echo "Could not find specific version of $compiler: $majorVersion $minorVersion."
             exit 1
         fi
     fi
@@ -120,7 +113,7 @@ if [ -z "$CLR_CC" ]; then
     fi
 else
     if [ ! -f "$CLR_CC" ]; then
-        Write-PipelineTelemetryError -category "Build" "CLR_CC is set but path '$CLR_CC' does not exist"
+        echo "CLR_CC is set but path '$CLR_CC' does not exist"
         exit 1
     fi
     CC="$CLR_CC"
@@ -128,12 +121,12 @@ else
 fi
 
 if [ -z "$CC" ]; then
-    Write-PipelineTelemetryError -category "Build" "Unable to find $compiler."
+    echo "Unable to find $compiler."
     exit 1
 fi
 
 # Only lld version >= 9 can be considered stable
-if [ "$compiler" = "clang" ] && [ "$majorVersion" -ge 9 ]; then
+if [ "$compiler" = "clang" ] && [ -n "$majorVersion" ] && [ "$majorVersion" -ge 9 ]; then
     if "$CC" -fuse-ld=lld -Wl,--version >/dev/null 2>&1; then
         LDFLAGS="-fuse-ld=lld"
     fi

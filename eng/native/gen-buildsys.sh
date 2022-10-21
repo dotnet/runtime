@@ -24,7 +24,7 @@ compiler="$4"
 
 if [[ "$compiler" != "default" ]]; then
     nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
-    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$host_arch" "$compiler"
+    build_arch="$host_arch" compiler="$compiler" . "$nativescriptroot/init-compiler.sh"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
