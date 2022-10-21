@@ -32,6 +32,7 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<string, int> _symbolNameToIndex = new();
 
         private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
+        private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
 
         protected CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -167,6 +168,34 @@ namespace ILCompiler.ObjectWriter
                 {
                     Name = symbolName,
                     StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
+                });
+            }
+
+            if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard))
+            {
+                // Create section with control flow guard symbols
+                GetOrCreateSection(GfidsSection, out var sectionStream, out _);
+
+                Span<byte> tempBuffer = stackalloc byte[4];
+                foreach (var (symbolName, symbolDefinition) in GetDefinedSymbols())
+                {
+                    // For now consider all method symbols address taken.
+                    // We could restrict this in the future to those that are referenced from
+                    // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
+                    if (symbolDefinition.Size > 0)
+                    {
+                        BinaryPrimitives.WriteInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
+                        sectionStream.Write(tempBuffer);
+                    }
+                }
+
+                // Emit the feat.00 symbol that controls various linker behaviors
+                _symbols.Add(new CoffSymbol
+                {
+                    Name = "@feat.00",
+                    StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
+                    SectionIndex = -1, // IMAGE_SYM_ABSOLUTE
+                    Value = 0x800, // cfGuardCF flags this object as control flow guard aware
                 });
             }
         }
