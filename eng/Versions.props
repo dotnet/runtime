@@ -102,6 +102,7 @@
     <MicrosoftNETCoreAppRuntimewinx64Version>8.0.0-alpha.1.22559.2</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
+<<<<<<< HEAD
     <MicrosoftNETCoreILAsmVersion>8.0.0-alpha.1.22559.2</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22566.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22566.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
@@ -111,6 +112,18 @@
     <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22566.1</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22566.1</runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22566.1</runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>
+=======
+    <MicrosoftNETCoreILAsmVersion>8.0.0-alpha.1.22530.1</MicrosoftNETCoreILAsmVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22517.1</runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22478.1</runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion>
+>>>>>>> 0822d9be8b5 (WIP FreeBSD NativeAOT)
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
@@ -243,5 +256,6 @@
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimefreebsdx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22478.1</runtimefreebsdx64MicrosoftNETCoreRuntimeJITToolsVersion>
   </PropertyGroup>
 </Project>

@@ -33,6 +33,9 @@
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
     <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
+<!--FreeBSD uses clang## for its compiler/linker versioning -->
+<!--TODO: Find a better way of doing this -->
+    <CppCompilerAndLinker Condition="'$(HostOS)' == 'freebsd'">clang11</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
