@@ -214,9 +214,7 @@ namespace BrowserDebugProxy
             if (!getObjectOptions.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
                 // FIXME: cache?
-                result = await sdbHelper.GetValuesFromDebuggerProxyAttribute(Id.Value, TypeId, token);
-                if (result != null)
-                    Console.WriteLine($"Investigate GetValuesFromDebuggerProxyAttribute\n{result}. There was a change of logic from loop to one iteration");
+                result = await sdbHelper.GetValuesFromDebuggerProxyAttributeForValueTypes(Id.Value, TypeId, token);
             }
 
             if (result == null && getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
