@@ -76,6 +76,8 @@ namespace System.CommandLine
                 return TargetOS.Linux;
             else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.OSX;
+            else if (token.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.FreeBSD;
 
             throw new CommandLineException($"Target OS '{token}' is not supported");
         }

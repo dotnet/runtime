@@ -143,6 +143,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ObjCopyNameAlternative Condition="'$(CppCompilerAndLinker)' == 'clang'">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(HostOS)' == 'FreeBSD'">
+      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">llvm-objcopy11</ObjCopyName>
+    </PropertyGroup>
+
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' != ''"
       Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Try installing appropriate package for $(CppLinker) or $(CppCompilerAndLinkerAlternative) to resolve the problem." />
