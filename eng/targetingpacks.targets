@@ -52,7 +52,7 @@
                         TargetFramework="$(NetCoreAppCurrent)"
                         Crossgen2PackNamePattern="$(LocalFrameworkOverrideName).Crossgen2.**RID**"
                         Crossgen2PackVersion="$(ProductVersion)"
-                        Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm;win-arm64;win-x86"
+                        Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;freebsd-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm;win-arm64;win-x86"
                         Condition="'@(KnownCrossgen2Pack)' == '' or !@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
     <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler"
                          ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
