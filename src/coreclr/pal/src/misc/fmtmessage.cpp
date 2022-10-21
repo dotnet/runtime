@@ -73,7 +73,14 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         }
         else
         {
-            swprintf_s(lpRetVal, MAX_ERROR_STRING_LENGTH, W("Error %u"), dwErrCode);
+            char errorString[sizeof("Error 4294967295")];
+            int cnt = sprintf_s(errorString, sizeof(errorString), "Error %u", dwErrCode);
+            cnt++; // +1 for null terminator
+
+            // Widening characters is okay here because they are the
+            // same in both char and WCHAR.
+            for (int i = 0; i < cnt; ++i)
+                lpRetVal[i] = (WCHAR)errorString[i];
         }
     }
     else
