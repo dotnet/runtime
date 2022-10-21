@@ -21643,6 +21643,7 @@ void gc_heap::gc1()
                 max_gen0_must_clear_bricks = max(max_gen0_must_clear_bricks, hp->gen0_must_clear_bricks);
             }
 #ifdef USE_REGIONS
+            initGCShadow();
             distribute_free_regions();
             verify_region_to_generation_map ();
             compute_gc_and_ephemeral_range (settings.condemned_generation, true);
@@ -21711,6 +21712,7 @@ void gc_heap::gc1()
     if (!(settings.concurrent))
     {
 #ifdef USE_REGIONS
+        initGCShadow();
         distribute_free_regions();
         verify_region_to_generation_map ();
         compute_gc_and_ephemeral_range (settings.condemned_generation, true);
@@ -30809,9 +30811,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
             if (gc_t_join.joined())
             {
 #endif //MULTIPLE_HEAPS
-#ifdef USE_REGIONS
-                initGCShadow();
-#endif //USE_REGIONS
 
 #ifdef FEATURE_EVENT_TRACE
                 if (informational_event_enabled_p && (condemned_gen_number < (max_generation -1)))
@@ -31079,10 +31078,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
-#ifdef USE_REGIONS
-            initGCShadow();
-#endif //USE_REGIONS
-
 #ifdef FEATURE_EVENT_TRACE
             if (informational_event_enabled_p)
             {
