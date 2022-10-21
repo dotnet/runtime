@@ -6688,12 +6688,17 @@ PhaseStatus Compiler::fgTailMerge()
                     lastStmt = lastStmt->GetPrevStmt();
                 }
 
+                // Block might be effectively empty.
+                //
+                if (lastStmt == nullptr)
+                {
+                    continue;
+                }
+
                 // We don't expect to see PHIs but watch for them anyways.
                 //
-                if ((lastStmt != nullptr) && !lastStmt->IsPhiDefnStmt())
-                {
-                    predInfo.Emplace(predBlock, lastStmt);
-                }
+                assert(!lastStmt->IsPhiDefnStmt());
+                predInfo.Emplace(predBlock, lastStmt);
             }
         }
 
