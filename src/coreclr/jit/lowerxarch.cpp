@@ -125,9 +125,7 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
-    // Do not do this optimization with min-opts enabled as
-    // this could create more tmp locals that need to be optimized
-    // in LSRA.
+    // Do not do these optimizations when min-opts enabled.
     if (comp->opts.MinOpts())
         return nullptr;
 

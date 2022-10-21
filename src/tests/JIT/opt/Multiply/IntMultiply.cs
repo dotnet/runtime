@@ -81,7 +81,7 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith7(ulong value)
         {
-            // X64:      lea [[REG0:[a-z]+]], {{\[}}8*[[REG1]]{{\]}}
+            // X64:      lea [[REG0:[a-z]+]], {{\[}}8*[[REG1:[a-z]+]]{{\]}}
             // X64-NEXT: sub [[REG0]], [[REG1]]
             return value * 7;
         }
