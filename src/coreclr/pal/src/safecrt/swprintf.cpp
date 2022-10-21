@@ -79,25 +79,6 @@
 *
 *******************************************************************************/
 
-DLLEXPORT int __cdecl swprintf_s (
-        char16_t *string,
-        size_t sizeInWords,
-        const char16_t *format,
-        ...
-        )
-{
-    int ret;
-    va_list arglist;
-
-    va_start(arglist, format);
-
-    ret = vswprintf_s(string, sizeInWords, format, arglist);
-
-    va_end(arglist);
-
-    return ret;
-}
-
 DLLEXPORT int __cdecl _snwprintf_s (
         char16_t *string,
         size_t sizeInWords,

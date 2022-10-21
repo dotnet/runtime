@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -38,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        
+
 
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for statics info lookup.
@@ -60,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(type))
                 {
-                    // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
+                    // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor
                     // context offset.
                     dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics indirection for StaticsInfoHashtable");
                 }

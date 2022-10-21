@@ -22,6 +22,7 @@ public:
             , breakOnError(false)
             , breakOnAssert(false)
             , breakOnException(false)
+            , ignoreStoredConfig(false)
             , applyDiff(false)
             , parallel(false)
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
@@ -39,7 +40,7 @@ public:
             , baseMetricsSummaryFile(nullptr)
             , diffMetricsSummaryFile(nullptr)
             , mclFilename(nullptr)
-            , diffMCLFilename(nullptr)
+            , diffsInfo(nullptr)
             , targetArchitecture(nullptr)
             , compileList(nullptr)
             , offset(-1)
@@ -59,6 +60,7 @@ public:
         bool  breakOnError;
         bool  breakOnAssert;
         bool  breakOnException;
+        bool  ignoreStoredConfig;
         bool  applyDiff;
         bool  parallel;        // User specified to use /parallel mode.
         bool  useCoreDisTools; // Use CoreDisTools library instead of Msvcdis
@@ -72,7 +74,7 @@ public:
         char* baseMetricsSummaryFile;
         char* diffMetricsSummaryFile;
         char* mclFilename;
-        char* diffMCLFilename;
+        char* diffsInfo;
         char* targetArchitecture;
         char* compileList;
         int   offset;

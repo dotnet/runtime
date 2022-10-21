@@ -201,7 +201,7 @@ namespace System.Formats.Tar
                     // No data section
                     if (_size > 0)
                     {
-                        throw new FormatException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
                     }
                     break;
                 case TarEntryType.RegularFile:
@@ -263,7 +263,7 @@ namespace System.Formats.Tar
                     // No data section
                     if (_size > 0)
                     {
-                        throw new FormatException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
                     }
                     break;
                 case TarEntryType.RegularFile:
@@ -376,10 +376,11 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            long size = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            long size = (long)TarHelpers.ParseOctal<ulong>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            Debug.Assert(size <= TarHelpers.MaxSizeLength, "size exceeded the max value possible with 11 octal digits. Actual size " + size);
             if (size < 0)
             {
-                throw new FormatException(string.Format(SR.TarSizeFieldNegative));
+                throw new InvalidDataException(string.Format(SR.TarSizeFieldNegative));
             }
 
             // Continue with the rest of the fields that require no special checks
@@ -477,7 +478,7 @@ namespace System.Formats.Tar
                         // Check for gnu version header for mixed case
                         if (!version.SequenceEqual(GnuVersionBytes))
                         {
-                            throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
+                            throw new InvalidDataException(string.Format(SR.TarPosixFormatExpected, _name));
                         }
 
                         _version = GnuVersion;
@@ -495,7 +496,7 @@ namespace System.Formats.Tar
                         // Check for ustar or pax version header for mixed case
                         if (!version.SequenceEqual(UstarVersionBytes))
                         {
-                            throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                            throw new InvalidDataException(string.Format(SR.TarGnuFormatExpected, _name));
                         }
 
                         _version = UstarVersion;
@@ -517,8 +518,8 @@ namespace System.Formats.Tar
         private void ReadPosixAndGnuSharedAttributes(Span<byte> buffer)
         {
             // Convert the byte arrays
-            _uName = TarHelpers.GetTrimmedAsciiString(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
-            _gName = TarHelpers.GetTrimmedAsciiString(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+            _uName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+            _gName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
 
             // DevMajor and DevMinor only have values with character devices and block devices.
             // For all other typeflags, the values in these fields are irrelevant.
@@ -626,7 +627,7 @@ namespace System.Formats.Tar
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
-                    throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, name));
+                    throw new InvalidDataException(string.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
             }
         }

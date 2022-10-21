@@ -158,40 +158,184 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+    // The node we're checking should be one of the two child nodes
+    assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+
+    // We cannot contain if the parent node
+    // * is contained
+    // * is not operating on an integer
+    // * is already marking a child node as contained
+    // * is required to throw on overflow
+
     if (parentNode->isContained())
         return false;
 
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtFlags & GTF_SET_FLAGS)
+    if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
         return false;
 
-    GenTree* op1 = parentNode->gtGetOp1();
-    GenTree* op2 = parentNode->gtGetOp2();
-
-    if (op2 != childNode)
+    if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
         return false;
 
-    if (op1->isContained() || op2->isContained())
+    // We cannot contain if the child node:
+    // * is not operating on an integer
+    // * is required to set a flag
+    // * is required to throw on overflow
+
+    if (!varTypeIsIntegral(childNode))
         return false;
 
-    if (!varTypeIsIntegral(op2))
+    if ((childNode->gtFlags & GTF_SET_FLAGS) != 0)
         return false;
 
-    if (op2->gtFlags & GTF_SET_FLAGS)
+    if (childNode->OperMayOverflow() && childNode->gtOverflow())
         return false;
 
-    // Find "a + b * c" or "a - b * c".
-    if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
+    GenTree* matchedOp = nullptr;
+
+    if (childNode->OperIs(GT_MUL))
     {
-        if (parentNode->gtOverflow())
+        if (childNode->gtGetOp1()->isContained() || childNode->gtGetOp2()->isContained())
+        {
+            // Cannot contain if either of the childs operands is already contained
             return false;
+        }
 
-        if (op2->gtOverflow())
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
             return false;
+        }
 
-        return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
+        if (parentNode->OperIs(GT_ADD))
+        {
+            // Find "c + (a * b)" or "(a * b) + c"
+            return IsSafeToContainMem(parentNode, childNode);
+        }
+
+        if (parentNode->OperIs(GT_SUB))
+        {
+            // Find "c - (a * b)"
+            assert(childNode == parentNode->gtGetOp2());
+            return IsSafeToContainMem(parentNode, childNode);
+        }
+
+        // TODO: Handle mneg
+        return false;
+    }
+
+    if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    {
+        // Find "a op (b shift cns)"
+
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        GenTree* shiftAmountNode = childNode->gtGetOp2();
+
+        if (!shiftAmountNode->IsCnsIntOrI())
+        {
+            // Cannot contain if the childs op2 is not a constant
+            return false;
+        }
+
+        const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
+        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_IN_BYTE) - 1;
+
+        if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
+        {
+            // Cannot contain if the shift amount is less than 1 or greater than maxShift
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND))
+        {
+            // These operations can still report flags
+
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                assert(shiftAmountNode->isContained());
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
+        {
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                assert(shiftAmountNode->isContained());
+                return true;
+            }
+        }
+
+        // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
+    if (childNode->OperIs(GT_CAST))
+    {
+        // Find "a op cast(b)"
+        GenTree* castOp = childNode->AsCast()->CastOp();
+
+        bool isSupportedCast = false;
+
+        if (varTypeIsSmall(childNode->CastToType()))
+        {
+            // The JIT doesn't track upcasts from small types, instead most types
+            // are tracked as TYP_INT and then we get explicit downcasts to the
+            // desired small type instead.
+
+            assert(!varTypeIsFloating(castOp));
+            isSupportedCast = true;
+        }
+        else if (childNode->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
+        {
+            // We can handle "INT -> LONG", "INT -> ULONG", "UINT -> LONG", and "UINT -> ULONG"
+            isSupportedCast = true;
+        }
+
+        if (!isSupportedCast)
+        {
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_ADD, GT_SUB))
+        {
+            // These operations can still report flags
+
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP))
+        {
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                return true;
+            }
+        }
+
+        // TODO: Handle CMN
+        return false;
     }
 
     return false;
@@ -206,61 +350,30 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 //
 // Notes:
 //    This involves:
-//    - Widening operations of unsigneds.
+//    - Widening small stores (on ARM).
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    GenTree* op1 = storeLoc->gtGetOp1();
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
+#ifdef TARGET_ARM
+    // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
+    // as most small locals have 4-byte-wide stack homes, the common exception being (dependent) struct fields.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsCnsIntOrI())
     {
-        // Try to widen the ops if they are going into a local var.
-        GenTreeIntCon* con    = op1->AsIntCon();
-        ssize_t        ival   = con->gtIconVal;
-        unsigned       varNum = storeLoc->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(varNum);
-
-        if (varDsc->lvIsSIMDType())
+        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+        if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // TODO-CQ: if the field is promoted independently shouldn't we
-            // also be able to do this?
-            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
         }
     }
+#endif // TARGET_ARM
+
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
@@ -572,7 +685,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#endif // TARGET_ARM
+#else // !TARGET_ARM
+    if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
+    {
+        return;
+    }
+#endif // !TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
@@ -603,22 +721,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        // TODO-ADDR: always perform this transformation in local morph and delete this code.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
-        {
-            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-            unsigned             lclNum      = lclAddrNode->GetLclNum();
-            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
-            ClassLayout*         layout      = src->AsObj()->GetLayout();
-
-            src->ChangeOper(GT_LCL_FLD);
-            src->AsLclFld()->SetLclNum(lclNum);
-            src->AsLclFld()->SetLclOffs(lclOffs);
-            src->AsLclFld()->SetLayout(layout);
-
-            BlockRange().Remove(lclAddrNode);
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
@@ -1095,7 +1198,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         assert(varTypeIsFloating(node->GetSimdBaseType()));
         assert(castOp == nullptr);
 
-        const double dataValue = op1->AsDblCon()->gtDconVal;
+        const double dataValue = op1->AsDblCon()->DconValue();
         return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
     }
 
@@ -1134,13 +1237,13 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
-    // Optimize comparison against Vector64/128<>.Zero via UMAX:
+    // Optimize comparison against Vector64/128<>.Zero via UMAXV:
     //
     //   bool eq = v == Vector128<integer>.Zero
     //
     // to:
     //
-    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt16()).ToScalar() == 0;
+    //   bool eq = AdvSimd.Arm64.MaxPairwise(v.AsUInt16(), v.AsUInt16()).GetElement(0) == 0;
     //
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
@@ -1155,20 +1258,36 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         opZero = op2;
     }
 
-    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
+    // Special case: "vec ==/!= zero_vector"
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
     {
-        // Use USHORT for V64 and UINT for V128 due to better latency/TP on some CPUs
-        CorInfoType maxType = (simdSize == 8) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_UINT;
-        GenTree*    cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, maxType, simdSize);
-        BlockRange().InsertBefore(node, cmp);
-        LowerNode(cmp);
+        GenTree* cmp = op;
+        if (simdSize != 8) // we don't need compression for Vector64
+        {
+            node->Op(1) = op;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            op               = node->Op(1);
+            GenTree* opClone = comp->gtClone(op);
+            BlockRange().InsertAfter(op, opClone);
+
+            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT,
+                                                 simdSize);
+            BlockRange().InsertBefore(node, cmp);
+            LowerNode(cmp);
+        }
+
         BlockRange().Remove(opZero);
 
-        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UINT, simdSize);
-        BlockRange().InsertAfter(cmp, val);
+        GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(cmp, zroCns);
+
+        GenTree* val =
+            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_ULONG, simdSize);
+        BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
-        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_INT);
+        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_LONG);
         BlockRange().InsertAfter(val, cmpZeroCns);
 
         node->ChangeOper(cmpOp);
@@ -1236,34 +1355,49 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         cmp = tmp;
     }
 
-    GenTree* msk =
-        comp->gtNewSimdHWIntrinsicNode(simdType, cmp, NI_AdvSimd_Arm64_MinAcross, CORINFO_TYPE_UBYTE, simdSize);
-    BlockRange().InsertAfter(cmp, msk);
-    LowerNode(msk);
+    if (simdSize != 8) // we don't need compression for Vector64
+    {
+        GenTree* msk;
+
+        // Save cmp into a temp as we're going to need to pass it twice to MinPairwise
+        node->Op(1) = cmp;
+        LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+        ReplaceWithLclVar(tmp1Use);
+        cmp               = node->Op(1);
+        GenTree* cmpClone = comp->gtClone(cmp);
+        BlockRange().InsertAfter(cmp, cmpClone);
+
+        msk = comp->gtNewSimdHWIntrinsicNode(simdType, cmp, cmpClone, NI_AdvSimd_Arm64_MinPairwise, CORINFO_TYPE_UINT,
+                                             simdSize);
+        BlockRange().InsertAfter(cmpClone, msk);
+        LowerNode(msk);
+
+        cmp = msk;
+    }
 
     GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
-    BlockRange().InsertAfter(msk, zroCns);
+    BlockRange().InsertAfter(cmp, zroCns);
 
     GenTree* val =
-        comp->gtNewSimdHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_UBYTE, simdSize);
+        comp->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_ULONG, simdSize);
     BlockRange().InsertAfter(zroCns, val);
     LowerNode(val);
 
-    zroCns = comp->gtNewIconNode(0, TYP_INT);
-    BlockRange().InsertAfter(val, zroCns);
+    GenTree* bitMskCns = comp->gtNewIconNode(static_cast<ssize_t>(0xffffffffffffffff), TYP_LONG);
+    BlockRange().InsertAfter(val, bitMskCns);
 
     node->ChangeOper(cmpOp);
 
-    node->gtType        = TYP_INT;
+    node->gtType        = TYP_LONG;
     node->AsOp()->gtOp1 = val;
-    node->AsOp()->gtOp2 = zroCns;
+    node->AsOp()->gtOp2 = bitMskCns;
 
     // The CompareEqual will set (condition is true) or clear (condition is false) all bits of the respective element
     // The MinAcross then ensures we get either all bits set (all conditions are true) or clear (any condition is false)
     // So, we need to invert the condition from the operation since we compare against zero
 
-    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::NE : GenCondition::EQ;
-    GenTree*     cc     = LowerNodeCC(node, cmpCnd);
+    GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
+    LowerNodeCC(node, cmpCnd);
 
     node->gtType = TYP_VOID;
     node->ClearUnusedValue();
@@ -1327,7 +1461,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().Remove(arg);
         }
 
-        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, simdBaseJitType);
+        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
         vecCon->gtSimd32Val = simd32Val;
         BlockRange().InsertBefore(node, vecCon);
@@ -1861,50 +1995,44 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
-    // Check and make op2 contained (if it is a containable immediate)
-    CheckImmedAndMakeContained(node, op2);
-
-#ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && IsContainableBinaryOp(node, op2))
+    if (CheckImmedAndMakeContained(node, op2))
     {
-        MakeSrcContained(node, op2);
+        return;
     }
 
-    // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
-    // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
-    if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
-        !node->gtOverflow())
+    if (node->OperIsCommutative() && CheckImmedAndMakeContained(node, op1))
     {
-        assert(!node->isContained());
+        MakeSrcContained(node, op1);
+        std::swap(node->gtOp1, node->gtOp2);
+        return;
+    }
 
-        if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled())
+    {
+        if (IsContainableBinaryOp(node, op2))
         {
-            GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
-            if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
+            if (op2->OperIs(GT_CAST))
             {
-                node->ChangeOper(GT_ADDEX);
-                cast->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-                MakeSrcContained(node, cast);
+                // We want to prefer the combined op here over containment of the cast op
+                op2->AsCast()->CastOp()->ClearContained();
             }
+            MakeSrcContained(node, op2);
+
+            return;
         }
-        else if (op1->OperIs(GT_LSH) || op2->OperIs(GT_LSH))
+
+        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
         {
-            GenTree* lsh     = op1->OperIs(GT_LSH) ? op1 : op2;
-            GenTree* shiftBy = lsh->gtGetOp2();
-
-            if (shiftBy->IsCnsIntOrI())
+            if (op1->OperIs(GT_CAST))
             {
-                const ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
-                const ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
-
-                if ((shiftByCns > 0) && (shiftByCns < maxShift))
-                {
-                    // shiftBy is small so it has to be contained at this point.
-                    assert(shiftBy->isContained());
-                    node->ChangeOper(GT_ADDEX);
-                    MakeSrcContained(node, lsh);
-                }
+                // We want to prefer the combined op here over containment of the cast op
+                op1->AsCast()->CastOp()->ClearContained();
             }
+            MakeSrcContained(node, op1);
+
+            std::swap(node->gtOp1, node->gtOp2);
+            return;
         }
     }
 #endif
@@ -2127,25 +2255,21 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (parent->isContainedCompareChainSegment(child))
     {
         // Already have a chain.
-        assert(child->OperIs(GT_AND) || child->OperIsCmpCompare());
         return true;
     }
-    else
+    else if (child->OperIs(GT_AND))
     {
-        if (child->OperIs(GT_AND))
-        {
-            // Count both sides.
-            return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
-                   IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
-        }
-        else if (child->OperIsCmpCompare())
-        {
-            // Can the child compare be contained.
-            return IsSafeToContainMem(parent, child);
-        }
+        // Count both sides.
+        return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
+               IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
+    }
+    else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
+    {
+        // Can the child compare be contained.
+        return IsSafeToContainMem(parent, child);
     }
 
     return false;
@@ -2170,9 +2294,9 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
     *startOfChain = nullptr; // Nothing found yet.
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (parent->isContainedCompareChainSegment(child))
     {
-        // Already have a chain.
+        // Already have a contained chain.
         return true;
     }
     // Can the child be contained.
@@ -2181,7 +2305,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         if (child->OperIs(GT_AND))
         {
             // If Op2 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp2()->isContainedAndNotIntOrIImmed())
+            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp2()))
             {
                 if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
                 {
@@ -2191,7 +2315,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             }
 
             // If Op1 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp1()->isContainedAndNotIntOrIImmed())
+            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp1()))
             {
                 if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
                 {
@@ -2203,7 +2327,8 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             child->AsOp()->SetContained();
 
@@ -2449,7 +2574,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(varTypeIsFloating(intrin.baseType));
 
-                        const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
 
                         if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
                         {

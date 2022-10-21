@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -61,8 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (relocs != null)
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
+                dependencies ??= new DependencyList();
 
                 foreach (Relocation reloc in relocs)
                 {

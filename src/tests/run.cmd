@@ -53,10 +53,10 @@ if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
-if /i "%1" == "jitstress"                               (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitstressregs"                           (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitminopts"                              (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
-if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
+if /i "%1" == "jitstress"                               (set DOTNET_JitStress=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitstressregs"                           (set DOTNET_JitStressRegs=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitminopts"                              (set DOTNET_JITMinOpts=1&shift&goto Arg_Loop)
+if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
@@ -64,11 +64,11 @@ if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&s
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "gcname"                                  (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 
-REM change it to COMPlus_GCStress when we stop using xunit harness
-if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
+REM change it to DOTNET_GCStress when we stop using xunit harness
+if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
@@ -390,12 +390,12 @@ echo ^<build_type^>              - Specifies build type: Debug, Release, or Chec
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo sequential                - Run tests sequentially (no parallelism).
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
-echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
-echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
-echo jitminopts                - Runs the tests with COMPlus_JITMinOpts=1
-echo jitforcerelocs            - Runs the tests with COMPlus_ForceRelocs=1
-echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
-echo gcstresslevel ^<n^>         - Runs the tests with COMPlus_GCStress=n. n=0 means no GC Stress. Otherwise, n is a bitmask of the following:
+echo jitstress ^<n^>             - Runs the tests with DOTNET_JitStress=n
+echo jitstressregs ^<n^>         - Runs the tests with DOTNET_JitStressRegs=n
+echo jitminopts                - Runs the tests with DOTNET_JITMinOpts=1
+echo jitforcerelocs            - Runs the tests with DOTNET_ForceRelocs=1
+echo gcname ^<name^>             - Runs the tests with DOTNET_GCName=name
+echo gcstresslevel ^<n^>         - Runs the tests with DOTNET_GCStress=n. n=0 means no GC Stress. Otherwise, n is a bitmask of the following:
 echo                               1: GC on all allocations and 'easy' places
 echo                               2: GC on transitions to preemptive GC
 echo                               4: GC on every allowable JITed instruction

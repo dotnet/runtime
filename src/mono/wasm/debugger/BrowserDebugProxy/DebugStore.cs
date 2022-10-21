@@ -996,7 +996,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
-                                source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
+                                source = GetOrAddSourceFile(methodDebugInformation.Document, documentName);
                             }
                             var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                             methods[entryRow] = methodInfo;
@@ -1018,13 +1018,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-        private SourceFile GetOrAddSourceFile(DocumentHandle doc, int rowid, string documentName)
+        private SourceFile GetOrAddSourceFile(DocumentHandle doc, string documentName)
         {
-            if (_documentIdToSourceFileTable.TryGetValue(rowid, out SourceFile source))
+            if (_documentIdToSourceFileTable.TryGetValue(documentName.GetHashCode(), out SourceFile source))
                 return source;
 
             var src = new SourceFile(this, _documentIdToSourceFileTable.Count, doc, GetSourceLinkUrl(documentName), documentName);
-            _documentIdToSourceFileTable[rowid] = src;
+            _documentIdToSourceFileTable[documentName.GetHashCode()] = src;
             return src;
         }
 
@@ -1054,7 +1054,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
                             var documentName = pdbMetadataReader.GetString(document.Name);
-                            source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
+                            source = GetOrAddSourceFile(methodDebugInformation.Document, documentName);
                         }
                     }
                     var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
@@ -1467,11 +1467,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     try
                     {
+                        string unescapedFileName = Uri.UnescapeDataString(file_name);
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
                             });
                     }
                     catch (Exception e)

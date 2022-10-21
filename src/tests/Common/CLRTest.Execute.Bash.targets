@@ -53,7 +53,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).sh"
-    DependsOnTargets="$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
+    DependsOnTargets="$(BashScriptSnippetGen);GetIlasmRoundTripBashScript;GetSuperPMICollectionBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -63,9 +63,9 @@ WARNING:   When setting properties based on their current state (for example:
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_GCStress" ]
+if [ ! -z "$DOTNET_GCStress" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_GCStress IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -88,22 +88,22 @@ fi
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
+if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
-if [[ "$COMPlus_TieredCompilation" != "0" ]]
+if [[ "$DOTNET_TieredCompilation" != "0" ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
+  echo "SKIPPING EXECUTION BECAUSE DOTNET_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_HeapVerify" ]
+if [ ! -z "$DOTNET_HeapVerify" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -286,6 +286,9 @@ else
   __Command+=" dotnet"
 fi
 
+# workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
+export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
 $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
@@ -313,7 +316,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -322,7 +325,7 @@ $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
@@ -341,7 +344,7 @@ fi
 
 $(BashIlrtTestLaunchCmds)
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
@@ -350,7 +353,7 @@ $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 
-if [ ! -z ${RunCrossGen+x} ]%3B then
+if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
 
@@ -427,11 +430,17 @@ echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecuti
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
-    </PropertyGroup>
 
+      <BashCLRTestPostCommands><![CDATA[
+$(BashDisasmCheckPostCommands)
+$(CLRTestBashPostCommands)
+      ]]></BashCLRTestPostCommands>
+
+    </PropertyGroup>
     <PropertyGroup>
       <BashEnvironmentVariables>
-@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
+@(CLRTestBashEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
+@(CLRTestEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
 
@@ -529,14 +538,15 @@ if [ -n "$__TestEnv" ]%3B then
     source $__TestEnv
 fi
 
-$(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 $(IlasmRoundTripBashScript)
-# Allow precommands to override the ExePath
+$(SuperPMICollectionBashScript)
+# Allow test environment variables or precommands to override the ExePath
 ExePath=$(InputAssemblyName)
 export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
+$(BashEnvironmentVariables)
 # PreCommands
 $(BashCLRTestPreCommands)
 # Launch

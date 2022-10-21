@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || !field.HasGCStaticBase)
                     continue;
-                
+
                 int padding = field.Offset.AsInt - initialOffset - builder.CountBytes;
                 Debug.Assert(padding >= 0);
                 builder.EmitZeros(padding);

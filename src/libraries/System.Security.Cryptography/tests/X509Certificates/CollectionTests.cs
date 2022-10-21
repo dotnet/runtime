@@ -1745,7 +1745,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     X509Certificate2[] expectedCollection = expected.OrderBy(c => c.Thumbprint).ToArray();
                     X509Certificate2[] actualCollection = imported.Collection.OrderBy(c => c.Thumbprint).ToArray();
-                    Assert.Equal(expectedCollection, actualCollection, new X509Certificate2EqualityComparer());
+                    Assert.Equal(expectedCollection, actualCollection,
+                        EqualityComparer<X509Certificate2>.Create((x, y) => x == y || x != null && y != null && x.RawDataMemory.Span.SequenceEqual(y.RawDataMemory.Span)));
                 }
             }
 
@@ -1784,19 +1785,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
-
-        private class X509Certificate2EqualityComparer : IEqualityComparer<X509Certificate2>
-        {
-            public int GetHashCode(X509Certificate2 obj) => obj.GetHashCode();
-
-            public bool Equals(X509Certificate2 x, X509Certificate2 y)
-            {
-                if (x is null)
-                    return y is null;
-                if (y is null)
-                    return false;
-                return x.RawDataMemory.Span.SequenceEqual(y.RawDataMemory.Span);
-            }
-        }
     }
 }

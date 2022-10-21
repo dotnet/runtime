@@ -117,7 +117,7 @@ bool GCToOSInterface::Initialize()
     g_pageSizeUnixInl = GetOsPageSize();
 
     uint32_t currentProcessCpuCount = PAL_GetLogicalCpuCountFromOS();
-    if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, g_processAffinitySet.GetBitsetData()))
+    if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, (UINT_PTR *)g_processAffinitySet.GetBitsetData()))
     {
         _ASSERTE(currentProcessCpuCount == g_processAffinitySet.Count());
     }
@@ -1047,11 +1047,11 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 // Get a time stamp with a low precision
 // Return:
 //  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ::GetTickCount();
+    return ::GetTickCount64();
 }
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()

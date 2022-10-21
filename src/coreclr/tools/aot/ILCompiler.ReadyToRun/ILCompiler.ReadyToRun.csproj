@@ -101,7 +101,6 @@
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
-    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
@@ -266,8 +265,8 @@
     <Compile Include="..\..\Common\JitInterface\TypeString.cs">
       <Link>JitInterface\TypeString.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
-      <Link>JitInterface\CorInfoBase.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl_generated.cs">
+      <Link>JitInterface\CorInfoImpl_generated.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
@@ -280,6 +279,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
       <Link>JitInterface\CorInfoInstructionSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\IJitHashableOnly.cs">
+      <Link>JitInterface\IJitHashableOnly.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>

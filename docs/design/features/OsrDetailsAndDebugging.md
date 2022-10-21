@@ -172,7 +172,7 @@ During the patchpoint phase, if any block was marked, the jit adds a
 new integer local to the method (the patchpoint counter) and adds IR
 to initialize the counter on method entry to the value of
 `DOTNET_TC_OnStackReplacement_InitialCounter` (by default this is
-0x1000).
+1000).
 
 At each marked block the JIT adds code to decrement the counter and
 conditionally invoke `CORINFO_HELP_PATCHPOINT` if the counter value is zero

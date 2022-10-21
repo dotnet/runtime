@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -14,8 +12,6 @@ namespace ILCompiler.DependencyAnalysis
         // together in multifile mode, the runtime needs to get list of modules present
         // in the final binary. This list is created via a special .modules section that
         // contains list of pointers to all module headers.
-        public static readonly string WindowsSectionName = ".modules$I";
-        public static readonly string UnixSectionName = "__modules";
 
         private TargetDetails _target;
 
@@ -28,10 +24,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_target.IsWindows)
-                    return new ObjectNodeSection(WindowsSectionName, SectionType.ReadOnly);
-                else
-                    return new ObjectNodeSection(UnixSectionName, SectionType.Writeable);
+                return _target.IsWindows ?
+                    ObjectNodeSection.ModulesWindowsContentSection :
+                    ObjectNodeSection.ModulesUnixContentSection;
             }
         }
 

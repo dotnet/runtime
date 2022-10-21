@@ -103,7 +103,7 @@ PALTEST(file_io_GetTempFileNameW_test1_paltest_gettempfilenamew_test1, "file_io/
         }
 
         // now verify that it only used the first 3 characters of the prefix
-        swprintf_s(wTempString, ARRAY_SIZE(wTempString), convert("%s\\%s"), wPath, wPrefix);
+        _snwprintf_s(wTempString, ARRAY_SIZE(wTempString), _TRUNCATE, convert("%s\\%s"), wPath, wPrefix);
         if (memcmp(wTempString, wReturnedName, wcslen(wTempString)*sizeof(WCHAR)) == 0)
         {
             free (wPath);

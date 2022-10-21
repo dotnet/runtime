@@ -17,7 +17,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire();
@@ -27,7 +27,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease.Dispose();
             Assert.False(limiter.AttemptAcquire().IsAcquired);
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             Assert.True(limiter.AttemptAcquire().IsAcquired);
         }
@@ -35,33 +35,51 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = -1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                Window = TimeSpan.FromMinutes(2),
-                AutoReplenishment = false
-            }));
-            Assert.Throws<ArgumentException>(
+                {
+                    PermitLimit = -1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.FromMinutes(2),
+                    AutoReplenishment = false
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = -1,
-                Window = TimeSpan.FromMinutes(2),
-                AutoReplenishment = false
-            }));
-            Assert.Throws<ArgumentException>(
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = -1,
+                    Window = TimeSpan.FromMinutes(2),
+                    AutoReplenishment = false
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
-                QueueLimit = 1,
-                Window = TimeSpan.MinValue,
-                AutoReplenishment = false
-            }));
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.MinValue,
+                    AutoReplenishment = false
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.FromMinutes(-2),
+                    AutoReplenishment = false,
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
+                    AutoReplenishment = false,
+                }));
         }
 
         [Fact]
@@ -72,7 +90,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -82,7 +100,7 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.AcquireAsync();
             Assert.False(wait.IsCompleted);
 
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             Assert.True((await wait).IsAcquired);
         }
@@ -95,7 +113,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = await limiter.AcquireAsync();
@@ -107,7 +125,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait2.IsCompleted);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             lease = await wait1;
             Assert.True(lease.IsAcquired);
@@ -115,7 +133,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease.Dispose();
             Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             lease = await wait2;
             Assert.True(lease.IsAcquired);
@@ -129,7 +147,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.FromMinutes(0),
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -142,7 +160,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait2.IsCompleted);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             // second queued item completes first with NewestFirst
             lease = await wait2;
@@ -151,7 +169,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease.Dispose();
             Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             lease = await wait1;
             Assert.True(lease.IsAcquired);
@@ -165,7 +183,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             using var lease = limiter.AttemptAcquire(1);
@@ -174,7 +192,7 @@ namespace System.Threading.RateLimiting.Test
             var failedLease = await limiter.AcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
-            Assert.Equal(TimeSpan.Zero, timeSpan);
+            Assert.Equal(TimeSpan.FromMilliseconds(2), timeSpan);
         }
 
         [Fact]
@@ -185,7 +203,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -197,7 +215,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(lease1.IsAcquired);
             Assert.False(wait2.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait2;
             Assert.True(lease.IsAcquired);
@@ -211,7 +229,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(2);
@@ -229,7 +247,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(lease2.IsAcquired);
             Assert.False(wait3.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait3;
             Assert.True(lease.IsAcquired);
@@ -243,7 +261,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(2);
@@ -256,7 +274,7 @@ namespace System.Threading.RateLimiting.Test
             var lease1 = await limiter.AcquireAsync(2);
             Assert.False(lease1.IsAcquired);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -270,7 +288,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -279,14 +297,14 @@ namespace System.Threading.RateLimiting.Test
             var failedLease = await limiter.AcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             lease = await wait;
             Assert.True(lease.IsAcquired);
 
             wait = limiter.AcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             lease = await wait;
             Assert.True(lease.IsAcquired);
         }
@@ -299,7 +317,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = int.MaxValue,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = int.MaxValue,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(int.MaxValue);
@@ -315,7 +333,7 @@ namespace System.Threading.RateLimiting.Test
             var lease1 = await wait;
             Assert.False(lease1.IsAcquired);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             var lease2 = await wait2;
             Assert.True(lease2.IsAcquired);
         }
@@ -328,7 +346,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => limiter.AttemptAcquire(2));
@@ -342,7 +360,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.AcquireAsync(2));
@@ -356,7 +374,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => limiter.AttemptAcquire(-1));
@@ -370,7 +388,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.AcquireAsync(-1));
@@ -384,7 +402,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -400,7 +418,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             using var lease = limiter.AttemptAcquire(1);
@@ -419,7 +437,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -435,7 +453,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = await limiter.AcquireAsync(1);
@@ -445,7 +463,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
             using var lease2 = await wait;
             Assert.True(lease2.IsAcquired);
         }
@@ -458,7 +476,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             using var lease = await limiter.AcquireAsync(2);
@@ -470,7 +488,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait2.IsCompleted);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             var lease1 = await wait1;
             var lease2 = await wait2;
@@ -486,7 +504,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -500,7 +518,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
         }
@@ -513,7 +531,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -526,7 +544,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
-            Assert.True(limiter.TryReplenish());
+            Replenish(limiter, 1L);
 
             Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
         }
@@ -539,7 +557,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -555,7 +573,7 @@ namespace System.Threading.RateLimiting.Test
             wait = limiter.AcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             lease = await wait;
             Assert.True(lease.IsAcquired);
         }
@@ -568,7 +586,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             using var lease = limiter.AttemptAcquire(1);
@@ -583,7 +601,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             using var lease = limiter.AttemptAcquire(1);
@@ -598,7 +616,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -631,7 +649,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -770,7 +788,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -785,7 +803,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
             Assert.False(wait.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -799,7 +817,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -811,13 +829,13 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
             Assert.False(wait2.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait2;
             Assert.True(lease.IsAcquired);
@@ -831,7 +849,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -845,7 +863,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
             Assert.False(wait.IsCompleted);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -859,7 +877,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 3,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -872,7 +890,7 @@ namespace System.Threading.RateLimiting.Test
             lease = limiter.AttemptAcquire(1);
             Assert.False(lease.IsAcquired);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -918,11 +936,11 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             limiter.AttemptAcquire(1);
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             Assert.NotNull(limiter.IdleDuration);
         }
 
@@ -962,7 +980,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 2,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(2);
@@ -988,7 +1006,7 @@ namespace System.Threading.RateLimiting.Test
             lease = await wait2;
             Assert.False(lease.IsAcquired);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1L);
             lease = await wait3;
             Assert.True(lease.IsAcquired);
         }
@@ -1001,7 +1019,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(1);
@@ -1026,7 +1044,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -1049,7 +1067,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 100,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 50,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
 
@@ -1093,7 +1111,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(2, stats.TotalFailedLeases);
             Assert.Equal(1, stats.TotalSuccessfulLeases);
 
-            limiter.TryReplenish();
+            Replenish(limiter, 1);
             await lease2Task;
 
             // success from wait + available + queue
@@ -1112,7 +1130,7 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 100,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 50,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             var lease = limiter.AttemptAcquire(0);
@@ -1145,11 +1163,45 @@ namespace System.Threading.RateLimiting.Test
                 PermitLimit = 100,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 50,
-                Window = TimeSpan.Zero,
+                Window = TimeSpan.FromMilliseconds(1),
                 AutoReplenishment = false
             });
             limiter.Dispose();
             Assert.Throws<ObjectDisposedException>(limiter.GetStatistics);
+        }
+
+        [Fact]
+        public void AutoReplenishIgnoresTimerJitter()
+        {
+            var replenishmentPeriod = TimeSpan.FromMinutes(10);
+            using var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = replenishmentPeriod,
+                AutoReplenishment = true,
+            });
+
+            var lease = limiter.AttemptAcquire(permitCount: 3);
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
+
+            // Replenish 1 millisecond less than ReplenishmentPeriod while AutoReplenishment is enabled
+            Replenish(limiter, (long)replenishmentPeriod.TotalMilliseconds - 1);
+
+            Assert.Equal(10, limiter.GetStatistics().CurrentAvailablePermits);
+        }
+
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+
+        static internal void Replenish(FixedWindowRateLimiter limiter, long addMilliseconds)
+        {
+            var replenishInternalMethod = typeof(FixedWindowRateLimiter).GetMethod("ReplenishInternal", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            var internalTick = typeof(FixedWindowRateLimiter).GetField("_lastReplenishmentTick", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            var currentTick = (long)internalTick.GetValue(limiter);
+            replenishInternalMethod.Invoke(limiter, new object[] { currentTick + addMilliseconds * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
         }
     }
 }
