@@ -245,7 +245,7 @@ namespace CodeGenTests
         {
             // X64:      mov [[REG0:[a-z]+]], qword ptr
             // X64-NOT:  mov
-            // X64-NEXT: lea [[REG1:[a-z]+]], {{\[}}[[REG0:[a-z]+]]+4*[[REG0]]{{\]}}
+            // X64-NEXT: lea [[REG1:[a-z]+]], {{\[}}[[REG0]]+4*[[REG0]]{{\]}}
             var value2 = value * 5;
             UInt64_AddressExposed(ref value);
             return value2;
