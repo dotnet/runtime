@@ -75,7 +75,6 @@ jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_validateRemoteCerti
 {
     abort_unless(dotnetCallback, "dotnetCallback has not been registered");
 
-    LOG_INFO("CALLBACK CALLED!!");
     INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, trustManagerProxy, certificate, encodedCertificate);
 
     bool isAccepted = false;

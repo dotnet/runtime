@@ -507,6 +507,9 @@ namespace System.Net.Security
             // Client streams perform the verification during the handshake via Java's TrustManager callbacks
             if (!_sslAuthenticationOptions.IsServer)
             {
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+
                 _handshakeCompleted = true;
                 return true;
             }

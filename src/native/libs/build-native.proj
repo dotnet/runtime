@@ -57,7 +57,7 @@
 
   <UsingTask TaskName="AndroidDexBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
-  <Target Name="BuildAndroid"
+  <Target Name="BuildNativeAndroid"
           BeforeTargets="BuildNativeUnix"
           Condition="'$(TargetOS)' == 'Android'">
     <ItemGroup>
