@@ -723,7 +723,7 @@ get_mov_for_type (int mt, gboolean needs_sext)
 	case MINT_TYPE_I2:
 	case MINT_TYPE_U2:
 		if (needs_sext)
-			return MINT_MOV_I1 + mt;
+			return MINT_MOV_I4_I1 + mt;
 		else
 			return MINT_MOV_4;
 	case MINT_TYPE_I4:
@@ -7982,10 +7982,25 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			src_off += foff;
 		else
 			dest_off += foff;
-		if (mt == MINT_TYPE_VT || fsize)
+		if (mt == MINT_TYPE_VT || fsize) {
+			// For valuetypes or unaligned access we just use memcpy
 			opcode = MINT_MOV_VT;
-		else
-			opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+		} else {
+			if (opcode == MINT_MOV_SRC_OFF) {
+				// Loading from field, always load full i4
+				opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+			} else {
+				// Storing into field, copy exact size
+				fsize = get_mint_type_size (mt);
+				switch (fsize) {
+					case 1: opcode = MINT_MOV_1; break;
+					case 2: opcode = MINT_MOV_2; break;
+					case 4: opcode = MINT_MOV_4; break;
+					case 8: opcode = MINT_MOV_8; break;
+					default: g_assert_not_reached ();
+				}
+			}
+		}
 		// Replace MINT_MOV_OFF with the real instruction
 		ip [-1] = opcode;
 		*ip++ = GINT_TO_UINT16 (dest_off);
@@ -8666,7 +8681,7 @@ retry:
 
 			// We always store to the full i4, except as part of STIND opcodes. These opcodes can be
 			// applied to a local var only if that var has LDLOCA applied to it
-			if ((opcode >= MINT_MOV_I1 && opcode <= MINT_MOV_U2) && !td->locals [sregs [0]].indirects) {
+			if ((opcode >= MINT_MOV_I4_I1 && opcode <= MINT_MOV_I4_U2) && !td->locals [sregs [0]].indirects) {
 				ins->opcode = MINT_MOV_4;
 				opcode = MINT_MOV_4;
 			}
@@ -8954,18 +8969,23 @@ retry:
 						// Add mov.dst.off to store directly int the local var space without use of ldloca.
 						int foffset = ins->data [0];
 						guint16 vtsize = 0;
-						if (mt == MINT_TYPE_VT)
+						if (mt == MINT_TYPE_VT) {
 							vtsize = ins->data [1];
-						else
-							vtsize = get_mint_type_size (mt);
+						}
+#ifdef NO_UNALIGNED_ACCESS
+						else {
+							// As with normal loads/stores we use memcpy for unaligned 8 byte accesses
+							if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && foffset % SIZEOF_VOID_P != 0)
+								vtsize = 8;
+						}
+#endif
 
 						// This stores just to part of the dest valuetype
 						ins = interp_insert_ins (td, ins, MINT_MOV_DST_OFF);
 						interp_ins_set_dreg (ins, local);
 						interp_ins_set_sreg (ins, sregs [1]);
 						ins->data [0] = foffset;
-						// Always use MINT_TYPE_VT so we end up doing a memmove with the type size
-						ins->data [1] = MINT_TYPE_VT;
+						ins->data [1] = mt;
 						ins->data [2] = vtsize;
 
 						interp_clear_ins (ins->prev);
