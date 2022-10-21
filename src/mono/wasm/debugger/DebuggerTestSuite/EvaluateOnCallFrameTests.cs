@@ -1180,6 +1180,7 @@ namespace DebuggerTests
 
                 var (refList, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.list");
                 var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
+                // FixMe: https://github.com/dotnet/runtime/issues/76876
                 var list = refListProp
                     .Where(v => v["name"]?.Value<string>() == "Items" || v["name"]?.Value<string>() == "_items")
                     .FirstOrDefault();
@@ -1194,33 +1195,56 @@ namespace DebuggerTests
                 var (refClass, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleClass");
                 var refClassProp = await GetProperties(refClass["objectId"]?.Value<string>());
 
-                int refItemsCnt = refListElementsProp.Count() + refArrayProp.Count() + refStructProp.Count() + refClassProp.Count();
-                Assert.Equal(refItemsCnt, testRootHiddenProps.Count());
+                JObject[] expectedListRootHiddenElements = new[]
+                {
+                    TNumber(1),
+                    TNumber(2)
+                };
+                JObject[] expectedArrayElements = new[]
+                {
+                    TNumber(11),
+                    TNumber(22)
+                };
+                JObject[] expectedStructRootHiddenElements = new[]
+                {
+                    JObject.FromObject(new { value = TNumber(100), name = "Id"}),
+                    JObject.FromObject(new { value = TBool(true), name = "IsStruct"})
+                };
+                JObject[] expectedClassRootHiddenElements = new[]
+                {
+                    JObject.FromObject(new { value = TNumber(200), name = "ClassId"}),
+                    JObject.FromObject(new { value = TObject("System.Collections.Generic.List<string>", description: "Count = 1"), name = "Items"})
+                };
 
-                //in Console App names are in []
-                //adding variable name to make elements unique
-                foreach (var item in refListElementsProp)
+                // in Console App names are in []
+                // adding variable name to make elements unique
+                for (int i = 0; i < expectedListRootHiddenElements.Length; i ++)
                 {
-                    item["name"] = string.Concat("listRootHidden[", item["name"], "]");
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"listRootHidden[{i}]");
+                    await CheckValue(actualValObj["value"], expectedListRootHiddenElements[i], "listRootHidden");
                 }
-                foreach (var item in refArrayProp)
-                {
-                    item["name"] = string.Concat("arrayRootHidden[", item["name"], "]");
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
-                }
+                await CheckProps(refListElementsProp, expectedListRootHiddenElements, "listRootHidden");
 
-                // valuetype/class members unique names are created by concatenation with a dot
-                foreach (var item in refStructProp)
+                for (int i = 0; i < expectedArrayElements.Length; i ++)
                 {
-                    item["name"] = string.Concat("sampleStructRootHidden.", item["name"]);
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"arrayRootHidden[{i}]");
+                    await CheckValue(actualValObj["value"], expectedArrayElements[i], "x");
                 }
-                foreach (var item in refClassProp)
+                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
+
+                foreach (var structItem in expectedStructRootHiddenElements)
                 {
-                    item["name"] = string.Concat("sampleClassRootHidden.", item["name"]);
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"sampleStructRootHidden.{structItem["name"]}");
+                    await CheckValue(actualValObj["value"], structItem["value"], "sampleStructRootHidden");
                 }
+                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
+
+                foreach (var classItem in expectedClassRootHiddenElements)
+                {
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"sampleClassRootHidden.{classItem["name"]}");
+                    await CheckValue(actualValObj["value"], classItem["value"], "sampleClassRootHidden");
+                }
+                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]

@@ -772,7 +772,11 @@ namespace DebuggerTests
                     var exp_i = exp_v_arr[i];
                     var act_i = actual_arr[i];
 
-                    AssertEqual(i.ToString(), act_i["name"]?.Value<string>(), $"{label}-[{i}].name");
+                    string exp_name = exp_i["name"]?.Value<string>();
+                    if (string.IsNullOrEmpty(exp_name))
+                        exp_name = i.ToString();
+
+                    AssertEqual(exp_name, act_i["name"]?.Value<string>(), $"{label}-[{i}].name");
                     if (exp_i != null)
                         await CheckValue(act_i["value"], exp_i, $"{label}-{i}th value");
                 }
