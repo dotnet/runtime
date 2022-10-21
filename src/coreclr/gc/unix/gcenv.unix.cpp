@@ -729,8 +729,11 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
 #ifdef MADV_DODUMP
-    // Include committed memory in coredump.
-    madvise(address, size, MADV_DODUMP);
+    if (success)
+    {
+        // Include committed memory in coredump.
+        madvise(address, size, MADV_DODUMP);
+    }
 #endif
 
 #if HAVE_NUMA_H
@@ -769,14 +772,17 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // that much more clear to the operating system that we no
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    void* bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
+    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
 
 #ifdef MADV_DONTDUMP
-    // Do not include freed memory in coredump.
-    madvise(address, size, MADV_DONTDUMP);
+    if (bRetVal)
+    {
+        // Do not include freed memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
 #endif
 
-    return  (bRetVal != MAP_FAILED);
+    return  bRetVal;
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
@@ -808,8 +814,11 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     }
 
 #ifdef MADV_DONTDUMP
-    // Do not include reset memory in coredump.
-    madvise(address, size, MADV_DONTDUMP);
+    if (st == 0)
+    {
+        // Do not include reset memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
 #endif
 
     return (st == 0);
