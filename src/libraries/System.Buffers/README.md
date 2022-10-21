@@ -1,6 +1,8 @@
 # System.Buffers
 Contains types used in creating and managing memory buffers, such as those represented by `Span<T>` and `Memory<T>`.
 
+Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/system.buffers.
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
 
