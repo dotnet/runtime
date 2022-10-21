@@ -460,9 +460,10 @@ sgen_client_object_finalize_eagerly (GCObject *obj)
 	if (obj->vtable->klass == mono_defaults.weakreference_class ||
 	    obj->vtable->klass == mono_defaults.generic_weakreference_class) {
 		MonoWeakReference *wr = (MonoWeakReference*)obj;
-		MonoGCHandle gc_handle = (MonoGCHandle)(wr->handleAndKind & ~(gsize)1);
+		MonoGCHandle gc_handle = (MonoGCHandle)(wr->taggedHandle & ~(gsize)1);
 		mono_gchandle_free_internal (gc_handle);
-		wr->handleAndKind &= (gsize)1;
+		// keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+		wr->taggedHandle &= (gsize)1;
 		return TRUE;
 	}
 

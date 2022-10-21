@@ -8,14 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Threading;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-
-#if TARGET_64BIT
-using nint_t = System.Int64;
-#else
-using nint_t = System.Int32;
-#endif
-
 namespace System
 {
     [Serializable]
@@ -29,56 +21,19 @@ namespace System
         // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
+        private nint _taggedHandle;
 
-        private nint_t _handleAndKind;
-
+#if FEATURE_COMINTEROP
         // the lowermost 2 bits are reserved for storing additional info about the handle
         // we can use these bits because handle is at least 32bit aligned
-        // we also reserve the sign bit
-#if CORECLR
-        private const nint_t HandleTagBits = nint_t.MinValue | 3;
+        private const nint HandleTagBits = 3;
 #else
-        private const nint_t HandleTagBits = 1;
+        // the lowermost 1 bit is reserved for storing additional info about the handle
+        private const nint HandleTagBits = 1;
 #endif
 
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private const nint_t TracksResurrectionBit = 1;
-
-#if CORECLR
-        // the next bit is used to indicate whether there is an associated COM weak reference
-        private const nint_t HasComWeakReferenceBit = 2;
-        private bool HasComWeakReference() => (_handleAndKind & HasComWeakReferenceBit) != 0;
-
-        // one more bit to coordinate exclusive Set operations
-        // because of COM interop a Set may change two values, so we must ensure two Sets are not running concurrently
-        private const nint_t ExclusiveSetAccessBit = nint_t.MinValue;
-
-        private void TrySetComTarget(object? target)
-        {
-            if (target != null || HasComWeakReference())
-            {
-                if (ComWeakReferenceHelpers.SetComTarget(this, target, HasComWeakReference()))
-                {
-                    _handleAndKind |= HasComWeakReferenceBit;
-                }
-                else
-                {
-                    _handleAndKind &= ~HasComWeakReferenceBit;
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? TryGetComTarget()
-        {
-            if (HasComWeakReference())
-            {
-                return ComWeakReferenceHelpers.GetComTarget(this);
-            }
-
-            return null;
-        }
-#endif
+        private const nint TracksResurrectionBit = 1;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -117,8 +72,10 @@ namespace System
             // Call the worker method that has more performant but less user friendly signature.
             T? o = this.Target;
 
-#if CORECLR
-            o ??= Unsafe.As<T?>(TryGetComTarget());
+#if FEATURE_COMINTEROP
+            o ??= Unsafe.As<T?>(ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target);
+            // must keep the instance alive as long as we use the handle.
+            GC.KeepAlive(this);
 #endif
 
             target = o!;
@@ -135,38 +92,46 @@ namespace System
 
         // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         // or just until they're finalized (false).
-        private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
+        private bool IsTrackResurrection() => (_taggedHandle & TracksResurrectionBit) != 0;
 
         // Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            nint_t h = (nint_t)GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            _handleAndKind = trackResurrection ?
+            nint h = (nint)GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            _taggedHandle = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
 
-#if CORECLR
-            TrySetComTarget(target);
+#if FEATURE_COMINTEROP
+            ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
+            if (comInfo != null)
+            {
+                ComAwareWeakReference.EnsureComAwareReference(ref _taggedHandle).SetTarget(target, comInfo);
+            }
 #endif
         }
 
-        private nint Handle => (nint)(_handleAndKind & ~HandleTagBits);
+        internal nint WeakHandle
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                nint th = _taggedHandle;
+
+#if FEATURE_COMINTEROP
+                ComAwareWeakReference? cr = ComAwareWeakReference.GetComAwareReference(th);
+                if (cr != null)
+                {
+                    return cr.WeakHandle;
+                }
+#endif
+                return th & ~HandleTagBits;
+            }
+        }
 
         public void SetTarget(T target)
         {
-#if CORECLR
-            // simple spinlock to ensure that two Sets are not runing concurrently
-            SpinWait sw = default;
-            nint_t hk = _handleAndKind;
-            while ((hk & ExclusiveSetAccessBit) != 0 ||
-                    Interlocked.CompareExchange(ref _handleAndKind, hk | ExclusiveSetAccessBit, hk) != hk)
-            {
-                sw.SpinOnce();
-                hk = _handleAndKind;
-            }
-#endif
-
-            nint h = Handle;
+            nint h = WeakHandle;
             // Should only happen for corner cases, like using a WeakReference from a finalizer.
             // GC can finalize the instance if it becomes F-Reachable.
             // That, however, cannot happen while we use the instance.
@@ -175,21 +140,24 @@ namespace System
 
             GCHandle.InternalSet(h, target);
 
+#if FEATURE_COMINTEROP
+            ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
+            ComAwareWeakReference? fr = comInfo == null ?
+                ComAwareWeakReference.GetComAwareReference(_taggedHandle) :
+                ComAwareWeakReference.EnsureComAwareReference(ref _taggedHandle);
+
+            fr?.UpdateComInfo(target, comInfo);
+#endif
+
             // must keep the instance alive as long as we use the handle.
             GC.KeepAlive(this);
-
-#if CORECLR
-            TrySetComTarget(target);
-            // release the lock
-            Volatile.Write(ref _handleAndKind, _handleAndKind & ~ExclusiveSetAccessBit);
-#endif
         }
 
         private T? Target
         {
             get
             {
-                nint h = Handle;
+                nint h = WeakHandle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
@@ -199,12 +167,12 @@ namespace System
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
                 T? target = Unsafe.As<T?>(GCHandle.InternalGet(h));
 
+#if FEATURE_COMINTEROP
+                target ??= Unsafe.As<T?>(ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target);
+#endif
+
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
-
-#if CORECLR
-                target ??= Unsafe.As<T?>(TryGetComTarget());
-#endif
 
                 return target;
             }

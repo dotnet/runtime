@@ -675,12 +675,17 @@ void FinalizeWeakReference(Object * obj)
 
     // the lowermost 2 bits are reserved for storing additional info about the handle
     // we can use these bits because handle is at least 32bit aligned
-    // we also reserve the sign bit
-    const uintptr_t HandleTagBits = ((uintptr_t)-1 ^ (uintptr_t)-1 >> 1) | 3;
+    const uintptr_t HandleTagBits = 3;
 
     WeakReferenceObject* weakRefObj = (WeakReferenceObject*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)((uintptr_t)weakRefObj->m_Handle & ~HandleTagBits);
-    HandleType handleType = ((uintptr_t)weakRefObj->m_Handle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    HandleType handleType = ((uintptr_t)weakRefObj->m_Handle & 2) ?
+        HandleType::HNDTYPE_STRONG :
+        ((uintptr_t)weakRefObj->m_Handle & 1) ?
+            HandleType::HNDTYPE_WEAK_LONG :
+            HandleType::HNDTYPE_WEAK_SHORT;
+
+    // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
     (uintptr_t&)weakRefObj->m_Handle &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
 }

@@ -653,7 +653,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	gsize handleAndKind;
+	gsize taggedHandle;
 } MonoWeakReference;
 
 /* Safely access System.Delegate from native code */

@@ -86,7 +86,9 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? obj = RuntimeImports.RhHandleGet(wo.Handle);
+            object? obj = RuntimeImports.RhHandleGet(wo.WeakHandle);
+            KeepAlive(wo);
+
             if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));

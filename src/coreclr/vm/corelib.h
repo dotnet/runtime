@@ -940,7 +940,7 @@ DEFINE_METHOD(GC,                   COLLECT,                Collect,            
 DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
 
 DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
-DEFINE_FIELD_U(_handleAndKind,      WeakReferenceObject,    m_Handle)
+DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_Handle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
