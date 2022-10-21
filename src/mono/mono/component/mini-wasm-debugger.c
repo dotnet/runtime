@@ -454,7 +454,6 @@ done:
 static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
-	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message_with_data ((const char*)data, len);
 	return FALSE;
 }
