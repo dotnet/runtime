@@ -7,6 +7,6 @@
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJit" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJit" Value="1" />
   </ItemGroup>
 </Project>
