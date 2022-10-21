@@ -450,11 +450,9 @@ private:
 
     class GuardedDevirtualizationTransformer final : public Transformer
     {
-        unsigned m_targetLclNum;
-
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), m_targetLclNum(BAD_VAR_NUM), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -540,27 +538,43 @@ private:
             checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
-            CallArg* thisArg  = origCall->gtArgs.GetThisArg();
-            GenTree* thisTree = thisArg->GetNode();
-
-            // Create temp for this if the tree is costly.
-            if (thisTree->IsLocal())
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            CallArg* lastSideEffArg = nullptr;
+            for (CallArg& arg : origCall->gtArgs.Args())
             {
-                thisTree = compiler->gtCloneExpr(thisTree);
+                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    lastSideEffArg = &arg;
+                }
             }
-            else
+
+            if (lastSideEffArg != nullptr)
             {
-                const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
-                GenTree*       asgTree     = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement*     asgStmt     = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+                for (CallArg& arg : origCall->gtArgs.Args())
+                {
+                    GenTree* argNode = arg.GetNode();
+                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
+                    {
+                        SpillArgToTempBeforeGuard(&arg);
+                    }
 
-                thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
-
-                // Propagate the new this to the call. Must be a new expr as the call
-                // will live on in the else block and thisTree is used below.
-                thisArg->SetEarlyNode(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
+                    if (&arg == lastSideEffArg)
+                    {
+                        break;
+                    }
+                }
             }
+
+            CallArg* thisArg = origCall->gtArgs.GetThisArg();
+            // We spill 'this' if it is complex, regardless of side effects. It
+            // is going to be used multiple times due to the guard.
+            if (!thisArg->GetNode()->IsLocal())
+            {
+                SpillArgToTempBeforeGuard(thisArg);
+            }
+
+            GenTree* thisTree = compiler->gtCloneExpr(thisArg->GetNode());
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
             // all the code in the check block up to and including this statement.
@@ -591,24 +605,9 @@ private:
                 // which case the check will be moved into the success case of
                 // a previous GDV and thus may not execute when we hit the cold
                 // path.
-                // TODO-GDV: Consider duplicating the store at the end of the
-                // cold case for the previous GDV. Then we can reuse the target
-                // if the second check of a chained GDV fails.
-                bool reuseTarget = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
                 if (origCall->IsVirtualVtable())
                 {
                     GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
-
-                    if (reuseTarget)
-                    {
-                        m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-
-                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
-                        Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                        compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-
-                        tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    }
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -619,35 +618,12 @@ private:
                 }
                 else
                 {
-                    // Reusing the call target for delegates is more
-                    // complicated. Essentially we need to do the
-                    // transformation done in LowerDelegateInvoke by converting
-                    // the call to CT_INDIRECT and reusing the target address.
-                    // We will do that transformation in CreateElse, but here
-                    // we need to stash the target.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef TARGET_ARM
-                    // Not impossible to support, but would additionally
-                    // require us to load the wrapper delegate cell when
-                    // expanding.
-                    reuseTarget &= (origCall->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV) == 0;
-#endif
-
                     GenTree* offset =
                         compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget,
                                                 TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
                     tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
-
-                    if (reuseTarget)
-                    {
-                        m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-
-                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
-                        Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                        compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-                        tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    }
+                    tarTree->gtFlags |= GTF_IND_INVARIANT;
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -661,6 +637,22 @@ private:
             GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and assignment for.
+        //
+        void SpillArgToTempBeforeGuard(CallArg* arg)
+        {
+            unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg->GetNode());
+            Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+            arg->SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg->GetNode())));
         }
 
         //------------------------------------------------------------------------
@@ -936,38 +928,6 @@ private:
             {
                 GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
                 newStmt->SetRootNode(assign);
-            }
-
-            if (m_targetLclNum != BAD_VAR_NUM)
-            {
-                if (call->IsVirtualVtable())
-                {
-                    // We already loaded the target once for the check, so reuse it from the temp.
-                    call->gtControlExpr = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    call->SetExpandedEarly();
-                }
-                else if (call->IsDelegateInvoke())
-                {
-                    // Target was saved into a temp during check. We expand the
-                    // delegate call to a CT_INDIRECT call that uses the target
-                    // directly, somewhat similarly to LowerDelegateInvoke.
-                    call->gtCallType   = CT_INDIRECT;
-                    call->gtCallAddr   = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    call->gtCallCookie = nullptr;
-                    call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-
-                    GenTree* thisOffset =
-                        compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
-                    CallArg* thisArg     = call->gtArgs.GetThisArg();
-                    GenTree* delegateObj = thisArg->GetNode();
-
-                    assert(delegateObj->OperIsLocal());
-                    GenTree* newThis =
-                        compiler->gtNewOperNode(GT_ADD, TYP_BYREF, compiler->gtCloneExpr(delegateObj), thisOffset);
-                    newThis = compiler->gtNewIndir(TYP_REF, newThis);
-
-                    thisArg->SetEarlyNode(newThis);
-                }
             }
 
             compiler->fgInsertStmtAtEnd(elseBlock, newStmt);

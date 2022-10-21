@@ -194,7 +194,7 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
             {
                 if (DEBUG_OUT)
                 {
-                    printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", classId);
+                    printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", (uintptr_t)classId);
                 }
 
                 it = classADMap.erase(it);
@@ -211,7 +211,7 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
 
                 if (DEBUG_OUT)
                 {
-                    printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", typeArg, classId);
+                    printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", (uintptr_t)typeArg, (uintptr_t)classId);
                 }
 
                 hr = pCorProfilerInfo->GetClassIDInfo(typeArg, &typeArgModId, NULL);
@@ -285,7 +285,7 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
     hr = pCorProfilerInfo->GetThreadAppDomain(threadId, &appDomainId);
     if (FAILED(hr))
     {
-        printf("GetThreadAppDomain returned 0x%x for ThreadID 0x%" PRIxPTR "\n", hr, threadId);
+        printf("GetThreadAppDomain returned 0x%x for ThreadID 0x%" PRIxPTR "\n", hr, (uintptr_t)threadId);
         ++failures;
         return hr;
     }
@@ -303,7 +303,7 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
                                           NULL);
     if (FAILED(hr))
     {
-        printf("GetClassIDInfo2 returned 0x%x for ClassID 0x%" PRIxPTR "\n", hr, classId);
+        printf("GetClassIDInfo2 returned 0x%x for ClassID 0x%" PRIxPTR "\n", hr, (uintptr_t)classId);
         ++failures;
     }
 
@@ -386,7 +386,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
 
         if (DEBUG_OUT)
         {
-            printf("Calling GetClassIDInfo2 on classId 0x%" PRIxPTR "\n", classId);
+            printf("Calling GetClassIDInfo2 on classId 0x%" PRIxPTR "\n", (uintptr_t)classId);
             fflush(stdout);
         }
 
@@ -400,7 +400,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
                                     NULL);
         if (FAILED(hr))
         {
-            printf("GetClassIDInfo2 returned 0x%x for ClassID 0x%" PRIxPTR "\n", hr, classId);
+            printf("GetClassIDInfo2 returned 0x%x for ClassID 0x%" PRIxPTR "\n", hr, (uintptr_t)classId);
             ++failures;
             continue;
         }
@@ -418,7 +418,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
         }
         else if (FAILED(hr))
         {
-            printf("GetModuleMetaData returned 0x%x  for ModuleID 0x%" PRIxPTR "\n", hr, classModuleId);
+            printf("GetModuleMetaData returned 0x%x  for ModuleID 0x%" PRIxPTR "\n", hr, (uintptr_t)classModuleId);
             ++failures;
             continue;
         }
@@ -430,7 +430,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
 
         if (DEBUG_OUT)
         {
-            printf("Calling GetClassIDInfo2 (again?) on classId 0x%" PRIxPTR "\n", classId);
+            printf("Calling GetClassIDInfo2 (again?) on classId 0x%" PRIxPTR "\n", (uintptr_t)classId);
             fflush(stdout);
         }
 
@@ -513,7 +513,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
 
                     if (DEBUG_OUT)
                     {
-                        printf("Calling GetAppDomainStaticAddress on classId=0x%" PRIxPTR "\n", classId);
+                        printf("Calling GetAppDomainStaticAddress on classId=0x%" PRIxPTR "\n", (uintptr_t)classId);
                         fflush(stdout);
                     }
 

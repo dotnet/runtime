@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -45,9 +45,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return this;
             }
 
-            internal JObject ToJson()
+            internal JsonObject ToJson()
             {
-                JObject frameworkReference = new JObject();
+                JsonObject frameworkReference = new();
 
                 if (Name != null)
                 {
@@ -83,9 +83,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return frameworkReference;
             }
 
-            internal static Framework FromJson(JObject jobject)
+            internal static Framework FromJson(JsonObject jobject)
             {
-                return new Framework((string)jobject["name"], (string)jobject["version"])
+                return new Framework(jobject["name"].ToString(), jobject["version"].ToString())
                 {
                     RollForward = (string)jobject[Constants.RollForwardSetting.RuntimeConfigPropertyName],
                     RollForwardOnNoCandidateFx = (int?)jobject[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName],
@@ -117,44 +117,43 @@ namespace Microsoft.DotNet.CoreSetup.Test
         /// </summary>
         public static RuntimeConfig FromFile(string path)
         {
-            RuntimeConfig runtimeConfig = new RuntimeConfig(path);
+            RuntimeConfig runtimeConfig = new(path);
             if (File.Exists(path))
             {
-                using (TextReader textReader = File.OpenText(path))
-                using (var reader = new JsonTextReader(textReader) { MaxDepth = null })
+                var reader = new Utf8JsonReader(File.ReadAllBytes(path));
                 {
-                    JObject root = (JObject)JToken.ReadFrom(reader);
-                    JObject runtimeOptions = (JObject)root["runtimeOptions"];
-                    var singleFramework = runtimeOptions["framework"] as JObject;
+                    JsonObject root = (JsonObject)JsonNode.Parse(ref reader);
+                    JsonObject runtimeOptions = (JsonObject)root["runtimeOptions"];
+                    var singleFramework = runtimeOptions["framework"] as JsonObject;
                     if (singleFramework != null)
                     {
                         runtimeConfig.WithFramework(Framework.FromJson(singleFramework));
                     }
 
-                    var frameworks = runtimeOptions["frameworks"];
+                    JsonArray frameworks = runtimeOptions["frameworks"] as JsonArray;
                     if (frameworks != null)
                     {
-                        foreach (JObject framework in frameworks)
+                        foreach (var framework in frameworks)
                         {
-                            runtimeConfig.WithFramework(Framework.FromJson(framework));
+                            runtimeConfig.WithFramework(Framework.FromJson((JsonObject)framework));
                         }
                     }
 
-                    var includedFrameworks = runtimeOptions["includedFrameworks"];
+                    JsonArray includedFrameworks = runtimeOptions["includedFrameworks"] as JsonArray;
                     if (includedFrameworks != null)
                     {
-                        foreach (JObject includedFramework in includedFrameworks)
+                        foreach (var includedFramework in includedFrameworks)
                         {
-                            runtimeConfig.WithFramework(Framework.FromJson(includedFramework));
+                            runtimeConfig.WithFramework(Framework.FromJson((JsonObject)includedFramework));
                         }
                     }
 
-                    var configProperties = runtimeOptions["configProperties"] as JObject;
+                    JsonObject configProperties = runtimeOptions["configProperties"] as JsonObject;
                     if (configProperties != null)
                     {
-                        foreach (KeyValuePair<string, JToken> property in configProperties)
+                        foreach (var property in configProperties)
                         {
-                            runtimeConfig.WithProperty(property.Key, (string)property.Value);
+                            runtimeConfig.WithProperty(property.Key, property.Value.ToString());
                         }
                     }
 
@@ -242,19 +241,19 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void Save()
         {
-            JObject runtimeOptions = new JObject();
+            JsonObject runtimeOptions = new JsonObject();
             if (_frameworks.Any())
             {
                 runtimeOptions.Add(
                     "frameworks",
-                    new JArray(_frameworks.Select(f => f.ToJson()).ToArray()));
+                    new JsonArray(_frameworks.Select(f => f.ToJson()).ToArray()));
             }
 
             if (_includedFrameworks.Any())
             {
                 runtimeOptions.Add(
                     "includedFrameworks",
-                    new JArray(_includedFrameworks.Select(f => f.ToJson()).ToArray()));
+                    new JsonArray(_includedFrameworks.Select(f => f.ToJson()).ToArray()));
             }
 
             if (_rollForward != null)
@@ -287,21 +286,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             if (_properties.Count > 0)
             {
-                JObject configProperties = new JObject();
+                JsonObject configProperties = new JsonObject();
                 foreach (var property in _properties)
                 {
                     var tokenValue = (property.Item2 == "false" || property.Item2 == "true") ?
-                        JToken.Parse(property.Item2) : property.Item2;
+                        JsonNode.Parse(property.Item2) : property.Item2;
                     configProperties.Add(property.Item1, tokenValue);
                 }
 
                 runtimeOptions.Add("configProperties", configProperties);
             }
 
-            JObject json = new JObject()
-                {
-                    { "runtimeOptions", runtimeOptions }
-                };
+            JsonObject json = new JsonObject
+            {
+                ["runtimeOptions"] = runtimeOptions
+            };
 
             File.WriteAllText(_path, json.ToString());
         }

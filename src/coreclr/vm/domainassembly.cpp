@@ -810,6 +810,14 @@ void DomainAssembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
+#ifdef PROFILING_SUPPORTED
+    if (!IsProfilerNotified())
+    {
+        SetProfilerNotified();
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
+    }
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())

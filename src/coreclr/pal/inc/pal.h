@@ -4154,9 +4154,7 @@ PALIMPORT DLLEXPORT int __cdecl _vsnwprintf_s(WCHAR *, size_t, size_t, const WCH
 PALIMPORT DLLEXPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl swprintf_s(WCHAR *, size_t, const WCHAR *, ... );
 PALIMPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
-PALIMPORT int __cdecl vswprintf_s( WCHAR *, size_t, const WCHAR *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
 
@@ -4322,6 +4320,12 @@ extern "C++" {
 inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
+
+#ifdef __APPLE__
+inline __int64 abs(SSIZE_T _X) {
+    return llabs((__int64)_X);
+}
+#endif
 
 }
 #endif
