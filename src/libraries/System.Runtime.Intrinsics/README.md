@@ -1,11 +1,18 @@
 # System.Runtime.Intrinsics
-TODO: Summary
+Contains types used to create and convey register states in various sizes and formats for use with instruction-set extensions. Also exposes select instruction-set extensions for various architectures (x86, Arm, Wasm).
 
-## Status: [Active](../../libraries/README.md#development-statuses)
-TODO: Explanation of status
+## Contribution Bar
+- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+
+See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Runtime.Intrinsics+label%3A%22help+wanted%22+) issues.
 
 ## Source
-TODO: Point to System.Private.CoreLib
+* Vector64/128/256/512: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics)
+* Arm intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm)
+* Wasm intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm)
+* x86 intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86)
+TODO why does Vector(T) live in numerics? Should we mention that somewhere in this README?
 
 ## Deployment
-TODO: whether or not it is included in the shared framework
+[System.Runtime.Intrinsics](TODO) is included in the shared framework. (TODO is this true?)
+TODO Do we need to separately mention x86, Wasm, Arm?
