@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetAbsoluteExpiration(
             this ICacheEntry entry,
-            TimeSpan relative)
+            TimeSpan? relative)
         {
             entry.AbsoluteExpirationRelativeToNow = relative;
             return entry;
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetAbsoluteExpiration(
             this ICacheEntry entry,
-            DateTimeOffset absolute)
+            DateTimeOffset? absolute)
         {
             entry.AbsoluteExpiration = absolute;
             return entry;
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetSlidingExpiration(
             this ICacheEntry entry,
-            TimeSpan offset)
+            TimeSpan? offset)
         {
             entry.SlidingExpiration = offset;
             return entry;
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetValue(
             this ICacheEntry entry,
-            object value)
+            object? value)
         {
             entry.Value = value;
             return entry;
