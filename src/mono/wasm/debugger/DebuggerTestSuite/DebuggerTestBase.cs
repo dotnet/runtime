@@ -154,7 +154,7 @@ namespace DebuggerTests
                     getInitCmdFn("Debugger.enable", null),
                     getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
                     getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
-                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true}))
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
                     //getInitCmdFn("ServiceWorker.enable", null)
                  };
                  return init_cmds;
