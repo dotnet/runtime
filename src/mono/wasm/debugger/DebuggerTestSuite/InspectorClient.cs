@@ -21,7 +21,7 @@ namespace DebuggerTests
         protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
 
-        public SessionId CurrentSessionId { get; set; } = new SessionId(null);
+        public SessionId CurrentSessionId { get; set; } = SessionId.Null;
 
         public InspectorClient(ILogger logger) : base(logger) { }
 
