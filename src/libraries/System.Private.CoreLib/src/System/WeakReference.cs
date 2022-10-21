@@ -19,11 +19,26 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal static class ComWeakReferenceHelpers
     {
+#if NATIVEAOT
+        internal static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
+        {
+            // NativeAOT support for COM WeakReference is NYI
+            return null;
+        }
+
+        internal static IntPtr ObjectToComWeakRef(object target, out long wrapperId)
+        {
+            // NativeAOT support for COM WeakReference is NYI
+            wrapperId = 0;
+            return 0;
+        }
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr ObjectToComWeakRef(object target, out long wrapperId);
+#endif
     }
 }
 
