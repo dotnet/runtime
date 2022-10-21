@@ -8740,18 +8740,24 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     }
     else
     {
-        if (!m_VariableLiveRanges->empty() && isLastRangeEmpty())
-        {
-            removeLastRange();
-        }
         JITDUMP("New debug range: %s\n",
                 m_VariableLiveRanges->empty()
                     ? "first"
                     : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
                           ? "new var or location"
                           : "not adjacent");
-        // Creates new live range with invalid end
-        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        // If we can tell from emitLocations that the previous debug range was empty
+        // we are replacing it with the new one, otherwise creating a space of it.
+        // The new range has undefined end.
+        if (isLastRangeEmpty())
+        {
+            m_VariableLiveRanges->back().m_VarLocation = varLocation;
+            m_VariableLiveRanges->back().m_EndEmitLocation.Init();
+        }
+        else
+        {
+            m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        }
         m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
     }
 
