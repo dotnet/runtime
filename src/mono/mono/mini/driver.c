@@ -2021,6 +2021,7 @@ print_icall_table (void)
 
 	printf ("[\n{ \"klass\": \"\", \"icalls\": [");
 #define NOHANDLES(inner) inner
+#define NOHANDLES_FLAGS(inner,flags) inner
 #define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true }\n", name, #func);
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
