@@ -1225,10 +1225,10 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
-                case NativeCodeVersion::OptimizationTierInstrumented:
+                case NativeCodeVersion::OptimizationTier0Instrumented:
                     return JitOptimizationTier::InstrumentedTier;
 
-                case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
+                case NativeCodeVersion::OptimizationTier1Instrumented:
                     return JitOptimizationTier::InstrumentedTierOptimized;
 
                 default:
@@ -1304,7 +1304,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
-            previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumented ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTier0Instrumented ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 

@@ -1,17 +1,17 @@
 # Instrumented Tiers
 
-[#70941](https://github.com/dotnet/runtime/pull/70941) introduced separate tiers to instrument hot code mainly to address the following problems:
+[#70941](https://github.com/dotnet/runtime/pull/70941) introduced separate tiers to focus on instrumenting only the hot code. It's done to address the following problems:
 1) R2R code should still benefit from Dynamic PGO despite being not instrumented in the first place
-2) Instrumentation in Tier0 should not affect startup
+2) Overhead from the instrumentation in Tier0 should not slow startup
 
-To address both of the problems the following workflow (when TieredPGO is enabled) was introduced:
+To address these problems the following workflow was introduced:
 
 ```mermaid
 flowchart
     prestub(.NET Function) -->|Compilation| hasAO{"Marked with<br/>[AggressiveOpts]?"}
-    hasAO-->|Yes|tier1ao["JIT to <b><ins>Tier1</ins></b><br/><br/>(that attribute is extremely<br/> rarely a good idea)"]
+    hasAO-->|Yes|tier1ao["JIT to <b><ins>Tier1</ins></b><br/><br/>(no dynamic profile data)"]
     hasAO-->|No|hasR2R
-    hasR2R{"Is prejitted (R2R)<br/>and ReadyToRun==1"?} -->|No| tier000
+    hasR2R{"Is prejitted (R2R)?"} -->|No| tier000
 
     tier000["JIT to <b><ins>Tier0</ins></b><br/><br/>(not optimized, not instrumented,<br/> with patchpoints)"]-->|Running...|ishot555
     ishot555{"Is hot?<br/>(called >30 times)"}
@@ -23,17 +23,17 @@ flowchart
     ishot1{"Is hot?<br/>(called >30 times)"}-.->|No,<br/>keep running...|ishot1
     ishot1--->|"Yes"|tier1inst
 
-    tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
+    tier0["JIT to <b><ins>Tier0Instrumented</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
       
-    tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
+    tier1inst["JIT to <b><ins>Tier1Instrumented</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
     tier1inst-->|Running...|ishot5
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
 (_VSCode doesn't support mermaid diagrams out of the box, consider installing external add-ins_)
 
-It's easier to explain this on a concrete example:
+Now, any code is eligible for Dynamic PGO if it's hot enough. It's easier to explain this on a concrete example:
 
 ```csharp
 class Program : IDisposable
@@ -67,19 +67,17 @@ class Program : IDisposable
 
 The method we'll be looking at is `HotLoop`. The method itself has a hot loop (to show how this work interacts with OSR) but the whole method is expected to be promoted to Tier1 too since it's invoked also in a loop (cold loop). The method also has a virtual call to showcase GDV.
 
-# Case 1: Program is prejitted (R2R)
+# Case 1: `HotLoop` is prejitted (R2R)
 
-Let's see what happens with this program when it's prejitted:
+Let's see what happens when the method we're inspecting has an AOT version on start:
 
-1) When we start the app, vm picks up R2R'd version of `HotLoop` that looks like this:
+1) When we start the app, VM picks up R2R'd version of `HotLoop` that looks like this:
 
 ```asm
 ; Assembly listing for method Program:HotLoop(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; ReadyToRun compilation
 ; optimized code
-; rsp based frame
-; fully interruptible
 ; No PGO data
 G_M43040_IG01:              ;; offset=0000H
        57                   push     rdi
@@ -110,21 +108,18 @@ G_M43040_IG06:              ;; offset=0027H
        5F                   pop      rdi
        C3                   ret      
 						;; size=7 bbWeight=1    PerfScore 2.25
-
 ; Total bytes of code 46
 ```
 
-As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - it would increas binary size by quite a lot), it doesn't have patchpoints for OSR (since it's already optimized) and is optimized. Technically, t can be optimized with a Static PGO but, presumably, it's a rare case in the real world so we left that virtual call here non-devirtualized.
+As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - it would increase the binary size by quite a lot), it doesn't have patchpoints for OSR (since it's already optimized) and is optimized. Technically, it can be optimized with a Static PGO but, presumably, it's a rare case in the real world due to complexity, so we left that virtual call here non-devirtualized.
 
-2) HotLoop is invoked >30 times meaning it's likely a hot method so VM "promotes" it to InstrumentedTierOptimized:
+2) HotLoop is invoked >30 times meaning it's likely a hot method so VM "promotes" it to Tier1Instrumented:
 ```asm
 ; Assembly listing for method Program:HotLoop(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; optimized code
 ; instrumented for collecting profile data
-; rsp based frame
-; fully interruptible
 ; No PGO data
 G_M43040_IG01:              ;; offset=0000H
        57                   push     rdi
@@ -176,15 +171,13 @@ We had to instrument **optimized** code here to mitigate two issues:
 
 As a downside - the profile is less accurate and it doesn't instrument inlinees.
 
-3) Th new code version of `HotLoop` is also invoked >30 times leading to a final promotion to Tier1:
+3) The new code version of `HotLoop` is also invoked >30 times leading to the final promotion to Tier1:
 ```asm
 ; Assembly listing for method Program:HotLoop(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; optimized code
 ; optimized using profile data
-; rsp based frame
-; fully interruptible
 ; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 48
 ; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
 G_M43040_IG01:              ;; offset=0000H
@@ -236,10 +229,9 @@ G_M43040_IG08:              ;; offset=0062H
        49BB10007E61FD7F0000 mov      r11, 0x7FFD617E0010      ; code for System.IDisposable:Dispose
        41FF13               call     [r11]System.IDisposable:Dispose():this
        EBDD                 jmp      SHORT G_M43040_IG06
-
 ; Total bytes of code 116
 ```
-The codegen looks a bit bulky but if we look closer we'll see that we clonned the loop to have a fast version with a devirtualized call inside (see `G_M43040_IG03`) without guards inside. To summarize what happened with `HotLoop` we can take a look at this part of the diagram:
+The codegen looks a bit bulky but if we look closer we'll see that we clonned the loop to have a fast version with a devirtualized call inside (see `G_M43040_IG03`) with guards hoisted out of that loop. To summarize what happened with `HotLoop` we can take a look at this part of the diagram:
 ```mermaid
 flowchart
     hasR2R("...") -->|Yes| R2R
@@ -247,16 +239,16 @@ flowchart
     ishot1{"Is hot?<br/>(called >30 times)"}-.->|No,<br/>keep running...|ishot1
     ishot1--->|"Yes"|tier1inst
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
-    tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
+    tier1inst["JIT to <b><ins>Tier1Instrumented</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
     tier1inst-->|Running...|ishot5
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
 
 
-# Case 2: Program is not prejitted
+# Case 2: `HotLoop` is not initially prejitted
 
-This case is a bit more complicated since it involves OSR.
+This case is a bit more complicated since it involves OSR for this case.
 
 1) Since no R2R version exists for `HotLoop` VM has to ask JIT to compile a Tier0 version of it as fast as it can:
 ```asm
@@ -264,8 +256,6 @@ This case is a bit more complicated since it involves OSR.
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-0 compilation
 ; MinOpts code
-; rbp based frame
-; fully interruptible
 G_M43040_IG01:              ;; offset=0000H
        55                   push     rbp
        4883EC70             sub      rsp, 112
@@ -316,17 +306,15 @@ G_M43040_IG08:              ;; offset=0066H
 ; Total bytes of code 108
 ```
 
-The codegen is unoptimized, with patchpoints for OSR and without instrumentation (to avoid spending time on it for methods which will never make it to tier1)
+The codegen is unoptimized, with patchpoints for OSR and without instrumentation (to avoid spending time on it for methods which will never make it to Tier1 - as the practice shows: only 10-20% of methods make it to Tier1)
 
-2) Its loop body triggers OSR:
+2) Its loop body triggers OSR after `DOTNET_TC_OnStackReplacement_InitialCounter` iterations (see jitconfigvalue.h):
 ```asm
 ; Assembly listing for method Program:HotLoop(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-1 compilation
 ; OSR variant for entry point 0x11
 ; optimized code
-; rsp based frame
-; fully interruptible
 ; No PGO data
 G_M43040_IG01:              ;; offset=0000H
        4883EC38             sub      rsp, 56
@@ -363,17 +351,15 @@ G_M43040_IG06:              ;; offset=0047H
 ; Total bytes of code 82
 ```
 
-Now the loop is faster because of optimizations but is still not instrumented/devirtualized.
+Now the loop is faster because of optimizations but is still not instrumented/devirtualized. In theory, we could start instrumenting at least the loop body at this stage, but it's left as is for now, see notes below.
 
-3) `HotLoop` itself is invoked > 30 times, that triggers promotion to InstrumentedTier:
+3) `HotLoop` itself is invoked > 30 times, that triggers promotion to Tier0Instrumented:
 ```asm
 ; Assembly listing for method Program:HotLoop(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
 ; Tier-0 compilation
 ; MinOpts code
 ; instrumented for collecting profile data
-; rbp based frame
-; fully interruptible
 G_M43040_IG01:              ;; offset=0000H
        55                   push     rbp
        4881EC80000000       sub      rsp, 128
@@ -440,12 +426,12 @@ G_M43040_IG08:              ;; offset=00C1H
 ; Total bytes of code 202
 ```
 Now the whole method is compiled to Tier0 with instrumentation and patchpoints. No optimizations.
-We decided to promote hot Tier0 to InstrumentedTier without optimizations for the following reasons:
-1) We won't notice a big performance regression from going from Tier0 to InstrumentedTier
-2) InstrumentedTier is faster to compile
+We decided to promote hot Tier0 to Tier0Instrumented without optimizations for the following reasons:
+1) We won't notice a big performance regression from going from Tier0 to Tier0Instrumented
+2) Tier0Instrumented is faster to compile
 3) Its profile is more accurate
 
-Although, in this specific case we could consider using InstrumentedTierOptimized since we had a faster loop in previous code version due to Tier1-OSR but since OSR events are rare and we don't want to produce a less accurate profile that we had before https://github.com/dotnet/runtime/pull/70941 it's left as is. We might re-consider this if we improve instrumentation for the optimized code to produce more accurate profile including inlinees.
+Although, in this specific case we could consider using Tier1Instrumented since we had a faster loop in the previous code version due to Tier1-OSR, but since OSR events are rare and we don't want to produce a less accurate profile that we had before https://github.com/dotnet/runtime/pull/70941 it's left as is. We might re-consider this when we improve instrumentation for the optimized code to produce a more accurate profile including inlinees.
 
 4) The loop of `HotLoop` triggered OSR once again:
 ```asm
@@ -455,8 +441,6 @@ Although, in this specific case we could consider using InstrumentedTierOptimize
 ; OSR variant for entry point 0x11
 ; optimized code
 ; optimized using profile data
-; rsp based frame
-; fully interruptible
 ; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 9999
 ; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
 G_M43040_IG01:              ;; offset=0000H
@@ -521,8 +505,6 @@ We ended up with a very fast version of the method with optimal loop `G_M43040_I
 ; Tier-1 compilation
 ; optimized code
 ; optimized using profile data
-; rsp based frame
-; fully interruptible
 ; with Dynamic PGO: edge weights are invalid, and fgCalledCount is 48
 ; 0 inlinees with PGO data; 1 single block inlinees; 0 inlinees without PGO data
 G_M43040_IG01:              ;; offset=0000H
@@ -584,22 +566,22 @@ flowchart
     ishot555{"Is hot?<br/>(called >30 times)"}
     ishot555-.->|No,<br/>keep running...|ishot555
     ishot555-->|Yes|tier0
-    tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
+    tier0["JIT to <b><ins>Tier0Instrumented</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
 
-It's worth noting that we analyzed the worst (in case of working set) case with OSR, normally (in 99% of cases) we end up only with three code versions for hot code:
-1) Tier0
-2) Instrumented Tier0
-3) Tier1
+It's worth noting that we analyzed the worst (in case of working set) case with OSR, normally (in 99.8% of cases) we end up only with three code versions for hot code:
+1) Tier0/R2R
+2) Instrumented Tier (with or without optimizations)
+3) Tier1 optimized with profile
 
-# Impact on Working set
+# Working Set Impact
 
-The general rule of thumb that only 10-20% of methods make it to Tier1 and about to 40-60% of all methods are less than 8 bytes of IL (e.g., getters/setters) so we're effectively double the size of Tier1 with this approach (including call counting stubs, etc.) How bad it is compared to overall working set in various apps? let's consider these two examples:
+The general rule of thumb that only 10-20% of methods make it to Tier1 and about to 40-60% of all methods are less than 8 bytes of IL (e.g., getters/setters) so we're effectively double the size of Tier1 with this approach (including call counting stubs, etc.). How bad it can be compared to overall working set in various apps? let's consider these two examples:
 
-## 1) A 1st party service (build size is >100Gb)
+## 1) A large web app (internal Microsoft service)
 
 | Metric           | Number of methods | Share, % | Total size, Mb | Share, % |
 |------------------|-------------------|----------|----------------|----------|
@@ -610,11 +592,11 @@ The general rule of thumb that only 10-20% of methods make it to Tier1 and about
 | **Total jitted** |            195188 |  100.00% |          71.60 |  100.00% |
 
 
-![IL Histogram 1](DynamicPgo-InstrumentedTiers-ilsize-histogram1.png)
+![IL Histogram 1](DynamicPgo-Tier0Instrumenteds-ilsize-histogram1.png)
 
-In this app Tier1 code occupies 8.22mb in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that instrumentation tier is expected to add a similar amount (~13Mb). The total working set of the service is 7.5Gb so instrumentation tier contributes less than 0.2% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
+In this app Tier1 code occupies 8.22mb in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that instrumentated tier is expected to add a similar amount (~13Mb). The total working set of the service is 10Gb so instrumentated tiers contribute ~0.1% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
 
-## 2) A desktop application [AvaloniaILSpy](https://github.com/icsharpcode/AvaloniaILSpy)
+## 2) A desktop OSS application [AvaloniaILSpy](https://github.com/icsharpcode/AvaloniaILSpy)
 
 `ReadyToRun=0`:
 
@@ -636,28 +618,29 @@ In this app Tier1 code occupies 8.22mb in the loader heap (we can add a few mega
 | **Contains OSR** |                 0 |    0.00% |           0.00 |    0.00% |
 | **Total jitted** |              7547 |  100.00% |           1.44 |  100.00% |
 
-In case of AvaloniaILSpy, Instrumented tiers add around 1Mb (stubs included) to the working set and around 5k of new jit compilations.
+In case of AvaloniaILSpy, instrumented tiers add around 1Mb (stubs included) to the total working set and around 5k of new jit compilations.
 
 # Start time and performance impact
 
 ## TechEmpower
 
-Overall, it is expected from Instrumented tiers to improve startup speed when Dynamic PGO is enabled and improve performance (e.g. Latency/Throughput) for prejitted code. A good example demonstrating both is the following TechEmpower benchmark (plaintext-plaintext):
+Overall, it is expected from instrumented tiers to improve startup speed when Dynamic PGO is enabled and improve performance (e.g. Latency/Throughput) for prejitted code. A good example demonstrating both is the following TechEmpower benchmark (plaintext-plaintext):
 
-![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext.png)
+![Plaintext](DynamicPgo-Tier0Instrumenteds-Plaintext.png)
 
 Legend:
 * Red    - `DOTNET_TieredPGO=0`, `DOTNET_ReadyToRun=1`
 * Black  - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=1`
 * Yellow - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=0`
 
-Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentation tier for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
+Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentated tiers for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
 
-![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext-opt.png)
+![Plaintext](DynamicPgo-Tier0Instrumenteds-Plaintext-opt.png)
+(_Predicted results according to local runs_)
 
 ## AvaloniaILSpy
 
-For this experiment we modified the source code of the app to send an event once view is completely loaded to measure start time:
+For this experiment we modified the source code of the app to send an event once view is completely loaded to measure the real start time:
 
 | Mode                       | Start time |
 |----------------------------|------------|
@@ -665,6 +648,4 @@ For this experiment we modified the source code of the app to send an event once
 | R2R=0, PGO=1               |      2.26s |
 | R2R=0, PGO=1, Instr. Tiers |      2.03s |
 
-As we can see, Instrumentation tiers help to mitigate the start time regression from Dynamic PGO.
-
-(_Predicted results according to local runs_)
+As we can see, instrumentated tiers help to mitigate the start time regression from Dynamic PGO.

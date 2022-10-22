@@ -4107,7 +4107,7 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
         }
         else
         {
-            return "Tier1";
+            return instrumenting ? "Instrumented Tier1" : "Tier1";
         }
     }
     else if (opts.OptimizationEnabled())

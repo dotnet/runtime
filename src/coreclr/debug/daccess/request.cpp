@@ -1112,11 +1112,11 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     break;
-                case NativeCodeVersion::OptimizationTierInstrumented:
-                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_InstrumentedTier;
+                case NativeCodeVersion::OptimizationTier0Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJittedInstrumented;
                     break;
-                case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
-                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_InstrumentedTierOptimized;
+                case NativeCodeVersion::OptimizationTier1Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1Instrumented;
                     break;
                 }
             }

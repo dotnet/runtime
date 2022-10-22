@@ -117,13 +117,13 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         // Initial tier for R2R is always just OptimizationTier0
         // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
         // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
-        // 2 - OptimizationTierInstrumented - instrument all ILOnly code
+        // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
         if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
             ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
         {
             return NativeCodeVersion::OptimizationTier0;
         }
-        return NativeCodeVersion::OptimizationTierInstrumented;
+        return NativeCodeVersion::OptimizationTier0Instrumented;
     }
 #endif
 
@@ -292,7 +292,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // We definitely don't want to use unoptimized instrumentation tier for hot R2R:
                 // 1) It will produce a lot of new compilations for small methods which were inlined in R2R
                 // 2) Noticeable performance regression from fast R2R to slow instrumented Tier0
-                nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+                nextTier = NativeCodeVersion::OptimizationTier1Instrumented;
             }
             else
             {
@@ -300,9 +300,9 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // 1) No new compilations since previous tier already triggered them
                 // 2) Better profile since we'll be able to instrument inlinees
                 // 3) Unoptimized instrumented tier is faster to produce and wire up
-                nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
 
-                // NOTE: we might consider using OptimizationTierInstrumentedOptimized if the previous Tier0
+                // NOTE: we might consider using OptimizationTier1Instrumented if the previous Tier0
                 // made it to Tier1-OSR.
             }
         }
@@ -1066,14 +1066,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumented)
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
                 {
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                     return flags;
                 }
 
-                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumentedOptimized)
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
                 {
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
@@ -1103,13 +1103,13 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {
-        case NativeCodeVersion::OptimizationTierInstrumented:
+        case NativeCodeVersion::OptimizationTier0Instrumented:
             _ASSERT(g_pConfig->TieredCompilation_QuickJit());
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
             break;
 
-        case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
+        case NativeCodeVersion::OptimizationTier1Instrumented:
             _ASSERT(g_pConfig->TieredCompilation_QuickJit());
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);

@@ -1887,8 +1887,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         (JitConfig.TC_PartialCompilation() > 0);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
-    const bool instrOpt             = opts.IsInstrumentedOptimized();
-    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !instrOpt;
+    const bool osrMethod            = opts.IsInstrumentedOptimized() && opts.IsOSR();
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
     {
@@ -1899,7 +1899,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         JITDUMP("Using block profiling, because %s\n",
                 (JitConfig.JitEdgeProfiling() == 0)
                     ? "edge profiles disabled"
-                    : prejit ? "prejitting" : instrOpt ? "optimized instr" : "tier0 with patchpoints");
+                    : prejit ? "prejitting" : osrMethod ? "OSR" : "tier0 with patchpoints");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
