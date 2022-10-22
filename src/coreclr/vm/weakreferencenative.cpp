@@ -415,18 +415,18 @@ FCIMPL2(Object*, ComAwareWeakReferenceNative::ComWeakRefToObject, IWeakReference
 }
 FCIMPLEND
 
-FCIMPL2(IWeakReference*, ComAwareWeakReferenceNative::ObjectToComWeakRef, Object* pObject, INT64* pWrapperId)
+NOINLINE IWeakReference* ObjectToComWeakRefFramed(Object* pObject, INT64* pWrapperId, LPVOID __me)
 {
     FCALL_CONTRACT;
-
     _ASSERTE(pObject != nullptr);
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     IWeakReference* pWeakReference = nullptr;
     *pWrapperId = ComWrappersNative::InvalidWrapperId;
 
     OBJECTREF objRef = ObjectToOBJECTREF(pObject);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
+
+    FC_INNER_PROLOG_NO_ME_SETUP();
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
 
     SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
 
@@ -468,12 +468,28 @@ FCIMPL2(IWeakReference*, ComAwareWeakReferenceNative::ObjectToComWeakRef, Object
     }
 
     HELPER_METHOD_FRAME_END();
+    FC_INNER_EPILOG();
 
     return pWeakReference;
+}
 
-#else  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+FCIMPL2(IWeakReference*, ComAwareWeakReferenceNative::ObjectToComWeakRef, Object* pObject, INT64* pWrapperId)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pObject != nullptr);
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+
+    SyncBlock* pSyncBlock = pObject->PassiveGetSyncBlock();
+    if (pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr)
+    {
+        FC_INNER_RETURN(IWeakReference*, ObjectToComWeakRefFramed(pObject, pWrapperId, GetEEFuncEntryPointMacro(ComAwareWeakReferenceNative::ObjectToComWeakRef)));
+    }
+
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
     return nullptr;
-#endif
 }
 FCIMPLEND
 

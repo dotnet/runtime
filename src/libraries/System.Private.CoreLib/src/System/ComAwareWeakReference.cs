@@ -27,11 +27,32 @@ namespace System
                 return ComWeakRefToObject(_pComWeakRef, _wrapperId);
             }
 
-            internal static ComInfo? FromObject(object? target)
+            // see: syncblk.h
+            private const int IS_HASHCODE_BIT_NUMBER = 26;
+            private const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
+            private const int BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static unsafe ComInfo? FromObject(object? target)
             {
                 if (target == null)
                     return null;
 
+                fixed (byte* pRawData = &target.GetRawData())
+                {
+                    // The header is 4 bytes before MT field on all architectures
+                    int header = *(int*)(pRawData - sizeof(IntPtr) - sizeof(int));
+                    // common case: target does not have a syncblock, so there is no interop info
+                    if ((header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) != BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+                        return null;
+                }
+
+                return FromObjectSlow(target);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static unsafe ComInfo? FromObjectSlow(object target)
+            {
                 IntPtr pComWeakRef = ObjectToComWeakRef(target, out long wrapperId);
                 if (pComWeakRef == 0)
                     return null;
@@ -42,26 +63,28 @@ namespace System
             private ComInfo(IntPtr pComWeakRef, long wrapperId)
             {
                 Debug.Assert(pComWeakRef != IntPtr.Zero);
-
                 _pComWeakRef = pComWeakRef;
                 _wrapperId = wrapperId;
             }
 
             ~ComInfo()
             {
-                Debug.Assert(_pComWeakRef != IntPtr.Zero);
                 Marshal.Release(_pComWeakRef);
             }
         }
 
-        internal nint WeakHandle => _weakHandle;
-
-        internal ComAwareWeakReference(nint weakHandle)
+        private ComAwareWeakReference(nint weakHandle)
         {
+            Debug.Assert(weakHandle != 0);
             _weakHandle = weakHandle;
         }
 
-        internal void SetTarget(object? target, ComInfo? comInfo)
+        ~ComAwareWeakReference()
+        {
+            GCHandle.InternalFree(_weakHandle);
+        }
+
+        private void SetTarget(object? target, ComInfo? comInfo)
         {
             // NOTE: ComAwareWeakReference is an internal implementation detail and
             //       instances are never exposed publicly, thus we can use "this" for locking
@@ -72,26 +95,15 @@ namespace System
             }
         }
 
-        internal void UpdateComInfo(object? target, ComInfo? comInfo)
-        {
-            lock (this)
-            {
-                if (_comInfo != comInfo && GCHandle.InternalGet(_weakHandle) == target)
-                {
-                    _comInfo = comInfo;
-                }
-            }
-        }
-
         public object? Target => GCHandle.InternalGet(_weakHandle) ?? _comInfo?.ResolveTarget();
 
-        internal static ComAwareWeakReference EnsureComAwareReference(ref nint taggedHandle)
+        private static ComAwareWeakReference EnsureComAwareReference(ref nint taggedHandle)
         {
             nint current = taggedHandle;
             if ((current & ComAwareBit) == 0)
             {
                 ComAwareWeakReference newRef = new ComAwareWeakReference(taggedHandle & ~HandleTagBits);
-                nint newHandle = (nint)GCHandle.InternalAlloc(newRef, GCHandleType.Normal);
+                nint newHandle = GCHandle.InternalAlloc(newRef, GCHandleType.Normal);
                 nint newTaggedHandle = newHandle | ComAwareBit | (taggedHandle & TracksResurrectionBit);
                 if (Interlocked.CompareExchange(ref taggedHandle, newTaggedHandle, current) == current)
                 {
@@ -107,15 +119,7 @@ namespace System
             return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
         }
 
-        internal static ComAwareWeakReference? GetComAwareReference(nint taggedHandle)
-        {
-            if ((taggedHandle & ComAwareBit) == 0)
-                return null;
-
-            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static object? GetTarget(nint taggedHandle)
         {
             Debug.Assert((taggedHandle & ComAwareBit) != 0);
@@ -126,12 +130,27 @@ namespace System
         internal static nint GetWeakHandle(nint taggedHandle)
         {
             Debug.Assert((taggedHandle & ComAwareBit) != 0);
-            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)).WeakHandle;
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits))._weakHandle;
         }
 
-        ~ComAwareWeakReference()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SetTarget(ref nint taggedHandle, object? target, ComInfo? comInfo)
         {
-            GCHandle.InternalFree(_weakHandle);
+            ComAwareWeakReference comAwareRef = comInfo != null ?
+                EnsureComAwareReference(ref taggedHandle) :
+                Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
+
+            comAwareRef.SetTarget(target, comInfo);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SetComInfoInConstructor(ref nint taggedHandle, ComInfo comInfo)
+        {
+            Debug.Assert((taggedHandle & ComAwareBit) == 0);
+            ComAwareWeakReference comAwareRef = new ComAwareWeakReference(taggedHandle & ~HandleTagBits);
+            nint newHandle = GCHandle.InternalAlloc(comAwareRef, GCHandleType.Normal);
+            taggedHandle = newHandle | ComAwareBit | (taggedHandle & TracksResurrectionBit);
+            comAwareRef._comInfo = comInfo;
         }
     }
 }

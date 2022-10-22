@@ -84,7 +84,7 @@ namespace System
             ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
             if (comInfo != null)
             {
-                ComAwareWeakReference.EnsureComAwareReference(ref _taggedHandle).SetTarget(target, comInfo);
+                ComAwareWeakReference.SetComInfoInConstructor(ref _taggedHandle, comInfo);
             }
 #endif
         }
@@ -168,24 +168,24 @@ namespace System
 
             set
             {
-                nint wh = WeakHandle;
+                nint th = _taggedHandle & ~TracksResurrectionBit;
+
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
-                // See the comment in the getter.
-                if (wh == 0)
+                // GC can finalize the instance if it becomes F-Reachable.
+                // That, however, cannot happen while we use the instance.
+                if (th == 0)
                     throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
 
-                GCHandle.InternalSet(wh, value);
-
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-                ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(value);
-                ComAwareWeakReference? fr = comInfo == null ?
-                    ComAwareWeakReference.GetComAwareReference(_taggedHandle) :
-                    ComAwareWeakReference.EnsureComAwareReference(ref _taggedHandle);
-
-                // Update the COM info to match the new target.
-                // The target is alive while we update the COM info, since we have a strong reference here.
-                fr?.UpdateComInfo(value, comInfo);
+                var comInfo = ComAwareWeakReference.ComInfo.FromObject(value);
+                if ((th & ComAwareBit) != 0 || comInfo != null)
+                {
+                    ComAwareWeakReference.SetTarget(ref _taggedHandle, value, comInfo);
+                    return;
+                }
 #endif
+
+                GCHandle.InternalSet(th, value);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
