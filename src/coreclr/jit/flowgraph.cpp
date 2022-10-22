@@ -936,98 +936,86 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
-    addr = addr->gtEffectiveVal();
-    if (addr->IsIconHandle())
+    switch (addr->OperGet())
     {
-        return false;
-    }
-    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
-    {
-        return false;
-    }
-    else if (addr->OperIs(GT_INDEX_ADDR))
-    {
-        return !addr->AsIndexAddr()->IsNotNull();
-    }
-    else if (addr->OperIs(GT_ARR_ADDR))
-    {
-        return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
-    }
-    else if (addr->gtOper == GT_LCL_VAR)
-    {
-        unsigned varNum = addr->AsLclVarCommon()->GetLclNum();
+        case GT_CNS_INT:
+            return !addr->IsIconHandle();
 
-        if (lvaIsImplicitByRefLocal(varNum))
-        {
+        case GT_CNS_STR:
+        case GT_ADDR:
+        case GT_FIELD_ADDR:
+        case GT_CLS_VAR_ADDR:
+            // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
+            // taken is either a local or static variable, whose address is necessarily non-null, or else it is
+            // a field dereference, which will do its own bounds checking if necessary.
             return false;
-        }
-    }
-    else if (addr->gtOper == GT_ADDR)
-    {
-        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
-        {
-            GenTree* cns1Tree = addr->AsOp()->gtOp1;
-            if (!cns1Tree->IsIconHandle())
-            {
-                // Indirection of some random constant...
-                // It is safest just to return true
-                return true;
-            }
-        }
 
-        return false; // we can't have a null address
-    }
-    else if (addr->gtOper == GT_ADD)
-    {
-        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
-        {
-            GenTree* cns1Tree = addr->AsOp()->gtOp1;
-            if (!cns1Tree->IsIconHandle())
+        case GT_INDEX_ADDR:
+            return !addr->AsIndexAddr()->IsNotNull();
+
+        case GT_ARR_ADDR:
+            return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
+
+        case GT_LCL_VAR:
+            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+
+        case GT_COMMA:
+            return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+
+        case GT_ADD:
+            if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
             {
-                if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                GenTree* cns1Tree = addr->AsOp()->gtOp1;
+                if (!cns1Tree->IsIconHandle())
                 {
-                    // Op1 was an ordinary small constant
-                    return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                    {
+                        // Op1 was an ordinary small constant
+                        return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+                    }
+                }
+                else // Op1 was a handle represented as a constant
+                {
+                    // Is Op2 also a constant?
+                    if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                    {
+                        GenTree* cns2Tree = addr->AsOp()->gtOp2;
+                        // Is this an addition of a handle and constant
+                        if (!cns2Tree->IsIconHandle())
+                        {
+                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                            {
+                                // Op2 was an ordinary small constant
+                                return false; // we can't have a null address
+                            }
+                        }
+                    }
                 }
             }
-            else // Op1 was a handle represented as a constant
+            else
             {
-                // Is Op2 also a constant?
+                // Op1 is not a constant. What about Op2?
                 if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
                 {
                     GenTree* cns2Tree = addr->AsOp()->gtOp2;
-                    // Is this an addition of a handle and constant
+                    // Is this an addition of a small constant
                     if (!cns2Tree->IsIconHandle())
                     {
                         if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
                         {
                             // Op2 was an ordinary small constant
-                            return false; // we can't have a null address
+                            return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
                         }
                     }
                 }
             }
-        }
-        else
-        {
-            // Op1 is not a constant
-            // What about Op2?
-            if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
-            {
-                GenTree* cns2Tree = addr->AsOp()->gtOp2;
-                // Is this an addition of a small constant
-                if (!cns2Tree->IsIconHandle())
-                {
-                    if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
-                    {
-                        // Op2 was an ordinary small constant
-                        return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
-                    }
-                }
-            }
-        }
+            break;
+
+        default:
+            break;
     }
-    return true; // default result: addr could be null
+
+    return true; // default result: addr could be null.
 }
 
 //------------------------------------------------------------------------------
