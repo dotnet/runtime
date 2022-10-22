@@ -101,11 +101,8 @@ namespace System
                 nint th = _taggedHandle;
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-                ComAwareWeakReference? cr = ComAwareWeakReference.GetComAwareReference(th);
-                if (cr != null)
-                {
-                    return cr.WeakHandle;
-                }
+                if ((th & ComAwareBit) != 0)
+                    return ComAwareWeakReference.GetWeakHandle(th);
 #endif
                 return th & ~HandleTagBits;
             }
@@ -137,9 +134,11 @@ namespace System
         // Or sets it.
         public virtual object? Target
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                nint wh = WeakHandle;
+                nint th = _taggedHandle & ~TracksResurrectionBit;
+
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
@@ -150,14 +149,17 @@ namespace System
                 // There is a possibility that a derived type overrides the default finalizer and arranges concurrent access.
                 // There is nothing that we can do about that and a few other exotic ways to break this.
                 //
-                if (wh == 0)
+                if (th == 0)
                     return default;
 
-                object? target = GCHandle.InternalGet(wh);
-
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-                target ??= ComAwareWeakReference.GetComAwareReference(_taggedHandle)?.Target;
+                if ((th & ComAwareBit) != 0)
+                    return ComAwareWeakReference.GetTarget(th);
 #endif
+
+                // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
+                object? target = GCHandle.InternalGet(th);
+
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
 

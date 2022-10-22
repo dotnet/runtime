@@ -107,12 +107,26 @@ namespace System
             return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ComAwareWeakReference? GetComAwareReference(nint taggedHandle)
         {
-            return (taggedHandle & ComAwareBit) != 0 ?
-                Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)) :
-                null;
+            if ((taggedHandle & ComAwareBit) == 0)
+                return null;
+
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static object? GetTarget(nint taggedHandle)
+        {
+            Debug.Assert((taggedHandle & ComAwareBit) != 0);
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)).Target;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static nint GetWeakHandle(nint taggedHandle)
+        {
+            Debug.Assert((taggedHandle & ComAwareBit) != 0);
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)).WeakHandle;
         }
 
         ~ComAwareWeakReference()
