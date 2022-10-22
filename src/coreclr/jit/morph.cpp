@@ -4204,7 +4204,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg);
 
     // Change the expression to "(tmp=val),tmp"
-    argNode                              = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
+    argNode                      = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
 
@@ -4731,7 +4731,7 @@ GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
 #ifdef TARGET_X86
     expandedTree = fgMorphExpandStackArgForVarArgs(lclNode);
 #else
-    expandedTree                         = fgMorphExpandImplicitByRefArg(lclNode);
+    expandedTree                 = fgMorphExpandImplicitByRefArg(lclNode);
 #endif
 
     if (expandedTree != nullptr)
@@ -5021,30 +5021,34 @@ unsigned Compiler::fgGetBigOffsetMorphingTemp(var_types type)
     return lclNum;
 }
 
-/*****************************************************************************
- *
- *  Transform the given GT_FIELD tree for code generation.
- */
-
+//------------------------------------------------------------------------
+// fgMorphField: Fully morph a FIELD/FIELD_ADDR tree.
+//
+// Expands the field node into explicit additions and indirections.
+//
+// Arguments:
+//    tree - The FIELD/FIELD_ADDR tree
+//    mac  - The morphing context, used to elide adding null checks
+//
+// Return Value:
+//    The fully morphed "tree".
+//
 GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 {
-    assert(tree->gtOper == GT_FIELD);
+    assert(tree->OperIs(GT_FIELD, GT_FIELD_ADDR));
 
-    CORINFO_FIELD_HANDLE symHnd        = tree->AsField()->gtFldHnd;
-    unsigned             fldOffset     = tree->AsField()->gtFldOffset;
-    GenTree*             objRef        = tree->AsField()->GetFldObj();
-    bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
-    FieldSeq*            fieldSeq      = nullptr;
+    GenTreeField* fieldNode = tree->AsField();
+    GenTree*      objRef    = fieldNode->GetFldObj();
 
-    // Reset the flag because we may reuse the node.
-    tree->AsField()->gtFldMayOverlap = false;
-
-    noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
-                 ((tree->gtFlags & GTF_GLOB_REF) != 0));
+    if (tree->OperIs(GT_FIELD))
+    {
+        noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
+                     ((tree->gtFlags & GTF_GLOB_REF) != 0));
+    }
 
 #ifdef FEATURE_SIMD
     // if this field belongs to simd struct, translate it to simd intrinsic.
-    if (mac == nullptr)
+    if ((mac == nullptr) && tree->OperIs(GT_FIELD))
     {
         if (IsBaselineSimdIsaSupported())
         {
@@ -5066,33 +5070,83 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 #endif
 
-    // Create a default MorphAddrContext early so it doesn't go out of scope
-    // before it is used.
-    MorphAddrContext defMAC(MACK_Ind);
+    MorphAddrContext indMAC(MACK_Ind);
+    MorphAddrContext addrMAC(MACK_Addr);
+    bool             isAddr = tree->OperIs(GT_FIELD_ADDR);
 
-    // Is this an instance data member?
-    if (objRef != nullptr)
+    if (fieldNode->IsInstance())
     {
-        /* We'll create the expression "*(objRef + mem_offs)" */
+        // NULL mac means we encounter the GT_FIELD/GT_FIELD_ADDR first (and don't know our parent).
+        if (mac == nullptr)
+        {
+            // FIELD denotes a dereference of the field, equivalent to a MACK_Ind with zero offset.
+            mac = tree->OperIs(GT_FIELD) ? &indMAC : &addrMAC;
+        }
 
-        noway_assert(varTypeIsGC(objRef->TypeGet()) || objRef->TypeGet() == TYP_I_IMPL);
+        tree = fgMorphExpandInstanceField(tree, mac);
+    }
+    else if (fieldNode->IsTlsStatic())
+    {
+        tree = fgMorphExpandTlsFieldAddr(tree);
+    }
+    else
+    {
+        tree = fgMorphExpandStaticField(tree);
+    }
 
-        /*
-            Now we have a tree like this:
+    // Pass down the current mac; if non null we are computing an address
+    GenTree* result = fgMorphTree(tree, mac);
+    DBEXEC(result == fieldNode, result->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
+
+    // Quirk: preserve previous behavior with this NO_CSE.
+    if (isAddr && tree->OperIs(GT_COMMA))
+    {
+        tree->SetDoNotCSE();
+    }
+
+    JITDUMP("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
+    DISPTREE(result);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// fgMorphExpandInstanceField: Expand an instance field reference.
+//
+// Expands the field node into explicit additions and indirections, adding
+// explicit null checks if necessary.
+//
+// Arguments:
+//    tree - The FIELD/FIELD_ADDR tree
+//    mac  - The morphing context, used to elide adding null checks
+//
+// Return Value:
+//    The expanded "tree" of an arbitrary shape.
+//
+GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac)
+{
+    assert(tree->OperIs(GT_FIELD, GT_FIELD_ADDR) && tree->AsField()->IsInstance());
+
+    GenTree*             objRef      = tree->AsField()->GetFldObj();
+    CORINFO_FIELD_HANDLE fieldHandle = tree->AsField()->gtFldHnd;
+    unsigned             fieldOffset = tree->AsField()->gtFldOffset;
+
+    noway_assert(varTypeIsI(genActualType(objRef)));
+
+    /* Now we have a tree like this:
 
                                   +--------------------+
-                                  |      GT_FIELD      |   tree
+                                  |  GT_FIELD[_ADDR]   |   tree
                                   +----------+---------+
                                              |
                               +--------------+-------------+
                               |tree->AsField()->GetFldObj()|
                               +--------------+-------------+
 
-
             We want to make it like this (when fldOffset is <= MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT):
 
                                   +--------------------+
-                                  |   GT_IND/GT_OBJ    |   tree
+                                  |   GT_IND/GT_OBJ    |   tree (for FIELD)
                                   +---------+----------+
                                             |
                                             |
@@ -5103,37 +5157,37 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                                           /   \
                                         /       \
                                       /           \
-                         +-------------------+  +----------------------+
-                         |       objRef      |  |     fldOffset        |
-                         |                   |  | (when fldOffset !=0) |
-                         +-------------------+  +----------------------+
+                       +-------------------+  +----------------------+
+                       |       objRef      |  |     fldOffset        |
+                       |                   |  | (when fldOffset !=0) |
+                       +-------------------+  +----------------------+
 
 
             or this (when fldOffset is > MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT):
 
 
                                   +--------------------+
-                                  |   GT_IND/GT_OBJ    |   tree
+                                  |   GT_IND/GT_OBJ    |   tree (for FIELD)
                                   +----------+---------+
                                              |
                                   +----------+---------+
-                                  |       GT_COMMA     |  comma2
+                                  |       GT_COMMA     |   comma2
                                   +----------+---------+
                                              |
                                             / \
                                           /     \
                                         /         \
                                       /             \
-                 +---------+----------+               +---------+----------+
-           comma |      GT_COMMA      |               |  "+" (i.e. GT_ADD) |   addr
-                 +---------+----------+               +---------+----------+
-                           |                                     |
-                         /   \                                  /  \
-                       /       \                              /      \
-                     /           \                          /          \
-         +-----+-----+             +-----+-----+      +---------+   +-----------+
-     asg |  GT_ASG   |         ind |   GT_IND  |      |  tmpLcl |   | fldOffset |
-         +-----+-----+             +-----+-----+      +---------+   +-----------+
+                 +---------+----------+              +---------+----------+
+           comma |      GT_COMMA      |              |  "+" (i.e. GT_ADD) |   addr
+                 +---------+----------+              +---------+----------+
+                           |                                    |
+                         /   \                                 /  \
+                       /       \                             /      \
+                     /           \                         /          \
+         +-----+-----+             +-----+-----+     +---------+   +-----------+
+     asg |  GT_ASG   |         ind |   GT_IND  |     |  tmpLcl |   | fldOffset |
+         +-----+-----+             +-----+-----+     +---------+   +-----------+
                |                         |
               / \                        |
             /     \                      |
@@ -5142,286 +5196,171 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
    |   tmpLcl  |   |   objRef  |   |   tmpLcl  |
    +-----------+   +-----------+   +-----------+
 
+    */
 
-        */
+    var_types objRefType = objRef->TypeGet();
+    GenTree*  addr       = nullptr;
+    GenTree*  comma      = nullptr;
 
-        var_types objRefType = objRef->TypeGet();
-        GenTree*  addr       = nullptr;
-        GenTree*  comma      = nullptr;
-
-        // NULL mac means we encounter the GT_FIELD first.  This denotes a dereference of the field,
-        // and thus is equivalent to a MACK_Ind with zero offset.
-        if (mac == nullptr)
-        {
-            mac = &defMAC;
-        }
-
-        // This flag is set to enable the "conservative" style of explicit null-check insertion.
-        // This means that we insert an explicit null check whenever we create byref by adding a
-        // constant offset to a ref, in a MACK_Addr context (meaning that the byref is not immediately
-        // dereferenced).  The alternative is "aggressive", which would not insert such checks (for
-        // small offsets); in this plan, we would transfer some null-checking responsibility to
-        // callee's of methods taking byref parameters.  They would have to add explicit null checks
-        // when creating derived byrefs from argument byrefs by adding constants to argument byrefs, in
-        // contexts where the resulting derived byref is not immediately dereferenced (or if the offset is too
-        // large).  To make the "aggressive" scheme work, however, we'd also have to add explicit derived-from-null
-        // checks for byref parameters to "external" methods implemented in C++, and in P/Invoke stubs.
-        // This is left here to point out how to implement it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
+    // This flag is set to enable the "conservative" style of explicit null-check insertion.
+    // This means that we insert an explicit null check whenever we create byref by adding a
+    // constant offset to a ref, in a MACK_Addr context (meaning that the byref is not immediately
+    // dereferenced).  The alternative is "aggressive", which would not insert such checks (for
+    // small offsets); in this plan, we would transfer some null-checking responsibility to
+    // callee's of methods taking byref parameters.  They would have to add explicit null checks
+    // when creating derived byrefs from argument byrefs by adding constants to argument byrefs, in
+    // contexts where the resulting derived byref is not immediately dereferenced (or if the offset is too
+    // large).  To make the "aggressive" scheme work, however, we'd also have to add explicit derived-from-null
+    // checks for byref parameters to "external" methods implemented in C++, and in P/Invoke stubs.
+    // This is left here to point out how to implement it.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define CONSERVATIVE_NULL_CHECK_BYREF_CREATION 1
 
-        bool addExplicitNullCheck = false;
+    bool addExplicitNullCheck = false;
 
-        // Implicit byref locals and string literals are never null.
-        if (fgAddrCouldBeNull(objRef))
+    if (fgAddrCouldBeNull(objRef))
+    {
+        if (!mac->m_allConstantOffsets || fgIsBigOffset(mac->m_totalOffset + fieldOffset))
         {
-            // If the objRef is a GT_ADDR node, it, itself, never requires null checking.  The expression
-            // whose address is being taken is either a local or static variable, whose address is necessarily
-            // non-null, or else it is a field dereference, which will do its own bounds checking if necessary.
-            if (objRef->gtOper != GT_ADDR && (mac->m_kind == MACK_Addr || mac->m_kind == MACK_Ind))
-            {
-                if (!mac->m_allConstantOffsets || fgIsBigOffset(mac->m_totalOffset + fldOffset))
-                {
-                    addExplicitNullCheck = true;
-                }
-                else
-                {
-                    // In R2R mode the field offset for some fields may change when the code
-                    // is loaded. So we can't rely on a zero offset here to suppress the null check.
-                    //
-                    // See GitHub issue #16454.
-                    bool fieldHasChangeableOffset = false;
+            addExplicitNullCheck = true;
+        }
+        else
+        {
+            // In R2R mode the field offset for some fields may change when the code
+            // is loaded. So we can't rely on a zero offset here to suppress the null check.
+            //
+            // See GitHub issue #16454.
+            bool fieldHasChangeableOffset = false;
 
 #ifdef FEATURE_READYTORUN
-                    fieldHasChangeableOffset = (tree->AsField()->gtFieldLookup.addr != nullptr);
+            fieldHasChangeableOffset = (tree->AsField()->gtFieldLookup.addr != nullptr);
 #endif
 
 #if CONSERVATIVE_NULL_CHECK_BYREF_CREATION
-                    addExplicitNullCheck = (mac->m_kind == MACK_Addr) &&
-                                           ((mac->m_totalOffset + fldOffset > 0) || fieldHasChangeableOffset);
+            addExplicitNullCheck =
+                (mac->m_kind == MACK_Addr) && ((mac->m_totalOffset + fieldOffset > 0) || fieldHasChangeableOffset);
 #else
-                    addExplicitNullCheck = (objRef->gtType == TYP_BYREF && mac->m_kind == MACK_Addr &&
-                                            ((mac->m_totalOffset + fldOffset > 0) || fieldHasChangeableOffset));
+            addExplicitNullCheck = (objRef->gtType == TYP_BYREF && mac->m_kind == MACK_Addr &&
+                                    ((mac->m_totalOffset + fldOffset > 0) || fieldHasChangeableOffset));
 #endif
-                }
-            }
         }
+    }
 
-        if (addExplicitNullCheck)
+    if (addExplicitNullCheck)
+    {
+        JITDUMP("Before explicit null check morphing:\n");
+        DISPTREE(tree);
+
+        // Create the "comma" subtree.
+        GenTree* asg = nullptr;
+
+        unsigned lclNum;
+
+        if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Before explicit null check morphing:\n");
-                gtDispTree(tree);
-            }
-#endif
+            lclNum = fgGetBigOffsetMorphingTemp(genActualType(objRef->TypeGet()));
 
-            //
-            // Create the "comma" subtree
-            //
-            GenTree* asg = nullptr;
-
-            unsigned lclNum;
-
-            if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
-            {
-                lclNum = fgGetBigOffsetMorphingTemp(genActualType(objRef->TypeGet()));
-
-                // Create the "asg" node
-                asg = gtNewTempAssign(lclNum, objRef);
-            }
-            else
-            {
-                lclNum = objRef->AsLclVarCommon()->GetLclNum();
-            }
-
-            GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
-            GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
-
-            if (asg != nullptr)
-            {
-                // Create the "comma" node.
-                comma = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullchk);
-            }
-            else
-            {
-                comma = nullchk;
-            }
-
-            addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
+            // Create the "asg" node
+            asg = gtNewTempAssign(lclNum, objRef);
         }
         else
         {
-            addr = objRef;
+            lclNum = objRef->AsLclVarCommon()->GetLclNum();
         }
 
-#ifdef FEATURE_READYTORUN
-        if (tree->AsField()->gtFieldLookup.addr != nullptr)
+        GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
+        GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
+
+        if (asg != nullptr)
         {
-            GenTree* offsetNode = nullptr;
-            if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
-            {
-                offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
-                                                      GTF_ICON_CONST_PTR, true);
-#ifdef DEBUG
-                offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
-#endif
-            }
-            else
-            {
-                noway_assert(!"unexpected accessType for R2R field access");
-            }
-
-            var_types addType = (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
-            addr              = gtNewOperNode(GT_ADD, addType, addr, offsetNode);
+            // Create the "comma" node.
+            comma = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullchk);
         }
-#endif
-
-        // We only need to attach the field offset information for class fields.
-        if ((objRefType == TYP_REF) && !fldMayOverlap)
+        else
         {
-            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeq::FieldKind::Instance);
+            comma = nullchk;
         }
 
-        // Add the member offset to the object's address.
-        if (fldOffset != 0)
-        {
-            addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
-                                 gtNewIconNode(fldOffset, fieldSeq));
-        }
-
-        // Now let's set the "tree" as a GT_IND tree.
-
-        tree->SetOper(GT_IND);
-        tree->AsOp()->gtOp1 = addr;
-
-        if (addExplicitNullCheck)
-        {
-            //
-            // Create "comma2" node and link it to "tree".
-            //
-            GenTree* comma2     = gtNewOperNode(GT_COMMA, addr->TypeGet(), comma, addr);
-            tree->AsOp()->gtOp1 = comma2;
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            if (addExplicitNullCheck)
-            {
-                printf("After adding explicit null check:\n");
-                gtDispTree(tree);
-            }
-        }
-#endif
+        addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
     }
     else
     {
-        // Normal static field reference
-        //
-        // If we can we access the static's address directly
-        // then pFldAddr will be NULL and
-        //      fldAddr will be the actual address of the static field
-        //
-        void** pFldAddr = nullptr;
-        void*  fldAddr  = info.compCompHnd->getFieldAddress(symHnd, (void**)&pFldAddr);
+        addr = objRef;
+    }
 
-        // We should always be able to access this static field address directly
-        //
-        assert(pFldAddr == nullptr);
-
-        // For boxed statics, this direct address will be for the box. We have already added
-        // the indirection for the field itself and attached the sequence, in importation.
-        bool isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-        if (!isBoxedStatic)
+#ifdef FEATURE_READYTORUN
+    if (tree->AsField()->gtFieldLookup.addr != nullptr)
+    {
+        GenTree* offsetNode = nullptr;
+        if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
         {
-            // Only simple statics get importred as GT_FIELDs.
-            fieldSeq = GetFieldSeqStore()->Create(symHnd, reinterpret_cast<size_t>(fldAddr),
-                                                  FieldSeq::FieldKind::SimpleStatic);
-        }
-
-        // TODO-CQ: enable this optimization for 32 bit targets.
-        bool isStaticReadOnlyInited = false;
-#ifdef TARGET_64BIT
-        if (tree->TypeIs(TYP_REF) && !isBoxedStatic)
-        {
-            bool pIsSpeculative = true;
-            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &pIsSpeculative) != NO_CLASS_HANDLE)
-            {
-                isStaticReadOnlyInited = !pIsSpeculative;
-            }
-        }
-#endif // TARGET_64BIT
-
-        GenTreeFlags handleKind = GTF_EMPTY;
-        if (isBoxedStatic)
-        {
-            handleKind = GTF_ICON_STATIC_BOX_PTR;
-        }
-        else if (isStaticReadOnlyInited)
-        {
-            handleKind = GTF_ICON_CONST_PTR;
+            offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
+                                                  GTF_ICON_CONST_PTR, true);
+#ifdef DEBUG
+            offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)fieldHandle;
+#endif
         }
         else
         {
-            handleKind = GTF_ICON_STATIC_HDL;
-        }
-        GenTreeIntCon* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
-        INDEBUG(addr->gtTargetHandle = reinterpret_cast<size_t>(symHnd));
-
-        // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
-        if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
-        {
-            tree->gtFlags &= ~GTF_FLD_INITCLASS;
-            addr->gtFlags |= GTF_ICON_INITCLASS;
+            noway_assert(!"unexpected accessType for R2R field access");
         }
 
-        tree->SetOper(GT_IND);
-        tree->AsOp()->gtOp1 = addr;
+        addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr, offsetNode);
+    }
+#endif
 
-        if (isBoxedStatic)
-        {
-            // The box for the static cannot be null, and is logically invariant, since it
-            // represents (a base for) the static's address.
-            tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-        }
-        else if (isStaticReadOnlyInited)
-        {
-            JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-
-            // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
-            tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-        }
-
-        return fgMorphSmpOp(tree, /* mac */ nullptr);
+    // We only need to attach the field offset information for class fields.
+    FieldSeq* fieldSeq = nullptr;
+    if ((objRefType == TYP_REF) && !tree->AsField()->gtFldMayOverlap)
+    {
+        fieldSeq = GetFieldSeqStore()->Create(fieldHandle, fieldOffset, FieldSeq::FieldKind::Instance);
     }
 
-    noway_assert(tree->OperIs(GT_IND));
+    // Add the member offset to the object's address.
+    if (fieldOffset != 0)
+    {
+        addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
+                             gtNewIconNode(fieldOffset, fieldSeq));
+    }
 
-    // Pass down the current mac; if non null we are computing an address
-    GenTree* result = fgMorphSmpOp(tree, mac);
+    if (addExplicitNullCheck)
+    {
+        // Create the "comma2" tree.
+        addr = gtNewOperNode(GT_COMMA, addr->TypeGet(), comma, addr);
+    }
 
-    JITDUMP("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
-    DISPTREE(result);
+    if (tree->OperIs(GT_FIELD))
+    {
+        tree->SetOper(GT_IND);
+        tree->AsIndir()->SetAddr(addr);
+    }
+    else // Otherwise, we have a FIELD_ADDR.
+    {
+        tree = addr;
+    }
 
-    return result;
+    if (addExplicitNullCheck)
+    {
+        JITDUMP("After adding explicit null check:\n");
+        DISPTREE(tree);
+    }
+
+    return tree;
 }
 
 //------------------------------------------------------------------------
 // fgMorphExpandTlsFieldAddr: Expand a TLS field address.
+//
+// Expands ".tls"-style statics, produced by the C++/CLI compiler for
+// "__declspec(thread)" variables. An overview of the underlying native
+// mechanism can be found here: http://www.nynaeve.net/?p=180.
 //
 // Arguments:
 //    tree - The GT_FIELD_ADDR tree
 //
 // Return Value:
 //    The expanded tree - a GT_ADD.
-//
-// Notes:
-//    This expands ".tls"-style statics, produced by the C++/CLI compiler
-//    for "__declspec(thread)" variables. An overview of the underlying
-//    (native) mechanism can be found here: http://www.nynaeve.net/?p=180.
 //
 GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
 {
@@ -5510,6 +5449,102 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     tree->ChangeOper(GT_ADD);
     tree->AsOp()->gtOp1 = tlsRef;
     tree->AsOp()->gtOp2 = offsetNode;
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
+// fgMorphExpandStaticField: Expand a simple static field load.
+//
+// Transforms the field into an explicit indirection off of a constant
+// address.
+//
+// Arguments:
+//    tree - The GT_FIELD tree
+//
+// Return Value:
+//    The expanded tree - a GT_IND.
+//
+GenTree* Compiler::fgMorphExpandStaticField(GenTree* tree)
+{
+    // Note we do not support "FIELD_ADDR"s for simple statics.
+    assert(tree->OperIs(GT_FIELD) && tree->AsField()->IsStatic());
+
+    // If we can we access the static's address directly
+    // then pFldAddr will be NULL and
+    //      fldAddr will be the actual address of the static field
+    //
+    CORINFO_FIELD_HANDLE fieldHandle = tree->AsField()->gtFldHnd;
+    void**               pFldAddr    = nullptr;
+    void*                fldAddr     = info.compCompHnd->getFieldAddress(fieldHandle, (void**)&pFldAddr);
+
+    // We should always be able to access this static field address directly
+    //
+    assert(pFldAddr == nullptr);
+
+    // For boxed statics, this direct address will be for the box. We have already added
+    // the indirection for the field itself and attached the sequence, in importation.
+    FieldSeq* fieldSeq      = nullptr;
+    bool      isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), fieldHandle);
+    if (!isBoxedStatic)
+    {
+        // Only simple statics get importred as GT_FIELDs.
+        fieldSeq = GetFieldSeqStore()->Create(fieldHandle, reinterpret_cast<size_t>(fldAddr),
+                                              FieldSeq::FieldKind::SimpleStatic);
+    }
+
+    // TODO-CQ: enable this optimization for 32 bit targets.
+    bool isStaticReadOnlyInited = false;
+#ifdef TARGET_64BIT
+    if (tree->TypeIs(TYP_REF) && !isBoxedStatic)
+    {
+        bool pIsSpeculative = true;
+        if (info.compCompHnd->getStaticFieldCurrentClass(fieldHandle, &pIsSpeculative) != NO_CLASS_HANDLE)
+        {
+            isStaticReadOnlyInited = !pIsSpeculative;
+        }
+    }
+#endif // TARGET_64BIT
+
+    GenTreeFlags handleKind = GTF_EMPTY;
+    if (isBoxedStatic)
+    {
+        handleKind = GTF_ICON_STATIC_BOX_PTR;
+    }
+    else if (isStaticReadOnlyInited)
+    {
+        handleKind = GTF_ICON_CONST_PTR;
+    }
+    else
+    {
+        handleKind = GTF_ICON_STATIC_HDL;
+    }
+    GenTreeIntCon* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+    INDEBUG(addr->gtTargetHandle = reinterpret_cast<size_t>(fieldHandle));
+
+    // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
+    if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
+    {
+        tree->gtFlags &= ~GTF_FLD_INITCLASS;
+        addr->gtFlags |= GTF_ICON_INITCLASS;
+    }
+
+    tree->SetOper(GT_IND);
+    tree->AsOp()->gtOp1 = addr;
+
+    if (isBoxedStatic)
+    {
+        // The box for the static cannot be null, and is logically invariant, since it
+        // represents (a base for) the static's address.
+        tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+    }
+    else if (isStaticReadOnlyInited)
+    {
+        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle));
+
+        // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+        tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+    }
 
     return tree;
 }
@@ -9882,14 +9917,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 
         case GT_FIELD:
-            return fgMorphField(tree, mac);
-
         case GT_FIELD_ADDR:
-            tree = fgMorphExpandTlsFieldAddr(tree);
-            oper = tree->OperGet();
-            op1  = tree->AsOp()->gtOp1;
-            op2  = tree->AsOp()->gtOp2;
-            break;
+            return fgMorphField(tree, mac);
 
         case GT_INDEX_ADDR:
             return fgMorphIndexAddr(tree->AsIndexAddr());

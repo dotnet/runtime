@@ -4054,9 +4054,14 @@ struct GenTreeField : public GenTreeUnOp
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
 
+    bool IsInstance() const
+    {
+        return GetFldObj() != nullptr;
+    }
+
     bool IsStatic() const
     {
-        return GetFldObj() == nullptr;
+        return !IsInstance();
     }
 
     bool IsTlsStatic() const
@@ -7016,8 +7021,7 @@ struct GenTreeIndir : public GenTreeOp
 
     void SetAddr(GenTree* addr)
     {
-        assert(addr != nullptr);
-        assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
+        assert(varTypeIsI(addr));
         gtOp1 = addr;
     }
 
