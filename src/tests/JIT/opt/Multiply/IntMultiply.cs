@@ -89,7 +89,7 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith8(ulong value)
         {
-            // X64: lea [[REG0:[a-z]+]], {{\[}}8*[[REG1]]{{\]}}
+            // X64: lea [[REG0:[a-z]+]], {{\[}}8*[[REG1:[a-z]+]]{{\]}}
             return value * 8;
         }
 
