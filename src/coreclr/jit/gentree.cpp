@@ -15865,9 +15865,17 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                     PushSideEffects(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                        // It would change a non-faulting ind to a non-faulting nullcheck.
-                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        if (m_compiler->fgAddrCouldBeNull(node->AsUnOp()->gtGetOp1()))
+                        {
+                            JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                            // It would change a non-faulting ind to a non-faulting nullcheck.
+                            m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        }
+                        else
+                        {
+                            JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NOTHING node\n", dspTreeID(node));
+                            node = m_compiler->gtNewNothingNode();
+                        }
                     }
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
