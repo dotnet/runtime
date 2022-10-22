@@ -19,8 +19,8 @@ namespace System
 
         internal sealed class ComInfo
         {
-            internal readonly IntPtr _pComWeakRef;
-            internal readonly long _wrapperId;
+            private readonly IntPtr _pComWeakRef;
+            private readonly long _wrapperId;
 
             internal object? ResolveTarget()
             {
@@ -95,7 +95,7 @@ namespace System
             }
         }
 
-        public object? Target => GCHandle.InternalGet(_weakHandle) ?? _comInfo?.ResolveTarget();
+        internal object? Target => GCHandle.InternalGet(_weakHandle) ?? _comInfo?.ResolveTarget();
 
         private static ComAwareWeakReference EnsureComAwareReference(ref nint taggedHandle)
         {
