@@ -412,6 +412,8 @@ namespace System
                 ctorFtn(ref Unsafe.Add(ref arrayRef, offset), pElemMT);
                 offset += pArrayMT->ComponentSize;
             }
+
+            GC.KeepAlive(this);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

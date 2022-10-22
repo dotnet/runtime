@@ -4455,7 +4455,7 @@ namespace System.Tests
 
             var array2 = new NonGenericClass1[10];
             array2.Initialize();
-            Assert.All(array2, a => Assert.Null(a));
+            Assert.All(array2, Assert.Null);
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
