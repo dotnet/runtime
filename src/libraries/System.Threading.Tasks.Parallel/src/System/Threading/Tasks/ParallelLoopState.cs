@@ -263,6 +263,8 @@ namespace System.Threading.Tasks
         }
 
         //Can't Turn the class to abstract so added as virtual
+        internal virtual TIndex GetCurrentIteration<TIndex>()
+            where TIndex : INumber<TIndex> => throw new NotImplementedException("Should not call this");
         internal virtual void SetCurrentIteration<TIndex>(TIndex CurrentIteration)
             where TIndex : INumber<TIndex> => throw new NotImplementedException("Should not call this");
     }
@@ -328,6 +330,7 @@ namespace System.Threading.Tasks
         }
 
         internal override void SetCurrentIteration<TIndex>(TIndex currentIteration) => CurrentIteration = int.CreateChecked(currentIteration);
+        internal override TIndex GetCurrentIteration<TIndex>() => TIndex.CreateChecked(CurrentIteration);
     }
 
     /// <summary>
@@ -398,6 +401,8 @@ namespace System.Threading.Tasks
         }
 
         internal override void SetCurrentIteration<TIndex>(TIndex currentIteration) => CurrentIteration = long.CreateChecked(currentIteration);
+        internal override TIndex GetCurrentIteration<TIndex>() => TIndex.CreateChecked(CurrentIteration);
+
     }
 
     /// <summary>
