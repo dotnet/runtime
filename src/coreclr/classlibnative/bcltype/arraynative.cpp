@@ -28,16 +28,24 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, ArrayNative::GetConstructorSlot, MethodTable* pMT)
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    MethodTable* pCanonMT = pMT->GetCanonicalMethodTable();
-    WORD slot = pCanonMT->GetDefaultConstructorSlot();
+    PCODE ctorEntrypoint = NULL;
 
-    return pCanonMT->GetSlot(slot);
+    BEGIN_QCALL;
+
+    TypeHandle th = pArrayTypeHnd.AsTypeHandle();
+    MethodTable* pElemMT = th.GetArrayElementTypeHandle().AsMethodTable();
+    ctorEntrypoint = pElemMT->GetDefaultConstructor()->GetMultiCallableAddrOfCode();
+
+    pElemMT->EnsureInstanceActive();
+
+    END_QCALL;
+
+    return ctorEntrypoint;
 }
-FCIMPLEND
 
     // Returns whether you can directly copy an array of srcType into destType.
 FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst)

@@ -396,28 +396,37 @@ namespace System
                 return;
             }
 
-            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
-            delegate*<ref byte, MethodTable*, void> ctorFtn = GetConstructorSlot(pElemMT);
+            RuntimeType arrayType = (RuntimeType)GetType();
 
-            nuint offset = 0;
-            for (var i = 0; i < Length; i++)
+            if (arrayType.GenericCache is not ArrayInitializeCache cache)
             {
-                // Since GetConstructorSlot() is not idempotent and may have returned
-                // a non-optimal entry-point the first time round.
-                if (i == 1)
-                {
-                    ctorFtn = GetConstructorSlot(pElemMT);
-                }
-
-                ctorFtn(ref Unsafe.Add(ref arrayRef, offset), pElemMT);
-                offset += pArrayMT->ComponentSize;
+                cache = new ArrayInitializeCache(arrayType);
+                arrayType.GenericCache = cache;
             }
 
-            GC.KeepAlive(this);
+            delegate*<ref byte, void> ctorFtn = cache.ConstructorEntrypoint;
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            var elementSize = pArrayMT->ComponentSize;
+
+            for (int i = 0; i < Length; i++)
+            {
+                ctorFtn(ref arrayRef);
+                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
+            }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe delegate*<ref byte, MethodTable*, void> GetConstructorSlot(MethodTable* pMT);
+        private sealed unsafe partial class ArrayInitializeCache
+        {
+            internal delegate*<ref byte, void> ConstructorEntrypoint { get; }
+
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
+            private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
+
+            public ArrayInitializeCache(RuntimeType arrayType)
+            {
+                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+            }
+        }
     }
 
 #pragma warning disable CA1822 // Mark members as static
