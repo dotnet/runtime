@@ -265,6 +265,7 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_ARR_OFFSET]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD]         = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_FIELD_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CMPXCHG]       = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_STORE_DYN_BLK] = TREE_NODE_SZ_LARGE;
@@ -2319,9 +2320,6 @@ bool GenTree::Compare(GenTree* op1, GenTree* op2, bool swapOK)
     genTreeOps oper;
     unsigned   kind;
 
-//  printf("tree1:\n"); gtDispTree(op1);
-//  printf("tree2:\n"); gtDispTree(op2);
-
 AGAIN:
 
     if (op1 == nullptr)
@@ -2491,6 +2489,7 @@ AGAIN:
                     break;
 
                 case GT_FIELD:
+                case GT_FIELD_ADDR:
                     if (op1->AsField()->gtFldHnd != op2->AsField()->gtFldHnd)
                     {
                         return false;
@@ -2976,6 +2975,7 @@ AGAIN:
                     break;
 
                 case GT_FIELD:
+                case GT_FIELD_ADDR:
                     hash = genTreeHashAdd(hash, tree->AsField()->gtFldHnd);
                     break;
 
@@ -6540,19 +6540,13 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_FIELD:
-        {
-            GenTree* fldObj = this->AsField()->GetFldObj();
-
-            if (fldObj != nullptr)
+        case GT_FIELD_ADDR:
+            if (AsField()->IsInstance() && comp->fgAddrCouldBeNull(AsField()->GetFldObj()))
             {
-                if (comp->fgAddrCouldBeNull(fldObj))
-                {
-                    return ExceptionSetFlags::NullReferenceException;
-                }
+                return ExceptionSetFlags::NullReferenceException;
             }
 
             return ExceptionSetFlags::None;
-        }
 
         case GT_BOUNDS_CHECK:
         case GT_INDEX_ADDR:
@@ -8529,8 +8523,10 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_FIELD:
-                copy = new (this, GT_FIELD) GenTreeField(tree->TypeGet(), tree->AsField()->GetFldObj(),
-                                                         tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
+            case GT_FIELD_ADDR:
+                copy = new (this, tree->OperGet())
+                    GenTreeField(tree->OperGet(), tree->TypeGet(), tree->AsField()->GetFldObj(),
+                                 tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
                 copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
@@ -9327,6 +9323,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         // Unary operators with an optional operand
         case GT_NOP:
         case GT_FIELD:
+        case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
             if (m_node->AsUnOp()->gtOp1 == nullptr)
@@ -11761,7 +11758,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
-        if (tree->OperIs(GT_FIELD))
+        if (tree->OperIs(GT_FIELD, GT_FIELD_ADDR))
         {
             printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
         }

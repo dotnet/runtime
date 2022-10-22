@@ -1743,6 +1743,7 @@ public:
             case GT_RETFILT:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
                 return gtType == TYP_VOID;
@@ -4030,8 +4031,8 @@ struct GenTreeField : public GenTreeUnOp
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+    GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTreeUnOp(oper, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;

@@ -2598,6 +2598,9 @@ public:
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
+    GenTreeField* gtNewFieldAddrNode(
+        var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
                                      var_types            elemType,
@@ -10744,6 +10747,7 @@ public:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
