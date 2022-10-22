@@ -1465,17 +1465,17 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        public async Task<JObject> WaitForBreakpointResolvedEvent()
+        public Task<JObject> WaitForBreakpointResolvedEvent() => WaitForEventAsync("Debugger.breakpointResolved");
+
+        public async Task<JObject> WaitForEventAsync(string eventName)
         {
             try
             {
-                var res = await insp.WaitForEvent("Debugger.breakpointResolved");
-                _testOutput.WriteLine ($"breakpoint resolved to {res}");
-                return res;
+                return await insp.WaitForEvent(eventName);
             }
             catch (TaskCanceledException)
             {
-                throw new XunitException($"Timed out waiting for Debugger.breakpointResolved event");
+                throw new XunitException($"Timed out waiting for {eventName} event");
             }
         }
 

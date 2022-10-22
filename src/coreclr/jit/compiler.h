@@ -1408,9 +1408,8 @@ enum Phases
     PHASE_NUMBER_OF
 };
 
-extern const char*   PhaseNames[];
-extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseEnumsW[];
+extern const char* PhaseNames[];
+extern const char* PhaseEnums[];
 
 // Specify which checks should be run after each phase
 //
@@ -2595,7 +2594,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
+    GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -5328,7 +5327,7 @@ public:
     };
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
-    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type);
+    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type);
     bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
 #endif // DUMP_FLOWGRAPHS
 
@@ -7375,17 +7374,17 @@ public:
         Statement*        stmt;
         const unsigned    loopNum;
         const bool        cloneForArrayBounds;
-        const bool        cloneForTypeTests;
+        const bool        cloneForGDVTests;
         LoopCloneVisitorInfo(LoopCloneContext* context,
                              unsigned          loopNum,
                              Statement*        stmt,
                              bool              cloneForArrayBounds,
-                             bool              cloneForTypeTests)
+                             bool              cloneForGDVTests)
             : context(context)
             , stmt(nullptr)
             , loopNum(loopNum)
             , cloneForArrayBounds(cloneForArrayBounds)
-            , cloneForTypeTests(cloneForTypeTests)
+            , cloneForGDVTests(cloneForGDVTests)
         {
         }
     };
@@ -7399,6 +7398,8 @@ public:
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
     bool optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
+    bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     bool optLoopCloningEnabled();
 

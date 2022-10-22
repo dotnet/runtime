@@ -1654,7 +1654,7 @@ error_erange:
 
 /* vsprintf_s */
 /*
- * swprintf_s, vsprintf_s, vswprintf_s format a string and copy it into _Dst;
+ * swprintf_s, vsprintf_s format a string and copy it into _Dst;
  * need safecrt.lib and msvcrt.dll;
  * will call _SAFECRT_INVALID_PARAMETER if there is not enough space in _Dst;
  * will call _SAFECRT_INVALID_PARAMETER if the format string is malformed;
@@ -1676,36 +1676,8 @@ int __cdecl vsprintf_s(char (&_Dst)[_SizeInBytes], const char *_Format, va_list 
 }
 #endif
 
-/* no inline version of vsprintf_s */
 
-/* swprintf_s, vswprintf_s */
-_SAFECRT__EXTERN_C
-int __cdecl swprintf_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Format, ...);
-_SAFECRT__EXTERN_C
-int __cdecl vswprintf_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Format, va_list _ArgList);
-
-#if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
-template <size_t _SizeInWords>
-inline
-int __cdecl swprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
-}
-
-template <size_t _SizeInWords>
-inline
-int __cdecl vswprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, va_list _ArgList)
-{
-    return vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
-}
-#endif
-
-/* no inline version of swprintf_s, vswprintf_s */
+/* no inline version of swprintf_s */
 
 /* _vsnprintf_s */
 /*

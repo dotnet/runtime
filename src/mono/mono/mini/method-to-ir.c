@@ -7837,7 +7837,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Inlining */
-			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall &&
+			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall && !gshared_static_virtual &&
 				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
 			    mono_method_check_inlining (cfg, cmethod)) {
 				int costs;

@@ -5,7 +5,7 @@
 *vswprint.c - print formatted data into a string from var arg list
 *
 *Purpose:
-*       defines vswprintf_s() and _vsnwprintf_s() - print formatted output to
+*       defines _vsnwprintf_s() - print formatted output to
 *       a string, get the data from an argument ptr instead of explicit
 *       arguments.
 *
@@ -24,7 +24,6 @@ typedef int (*WOUTPUTFN)(miniFILE *, const char16_t *, va_list);
 static int _vswprintf_helper( WOUTPUTFN outfn, char16_t *string, size_t count, const char16_t *format, va_list ap );
 
 /***
-*int vswprintf_s(string, sizeInWords, format, ap) - print formatted data to string from arg ptr
 *int _vsnwprintf_s(string, sizeInWords, cnt, format, ap) - print formatted data to string from arg ptr
 *Purpose:
 *       Prints formatted data, but to a string and gets data from an argument
@@ -109,37 +108,6 @@ int __cdecl _vswprintf_helper (
             return -2;
         }
         return -1;
-}
-
-DLLEXPORT int __cdecl vswprintf_s (
-        char16_t *string,
-        size_t sizeInWords,
-        const char16_t *format,
-        va_list ap
-        )
-{
-    int retvalue = -1;
-
-    /* validation section */
-    _VALIDATE_RETURN(format != NULL, EINVAL, -1);
-    _VALIDATE_RETURN(string != NULL && sizeInWords > 0, EINVAL, -1);
-
-    retvalue = _vswprintf_helper(_woutput_s, string, sizeInWords, format, ap);
-    if (retvalue < 0)
-    {
-        string[0] = 0;
-        _SECURECRT__FILL_STRING(string, sizeInWords, 1);
-    }
-    if (retvalue == -2)
-    {
-        _VALIDATE_RETURN(("Buffer too small" && 0), ERANGE, -1);
-    }
-    if (retvalue >= 0)
-    {
-        _SECURECRT__FILL_STRING(string, sizeInWords, retvalue + 1);
-    }
-
-    return retvalue;
 }
 
 DLLEXPORT int __cdecl _vsnwprintf_s (

@@ -7364,7 +7364,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags)
+GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -7372,14 +7372,10 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     node->gtInlineCandidate = inlineCandidate;
 
-    node->bbFlags = bbFlags;
+    node->gtSubstExpr = nullptr;
+    node->gtSubstBB   = nullptr;
 
-    if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
-    {
-        node->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
-    }
-
-    // GT_RET_EXPR node eventually might be bashed back to GT_CALL (when inlining is aborted for example).
+    // GT_RET_EXPR node eventually might be turned back into GT_CALL (when inlining is aborted for example).
     // Therefore it should carry the GTF_CALL flag so that all the rules about spilling can apply to it as well.
     // For example, impImportLeave or CEE_POP need to spill GT_RET_EXPR before empty the evaluation stack.
     node->gtFlags |= GTF_CALL;
@@ -11502,10 +11498,16 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
         {
-            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
-            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
-            printTreeID(associatedTree);
+            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(for ");
+            printTreeID(inlineCand);
             printf(")");
+
+            if (tree->AsRetExpr()->gtSubstExpr != nullptr)
+            {
+                printf(" -> ");
+                printTreeID(tree->AsRetExpr()->gtSubstExpr);
+            }
         }
         break;
 
@@ -17446,7 +17448,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
             case GT_RET_EXPR:
-                structHnd = tree->AsRetExpr()->gtRetClsHnd;
+                structHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
                 break;
             case GT_FIELD:
                 info.compCompHnd->getFieldType(tree->AsField()->gtFldHnd, &structHnd);
