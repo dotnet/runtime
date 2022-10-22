@@ -226,16 +226,10 @@ IF NOT DEFINED DoLink (
 
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
-<<<<<<< HEAD
+
       <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBashPreCommands)
-if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
-=======
-
-      <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-$(BashCLRTestPreCommands)
 if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOTNET_TailcallStress" ) && ( "$DOTNET_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
->>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
@@ -250,15 +244,9 @@ fi
 ]]>
       </CLRTestBashPreCommands>
 
-<<<<<<< HEAD
       <CLRTestBashPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBashPostCommands)
-if [[ -n $COMPlus_JitDisasm ]]; then
-=======
-      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
-      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n $DOTNET_JitDisasm ]]; then
->>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BashDisasmOutputFile)"
     ERRORLEVEL=$?
     if [[ $ERRORLEVEL -ne 0 ]]
@@ -280,17 +268,10 @@ fi
 
       <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
       <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
-<<<<<<< HEAD
+
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBatchPreCommands)
-IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_TailcallStress%"=="" IF NOT "%COMPlus_TieredPGO%" == "1" IF NOT "%RunCrossGen2%" == "1" (
-=======
-
-      <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
-<![CDATA[
-      $(CLRTestBatchPreCommands)
 IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_TailcallStress%"=="" IF NOT "%DOTNET_TieredPGO%" == "1" IF NOT "%RunCrossGen2%" == "1" (
->>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
       ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
@@ -303,15 +284,9 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
 ]]>
       </CLRTestBatchPreCommands>
 
-<<<<<<< HEAD
       <CLRTestBatchPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBatchPostCommands)
-IF NOT "%COMPlus_JitDisasm%" == "" (
-=======
-      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
-      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 IF NOT "%DOTNET_JitDisasm%" == "" (
->>>>>>> dotnet/main
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BatchDisasmOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
       ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
