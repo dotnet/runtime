@@ -233,6 +233,31 @@ ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandl
 	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
 }
 
+void
+ves_icall_System_Array_InitializeInternal (MonoObjectHandleOnStack arr_handle, MonoError *error)
+{
+	MonoArray *arr = *(MonoArray**)arr_handle;
+	MonoClass * const array_class = mono_object_class (arr);
+	MonoClass * const element_class = m_class_get_element_class (array_class);
+	if (!m_class_is_valuetype (element_class)) {
+		return;
+	}
+
+
+	MonoMethod * const method = mono_class_get_method_from_name_checked (element_class, ".ctor", 0, 0, error);
+	if (!method) {
+		return;
+	}
+
+	gsize element_size = mono_array_element_size (array_class);
+
+	for (guint32 i = 0; i < arr->max_length; i++) {
+		gpointer element_address = mono_array_addr_with_size_fast (arr, element_size, (gsize)i);
+		mono_runtime_invoke_checked (method, element_address, NULL, error);
+		return_if_nok (error);
+	}
+}
+
 // Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.cpp#L31
 #define PT_Primitive          0x01000000
 

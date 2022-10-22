@@ -4449,9 +4449,9 @@ namespace System.Tests
         [Fact]
         public static void Array_Initialize()
         {
-            var array = new StructWithParameterlessConstructor[10];
+            var array = new StructWithDefaultConstructor[10, 10];
             array.Initialize();
-            Assert.All(array, a => Assert.True(a.Constructed));
+            Assert.All(array.OfType<StructWithDefaultConstructor>(), a => Assert.True(a.Constructed));
 
             var array2 = new NonGenericClass1[10];
             array2.Initialize();
@@ -4602,9 +4602,9 @@ namespace System.Tests
             public int z;
         }
 
-        private struct StructWithParameterlessConstructor
+        private struct StructWithDefaultConstructor
         {
-            public StructWithParameterlessConstructor()
+            public StructWithDefaultConstructor()
             {
                 Constructed = true;
             }
