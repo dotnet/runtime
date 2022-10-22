@@ -6061,33 +6061,31 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETITEM_SPAN) {
-			guint8 *span = LOCAL_VAR (ip [2], guint8*);
+			MonoSpanOfVoid *span = LOCAL_VAR (ip [2], MonoSpanOfVoid*);
 			int index = LOCAL_VAR (ip [3], int);
 			NULL_CHECK (span);
 
-			const gint32 length = *(gint32 *) (span + TARGET_SIZEOF_VOID_P);
+			gint32 length = span->_length;
 			if (index < 0 || index >= length)
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
 			gsize element_size = (gsize)(gint16)ip [4];
-			gpointer pointer = *(gpointer *)span;
-			LOCAL_VAR (ip [1], gpointer) = (guint8 *) pointer + index * element_size;
+			LOCAL_VAR (ip [1], gpointer) = (guint8*)span->_reference + index * element_size;
 
 			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETITEM_LOCALSPAN) {
 			// Same as getitem span but we know the offset of the span structure on the stack
-			guint8 *span = (guint8*)locals + ip [2];
+			MonoSpanOfVoid *span = (MonoSpanOfVoid*)(locals + ip [2]);
 			int index = LOCAL_VAR (ip [3], int);
 
-			gint32 length = *(gint32 *) (span + TARGET_SIZEOF_VOID_P);
+			gint32 length = span->_length;
 			if (index < 0 || index >= length)
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
 			gsize element_size = (gsize)(gint16)ip [4];
-			gpointer pointer = *(gpointer *)span;
-			LOCAL_VAR (ip [1], gpointer) = (guint8 *) pointer + index * element_size;
+			LOCAL_VAR (ip [1], gpointer) = (guint8*)span->_reference + index * element_size;
 
 			ip += 5;
 			MINT_IN_BREAK;
