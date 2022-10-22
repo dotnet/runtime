@@ -9311,9 +9311,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_TGT_HEAP]");
                 }
-                if (tree->gtFlags & GTF_IND_TLS_REF)
+                if (tree->gtFlags & GTF_IND_REQ_ADDR_IN_REG)
                 {
-                    chars += printf("[IND_TLS_REF]");
+                    chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
                 if (tree->gtFlags & GTF_IND_ASG_LHS)
                 {

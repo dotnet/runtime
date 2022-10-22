@@ -1212,10 +1212,14 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 // Return Value:
 //    New GT_IND node
 
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
 {
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
     GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->gtFlags |= indirFlags;
     indir->SetIndirExceptionFlags(this);
+
     return indir->AsIndir();
 }
 

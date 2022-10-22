@@ -53,9 +53,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-    indir->gtFlags &= ~GTF_IND_ASG_LHS;
-
     if (indir->OperIs(GT_IND))
     {
         if (varTypeIsSIMD(indir))

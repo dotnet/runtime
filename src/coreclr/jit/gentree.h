@@ -489,33 +489,29 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
+    GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
+    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
-    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
-    GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile semantics (this is a nop on X86)
+    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
+    GTF_IND_VOLATILE            = 0x40000000, // GT_IND -- the load or store must use volatile semantics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
-                                              // Same as GTF_ARRLEN_NONFAULTING.
-    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND   -- the target is on the heap
-    GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
-                                              //             assignment; don't evaluate it independently.
-    GTF_IND_REQ_ADDR_IN_REG     = GTF_IND_ASG_LHS, // GT_IND  -- requires its addr operand to be evaluated
-                                              // into a register. This flag is useful in cases where it
-                                              // is required to generate register indirect addressing mode.
-                                              // One such case is virtual stub calls on xarch.  This is only
-                                              // valid in the backend, where GTF_IND_ASG_LHS is not necessary
-                                              // (all such indirections will be lowered to GT_STOREIND).
-    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND   -- the load or store is unaligned (we assume worst case
-                                              //             alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
-    GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
+    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND -- the target is on the heap
+    GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
+                                              //           This flag is useful in cases where it is required to generate register
+                                              //           indirect addressing mode. One such case is virtual stub calls on xarch.
+    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
+                                              //           assignment; don't evaluate it independently.
+    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND -- the load or store is unaligned (we assume worst case
+                                              //           alignment of 1 byte)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
@@ -4056,6 +4052,17 @@ struct GenTreeField : public GenTreeUnOp
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsStatic() const
+    {
+        return GetFldObj() == nullptr;
+    }
+
+    bool IsTlsStatic() const
+    {
+        assert(((gtFlags & GTF_FLD_TLS) == 0) || IsStatic());
+        return (gtFlags & GTF_FLD_TLS) != 0;
     }
 };
 

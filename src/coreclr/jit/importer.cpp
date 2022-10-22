@@ -9559,22 +9559,27 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_TLS:
 #ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only
+                        op1 = gtNewFieldAddrNode(TYP_I_IMPL, resolvedToken.hField, nullptr, fieldInfo.offset);
+                        op1->gtFlags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
 
-                        /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-                        op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
-
-                        if (isLoadAddress)
+                        if (!isLoadAddress)
                         {
-                            op1 = gtNewOperNode(GT_ADDR, (var_types)TYP_I_IMPL, op1);
+                            if (varTypeIsStruct(lclTyp))
+                            {
+                                op1 = gtNewObjNode(fieldInfo.structType, op1);
+                                op1->gtFlags |= GTF_IND_NONFAULTING;
+                            }
+                            else
+                            {
+                                op1 = gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
+                                op1->gtFlags |= GTF_GLOB_REF;
+                            }
                         }
                         break;
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
-
                         FALLTHROUGH;
 #endif
-
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
                     case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
@@ -9827,19 +9832,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     case CORINFO_FIELD_STATIC_TLS:
 #ifdef TARGET_X86
-                        // Legacy TLS access is implemented as intrinsic on x86 only
+                        // Legacy TLS access is implemented as intrinsic on x86 only.
+                        op1 = gtNewFieldAddrNode(TYP_I_IMPL, resolvedToken.hField, nullptr, fieldInfo.offset);
+                        op1->gtFlags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
 
-                        /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-                        op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
-
+                        if (varTypeIsStruct(lclTyp))
+                        {
+                            op1 = gtNewObjNode(fieldInfo.structType, op1);
+                            op1->gtFlags |= GTF_IND_NONFAULTING;
+                        }
+                        else
+                        {
+                            op1 = gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
+                            op1->gtFlags |= GTF_GLOB_REF;
+                        }
                         break;
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
-
                         FALLTHROUGH;
 #endif
-
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
                     case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
