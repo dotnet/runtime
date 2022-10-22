@@ -226,7 +226,7 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith24(ulong value)
         {
-            // X64:      lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+4*[[REG1]]{{\]}}
+            // X64:      lea [[REG0:[a-z]+]], {{\[}}[[REG1:[a-z]+]]+2*[[REG1]]{{\]}}
             // X64-NEXT: shl [[REG0]], 3
             return value * 24;
         }
