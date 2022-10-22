@@ -27,7 +27,7 @@ class ArrayNative
 public:
     static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 
-    static FCDECL1(void, Initialize, ArrayBase* pArray);
+    static FCDECL1(PCODE, GetConstructorSlot, MethodTable* pMT);
 
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
     static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);

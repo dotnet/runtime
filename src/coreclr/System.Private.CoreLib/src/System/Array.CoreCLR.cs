@@ -381,8 +381,41 @@ namespace System
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
+        public unsafe void Initialize()
+        {
+            MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);
+            var thElem = pArrayMT->GetArrayElementTypeHandle();
+            if (thElem.IsTypeDesc)
+            {
+                return;
+            }
+
+            var pElemMT = thElem.AsMethodTable();
+            if (!pElemMT->HasDefaultConstructor || !pElemMT->IsValueType)
+            {
+                return;
+            }
+
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            delegate*<ref byte, MethodTable*, void> ctorFtn = GetConstructorSlot(pElemMT);
+
+            nuint offset = 0;
+            for (var i = 0; i < Length; i++)
+            {
+                // Since GetConstructorSlot() is not idempotent and may have returned
+                // a non-optimal entry-point the first time round.
+                if (i == 1)
+                {
+                    ctorFtn = GetConstructorSlot(pElemMT);
+                }
+
+                ctorFtn(ref Unsafe.Add(ref arrayRef, offset), pElemMT);
+                offset += pArrayMT->ComponentSize;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void Initialize();
+        private static extern unsafe delegate*<ref byte, MethodTable*, void> GetConstructorSlot(MethodTable* pMT);
     }
 
 #pragma warning disable CA1822 // Mark members as static

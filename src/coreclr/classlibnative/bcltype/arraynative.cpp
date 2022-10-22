@@ -28,116 +28,16 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-// array is GC protected by caller
-void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
-                           MethodTable* pArrayMT,
-                           MethodTable* pElemMT)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    // Ensure that the array element type is fully loaded before executing its code
-    pElemMT->EnsureInstanceActive();
-
-    //can not use contract here because of SEH
-    _ASSERTE(IsProtectedByGCFrame (arrayRef));
-
-    SIZE_T offset = ArrayBase::GetDataPtrOffset(pArrayMT);
-    SIZE_T size = pArrayMT->GetComponentSize();
-    SIZE_T cElements = (*arrayRef)->GetNumComponents();
-
-    MethodTable * pCanonMT = pElemMT->GetCanonicalMethodTable();
-    WORD slot = pCanonMT->GetDefaultConstructorSlot();
-
-    PCODE ctorFtn = pCanonMT->GetSlot(slot);
-
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    BEGIN_CALL_TO_MANAGED();
-
-
-    for (SIZE_T i = 0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-#ifdef _DEBUG
-        __asm {
-            mov ECX, thisPtr
-            mov EDX, pElemMT // Instantiation argument if the type is generic
-            call    [ctorFtn]
-            nop                // Mark the fact that we can call managed code
-        }
-#else // _DEBUG
-        typedef void (__fastcall * CtorFtnType)(BYTE*, BYTE*);
-        (*(CtorFtnType)ctorFtn)(thisPtr, (BYTE*)pElemMT);
-#endif // _DEBUG
-
-        offset += size;
-    }
-
-    END_CALL_TO_MANAGED();
-#else // TARGET_X86 && !TARGET_UNIX
-    //
-    // This is quite a bit slower, but it is portable.
-    //
-
-    for (SIZE_T i =0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(ctorFtn);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(thisPtr);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pElemMT); // Instantiation argument if the type is generic
-        CALL_MANAGED_METHOD_NORET(args);
-
-        offset += size;
-    }
-#endif // !TARGET_X86 || TARGET_UNIX
-}
-
-
-FCIMPL1(void, ArrayNative::Initialize, ArrayBase* array)
+FCIMPL1(PCODE, ArrayNative::GetConstructorSlot, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    if (array == NULL)
-    {
-        FCThrowVoid(kNullReferenceException);
-    }
+    MethodTable* pCanonMT = pMT->GetCanonicalMethodTable();
+    WORD slot = pCanonMT->GetDefaultConstructorSlot();
 
-
-    MethodTable* pArrayMT = array->GetMethodTable();
-
-    TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
-    if (thElem.IsTypeDesc())
-        return;
-
-    MethodTable * pElemMT = thElem.AsMethodTable();
-    if (!pElemMT->HasDefaultConstructor() || !pElemMT->IsValueType())
-        return;
-
-    ARRAYBASEREF arrayRef (array);
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
-
-    ArrayInitializeWorker(&arrayRef, pArrayMT, pElemMT);
-
-    HELPER_METHOD_FRAME_END();
+    return pCanonMT->GetSlot(slot);
 }
 FCIMPLEND
-
 
     // Returns whether you can directly copy an array of srcType into destType.
 FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst)
