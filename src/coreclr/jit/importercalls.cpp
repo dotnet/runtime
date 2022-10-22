@@ -1312,7 +1312,7 @@ DONE:
 
             // Only schedule importation if we're not currently importing.
             //
-            if ((opts.IsInstrumentedOptimized() && opts.IsOSR()) && mustImportEntryBlock && (compCurBB != fgEntryBB))
+            if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
             {
                 JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
