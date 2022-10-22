@@ -257,24 +257,6 @@ add_executable_clr(paltests
   c_runtime/strtod/test2/test2.cpp
   c_runtime/strtok/test1/test1.cpp
   c_runtime/strtoul/test1/test1.cpp
-  c_runtime/swprintf/test1/test1.cpp
-  c_runtime/swprintf/test10/test10.cpp
-  c_runtime/swprintf/test11/test11.cpp
-  c_runtime/swprintf/test12/test12.cpp
-  c_runtime/swprintf/test13/test13.cpp
-  c_runtime/swprintf/test14/test14.cpp
-  c_runtime/swprintf/test15/test15.cpp
-  c_runtime/swprintf/test16/test16.cpp
-  c_runtime/swprintf/test17/test17.cpp
-  c_runtime/swprintf/test18/test18.cpp
-  c_runtime/swprintf/test19/test19.cpp
-  c_runtime/swprintf/test2/test2.cpp
-  c_runtime/swprintf/test3/test3.cpp
-  c_runtime/swprintf/test4/test4.cpp
-  c_runtime/swprintf/test6/test6.cpp
-  c_runtime/swprintf/test7/test7.cpp
-  c_runtime/swprintf/test8/test8.cpp
-  c_runtime/swprintf/test9/test9.cpp
   c_runtime/tan/test1/test1.cpp
   c_runtime/tanf/test1/test1.cpp
   c_runtime/tanh/test1/test1.cpp

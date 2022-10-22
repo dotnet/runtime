@@ -11,6 +11,6 @@
   <ItemGroup>
     <Compile Include="dblarray4.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_DoubleArrayToLargeObjectHeap" Value="0x64" />
+    <CLRTestEnvironmentVariable Include="DOTNET_DoubleArrayToLargeObjectHeap" Value="0x64" />
   </ItemGroup>
 </Project>
