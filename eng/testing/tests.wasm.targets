@@ -37,7 +37,10 @@
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets" Condition="'$(InstallChromeForTests)' == 'true'" />
+  <!-- On CI this is installed as part of pretest, but it should still be installed
+       for WBT, and debugger tests -->
+  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
+          Condition="'$(InstallChromeForTests)' == 'true' and ('$(ContinuousIntegrationBuild)' != 'true' or '$(IsWasmProject)' != 'true')" />
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
@@ -348,7 +351,7 @@
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
 
-      <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::Path.GetDirectoryName($(ChromeDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
     </ItemGroup>
 
     <ItemGroup>

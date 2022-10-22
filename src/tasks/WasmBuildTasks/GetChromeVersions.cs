@@ -17,12 +17,12 @@ using MBU = Microsoft.Build.Utilities;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
-public class InstallChromeForTests : MBU.Task
+public class GetChromeVersions : MBU.Task
 {
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
     private const int s_versionCheckThresholdDays = 3;
-    private const int s_numBranchPositionsToTry = 10;
+    private const int s_numBranchPositionsToTry = 30;
     private static readonly HttpClient s_httpClient = new();
 
     public string Channel { get; set; } = "stable";
@@ -45,7 +45,7 @@ public class InstallChromeForTests : MBU.Task
     [Output]
     public string ChromeVersion { get; set; } = string.Empty;
     [Output]
-    public string BranchBasePosition { get; set; } = string.Empty;
+    public string BranchPosition { get; set; } = string.Empty;
     [Output]
     public string BaseSnapshotUrl { get; set; } = string.Empty;
     [Output]
@@ -67,7 +67,7 @@ public class InstallChromeForTests : MBU.Task
             BaseSnapshotUrl = await GetChromeUrlsAsync(version).ConfigureAwait(false);
             ChromeVersion = version.version;
             V8Version = version.v8_version;
-            BranchBasePosition = version.branch_base_position;
+            BranchPosition = version.branch_base_position;
 
             return !Log.HasLoggedErrors;
         }
@@ -80,13 +80,13 @@ public class InstallChromeForTests : MBU.Task
 
     private async Task<string> GetChromeUrlsAsync(ChromeVersionSpec version)
     {
-        string baseUrl = Path.Combine(s_snapshotBaseUrl, OSPrefix);
+        string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
 
         int branchPosition = int.Parse(version.branch_base_position);
         for (int i = 0; i < s_numBranchPositionsToTry; i++)
         {
-            string branchUrl = Path.Combine(baseUrl, branchPosition.ToString());
-            string url = Path.Combine(branchUrl, "REVISIONS");
+            string branchUrl = $"{baseUrl}/{branchPosition}";
+            string url = $"{branchUrl}/REVISIONS";
 
             Log.LogMessage(MessageImportance.Low, $"Checking if {url} exists ..");
             HttpResponseMessage response = await s_httpClient
@@ -98,11 +98,12 @@ public class InstallChromeForTests : MBU.Task
                 return branchUrl;
             }
 
-            branchPosition -= 1;
+            branchPosition += 1;
         }
 
         throw new LogAsErrorException($"Could not find a chrome snapshot folder under {baseUrl}, " +
-                                        $"starting at branch position {branchPosition}, for version {version.version}");
+                                        $"for branch positions {version.branch_base_position} to " +
+                                        $"{branchPosition}, for version {version.version}.");
     }
 
     private async Task<ChromeVersionSpec> GetChromeVersionAsync()
@@ -119,7 +120,8 @@ public class InstallChromeForTests : MBU.Task
         if (foundOSVersions.Length == 0)
         {
             string availableOSIds = string.Join(", ", perOSVersions.Select(osv => osv.os).Distinct().Order());
-            throw new LogAsErrorException($"Unknown OS identifier '{OSIdentifier}'. OS identifiers found in all.json: {availableOSIds}");
+            throw new LogAsErrorException($"Unknown OS identifier '{OSIdentifier}'. OS identifiers found " +
+                                            $"in all.json: {availableOSIds}");
         }
 
         ChromeVersionSpec[] foundChromeVersions = foundOSVersions
@@ -134,7 +136,8 @@ public class InstallChromeForTests : MBU.Task
                                                             .Select(cv => cv.channel)
                                                             .Distinct()
                                                             .Order());
-            throw new LogAsErrorException($"Unknown chrome channel '{Channel}'. Channels found in all.json: {availableChannels}");
+            throw new LogAsErrorException($"Unknown chrome channel '{Channel}'. Channels found in all.json: " +
+                                            availableChannels);
         }
 
         return foundChromeVersions[0];

@@ -29,10 +29,10 @@
 
     <RemoveDir Directories="$(ChromeDir)" />
 
-    <Message Text="** Installing chrome version $(ChromeVersion), rev: $(ChromeRevision). Disable this by setting msbuild property InstallChromeForTests=false ."
+    <Message Text="** Installing chrome version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
              Importance="High" />
 
-    <DownloadFile SourceUrl="$(ChromeUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
+    <DownloadFile SourceUrl="$(ChromeUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
@@ -51,10 +51,10 @@
 
     <RemoveDir Directories="$(ChromeDriverDir)" />
 
-    <Message Text="** Installing chromedriver version $(ChromeVersion), rev: $(ChromeRevision). Disable this by setting msbuild property InstallChromeForTests=false ."
+    <Message Text="** Installing chromedriver version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
              Importance="High" />
 
-    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
+    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDriverDir)" />
@@ -96,19 +96,19 @@
   </Target>
 
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)"
-             TaskName="Microsoft.WebAssembly.Build.Tasks.InstallChromeForTests" />
+             TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
 
   <Target Name="GetChromeVersion" AfterTargets="Build" Condition="'$(InstallChromeForTests)' == 'true'">
-    <InstallChromeForTests
+    <GetChromeVersions
                 OSIdentifier="$(ChromeOSIdentifier)"
                 OSPrefix="$(_ChromeOSPrefix)"
                 Channel="$(ChromeChannel)"
                 IntermediateOutputPath="$(ArtifactsObjDir)">
       <Output TaskParameter="ChromeVersion"      PropertyName="ChromeVersion" />
       <Output TaskParameter="V8Version"          PropertyName="V8Version" />
-      <Output TaskParameter="BranchBasePosition" PropertyName="ChromeRevision" />
+      <Output TaskParameter="BranchPosition"     PropertyName="ChromeRevision" />
       <Output TaskParameter="BaseSnapshotUrl"    PropertyName="_ChromeBaseSnapshotUrl" />
-    </InstallChromeForTests>
+    </GetChromeVersions>
 
     <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
       <ChromeUrl>$(_ChromeBaseSnapshotUrl)/chrome-linux.zip</ChromeUrl>
