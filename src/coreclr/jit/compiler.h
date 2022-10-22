@@ -2598,8 +2598,10 @@ public:
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
-    GenTreeField* gtNewFieldAddrNode(
-        var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTreeField* gtNewFieldAddrNode(var_types            type,
+                                     CORINFO_FIELD_HANDLE fldHnd,
+                                     GenTree*             obj    = nullptr,
+                                     DWORD                offset = 0);
 
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,

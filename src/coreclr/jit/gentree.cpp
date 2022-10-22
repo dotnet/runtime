@@ -7377,6 +7377,86 @@ GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCand
     return node;
 }
 
+//------------------------------------------------------------------------
+// gtNewFieldRef: Create a new GT_FIELD node.
+//
+// Normalizes struct types (for SIMD vectors). Sets GTF_GLOB_REF for fields
+// that may be pointing into globally visible memory.
+//
+// Arguments:
+//    type   - type for the field node
+//    fldHnd - the field handle
+//    obj    - the instance, an address
+//    offset - the field offset
+//
+// Return Value:
+//    The created node.
+//
+GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+{
+    // GT_FIELD nodes are transformed into GT_IND nodes.
+    assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
+
+    if (type == TYP_STRUCT)
+    {
+        CORINFO_CLASS_HANDLE structHnd;
+        eeGetFieldType(fldHnd, &structHnd);
+        type = impNormStructType(structHnd);
+    }
+
+    GenTreeField* fieldNode = new (this, GT_FIELD) GenTreeField(GT_FIELD, type, obj, fldHnd, offset);
+
+    // If "obj" is the address of a local, note that a field of that struct local has been accessed.
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
+
+        varDsc->lvFieldAccessed = 1;
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
+        {
+            // These structs are passed by reference and can easily become global references if those
+            // references are exposed. We clear out address-exposure information for these parameters
+            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
+            // the necessary information in morph to know if these indirections are actually global
+            // references, so we have to be conservative here.
+            fieldNode->gtFlags |= GTF_GLOB_REF;
+        }
+    }
+    else
+    {
+        fieldNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return fieldNode;
+}
+
+//------------------------------------------------------------------------
+// gtNewFieldRef: Create a new GT_FIELD_ADDR node.
+//
+// Arguments:
+//    type   - type for the address node
+//    fldHnd - the field handle
+//    obj    - the instance, an address
+//    offset - the field offset
+//
+// Return Value:
+//    The created node.
+//
+GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+{
+    assert(varTypeIsI(genActualType(type)));
+
+    GenTreeField* fieldNode = new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, obj, fldHnd, offset);
+
+    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
+    // TODO-ADDR: delete this zero-diff quirk.
+    fieldNode->gtFlags |= GTF_GLOB_REF;
+
+    return fieldNode;
+}
+
 /*****************************************************************************
  *
  *  Create a node that will assign 'src' to 'dst'.
