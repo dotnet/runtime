@@ -6237,23 +6237,29 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	get_marshal_cb ()->emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, flags);
 }
 
-static MonoMarshalLightweightCallbacks marshal_lightweight_cb;
-static gboolean lightweight_cb_inited = FALSE;
+static MonoMarshalLightweightCallbacks* marshal_lightweight_cb = NULL;
+
 
 void
 mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 {
-	g_assert (!lightweight_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&marshal_lightweight_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
-	lightweight_cb_inited = TRUE;
+	MonoMarshalLightweightCallbacks* local_cb = (MonoMarshalLightweightCallbacks*)malloc(sizeof(MonoMarshalLightweightCallbacks));
+	memcpy (local_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
+
+	if (mono_atomic_cas_ptr((void**)&marshal_lightweight_cb, local_cb, NULL))
+	{
+		// cas failed
+		free(local_cb);
+	}
 }
+
 
 static MonoMarshalLightweightCallbacks *
 get_marshal_cb (void)
 {
 
-	if (G_UNLIKELY (!lightweight_cb_inited)) {
+	if (G_UNLIKELY (!marshal_lightweight_cb)) {
 #ifdef ENABLE_ILGEN
 		mono_marshal_lightweight_init ();
 #else
@@ -6261,7 +6267,7 @@ get_marshal_cb (void)
 #endif
 	}
 
-	return &marshal_lightweight_cb;
+	return marshal_lightweight_cb;
 }
 
 

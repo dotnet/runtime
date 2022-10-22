@@ -29,18 +29,21 @@ static void emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 // TODO: Does this need to loose the mono_ prefix?
 static void mono_marshal_ilgen_legacy_init (void);
 
-static gboolean ilgen_cb_inited = FALSE;
-static MonoMarshalIlgenCallbacks ilgen_marshal_cb;
+static MonoMarshalIlgenCallbacks* ilgen_marshal_cb = NULL;
 
 void
 mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb)
 {
-	g_assert (!ilgen_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalIlgenCallbacks));
-	ilgen_cb_inited = TRUE;
-}
+	MonoMarshalIlgenCallbacks* local_cb = (MonoMarshalIlgenCallbacks*)malloc(sizeof(MonoMarshalIlgenCallbacks));
+	memcpy (local_cb, cb, sizeof (MonoMarshalIlgenCallbacks));
 
+	if (mono_atomic_cas_ptr((void**)&ilgen_marshal_cb, local_cb, NULL  ))
+	{
+		// cas failed
+		free(local_cb);
+	}
+}
 
 static void
 emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
@@ -2717,14 +2720,14 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static MonoMarshalIlgenCallbacks *
 get_marshal_cb (void)
 {
-	if (G_UNLIKELY (!ilgen_cb_inited)) {
+	if (G_UNLIKELY (!ilgen_marshal_cb)) {
 #ifdef ENABLE_ILGEN
 		mono_marshal_ilgen_init ();
 #else
 		mono_marshal_noilgen_init_heavyweight ();
 #endif
 	}
-	return &ilgen_marshal_cb;
+	return ilgen_marshal_cb;
 }
 
 int
