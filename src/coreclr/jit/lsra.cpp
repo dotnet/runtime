@@ -312,42 +312,45 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
 
 void LinearScan::clearSpillCost(regNumber reg, Referenceable* reference)
 {
-    spillCost[reg] = 0;
+    int       regCount = reference->regCount;
+    regNumber currReg  = reg;
 #ifdef TARGET_ARM
-    if (reference->registerType == TYP_DOUBLE)
-    {
-        assert(genIsValidDoubleReg(reg));
-        regNumber otherReg  = REG_NEXT(reg);
-        spillCost[otherReg] = 0;
-    }
+    assert((regCount == 1) || (reference->registerType == TYP_DOUBLE));
 #endif
+    do
+    {
+        spillCost[currReg] = 0;
+        currReg            = REG_NEXT(currReg);
+    } while (--regCount > 0);
 }
 
 void LinearScan::clearNextIntervalRef(regNumber reg, Referenceable* reference)
 {
-    nextIntervalRef[reg] = MaxLocation;
+    int       regCount = reference->regCount;
+    regNumber currReg  = reg;
 #ifdef TARGET_ARM
-    if (reference->registerType == TYP_DOUBLE)
-    {
-        assert(genIsValidDoubleReg(reg));
-        regNumber otherReg        = REG_NEXT(reg);
-        nextIntervalRef[otherReg] = MaxLocation;
-    }
+    assert((regCount == 1) || (reference->registerType == TYP_DOUBLE));
 #endif
+    do
+    {
+        nextIntervalRef[currReg] = MaxLocation;
+        currReg            = REG_NEXT(currReg);
+    } while (--regCount > 0);
 }
 
 void LinearScan::updateNextIntervalRef(regNumber reg, Interval* interval)
 {
     LsraLocation nextRefLocation = interval->getNextRefLocation();
-    nextIntervalRef[reg]         = nextRefLocation;
+    int       regCount           = interval->regCount;
+    regNumber currReg            = reg;
 #ifdef TARGET_ARM
-    if (interval->registerType == TYP_DOUBLE)
-    {
-        assert(interval->regCount == 2);
-        regNumber otherReg        = REG_NEXT(reg);
-        nextIntervalRef[otherReg] = nextRefLocation;
-    }
+    assert((regCount == 1) || (interval->registerType == TYP_DOUBLE));
 #endif
+    do
+    {
+        nextIntervalRef[currReg] = nextRefLocation;
+        currReg            = REG_NEXT(currReg);
+    } while (--regCount > 0);
 }
 
 void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
@@ -355,15 +358,16 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
     weight_t cost  = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
-    spillCost[reg] = cost;
+    int       regCount = interval->regCount;
+    regNumber currReg  = reg;
 #ifdef TARGET_ARM
-    if (interval->registerType == TYP_DOUBLE)
-    {
-        assert(interval->regCount == 2);
-        regNumber otherReg  = REG_NEXT(reg);
-        spillCost[otherReg] = cost;
-    }
+    assert((regCount == 1) || (interval->registerType == TYP_DOUBLE));
 #endif
+    do
+    {
+        spillCost[currReg] = cost;
+        currReg            = REG_NEXT(currReg);
+    } while (--regCount > 0);
 }
 
 //------------------------------------------------------------------------
