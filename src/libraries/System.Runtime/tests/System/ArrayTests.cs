@@ -4446,7 +4446,8 @@ namespace System.Tests
             Assert.Equal(0x7FFFFFC7, Array.MaxLength);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))] // Array.Initialize NYI for NativeAOT
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] // Array.Initialize
         public static void Array_Initialize()
         {
             var array = new StructWithDefaultConstructor[10, 10];

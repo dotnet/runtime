@@ -405,7 +405,7 @@ namespace System
             }
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
-            ushort elementSize = pArrayMT->ComponentSize;
+            nuint elementSize = pArrayMT->ComponentSize;
 
             for (int i = 0; i < Length; i++)
             {
@@ -416,21 +416,20 @@ namespace System
 
         private sealed unsafe partial class ArrayInitializeCache
         {
-            internal delegate*<ref byte, void> ConstructorEntrypoint;
+            private readonly delegate*<ref byte, void> _constructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
             public ArrayInitializeCache(RuntimeType arrayType)
             {
-                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+                _constructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void InvokeConstructor(ref byte thisAddress)
             {
-                ConstructorEntrypoint(ref thisAddress);
-
+                _constructorEntrypoint(ref thisAddress);
             }
         }
     }
