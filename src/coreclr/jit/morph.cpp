@@ -5491,7 +5491,7 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
         tlsRef->gtFlags |= GTF_ICON_INITCLASS;
     }
 
-    tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
+    tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     if (dllRef != nullptr)
     {
