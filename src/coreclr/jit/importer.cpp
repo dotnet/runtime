@@ -4154,6 +4154,8 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         return nullptr;
     }
 
+    JITDUMP("\nCheck if we can import 'static readonly' as a jit-time constant... ")
+
     CORINFO_CLASS_HANDLE fieldClsHnd;
     var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls));
 
@@ -4167,15 +4169,87 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
             if (cnsValue != nullptr)
             {
+                JITDUMP("... success! The value is:\n");
+                DISPTREE(cnsValue);
                 return cnsValue;
             }
         }
     }
     else if (fieldType == TYP_STRUCT)
     {
+        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+        unsigned fieldsCnt = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
 
-        if (info.compCompHnd->getClassNumInstanceFields(fieldClsHnd) != 1)
+        // For large structs we only want to handle "initialized with zero" case
+        // e.g. Guid.Empty field.
+        if ((totalSize > TARGET_POINTER_SIZE) || (fieldsCnt != 1))
         {
+            JITDUMP("checking if we can do anything for a large struct ...");
+            const int MaxStructSize = 16;
+            if ((totalSize == 0) || (totalSize > MaxStructSize))
+            {
+                // TP-wise check
+                JITDUMP("struct is larger than 16 bytes - bail out.");
+                return nullptr;
+            }
+
+            uint8_t buffer[MaxStructSize] = {0};
+            if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+            {
+                for (unsigned i = 0; i < totalSize; i++)
+                {
+                    if (buffer[i] != 0)
+                    {
+                        // Value is not all zeroes - bail out
+                        JITDUMP("value is not all zeros - bail out.");
+                        return nullptr;
+                    }
+                }
+
+                DWORD typeFlags = info.compCompHnd->getClassAttribs(fieldClsHnd);
+                if (StructHasOverlappingFields(typeFlags) || StructHasCustomLayout(typeFlags))
+                {
+                    // Technically, we only care about holes in a struct but overlapping fields would complicate
+                    // the holes detection logic. And since, again, only Guid.Empty shows up in the diffs - it's fine.
+                    JITDUMP("struct has complex layout - bail out.");
+                    return nullptr;
+                }
+
+                unsigned totalFldSize = 0;
+                for (unsigned fldIndex = 0; fldIndex < fieldsCnt; fldIndex++)
+                {
+                    CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, fldIndex);
+                    CORINFO_CLASS_HANDLE innerFieldClsHnd;
+                    var_types            fieldVarType =
+                        JITtype2varType(info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
+
+                    if (!varTypeIsIntegral(fieldVarType))
+                    {
+                        // This is a bit too conservative check but since mostly Guid shows it's fine for TP
+                        JITDUMP("struct has non-primitive fields - bail out.");
+                        return nullptr;
+                    }
+                    totalFldSize += genTypeSize(fieldVarType);
+                }
+
+                if (totalFldSize != totalSize)
+                {
+                    JITDUMP("struct has holes - bail out.");
+                    return nullptr;
+                }
+
+                JITDUMP("success! Optimizing to ASG(struct, 0).");
+
+                unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld empty struct"));
+                lvaSetStruct(structTempNum, fieldClsHnd, false);
+                GenTree* tree = impCreateLocalNode(structTempNum DEBUGARG(0));
+                impAppendTree(tree, CHECK_SPILL_NONE, impCurStmtDI);
+                impAppendTree(gtNewBlkOpNode(gtClone(tree), gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
+                              impCurStmtDI);
+                return gtClone(tree);
+            }
+
+            JITDUMP("struct has complex layout - bail out.");
             // Only single-field structs are supported here to avoid potential regressions where
             // Metadata-driven struct promotion leads to regressions.
             return nullptr;
@@ -4189,15 +4263,16 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         // Technically, we can support frozen gc refs here and maybe floating point in future
         if (!varTypeIsIntegral(fieldVarType))
         {
+            JITDUMP("struct has non-primitive fields - bail out.");
             return nullptr;
         }
 
-        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
         unsigned fldOffset = info.compCompHnd->getFieldOffset(innerField);
 
-        if ((fldOffset != 0) || (totalSize != info.compCompHnd->getClassSize(fieldClsHnd)) || (totalSize == 0))
+        if ((fldOffset != 0) || (totalSize != genTypeSize(fieldVarType)) || (totalSize == 0))
         {
             // The field is expected to be of the exact size as the struct with 0 offset
+            JITDUMP("struct has complex layout - bail out.");
             return nullptr;
         }
 
