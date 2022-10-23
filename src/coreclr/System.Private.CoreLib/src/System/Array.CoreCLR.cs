@@ -384,13 +384,13 @@ namespace System
         public unsafe void Initialize()
         {
             MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);
-            var thElem = pArrayMT->GetArrayElementTypeHandle();
+            TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
             if (thElem.IsTypeDesc)
             {
                 return;
             }
 
-            var pElemMT = thElem.AsMethodTable();
+            MethodTable* pElemMT = thElem.AsMethodTable();
             if (!pElemMT->HasDefaultConstructor || !pElemMT->IsValueType)
             {
                 return;
@@ -404,20 +404,19 @@ namespace System
                 arrayType.GenericCache = cache;
             }
 
-            delegate*<ref byte, void> ctorFtn = cache.ConstructorEntrypoint;
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
-            var elementSize = pArrayMT->ComponentSize;
+            ushort elementSize = pArrayMT->ComponentSize;
 
             for (int i = 0; i < Length; i++)
             {
-                ctorFtn(ref arrayRef);
+                InvokeConstructor(ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }
 
         private sealed unsafe partial class ArrayInitializeCache
         {
-            internal delegate*<ref byte, void> ConstructorEntrypoint { get; }
+            internal delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
@@ -425,6 +424,13 @@ namespace System
             public ArrayInitializeCache(RuntimeType arrayType)
             {
                 ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void InvokeConstructor(ref byte thisAddress)
+            {
+                ConstructorEntrypoint(ref thisAddress);
+
             }
         }
     }

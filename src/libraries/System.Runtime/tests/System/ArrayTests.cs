@@ -4446,7 +4446,7 @@ namespace System.Tests
             Assert.Equal(0x7FFFFFC7, Array.MaxLength);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot)] // Remove this once I make sure that tests are green otherwise.
         public static void Array_Initialize()
         {
             var array = new StructWithDefaultConstructor[10, 10];
