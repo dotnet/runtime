@@ -9037,6 +9037,12 @@ public:
         COUNT_OPT_CODE
     };
 
+    enum OptimizationsKind
+    {
+        OPT_Lightweight,
+        OPT_All
+    };
+
     struct Options
     {
         JitFlags* jitFlags; // all flags passed from the EE
@@ -9106,8 +9112,25 @@ public:
         {
             return MinOpts() || compDbgCode;
         }
-        bool OptimizationEnabled() const
+
+        //------------------------------------------------------------------------
+        // OptimizationEnabled: Are optimizations of the specified kind allowed?
+        //
+        // Arguments:
+        //    kind - there are two kinds of optimizations:
+        //      OPT_All:         all kinds of optimizations
+        //      OPT_Lightweight: only those which won't regress JIT throughput
+        //
+        // Return Value:
+        //    true if JIT is alowed to perform optimizations of the given kind.
+        //
+        bool OptimizationEnabled(OptimizationsKind kind = OPT_All) const
         {
+            if (kind == OPT_Lightweight)
+            {
+                // Quick optimizations are allowed for all cases except debug code mode
+                return !compDbgCode;
+            }
             return !OptimizationDisabled();
         }
 

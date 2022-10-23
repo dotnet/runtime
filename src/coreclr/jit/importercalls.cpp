@@ -2476,6 +2476,33 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
     }
 
+    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
+    // in this case unlike mustExpand.
+    bool betterToExpand = mustExpand;
+    if (!mustExpand && opts.OptimizationEnabled(OPT_Lightweight))
+    {
+        switch (ni)
+        {
+            // HasFlag allocates in Tier0 and produces a fairly large IR tree
+            case NI_System_Enum_HasFlag:
+
+            // This one is just `return true/false`
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+
+            // This is faster to expand than emitting get_Length call
+            case NI_System_String_get_Length:
+
+                betterToExpand = true;
+                break;
+
+            default:
+                // Unsafe.* are all small enough to prefer expansions.
+                betterToExpand = ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                break;
+        }
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
@@ -2483,7 +2510,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
     // To avoid that we conservatively expand only required intrinsics in methods that call
     // the NextCallReturnAddress intrinsic.
-    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+    if (!betterToExpand && !mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
     {
         *pIntrinsicName = NI_Illegal;
         return retNode;

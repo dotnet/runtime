@@ -3791,7 +3791,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // and the other you get
         //    *(temp+4) = expr
 
-        if (opts.OptimizationDisabled())
+        if (!opts.OptimizationEnabled(OPT_Lightweight))
         {
             // For minopts/debug code, try and minimize the total number
             // of box temps by reusing an existing temp when possible.
