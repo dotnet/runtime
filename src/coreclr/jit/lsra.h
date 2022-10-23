@@ -498,6 +498,8 @@ public:
         regNum           = REG_NA;
         isCalleeSave     = false;
         registerType     = IntRegisterType;
+        regCount         = 1;
+        regIdx           = 0;
     }
 
     void init(regNumber reg)
@@ -547,6 +549,10 @@ public:
     regNumber     regNum;
     bool          isCalleeSave;
     unsigned char regOrder;
+
+    // If this RegRecord is participating in consecutive register, the index of the
+    // register in sequence. When no consecutive register, this should be 0.
+    unsigned int regIdx : 2;
 };
 
 inline bool leafInRange(GenTree* leaf, int lower, int upper)
