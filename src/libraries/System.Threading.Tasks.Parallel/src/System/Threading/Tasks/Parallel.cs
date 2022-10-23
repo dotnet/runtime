@@ -232,8 +232,7 @@ namespace System.Threading.Tasks
                 if (OperatingSystem.IsBrowser() ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
-                    (parallelOptions.MaxDegreeOfParallelism != -1 &&
-                     parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
+                    (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
                    )
                 {
                     // Used to hold any exceptions encountered during action processing
@@ -266,8 +265,7 @@ namespace System.Threading.Tasks
                                     }
                                     catch (Exception e)
                                     {
-                                        LazyInitializer.EnsureInitialized(ref exceptionQ,
-                                            () => { return new ConcurrentQueue<Exception>(); });
+                                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
                                         exceptionQ.Enqueue(e);
                                     }
 
@@ -283,8 +281,7 @@ namespace System.Threading.Tasks
                     }
                     catch (Exception e)
                     {
-                        LazyInitializer.EnsureInitialized(ref exceptionQ,
-                            () => { return new ConcurrentQueue<Exception>(); });
+                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
 
                         // Since we're consuming all action exceptions, there are very few reasons that
                         // we would see an exception here.  Two that come to mind:
@@ -311,8 +308,7 @@ namespace System.Threading.Tasks
                     // If we have encountered any exceptions, then throw.
                     if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
                     {
-                        ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken,
-                            new AggregateException(exceptionQ));
+                        ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken, new AggregateException(exceptionQ));
                     }
                 }
                 else // This is more efficient for a small number of actions and no DOP support:
@@ -326,9 +322,7 @@ namespace System.Threading.Tasks
                     // Invoke all actions as tasks.  Queue N-1 of them, and run 1 synchronously.
                     for (int i = 1; i < tasks.Length; i++)
                     {
-                        tasks[i] = Task.Factory.StartNew(actionsCopy[i], parallelOptions.CancellationToken,
-                            TaskCreationOptions.None,
-                            parallelOptions.EffectiveTaskScheduler);
+                        tasks[i] = Task.Factory.StartNew(actionsCopy[i], parallelOptions.CancellationToken, TaskCreationOptions.None, parallelOptions.EffectiveTaskScheduler);
                     }
 
                     tasks[0] = new Task(actionsCopy[0], parallelOptions.CancellationToken, TaskCreationOptions.None);
@@ -346,8 +340,7 @@ namespace System.Threading.Tasks
                     catch (AggregateException aggExp)
                     {
                         // see if we can combine it into a single OCE. If not propagate the original exception
-                        ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions,
-                            parallelOptions.CancellationToken, aggExp);
+                        ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
                     }
                 }
             }
@@ -428,8 +421,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="body"/> delegate is invoked once for each value in the iteration range:
         /// [fromInclusive, toExclusive).  It is provided with the iteration count (an Int32) as a parameter.
         /// </remarks>
-        public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions,
-            Action<int> body)
+        public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int> body)
         {
             return For<int>(fromInclusive, toExclusive, parallelOptions, body);
         }
@@ -461,19 +453,14 @@ namespace System.Threading.Tasks
         /// The <paramref name="body"/> delegate is invoked once for each value in the iteration range:
         /// [fromInclusive, toExclusive).  It is provided with the iteration count (an Int64) as a parameter.
         /// </remarks>
-        public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions,
-            Action<long> body)
+        public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions, Action<long> body)
         {
             return For<long>(fromInclusive, toExclusive, parallelOptions, body);
         }
 
-        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive,
-            ParallelOptions parallelOptions, Action<TIndex> body)
+        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex> body)
             where TIndex : INumber<TIndex>
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
-
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithSimpleBodyFactory<TIndex>(body);
             return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
@@ -575,8 +562,7 @@ namespace System.Threading.Tasks
         /// and a <see cref="System.Threading.Tasks.ParallelLoopState">ParallelLoopState</see> instance that may be
         /// used to break out of the loop prematurely.
         /// </remarks>
-        public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions,
-            Action<int, ParallelLoopState> body)
+        public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int, ParallelLoopState> body)
         {
             return For<int>(fromInclusive, toExclusive, parallelOptions, body);
         }
@@ -610,19 +596,14 @@ namespace System.Threading.Tasks
         /// and a <see cref="System.Threading.Tasks.ParallelLoopState">ParallelLoopState</see> instance that may be
         /// used to break out of the loop prematurely.
         /// </remarks>
-        public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions,
-            Action<long, ParallelLoopState> body)
+        public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions, Action<long, ParallelLoopState> body)
         {
             return For<long>(fromInclusive, toExclusive, parallelOptions, body);
         }
 
-        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive,
-            ParallelOptions parallelOptions, Action<TIndex, ParallelLoopState> body)
+        private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex, ParallelLoopState> body)
             where TIndex : INumber<TIndex>
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
-
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithStateFactory<TIndex, TIndex>(body);
             return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
@@ -671,8 +652,7 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            return For<int, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body,
-                localFinally);
+            return For<int, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body, localFinally);
         }
 
         /// <summary>
@@ -719,8 +699,7 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            return For<long, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body,
-                localFinally);
+            return For<long, TLocal>(fromInclusive, toExclusive, s_defaultParallelOptions, localInit, body, localFinally);
         }
 
         /// <summary>
@@ -846,11 +825,6 @@ namespace System.Threading.Tasks
             Action<TLocal> localFinally)
             where TIndex : INumber<TIndex>
         {
-            ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
-
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithLocalFactory<TIndex, TIndex, TLocal>(body, localInit, localFinally);
             return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
@@ -875,8 +849,8 @@ namespace System.Threading.Tasks
             ParallelOptions parallelOptions,
             IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex : INumber<TIndex>
         {
-            Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long),
-                "only long and int index types supported in TIndex");
+            Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long), "only long and int index types supported in TIndex");
+            ArgumentNullException.ThrowIfNull(parallelOptions);
 
             // Instantiate our result.  Specifics will be filled in later.
             ParallelLoopResult result = default;
@@ -888,6 +862,13 @@ namespace System.Threading.Tasks
                 return result;
             }
 
+            // initialize ranges with passed in loop arguments and expected number of workers
+            int numExpectedWorkers = (parallelOptions.EffectiveMaxConcurrencyLevel == -1)
+                ? Environment.ProcessorCount
+                : parallelOptions.EffectiveMaxConcurrencyLevel;
+            RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive),
+                long.CreateChecked(toExclusive), 1, numExpectedWorkers);
+
             // For all loops we need a shared flag even though we don't have a body with state,
             // because the shared flag contains the exceptional bool, which triggers other workers
             // to exit their loops if one worker catches an exception
@@ -897,20 +878,11 @@ namespace System.Threading.Tasks
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            Box<OperationCanceledException> oce =
-                RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out var ctr);
+            Box<OperationCanceledException> oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
-            const ParallelEtwProvider.ForkJoinOperationType OperationType =
-                ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
 
             int forkJoinContextID = LogEtwEventParallelLoopBegin(OperationType, fromInclusive, toExclusive);
-
-            // initialize ranges with passed in loop arguments and expected number of workers
-            int numExpectedWorkers = (parallelOptions.EffectiveMaxConcurrencyLevel == -1)
-                ? Environment.ProcessorCount
-                : parallelOptions.EffectiveMaxConcurrencyLevel;
-            RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive),
-                long.CreateChecked(toExclusive), 1, numExpectedWorkers);
 
             try
             {
@@ -934,8 +906,7 @@ namespace System.Threading.Tasks
             catch (AggregateException aggExp)
             {
                 // If we have many cancellation exceptions all caused by the specified user cancel control, then throw only one OCE:
-                ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions,
-                    parallelOptions.CancellationToken, aggExp);
+                ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
             }
             finally
             {
@@ -1052,10 +1023,8 @@ namespace System.Threading.Tasks
                 do
                 {
                     for (TIndex j = nFromInclusiveLocal;
-                         j < nToExclusiveLocal &&
-                         (SharedPStateFlags.LoopStateFlags ==
-                          ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
-                          || !SharedPStateFlags.ShouldExitLoop(j));
+                         j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
+                                                   || !SharedPStateFlags.ShouldExitLoop(j));
                          j += TIndex.One)
                     {
                         if (workerBody is IWorkerBodyWithIndex<TIndex, TIndex> workerBodyWithIndex)
@@ -1081,8 +1050,7 @@ namespace System.Threading.Tasks
             }
 
             public static Worker<RangeWorker, TIndex> CreateWorker(
-                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source,
-                IWorkerBodyFactory<TIndex> workerBodyFactory)
+                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source, IWorkerBodyFactory<TIndex> workerBodyFactory)
                 => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
         }
 
@@ -1152,12 +1120,12 @@ namespace System.Threading.Tasks
             {
                 int from = array.GetLowerBound(0);
                 int to = array.GetUpperBound(0) + 1;
-                return For(from, to, (i) => body(array[i]));
+                return For(from, to, parallelOptions, (i) => body(array[i]));
             }
 
             if (source is IList<TSource> list)
             {
-                return For(0, list.Count, (i) => body(list[i]));
+                return For(0, list.Count, parallelOptions, (i) => body(list[i]));
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
@@ -1232,12 +1200,12 @@ namespace System.Threading.Tasks
             {
                 int from = array.GetLowerBound(0);
                 int to = array.GetUpperBound(0) + 1;
-                return For(from, to, (i, state) => body(array[i], state));
+                return For(from, to, parallelOptions, (i, state) => body(array[i], state));
             }
 
             if (source is IList<TSource> list)
             {
-                return For(0, list.Count, (i, state) => body(list[i], state));
+                return For(0, list.Count, parallelOptions, (i, state) => body(list[i], state));
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
@@ -1312,16 +1280,15 @@ namespace System.Threading.Tasks
             {
                 int from = array.GetLowerBound(0);
                 int to = array.GetUpperBound(0) + 1;
-                return For(from, to, (i, state) => body(array[i], state, i));
+                return For(from, to, parallelOptions, (i, state) => body(array[i], state, i));
             }
 
             if (source is IList<TSource> list)
             {
-                return For(0, list.Count, (i, state) => body(list[i], state, i));
+                return For(0, list.Count, parallelOptions, (i, state) => body(list[i], state, i));
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateAndIndexFactory<TSource, long>(body);
-
             return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
@@ -1438,12 +1405,12 @@ namespace System.Threading.Tasks
             {
                 int from = array.GetLowerBound(0);
                 int to = array.GetUpperBound(0) + 1;
-                return For(from, to, localInit, (i, state, local) => body(array[i], state, local), localFinally);
+                return For(from, to, parallelOptions, localInit, (i, state, local) => body(array[i], state, local), localFinally);
             }
 
             if (source is IList<TSource> list)
             {
-                return For(0, list.Count, localInit, (i, state, local) => body(list[i], state, local), localFinally);
+                return For(0, list.Count, parallelOptions, localInit, (i, state, local) => body(list[i], state, local), localFinally);
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
@@ -1562,12 +1529,12 @@ namespace System.Threading.Tasks
             {
                 int from = array.GetLowerBound(0);
                 int to = array.GetUpperBound(0) + 1;
-                return For(from, to, localInit, (i, state, local) => body(array[i], state, i, local), localFinally);
+                return For(from, to, parallelOptions, localInit, (i, state, local) => body(array[i], state, i, local), localFinally);
             }
 
             if (source is IList<TSource> list)
             {
-                return For(0, list.Count, localInit, (i, state, local) => body(list[i], state, i, local), localFinally);
+                return For(0, list.Count, parallelOptions, localInit, (i, state, local) => body(list[i], state, i, local), localFinally);
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithEveryThingFactory<TSource, long, TLocal>(body, localInit, localFinally);
@@ -1616,9 +1583,7 @@ namespace System.Threading.Tasks
         /// Partitioner.  It is provided with the current element as a parameter.
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            Partitioner<TSource> source,
-            Action<TSource> body)
+        public static ParallelLoopResult ForEach<TSource>(Partitioner<TSource> source, Action<TSource> body)
         {
             return ForEach(source, s_defaultParallelOptions, body);
         }
@@ -1666,9 +1631,7 @@ namespace System.Threading.Tasks
         /// used to break out of the loop prematurely.
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            Partitioner<TSource> source,
-            Action<TSource, ParallelLoopState> body)
+        public static ParallelLoopResult ForEach<TSource>(Partitioner<TSource> source, Action<TSource, ParallelLoopState> body)
         {
             return ForEach(source, s_defaultParallelOptions, body);
         }
@@ -1719,9 +1682,7 @@ namespace System.Threading.Tasks
         /// used to break out of the loop prematurely, and the current element's index (an Int64).
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            OrderablePartitioner<TSource> source,
-            Action<TSource, ParallelLoopState, long> body)
+        public static ParallelLoopResult ForEach<TSource>(OrderablePartitioner<TSource> source, Action<TSource, ParallelLoopState, long> body)
         {
             return ForEach(source, s_defaultParallelOptions, body);
         }
@@ -1788,10 +1749,7 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource, TLocal>(
-            Partitioner<TSource> source,
-            Func<TLocal> localInit,
-            Func<TSource, ParallelLoopState, TLocal, TLocal> body,
-            Action<TLocal> localFinally)
+            Partitioner<TSource> source, Func<TLocal> localInit, Func<TSource, ParallelLoopState, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
             return ForEach(source, s_defaultParallelOptions, localInit, body, localFinally);
         }
@@ -1861,10 +1819,7 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource, TLocal>(
-            OrderablePartitioner<TSource> source,
-            Func<TLocal> localInit,
-            Func<TSource, ParallelLoopState, long, TLocal, TLocal> body,
-            Action<TLocal> localFinally)
+            OrderablePartitioner<TSource> source, Func<TLocal> localInit, Func<TSource, ParallelLoopState, long, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
             return ForEach(source, s_defaultParallelOptions, localInit, body, localFinally);
         }
@@ -1921,14 +1876,10 @@ namespace System.Threading.Tasks
         /// Partitioner.  It is provided with the current element as a parameter.
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            Partitioner<TSource> source,
-            ParallelOptions parallelOptions,
-            Action<TSource> body)
+        public static ParallelLoopResult ForEach<TSource>(Partitioner<TSource> source, ParallelOptions parallelOptions, Action<TSource> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
             return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
@@ -1988,14 +1939,10 @@ namespace System.Threading.Tasks
         /// used to break out of the loop prematurely.
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            Partitioner<TSource> source,
-            ParallelOptions parallelOptions,
-            Action<TSource, ParallelLoopState> body)
+        public static ParallelLoopResult ForEach<TSource>(Partitioner<TSource> source, ParallelOptions parallelOptions, Action<TSource, ParallelLoopState> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
             return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
@@ -2058,14 +2005,10 @@ namespace System.Threading.Tasks
         /// used to break out of the loop prematurely, and the current element's index (an Int64).
         /// </para>
         /// </remarks>
-        public static ParallelLoopResult ForEach<TSource>(
-            OrderablePartitioner<TSource> source,
-            ParallelOptions parallelOptions,
-            Action<TSource, ParallelLoopState, long> body)
+        public static ParallelLoopResult ForEach<TSource>(OrderablePartitioner<TSource> source, ParallelOptions parallelOptions, Action<TSource, ParallelLoopState, long> body)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(body);
 
             if (!source.KeysNormalized)
             {
@@ -2157,9 +2100,6 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
             return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
@@ -2249,9 +2189,6 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(parallelOptions);
-            ArgumentNullException.ThrowIfNull(localInit);
-            ArgumentNullException.ThrowIfNull(body);
-            ArgumentNullException.ThrowIfNull(localFinally);
 
             if (!source.KeysNormalized)
             {
@@ -2265,25 +2202,57 @@ namespace System.Threading.Tasks
         #endregion
 
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
-        private static ParallelLoopResult PartitionerForEachWorker<TSource>(
-            Partitioner<TSource> source, // Might be OrderablePartitioner
-            ParallelOptions parallelOptions,
-            IWorkerBodyFactory<TSource> workerBodyFactory)
+        private static ParallelLoopResult PartitionerForEachWorker<TValue>(Partitioner<TValue> source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
         {
-            OrderablePartitioner<TSource>? orderedSource = source as OrderablePartitioner<TSource>;
+            if (source is OrderablePartitioner<TValue> orderedSource)
+            {
+                return PartitionerForEachWorker(orderedSource, parallelOptions, workerBodyFactory);
+            }
 
             if (!source.SupportsDynamicPartitions)
             {
                 throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
             }
 
+            IEnumerable<TValue>? partitionerSource = source.GetDynamicPartitions();
+            if (partitionerSource == null)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
+            }
+
+            return PartitionerForEachWorkerCore<IEnumerable<TValue>, IEnumerator, TValue, PartitionerForeachWorker<TValue>>(
+                partitionerSource, parallelOptions, workerBodyFactory);
+        }
+
+        // Main worker method for Parallel.ForEach() calls w/ Partitioners.
+        private static ParallelLoopResult PartitionerForEachWorker<TValue>(OrderablePartitioner<TValue> orderedSource, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
+        {
+            if (!orderedSource.SupportsDynamicPartitions)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
+            }
+
+            IEnumerable<KeyValuePair<long, TValue>>? orderablePartitionerSource = orderedSource.GetOrderableDynamicPartitions();
+            if (orderablePartitionerSource == null)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
+            }
+
+            return PartitionerForEachWorkerCore<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, OrderablePartitionerForeachWorker<TValue>>(
+                orderablePartitionerSource, parallelOptions, workerBodyFactory);
+        }
+
+        // Main worker method for Parallel.ForEach() calls w/ Partitioners.
+        private static ParallelLoopResult PartitionerForEachWorkerCore<TSource, TInput, TValue, TWorker>(TSource source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
+            where TWorker: IWorkerFactory<TSource, TInput, TValue>
+        {
             // Instantiate our result.  Specifics will be filled in later.
             ParallelLoopResult result = default;
 
             // For all loops we need a shared flag even though we don't have a body with state,
             // because the shared flag contains the exceptional bool, which triggers other workers
             // to exit their loops if one worker catches an exception
-            ParallelLoopStateFlags sharedPStateFlags = new ParallelLoopStateFlags64();
+            ParallelLoopStateFlags sharedPStateFlags = ParallelLoopStateFlags.Create<long>();
 
             // Before getting started, do a quick peek to see if we have been canceled already
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
@@ -2295,43 +2264,12 @@ namespace System.Threading.Tasks
 
             int forkJoinContextID = LogEtwEventParallelLoopBegin(OperationType, 0, 0);
 
-            // Get our dynamic partitioner -- depends on whether source is castable to OrderablePartitioner
-            // Also, do some error checking.
-            IEnumerable<TSource>? partitionerSource = null;
-            IEnumerable<KeyValuePair<long, TSource>>? orderablePartitionerSource = null;
-            if (orderedSource != null)
-            {
-                orderablePartitionerSource = orderedSource.GetOrderableDynamicPartitions();
-                if (orderablePartitionerSource == null)
-                {
-                    throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
-                }
-            }
-            else
-            {
-                partitionerSource = source.GetDynamicPartitions();
-                if (partitionerSource == null)
-                {
-                    throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
-                }
-            }
-
             try
             {
                 try
                 {
-                    TaskReplicator.ReplicatableUserAction<IEnumerator> worker;
-                    if (orderablePartitionerSource != null)
-                    {
-                        worker = OrderablePartitionerForeachWorker<TSource>.CreateWorker(
-                            forkJoinContextID, sharedPStateFlags, orderablePartitionerSource, workerBodyFactory).Work;
-                    }
-                    else
-                    {
-                        worker = PartitionerForeachWorker<TSource>.CreateWorker(
-                            forkJoinContextID, sharedPStateFlags, partitionerSource!, workerBodyFactory).Work;
-                    }
-
+                    TaskReplicator.ReplicatableUserAction<TInput> worker =
+                        TWorker.CreateWorker(forkJoinContextID, sharedPStateFlags, source, workerBodyFactory).Work;
                     TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
                 }
                 finally
@@ -2354,17 +2292,7 @@ namespace System.Threading.Tasks
             {
                 SetLoopResultEndState(sharedPStateFlags, ref result);
 
-                //dispose the partitioner source if it implements IDisposable
-                IDisposable? d;
-                if (orderablePartitionerSource != null)
-                {
-                    d = orderablePartitionerSource as IDisposable;
-                }
-                else
-                {
-                    d = partitionerSource as IDisposable;
-                }
-
+                IDisposable? d = source as IDisposable;
                 d?.Dispose();
 
                 // ETW event for Parallel For End
@@ -2462,8 +2390,7 @@ namespace System.Threading.Tasks
                 int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
                 IEnumerable<KeyValuePair<long, TValue>> source,
                 IWorkerBodyFactory<TValue> workerBodyFactory) =>
-                new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source,
-                    workerBodyFactory);
+                new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
         }
 
         private sealed class PartitionerForeachWorker<TValue>
@@ -2827,6 +2754,8 @@ namespace System.Threading.Tasks
 
             public WorkerWithSimpleBodyFactory(Action<TValue> body)
             {
+                ArgumentNullException.ThrowIfNull(body);
+
                 _body = body;
             }
 
@@ -2840,6 +2769,8 @@ namespace System.Threading.Tasks
 
             public WorkerWithStateFactory(Action<TValue, ParallelLoopState> bodyWithState)
             {
+                ArgumentNullException.ThrowIfNull(bodyWithState);
+
                 _bodyWithState = bodyWithState;
             }
 
@@ -2853,6 +2784,8 @@ namespace System.Threading.Tasks
 
             public WorkerWithStateAndIndexFactory(Action<TValue, ParallelLoopState, TIndex> bodyWithStateAndIndex)
             {
+                ArgumentNullException.ThrowIfNull(bodyWithStateAndIndex);
+
                 _bodyWithStateAndIndex = bodyWithStateAndIndex;
             }
 
@@ -2869,6 +2802,10 @@ namespace System.Threading.Tasks
 
             public WorkerWithLocalFactory(Func<TValue, ParallelLoopState, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
             {
+                ArgumentNullException.ThrowIfNull(localInit);
+                ArgumentNullException.ThrowIfNull(bodyWithLocal);
+                ArgumentNullException.ThrowIfNull(localFinally);
+
                 _bodyWithLocal = bodyWithLocal;
                 _localInit = localInit;
                 _localFinally = localFinally;
@@ -2886,6 +2823,10 @@ namespace System.Threading.Tasks
 
             public WorkerWithEveryThingFactory(Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
             {
+                ArgumentNullException.ThrowIfNull(localInit);
+                ArgumentNullException.ThrowIfNull(bodyWithLocal);
+                ArgumentNullException.ThrowIfNull(localFinally);
+
                 _bodyWithLocal = bodyWithLocal;
                 _localInit = localInit;
                 _localFinally = localFinally;
