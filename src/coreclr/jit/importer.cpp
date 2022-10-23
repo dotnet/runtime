@@ -4242,11 +4242,11 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 
                 unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld empty struct"));
                 lvaSetStruct(structTempNum, fieldClsHnd, false);
-                GenTree* tree = impCreateLocalNode(structTempNum DEBUGARG(0));
+                GenTreeLclVar* tree = impCreateLocalNode(structTempNum DEBUGARG(0));
                 impAppendTree(tree, CHECK_SPILL_NONE, impCurStmtDI);
                 impAppendTree(gtNewBlkOpNode(gtClone(tree), gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
                               impCurStmtDI);
-                return gtClone(tree);
+                return gtClone(tree); // clonning GenTreeLclVar node
             }
 
             JITDUMP("struct has complex layout - bail out.");
