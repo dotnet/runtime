@@ -475,8 +475,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithSimpleBodyFactory<TIndex>(body);
-            IForWorkerFactory<TIndex> workerFactory = new ForWorkerFactory<TIndex>(workerBodyFactory);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerFactory);
+            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -625,8 +624,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithStateFactory<TIndex, TIndex>(body);
-            IForWorkerFactory<TIndex> workerFactory = new ForWorkerFactory<TIndex>(workerBodyFactory);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerFactory);
+            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -854,8 +852,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(localFinally);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithLocalFactory<TIndex, TIndex, TLocal>(body, localInit, localFinally);
-            IForWorkerFactory<TIndex> workerFactory = new ForWorkerFactory<TIndex>(workerBodyFactory);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerFactory);
+            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -870,13 +867,13 @@ namespace System.Threading.Tasks
         /// <param name="fromInclusive">The loop's start index, inclusive.</param>
         /// <param name="toExclusive">The loop's end index, exclusive.</param>
         /// <param name="parallelOptions">A ParallelOptions instance.</param>
-        /// <param name="workerFactory">Factory for creating thread workers</param>
+        /// <param name="workerBodyFactory">Factory for creating thread workers</param>
         /// <remarks>Only one of the body arguments may be supplied (i.e. they are exclusive).</remarks>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult"/> structure.</returns>
         private static ParallelLoopResult ForWorkerOrchestrator<TIndex>(
             TIndex fromInclusive, TIndex toExclusive,
             ParallelOptions parallelOptions,
-            IForWorkerFactory<TIndex> workerFactory) where TIndex : INumber<TIndex>
+            IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex : INumber<TIndex>
         {
             Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long),
                 "only long and int index types supported in TIndex");
@@ -920,7 +917,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     TaskReplicator.ReplicatableUserAction<RangeWorker> worker =
-                        workerFactory.CreateWorker(sharedPStateFlags, rangeManager, forkJoinContextID);
+                        ForWorker<TIndex>.CreateWorker(forkJoinContextID, sharedPStateFlags, rangeManager, workerBodyFactory).Work;
                     TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
                 }
                 finally
@@ -981,19 +978,20 @@ namespace System.Threading.Tasks
         private abstract class Worker<TInput, TValue>
         {
             private readonly int _forkJoinContextId;
-            protected readonly IWorkerBody<TValue> WorkerBody;
+            protected readonly IWorkerBodyFactory<TValue> WorkerBodyFactory;
             protected readonly ParallelLoopStateFlags SharedPStateFlags;
 
             protected Worker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IWorkerBody<TValue> workerBody)
+                IWorkerBodyFactory<TValue> workerBodyFactory)
             {
                 _forkJoinContextId = forkJoinContextId;
                 SharedPStateFlags = sharedPStateFlags;
-                WorkerBody = workerBody;
+                WorkerBodyFactory = workerBodyFactory;
             }
 
             internal void Work(ref TInput input, int timeout, out bool replicationDelegateYieldedBeforeCompletion)
             {
+                IWorkerBody<TValue> workerBody = WorkerBodyFactory.CreateWorkerBody(SharedPStateFlags);
                 // We will need to reset this to true if we exit due to a timeout:
                 replicationDelegateYieldedBeforeCompletion = false;
 
@@ -1004,7 +1002,7 @@ namespace System.Threading.Tasks
                     // initialize a loop timer which will help us decide whether we should exit early
                     int loopTimeout = ComputeTimeoutPoint(timeout);
 
-                    LoopBody(loopTimeout, ref input, ref replicationDelegateYieldedBeforeCompletion);
+                    LoopBody(workerBody, loopTimeout, ref input, ref replicationDelegateYieldedBeforeCompletion);
                 }
                 catch (Exception ex)
                 {
@@ -1014,44 +1012,44 @@ namespace System.Threading.Tasks
                 }
                 finally
                 {
-                    Finally(ref input, replicationDelegateYieldedBeforeCompletion);
+                    Finally(workerBody, ref input, replicationDelegateYieldedBeforeCompletion);
 
                     LogEtwEventParallelJoin(_forkJoinContextId);
                 }
             }
 
-            protected abstract void LoopBody(int loopTimeout, ref TInput input,
+            protected abstract void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout, ref TInput input,
                 ref bool replicationDelegateYieldedBeforeCompletion);
 
-            protected virtual void Finally(ref TInput input, in bool replicationDelegateYieldedBeforeCompletion)
+            protected virtual void Finally(IWorkerBody<TValue> workerBody, ref TInput input, in bool replicationDelegateYieldedBeforeCompletion)
             {
-                WorkerBody.Finally();
+                workerBody.Finally();
             }
-        }
-
-        private interface IWorkerFactory<TState, in TInput>
-        {
-            TaskReplicator.ReplicatableUserAction<TState> CreateWorker(ParallelLoopStateFlags sharedPStateFlags,
-                TInput input, int forkJoinContextId);
         }
 
         private interface IWorkerBodyFactory<in TValue>
         {
-            IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags);
+            IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags);
         }
 
-        private sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex> where TIndex : INumber<TIndex>
+        private interface IWorkerFactory<in TSource, TInput, TValue>
+        {
+            static abstract Worker<TInput, TValue> CreateWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, TSource source, IWorkerBodyFactory<TValue> workerBodyFactory);
+        }
+
+        private sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex>, IWorkerFactory<RangeManager, RangeWorker, TIndex> where TIndex : INumber<TIndex>
         {
             private readonly RangeManager _rangeManager;
 
             internal ForWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                RangeManager rangeManager, IWorkerBody<TIndex> workerBody)
-                : base(forkJoinContextId, sharedPStateFlags, workerBody)
+                RangeManager rangeManager, IWorkerBodyFactory<TIndex> workerBodyFactory)
+                : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
             {
                 _rangeManager = rangeManager;
             }
 
-            protected override void LoopBody(int loopTimeout, ref RangeWorker currentWorker,
+            protected override void LoopBody(IWorkerBody<TIndex> workerBody, int loopTimeout,
+                ref RangeWorker currentWorker,
                 ref bool replicationDelegateYieldedBeforeCompletion)
             {
                 // First thing we do upon entering the task is to register as a new "RangeWorker" with the
@@ -1078,12 +1076,12 @@ namespace System.Threading.Tasks
                           || !SharedPStateFlags.ShouldExitLoop(j));
                          j += TIndex.One)
                     {
-                        if (WorkerBody is IWorkerBodyWithIndex<TIndex, TIndex> workerBodyWithIndex)
+                        if (workerBody is IWorkerBodyWithIndex<TIndex, TIndex> workerBodyWithIndex)
                         {
                             workerBodyWithIndex.SetIteration(j);
                         }
 
-                        WorkerBody.Body(j);
+                        workerBody.Body(j);
                     }
 
                     // Cooperative multitasking:
@@ -1099,6 +1097,11 @@ namespace System.Threading.Tasks
                          ((SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
                           !SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
             }
+
+            public static Worker<RangeWorker, TIndex> CreateWorker(
+                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source,
+                IWorkerBodyFactory<TIndex> workerBodyFactory)
+                => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
         }
 
         #region Worker Bodies
@@ -1244,7 +1247,7 @@ namespace System.Threading.Tasks
                 _body = body;
             }
 
-            public IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags)
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
                 => new SimpleWorkerBody<TValue>(_body);
         }
 
@@ -1257,7 +1260,7 @@ namespace System.Threading.Tasks
                 _bodyWithState = bodyWithState;
             }
 
-            public IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags)
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
                 => new WorkerWithState<TValue, TIndex>(sharedPStateFlags, _bodyWithState);
         }
 
@@ -1270,7 +1273,7 @@ namespace System.Threading.Tasks
                 _bodyWithStateAndIndex = bodyWithStateAndIndex;
             }
 
-            public IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags)
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
                 => new WorkerWithStateAndIndex<TValue, TIndex>(sharedPStateFlags, _bodyWithStateAndIndex);
         }
 
@@ -1288,7 +1291,7 @@ namespace System.Threading.Tasks
                 _localFinally = localFinally;
             }
 
-            public IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags)
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
                 => new WorkerWithStateAndLocal<TValue,TIndex,TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
         }
 
@@ -1305,40 +1308,11 @@ namespace System.Threading.Tasks
                 _localFinally = localFinally;
             }
 
-            public IWorkerBody<TValue> CreateWorker(ParallelLoopStateFlags sharedPStateFlags)
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
                 => new WorkerWithEverything<TValue,TIndex,TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
         }
 
         #endregion
-
-        #region For Worker Factories
-
-        private interface IForWorkerFactory<TIndex> : IWorkerFactory<RangeWorker, RangeManager>
-            where TIndex : INumber<TIndex> { }
-
-        private sealed class ForWorkerFactory<TIndex> : IForWorkerFactory<TIndex>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly IWorkerBodyFactory<TIndex> _workerBodyFactory;
-
-            public ForWorkerFactory(IWorkerBodyFactory<TIndex> workerBodyFactory)
-            {
-                _workerBodyFactory = workerBodyFactory;
-            }
-
-            public TaskReplicator.ReplicatableUserAction<RangeWorker> CreateWorker(
-                ParallelLoopStateFlags sharedPStateFlags, RangeManager rangeManager,
-                int forkJoinContextId) =>
-                (ref RangeWorker currentWorker, int timeout, out bool replicationDelegateYieldedBeforeCompletion)
-                    =>
-                {
-                    IWorkerBody<TIndex> workerBody = _workerBodyFactory.CreateWorker(sharedPStateFlags);
-                    new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, rangeManager, workerBody)
-                        .Work(ref currentWorker, timeout, out replicationDelegateYieldedBeforeCompletion);
-                };
-        }
-        #endregion
-
 
         /// <summary>
         /// Executes a for each operation on an <see cref="System.Collections.Generic.IEnumerable{TSource}"/>
@@ -1413,13 +1387,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(
-                Partitioner.Create(source), parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1499,13 +1467,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(
-                Partitioner.Create(source), parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1585,13 +1547,8 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateAndIndexFactory<TSource, long>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
 
-            return PartitionerForEachWorker(
-                Partitioner.Create(source), parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1716,13 +1673,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(
-                Partitioner.Create(source), parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1846,13 +1797,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithEveryThingFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(
-                Partitioner.Create(source), parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
 
@@ -2212,12 +2157,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(source, parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2284,12 +2224,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(source, parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2364,12 +2299,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateAndIndexFactory<TSource, long>(body);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(source, parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2458,12 +2388,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(localFinally);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(source, parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);
+            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2560,20 +2485,14 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithEveryThingFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory =
-                new OrderablePartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory =
-                new PartitionerForeachWorkerFactory<TSource>(workerBodyFactory);
-
-            return PartitionerForEachWorker(source, parallelOptions, orderableWorkerFactory, partitionerWorkerFactory);        }
+            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
+        }
 
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
         private static ParallelLoopResult PartitionerForEachWorker<TSource>(
             Partitioner<TSource> source, // Might be OrderablePartitioner
             ParallelOptions parallelOptions,
-            IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TSource>>, TSource> orderableWorkerFactory,
-            IForeachWorkerFactory<IEnumerable<TSource>, TSource> partitionerWorkerFactory
-        )
+            IWorkerBodyFactory<TSource> workerBodyFactory)
         {
             OrderablePartitioner<TSource>? orderedSource = source as OrderablePartitioner<TSource>;
 
@@ -2628,11 +2547,13 @@ namespace System.Threading.Tasks
                     TaskReplicator.ReplicatableUserAction<IEnumerator> worker;
                     if (orderablePartitionerSource != null)
                     {
-                        worker = orderableWorkerFactory.CreateWorker(sharedPStateFlags, orderablePartitionerSource, forkJoinContextID);
+                        worker = OrderablePartitionerForeachWorker<TSource>.CreateWorker(
+                            forkJoinContextID, sharedPStateFlags, orderablePartitionerSource, workerBodyFactory).Work;
                     }
                     else
                     {
-                        worker = partitionerWorkerFactory.CreateWorker(sharedPStateFlags, partitionerSource!, forkJoinContextID);
+                        worker = PartitionerForeachWorker<TSource>.CreateWorker(
+                            forkJoinContextID, sharedPStateFlags, partitionerSource!, workerBodyFactory).Work;
                     }
 
                     TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
@@ -2686,22 +2607,23 @@ namespace System.Threading.Tasks
         {
             private readonly IEnumerable<TSource>? _partitionSource;
 
-            protected ForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TSource>? partitionSource, IWorkerBody<TValue> workerBody)
-                : base(forkJoinContextId, sharedPStateFlags, workerBody)
+            protected ForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TSource>? partitionSource, IWorkerBodyFactory<TValue> workerBodyFactory)
+                : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
             {
                 _partitionSource = partitionSource;
             }
 
-            protected override void Finally(ref IEnumerator partitionState, in bool replicationDelegateYieldedBeforeCompletion)
+            protected override void Finally(IWorkerBody<TValue> workerBody, ref IEnumerator partitionState, in bool replicationDelegateYieldedBeforeCompletion)
             {
                 if (replicationDelegateYieldedBeforeCompletion) return;
 
                 if (partitionState is IDisposable partitionToDispose)
                     partitionToDispose.Dispose();
-                base.Finally(ref partitionState, replicationDelegateYieldedBeforeCompletion);
+                base.Finally(workerBody, ref partitionState, replicationDelegateYieldedBeforeCompletion);
             }
 
-            protected sealed override void LoopBody(int loopTimeout, ref IEnumerator partitionState, ref bool replicationDelegateYieldedBeforeCompletion)
+            protected sealed override void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout,
+                ref IEnumerator partitionState, ref bool replicationDelegateYieldedBeforeCompletion)
             {
                 // first check if there's saved state from a previous replica that we might be replacing.
                 // the only state to be passed down in such a transition is the enumerator
@@ -2718,7 +2640,7 @@ namespace System.Threading.Tasks
                 {
                     TSource value = myPartition.Current;
 
-                    Body(value);
+                    Body(workerBody, value);
 
                     if (ShouldBreak(value)) break;
 
@@ -2733,88 +2655,61 @@ namespace System.Threading.Tasks
                 }
             }
 
-            protected abstract void Body(TSource value);
+            protected abstract void Body(IWorkerBody<TValue> workerBody, TSource value);
 
             protected abstract bool ShouldBreak(TSource value);
         }
 
-        private sealed class OrderablePartitionerForeachWorker<TValue>: ForeachWorker<KeyValuePair<long, TValue>, TValue>
+        private sealed class OrderablePartitionerForeachWorker<TValue>
+            : ForeachWorker<KeyValuePair<long, TValue>, TValue>,
+                IWorkerFactory<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue>
         {
             public OrderablePartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
                 IEnumerable<KeyValuePair<long, TValue>>? partitionSource,
-                IWorkerBody<TValue> workerBody)
-                : base(forkJoinContextId, sharedPStateFlags, partitionSource, workerBody)
+                IWorkerBodyFactory<TValue> workerBodyFactory)
+                : base(forkJoinContextId, sharedPStateFlags, partitionSource, workerBodyFactory)
             {
             }
 
             protected override bool ShouldBreak(KeyValuePair<long, TValue> value) => SharedPStateFlags.ShouldExitLoop(value.Key);
 
-            protected override void Body(KeyValuePair<long, TValue> value)
+            protected override void Body(IWorkerBody<TValue> workerBody, KeyValuePair<long, TValue> value)
             {
-                if (WorkerBody is IWorkerBodyWithIndex<TValue, long> workerBody)
+                if (workerBody is IWorkerBodyWithIndex<TValue, long> workerBodyWithIndex)
                 {
-                    workerBody.SetIteration(value.Key);
+                    workerBodyWithIndex.SetIteration(value.Key);
                 }
-                WorkerBody.Body(value.Value);
+                workerBody.Body(value.Value);
             }
+
+            public static Worker<IEnumerator, TValue> CreateWorker(
+                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+                IEnumerable<KeyValuePair<long, TValue>> source,
+                IWorkerBodyFactory<TValue> workerBodyFactory) =>
+                new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source,
+                    workerBodyFactory);
         }
 
-        private sealed class PartitionerForeachWorker<TSource>: ForeachWorker<TSource, TSource>
+        private sealed class PartitionerForeachWorker<TValue>
+            : ForeachWorker<TValue, TValue>,
+                IWorkerFactory<IEnumerable<TValue>, IEnumerator, TValue>
         {
             public PartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IEnumerable<TSource>? partitionerSource, IWorkerBody<TSource> workerBody)
-                : base(forkJoinContextId, sharedPStateFlags, partitionerSource, workerBody)
+                IEnumerable<TValue>? partitionerSource, IWorkerBodyFactory<TValue> workerBodyFactory)
+                : base(forkJoinContextId, sharedPStateFlags, partitionerSource, workerBodyFactory)
             {
             }
 
-            protected override void Body(TSource value) => WorkerBody.Body(value);
+            protected override void Body(IWorkerBody<TValue> workerBody, TValue value) => workerBody.Body(value);
 
-            protected override bool ShouldBreak(TSource value) =>
+            protected override bool ShouldBreak(TValue value) =>
                 SharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone;
+
+            public static Worker<IEnumerator, TValue> CreateWorker(
+                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TValue> source,
+                IWorkerBodyFactory<TValue> workerBodyFactory) =>
+                new PartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
         }
-
-        private interface IForeachWorkerFactory<in TSource, TValue> : IWorkerFactory<IEnumerator, TSource> {}
-
-        private sealed class OrderablePartitionerForeachWorkerFactory<TValue>
-            : IForeachWorkerFactory<IEnumerable<KeyValuePair<long, TValue>>, TValue>
-        {
-            private readonly IWorkerBodyFactory<TValue> _workerBodyFactory;
-
-            public OrderablePartitionerForeachWorkerFactory(IWorkerBodyFactory<TValue> workerBodyFactory)
-            {
-                _workerBodyFactory = workerBodyFactory;
-            }
-
-            public TaskReplicator.ReplicatableUserAction<IEnumerator> CreateWorker(
-                ParallelLoopStateFlags sharedPStateFlags, IEnumerable<KeyValuePair<long, TValue>> input, int forkJoinContextId) =>
-                    (ref IEnumerator enumerator, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
-                    {
-                        IWorkerBody<TValue> workerBody = _workerBodyFactory.CreateWorker(sharedPStateFlags);
-                        new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, input, workerBody)
-                            .Work(ref enumerator, timeout, out replicationDelegateYieldedBeforeCompletion);
-                    };
-        }
-
-        private sealed class PartitionerForeachWorkerFactory<TValue>
-            : IForeachWorkerFactory<IEnumerable<TValue>, TValue>
-        {
-            private readonly IWorkerBodyFactory<TValue> _workerBodyFactory;
-
-            public PartitionerForeachWorkerFactory(IWorkerBodyFactory<TValue> workerBodyFactory)
-            {
-                _workerBodyFactory = workerBodyFactory;
-            }
-
-            public TaskReplicator.ReplicatableUserAction<IEnumerator> CreateWorker(
-                ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TValue> input, int forkJoinContextId) =>
-                    (ref IEnumerator enumerator, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
-                    {
-                        IWorkerBody<TValue> workerBody = _workerBodyFactory.CreateWorker(sharedPStateFlags);
-                        new PartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, input, workerBody)
-                            .Work(ref enumerator, timeout, out replicationDelegateYieldedBeforeCompletion);
-                    };
-        }
-
 
         #endregion
 
@@ -2992,5 +2887,5 @@ namespace System.Threading.Tasks
                 result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
             }
         }
-    }  // class Parallel
-}  // namespace
+    }
+}
