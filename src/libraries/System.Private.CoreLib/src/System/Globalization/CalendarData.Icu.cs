@@ -81,15 +81,6 @@ namespace System.Globalization
             return result;
         }
 
-        internal static int IcuGetTwoDigitYearMax()
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            // There is no user override for this value on Linux or in ICU.
-            // So just return -1 to use the hard-coded defaults.
-            return -1;
-        }
-
         // Call native side to figure out which calendars are allowed
         internal static int IcuGetCalendars(string localeName, CalendarId[] calendars)
         {

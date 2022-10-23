@@ -4135,11 +4135,110 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     return node;
 }
 
-GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType)
+//------------------------------------------------------------------------
+// impImportStaticReadOnlyField: Tries to import 'static readonly' field
+//    as a constant if the host type is statically initialized.
+//
+// Arguments:
+//    field    - 'static readonly' field
+//    ownerCls - class handle of the type the given field defined in
+//
+// Return Value:
+//    The tree representing the constant value of the statically initialized
+//    readonly tree.
+//
+GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls)
 {
-    // We plan to support larger values (for structs), for now let's keep it 64 bit
-    assert(bufferSize == sizeof(INT64));
+    if (!opts.OptimizationEnabled())
+    {
+        return nullptr;
+    }
 
+    CORINFO_CLASS_HANDLE fieldClsHnd;
+    var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls));
+
+    const int bufferSize         = sizeof(uint64_t);
+    uint8_t   buffer[bufferSize] = {0};
+    if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType == TYP_REF))
+    {
+        assert(bufferSize >= genTypeSize(fieldType));
+        if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, genTypeSize(fieldType)))
+        {
+            GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
+            if (cnsValue != nullptr)
+            {
+                return cnsValue;
+            }
+        }
+    }
+    else if (fieldType == TYP_STRUCT)
+    {
+
+        if (info.compCompHnd->getClassNumInstanceFields(fieldClsHnd) != 1)
+        {
+            // Only single-field structs are supported here to avoid potential regressions where
+            // Metadata-driven struct promotion leads to regressions.
+            return nullptr;
+        }
+
+        CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
+        CORINFO_CLASS_HANDLE innerFieldClsHnd;
+        var_types            fieldVarType =
+            JITtype2varType(info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
+
+        // Technically, we can support frozen gc refs here and maybe floating point in future
+        if (!varTypeIsIntegral(fieldVarType))
+        {
+            return nullptr;
+        }
+
+        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+        unsigned fldOffset = info.compCompHnd->getFieldOffset(innerField);
+
+        if ((fldOffset != 0) || (totalSize != info.compCompHnd->getClassSize(fieldClsHnd)) || (totalSize == 0))
+        {
+            // The field is expected to be of the exact size as the struct with 0 offset
+            return nullptr;
+        }
+
+        const int bufferSize         = TARGET_POINTER_SIZE;
+        uint8_t   buffer[bufferSize] = {0};
+
+        if ((totalSize > bufferSize) || !info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+        {
+            return nullptr;
+        }
+
+        unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld struct"));
+        lvaSetStruct(structTempNum, fieldClsHnd, false);
+
+        GenTree* constValTree = impImportCnsTreeFromBuffer(buffer, fieldVarType);
+        assert(constValTree != nullptr);
+
+        GenTreeLclFld* fieldTree    = gtNewLclFldNode(structTempNum, fieldVarType, fldOffset);
+        GenTree*       fieldAsgTree = gtNewAssignNode(fieldTree, constValTree);
+        impAppendTree(fieldAsgTree, CHECK_SPILL_NONE, impCurStmtDI);
+
+        JITDUMP("Folding 'static readonly %s' field to an ASG(LCL, CNS) node\n", eeGetClassName(fieldClsHnd));
+
+        return impCreateLocalNode(structTempNum DEBUGARG(0));
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// impImportCnsTreeFromBuffer: read value of the given type from the
+//    given buffer to create a tree representing that constant.
+//
+// Arguments:
+//    buffer    - array of bytes representing the value
+//    valueType - type of the value
+//
+// Return Value:
+//    The tree representing the constant from the given buffer
+//
+GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType)
+{
     GenTree* tree = nullptr;
     switch (valueType)
     {
@@ -9489,21 +9588,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL))
                         {
-                            const int bufferSize         = sizeof(uint64_t);
-                            uint8_t   buffer[bufferSize] = {0};
-                            if (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF))
+                            GenTree* newTree = impImportStaticReadOnlyField(resolvedToken.hField, resolvedToken.hClass);
+
+                            if (newTree != nullptr)
                             {
-                                assert(bufferSize >= genTypeSize(lclTyp));
-                                if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer,
-                                                                                  genTypeSize(lclTyp)))
-                                {
-                                    GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
-                                    if (cnsValue != nullptr)
-                                    {
-                                        op1 = cnsValue;
-                                        goto FIELD_DONE;
-                                    }
-                                }
+                                op1 = newTree;
+                                goto FIELD_DONE;
                             }
                         }
                         FALLTHROUGH;
@@ -11294,13 +11384,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 #endif
 
+            InlineCandidateInfo* inlCandInfo = impInlineInfo->inlineCandidateInfo;
+            GenTreeRetExpr*      inlRetExpr  = inlCandInfo->retExpr;
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = impInlineInfo->inlineCandidateInfo->fncRetType;
+            var_types originalCallType = inlCandInfo->fncRetType;
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
-                originalCallType = impNormStructType(impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass);
+                originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
             }
 
             if (returnType != originalCallType)
@@ -11370,7 +11462,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         bool                 isNonNull    = false;
                         CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
 
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // This is the first return, so best known type is the type
                             // of this return value.
@@ -11394,12 +11486,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     op2 = tmpOp2;
 #ifdef DEBUG
-                    if (impInlineInfo->retExpr)
+                    if (inlRetExpr->gtSubstExpr != nullptr)
                     {
                         // Some other block(s) have seen the CEE_RET first.
                         // Better they spilled to the same temp.
-                        assert(impInlineInfo->retExpr->gtOper == GT_LCL_VAR);
-                        assert(impInlineInfo->retExpr->AsLclVarCommon()->GetLclNum() ==
+                        assert(inlRetExpr->gtSubstExpr->gtOper == GT_LCL_VAR);
+                        assert(inlRetExpr->gtSubstExpr->AsLclVarCommon()->GetLclNum() ==
                                op2->AsLclVarCommon()->GetLclNum());
                     }
 #endif
@@ -11414,7 +11506,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
 
                 // Report the return expression
-                impInlineInfo->retExpr = op2;
+                inlRetExpr->gtSubstExpr = op2;
             }
             else
             {
@@ -11440,16 +11532,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = op2;
+                        inlRetExpr->gtSubstExpr = op2;
                     }
                 }
                 else // The struct was to be returned via a return buffer.
@@ -11460,24 +11552,37 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     if (fgNeedReturnSpillTemp())
                     {
                         // If this is the first return we have seen set the retExpr.
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
                                                    retClsHnd, CHECK_SPILL_ALL);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
+                        inlRetExpr->gtSubstExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
                     }
                 }
             }
 
-            if (impInlineInfo->retExpr != nullptr)
-            {
-                impInlineInfo->retBB = compCurBB;
-            }
+            // TODO-Inlining: Setting gtSubstBB unconditionally here does not
+            // make sense. The intention is to be able to propagate BB flags in
+            // UpdateInlineReturnExpressionPlaceHolder, but we only need to
+            // propagate the mandatory flags in case gtSubstExpr is a tree
+            // (e.g. GT_ARR_LENGTH in gtSubstExpr means we need to set
+            // BBF_HAS_IDX_LEN on the final BB that the substituted expression
+            // ends up in -- so we should not need to set this for the spill
+            // temp cases above).
+            //
+            // However, during substitution we actually propagate all
+            // BBF_SPLIT_GAINED flags which includes BBF_PROF_WEIGHT. The net
+            // effect of this is that if we inline a tree from a hot block into
+            // a block without profile data we suddenly start to believe the
+            // inliner block is hot, and then future inline candidates are
+            // treated more aggressively. Changing this leads to large diffs.
+            assert(inlRetExpr->gtSubstExpr != nullptr);
+            inlRetExpr->gtSubstBB = compCurBB;
         }
     }
 

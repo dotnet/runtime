@@ -958,25 +958,6 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-void    MakePath(_Out_ CQuickWSTR &path,
-                 _In_ LPCWSTR drive,
-                 _In_ LPCWSTR dir,
-                 _In_ LPCWSTR fname,
-                 _In_ LPCWSTR ext);
-
-WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
-
-//*****************************************************************************
-//
-// SString version of the path functions.
-//
-//*****************************************************************************
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext);
-
 #include "ostype.h"
 
 #define CLRGetTickCount64() GetTickCount64()
@@ -4433,13 +4414,6 @@ inline T* InterlockedCompareExchangeT(
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
 HRESULT GetClrModuleDirectory(SString& wszPath);
-HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
-
-HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
-// This is a slight variation that can be used for anything else
-typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
-void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
 
 namespace Clr { namespace Util
 {

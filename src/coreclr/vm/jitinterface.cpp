@@ -6299,11 +6299,23 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
     } CONTRACTL_END;
 
     const char* result = NULL;
-    const char* classResult = NULL;
-    const char* namespaceResult = NULL;
-    const char* enclosingResult = NULL;
 
     JIT_TO_EE_TRANSITION();
+
+    if (className != NULL)
+    {
+        *className = NULL;
+    }
+
+    if (namespaceName != NULL)
+    {
+        *namespaceName = NULL;
+    }
+
+    if (enclosingClassName != NULL)
+    {
+        *enclosingClassName = NULL;
+    }
 
     MethodDesc *ftn = GetMethod(ftnHnd);
     mdMethodDef token = ftn->GetMemberDef();
@@ -6314,28 +6326,16 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         IMDInternalImport* pMDImport = pMT->GetMDImport();
 
         IfFailThrow(pMDImport->GetNameOfMethodDef(token, &result));
-        IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), &classResult, &namespaceResult));
+        if (className != NULL || namespaceName != NULL)
+        {
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), className, namespaceName));
+        }
         // Query enclosingClassName when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if (pMT->GetClass()->IsNested())
+        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
         {
-            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), &enclosingResult, &namespaceResult));
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
         }
-    }
-
-    if (className != NULL)
-    {
-        *className = classResult;
-    }
-
-    if (namespaceName != NULL)
-    {
-        *namespaceName = namespaceResult;
-    }
-
-    if (enclosingClassName != NULL)
-    {
-        *enclosingClassName = enclosingResult;
     }
 
     EE_TO_JIT_TRANSITION();
