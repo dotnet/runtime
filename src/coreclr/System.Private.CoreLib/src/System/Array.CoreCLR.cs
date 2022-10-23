@@ -409,7 +409,7 @@ namespace System
 
             for (int i = 0; i < Length; i++)
             {
-                InvokeConstructor(ref arrayRef);
+                cache.InvokeConstructor(ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }
