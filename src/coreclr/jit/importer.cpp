@@ -4154,7 +4154,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         return nullptr;
     }
 
-    JITDUMP("\nCheck if we can import 'static readonly' as a jit-time constant... ")
+    JITDUMP("\nChecking if we can import 'static readonly' as a jit-time constant... ")
 
     CORINFO_CLASS_HANDLE fieldClsHnd;
     var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls));
@@ -4181,14 +4181,14 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         unsigned fieldsCnt = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
 
         // For large structs we only want to handle "initialized with zero" case
-        // e.g. Guid.Empty field.
+        // e.g. Guid.Empty and decimal.Zero static readonly fields.
         if ((totalSize > TARGET_POINTER_SIZE) || (fieldsCnt != 1))
         {
             JITDUMP("checking if we can do anything for a large struct ...");
             const int MaxStructSize = 16;
             if ((totalSize == 0) || (totalSize > MaxStructSize))
             {
-                // TP-wise check
+                // Limit to 16 bytes for better throughput, larger structs didn't increase the diffs
                 JITDUMP("struct is larger than 16 bytes - bail out.");
                 return nullptr;
             }
@@ -4209,8 +4209,8 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 DWORD typeFlags = info.compCompHnd->getClassAttribs(fieldClsHnd);
                 if (StructHasOverlappingFields(typeFlags) || StructHasCustomLayout(typeFlags))
                 {
-                    // Technically, we only care about holes in a struct but overlapping fields would complicate
-                    // the holes detection logic. And since, again, only Guid.Empty shows up in the diffs - it's fine.
+                    // Technically, we only care about holes in a struct, but overlapping fields would complicate
+                    // the holes detection logic.
                     JITDUMP("struct has complex layout - bail out.");
                     return nullptr;
                 }
@@ -4225,7 +4225,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 
                     if (!varTypeIsIntegral(fieldVarType))
                     {
-                        // This is a bit too conservative check but since mostly Guid shows it's fine for TP
+                        // A conservative check since a proper one is more complicated and doesn't bring new diffs
                         JITDUMP("struct has non-primitive fields - bail out.");
                         return nullptr;
                     }
