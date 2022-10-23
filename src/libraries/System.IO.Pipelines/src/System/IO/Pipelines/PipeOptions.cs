@@ -63,9 +63,15 @@ namespace System.IO.Pipelines
             {
                 resumeWriterThreshold = DefaultResumeWriterThreshold;
             }
-            else if (resumeWriterThreshold < 0 || resumeWriterThreshold > pauseWriterThreshold)
+            else if (resumeWriterThreshold <= 0 || resumeWriterThreshold > pauseWriterThreshold)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.resumeWriterThreshold);
+            }
+
+            // If resumeWriterThreshold is still larger than pauseWriterThreshold, need to throw exception to prevent system hanging
+            if (resumeWriterThreshold > pauseWriterThreshold)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
             }
 
             Pool = pool ?? MemoryPool<byte>.Shared;
