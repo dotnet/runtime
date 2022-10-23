@@ -230,7 +230,7 @@ namespace ILCompiler.ObjectWriter
                     string unwindSymbolName = $"_unwind{i}{currentSymbolName}";
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
-                    UpdateSectionAlignment(xdataSectionIndex, 4, out _);
+                    EmitAlignment(xdataSectionIndex, xdataStream, 4);
                     EmitSymbolDefinition(unwindSymbolName, new SymbolDefinition(xdataSectionIndex, xdataStream.Position));
                     if (start != 0)
                     {
@@ -306,17 +306,20 @@ namespace ILCompiler.ObjectWriter
                         start);
                     pdataStream.Write(tempBuffer);
 
-                    // End
-                    tempBuffer.Clear();
-                    EmitRelocation(
-                        pdataSectionIndex,
-                        pdataRelocations,
-                        (int)pdataStream.Position,
-                        tempBuffer,
-                        RelocType.IMAGE_REL_BASED_ADDR32NB,
-                        currentSymbolName,
-                        end);
-                    pdataStream.Write(tempBuffer);
+                    if (_machine == Machine.Amd64)
+                    {
+                        // End
+                        tempBuffer.Clear();
+                        EmitRelocation(
+                            pdataSectionIndex,
+                            pdataRelocations,
+                            (int)pdataStream.Position,
+                            tempBuffer,
+                            RelocType.IMAGE_REL_BASED_ADDR32NB,
+                            currentSymbolName,
+                            end);
+                        pdataStream.Write(tempBuffer);
+                    }
 
                     // Unwind info pointer
                     tempBuffer.Clear();
@@ -484,16 +487,41 @@ namespace ILCompiler.ObjectWriter
                         binaryWriter.Write((int)_symbolNameToIndex[relocation.SymbolName]);
 
                         // FIXME: Other architectures
-                        var relocationType = relocation.Type switch
+                        uint relocationType;
+
+                        if (_machine == Machine.Amd64)
                         {
-                            RelocType.IMAGE_REL_BASED_ABSOLUTE => 3u,
-                            RelocType.IMAGE_REL_BASED_ADDR32NB => 3u,
-                            RelocType.IMAGE_REL_BASED_HIGHLOW => 2u,
-                            RelocType.IMAGE_REL_BASED_DIR64 => 1u,
-                            RelocType.IMAGE_REL_BASED_REL32 => 4u,
-                            RelocType.IMAGE_REL_BASED_RELPTR32 => 4u,
-                            _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                        };
+                            relocationType = relocation.Type switch
+                            {
+                                RelocType.IMAGE_REL_BASED_ABSOLUTE => 3u,
+                                RelocType.IMAGE_REL_BASED_ADDR32NB => 3u,
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => 2u,
+                                RelocType.IMAGE_REL_BASED_DIR64 => 1u,
+                                RelocType.IMAGE_REL_BASED_REL32 => 4u,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => 4u,
+                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                            };
+                        }
+                        else if (_machine == Machine.Arm64)
+                        {
+                            relocationType = relocation.Type switch
+                            {
+                                RelocType.IMAGE_REL_BASED_ABSOLUTE => 2u,
+                                RelocType.IMAGE_REL_BASED_ADDR32NB => 2u,
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => 1u,
+                                RelocType.IMAGE_REL_BASED_DIR64 => 14u,
+                                RelocType.IMAGE_REL_BASED_REL32 => 17u,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => 17u,
+                                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => 3u,
+                                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4u,
+                                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 6u,
+                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                            };
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("Unsupported architecture");
+                        }
 
                         binaryWriter.Write((ushort)relocationType);
                     }
