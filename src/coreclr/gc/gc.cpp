@@ -2045,7 +2045,9 @@ void stomp_write_barrier_ephemeral (uint8_t* ephemeral_low, uint8_t* ephemeral_h
 #endif //USE_REGIONS
                                    )
 {
+#ifndef USE_REGIONS
     initGCShadow();
+#endif
 
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::StompEphemeral;
@@ -7905,6 +7907,32 @@ BOOL gc_heap::ephemeral_pointer_p (uint8_t* o)
 #endif //USE_REGIONS
 }
 
+// This needs to check the range that's covered by bookkeeping because find_object will
+// need to look at the brick table.
+inline
+bool gc_heap::is_in_find_object_range (uint8_t* o)
+{
+    if (o == nullptr)
+    {
+        return false;
+    }
+#if defined(USE_REGIONS) && defined(FEATURE_CONSERVATIVE_GC)
+    return ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
+#else //USE_REGIONS && FEATURE_CONSERVATIVE_GC
+    if ((o >= g_gc_lowest_address) && (o < g_gc_highest_address))
+    {
+#ifdef USE_REGIONS
+        assert ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
+#endif //USE_REGIONS
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+#endif //USE_REGIONS && FEATURE_CONSERVATIVE_GC
+}
+
 #ifdef USE_REGIONS
 // This assumes o is guaranteed to be in a region.
 inline
@@ -7923,14 +7951,6 @@ bool gc_heap::is_in_condemned_gc (uint8_t* o)
     }
 
     return true;
-}
-
-// This needs to check the range that's covered by bookkeeping because find_object will
-// need to look at the brick table.
-inline
-bool gc_heap::is_in_bookkeeping_range (uint8_t* o)
-{
-    return ((o >= g_gc_lowest_address) && (o < bookkeeping_covered_committed));
 }
 
 inline
@@ -8724,6 +8744,31 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
 #ifdef USE_REGIONS
 bool gc_heap::on_used_changed (uint8_t* new_used)
 {
+#if defined(WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_BARRIERCHECK)
+    {
+        size_t shadow_covered = g_GCShadowEnd - g_GCShadow;
+        size_t used_heap_range = new_used - g_gc_lowest_address;
+        if (used_heap_range > shadow_covered)
+        {
+            size_t extra = used_heap_range - shadow_covered;
+            if (!GCToOSInterface::VirtualCommit (g_GCShadowEnd, extra))
+            {
+                _ASSERTE(!"Not enough memory to run HeapVerify level 2");
+                // If after the assert we decide to allow the program to continue
+                // running we need to be in a state that will not trigger any
+                // additional AVs while we fail to allocate a shadow segment, i.e.
+                // ensure calls to updateGCShadow() checkGCWriteBarrier() don't AV
+                deleteGCShadow();
+            }
+            else
+            {
+                g_GCShadowEnd += extra;
+            }
+        }
+    }
+#endif //WRITE_BARRIER_CHECK && !SERVER_GC
+
     if (new_used > bookkeeping_covered_committed)
     {
         bool speculative_commit_tried = false;
@@ -11271,7 +11316,7 @@ void gc_heap::clear_region_info (heap_segment* region)
         clear_brick_table (heap_segment_mem (region), heap_segment_reserved (region));
     }
 
-    // we should really clear cards as well!!
+    clear_card_for_addresses (get_region_start (region), heap_segment_reserved (region));
 
 #ifdef BACKGROUND_GC
     ::record_changed_seg ((uint8_t*)region, heap_segment_reserved (region),
@@ -11709,7 +11754,7 @@ void gc_heap::clear_gen1_cards()
         heap_segment* region = generation_start_segment (generation_of (1));
         while (region)
         {
-            clear_card_for_addresses (heap_segment_mem (region), heap_segment_allocated (region));
+            clear_card_for_addresses (get_region_start (region), heap_segment_reserved (region));
             region = heap_segment_next (region);
         }
 #else //USE_REGIONS
@@ -21616,6 +21661,7 @@ void gc_heap::gc1()
                 max_gen0_must_clear_bricks = max(max_gen0_must_clear_bricks, hp->gen0_must_clear_bricks);
             }
 #ifdef USE_REGIONS
+            initGCShadow();
             distribute_free_regions();
             verify_region_to_generation_map ();
             compute_gc_and_ephemeral_range (settings.condemned_generation, true);
@@ -21684,6 +21730,7 @@ void gc_heap::gc1()
     if (!(settings.concurrent))
     {
 #ifdef USE_REGIONS
+        initGCShadow();
         distribute_free_regions();
         verify_region_to_generation_map ();
         compute_gc_and_ephemeral_range (settings.condemned_generation, true);
@@ -25185,8 +25232,10 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
+    if (!is_in_find_object_range (o))
+    {
         return;
+    }
 
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
@@ -35949,8 +35998,10 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
+    if (!is_in_find_object_range (o))
+    {
         return;
+    }
 
     HEAP_FROM_THREAD;
 
@@ -45878,8 +45929,10 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (o == 0)
+    if (!gc_heap::is_in_find_object_range (o))
+    {
         return;
+    }
 
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
@@ -45892,7 +45945,7 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
     gc_heap* hp = gc_heap::heap_of (o);
 
 #ifdef USE_REGIONS
-    if (!gc_heap::is_in_bookkeeping_range (o) || !gc_heap::is_in_condemned_gc (o))
+    if (!gc_heap::is_in_condemned_gc (o))
 #else //USE_REGIONS
     if ((o < hp->gc_low) || (o >= hp->gc_high))
 #endif //USE_REGIONS
@@ -45946,18 +45999,15 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
 
     uint8_t* object = (uint8_t*)(Object*)(*ppObject);
 
+    if (!gc_heap::is_in_find_object_range (object))
+    {
+        return;
+    }
+
     THREAD_NUMBER_FROM_CONTEXT;
 
     //dprintf (3, ("Relocate location %Ix\n", (size_t)ppObject));
     dprintf (3, ("R: %Ix", (size_t)ppObject));
-
-    if (!object 
-#ifdef USE_REGIONS
-        || !gc_heap::is_in_bookkeeping_range (object))
-#else //USE_REGIONS
-        || !((object >= g_gc_lowest_address) && (object < g_gc_highest_address)))
-#endif //USE_REGIONS
-        return;
 
     gc_heap* hp = gc_heap::heap_of (object);
 
@@ -46408,20 +46458,19 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 {
     uint8_t *o = (uint8_t*)pInteriorPtr;
 
-    gc_heap* hp = gc_heap::heap_of (o);
-
-#ifdef USE_REGIONS
-    if (gc_heap::is_in_bookkeeping_range (o))
-    {
-        if (fCollectedGenOnly && !gc_heap::is_in_condemned_gc (o))
-        {
-            return NULL;
-        }
-    }
-    else
+    if (!gc_heap::is_in_find_object_range (o))
     {
         return NULL;
     }
+
+    gc_heap* hp = gc_heap::heap_of (o);
+
+#ifdef USE_REGIONS
+    if (fCollectedGenOnly && !gc_heap::is_in_condemned_gc (o))
+    {
+        return NULL;
+    }
+
 #else //USE_REGIONS
 
     uint8_t* lowest = (fCollectedGenOnly ? hp->gc_low : hp->lowest_address);
@@ -48827,16 +48876,16 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 }
 
 #if defined(WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
-    // This code is designed to catch the failure to update the write barrier
-    // The way it works is to copy the whole heap right after every GC.  The write
-    // barrier code has been modified so that it updates the shadow as well as the
-    // real GC heap.  Before doing the next GC, we walk the heap, looking for pointers
-    // that were updated in the real heap, but not the shadow.  A mismatch indicates
-    // an error.  The offending code can be found by breaking after the correct GC,
-    // and then placing a data breakpoint on the Heap location that was updated without
-    // going through the write barrier.
+// This code is designed to catch the failure to update the write barrier
+// The way it works is to copy the whole heap right after every GC.  The write
+// barrier code has been modified so that it updates the shadow as well as the
+// real GC heap.  Before doing the next GC, we walk the heap, looking for pointers
+// that were updated in the real heap, but not the shadow.  A mismatch indicates
+// an error.  The offending code can be found by breaking after the correct GC,
+// and then placing a data breakpoint on the Heap location that was updated without
+// going through the write barrier.
 
-    // Called at process shutdown
+// Called at process shutdown
 void deleteGCShadow()
 {
     if (g_GCShadow != 0)
@@ -48845,18 +48894,27 @@ void deleteGCShadow()
     g_GCShadowEnd = 0;
 }
 
-    // Called at startup and right after a GC, get a snapshot of the GC Heap
+// Called at startup and right after a GC, get a snapshot of the GC Heap
 void initGCShadow()
 {
     if (!(GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_BARRIERCHECK))
         return;
 
+    uint8_t* highest = nullptr;
+
+#ifdef USE_REGIONS
+    highest = global_region_allocator.get_left_used_unsafe();
+#else
+    highest = g_gc_highest_address;
+#endif
+
     size_t len = g_gc_highest_address - g_gc_lowest_address;
+    size_t commit_len = highest - g_gc_lowest_address;
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow))
     {
         deleteGCShadow();
-        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve(len, 0, VirtualReserveFlags::None);
-        if (g_GCShadow == NULL || !GCToOSInterface::VirtualCommit(g_GCShadow, len))
+        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve (len, 0, VirtualReserveFlags::None);
+        if (g_GCShadow == NULL || !GCToOSInterface::VirtualCommit (g_GCShadow, commit_len))
         {
             _ASSERTE(!"Not enough memory to run HeapVerify level 2");
             // If after the assert we decide to allow the program to continue
@@ -48867,7 +48925,7 @@ void initGCShadow()
             return;
         }
 
-        g_GCShadowEnd += len;
+        g_GCShadowEnd += commit_len;
     }
 
     // save the value of g_gc_lowest_address at this time.  If this value changes before
@@ -48875,7 +48933,7 @@ void initGCShadow()
     // large object segment most probably), and the whole shadow segment is inconsistent.
     g_shadow_lowest_address = g_gc_lowest_address;
 
-        //****** Copy the whole GC heap ******
+    //****** Copy the whole GC heap ******
     //
     // NOTE: This is the one situation where the combination of heap_segment_rw(gen_start_segment())
     // can produce a NULL result.  This is because the initialization has not completed.
@@ -48889,9 +48947,9 @@ void initGCShadow()
         while (seg)
         {
             // Copy the segment
-            uint8_t* start = heap_segment_mem(seg);
+            uint8_t* start = heap_segment_mem (seg);
             uint8_t* end = heap_segment_allocated (seg);
-            memcpy(start + delta, start, end - start);
+            memcpy (start + delta, start, end - start);
             seg = heap_segment_next_rw (seg);
         }
     }
@@ -48956,40 +49014,20 @@ void testGCShadowHelper (uint8_t* x)
     }
 }
 
-    // Walk the whole heap, looking for pointers that were not updated with the write barrier.
+// Walk the whole heap, looking for pointers that were not updated with the write barrier.
 void checkGCWriteBarrier()
 {
     // g_shadow_lowest_address != g_gc_lowest_address means the GC heap was extended by a segment
     // and the GC shadow segment did not track that change!
     if (g_GCShadowEnd <= g_GCShadow || g_shadow_lowest_address != g_gc_lowest_address)
     {
-        // No shadow stack, nothing to check.
+        // No shadow heap, nothing to check.
         return;
     }
 
+    for (int i = get_start_generation_index(); i < total_generation_count; i++)
     {
-        generation* gen = gc_heap::generation_of (max_generation);
-        heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
-
-        PREFIX_ASSUME(seg != NULL);
-
-        while(seg)
-        {
-            uint8_t* x = heap_segment_mem(seg);
-            while (x < heap_segment_allocated (seg))
-            {
-                size_t s = size (x);
-                testGCShadowHelper (x);
-                x = x + Align (s);
-            }
-            seg = heap_segment_next_rw (seg);
-        }
-    }
-
-    {
-        // go through non-soh object heaps
-        int alignment = get_alignment_constant(FALSE);
-        for (int i = uoh_start_generation; i < total_generation_count; i++)
+        int alignment = get_alignment_constant(i <= max_generation);
         {
             generation* gen = gc_heap::generation_of (i);
             heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -48998,7 +49036,7 @@ void checkGCWriteBarrier()
 
             while(seg)
             {
-                uint8_t* x = heap_segment_mem(seg);
+                uint8_t* x = heap_segment_mem (seg);
                 while (x < heap_segment_allocated (seg))
                 {
                     size_t s = size (x);

@@ -3134,15 +3134,15 @@ protected:
     void copy_mark_bits_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
 #endif //BACKGROUND_GC
 
+    PER_HEAP_ISOLATED
+    bool is_in_find_object_range (uint8_t* o);
+
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
     PER_HEAP_ISOLATED
     bool is_in_condemned_gc (uint8_t* o);
-    // requires checking if o is in the heap range first.
-    PER_HEAP_ISOLATED
-    bool is_in_bookkeeping_range (uint8_t* o);
     PER_HEAP_ISOLATED
     bool should_check_brick_for_reloc (uint8_t* o);
 #endif //USE_REGIONS
