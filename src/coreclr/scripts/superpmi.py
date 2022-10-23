@@ -1711,8 +1711,13 @@ class SuperPMIReplayAsmDiffs:
                                 logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
                                 proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
                                 await proc.communicate()
-                                with open(item_path, 'r') as file_handle:
-                                    generated_txt = file_handle.read()
+                                (stdout, stderr) = await proc.communicate()
+                                if os.path.exists(item_path):
+                                    with open(item_path, 'r') as file_handle:
+                                        generated_txt = file_handle.read()
+                                else:
+                                    raise Exception("No JitStdOutFile was created. Exit code: {}\n\nstdout:\n{}\n\nstderr:\n{}".format(proc.returncode, stdout.decode(), stderr.decode()))
+
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
