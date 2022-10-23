@@ -260,6 +260,21 @@ regMaskTP LinearScan::allRegs(RegisterType rt)
     }
 }
 
+regMaskTP LinearScan::getRegMask(regNumber reg, Interval* interval)
+{
+    int       regCount = interval->regCount;
+    regNumber currReg  = reg;
+    regMaskTP mask     = 0;
+    do
+    {
+        mask |= genRegMask(currReg);
+        currReg = REG_NEXT(reg);
+    } while (--regCount > 0);
+
+    return mask;
+}
+
+
 regMaskTP LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
@@ -399,7 +414,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
 bool LinearScan::isFree(RegRecord* regRecord)
 {
     return ((regRecord->assignedInterval == nullptr || !regRecord->assignedInterval->isActive) &&
-            !isRegBusy(regRecord->regNum, regRecord));
+            !isRegBusy(regRecord->regNum));
 }
 
 RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
@@ -4281,7 +4296,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         RegRecord* physRegRecord = getRegisterRecord(reg);
         if ((liveRegs & genRegMask(reg)) == 0)
         {
-            makeRegAvailable(reg, physRegRecord);
+            makeRegAvailable(reg);
             Interval* assignedInterval = physRegRecord->assignedInterval;
 
             if (assignedInterval != nullptr)
@@ -4320,7 +4335,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     // Skip next float register, because we already addressed a double register
                     assert(genIsValidDoubleReg(reg));
                     reg = REG_NEXT(reg);
-                    makeRegAvailable(reg, physRegRecord);
+                    makeRegAvailable(reg);
                 }
 #endif // TARGET_ARM
             }
@@ -4457,7 +4472,7 @@ void LinearScan::makeRegisterInactive(RegRecord* physRegRecord)
 void LinearScan::freeRegister(RegRecord* physRegRecord)
 {
     Interval* assignedInterval = physRegRecord->assignedInterval;
-    makeRegAvailable(physRegRecord->regNum, physRegRecord);
+    makeRegAvailable(physRegRecord->regNum);
     clearSpillCost(physRegRecord->regNum, physRegRecord);
     makeRegisterInactive(physRegRecord);
 
@@ -4837,8 +4852,8 @@ void LinearScan::allocateRegisters()
                     else
                     {
                         // Available registers should not hold constants
-                        assert(isRegAvailable(reg, physRegRecord));
-                        assert(!isRegConstant(reg, physRegRecord));
+                        assert(isRegAvailable(reg));
+                        assert(!isRegConstant(reg));
                         assert(nextIntervalRef[reg] == MaxLocation);
                         assert(spillCost[reg] == 0);
                     }

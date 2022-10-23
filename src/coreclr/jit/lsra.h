@@ -1680,19 +1680,14 @@ private:
         return reg;
     }
 
-    regMaskTP getRegMask(regNumber reg, Referenceable* reference)
+    regMaskTP getRegMask(regNumber reg)
     {
-        reg               = getRegForType(reg, reference);
-        regMaskTP regMask = genRegMask(reg);
 #ifdef TARGET_ARM
-        if (reference->registerType == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(reg));
-            regMask |= (regMask << 1);
-        }
-#endif // TARGET_ARM
-        return regMask;
+        assert(getRegisterRecord(reg)->registerType != TYP_DOUBLE);
+#endif
+        return genRegMask(reg);
     }
+    regMaskTP getRegMask(regNumber reg, Interval* interval);
 
     void resetAvailableRegs()
     {
@@ -1700,9 +1695,14 @@ private:
         m_RegistersWithConstants = RBM_NONE;
     }
 
-    bool isRegAvailable(regNumber reg, Referenceable* reference)
+    bool isRegAvailable(regNumber reg)
     {
-        regMaskTP regMask = getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg);
+        return (m_AvailableRegs & regMask) == regMask;
+    }
+    bool isRegAvailable(regNumber reg, Interval* interval)
+    {
+        regMaskTP regMask = getRegMask(reg, interval);
         return (m_AvailableRegs & regMask) == regMask;
     }
 
@@ -1711,9 +1711,15 @@ private:
         m_AvailableRegs &= ~regMask;
     }
 
-    void setRegInUse(regNumber reg, Referenceable* reference)
+    void setRegInUse(regNumber reg)
     {
-        regMaskTP regMask = getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg);
+        setRegsInUse(regMask);
+    }
+
+    void setRegInUse(regNumber reg, Interval* interval)
+    {
+        regMaskTP regMask = getRegMask(reg, interval);
         setRegsInUse(regMask);
     }
 
@@ -1722,9 +1728,14 @@ private:
         m_AvailableRegs |= regMask;
     }
 
-    void makeRegAvailable(regNumber reg, Referenceable* reference)
+    void makeRegAvailable(regNumber reg)
     {
-        regMaskTP regMask = getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg);
+        makeRegsAvailable(regMask);
+    }
+    void makeRegAvailable(regNumber reg, Interval* interval)
+    {
+        regMaskTP regMask = getRegMask(reg, interval);
         makeRegsAvailable(regMask);
     }
 
@@ -1736,18 +1747,33 @@ private:
 
     regMaskTP m_RegistersWithConstants;
 
-    void clearConstantReg(regNumber reg, Referenceable* reference)
+    void clearConstantReg(regNumber reg, Interval* interval)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, reference);
+        m_RegistersWithConstants &= ~getRegMask(reg, interval);
     }
-    void setConstantReg(regNumber reg, Referenceable* reference)
+    void clearConstantReg(regNumber reg)
     {
-        m_RegistersWithConstants |= getRegMask(reg, reference);
+        m_RegistersWithConstants &= ~getRegMask(reg);
     }
-    bool isRegConstant(regNumber reg, Referenceable* reference)
+
+    void setConstantReg(regNumber reg, Interval* interval)
     {
-        reg               = getRegForType(reg, reference);
-        regMaskTP regMask = getRegMask(reg, reference);
+        m_RegistersWithConstants |= getRegMask(reg, interval);
+    }
+    void setConstantReg(regNumber reg)
+    {
+        m_RegistersWithConstants |= getRegMask(reg);
+    }
+
+    bool isRegConstant(regNumber reg)
+    {
+        regMaskTP regMask = getRegMask(reg);
+        return (m_RegistersWithConstants & regMask) == regMask;
+    }
+    bool isRegConstant(regNumber reg, Interval* interval)
+    {
+        reg               = getRegForType(reg, (Referenceable*)interval);
+        regMaskTP regMask = getRegMask(reg, interval);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
 
@@ -1758,26 +1784,32 @@ private:
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
-        LsraLocation loc = nextFixedRef[regNum];
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
+        RegRecord* regRecord = getRegisterRecord(regNum);
+        int regCount = regRecord->regCount;
+        regNumber currReg = regNum;
+        LsraLocation loc       = MaxLocation;
+        do
         {
-            loc = Min(loc, nextFixedRef[regNum + 1]);
-        }
-#endif
+            loc = Min(loc, nextFixedRef[currReg]);
+            currReg = REG_NEXT(currReg);
+        } while (--regCount > 0);
+
         return loc;
     }
 
     LsraLocation nextIntervalRef[REG_COUNT];
     LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
     {
-        LsraLocation loc = nextIntervalRef[regNum];
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
+        RegRecord*   regRecord = getRegisterRecord(regNum);
+        int          regCount  = regRecord->regCount;
+        regNumber    currReg   = regNum;
+        LsraLocation loc       = MaxLocation;
+        do
         {
-            loc = Min(loc, nextIntervalRef[regNum + 1]);
-        }
-#endif
+            loc     = Min(loc, nextIntervalRef[currReg]);
+            currReg = REG_NEXT(currReg);
+        } while (--regCount > 0);
+
         return loc;
     }
     weight_t spillCost[REG_COUNT];
@@ -1795,14 +1827,23 @@ private:
     //    regsBusyUntilKill |= getRegMask(reg, regType);
     //}
 
-    bool isRegBusy(regNumber reg, Referenceable* reference)
+    bool isRegBusy(regNumber reg)
     {
-        regMaskTP regMask = getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg);
         return (regsBusyUntilKill & regMask) != RBM_NONE;
     }
-    void setRegBusyUntilKill(regNumber reg, Referenceable* reference)
+    bool isRegBusy(regNumber reg, Interval* interval)
     {
-        regsBusyUntilKill |= getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg, interval);
+        return (regsBusyUntilKill & regMask) != RBM_NONE;
+    }
+    void setRegBusyUntilKill(regNumber reg, Interval* interval)
+    {
+        regsBusyUntilKill |= getRegMask(reg, interval);
+    }
+    void setRegBusyUntilKill(regNumber reg)
+    {
+        regsBusyUntilKill |= getRegMask(reg);
     }
 
     void clearRegBusyUntilKill(regNumber reg)
@@ -1810,15 +1851,14 @@ private:
         regsBusyUntilKill &= ~genRegMask(reg);
     }
 
-    // bool isRegInUse(regNumber reg, var_types regType)
-    //{
-    //    regMaskTP regMask = getRegMask(reg, regType);
-    //    return (regsInUseThisLocation & regMask) != RBM_NONE;
-    //}
-
-    bool isRegInUse(regNumber reg, Referenceable* reference)
+    bool isRegInUse(regNumber reg, Interval* interval)
     {
-        regMaskTP regMask = getRegMask(reg, reference);
+        regMaskTP regMask = getRegMask(reg, interval);
+        return (regsInUseThisLocation & regMask) != RBM_NONE;
+    }
+    bool isRegInUse(regNumber reg)
+    {
+        regMaskTP regMask = getRegMask(reg);
         return (regsInUseThisLocation & regMask) != RBM_NONE;
     }
 
