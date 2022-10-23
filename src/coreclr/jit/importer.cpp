@@ -4485,7 +4485,6 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             }
             else // We need the value of a static field
             {
-                // In future, it may be better to just create the right tree here instead of folding it later.
                 op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
@@ -4518,9 +4517,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (isBoxedStatic)
     {
-        op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
-        op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-
+        op1 = gtNewIndir(TYP_REF, op1, GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
         op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
     }
 
@@ -9390,12 +9387,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 int aflags = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
 
                 GenTree*             obj     = nullptr;
-                typeInfo*            tiObj   = nullptr;
                 CORINFO_CLASS_HANDLE objType = nullptr; // used for fields
 
-                if (opcode == CEE_LDFLD || opcode == CEE_LDFLDA)
+                if ((opcode == CEE_LDFLD) || (opcode == CEE_LDFLDA))
                 {
-                    tiObj         = &impStackTop().seTypeInfo;
                     StackEntry se = impPopStack();
                     objType       = se.seTypeInfo.GetClassHandle();
                     obj           = se.val;
@@ -9657,8 +9652,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if (!usesHelper)
                         {
-                            assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) ||
-                                   (op1->OperGet() == GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
                             op1->gtFlags |= GTF_IND_VOLATILE;
                         }
                     }
@@ -9667,15 +9661,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (!usesHelper)
                         {
-                            assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) ||
-                                   (op1->OperGet() == GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
                             op1->gtFlags |= GTF_IND_UNALIGNED;
                         }
                     }
                 }
 
-                /* Check if the class needs explicit initialization */
-
+                // Check if the class needs explicit initialization.
                 if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
                     GenTree* helperNode = impInitClass(&resolvedToken);
@@ -9710,21 +9702,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                int       aflags = CORINFO_ACCESS_SET;
-                GenTree*  obj    = nullptr;
-                typeInfo* tiObj  = nullptr;
-                typeInfo  tiVal;
+                int      aflags = CORINFO_ACCESS_SET;
+                GenTree* obj    = nullptr;
 
-                /* Pull the value from the stack */
+                // Pull the value from the stack.
                 StackEntry se = impPopStack();
                 op2           = se.val;
-                tiVal         = se.seTypeInfo;
-                clsHnd        = tiVal.GetClassHandle();
+                clsHnd        = se.seTypeInfo.GetClassHandle();
 
                 if (opcode == CEE_STFLD)
                 {
-                    tiObj = &impStackTop().seTypeInfo;
-                    obj   = impPopStack().val;
+                    obj = impPopStack().val;
 
                     if (impIsThis(obj))
                     {
@@ -9948,14 +9936,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 #endif
 
-                    // We can generate an assignment to a TYP_FLOAT from a TYP_DOUBLE
-                    // We insert a cast to the dest 'op1' type
-                    //
-                    if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1->gtType) &&
-                        varTypeIsFloating(op2->gtType))
-                    {
-                        op2 = gtNewCastNode(op1->TypeGet(), op2, false, op1->TypeGet());
-                    }
+                    // Insert an implicit FLOAT<->DOUBLE cast if needed.
+                    op2 = impImplicitR4orR8Cast(op2, op1->TypeGet());
 
                     op1 = gtNewAssignNode(op1, op2);
                 }
