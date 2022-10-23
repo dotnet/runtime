@@ -18,6 +18,11 @@ namespace System
         /// </summary>
         internal static bool IsSingleProcessor => ProcessorCount == 1;
 
+        /// <summary>
+        /// Gets whether the current process is authorized to perform security-relevant functions.
+        /// </summary>
+        public static bool IsPrivilegedProcess { get; } = IsAdminProcess();
+
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 

@@ -26,6 +26,12 @@ namespace System
 
         public static string UserName => Interop.Sys.GetUserNameFromPasswd(Interop.Sys.GetEUid());
 
+        private static bool IsAdminProcess()
+        {
+            uint userId = Interop.Sys.GetEUid();
+            return (userId == 0);
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => Interop.Sys.GetPid();
 
