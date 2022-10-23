@@ -9512,8 +9512,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
+                        DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
+
+                        // TODO-ADDR: use FIELD_ADDR for all fields, not just those of classes.
+                        //
+                        if (isLoadAddress && ((typeFlags & CORINFO_FLG_VALUECLASS) == 0))
+                        {
+                            op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
+                                                     obj, fieldInfo.offset);
+                        }
+                        else
+                        {
+                            op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
+                        }
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
@@ -9527,26 +9538,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
                         if (StructHasOverlappingFields(typeFlags))
                         {
                             op1->AsField()->gtFldMayOverlap = true;
                         }
 
-                        // wrap it in a address of operator if necessary
-                        if (isLoadAddress)
+                        // Wrap it in a address of operator if necessary.
+                        if (isLoadAddress && op1->OperIs(GT_FIELD))
                         {
-                            op1 = gtNewOperNode(GT_ADDR,
-                                                (var_types)(varTypeIsGC(obj->TypeGet()) ? TYP_BYREF : TYP_I_IMPL), op1);
+                            op1 = gtNewOperNode(GT_ADDR, varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, op1);
                         }
-                        else
+
+                        if (!isLoadAddress && compIsForInlining() &&
+                            impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, nullptr, obj,
+                                                                               impInlineInfo->inlArgInfo))
                         {
-                            if (compIsForInlining() &&
-                                impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, nullptr, obj,
-                                                                                   impInlineInfo->inlArgInfo))
-                            {
-                                impInlineInfo->thisDereferencedFirst = true;
-                            }
+                            impInlineInfo->thisDereferencedFirst = true;
                         }
                     }
                     break;
