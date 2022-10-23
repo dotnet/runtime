@@ -4185,11 +4185,11 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         if ((totalSize > TARGET_POINTER_SIZE) || (fieldsCnt != 1))
         {
             JITDUMP("checking if we can do anything for a large struct ...");
-            const int MaxStructSize = 16;
+            const int MaxStructSize = 64;
             if ((totalSize == 0) || (totalSize > MaxStructSize))
             {
-                // Limit to 16 bytes for better throughput, larger structs didn't increase the diffs
-                JITDUMP("struct is larger than 16 bytes - bail out.");
+                // Limit to 64 bytes for better throughput
+                JITDUMP("struct is larger than 64 bytes - bail out.");
                 return nullptr;
             }
 
@@ -4200,60 +4200,27 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 {
                     if (buffer[i] != 0)
                     {
-                        // Value is not all zeroes - bail out
+                        // Value is not all zeroes - bail out.
+                        // Although, We might eventually support that too.
                         JITDUMP("value is not all zeros - bail out.");
                         return nullptr;
                     }
                 }
 
-                DWORD typeFlags = info.compCompHnd->getClassAttribs(fieldClsHnd);
-                if (StructHasOverlappingFields(typeFlags) || StructHasCustomLayout(typeFlags))
-                {
-                    // Technically, we only care about holes in a struct, but overlapping fields would complicate
-                    // the holes detection logic.
-                    JITDUMP("struct has complex layout - bail out.");
-                    return nullptr;
-                }
-
-                unsigned totalFldSize = 0;
-                for (unsigned fldIndex = 0; fldIndex < fieldsCnt; fldIndex++)
-                {
-                    CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, fldIndex);
-                    CORINFO_CLASS_HANDLE innerFieldClsHnd;
-                    var_types            fieldVarType =
-                        JITtype2varType(info.compCompHnd->getFieldType(innerField, &innerFieldClsHnd, fieldClsHnd));
-
-                    if (!varTypeIsIntegral(fieldVarType))
-                    {
-                        // A conservative check since a proper one is more complicated and doesn't bring new diffs
-                        JITDUMP("struct has non-primitive fields - bail out.");
-                        return nullptr;
-                    }
-                    totalFldSize += genTypeSize(fieldVarType);
-                }
-
-                if (totalFldSize != totalSize)
-                {
-                    JITDUMP("struct has holes - bail out.");
-                    return nullptr;
-                }
-
                 JITDUMP("success! Optimizing to ASG(struct, 0).");
-
                 unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld empty struct"));
                 lvaSetStruct(structTempNum, fieldClsHnd, false);
                 GenTreeLclVar* tree = impCreateLocalNode(structTempNum DEBUGARG(0));
-                impAppendTree(tree, CHECK_SPILL_NONE, impCurStmtDI);
-                impAppendTree(gtNewBlkOpNode(gtClone(tree), gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
-                              impCurStmtDI);
+                impAppendTree(gtNewBlkOpNode(tree, gtNewIconNode(0), false, false), CHECK_SPILL_NONE, impCurStmtDI);
                 return gtClone(tree); // clonning GenTreeLclVar node
             }
 
-            JITDUMP("struct has complex layout - bail out.");
-            // Only single-field structs are supported here to avoid potential regressions where
-            // Metadata-driven struct promotion leads to regressions.
+            JITDUMP("getReadonlyStaticFieldValue returned false - bail out.");
             return nullptr;
         }
+
+        // Only single-field structs are supported here to avoid potential regressions where
+        // Metadata-driven struct promotion leads to regressions.
 
         CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
         CORINFO_CLASS_HANDLE innerFieldClsHnd;
