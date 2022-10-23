@@ -9129,7 +9129,7 @@ public:
             if (kind == OPT_Lightweight)
             {
                 // Quick optimizations are allowed for all cases except debug code mode
-                return !compDbgCode;
+                return !compDbgCode && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
             }
             return !OptimizationDisabled();
         }
