@@ -962,19 +962,6 @@ namespace System.Threading.Tasks
             return result;
         }
 
-        private interface IWorkerBody<in TValue>
-        {
-            void Body(TValue value);
-
-            virtual void Finally() { }
-        }
-
-        private interface IWorkerBodyWithIndex<in TValue, in TIndex> : IWorkerBody<TValue>
-            where TIndex : INumber<TIndex>
-        {
-            void SetIteration(TIndex index);
-        }
-
         private abstract class Worker<TInput, TValue>
         {
             private readonly int _forkJoinContextId;
@@ -1025,11 +1012,6 @@ namespace System.Threading.Tasks
             {
                 workerBody.Finally();
             }
-        }
-
-        private interface IWorkerBodyFactory<in TValue>
-        {
-            IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags);
         }
 
         private interface IWorkerFactory<in TSource, TInput, TValue>
@@ -1104,215 +1086,7 @@ namespace System.Threading.Tasks
                 => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
         }
 
-        #region Worker Bodies
-        private sealed class SimpleWorkerBody<TValue> : IWorkerBody<TValue>
-        {
-            private readonly Action<TValue> _body;
-
-            internal SimpleWorkerBody(Action<TValue> body)
-            {
-                _body = body;
-            }
-
-            public void Body(TValue index)
-            {
-                _body(index);
-            }
-        }
-
-        private abstract class WorkerBodyWithIndex<TValue, TIndex> : IWorkerBodyWithIndex<TValue, TIndex>
-            where TIndex : INumber<TIndex>
-        {
-            protected readonly ParallelLoopState State;
-
-            protected WorkerBodyWithIndex(ParallelLoopStateFlags sharedPStateFlags)
-            {
-                State = sharedPStateFlags.CreateLoopState();
-            }
-
-            public abstract void Body(TValue value);
-
-            public void SetIteration(TIndex index) => State.SetCurrentIteration(index);
-
-            public virtual void Finally() {}
-        }
-
-        private sealed class WorkerWithState<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly Action<TValue, ParallelLoopState> _bodyWithState;
-
-            internal WorkerWithState(ParallelLoopStateFlags sharedPStateFlags,
-                Action<TValue, ParallelLoopState> bodyWithState) : base(sharedPStateFlags)
-            {
-                _bodyWithState = bodyWithState;
-            }
-
-            public override void Body(TValue value)
-            {
-                _bodyWithState(value, State);
-            }
-        }
-
-        private sealed class WorkerWithStateAndIndex<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly Action<TValue, ParallelLoopState, TIndex> _bodyWithStateAndIndex;
-
-            public WorkerWithStateAndIndex(ParallelLoopStateFlags sharedPStateFlags,
-                Action<TValue, ParallelLoopState, TIndex> bodyWithStateAndIndex) : base(sharedPStateFlags)
-            {
-                _bodyWithStateAndIndex = bodyWithStateAndIndex;
-            }
-
-            public override void Body(TValue value)
-            {
-                _bodyWithStateAndIndex(value, State, State.GetCurrentIteration<TIndex>());
-            }
-        }
-
-        private abstract class WorkerWithLocal<TValue, TIndex, TLocal> : WorkerBodyWithIndex<TValue, TIndex>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly Action<TLocal>? _localFinally;
-            protected TLocal LocalValue;
-
-            protected WorkerWithLocal(
-                ParallelLoopStateFlags sharedPStateFlags,
-                Func<TLocal> localInit,
-                Action<TLocal>? localFinally) : base(sharedPStateFlags)
-            {
-                LocalValue = localInit();
-                _localFinally = localFinally;
-            }
-
-            public override void Finally()
-            {
-                // If a cleanup function was specified, call it. Otherwise, if the type is
-                // IDisposable, we will invoke Dispose on behalf of the user.
-                _localFinally?.Invoke(LocalValue);
-            }
-        }
-
-        private sealed class WorkerWithStateAndLocal<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly Func<TValue, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
-
-            internal WorkerWithStateAndLocal(
-                ParallelLoopStateFlags sharedPStateFlags,
-                Func<TValue, ParallelLoopState, TLocal, TLocal> bodyWithLocal,
-                Func<TLocal> localInit,
-                Action<TLocal>? localFinally) : base(sharedPStateFlags, localInit, localFinally)
-            {
-                _bodyWithLocal = bodyWithLocal;
-            }
-
-            public override void Body(TValue value)
-            {
-                LocalValue = _bodyWithLocal(value, State, LocalValue);
-            }
-        }
-
-        private sealed class WorkerWithEverything<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
-            where TIndex : INumber<TIndex>
-        {
-            private readonly Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> _bodyWithEverything;
-
-            public WorkerWithEverything(
-                ParallelLoopStateFlags sharedPStateFlags,
-                Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> bodyWithEverything,
-                Func<TLocal> localInit,
-                Action<TLocal>? localFinally) : base(sharedPStateFlags, localInit, localFinally)
-            {
-                _bodyWithEverything = bodyWithEverything;
-            }
-
-            public override void Body(TValue value)
-            {
-                LocalValue = _bodyWithEverything(value, State, State.GetCurrentIteration<TIndex>(), LocalValue);
-            }
-        }
-
-        #endregion
-
-        #region Worker Bodies Factories
-
-        private sealed class WorkerWithSimpleBodyFactory<TValue>: IWorkerBodyFactory<TValue>
-        {
-            private readonly Action<TValue> _body;
-
-            public WorkerWithSimpleBodyFactory(Action<TValue> body)
-            {
-                _body = body;
-            }
-
-            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
-                => new SimpleWorkerBody<TValue>(_body);
-        }
-
-        private sealed class WorkerWithStateFactory<TValue, TIndex> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
-        {
-            private readonly Action<TValue, ParallelLoopState> _bodyWithState;
-
-            public WorkerWithStateFactory(Action<TValue, ParallelLoopState> bodyWithState)
-            {
-                _bodyWithState = bodyWithState;
-            }
-
-            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
-                => new WorkerWithState<TValue, TIndex>(sharedPStateFlags, _bodyWithState);
-        }
-
-        private sealed class WorkerWithStateAndIndexFactory<TValue, TIndex> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
-        {
-            private readonly Action<TValue, ParallelLoopState, TIndex> _bodyWithStateAndIndex;
-
-            public WorkerWithStateAndIndexFactory(Action<TValue, ParallelLoopState, TIndex> bodyWithStateAndIndex)
-            {
-                _bodyWithStateAndIndex = bodyWithStateAndIndex;
-            }
-
-            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
-                => new WorkerWithStateAndIndex<TValue, TIndex>(sharedPStateFlags, _bodyWithStateAndIndex);
-        }
-
-
-        private sealed class WorkerWithLocalFactory<TValue, TIndex, TLocal> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
-        {
-            private readonly Func<TValue, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
-            private readonly Func<TLocal> _localInit;
-            private readonly Action<TLocal>? _localFinally;
-
-            public WorkerWithLocalFactory(Func<TValue, ParallelLoopState, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
-            {
-                _bodyWithLocal = bodyWithLocal;
-                _localInit = localInit;
-                _localFinally = localFinally;
-            }
-
-            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
-                => new WorkerWithStateAndLocal<TValue,TIndex,TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
-        }
-
-        private sealed class WorkerWithEveryThingFactory<TValue, TIndex, TLocal> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
-        {
-            private readonly Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> _bodyWithLocal;
-            private readonly Func<TLocal> _localInit;
-            private readonly Action<TLocal>? _localFinally;
-
-            public WorkerWithEveryThingFactory(Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
-            {
-                _bodyWithLocal = bodyWithLocal;
-                _localInit = localInit;
-                _localFinally = localFinally;
-            }
-
-            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
-                => new WorkerWithEverything<TValue,TIndex,TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
-        }
-
-        #endregion
+        #region Foreach EntryPoints
 
         /// <summary>
         /// Executes a for each operation on an <see cref="System.Collections.Generic.IEnumerable{TSource}"/>
@@ -2488,6 +2262,8 @@ namespace System.Threading.Tasks
             return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
         }
 
+        #endregion
+
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
         private static ParallelLoopResult PartitionerForEachWorker<TSource>(
             Partitioner<TSource> source, // Might be OrderablePartitioner
@@ -2713,6 +2489,8 @@ namespace System.Threading.Tasks
 
         #endregion
 
+        #region Helpers
+
         private static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
             ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
         {
@@ -2887,5 +2665,236 @@ namespace System.Threading.Tasks
                 result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
             }
         }
+
+        #endregion
+
+        #region Worker Bodies
+
+        private interface IWorkerBody<in TValue>
+        {
+            void Body(TValue value);
+
+            virtual void Finally() { }
+        }
+
+        private interface IWorkerBodyWithIndex<in TValue, in TIndex> : IWorkerBody<TValue>
+            where TIndex : INumber<TIndex>
+        {
+            void SetIteration(TIndex index);
+        }
+
+        private sealed class SimpleWorkerBody<TValue> : IWorkerBody<TValue>
+        {
+            private readonly Action<TValue> _body;
+
+            internal SimpleWorkerBody(Action<TValue> body)
+            {
+                _body = body;
+            }
+
+            public void Body(TValue index)
+            {
+                _body(index);
+            }
+        }
+
+        private abstract class WorkerBodyWithIndex<TValue, TIndex> : IWorkerBodyWithIndex<TValue, TIndex>
+            where TIndex : INumber<TIndex>
+        {
+            protected readonly ParallelLoopState State;
+
+            protected WorkerBodyWithIndex(ParallelLoopStateFlags sharedPStateFlags)
+            {
+                State = sharedPStateFlags.CreateLoopState();
+            }
+
+            public abstract void Body(TValue value);
+
+            public void SetIteration(TIndex index) => State.SetCurrentIteration(index);
+
+            public virtual void Finally() {}
+        }
+
+        private sealed class WorkerWithState<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
+            where TIndex : INumber<TIndex>
+        {
+            private readonly Action<TValue, ParallelLoopState> _bodyWithState;
+
+            internal WorkerWithState(ParallelLoopStateFlags sharedPStateFlags,
+                Action<TValue, ParallelLoopState> bodyWithState) : base(sharedPStateFlags)
+            {
+                _bodyWithState = bodyWithState;
+            }
+
+            public override void Body(TValue value)
+            {
+                _bodyWithState(value, State);
+            }
+        }
+
+        private sealed class WorkerWithStateAndIndex<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
+            where TIndex : INumber<TIndex>
+        {
+            private readonly Action<TValue, ParallelLoopState, TIndex> _bodyWithStateAndIndex;
+
+            public WorkerWithStateAndIndex(ParallelLoopStateFlags sharedPStateFlags,
+                Action<TValue, ParallelLoopState, TIndex> bodyWithStateAndIndex) : base(sharedPStateFlags)
+            {
+                _bodyWithStateAndIndex = bodyWithStateAndIndex;
+            }
+
+            public override void Body(TValue value)
+            {
+                _bodyWithStateAndIndex(value, State, State.GetCurrentIteration<TIndex>());
+            }
+        }
+
+        private abstract class WorkerWithLocal<TValue, TIndex, TLocal> : WorkerBodyWithIndex<TValue, TIndex>
+            where TIndex : INumber<TIndex>
+        {
+            private readonly Action<TLocal>? _localFinally;
+            protected TLocal LocalValue;
+
+            protected WorkerWithLocal(
+                ParallelLoopStateFlags sharedPStateFlags,
+                Func<TLocal> localInit,
+                Action<TLocal>? localFinally) : base(sharedPStateFlags)
+            {
+                LocalValue = localInit();
+                _localFinally = localFinally;
+            }
+
+            public override void Finally()
+            {
+                // If a cleanup function was specified, call it. Otherwise, if the type is
+                // IDisposable, we will invoke Dispose on behalf of the user.
+                _localFinally?.Invoke(LocalValue);
+            }
+        }
+
+        private sealed class WorkerWithStateAndLocal<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
+            where TIndex : INumber<TIndex>
+        {
+            private readonly Func<TValue, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
+
+            internal WorkerWithStateAndLocal(
+                ParallelLoopStateFlags sharedPStateFlags,
+                Func<TValue, ParallelLoopState, TLocal, TLocal> bodyWithLocal,
+                Func<TLocal> localInit,
+                Action<TLocal>? localFinally) : base(sharedPStateFlags, localInit, localFinally)
+            {
+                _bodyWithLocal = bodyWithLocal;
+            }
+
+            public override void Body(TValue value)
+            {
+                LocalValue = _bodyWithLocal(value, State, LocalValue);
+            }
+        }
+
+        private sealed class WorkerWithEverything<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
+            where TIndex : INumber<TIndex>
+        {
+            private readonly Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> _bodyWithEverything;
+
+            public WorkerWithEverything(
+                ParallelLoopStateFlags sharedPStateFlags,
+                Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> bodyWithEverything,
+                Func<TLocal> localInit,
+                Action<TLocal>? localFinally) : base(sharedPStateFlags, localInit, localFinally)
+            {
+                _bodyWithEverything = bodyWithEverything;
+            }
+
+            public override void Body(TValue value)
+            {
+                LocalValue = _bodyWithEverything(value, State, State.GetCurrentIteration<TIndex>(), LocalValue);
+            }
+        }
+
+        #endregion
+
+        #region Worker Bodies Factories
+
+        private interface IWorkerBodyFactory<in TValue>
+        {
+            IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags);
+        }
+
+        private sealed class WorkerWithSimpleBodyFactory<TValue>: IWorkerBodyFactory<TValue>
+        {
+            private readonly Action<TValue> _body;
+
+            public WorkerWithSimpleBodyFactory(Action<TValue> body)
+            {
+                _body = body;
+            }
+
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
+                => new SimpleWorkerBody<TValue>(_body);
+        }
+
+        private sealed class WorkerWithStateFactory<TValue, TIndex> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
+        {
+            private readonly Action<TValue, ParallelLoopState> _bodyWithState;
+
+            public WorkerWithStateFactory(Action<TValue, ParallelLoopState> bodyWithState)
+            {
+                _bodyWithState = bodyWithState;
+            }
+
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
+                => new WorkerWithState<TValue, TIndex>(sharedPStateFlags, _bodyWithState);
+        }
+
+        private sealed class WorkerWithStateAndIndexFactory<TValue, TIndex> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
+        {
+            private readonly Action<TValue, ParallelLoopState, TIndex> _bodyWithStateAndIndex;
+
+            public WorkerWithStateAndIndexFactory(Action<TValue, ParallelLoopState, TIndex> bodyWithStateAndIndex)
+            {
+                _bodyWithStateAndIndex = bodyWithStateAndIndex;
+            }
+
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
+                => new WorkerWithStateAndIndex<TValue, TIndex>(sharedPStateFlags, _bodyWithStateAndIndex);
+        }
+
+
+        private sealed class WorkerWithLocalFactory<TValue, TIndex, TLocal> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
+        {
+            private readonly Func<TValue, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
+            private readonly Func<TLocal> _localInit;
+            private readonly Action<TLocal>? _localFinally;
+
+            public WorkerWithLocalFactory(Func<TValue, ParallelLoopState, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
+            {
+                _bodyWithLocal = bodyWithLocal;
+                _localInit = localInit;
+                _localFinally = localFinally;
+            }
+
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
+                => new WorkerWithStateAndLocal<TValue, TIndex, TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
+        }
+
+        private sealed class WorkerWithEveryThingFactory<TValue, TIndex, TLocal> : IWorkerBodyFactory<TValue> where TIndex: INumber<TIndex>
+        {
+            private readonly Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> _bodyWithLocal;
+            private readonly Func<TLocal> _localInit;
+            private readonly Action<TLocal>? _localFinally;
+
+            public WorkerWithEveryThingFactory(Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> bodyWithLocal, Func<TLocal> localInit, Action<TLocal>? localFinally)
+            {
+                _bodyWithLocal = bodyWithLocal;
+                _localInit = localInit;
+                _localFinally = localFinally;
+            }
+
+            public IWorkerBody<TValue> CreateWorkerBody(ParallelLoopStateFlags sharedPStateFlags)
+                => new WorkerWithEverything<TValue, TIndex, TLocal>(sharedPStateFlags, _bodyWithLocal, _localInit, _localFinally);
+        }
+
+        #endregion
     }
 }
