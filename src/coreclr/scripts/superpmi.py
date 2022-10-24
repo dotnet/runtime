@@ -1691,10 +1691,7 @@ class SuperPMIReplayAsmDiffs:
                         """
                         # Setup flags to call SuperPMI for both the diff jit and the base jit
 
-                        flags = [
-                            "-c", str(context_index),
-                            "-v", "q"  # only log from the jit.
-                        ]
+                        flags = ["-c", str(context_index)]
                         flags += altjit_replay_flags
 
                         # Change the working directory to the core root we will call SuperPMI from.
@@ -1709,15 +1706,21 @@ class SuperPMIReplayAsmDiffs:
                                 modified_env['DOTNET_JitStdOutFile'] = item_path
                                 logging.debug("%sGenerating %s", print_prefix, item_path)
                                 logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
+                                proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=modified_env)
                                 (stdout, stderr) = await proc.communicate()
-                                if os.path.exists(item_path):
-                                    with open(item_path, 'r') as file_handle:
-                                        generated_txt = file_handle.read()
-                                else:
-                                    raise Exception("No JitStdOutFile was created. Exit code: {}\n\nstdout:\n{}\n\nstderr:\n{}".format(proc.returncode, stdout.decode(), stderr.decode()))
 
-                                return generated_txt
+                                def create_exception():
+                                    return Exception("Failure while creating JitStdOutFile.\nExit code: {}\nstdout:\n{}\n\nstderr:\n{}".format(proc.returncode, stdout.decode(), stderr.decode()))
+
+                                if proc.returncode != 0:
+                                    # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
+                                    raise create_exception()
+
+                                try:
+                                    with open(item_path, 'r') as file_handle:
+                                        return file_handle.read()
+                                except BaseException as err:
+                                    raise create_exception() from err
 
                             # Generate diff and base JIT dumps
                             base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
