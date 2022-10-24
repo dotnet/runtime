@@ -1282,6 +1282,7 @@
     {
       "lead": "jeffhandley",
       "owners": [
+        "ericstj",
         "jeffhandley"
       ],
       "label": "area-System.Speech"

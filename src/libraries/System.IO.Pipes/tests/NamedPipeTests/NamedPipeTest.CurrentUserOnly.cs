@@ -43,7 +43,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void CreateServer_ConnectClient_UsingUnixAbsolutePath()
         {
-            string name = Path.Combine("/tmp", PipeStreamConformanceTests.GetUniquePipeName());
+            string name = Path.Combine(Path.GetTempPath(), PipeStreamConformanceTests.GetUniquePipeName());
             using (var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
             {
                 using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.CurrentUserOnly))
@@ -54,13 +54,19 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
-        public static void Connection_UnderSameUser_SingleSide_CurrentUserOnly_Works(PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        public static void Connection_UnderSameUser_CurrentUserOnly_Works(PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientDirection)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, serverPipeOptions))
-            using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, clientPipeOptions))
+            using (var client = new NamedPipeClientStream(".", name, clientDirection, clientPipeOptions))
             {
                 Task[] tasks = new[]
                 {

@@ -307,6 +307,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> echopromise_String([JSMarshalAs<JSType.String>] string value);
         #endregion String
 
         #region Object
@@ -333,6 +337,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        internal static partial Task<object> echopromise_Object([JSMarshalAs<JSType.Any>] object value);
         #endregion Object
 
         #region Exception
@@ -359,6 +367,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Error>>]
+        internal static partial Task<Exception> echopromise_Exception([JSMarshalAs<JSType.Error>] Exception value);
         #endregion Exception
 
         #region Task
@@ -967,6 +978,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Object>>]
+        internal static partial Task<JSObject> echopromise_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         #endregion JSObject
 
         [JSImport("setup", "JavaScriptTestHelper")]
