@@ -231,7 +231,7 @@ G_M43040_IG08:              ;; offset=0062H
        EBDD                 jmp      SHORT G_M43040_IG06
 ; Total bytes of code 116
 ```
-The codegen looks a bit bulky but if we look closer we'll see that we clonned the loop to have a fast version with a devirtualized call inside (see `G_M43040_IG03`) with guards hoisted out of that loop. To summarize what happened with `HotLoop` we can take a look at this part of the diagram:
+The codegen looks a bit bulky but if we look closer we'll see that we cloned the loop to have a fast version with a devirtualized call inside (see `G_M43040_IG03`) with guards hoisted out of that loop. To summarize what happened with `HotLoop` we can take a look at this part of the diagram:
 ```mermaid
 flowchart
     hasR2R("...") -->|Yes| R2R
