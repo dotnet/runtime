@@ -2278,7 +2278,12 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		} else {
 			ioffset = 0;
 		}
-		slot = mono_method_get_vtable_slot (info->method);
+		
+		if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
+			slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
+		} else {
+			slot = mono_method_get_vtable_slot (info->method);
+		}
 		g_assert (slot != -1);
 		g_assert (m_class_get_vtable (info->klass));
 		method = m_class_get_vtable (info->klass) [ioffset + slot];
@@ -2328,7 +2333,11 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		} else {
 			ioffset = 0;
 		}
-		slot = mono_method_get_vtable_slot (info->method);
+		if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
+			slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
+		} else {
+			slot = mono_method_get_vtable_slot (info->method);
+		}
 		g_assert (slot != -1);
 		g_assert (m_class_get_vtable (info->klass));
 		method = m_class_get_vtable (info->klass) [ioffset + slot];
