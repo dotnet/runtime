@@ -21,6 +21,8 @@ namespace System
             return ret;
         }
 
+        // This function does the same as just 'value.Equals("true", OrdinalIgnoreCase)' when unrolled by RyuJIT
+        // However, we don't want to have a potential call to globalization here to avoid recursion
         private static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity

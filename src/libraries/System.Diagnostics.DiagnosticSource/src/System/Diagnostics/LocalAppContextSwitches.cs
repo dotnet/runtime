@@ -21,6 +21,7 @@ namespace System
                     defaultActivityIdFormatIsHierarchial = IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
                 }
             }
+
             return defaultActivityIdFormatIsHierarchial;
         }
 
