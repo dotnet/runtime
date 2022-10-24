@@ -1,7 +1,7 @@
 <Project>
   <Import Project="..\..\Directory.Build.targets" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' != 'true'">
     <_DebugSymbolToMove Include="@(DebugSymbolsProjectOutputGroupOutput->Metadata('FinalOutputPath'))"
                         FolderName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
     <_DebugSymbolToMoveToExclude Include="@(_DebugSymbolToMove->WithMetadataValue('FolderName', 'aotsdk'))" />

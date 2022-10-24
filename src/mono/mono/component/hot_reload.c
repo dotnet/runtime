@@ -145,7 +145,7 @@ static const char *
 hot_reload_get_capabilities (void);
 
 static MonoClassMetadataUpdateField *
-metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
+metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
@@ -2189,11 +2189,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 				add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
 
-				/* This actually does more than mono_class_setup_basic_field_info and
-				 * resolves MonoClassField:type and sets MonoClassField:offset to -1 to make
-				 * it easier to spot that the field is special.
+				/* This actually does slightly more than
+				 * mono_class_setup_basic_field_info and sets MonoClassField:offset
+				 * to -1 to make it easier to spot that the field is special.
 				 */
-				metadata_update_field_setup_basic_info_and_resolve (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags, error);
+				metadata_update_field_setup_basic_info (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags);
 				if (!is_ok (error)) {
 					mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
 					return FALSE;
@@ -2884,7 +2884,7 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 
 
 static MonoClassMetadataUpdateField *
-metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
+metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags)
 {
 	if (!m_class_is_inited (parent_klass))
 		mono_class_init_internal (parent_klass);
@@ -2903,9 +2903,13 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	uint32_t name_idx = mono_metadata_decode_table_row_col (image_base, MONO_TABLE_FIELD, mono_metadata_token_index (fielddef_token) - 1, MONO_FIELD_NAME);
 	field->field.name = mono_metadata_string_heap (image_base, name_idx);
 
-	mono_field_resolve_type (&field->field, error);
-	if (!is_ok (error))
-		return NULL;
+	/* It's important not to try and resolve field->type at this point. If the field's type is a
+	 * newly-added struct, we don't want to resolve it early here if we're going to add fields
+	 * and methods to it. It seems that for nested structs, the field additions come after the
+	 * field addition to the enclosing struct. So if the enclosing struct has a field of the
+	 * nested type, resolving the field type here will make it look like the nested struct has
+	 * no fields.
+	 */
 
 	parent_info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_fields, field);
 

@@ -215,7 +215,7 @@ internal static partial class SyntaxValueProviderExtensions
 
         try
         {
-            recurse(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+            processCompilationUnit(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
 
             if (results.Length == 0)
                 return ImmutableArray<SyntaxNode>.Empty;
@@ -229,7 +229,21 @@ internal static partial class SyntaxValueProviderExtensions
             seenNames.Dispose();
         }
 
-        void recurse(
+        void processCompilationUnit(
+            SyntaxNode compilationUnit,
+            ref Aliases localAliases,
+            ref ValueListBuilder<string> seenNames,
+            ref ValueListBuilder<SyntaxNode> results,
+            ref ValueListBuilder<SyntaxNode> attributeTargets)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            syntaxHelper.AddAliases(compilationUnit, ref localAliases, global: false);
+
+            processCompilationOrNamespaceMembers(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+        }
+
+        void processCompilationOrNamespaceMembers(
             SyntaxNode node,
             ref Aliases localAliases,
             ref ValueListBuilder<string> seenNames,
@@ -238,70 +252,100 @@ internal static partial class SyntaxValueProviderExtensions
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (node is ICompilationUnitSyntax)
+            foreach (var child in node.ChildNodesAndTokens())
             {
-                syntaxHelper.AddAliases(node, ref localAliases, global: false);
-
-                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
-            }
-            else if (syntaxHelper.IsAnyNamespaceBlock(node))
-            {
-                var localAliasCount = localAliases.Length;
-                syntaxHelper.AddAliases(node, ref localAliases, global: false);
-
-                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
-
-                // after recursing into this namespace, dump any local aliases we added from this namespace decl itself.
-                localAliases.Length = localAliasCount;
-            }
-            else if (syntaxHelper.IsAttributeList(node))
-            {
-                foreach (var attribute in syntaxHelper.GetAttributesOfAttributeList(node))
+                if (child.IsNode)
                 {
-                    // Have to lookup both with the name in the attribute, as well as adding the 'Attribute' suffix.
-                    // e.g. if there is [X] then we have to lookup with X and with XAttribute.
-                    var simpleAttributeName = syntaxHelper.GetUnqualifiedIdentifierOfName(
-                        syntaxHelper.GetNameOfAttribute(attribute)).ValueText;
-                    if (matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: false) ||
-                        matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: true))
-                    {
-                        attributeTargets.Length = 0;
-                        syntaxHelper.AddAttributeTargets(node, ref attributeTargets);
+                    var childNode = child.AsNode()!;
+                    if (syntaxHelper.IsAnyNamespaceBlock(childNode))
+                        processNamespaceBlock(childNode, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+                    else
+                        processMember(childNode, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+                }
+            }
+        }
 
-                        foreach (var target in attributeTargets.AsSpan())
+        void processNamespaceBlock(
+            SyntaxNode namespaceBlock,
+            ref Aliases localAliases,
+            ref ValueListBuilder<string> seenNames,
+            ref ValueListBuilder<SyntaxNode> results,
+            ref ValueListBuilder<SyntaxNode> attributeTargets)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var localAliasCount = localAliases.Length;
+            syntaxHelper.AddAliases(namespaceBlock, ref localAliases, global: false);
+
+            processCompilationOrNamespaceMembers(
+                namespaceBlock, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+
+            // after recursing into this namespace, dump any local aliases we added from this namespace decl itself.
+            localAliases.Length = localAliasCount;
+        }
+
+        void processMember(
+            SyntaxNode member,
+            ref Aliases localAliases,
+            ref ValueListBuilder<string> seenNames,
+            ref ValueListBuilder<SyntaxNode> results,
+            ref ValueListBuilder<SyntaxNode> attributeTargets)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // nodes can be arbitrarily deep.  Use an explicit stack over recursion to prevent a stack-overflow.
+            var nodeStack = new ValueListBuilder<SyntaxNode>(Span<SyntaxNode>.Empty);
+            nodeStack.Append(member);
+
+            try
+            {
+                while (nodeStack.Length > 0)
+                {
+                    var node = nodeStack.Pop();
+
+                    if (syntaxHelper.IsAttributeList(node))
+                    {
+                        foreach (var attribute in syntaxHelper.GetAttributesOfAttributeList(node))
                         {
-                            if (predicate(target, cancellationToken))
-                                results.Append(target);
+                            // Have to lookup both with the name in the attribute, as well as adding the 'Attribute' suffix.
+                            // e.g. if there is [X] then we have to lookup with X and with XAttribute.
+                            var simpleAttributeName = syntaxHelper.GetUnqualifiedIdentifierOfName(
+                                syntaxHelper.GetNameOfAttribute(attribute)).ValueText;
+                            if (matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: false) ||
+                                matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: true))
+                            {
+                                attributeTargets.Length = 0;
+                                syntaxHelper.AddAttributeTargets(node, ref attributeTargets);
+
+                                foreach (var target in attributeTargets.AsSpan())
+                                {
+                                    if (predicate(target, cancellationToken))
+                                        results.Append(target);
+                                }
+
+                                break;
+                            }
                         }
 
-                        return;
+                        // attributes can't have attributes inside of them.  so no need to recurse when we're done.
                     }
+                    else
+                    {
+                        // For any other node, just keep recursing deeper to see if we can find an attribute. Note: we cannot
+                        // terminate the search anywhere as attributes may be found on things like local functions, and that
+                        // means having to dive deep into statements and expressions.
+                        foreach (var child in node.ChildNodesAndTokens().Reverse())
+                        {
+                            if (child.IsNode)
+                                nodeStack.Append(child.AsNode()!);
+                        }
+                    }
+
                 }
-
-                // attributes can't have attributes inside of them.  so no need to recurse when we're done.
             }
-            else
+            finally
             {
-                // For any other node, just keep recursing deeper to see if we can find an attribute. Note: we cannot
-                // terminate the search anywhere as attributes may be found on things like local functions, and that
-                // means having to dive deep into statements and expressions.
-                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
-            }
-
-            return;
-
-            void recurseChildren(
-                SyntaxNode node,
-                ref Aliases localAliases,
-                ref ValueListBuilder<string> seenNames,
-                ref ValueListBuilder<SyntaxNode> results,
-                ref ValueListBuilder<SyntaxNode> attributeTargets)
-            {
-                foreach (var child in node.ChildNodesAndTokens())
-                {
-                    if (child.IsNode)
-                        recurse(child.AsNode()!, ref localAliases, ref seenNames, ref results, ref attributeTargets);
-                }
+                nodeStack.Dispose();
             }
         }
 

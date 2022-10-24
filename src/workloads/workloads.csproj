@@ -136,7 +136,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity).*.nupkg" 
+                        MsiVersion="$(MsiVersion)"
+                        SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>
 
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
