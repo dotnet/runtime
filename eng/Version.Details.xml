@@ -88,7 +88,7 @@
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Pdb" Version="0.11.4-alpha.22520.2">
+    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22524.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
     </Dependency>
