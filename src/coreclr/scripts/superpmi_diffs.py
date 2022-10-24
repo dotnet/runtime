@@ -207,7 +207,6 @@ def main(main_args):
         os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
         "--no_progress",
-        "-metrics", "PerfScore",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
         "-target_arch", arch_name,
