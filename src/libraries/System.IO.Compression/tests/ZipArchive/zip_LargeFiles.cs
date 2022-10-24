@@ -16,8 +16,8 @@ namespace System.IO.Compression.Tests
         {
             byte[] buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
 
-            string zipArchivePath = Path.Combine("ZipTestData", "over4GB.zip");
-            DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine("ZipTestData", "over4GB"));
+            string zipArchivePath = Path.Combine(Path.GetTempPath(), "over4GB.zip");
+            DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "over4GB"));
 
             try
             {
