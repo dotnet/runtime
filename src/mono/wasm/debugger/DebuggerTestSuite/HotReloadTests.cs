@@ -583,7 +583,13 @@ namespace DebuggerTests
                                        locals_fn: async (locals) => {
                                            //var c_props1 = await GetObjectOnFrame (locals, "c");
                                            _testOutput.WriteLine ("aleksey cprops1 ---- {0}", locals);
-                                           await CheckProps (locals, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 1);
+                                           //await CheckProps (locals, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 1);
+                                           await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+                                           var c = await GetObjectOnLocals(locals, "c");
+                                           // TODO: get the field "Field1" from "c" and check its value
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber(123),
+                                                   }, "c", num_fields: 1);
                                        });
 #if false
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
