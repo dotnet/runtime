@@ -202,6 +202,8 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? value, out bool result) =>
             TryParse(value.AsSpan(), out result);
 
+        // Determines whether a String represents true or false.
+        //
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
             // Boolean.{Try}Parse allows for optional whitespace/null values before and
