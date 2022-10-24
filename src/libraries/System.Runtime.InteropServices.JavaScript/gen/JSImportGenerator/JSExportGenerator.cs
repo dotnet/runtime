@@ -289,7 +289,9 @@ namespace Microsoft.Interop.JavaScript
                                 .WithModifiers(TokenList(new SyntaxToken[]{
                                     Token(SyntaxKind.UnsafeKeyword)}))
                                 .WithMembers(List(new[] { field, initializerMethod, method }))
-                                ));
+                                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                                    Attribute(IdentifierName(Constants.CompilerGeneratedAttributeGlobal)))
+                                )))));
 
             return ns;
         }

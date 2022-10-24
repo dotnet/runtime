@@ -257,27 +257,27 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
+        // this needs to stay here for compatibility with assemblies generated in Net7, which don't have the __GeneratedInitializer class
+        cwraps.mono_wasm_runtime_run_module_cctor(asm);
 
         const klass = cwraps.mono_wasm_assembly_find_class(asm, runtimeHelpers.runtime_interop_namespace, "__GeneratedInitializer");
-        if (!klass)
-            throw new Error("Could not find class: __GeneratedInitializer in assembly " + assembly);
-
-        const method = cwraps.mono_wasm_assembly_find_method(klass, "__Register_", -1);
-        if (!method)
-            throw new Error(`Could not find method: __Register_ in __GeneratedInitializer [${assembly}]`);
-
-        const outException = mono_wasm_new_root();
-        const outResult = mono_wasm_new_root<MonoString>();
-        try {
-            cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
-            if (outException.value !== MonoObjectNull) {
-                const msg = conv_string_root(outResult)!;
-                throw new Error(msg);
+        if (klass) {
+            const method = cwraps.mono_wasm_assembly_find_method(klass, "__Register_", -1);
+            if (method) {
+                const outException = mono_wasm_new_root();
+                const outResult = mono_wasm_new_root<MonoString>();
+                try {
+                    cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
+                    if (outException.value !== MonoObjectNull) {
+                        const msg = conv_string_root(outResult)!;
+                        throw new Error(msg);
+                    }
+                }
+                finally {
+                    outException.release();
+                    outResult.release();
+                }
             }
-        }
-        finally {
-            outException.release();
-            outResult.release();
         }
     }
 

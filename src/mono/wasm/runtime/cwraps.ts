@@ -38,6 +38,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_assembly_load", "number", ["string"]],
     [true, "mono_wasm_find_corlib_class", "number", ["string", "string"]],
     [true, "mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
+    [true, "mono_wasm_runtime_run_module_cctor", "void", ["number"]],
     [true, "mono_wasm_find_corlib_type", "number", ["string", "string"]],
     [true, "mono_wasm_assembly_find_type", "number", ["number", "string", "string"]],
     [true, "mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
@@ -201,6 +202,7 @@ export interface t_Cwraps {
     mono_wasm_u52_to_f64(source: VoidPtr, error: Int32Ptr): number;
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
+    mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
