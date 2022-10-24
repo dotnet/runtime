@@ -4,7 +4,6 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   framework: 'net7.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false

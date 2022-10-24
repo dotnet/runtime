@@ -365,8 +365,7 @@ namespace Internal.JitInterface
             return (IntPtr)callbacks;
         }
     }
-}
-");
+}");
         }
 
         static void WriteNativeWrapperInterface(TextWriter tw, IEnumerable<FunctionDecl> functionData)

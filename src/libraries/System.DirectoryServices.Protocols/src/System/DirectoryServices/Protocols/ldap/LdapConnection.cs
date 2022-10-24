@@ -529,7 +529,7 @@ namespace System.DirectoryServices.Protocols
             return s_partialResultsProcessor.GetCompleteResult((LdapPartialAsyncResult)asyncResult);
         }
 
-        private int SendRequestHelper(DirectoryRequest request, ref int messageID)
+        private unsafe int SendRequestHelper(DirectoryRequest request, ref int messageID)
         {
             IntPtr serverControlArray = IntPtr.Zero;
             LdapControl[] managedServerControls = null;
@@ -565,8 +565,6 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                IntPtr tempPtr = IntPtr.Zero;
-
                 // Build server control.
                 managedServerControls = BuildControlArray(request.Controls, true);
                 int structSize = Marshal.SizeOf(typeof(LdapControl));
@@ -574,16 +572,15 @@ namespace System.DirectoryServices.Protocols
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
+                    void** pServerControlArray = (void**)serverControlArray;
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pServerControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pServerControlArray[managedServerControls.Length] = null;
                 }
 
                 // build client control
@@ -591,16 +588,15 @@ namespace System.DirectoryServices.Protocols
                 if (managedClientControls != null)
                 {
                     clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
+                    void** pClientControlArray = (void**)clientControlArray;
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pClientControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pClientControlArray[managedClientControls.Length] = null;
                 }
 
                 if (request is DeleteRequest)
@@ -684,17 +680,16 @@ namespace System.DirectoryServices.Protocols
 
                     addModCount = (modifications == null ? 1 : modifications.Length + 1);
                     modArray = Utility.AllocHGlobalIntPtrArray(addModCount);
+                    void** pModArray = (void**)modArray;
                     int modStructSize = Marshal.SizeOf(typeof(LdapMod));
                     int i = 0;
                     for (i = 0; i < addModCount - 1; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(modStructSize);
                         Marshal.StructureToPtr(modifications[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)modArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pModArray[i] = (void*)controlPtr;
                     }
-                    tempPtr = (IntPtr)((long)modArray + IntPtr.Size * i);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pModArray[i] = null;
 
                     if (request is AddRequest)
                     {
@@ -755,16 +750,15 @@ namespace System.DirectoryServices.Protocols
                     if (attributeCount != 0)
                     {
                         searchAttributes = Utility.AllocHGlobalIntPtrArray(attributeCount + 1);
+                        void** pSearchAttributes = (void**)searchAttributes;
                         int i = 0;
                         for (i = 0; i < attributeCount; i++)
                         {
                             IntPtr controlPtr = LdapPal.StringToPtr(searchRequest.Attributes[i]);
-                            tempPtr = (IntPtr)((long)searchAttributes + IntPtr.Size * i);
-                            Marshal.WriteIntPtr(tempPtr, controlPtr);
+                            pSearchAttributes[i] = (void*)controlPtr;
                         }
 
-                        tempPtr = (IntPtr)((long)searchAttributes + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                        pSearchAttributes[i] = null;
                     }
 
                     // Process the scope.
@@ -951,7 +945,7 @@ namespace System.DirectoryServices.Protocols
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((long)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * i);
+                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * (nint)i);
                     CRYPTOAPI_BLOB info = (CRYPTOAPI_BLOB)Marshal.PtrToStructure(tempPtr, typeof(CRYPTOAPI_BLOB));
                     int dataLength = info.cbData;
 
@@ -1283,7 +1277,7 @@ namespace System.DirectoryServices.Protocols
             return managedControls;
         }
 
-        internal static LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
+        internal static unsafe LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
         {
             LdapMod[] attributes = null;
 
@@ -1370,9 +1364,9 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
+                    void** pAttributesValues = (void**)attributes[i].values;
                     int structSize = Marshal.SizeOf(typeof(BerVal));
                     IntPtr controlPtr;
-                    IntPtr tempPtr;
 
                     int m;
                     for (m = 0; m < valuesCount; m++)
@@ -1382,11 +1376,9 @@ namespace System.DirectoryServices.Protocols
                         // Need to free the memory allocated on the heap when we are done.
                         ptrToFree.Add(controlPtr);
                         Marshal.StructureToPtr(berValues[m], controlPtr, false);
-                        tempPtr = (IntPtr)((long)attributes[i].values + IntPtr.Size * m);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pAttributesValues[m] = (void*)controlPtr;
                     }
-                    tempPtr = (IntPtr)((long)attributes[i].values + IntPtr.Size * m);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pAttributesValues[m] = null;
                 }
             }
 

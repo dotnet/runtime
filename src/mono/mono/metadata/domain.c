@@ -290,11 +290,6 @@ mono_init_internal (const char *root_domain_name)
 	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
 	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
 
-	mono_defaults.weakreference_class = mono_class_try_load_from_name (
-	        mono_defaults.corlib, "System", "WeakReference");
-	mono_defaults.generic_weakreference_class = mono_class_try_load_from_name (
-	        mono_defaults.corlib, "System", "WeakReference`1");
-
 	// in the past we got a filename as the root_domain_name so try to get the basename
 	domain->friendly_name = g_path_get_basename (root_domain_name);
 
