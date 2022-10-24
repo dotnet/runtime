@@ -7,13 +7,14 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
+    [Collection(nameof(DisableParallelization))]
     public class zip_LargeFiles : ZipFileTestBase
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
         [OuterLoop("It requires almost 12 GB of free disk space")]
         public static void UnzipOver4GBZipFile()
         {
-            byte[] buffer = new byte[1_000_000_000]; // 1 GB
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
 
             string zipArchivePath = Path.Combine("ZipTestData", "over4GB.zip");
             DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine("ZipTestData", "over4GB"));
@@ -22,10 +23,7 @@ namespace System.IO.Compression.Tests
             {
                 for (byte i = 0; i < 6; i++)
                 {
-                    buffer.AsSpan().Fill(i);
-
-                    string entryName = $"{i}.test";
-                    File.WriteAllBytes(Path.Combine(tempDir.FullName, entryName), buffer);
+                    File.WriteAllBytes(Path.Combine(tempDir.FullName, $"{i}.test"), buffer);
                 }
 
                 ZipFile.CreateFromDirectory(tempDir.FullName, zipArchivePath, CompressionLevel.NoCompression, includeBaseDirectory: false);
@@ -41,10 +39,7 @@ namespace System.IO.Compression.Tests
             }
             finally
             {
-                if (File.Exists(zipArchivePath))
-                {
-                    File.Delete(zipArchivePath);
-                }
+                File.Delete(zipArchivePath);
 
                 tempDir.Delete(recursive: true);
             }
