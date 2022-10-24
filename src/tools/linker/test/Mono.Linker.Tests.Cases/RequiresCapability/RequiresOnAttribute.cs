@@ -52,10 +52,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         class GenericTypeWithAttributedParameter<[AttributeWhichRequires] T>
         {
@@ -63,10 +60,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         static void GenericMethodWithAttributedParameter<[AttributeWhichRequires] T>() { }
 
@@ -77,10 +71,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -92,10 +83,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -105,10 +93,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         static void MethodWithAttributeWhichRequires() { }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -118,10 +103,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         static int _fieldWithAttributeWhichRequires;
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = ProducedBy.Analyzer)]

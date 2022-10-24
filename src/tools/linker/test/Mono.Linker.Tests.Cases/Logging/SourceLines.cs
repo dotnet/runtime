@@ -7,7 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Logging
 {
     [SkipKeptItemsValidation]
-    [SetupCompileArgument("/debug:full")]
+    [SetupCompileArgument("/debug:portable")]
     [ExpectedNoWarnings]
     [ExpectedWarning("IL2074", FileName = "", SourceLine = 38, SourceColumn = 13)]
     [ExpectedWarning("IL2074", FileName = "", SourceLine = 39, SourceColumn = 13)]
