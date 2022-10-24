@@ -4210,9 +4210,14 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 JITDUMP("success! Optimizing to ASG(struct, 0).");
                 unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld empty struct"));
                 lvaSetStruct(structTempNum, fieldClsHnd, false);
-                GenTreeLclVar* tree = gtNewLclvNode(structTempNum, TYP_STRUCT);
-                impAppendTree(gtNewBlkOpNode(tree, gtNewIconNode(0), false, false), CHECK_SPILL_NONE, impCurStmtDI);
-                return gtNewLclvNode(structTempNum, TYP_STRUCT);
+
+                // realType is either struct or SIMD
+                var_types      realType  = lvaGetRealType(structTempNum);
+                GenTreeLclVar* structLcl = gtNewLclvNode(structTempNum, realType);
+                impAppendTree(gtNewBlkOpNode(structLcl, gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
+                              impCurStmtDI);
+
+                return gtNewLclvNode(structTempNum, realType);
             }
 
             JITDUMP("getReadonlyStaticFieldValue returned false - bail out.");
