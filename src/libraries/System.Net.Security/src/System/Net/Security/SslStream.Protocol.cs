@@ -818,7 +818,13 @@ namespace System.Net.Security
                     }
                     else
                     {
+#if TARGET_ANDROID
+                        _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
+#endif
                         status = SslStreamPal.InitializeSecurityContext(
+#if TARGET_ANDROID
+                                       _remoteCertificateVerifier,
+#endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,

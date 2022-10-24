@@ -503,6 +503,18 @@ namespace System.Net.Security
                 return true;
             }
 
+#if TARGET_ANDROID
+            // Client streams perform the verification during the handshake via Java's TrustManager callbacks
+            if (!_sslAuthenticationOptions.IsServer)
+            {
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+
+                _handshakeCompleted = true;
+                return true;
+            }
+#endif
+
             if (!VerifyRemoteCertificate(ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;

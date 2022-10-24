@@ -35,6 +35,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
+            RemoteCertificateVerification verifier,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -43,7 +44,7 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(verifier: null, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(verifier, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal Renegotiate(

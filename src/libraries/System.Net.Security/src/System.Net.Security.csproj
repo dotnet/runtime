@@ -11,6 +11,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetSecurity_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
     <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseManagedNtlm>
@@ -103,7 +104,7 @@
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
