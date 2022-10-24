@@ -2581,7 +2581,8 @@ void CodeGen::genLclHeap(GenTree* tree)
             // the alloc, not after.
 
             assert(amount < compiler->eeGetPageSize()); // must be < not <=
-            lastTouchDelta = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* canTrack */ regCnt == REG_NA);
+            lastTouchDelta =
+                genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* canTrack */ regCnt == REG_NA);
             goto ALLOC_DONE;
         }
 

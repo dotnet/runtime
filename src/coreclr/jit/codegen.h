@@ -1435,7 +1435,7 @@ protected:
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool canTrack);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool canTrack);
     void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
-#else // !TARGET_XARCH
+#else  // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
