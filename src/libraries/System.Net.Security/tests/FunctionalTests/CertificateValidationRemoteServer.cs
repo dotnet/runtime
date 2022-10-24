@@ -95,7 +95,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "The invalid certificate is rejected by Android and the .NET validation code isn't reached")]
+        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: Exception of type 'Interop+AndroidCrypto+SslException' was thrown.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", TestPlatforms.OSX)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {

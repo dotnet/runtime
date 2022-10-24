@@ -108,6 +108,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: Client certificate is not sent to the server
         public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);

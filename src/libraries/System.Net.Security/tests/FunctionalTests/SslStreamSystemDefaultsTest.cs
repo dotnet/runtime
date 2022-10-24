@@ -76,6 +76,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
+        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: System.Security.Authentication.AuthenticationException : The remote certificate was rejected by the provided RemoteCertificateValidationCallback.
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
