@@ -3791,10 +3791,20 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // and the other you get
         //    *(temp+4) = expr
 
-        if (!opts.OptimizationEnabled(OPT_Lightweight))
+        // For minopts/debug code, try and minimize the total number
+        // of box temps by reusing an existing temp when possible.
+        bool useSharedBoxTemp = opts.OptimizationDisabled();
+
+        // However, when we're allowed to perform quick opts we want to still have exact classes for boxed enums
+        // in case if we hit Enum.HasFlag.
+        if (useSharedBoxTemp && opts.OptimizationEnabled(OPT_Lightweight) &&
+            (info.compCompHnd->getTypeForPrimitiveNumericClass(pResolvedToken->hClass) == CORINFO_TYPE_UNDEF))
         {
-            // For minopts/debug code, try and minimize the total number
-            // of box temps by reusing an existing temp when possible.
+            useSharedBoxTemp = false;
+        }
+
+        if (useSharedBoxTemp)
+        {
             if (impBoxTempInUse || impBoxTemp == BAD_VAR_NUM)
             {
                 impBoxTemp = lvaGrabTemp(true DEBUGARG("Reusable Box Helper"));
