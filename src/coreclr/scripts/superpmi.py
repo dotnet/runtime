@@ -1710,7 +1710,6 @@ class SuperPMIReplayAsmDiffs:
                                 logging.debug("%sGenerating %s", print_prefix, item_path)
                                 logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
                                 proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
-                                await proc.communicate()
                                 (stdout, stderr) = await proc.communicate()
                                 if os.path.exists(item_path):
                                     with open(item_path, 'r') as file_handle:
