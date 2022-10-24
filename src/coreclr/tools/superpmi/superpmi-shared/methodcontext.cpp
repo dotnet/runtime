@@ -4881,35 +4881,24 @@ void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 
 int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
 {
-    if (GetStringLiteral == nullptr)
-    {
-        return -1;
-    }
-
     DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
 
-    int itemIndex = GetStringLiteral->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d", key.A, key.B, key.C);
+
+    DD value = GetStringLiteral->Get(key);
+    DEBUG_REP(dmpGetStringLiteral(key, value));
+    int srcBufferLength = (int)value.A;
+    if (buffer != nullptr && srcBufferLength > 0)
     {
-        return -1;
+        char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
     }
-    else
-    {
-        DD value = GetStringLiteral->Get(key);
-        DEBUG_REP(dmpGetStringLiteral(key, value));
-        int srcBufferLength = (int)value.A;
-        if (buffer != nullptr && srcBufferLength > 0)
-        {
-            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
-        }
-        return srcBufferLength;
-    }
+    return srcBufferLength;
 }
 
 void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
@@ -4943,44 +4932,31 @@ void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDesc
 }
 size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    if (PrintObjectDescription == nullptr)
-    {
-        return 0;
-    }
-
     DLDL key;
     key.A = CastHandle(handle);
     key.B = (DWORDLONG)bufferSize;
 
-    int itemIndex = PrintObjectDescription->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapAndKeyExist(PrintObjectDescription, key, ": key handle-%016llX bufferSize-%016llX", key.A, key.B);
+
+    Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
+    DEBUG_REP(dmpPrintObjectDescription(key, value));
+    if (pRequiredBufferSize != nullptr)
     {
-        return 0;
+        *pRequiredBufferSize = (size_t)value.requiredBufferSize;
     }
-    else
+
+    size_t bytesWritten = 0;
+
+    BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+    if (bufferSize > 0)
     {
-        Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
-        DEBUG_REP(dmpPrintObjectDescription(key, value));
-        if (pRequiredBufferSize != nullptr)
-        {
-            *pRequiredBufferSize = (size_t)value.requiredBufferSize;
-        }
+        bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+        memcpy(buffer, srcBuffer, bytesWritten);
 
-        size_t bytesWritten = 0;
-
-        BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
-        Assert(srcBuffer != nullptr);
-
-        if (bufferSize > 0)
-        {
-            bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
-            memcpy(buffer, srcBuffer, bytesWritten);
-
-            // Always null-terminate
-            buffer[bytesWritten] = 0;
-        }
-        return bytesWritten;
+        // Always null-terminate
+        buffer[bytesWritten] = 0;
     }
+    return bytesWritten;
 }
 
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
