@@ -3,6 +3,10 @@
 
 #include "platform.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void* mdhandle_t;
 
 // Create a metadata handle that can be used to parse the supplied metadata.
@@ -56,5 +60,9 @@ bool md_get_column_value_as_utf8(mdcursor_t c, uint32_t col_idx, char const** st
 bool md_get_column_value_as_wchar(mdcursor_t c, uint32_t col_idx, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte);
 bool md_get_column_value_as_blob(mdcursor_t c, uint32_t col_idx, uint8_t const** blob, uint32_t* blob_len);
 bool md_get_column_value_as_guid(mdcursor_t c, uint32_t col_idx, GUID* guid);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _SRC_INC_DNMD_H_
