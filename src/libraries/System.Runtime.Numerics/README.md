@@ -22,6 +22,3 @@ TODO: am I missing anything? For example, should we mention the globalization st
 
 ## Deployment
 [System.Runtime.Numerics](https://www.nuget.org/packages/System.Runtime.Numerics) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
-
-
-TODO Where is System.Numerics.Tensors? Do we need to discuss that?
