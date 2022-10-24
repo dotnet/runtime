@@ -78,7 +78,7 @@ struct InfoHdr;              // defined in GCInfo.h
 struct escapeMapping_t;      // defined in fgdiagnostic.cpp
 class emitter;               // defined in emit.h
 struct ShadowParamVarInfo;   // defined in GSChecks.cpp
-struct InitVarDscInfo;       // defined in register_arg_convention.h
+struct InitVarDscInfo;       // defined in registerargconvention.h
 class FgStack;               // defined in fgbasic.cpp
 class Instrumentor;          // defined in fgprofile.cpp
 class SpanningTreeVisitor;   // defined in fgprofile.cpp
@@ -211,17 +211,19 @@ class LclSsaVarDsc
     // TODO-Cleanup: In the case of uninitialized variables the block is set to nullptr by
     // SsaBuilder and changed to fgFirstBB during value numbering. It would be useful to
     // investigate and perhaps eliminate this rather unexpected behavior.
-    BasicBlock* m_block;
+    BasicBlock* m_block = nullptr;
     // The GT_ASG node that generates the definition, or nullptr for definitions
     // of uninitialized variables.
-    GenTreeOp* m_asg;
+    GenTreeOp* m_asg = nullptr;
+    // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
+    unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
 public:
-    LclSsaVarDsc() : m_block(nullptr), m_asg(nullptr)
+    LclSsaVarDsc()
     {
     }
 
-    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    LclSsaVarDsc(BasicBlock* block) : m_block(block)
     {
     }
 
@@ -249,6 +251,16 @@ public:
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
         m_asg = asg;
+    }
+
+    unsigned GetUseDefSsaNum() const
+    {
+        return m_useDefSsaNum;
+    }
+
+    void SetUseDefSsaNum(unsigned ssaNum)
+    {
+        m_useDefSsaNum = ssaNum;
     }
 
     ValueNumPair m_vnPair;
@@ -341,7 +353,7 @@ public:
     }
 
     // Get a pointer to the SSA definition at the specified index.
-    T* GetSsaDefByIndex(unsigned index)
+    T* GetSsaDefByIndex(unsigned index) const
     {
         assert(index < m_count);
         return &m_array[index];
@@ -354,7 +366,7 @@ public:
     }
 
     // Get a pointer to the SSA definition associated with the specified SSA number.
-    T* GetSsaDef(unsigned ssaNum)
+    T* GetSsaDef(unsigned ssaNum) const
     {
         assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
         return GetSsaDefByIndex(ssaNum - GetMinSsaNum());
@@ -1098,7 +1110,7 @@ public:
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
-    LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
+    LclSsaVarDsc* GetPerSsaData(unsigned ssaNum) const
     {
         return lvPerSsaData.GetSsaDef(ssaNum);
     }
@@ -1396,9 +1408,8 @@ enum Phases
     PHASE_NUMBER_OF
 };
 
-extern const char*   PhaseNames[];
-extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseEnumsW[];
+extern const char* PhaseNames[];
+extern const char* PhaseEnums[];
 
 // Specify which checks should be run after each phase
 //
@@ -1420,7 +1431,7 @@ enum class PhaseDumps
 enum API_ICorJitInfo_Names
 {
 #define DEF_CLR_API(name) API_##name,
-#include "ICorJitInfo_API_names.h"
+#include "ICorJitInfo_names_generated.h"
     API_COUNT
 };
 
@@ -1873,10 +1884,8 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-#if FEATURE_MULTIREG_RET
     GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
@@ -2760,6 +2769,9 @@ public:
     // the given "fldHnd", is such an object pointer.
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
+    bool gtStoreDefinesField(
+        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize);
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
@@ -2817,8 +2829,6 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
-    // Check if this tree is a gc static base helper call
-    bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
     GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
@@ -2863,6 +2873,7 @@ public:
     char* gtGetLclVarName(unsigned lclNum);
     void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
     void gtDispLclVarStructType(unsigned lclNum);
+    void gtDispSsaName(unsigned lclNum, unsigned ssaNum, bool isDef);
     void gtDispClassLayout(ClassLayout* layout, var_types type);
     void gtDispILLocation(const ILLocation& loc);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
@@ -3254,6 +3265,7 @@ public:
 
     static fgWalkPreFn lvaStressLclFldCB;
     void               lvaStressLclFld();
+    unsigned lvaStressLclFldPadding(unsigned lclNum);
 
     void lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars);
     void lvaDispVarSet(VARSET_VALARG_TP set);
@@ -3430,10 +3442,9 @@ public:
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
-    bool lvaInSsa(unsigned lclNum)
+    bool lvaInSsa(unsigned lclNum) const
     {
-        assert(lclNum < lvaCount);
-        return lvaTable[lclNum].lvInSsa;
+        return lvaGetDesc(lclNum)->lvInSsa;
     }
 
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
@@ -3623,15 +3634,11 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
-
-    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv);
+    CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
-    GenTree* impFixupStructReturnType(GenTree*                 op,
-                                      CORINFO_CLASS_HANDLE     retClsHnd,
-                                      CorInfoCallConvExtension unmgdCallConv);
+    GenTree* impFixupStructReturnType(GenTree* op);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -3639,7 +3646,8 @@ protected:
 
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
-    GenTree* impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp);
+    GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
+    GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
@@ -4697,20 +4705,9 @@ public:
         return BasicBlockRangeList(startBlock, endBlock);
     }
 
-    // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
-    // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
-    // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
-    // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
-    NodeToUnsignedMap* m_opAsgnVarDefSsaNums;
-    NodeToUnsignedMap* GetOpAsgnVarDefSsaNums()
-    {
-        if (m_opAsgnVarDefSsaNums == nullptr)
-        {
-            m_opAsgnVarDefSsaNums = new (getAllocator()) NodeToUnsignedMap(getAllocator());
-        }
-        return m_opAsgnVarDefSsaNums;
-    }
+    // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
+    // See "SsaNumInfo::GetNum" for more details on when this is needed.
+    JitExpandArrayStack<unsigned>* m_outlinedCompositeSsaNums;
 
     // This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.
     // The map provides the entry block of the most closely enclosing loop that
@@ -4738,12 +4735,6 @@ public:
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
-
-    // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
-    // Except: assumes that lcl is a def, and if it is
-    // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
-    // rather than the "use" SSA number recorded in the tree "lcl".
-    inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
     inline bool PreciseRefCountsRequired();
 
@@ -5336,7 +5327,7 @@ public:
     };
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
-    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type);
+    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type);
     bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
 #endif // DUMP_FLOWGRAPHS
 
@@ -6760,11 +6751,7 @@ public:
     bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTree*             defNode,
-                            GenTreeLclVarCommon* lclNode,
-                            unsigned             lclNum,
-                            LclNumToLiveDefsMap* curSsaName);
-    unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
+    void optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -6804,7 +6791,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
+#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -6829,14 +6816,14 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveFrozenString() const
+    bool doesMethodHaveFrozenObjects() const
     {
-        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
+        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
     }
 
-    void setMethodHasFrozenString()
+    void setMethodHasFrozenObjects()
     {
-        optMethodFlags |= OMF_HAS_FROZEN_STRING;
+        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -7387,17 +7374,17 @@ public:
         Statement*        stmt;
         const unsigned    loopNum;
         const bool        cloneForArrayBounds;
-        const bool        cloneForTypeTests;
+        const bool        cloneForGDVTests;
         LoopCloneVisitorInfo(LoopCloneContext* context,
                              unsigned          loopNum,
                              Statement*        stmt,
                              bool              cloneForArrayBounds,
-                             bool              cloneForTypeTests)
+                             bool              cloneForGDVTests)
             : context(context)
             , stmt(nullptr)
             , loopNum(loopNum)
             , cloneForArrayBounds(cloneForArrayBounds)
-            , cloneForTypeTests(cloneForTypeTests)
+            , cloneForGDVTests(cloneForGDVTests)
         {
         }
     };
@@ -7411,6 +7398,8 @@ public:
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
     bool optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
+    bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     bool optLoopCloningEnabled();
 
@@ -7801,7 +7790,7 @@ public:
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
 
 #if defined(DEBUG)
-    const WCHAR* eeGetCPString(size_t stringHandle);
+    void eePrintObjectDescriptionDescription(const char* prefix, size_t handle);
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
     const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
@@ -8493,13 +8482,18 @@ private:
         return CORINFO_TYPE_UNDEF;
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Numerics") == 0;
+            return isNumericsNamespace(namespaceName);
         }
         return false;
     }
@@ -8822,12 +8816,6 @@ private:
     bool lclVarIsSIMDType(unsigned varNum)
     {
         return lvaGetDesc(varNum)->lvIsSIMDType();
-    }
-
-    // Is this Local node a SIMD local?
-    bool lclVarIsSIMDType(GenTreeLclVarCommon* lclVarTree)
-    {
-        return lclVarIsSIMDType(lclVarTree->GetLclNum());
     }
 
     // Returns true if the TYP_SIMD locals on stack are aligned at their
@@ -9490,7 +9478,6 @@ public:
         STRESS_MODE(DO_WHILE_LOOPS)                                                             \
         STRESS_MODE(MIN_OPTS)                                                                   \
         STRESS_MODE(REVERSE_FLAG)     /* Will set GTF_REVERSE_OPS whenever we can */            \
-        STRESS_MODE(REVERSE_COMMA)    /* Will reverse commas created  with gtNewCommaNode */    \
         STRESS_MODE(TAILCALL)         /* Will make the call as a tailcall whenever legal */     \
         STRESS_MODE(CATCH_ARG)        /* Will spill catch arg */                                \
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
@@ -9503,6 +9490,7 @@ public:
         STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
         STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
         STRESS_MODE(VN_BUDGET)/* Randomize the VN budget */                                     \
+        STRESS_MODE(SSA_INFO) /* Select lower thresholds for "complex" SSA num encoding */      \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9515,7 +9503,6 @@ public:
         STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
-        STRESS_MODE(FLATFP)                                                                     \
         STRESS_MODE(GENERIC_CHECK)                                                              \
         STRESS_MODE(COUNT)
 
@@ -9646,7 +9633,7 @@ public:
         bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
-        var_types compRetType;       // Return type of the method as declared in IL
+        var_types compRetType;       // Return type of the method as declared in IL (including SIMD normalization)
         var_types compRetNativeType; // Normalized return type as per target arch ABI
         unsigned  compILargsCount;   // Number of arguments (incl. implicit but not hidden)
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
@@ -9713,19 +9700,23 @@ public:
 
     } info;
 
-    // Returns true if the method being compiled returns a non-void and non-struct value.
-    // Note that lvaInitTypeRef() normalizes compRetNativeType for struct returns in a
-    // single register as per target arch ABI (e.g on Amd64 Windows structs of size 1, 2,
-    // 4 or 8 gets normalized to TYP_BYTE/TYP_SHORT/TYP_INT/TYP_LONG; On Arm HFA structs).
-    // Methods returning such structs are considered to return non-struct return value and
-    // this method returns true in that case.
-    bool compMethodReturnsNativeScalarType()
+    ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
+
+    //------------------------------------------------------------------------
+    // compMethodHasRetVal: Does this method return some kind of value?
+    //
+    // Return Value:
+    //    If this method returns a struct via a return buffer, whether that
+    //    buffer's address needs to be returned, otherwise whether signature
+    //    return type is not "TYP_VOID".
+    //
+    bool compMethodHasRetVal() const
     {
-        return (info.compRetType != TYP_VOID) && !varTypeIsStruct(info.compRetNativeType);
+        return (info.compRetBuffArg != BAD_VAR_NUM) ? compMethodReturnsRetBufAddr() : (info.compRetType != TYP_VOID);
     }
 
     // Returns true if the method being compiled returns RetBuf addr as its return value
-    bool compMethodReturnsRetBufAddr()
+    bool compMethodReturnsRetBufAddr() const
     {
         // There are cases where implicit RetBuf argument should be explicitly returned in a register.
         // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.
@@ -9773,29 +9764,16 @@ public:
 #endif // TARGET_AMD64
     }
 
-    // Returns true if the method returns a value in more than one return register
-    // TODO-ARM-Bug: Deal with multi-register genReturnLocal structs?
-    // TODO-ARM64: Does this apply for ARM64 too?
-    bool compMethodReturnsMultiRegRetType()
+    //------------------------------------------------------------------------
+    // compMethodReturnsMultiRegRetType: Does this method return a multi-reg value?
+    //
+    // Return Value:
+    //    If this method returns a value in multiple registers, "true", "false"
+    //    otherwise.
+    //
+    bool compMethodReturnsMultiRegRetType() const
     {
-#if FEATURE_MULTIREG_RET
-#if defined(TARGET_X86)
-        // On x86, 64-bit longs and structs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType) ||
-               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
-#else  // targets: X64-UNIX, ARM64 or ARM32
-        // On all other targets that support multireg return values:
-        // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
-        // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
-        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
-#endif // TARGET_XXX
-
-#else // not FEATURE_MULTIREG_RET
-
-        // For this architecture there are no multireg returns
-        return false;
-
-#endif // FEATURE_MULTIREG_RET
+        return compRetTypeDesc.IsMultiRegRetType();
     }
 
     bool compEnregLocals()
@@ -9811,46 +9789,6 @@ public:
     bool compObjectStackAllocation()
     {
         return (JitConfig.JitObjectStackAllocation() != 0);
-    }
-
-    // Returns true if the method returns a value in more than one return register,
-    // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
-    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD* handling,
-    // this method correctly returns false for it (it is passed as HVA), when the original returns true.
-    bool compMethodReturnsMultiRegRegTypeAlternate()
-    {
-#if FEATURE_MULTIREG_RET
-#if defined(TARGET_X86)
-        // On x86, 64-bit longs and structs are returned in multiple registers
-        return varTypeIsLong(info.compRetNativeType) ||
-               (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
-#else // targets: X64-UNIX, ARM64 or ARM32
-#if defined(TARGET_ARM64)
-        // TYP_SIMD* are returned in one register.
-        if (varTypeIsSIMD(info.compRetNativeType))
-        {
-            return false;
-        }
-#endif
-        // On all other targets that support multireg return values:
-        // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
-        // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
-        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
-#endif // TARGET_XXX
-
-#else // not FEATURE_MULTIREG_RET
-
-        // For this architecture there are no multireg returns
-        return false;
-
-#endif // FEATURE_MULTIREG_RET
-    }
-
-    // Returns true if the method being compiled returns a value
-    bool compMethodHasRetVal()
-    {
-        return compMethodReturnsNativeScalarType() || compMethodReturnsRetBufAddr() ||
-               compMethodReturnsMultiRegRetType();
     }
 
     // Returns true if the method requires a PInvoke prolog and epilog
@@ -10198,7 +10136,7 @@ public:
     void compDispScopeLists();
 #endif // DEBUG
 
-    bool compIsProfilerHookNeeded();
+    bool compIsProfilerHookNeeded() const;
 
     //-------------------------------------------------------------------------
     /*               Statistical Data Gathering                               */
@@ -10521,7 +10459,7 @@ public:
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeq*> NodeToFieldSeqMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
@@ -11289,6 +11227,8 @@ class StringPrinter
     size_t        m_bufferMax;
     size_t        m_bufferIndex = 0;
 
+    void Grow(size_t newSize);
+
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
         : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
@@ -11319,7 +11259,8 @@ public:
         m_buffer[m_bufferIndex] = '\0';
     }
 
-    void Printf(const char* format, ...);
+    void Append(const char* str);
+    void Append(char chr);
 };
 
 /*****************************************************************************

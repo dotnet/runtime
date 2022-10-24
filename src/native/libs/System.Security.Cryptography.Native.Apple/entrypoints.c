@@ -9,7 +9,7 @@
 #include "pal_hmac.h"
 #include "pal_keyagree.h"
 #include "pal_keychain_macos.h"
-#include "pal_keyderivation_macos.h"
+#include "pal_keyderivation.h"
 #include "pal_random.h"
 #include "pal_rsa.h"
 #include "pal_sec.h"

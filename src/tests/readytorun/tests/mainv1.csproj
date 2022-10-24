@@ -19,8 +19,12 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 
-REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+REM Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
 setlocal
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
 set "COMPlus_GCName="
 set "COMPlus_GCStress="
 set "COMPlus_HeapVerify="
@@ -84,7 +88,8 @@ endlocal
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 
-# Suppress some COMPlus variables for the duration of Crossgen2 execution
+# Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 
 mkdir IL_DLLS
@@ -151,7 +156,7 @@ then
   exit 1
 fi
 
-export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>

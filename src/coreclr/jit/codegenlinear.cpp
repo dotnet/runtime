@@ -823,7 +823,12 @@ void CodeGen::genCodeForBBlist()
             // compJitAlignLoopBoundary.
             // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
             // and 16 bytes for arm64.
+
             assert(ShouldAlignLoops());
+            assert(!block->isBBCallAlwaysPairTail());
+#if FEATURE_EH_CALLFINALLY_THUNKS
+            assert(block->bbJumpKind != BBJ_CALLFINALLY);
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
         }

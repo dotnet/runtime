@@ -3070,9 +3070,6 @@ void CodeGen::genCall(GenTreeCall* call)
         CallArgABIInformation& abiInfo = arg.AbiInfo;
         GenTree*               argNode = arg.GetLateNode();
 
-        // GT_RELOAD/GT_COPY use the child node
-        argNode = argNode->gtSkipReloadOrCopy();
-
         if (abiInfo.GetRegNum() == REG_STK)
             continue;
 

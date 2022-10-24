@@ -32,12 +32,12 @@ namespace System.Security.Cryptography.Xml
 
         public void WriteHash(HashAlgorithm hash, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            byte[] rgbData = utf8.GetBytes(" " + Name + "=\"");
+            byte[] rgbData = Encoding.UTF8.GetBytes(" " + Name + "=\"");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes(Utils.EscapeAttributeValue(Value));
+            rgbData = Encoding.UTF8.GetBytes(Utils.EscapeAttributeValue(Value));
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes("\"");
+
+            rgbData = "\""u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
         }
     }

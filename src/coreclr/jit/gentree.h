@@ -549,7 +549,8 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a string handle
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
+    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
     GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
     GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
     GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
@@ -910,10 +911,10 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
-    // Node is contained, but it isn't contained due to being a containable int.
-    bool isContainedAndNotIntOrIImmed() const
+    // Node and its child in isolation form a contained compare chain.
+    bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return isContained() && !isContainedIntOrIImmed();
+        return (OperIs(GT_AND) && child->isContained() && (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
     }
 
     bool isContainedFltOrDblImmed() const
@@ -1985,7 +1986,8 @@ public:
     bool DefinesLocal(Compiler*             comp,
                       GenTreeLclVarCommon** pLclVarTree,
                       bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr);
+                      ssize_t*              pOffset   = nullptr,
+                      unsigned*             pSize     = nullptr);
 
     bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
 
@@ -3286,7 +3288,8 @@ inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
 template <typename T>
 inline void GenTreeIntConCommon::SetValueTruncating(T value)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+    static_assert_no_msg(
+        (std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
 
     if (TypeIs(TYP_LONG))
     {
@@ -3508,13 +3511,109 @@ struct GenTreeVecCon : public GenTree
 #endif
 };
 
-// Common supertype of LCL_VAR, LCL_FLD, REG_VAR, PHI_ARG
-// This inherits from UnOp because lclvar stores are Unops
+// Encapsulates the SSA info carried by local nodes. Most local nodes have simple 1-to-1
+// relationships with their SSA refs. However, defs of promoted structs can represent
+// many SSA defs at the same time, and we need to efficiently encode that.
+//
+class SsaNumInfo final
+{
+    // This can be in one of four states:
+    //  1. Single SSA name: > RESERVED_SSA_NUM (0).
+    //  2. RESERVED_SSA_NUM (0)
+    //  3. "Inline composite name": packed SSA numbers of field locals (each could be RESERVED):
+    //     [byte 3]: [top bit][ssa num 3] (7 bits)
+    //     [byte 2]: [ssa num 2] (8 bits)
+    //     [byte 1]: [compact encoding bit][ssa num 1] (7 bits)
+    //     [byte 0]: [ssa num 0] (8 bits)
+    //     We expect this encoding to cover the 99%+ case of composite names: locals with more
+    //     than 127 defs, maximum for this encoding, are rare, and the current limit on the count
+    //     of promoted fields is 4.
+    //  4. "Outlined composite name": index into the "composite SSA nums" table. The table itself
+    //     will have the very simple format of N (the total number of fields / simple names) slots
+    //     with full SSA numbers, starting at the encoded index. Notably, the table entries will
+    //     include "empty" slots (for untracked fields), as we don't expect to use the table in
+    //     the common case, and in the pathological cases, the space overhead should be mitigated
+    //     by the cap on the number of tracked locals.
+    //
+    static const int BITS_PER_SIMPLE_NUM     = 8;
+    static const int MAX_SIMPLE_NUM          = (1 << (BITS_PER_SIMPLE_NUM - 1)) - 1;
+    static const int SIMPLE_NUM_MASK         = MAX_SIMPLE_NUM;
+    static const int SIMPLE_NUM_COUNT        = sizeof(int) / BITS_PER_SIMPLE_NUM;
+    static const int COMPOSITE_ENCODING_BIT  = 1 << 31;
+    static const int OUTLINED_ENCODING_BIT   = 1 << 15;
+    static const int OUTLINED_INDEX_LOW_MASK = OUTLINED_ENCODING_BIT - 1;
+    static const int OUTLINED_INDEX_HIGH_MASK =
+        ~(COMPOSITE_ENCODING_BIT | OUTLINED_ENCODING_BIT | OUTLINED_INDEX_LOW_MASK);
+    static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0); // A lot in the encoding relies on this.
+
+    int m_value;
+
+    SsaNumInfo(int value) : m_value(value)
+    {
+    }
+
+public:
+    SsaNumInfo() : m_value(SsaConfig::RESERVED_SSA_NUM)
+    {
+    }
+
+    bool IsSimple() const
+    {
+        return IsInvalid() || IsSsaNum(m_value);
+    }
+
+    bool IsComposite() const
+    {
+        return !IsSimple();
+    }
+
+    bool IsInvalid() const
+    {
+        return m_value == SsaConfig::RESERVED_SSA_NUM;
+    }
+
+    unsigned GetNum() const
+    {
+        assert(IsSimple());
+        return m_value;
+    }
+
+    unsigned GetNum(Compiler* compiler, unsigned index) const;
+
+    static SsaNumInfo Simple(unsigned ssaNum)
+    {
+        assert(IsSsaNum(ssaNum) || (ssaNum == SsaConfig::RESERVED_SSA_NUM));
+        return SsaNumInfo(ssaNum);
+    }
+
+    static SsaNumInfo Composite(
+        SsaNumInfo baseNum, Compiler* compiler, unsigned parentLclNum, unsigned index, unsigned ssaNum);
+
+private:
+    bool HasCompactFormat() const
+    {
+        assert(IsComposite());
+        return (m_value & OUTLINED_ENCODING_BIT) == 0;
+    }
+
+    unsigned* GetOutlinedNumSlot(Compiler* compiler, unsigned index) const;
+
+    static bool NumCanBeEncodedCompactly(unsigned index, unsigned ssaNum);
+
+    static bool IsSsaNum(int value)
+    {
+        return value > SsaConfig::RESERVED_SSA_NUM;
+    }
+};
+
+// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_VAR_ADDR, LCL_FLD_ADDR.
+// This inherits from UnOp because lclvar stores are unary.
+//
 struct GenTreeLclVarCommon : public GenTreeUnOp
 {
 private:
-    unsigned _gtLclNum; // The local number. An index into the Compiler::lvaTable array.
-    unsigned _gtSsaNum; // The SSA number.
+    unsigned   m_lclNum; // The local number. An index into the Compiler::lvaTable array.
+    SsaNumInfo m_ssaNum; // The SSA info.
 
 public:
     GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum DEBUGARG(bool largeNode = false))
@@ -3531,13 +3630,13 @@ public:
 
     unsigned GetLclNum() const
     {
-        return _gtLclNum;
+        return m_lclNum;
     }
 
     void SetLclNum(unsigned lclNum)
     {
-        _gtLclNum = lclNum;
-        _gtSsaNum = SsaConfig::RESERVED_SSA_NUM;
+        m_lclNum = lclNum;
+        m_ssaNum = SsaNumInfo();
     }
 
     uint16_t GetLclOffs() const;
@@ -3546,17 +3645,32 @@ public:
 
     unsigned GetSsaNum() const
     {
-        return _gtSsaNum;
+        return m_ssaNum.IsSimple() ? m_ssaNum.GetNum() : SsaConfig::RESERVED_SSA_NUM;
+    }
+
+    unsigned GetSsaNum(Compiler* compiler, unsigned index) const
+    {
+        return m_ssaNum.IsComposite() ? m_ssaNum.GetNum(compiler, index) : SsaConfig::RESERVED_SSA_NUM;
     }
 
     void SetSsaNum(unsigned ssaNum)
     {
-        _gtSsaNum = ssaNum;
+        m_ssaNum = SsaNumInfo::Simple(ssaNum);
     }
 
-    bool HasSsaName()
+    void SetSsaNum(Compiler* compiler, unsigned index, unsigned ssaNum)
     {
-        return (GetSsaNum() != SsaConfig::RESERVED_SSA_NUM);
+        m_ssaNum = SsaNumInfo::Composite(m_ssaNum, compiler, GetLclNum(), index, ssaNum);
+    }
+
+    bool HasSsaName() const
+    {
+        return GetSsaNum() != SsaConfig::RESERVED_SSA_NUM;
+    }
+
+    bool HasCompositeSsaName() const
+    {
+        return m_ssaNum.IsComposite();
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4113,6 +4227,12 @@ public:
     // Only needed for X86 and arm32.
     void InitializeLongReturnType();
 
+    // Initialize the Return Type Descriptor.
+    void InitializeReturnType(Compiler*                comp,
+                              var_types                type,
+                              CORINFO_CLASS_HANDLE     retClsHnd,
+                              CorInfoCallConvExtension callConv);
+
     // Reset type descriptor to defaults
     void Reset()
     {
@@ -4143,6 +4263,7 @@ public:
     // Return Value:
     //   Count of return registers.
     //   Returns 0 if the return type is not returned in registers.
+    //
     unsigned GetReturnRegCount() const
     {
         assert(m_inited);
