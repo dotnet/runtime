@@ -376,21 +376,18 @@ namespace System.Xml
 
                     if (Sse41.IsSupported && charCount >= Vector128<short>.Count)
                     {
-                        Vector128<short> mask = Vector128.Create(unchecked((short)0xff80));
-                        char* simdLast = chars + charCount - Vector128<short>.Count;
-
-                        while (chars < simdLast)
+                        var mask = Vector128.Create(unchecked((short)0xff80));
+                        uint lastSimd = (uint)(charCount - Vector128<short>.Count);
+                        for (uint i = 0; i < lastSimd; i += (uint)Vector128<ushort>.Count)
                         {
-                            Vector128<short> v = *(Vector128<short>*)chars;
+                            var v = *(Vector128<short>*)(chars + i);
                             if (!Sse41.TestZ(v, mask))
                                 goto NonAscii;
 
-                            Sse2.StoreScalar((long*)bytes, Sse2.PackUnsignedSaturate(v, v).AsInt64());
-                            bytes += Vector128<short>.Count;
-                            chars += Vector128<short>.Count;
+                            Sse2.StoreScalar((long*)(bytes + i), Sse2.PackUnsignedSaturate(v, v).AsInt64());
                         }
 
-                        Vector128<short> v2 = *(Vector128<short>*)simdLast;
+                        var v2 = *(Vector128<short>*)(chars + charCount - Vector128<ushort>.Count);
                         if (!Sse41.TestZ(v2, mask))
                             goto NonAscii;
 
@@ -398,17 +395,15 @@ namespace System.Xml
                         return charCount;
                     }
                     // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster even for the all-Ascii case
-                    else if (charCount < 16)
+                    else if (Sse41.IsSupported || charCount < 16)
                     {
-                        while (chars < charsMax)
+                        for (uint i = 0; i < (uint)charCount; ++i)
                         {
-                            char t = *chars;
+                            char t = chars[i];
                             if (t >= 0x80)
                                 goto NonAscii;
 
-                            *bytes = (byte)t;
-                            bytes++;
-                            chars++;
+                            bytes[i] = (byte)t;
                         }
 
                         return charCount;
