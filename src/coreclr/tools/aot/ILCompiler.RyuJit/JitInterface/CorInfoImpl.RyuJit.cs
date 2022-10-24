@@ -2154,5 +2154,43 @@ namespace Internal.JitInterface
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
         }
+
+        private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
+        {
+            MetadataType type = HandleToObject(baseType) as MetadataType;
+            if (type == null)
+            {
+                return 0;
+            }
+
+            // type is already sealed, return it
+            if (_compilation.IsEffectivelySealed(type))
+            {
+                *exactClsRet = baseType;
+                return 1;
+            }
+
+            if (!type.IsInterface)
+            {
+                // TODO: handle classes
+                return 0;
+            }
+
+            TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
+            if (implClasses == null || implClasses.Length > maxExactClasses)
+            {
+                return 0;
+            }
+
+            int index = 0;
+            foreach (TypeDesc implClass in implClasses)
+            {
+                Debug.Assert(!implClass.IsCanonicalSubtype(CanonicalFormKind.Any));
+                exactClsRet[index++] = ObjectToHandle(implClass);
+            }
+
+            Debug.Assert(index <= maxExactClasses);
+            return index;
+        }
     }
 }

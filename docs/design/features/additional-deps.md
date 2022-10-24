@@ -3,9 +3,9 @@
 ## Summary
 This document describes current (2.0) and proposed (2.1) behavior for "light-up" scenarios regarding additional-deps functionality. The proposed behavior resolves the following issues:
 
-https://github.com/dotnet/core-setup/issues/3889
+https://github.com/dotnet/runtime/issues/3093
 
-https://github.com/dotnet/core-setup/issues/3884
+https://github.com/dotnet/runtime/issues/3091
 
 The `deps.json` file format specifies assets including managed assemblies, resource assemblies and native libraries to load.
 

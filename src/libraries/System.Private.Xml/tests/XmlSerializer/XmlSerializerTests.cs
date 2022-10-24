@@ -2112,6 +2112,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(!weakRef.IsAlive);
     }
 
+    [Fact]
+    public static void ValidateXElement()
+    {
+        XElement xe = new XElement("Root");
+        XElementWrapper wrapper = new XElementWrapper() { Value = xe };
+
+        XElementWrapper retWrapper = SerializeAndDeserialize<XElementWrapper>(wrapper, null, () => new XmlSerializer(typeof(XElementWrapper)), true);
+
+        Assert.NotNull(retWrapper);
+        Assert.NotNull(retWrapper.Value);
+        Assert.Equal("Root", retWrapper.Value.Name);
+        Assert.Equivalent(wrapper, retWrapper);
+    }
+
+    [Fact]
+    public static void ValidateXElementStruct()
+    {
+
+        XElement ele = new XElement("Test");
+        XElementStruct xstruct;
+        xstruct.xelement = ele;
+
+        XElementStruct rets = SerializeAndDeserialize<XElementStruct>(xstruct, null, () => new XmlSerializer(typeof(XElementStruct)), true);
+
+        Assert.NotNull(rets.xelement);
+        Assert.NotNull(rets.xelement.Name);
+        Assert.Equal("Test", rets.xelement.Name);
+    }
+
+    [Fact]
+    public static void ValidateXElementArray()
+    {
+        XElementArrayWrapper xarray = new XElementArrayWrapper
+        {
+            xelements = new XElement[] { new XElement("Root"), new XElement("Member") }
+        };
+
+        XElementArrayWrapper retarray = SerializeAndDeserialize<XElementArrayWrapper>(xarray, null, () => new XmlSerializer(typeof(XElementArrayWrapper)), true);
+
+        Assert.NotNull(retarray);
+        Assert.True(retarray.xelements.Length == 2);
+        Assert.Equal("Root", retarray.xelements[0].Name);
+        Assert.Equal("Member", retarray.xelements[1].Name);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {

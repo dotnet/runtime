@@ -145,7 +145,7 @@ mono_cpu_count (void)
  * [2] https://lists.01.org/pipermail/powertop/2012-September/000433.html
  * [3] https://android.googlesource.com/platform/libcore/+/750dc634e56c58d1d04f6a138734ac2b772900b5%5E1..750dc634e56c58d1d04f6a138734ac2b772900b5/
  * [4] https://bugs.openjdk.java.net/browse/JDK-6515172
- * [5] https://github.com/dotnet/coreclr/blob/7058273693db2555f127ce16e6b0c5b40fb04867/src/pal/src/misc/sysinfo.cpp#L148
+ * [5] https://github.com/dotnet/runtime/blob/732b7434a2ff453048c1647262c00bc8b7652112/src/coreclr/pal/src/misc/sysinfo.cpp#L126
  */
 
 #if defined (_SC_NPROCESSORS_CONF) && defined (HAVE_SYSCONF)

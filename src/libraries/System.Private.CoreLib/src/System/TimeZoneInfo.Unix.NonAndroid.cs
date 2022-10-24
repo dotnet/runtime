@@ -194,7 +194,7 @@ namespace System
                         IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
                         if (dirHandle == IntPtr.Zero)
                         {
-                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
+                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirError: true);
                         }
 
                         try

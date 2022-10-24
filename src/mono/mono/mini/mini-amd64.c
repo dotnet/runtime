@@ -5482,7 +5482,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #ifdef TARGET_WIN32
 			// Redundant REX byte indicates a tailcall to the native unwinder. It means nothing to the processor.
-			// https://github.com/dotnet/coreclr/blob/966dabb5bb3c4bf1ea885e1e8dc6528e8c64dc4f/src/unwinder/amd64/unwinder_amd64.cpp#L1394
+			// https://github.com/dotnet/runtime/blob/384dceb4547d3aa240107dc3fbd4abc4387ced70/src/coreclr/unwinder/amd64/unwinder_amd64.cpp#L1390
 			// FIXME This should be jmp rip+32 for AOT direct to same assembly.
 			// FIXME This should be jmp [rip+32] for AOT direct to not-same assembly (through data).
 			// FIXME This should be jmp [rip+32] for JIT direct -- patch data instead of code.

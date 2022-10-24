@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_module == null)
                 return 0;
 
-            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
+            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.SafeReadDebugDirectory();
             return entries == null ? 0 : entries.Length;
         }
 
@@ -99,8 +99,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
 
             ImmutableArray<DebugDirectoryEntry> entries = ImmutableArray<DebugDirectoryEntry>.Empty;
+
             if (_module != null)
-                entries = _module.PEReader.ReadDebugDirectory();
+                entries = _module.PEReader.SafeReadDebugDirectory();
 
             int numEntries = GetNumDebugDirectoryEntriesInModule();
 

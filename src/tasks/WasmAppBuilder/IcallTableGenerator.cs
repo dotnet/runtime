@@ -152,7 +152,7 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Could not get icall, or callbacks for method '{method.Name}' because '{ex.Message}'");
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Could not get icall, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
                 continue;
             }
 

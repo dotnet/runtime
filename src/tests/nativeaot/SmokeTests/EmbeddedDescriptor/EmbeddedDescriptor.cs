@@ -12,6 +12,8 @@ class Program
     static int Main()
     {
         ThrowIfMemberNotPresent(typeof(Program), nameof(methodKeptViaDescriptor));
+        ThrowIfMemberNotPresent(typeof(Program), nameof(methodKeptViaStandaloneDescriptor));
+        ThrowIfMemberPresent(typeof(Program), nameof(methodNotKept));
         ThrowIfMemberNotPresent(typeof(Program), nameof(fieldKeptViaDescriptor));
         ThrowIfMemberNotPresent(typeof(Program), nameof(PropertyKeptViaDescriptor));
         ThrowIfMemberNotPresent(typeof(Program), nameof(EventKeptViaDescriptor));
@@ -21,6 +23,14 @@ class Program
     }
 
     public static void methodKeptViaDescriptor()
+    {
+    }
+
+    public static void methodKeptViaStandaloneDescriptor()
+    {
+    }
+
+    public static void methodNotKept()
     {
     }
 
@@ -72,6 +82,14 @@ class Program
     private static void ThrowIfMemberNotPresent(Type testType, string memberName)
     {
         if (!IsMemberPresent(testType, memberName))
+        {
+            throw new Exception(memberName);
+        }
+    }
+
+    private static void ThrowIfMemberPresent(Type testType, string memberName)
+    {
+        if (IsMemberPresent(testType, memberName))
         {
             throw new Exception(memberName);
         }

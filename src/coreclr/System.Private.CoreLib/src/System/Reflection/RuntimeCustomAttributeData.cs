@@ -1544,7 +1544,7 @@ namespace System.Reflection
         {
             Type[] pcas = new Type[]
             {
-                // See https://github.com/dotnet/coreclr/blob/master/src/md/compiler/custattr_emit.cpp
+                // See https://github.com/dotnet/runtime/blob/main/src/coreclr/md/compiler/custattr_emit.cpp
                 typeof(FieldOffsetAttribute), // field
                 typeof(SerializableAttribute), // class, struct, enum, delegate
                 typeof(MarshalAsAttribute), // parameter, field, return-value

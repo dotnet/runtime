@@ -10,6 +10,5 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="main.js" />
-    <WasmExtraFilesToDeploy Include="app-support.js" />
   </ItemGroup>
 </Project>

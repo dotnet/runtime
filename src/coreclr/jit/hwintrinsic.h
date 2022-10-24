@@ -878,6 +878,11 @@ private:
             {
                 baseType = node->TypeGet();
             }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
+            }
         }
     }
 };

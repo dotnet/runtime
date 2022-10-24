@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // ******************************************************************************
 // WARNING!!!: This code is also used by SOS in the diagnostics repo. Should be
 // updated in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcdecoder.cpp
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcdecoder.cpp
 // ******************************************************************************
 
 #ifdef TARGET_X86

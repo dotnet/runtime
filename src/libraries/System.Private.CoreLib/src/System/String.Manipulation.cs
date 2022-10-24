@@ -1798,41 +1798,63 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
-
-        public string Substring(int startIndex, int length)
+        public string Substring(int startIndex)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
-            if (startIndex > Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
-
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
-
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            if (startIndex == 0 && length == this.Length)
+            if (startIndex == 0)
             {
                 return this;
             }
 
+            int length = Length - startIndex;
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if ((uint)startIndex > (uint)Length)
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
             return InternalSubString(startIndex, length);
+        }
+
+        public string Substring(int startIndex, int length)
+        {
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
+#else
+            if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
+#endif
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if (length == Length)
+            {
+                Debug.Assert(startIndex == 0);
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        {
+            (string paramName, string message) =
+                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
+                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
+                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
+                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+
+            throw new ArgumentOutOfRangeException(paramName, message);
         }
 
         private string InternalSubString(int startIndex, int length)

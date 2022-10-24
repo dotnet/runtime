@@ -148,7 +148,7 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThread()
+void ThreadStore::DetachCurrentThread(bool shutdownStarted)
 {
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
@@ -165,11 +165,21 @@ void ThreadStore::DetachCurrentThread()
     }
 
     {
+        // remove the thread from the list.
+        // this must be done even when shutdown is in progress.
+        // departing threads will be releasing their TLS storage and if not removed,
+        // will corrupt the thread list, while some prior to shutdown detach might still be in progress.
         ThreadStore* pTS = GetThreadStore();
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         pDetachingThread->Detach();
+    }
+
+    // the rest of cleanup is not necessary if we are shutting down.
+    if (shutdownStarted)
+    {
+        return;
     }
 
     pDetachingThread->Destroy();

@@ -579,7 +579,6 @@ namespace System.Numerics.Tests
 
         // A test for CreateFromAxisAngle(Vector3f,float)
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72149", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Matrix4x4CreateFromAxisAngleTest()
         {
             float radians = MathHelper.ToRadians(-30.0f);

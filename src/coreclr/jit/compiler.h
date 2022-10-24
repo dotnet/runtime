@@ -58,6 +58,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "emit.h"
 
+// Forward declaration
+template <class T>
+inline var_types genActualType(T value);
+
 #include "hwintrinsic.h"
 #include "simd.h"
 #include "simdashwintrinsic.h"

@@ -9,7 +9,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
+    <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/runtime/issues/43872 -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->

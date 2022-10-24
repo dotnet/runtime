@@ -1220,17 +1220,70 @@ namespace System
                         return ComputeIndex(ref searchSpace, ref oneVectorAwayFromEnd, notEquals);
                     }
                 }
+            }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static int ComputeIndex(ref T searchSpace, ref T current, Vector128<T> notEquals)
+            return -1;
+        }
+
+        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+            Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                for (int i = 0; i < length; i++)
                 {
-                    uint notEqualsElements = notEquals.ExtractMostSignificantBits();
-                    int index = BitOperations.TrailingZeroCount(notEqualsElements);
-                    return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+                    T current = Unsafe.Add(ref searchSpace, i);
+                    if (!current.Equals(value0) && !current.Equals(value1) && !current.Equals(value2) && !current.Equals(value3))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else
+            {
+                Vector128<T> notEquals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
+                ref T currentSearchSpace = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    current = Vector128.LoadUnsafe(ref currentSearchSpace);
+                    notEquals = ~(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                                | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
+                    if (notEquals != Vector128<T>.Zero)
+                    {
+                        return ComputeIndex(ref searchSpace, ref currentSearchSpace, notEquals);
+                    }
+
+                    currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<T>.Count);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)length % Vector128<T>.Count != 0)
+                {
+                    current = Vector128.LoadUnsafe(ref oneVectorAwayFromEnd);
+                    notEquals = ~(Vector128.Equals(values0, current) | Vector128.Equals(values1, current)
+                                | Vector128.Equals(values2, current) | Vector128.Equals(values3, current));
+                    if (notEquals != Vector128<T>.Zero)
+                    {
+                        return ComputeIndex(ref searchSpace, ref oneVectorAwayFromEnd, notEquals);
+                    }
                 }
             }
 
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeIndex<T>(ref T searchSpace, ref T current, Vector128<T> notEquals) where T : struct, IEquatable<T>
+        {
+            uint notEqualsElements = notEquals.ExtractMostSignificantBits();
+            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
         }
 
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>?

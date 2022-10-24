@@ -46,6 +46,8 @@ public class WasmAppBuilder : Task
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
     public string? MainHTMLPath { get; set; }
+    public bool IncludeThreadsWorker {get; set; }
+    public int PThreadPoolSize {get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -73,6 +75,8 @@ public class WasmAppBuilder : Task
 
     private sealed class WasmAppConfig
     {
+        [JsonPropertyName("mainAssemblyName")]
+        public string? MainAssemblyName { get; set; }
         [JsonPropertyName("assemblyRootFolder")]
         public string AssemblyRootFolder { get; set; } = "managed";
         [JsonPropertyName("debugLevel")]
@@ -179,7 +183,10 @@ public class WasmAppBuilder : Task
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ();
+        var config = new WasmAppConfig ()
+        {
+            MainAssemblyName = MainAssemblyName,
+        };
 
         // Create app
         var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
@@ -314,12 +321,23 @@ public class WasmAppBuilder : Task
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
         config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
+        if (IncludeThreadsWorker)
+            config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 
         if (RemoteSources?.Length > 0)
         {
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
+        }
+
+        if (PThreadPoolSize < -1)
+        {
+            throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
+        }
+        else
+        {
+            config.Extra["pthreadPoolSize"] = PThreadPoolSize;
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())

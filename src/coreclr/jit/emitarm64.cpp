@@ -11790,8 +11790,12 @@ void emitter::emitDispInst(instruction ins)
  *
  *  Display an immediate value
  */
-void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */)
+void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /* =false */)
 {
+    if (isAddrOffset)
+    {
+        alwaysHex = true;
+    }
     if (strictArmAsm)
     {
         printf("#");
@@ -11821,11 +11825,18 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
         if ((imm & 0xFFFFFFFF00000000LL) != 0)
         {
-            printf("0x%llx", imm);
+            if (isAddrOffset)
+            {
+                printf("0x%llX", imm);
+            }
+            else
+            {
+                printf("0x%llx", imm);
+            }
         }
         else
         {
-            printf("0x%02x", (unsigned)imm);
+            printf("0x%02X", (unsigned)imm);
         }
     }
 
@@ -12253,7 +12264,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         if (!insOptsPostIndex(opt) && (imm != 0))
         {
             printf(",");
-            emitDispImm(imm, false);
+            emitDispImm(imm, false, true, true);
         }
         printf("]");
 
@@ -12264,7 +12275,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         else if (insOptsPostIndex(opt))
         {
             printf(",");
-            emitDispImm(imm, false);
+            emitDispImm(imm, false, true, true);
         }
     }
     else // !strictArmAsm
@@ -12298,7 +12309,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         {
             printf("%c", operStr[1]);
         }
-        emitDispImm(imm, false);
+        emitDispImm(imm, false, true, true);
         printf("]");
     }
 }

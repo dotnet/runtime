@@ -41,7 +41,7 @@ namespace Internal.Runtime
     // of the enum and deprecated sections should not be removed to preserve ID stability.
     //
     // This list should be kept in sync with the runtime version at
-    // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
     public enum ReadyToRunSectionType
     {

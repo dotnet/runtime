@@ -1248,6 +1248,16 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     return temp;
 }
 
+int interceptor_ICJI::getExactClasses(CORINFO_CLASS_HANDLE  baseType,        /* IN */
+                                      int                   maxExactClasses, /* IN */
+                                      CORINFO_CLASS_HANDLE* exactClsRet)     /* OUT */
+{
+    mc->cr->AddCall("getExactClasses");
+    int result = original_ICorJitInfo->getExactClasses(baseType, maxExactClasses, exactClsRet);
+    this->mc->recGetExactClasses(baseType, maxExactClasses, exactClsRet, result);
+    return result;
+}
+
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
                                                    CORINFO_ARG_LIST_HANDLE args /* IN */

@@ -5,10 +5,6 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
-    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
-    <SuppressTrimAnalysisWarnings Condition="'$(EnableAggressiveTrimming)' == 'true'">true</SuppressTrimAnalysisWarnings>
-    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
-    <NoWarn Condition="'$(EnableAggressiveTrimming)' == 'true'">$(NoWarn);IL2118</NoWarn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
@@ -31,6 +27,15 @@
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
+    <NoWarn>$(NoWarn);IL2118</NoWarn>
+    <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

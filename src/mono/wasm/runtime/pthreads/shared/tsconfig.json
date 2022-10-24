@@ -1,3 +1,8 @@
 {
-    "extends": "../../tsconfig.shared.json"
+    "extends": "../../tsconfig.shared.json",
+    "include": [
+        "../../**/*.ts",
+        "../../**/*.d.ts"
+    ]
+
 }

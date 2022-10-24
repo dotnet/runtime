@@ -33,7 +33,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// This class represents a single exception handling clause. It basically corresponds
     /// to IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT in
-    /// <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/cordebuginfo.h">src\inc\corhdr.h</a>.
+    /// <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/cordebuginfo.h">src\inc\corhdr.h</a>.
     /// </summary>
     public class EHClause
     {

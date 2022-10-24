@@ -9458,6 +9458,32 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 /*********************************************************************/
 
+int CEEInfo::getExactClasses (
+        CORINFO_CLASS_HANDLE  baseType,
+        int                   maxExactClasses,
+        CORINFO_CLASS_HANDLE* exactClsRet
+        )
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    int exactClassesCount = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    // This function is currently implemented only on NativeAOT
+    // but can be implemented for CoreCLR as well (e.g. for internal types)
+
+    EE_TO_JIT_TRANSITION();
+
+    return exactClassesCount;
+}
+
+/*********************************************************************/
+
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     CORINFO_SIG_INFO*       sig,
     CORINFO_ARG_LIST_HANDLE args

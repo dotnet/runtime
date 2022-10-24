@@ -36,15 +36,13 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions authOptions)
-            : base(credential)
+        public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
+            : base(IntPtr.Zero)
         {
-            Debug.Assert((credential != null) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
             try
             {
-                _sslContext = CreateSslContext(credential);
-                InitializeSslContext(_sslContext, credential, authOptions);
+                _sslContext = CreateSslContext(authOptions);
+                InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
             {
@@ -147,14 +145,14 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions authOptions)
         {
-            if (credential.CertificateContext == null)
+            if (authOptions.CertificateContext == null)
             {
                 return Interop.AndroidCrypto.SSLStreamCreate();
             }
 
-            SslStreamCertificateContext context = credential.CertificateContext;
+            SslStreamCertificateContext context = authOptions.CertificateContext;
             X509Certificate2 cert = context.Certificate;
             Debug.Assert(context.Certificate.HasPrivateKey);
 
@@ -199,10 +197,9 @@ namespace System.Net
 
         private unsafe void InitializeSslContext(
             SafeSslHandle handle,
-            SafeFreeSslCredentials credential,
             SslAuthenticationOptions authOptions)
         {
-            switch (credential.Policy)
+            switch (authOptions.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -210,7 +207,7 @@ namespace System.Net
                     break;
 #pragma warning restore SYSLIB0040
                 default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, authOptions.EncryptionPolicy));
             }
 
             bool isServer = authOptions.IsServer;
@@ -226,12 +223,12 @@ namespace System.Net
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize);
 
-            if (credential.Protocols != SslProtocols.None)
+            if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
-                SslProtocols protocolsToEnable = credential.Protocols & s_supportedSslProtocols.Value;
+                SslProtocols protocolsToEnable = authOptions.EnabledSslProtocols & s_supportedSslProtocols.Value;
                 if (protocolsToEnable == 0)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_security_sslprotocol_notsupported, credential.Protocols));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_security_sslprotocol_notsupported, authOptions.EnabledSslProtocols));
                 }
 
                 (int minIndex, int maxIndex) = protocolsToEnable.ValidateContiguous(s_orderedSslProtocols);

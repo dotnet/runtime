@@ -211,6 +211,8 @@ namespace ILCompiler
         /// so it can answer this question.
         /// </remarks>
         public virtual bool CanConstructType(TypeDesc type) => true;
+
+        public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif
     }
 }

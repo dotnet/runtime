@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
-import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
+import { MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig } from "../shared";
+import { pthread_ptr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PromiseController, createPromiseController } from "../../promise-controller";
+import { MonoConfig, mono_assert } from "../../types";
+import Internals from "../shared/emscripten-internals";
+import { runtimeHelpers } from "../../imports";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -92,6 +95,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
+        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
         resolvePromises(pthread_id, thread);
     }
 }
@@ -103,21 +107,40 @@ export function afterLoadWasmModuleToWorker(worker: Worker): void {
     console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
-/// These utility functions dig into Emscripten internals
-const Internals = {
-    getWorker: (pthread_ptr: pthread_ptr): Worker => {
-        // see https://github.com/emscripten-core/emscripten/pull/16239
-        return (<any>Module).PThread.pthreads[pthread_ptr].worker;
-    },
-    getThreadId: (worker: Worker): pthread_ptr | undefined => {
-        /// See library_pthread.js in Emscripten.
-        /// They hang a "pthread" object from the worker if the worker is running a thread, and remove it when the thread stops by doing `pthread_exit` or when it's joined using `pthread_join`.
-        const emscriptenThreadInfo = (<any>worker)["pthread"];
-        if (emscriptenThreadInfo === undefined) {
-            return undefined;
-        }
-        return emscriptenThreadInfo.threadInfoStruct;
+/// We call on the main thread this during startup to pre-allocate a pool of pthread workers.
+/// At this point asset resolution needs to be working (ie we loaded MonoConfig).
+/// This is used instead of the Emscripten PThread.initMainThread because we call it later.
+export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
+    const poolSizeSpec = config?.pthreadPoolSize;
+    let n: number;
+    if (poolSizeSpec === undefined) {
+        n = defaultPthreadPoolSize;
+    } else {
+        mono_assert(typeof poolSizeSpec === "number", "pthreadPoolSize must be a number");
+        if (poolSizeSpec < 0)
+            n = defaultPthreadPoolSize;
+        else
+            n = poolSizeSpec;
     }
-};
+    for (let i = 0; i < n; i++) {
+        Internals.allocateUnusedWorker();
+    }
+}
 
-
+/// We call this on the main thread during startup once we fetched WasmModule.
+/// This sends a message to each pre-allocated worker to load the WasmModule and dotnet.js and to set up
+/// message handling.
+/// This is used instead of the Emscripten "receiveInstance" in "createWasm" because that code is
+/// conditioned on a non-zero PTHREAD_POOL_SIZE (but we set it to 0 to avoid early worker allocation).
+export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
+    // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
+    const workers = Internals.getUnusedWorkerPool();
+    const allLoaded = createPromiseController<void>();
+    let leftToLoad = workers.length;
+    workers.forEach((w) => {
+        Internals.loadWasmModuleToWorker(w, function () {
+            if (!--leftToLoad) allLoaded.promise_control.resolve();
+        });
+    });
+    await allLoaded.promise;
+}

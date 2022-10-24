@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
         private List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
-        private IServiceFactoryAdapter _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        private IServiceFactoryAdapter _serviceProviderFactory;
         private bool _hostBuilt;
         private IConfiguration? _hostConfiguration;
         private IConfiguration? _appConfiguration;
@@ -37,6 +37,12 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+
+        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
+        public HostBuilder()
+        {
+            _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        }
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
@@ -182,6 +188,8 @@ namespace Microsoft.Extensions.Hosting
             return diagnosticListener;
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+            Justification = "DiagnosticSource is used here to pass objects in-memory to code using HostFactoryResolver. This won't require creating new generic types.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
         private static void Write<T>(

@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="EmbeddedDescriptor">
+    <type fullname="Program">
+      <method name="methodKeptViaStandaloneDescriptor"/>
+    </type>
+  </assembly>
+</linker>

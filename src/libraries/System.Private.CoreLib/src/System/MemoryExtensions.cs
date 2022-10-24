@@ -592,6 +592,67 @@ namespace System
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
+        {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value0),
+                        Unsafe.As<T, byte>(ref value1),
+                        Unsafe.As<T, byte>(ref value2),
+                        Unsafe.As<T, byte>(ref value3),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value0),
+                        Unsafe.As<T, short>(ref value1),
+                        Unsafe.As<T, short>(ref value2),
+                        Unsafe.As<T, short>(ref value3),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value0),
+                        Unsafe.As<T, int>(ref value1),
+                        Unsafe.As<T, int>(ref value2),
+                        Unsafe.As<T, int>(ref value3),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value0),
+                        Unsafe.As<T, long>(ref value1),
+                        Unsafe.As<T, long>(ref value2),
+                        Unsafe.As<T, long>(ref value3),
+                        span.Length);
+                }
+            }
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value1) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value2) &&
+                    !EqualityComparer<T>.Default.Equals(span[i], value3))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
@@ -618,6 +679,9 @@ namespace System
 
                 case 3:
                     return IndexOfAnyExcept(span, values[0], values[1], values[2]);
+
+                case 4: // common for searching whitespaces
+                    return IndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
                     for (int i = 0; i < span.Length; i++)

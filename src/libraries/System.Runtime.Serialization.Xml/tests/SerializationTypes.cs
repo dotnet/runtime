@@ -1347,3 +1347,18 @@ public class Parameter<T> : Parameter
 {
     public T Value { get; set; }
 }
+
+public class XElementWrapper
+{
+    public XElement Value { get; set; }
+}
+
+public struct XElementStruct
+{
+    public XElement xelement;
+}
+
+public class XElementArrayWrapper
+{
+    public XElement[] xelements;
+}

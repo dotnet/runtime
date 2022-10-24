@@ -26,6 +26,7 @@ let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
+    __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 }
 let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
@@ -47,6 +48,7 @@ var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
     PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
+    PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
 }
 `,
 };
