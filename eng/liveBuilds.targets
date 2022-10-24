@@ -172,6 +172,7 @@
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
         $(LibrariesNativeArtifactsPath)*.so;
+        $(LibrariesNativeArtifactsPath)*.dex;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
