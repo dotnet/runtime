@@ -27,9 +27,19 @@ namespace ILCompiler.ObjectWriter
     public class CoffObjectWriter : ObjectWriter
     {
         private Machine _machine;
-        private List<(CoffSectionHeader Header, Stream Stream)> _sections = new();
+        private List<(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations)> _sections = new();
+
+        // Symbol table
         private List<CoffSymbol> _symbols = new();
-        private Dictionary<string, int> _symbolNameToIndex = new();
+        private Dictionary<string, uint> _symbolNameToIndex = new();
+
+        // Exception handling
+        private int _xdataSectionIndex;
+        private int _pdataSectionIndex;
+        private Stream _xdataStream;
+        private Stream _pdataStream;
+        private List<SymbolicRelocation> _xdataRelocations;
+        private List<SymbolicRelocation> _pdataRelocations;
 
         private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
         private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
@@ -72,7 +82,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             sectionStream = new MemoryStream();
-            _sections.Add((sectionHeader, sectionStream));
+            _sections.Add((sectionHeader, sectionStream, new List<CoffRelocation>()));
         }
 
         protected override void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable)
@@ -151,7 +161,7 @@ namespace ILCompiler.ObjectWriter
         {
             foreach (var (symbolName, symbolDefinition) in GetDefinedSymbols())
             {
-                _symbolNameToIndex.Add(symbolName, _symbols.Count);
+                _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                 _symbols.Add(new CoffSymbol
                 {
                     Name = symbolName,
@@ -163,7 +173,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (var symbolName in GetUndefinedSymbols())
             {
-                _symbolNameToIndex.Add(symbolName, _symbols.Count);
+                _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                 _symbols.Add(new CoffSymbol
                 {
                     Name = symbolName,
@@ -184,7 +194,7 @@ namespace ILCompiler.ObjectWriter
                     // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
                     if (symbolDefinition.Size > 0)
                     {
-                        BinaryPrimitives.WriteInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
+                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
                         sectionStream.Write(tempBuffer);
                     }
                 }
@@ -202,7 +212,72 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            // All relocations are emitted when writting final object file
+            CoffSectionHeader sectionHeader = _sections[sectionIndex].Header;
+            List<CoffRelocation> coffRelocations = _sections[sectionIndex].Relocations;
+            if (relocationList.Count > 0)
+            {
+                if (relocationList.Count <= ushort.MaxValue)
+                {
+                    sectionHeader.NumberOfRelocations = (ushort)relocationList.Count;
+                }
+                else
+                {
+                    // Write an overflow relocation with the real count of relocations
+                    sectionHeader.NumberOfRelocations = ushort.MaxValue;
+                    sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerNRelocOvfl;
+                    coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)relocationList.Count });
+                }
+
+                if (_machine == Machine.Amd64)
+                {
+                    foreach (var relocation in relocationList)
+                    {
+                        coffRelocations.Add(new CoffRelocation
+                        {
+                            VirtualAddress = (uint)relocation.Offset,
+                            SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
+                            Type = relocation.Type switch
+                            {
+                                RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
+                                RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_AMD64_ADDR32,
+                                RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_AMD64_ADDR64,
+                                RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
+                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                            },
+                        });
+                    }
+                }
+                else if (_machine == Machine.Arm64)
+                {
+                    foreach (var relocation in relocationList)
+                    {
+                        coffRelocations.Add(new CoffRelocation
+                        {
+                            VirtualAddress = (uint)relocation.Offset,
+                            SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
+                            Type = relocation.Type switch
+                            {
+                                RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
+                                RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_ARM64_ADDR32,
+                                RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_ARM64_ADDR64,
+                                RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
+                                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => CoffRelocationType.IMAGE_REL_ARM64_BRANCH26,
+                                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => CoffRelocationType.IMAGE_REL_ARM64_PAGEBASE_REL21,
+                                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => CoffRelocationType.IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
+                            },
+                        });
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException("Unsupported architecture");
+                }
+            }
         }
 
         protected override void EmitUnwindInfo(int sectionIndex, long methodStart, INodeWithCodeInfo nodeWithCodeInfo)
@@ -212,11 +287,6 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> tempBuffer = stackalloc byte[4];
                 string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
-
-                int xdataSectionIndex = GetOrCreateSection(
-                    ObjectNodeSection.XDataSection, out var xdataStream, out var xdataRelocations);
-                int pdataSectionIndex = GetOrCreateSection(
-                    PDataSection, out var pdataStream, out var pdataRelocations);
 
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
@@ -230,20 +300,25 @@ namespace ILCompiler.ObjectWriter
                     string unwindSymbolName = $"_unwind{i}{currentSymbolName}";
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
-                    EmitAlignment(xdataSectionIndex, xdataStream, 4);
-                    EmitSymbolDefinition(unwindSymbolName, new SymbolDefinition(xdataSectionIndex, xdataStream.Position));
+                    // Need to emit the UNWIND_INFO at 4-byte alignment to ensure that the
+                    // pointer has the lower two bits in .pdata section set to zero. On ARM64
+                    // non-zero bits would mean a compact encoding.
+                    EmitAlignment(_xdataSectionIndex, _xdataStream, 4);
+
+                    EmitSymbolDefinition(unwindSymbolName, new SymbolDefinition(_xdataSectionIndex, _xdataStream.Position));
                     if (start != 0)
                     {
                         EmitSymbolDefinition(framSymbolName, new SymbolDefinition(sectionIndex, methodStart + start, 0));
                     }
 
-                    xdataStream.Write(blob);
+                    // Emit UNWIND_INFO
+                    _xdataStream.Write(blob);
 
                     FrameInfoFlags flags = frameInfo.Flags;
 
                     if (i != 0)
                     {
-                        xdataStream.WriteByte((byte)flags);
+                        _xdataStream.WriteByte((byte)flags);
                     }
                     else
                     {
@@ -253,21 +328,21 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        xdataStream.WriteByte((byte)flags);
+                        _xdataStream.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
                             string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
                             tempBuffer.Clear();
                             EmitRelocation(
-                                xdataSectionIndex,
-                                xdataRelocations,
-                                (int)xdataStream.Position,
+                                _xdataSectionIndex,
+                                _xdataRelocations,
+                                (int)_xdataStream.Position,
                                 tempBuffer,
                                 RelocType.IMAGE_REL_BASED_ADDR32NB,
                                 symbolName,
                                 0);
-                            xdataStream.Write(tempBuffer);
+                            _xdataStream.Write(tempBuffer);
                         }
 
                         if (ehInfo != null)
@@ -275,63 +350,63 @@ namespace ILCompiler.ObjectWriter
                             string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
                             tempBuffer.Clear();
                             EmitRelocation(
-                                xdataSectionIndex,
-                                xdataRelocations,
-                                (int)xdataStream.Position,
+                                _xdataSectionIndex,
+                                _xdataRelocations,
+                                (int)_xdataStream.Position,
                                 tempBuffer,
                                 RelocType.IMAGE_REL_BASED_ADDR32NB,
                                 symbolName,
                                 0);
-                            xdataStream.Write(tempBuffer);
+                            _xdataStream.Write(tempBuffer);
                         }
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            xdataStream.Write(nodeWithCodeInfo.GCInfo);
+                            _xdataStream.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 
-                    // Emit UNWIND_INFO
-                    // TODO: Other architectures
+                    // Emit RUNTIME_FUNCTION
 
                     // Start
                     tempBuffer.Clear();
                     EmitRelocation(
-                        pdataSectionIndex,
-                        pdataRelocations,
-                        (int)pdataStream.Position,
+                        _pdataSectionIndex,
+                        _pdataRelocations,
+                        (int)_pdataStream.Position,
                         tempBuffer,
                         RelocType.IMAGE_REL_BASED_ADDR32NB,
                         currentSymbolName,
                         start);
-                    pdataStream.Write(tempBuffer);
+                    _pdataStream.Write(tempBuffer);
 
+                    // Only x64 has the End symbol
                     if (_machine == Machine.Amd64)
                     {
                         // End
                         tempBuffer.Clear();
                         EmitRelocation(
-                            pdataSectionIndex,
-                            pdataRelocations,
-                            (int)pdataStream.Position,
+                            _pdataSectionIndex,
+                            _pdataRelocations,
+                            (int)_pdataStream.Position,
                             tempBuffer,
                             RelocType.IMAGE_REL_BASED_ADDR32NB,
                             currentSymbolName,
                             end);
-                        pdataStream.Write(tempBuffer);
+                        _pdataStream.Write(tempBuffer);
                     }
 
                     // Unwind info pointer
                     tempBuffer.Clear();
                     EmitRelocation(
-                        pdataSectionIndex,
-                        pdataRelocations,
-                        (int)pdataStream.Position,
+                        _pdataSectionIndex,
+                        _pdataRelocations,
+                        (int)_pdataStream.Position,
                         tempBuffer,
                         RelocType.IMAGE_REL_BASED_ADDR32NB,
                         unwindSymbolName,
                         0);
-                    pdataStream.Write(tempBuffer);
+                    _pdataStream.Write(tempBuffer);
                 }
             }
         }
@@ -342,248 +417,98 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitObjectFile(string objectFilePath)
         {
-            const int CoffHeaderSize =
-                sizeof(short) + // Machine
-                sizeof(short) + // NumberOfSections
-                sizeof(int) +   // TimeDateStamp
-                sizeof(int) +   // PointerToSymbolTable
-                sizeof(int) +   // NumberOfSymbols
-                sizeof(short) + // SizeOfOptionalHeader
-                sizeof(ushort); // Characteristics
-            const int CoffSectionHeaderSize =
-                8 +             // Name size
-                sizeof(int) +   // VirtualSize
-                sizeof(int) +   // VirtualAddress
-                sizeof(int) +   // SizeOfRawData
-                sizeof(int) +   // PointerToRawData
-                sizeof(int) +   // PointerToRelocations
-                sizeof(int) +   // PointerToLineNumbers
-                sizeof(short) + // NumberOfRelocations
-                sizeof(short) + // NumberOfLineNumbers
-                sizeof(int);    // SectionCharacteristics
-            const int CoffRelocationSize =
-                sizeof(int) +   // Address
-                sizeof(int) +   // Symbol index
-                sizeof(short);  // Type
-            const int CoffSymbolSize =
-                8 +             // Name size
-                sizeof(int) +   // Value
-                sizeof(short) + // Section index
-                sizeof(short) + // Type
-                sizeof(byte) +  // Storage class
-                sizeof(byte);   // Auxiliary symbol count
-
             using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
-            using var binaryWriter = new BinaryWriter(outputFileStream); // TODO: Big endian?
-
             var stringTable = new MemoryStream();
 
-            // Calculate size of section data
+            // Calculate size of section data and assign offsets
+            int dataOffset = CoffHeader.Size + _sections.Count * CoffSectionHeader.Size;
             int sectionIndex = 0;
-            foreach ((CoffSectionHeader sectionHeader, Stream sectionStream) in _sections)
+            foreach (var section in _sections)
             {
-                sectionHeader.SizeOfRawData = (int)sectionStream.Length;
-                GetSection(sectionIndex, out _, out var relocationList);
-                if (relocationList.Count <= ushort.MaxValue)
+                section.Header.SizeOfRawData = (int)section.Stream.Length;
+
+                // Section content
+                if (section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
-                    sectionHeader.NumberOfRelocations = (ushort)relocationList.Count;
+                    section.Header.PointerToRawData = 0;
                 }
                 else
                 {
-                    sectionHeader.NumberOfRelocations = ushort.MaxValue;
-                    sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerNRelocOvfl;
-                }
-                sectionIndex++;
-            }
-
-            // Assign offsets to section data
-            int dataOffset = CoffHeaderSize + _sections.Count * CoffSectionHeaderSize;
-            sectionIndex = 0;
-            foreach ((CoffSectionHeader sectionHeader, _) in _sections)
-            {
-                GetSection(sectionIndex, out _, out var relocationList);
-
-                if (sectionHeader.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
-                {
-                    sectionHeader.PointerToRawData = 0;
-                }
-                else
-                {
-                    sectionHeader.PointerToRawData = dataOffset;
-                    dataOffset += sectionHeader.SizeOfRawData;
+                    section.Header.PointerToRawData = dataOffset;
+                    dataOffset += section.Header.SizeOfRawData;
                 }
 
-                sectionHeader.PointerToRelocations = relocationList.Count > 0 ? dataOffset : 0;
-                dataOffset += relocationList.Count * CoffRelocationSize;
-                if (sectionHeader.SectionCharacteristics.HasFlag(SectionCharacteristics.LinkerNRelocOvfl))
-                {
-                    dataOffset += CoffRelocationSize;
-                }
+                // Section relocations
+                section.Header.PointerToRelocations = section.Relocations.Count > 0 ? dataOffset : 0;
+                dataOffset += section.Relocations.Count * CoffRelocation.Size;
 
                 sectionIndex++;
             }
 
             int symbolTableOffset = dataOffset;
             int stringTableOffset =
-                symbolTableOffset + _symbols.Count * CoffSymbolSize +
+                symbolTableOffset + _symbols.Count * CoffSymbol.Size +
                 sizeof(int); // Count
 
             // Write COFF header
-            binaryWriter.Write((ushort)_machine);
-            binaryWriter.Write((ushort)_sections.Count);
-            binaryWriter.Write((uint)0u); // TimeDateStamp
-            binaryWriter.Write(symbolTableOffset);
-            binaryWriter.Write((uint)_symbols.Count);
-            binaryWriter.Write((ushort)0u); // SizeOfOptionalHeader
-            binaryWriter.Write((ushort)0u); // Characteristics
+            var coffHeader = new CoffHeader
+            {
+                Machine = _machine,
+                NumberOfSections = (ushort)_sections.Count,
+                PointerToSymbolTable = (uint)symbolTableOffset,
+                NumberOfSymbols = (uint)_symbols.Count,
+            };
+            coffHeader.Write(outputFileStream);
 
             // Write COFF section headers
-            foreach ((CoffSectionHeader sectionHeader, _) in _sections)
+            foreach ((CoffSectionHeader sectionHeader, _, _) in _sections)
             {
-                WritePaddedName(sectionHeader.Name, isSectionName: true);
-                binaryWriter.Write(sectionHeader.VirtualSize);
-                binaryWriter.Write(sectionHeader.VirtualAddress);
-                binaryWriter.Write(sectionHeader.SizeOfRawData);
-                binaryWriter.Write(sectionHeader.PointerToRawData);
-                binaryWriter.Write(sectionHeader.PointerToRelocations);
-                binaryWriter.Write(sectionHeader.PointerToLineNumbers);
-                binaryWriter.Write(sectionHeader.NumberOfRelocations);
-                binaryWriter.Write(sectionHeader.NumberOfLineNumbers);
-                binaryWriter.Write((int)sectionHeader.SectionCharacteristics);
+                sectionHeader.Write(outputFileStream, stringTable);
 
                 // Relocation code below assumes that addresses are 0-indexed
                 Debug.Assert(sectionHeader.VirtualAddress == 0);
             }
 
             // Writer section content and relocations
-            sectionIndex = 0;
-            foreach ((CoffSectionHeader sectionHeader, Stream sectionStream) in _sections)
+            foreach (var section in _sections)
             {
-                if (!sectionHeader.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
-                    Debug.Assert(outputFileStream.Position == sectionHeader.PointerToRawData);
-                    sectionStream.Position = 0;
-                    sectionStream.CopyTo(outputFileStream);
+                    Debug.Assert(outputFileStream.Position == section.Header.PointerToRawData);
+                    section.Stream.Position = 0;
+                    section.Stream.CopyTo(outputFileStream);
                 }
 
-                GetSection(sectionIndex, out _, out var relocationList);
-
-                if (relocationList.Count > 0)
+                if (section.Relocations.Count > 0)
                 {
-                    Debug.Assert(outputFileStream.Position == sectionHeader.PointerToRelocations);
-                    if (sectionHeader.SectionCharacteristics.HasFlag(SectionCharacteristics.LinkerNRelocOvfl))
+                    foreach (var relocation in section.Relocations)
                     {
-                        binaryWriter.Write((int)relocationList.Count);
-                        binaryWriter.Write((int)0);
-                        binaryWriter.Write((ushort)0u);
-                    }
-
-                    foreach (var relocation in relocationList)
-                    {
-                        // Addends are emitted directly into code in EmitRelocation
-                        Debug.Assert(relocation.Addend == 0);
-
-                        binaryWriter.Write((int)relocation.Offset);
-                        binaryWriter.Write((int)_symbolNameToIndex[relocation.SymbolName]);
-
-                        // FIXME: Other architectures
-                        uint relocationType;
-
-                        if (_machine == Machine.Amd64)
-                        {
-                            relocationType = relocation.Type switch
-                            {
-                                RelocType.IMAGE_REL_BASED_ABSOLUTE => 3u,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB => 3u,
-                                RelocType.IMAGE_REL_BASED_HIGHLOW => 2u,
-                                RelocType.IMAGE_REL_BASED_DIR64 => 1u,
-                                RelocType.IMAGE_REL_BASED_REL32 => 4u,
-                                RelocType.IMAGE_REL_BASED_RELPTR32 => 4u,
-                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                            };
-                        }
-                        else if (_machine == Machine.Arm64)
-                        {
-                            relocationType = relocation.Type switch
-                            {
-                                RelocType.IMAGE_REL_BASED_ABSOLUTE => 2u,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB => 2u,
-                                RelocType.IMAGE_REL_BASED_HIGHLOW => 1u,
-                                RelocType.IMAGE_REL_BASED_DIR64 => 14u,
-                                RelocType.IMAGE_REL_BASED_REL32 => 17u,
-                                RelocType.IMAGE_REL_BASED_RELPTR32 => 17u,
-                                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => 3u,
-                                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4u,
-                                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 6u,
-                                _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                            };
-                        }
-                        else
-                        {
-                            throw new NotSupportedException("Unsupported architecture");
-                        }
-
-                        binaryWriter.Write((ushort)relocationType);
+                        relocation.Write(outputFileStream);
                     }
                 }
-
-                sectionIndex++;
             }
 
             // Write symbol table
             Debug.Assert(outputFileStream.Position == symbolTableOffset);
             foreach (var coffSymbol in _symbols)
             {
-                WritePaddedName(coffSymbol.Name);
-                binaryWriter.Write(coffSymbol.Value);
-                binaryWriter.Write(coffSymbol.SectionIndex);
-                binaryWriter.Write(coffSymbol.Type);
-                binaryWriter.Write(coffSymbol.StorageClass);
-                binaryWriter.Write(coffSymbol.AuxiliaryCount);
+                coffSymbol.Write(outputFileStream, stringTable);
             }
 
             // Write string table
-            binaryWriter.Write((int)(stringTable.Length + 4));
+            Span<byte> stringTableSize = stackalloc byte[4];
+            BinaryPrimitives.WriteInt32LittleEndian(stringTableSize, (int)(stringTable.Length + 4));
+            outputFileStream.Write(stringTableSize);
             Debug.Assert(outputFileStream.Position == stringTableOffset);
             stringTable.Position = 0;
             stringTable.CopyTo(outputFileStream);
-
-            void WritePaddedName(string name, bool isSectionName = false)
-            {
-                // TODO: Reuse buffer
-                var nameBytes = Encoding.UTF8.GetBytes(name);
-                if (nameBytes.Length <= 8)
-                {
-                    binaryWriter.Write(nameBytes);
-                    if (nameBytes.Length < 8)
-                    {
-                        binaryWriter.Write(stackalloc byte[8 - nameBytes.Length]);
-                    }
-                }
-                else
-                {
-                    if (!isSectionName)
-                    {
-                        binaryWriter.Write((uint)0u);
-                        binaryWriter.Write((uint)(stringTable.Position + 4));
-                    }
-                    else
-                    {
-                        string longName = $"/{stringTable.Position + 4}\0\0\0\0\0\0";
-                        for (int i = 0; i < 8; i++)
-                        {
-                            binaryWriter.Write((byte)longName[i]);
-                        }
-                    }
-                    stringTable.Write(nameBytes);
-                    stringTable.WriteByte(0);
-                }
-            }
         }
 
         protected override void CreateEhSections()
         {
             // Create .xdata and .pdata
+            _xdataSectionIndex = GetOrCreateSection(ObjectNodeSection.XDataSection, out _xdataStream, out _xdataRelocations);
+            _pdataSectionIndex = GetOrCreateSection(PDataSection, out _pdataStream, out _pdataRelocations);
         }
 
         protected override ITypesDebugInfoWriter CreateDebugInfoBuilder() => null;
@@ -613,6 +538,41 @@ namespace ILCompiler.ObjectWriter
             objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
         }
 
+        private sealed class CoffHeader
+        {
+            public Machine Machine { get; set; }
+            public ushort NumberOfSections { get; set; }
+            public uint TimeDateStamp { get; set; }
+            public uint PointerToSymbolTable { get; set; }
+            public uint NumberOfSymbols { get; set; }
+            public ushort SizeOfOptionalHeader { get; set; }
+            public ushort Characteristics { get; set; }
+
+            public const int Size =
+                sizeof(ushort) + // Machine
+                sizeof(ushort) + // NumberOfSections
+                sizeof(uint) +   // TimeDateStamp
+                sizeof(uint) +   // PointerToSymbolTable
+                sizeof(uint) +   // NumberOfSymbols
+                sizeof(ushort) + // SizeOfOptionalHeader
+                sizeof(ushort);  // Characteristics
+
+            public void Write(Stream stream)
+            {
+                Span<byte> buffer = stackalloc byte[Size];
+
+                BinaryPrimitives.WriteInt16LittleEndian(buffer, (short)Machine);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), NumberOfSections);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), TimeDateStamp);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), PointerToSymbolTable);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12), NumberOfSymbols);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), SizeOfOptionalHeader);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), Characteristics);
+
+                stream.Write(buffer);
+            }
+        }
+
         private sealed class CoffSectionHeader
         {
             public string Name { get; set; }
@@ -625,6 +585,120 @@ namespace ILCompiler.ObjectWriter
             public ushort NumberOfRelocations { get; set; }
             public ushort NumberOfLineNumbers { get; set; }
             public SectionCharacteristics SectionCharacteristics { get; set; }
+
+            private const int NameSize = 8;
+
+            public const int Size =
+                NameSize +      // Name size
+                sizeof(int) +   // VirtualSize
+                sizeof(int) +   // VirtualAddress
+                sizeof(int) +   // SizeOfRawData
+                sizeof(int) +   // PointerToRawData
+                sizeof(int) +   // PointerToRelocations
+                sizeof(int) +   // PointerToLineNumbers
+                sizeof(short) + // NumberOfRelocations
+                sizeof(short) + // NumberOfLineNumbers
+                sizeof(int);    // SectionCharacteristics
+
+            public void Write(Stream stream, Stream stringTableStream)
+            {
+                Span<byte> buffer = stackalloc byte[Size];
+
+                var nameBytes = Encoding.UTF8.GetBytes(Name); // TODO: Pool buffers
+                if (nameBytes.Length <= NameSize)
+                {
+                    nameBytes.CopyTo(buffer);
+                    if (nameBytes.Length < NameSize)
+                    {
+                        buffer.Slice(nameBytes.Length, 8 - nameBytes.Length).Clear();
+                    }
+                }
+                else
+                {
+                    string longName = $"/{stringTableStream.Position + 4}\0\0\0\0\0\0";
+                    for (int i = 0; i < 8; i++)
+                    {
+                        buffer[i] = (byte)longName[i];
+                    }
+                    stringTableStream.Write(nameBytes);
+                    stringTableStream.WriteByte(0);
+                }
+
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize), VirtualSize);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 4), VirtualAddress);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 8), SizeOfRawData);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 12), PointerToRawData);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 16), PointerToRelocations);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 20), PointerToLineNumbers);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(NameSize + 24), NumberOfRelocations);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(NameSize + 26), NumberOfLineNumbers);
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 28), (int)SectionCharacteristics);
+
+                stream.Write(buffer);
+            }
+        }
+
+        private enum CoffRelocationType
+        {
+            IMAGE_REL_AMD64_ABSOLUTE = 0,
+            IMAGE_REL_AMD64_ADDR64 = 1,
+            IMAGE_REL_AMD64_ADDR32 = 2,
+            IMAGE_REL_AMD64_ADDR32NB = 3,
+            IMAGE_REL_AMD64_REL32 = 4,
+            IMAGE_REL_AMD64_REL32_1 = 5,
+            IMAGE_REL_AMD64_REL32_2 = 6,
+            IMAGE_REL_AMD64_REL32_3 = 7,
+            IMAGE_REL_AMD64_REL32_4 = 8,
+            IMAGE_REL_AMD64_REL32_5 = 9,
+            IMAGE_REL_AMD64_SECTION = 10,
+            IMAGE_REL_AMD64_SECREL = 11,
+            IMAGE_REL_AMD64_SECREL7 = 12,
+            IMAGE_REL_AMD64_TOKEN = 13,
+            IMAGE_REL_AMD64_SREL32 = 14,
+            IMAGE_REL_AMD64_PAIR = 15,
+            IMAGE_REL_AMD64_SSPAN32 = 16,
+
+            IMAGE_REL_ARM64_ABSOLUTE = 0,
+            IMAGE_REL_ARM64_ADDR32 = 1,
+            IMAGE_REL_ARM64_ADDR32NB = 2,
+            IMAGE_REL_ARM64_BRANCH26 = 3,
+            IMAGE_REL_ARM64_PAGEBASE_REL21 = 4,
+            IMAGE_REL_ARM64_REL21 = 5,
+            IMAGE_REL_ARM64_PAGEOFFSET_12A = 6,
+            IMAGE_REL_ARM64_PAGEOFFSET_12L = 7,
+            IMAGE_REL_ARM64_SECREL = 8,
+            IMAGE_REL_ARM64_SECREL_LOW12A = 9,
+            IMAGE_REL_ARM64_SECREL_HIGH12A = 10,
+            IMAGE_REL_ARM64_SECREL_LOW12L = 11,
+            IMAGE_REL_ARM64_TOKEN = 12,
+            IMAGE_REL_ARM64_SECTION = 13,
+            IMAGE_REL_ARM64_ADDR64 = 14,
+            IMAGE_REL_ARM64_BRANCH19 = 15,
+            IMAGE_REL_ARM64_BRANCH14 = 16,
+            IMAGE_REL_ARM64_REL32 = 17,
+        }
+
+        private sealed class CoffRelocation
+        {
+            public uint VirtualAddress { get; set; }
+            public uint SymbolTableIndex { get; set; }
+            public CoffRelocationType Type { get; set; }
+
+            public const int Size =
+                sizeof(uint) +  // VirtualAddress
+                sizeof(uint) +  // SymbolTableIndex
+                sizeof(ushort); // Type
+
+            public void Write(Stream stream)
+            {
+                Span<byte> buffer = stackalloc byte[Size];
+
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer, VirtualAddress);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), SymbolTableIndex);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(8), (ushort)Type);
+
+                stream.Write(buffer);
+            }
         }
 
         private sealed class CoffSymbol
@@ -635,6 +709,46 @@ namespace ILCompiler.ObjectWriter
             public short Type { get; set; }
             public byte StorageClass { get; set; }
             public byte AuxiliaryCount { get; set; }
+
+            private const int NameSize = 8;
+
+            public const int Size =
+                NameSize +      // Name size
+                sizeof(int) +   // Value
+                sizeof(short) + // Section index
+                sizeof(short) + // Type
+                sizeof(byte) +  // Storage class
+                sizeof(byte);   // Auxiliary symbol count
+
+            public void Write(Stream stream, Stream stringTableStream)
+            {
+                Span<byte> buffer = stackalloc byte[Size];
+
+                var nameBytes = Encoding.UTF8.GetBytes(Name); // TODO: Pool buffers
+                if (nameBytes.Length <= NameSize)
+                {
+                    nameBytes.CopyTo(buffer);
+                    if (nameBytes.Length < NameSize)
+                    {
+                        buffer.Slice(nameBytes.Length, 8 - nameBytes.Length).Clear();
+                    }
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer, 0);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)(stringTableStream.Position + 4));
+                    stringTableStream.Write(nameBytes);
+                    stringTableStream.WriteByte(0);
+                }
+
+                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize), Value);
+                BinaryPrimitives.WriteInt16LittleEndian(buffer.Slice(NameSize + 4), SectionIndex);
+                BinaryPrimitives.WriteInt16LittleEndian(buffer.Slice(NameSize + 6), Type);
+                buffer[NameSize + 8] = StorageClass;
+                buffer[NameSize + 9] = AuxiliaryCount;
+
+                stream.Write(buffer);
+            }
         }
     }
 }
