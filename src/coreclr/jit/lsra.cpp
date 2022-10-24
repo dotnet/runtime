@@ -325,6 +325,21 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
     return result;
 }
 
+//TODO: Convert all these to something like this:
+/* although it generates 3 comparisons, but may be
+*  branch predictor will optimize depending for the
+*  common paths where things are just 1.
+* switch (regCount)
+* {
+*   case 3:
+*       // do once
+*   case 2:
+*       // do once
+*   case 1:
+*       // do once
+*       break;
+* }
+*/
 void LinearScan::clearSpillCost(regNumber reg, Referenceable* reference)
 {
     int       regCount = reference->regCount;
@@ -3134,8 +3149,8 @@ bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 }
 
 //------------------------------------------------------------------------
-// checkAndAssignInterval: Check if the interval is already assigned and
-//                         if it is then unassign the physical record
+// checkAndAssignInterval: Check if the `regRec` is already assigned an interval
+//                         and if it is then unassign the physical record
 //                         and set the assignedInterval to 'interval'
 //
 // Arguments:
@@ -5758,7 +5773,7 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
 }
 
 //-----------------------------------------------------------------------------
-// updateAssignedInterval: Update assigned interval of register.
+// updateAssignedInterval: Update assigned interval of `reg` to `interval`.
 //
 // Arguments:
 //    reg      -    register to be updated
