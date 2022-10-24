@@ -8777,6 +8777,10 @@ DONE:
         // Update side effect flags since they may be different from the source side effect flags.
         // For example, we may have replaced some locals with constants and made indirections non-throwing.
         gtUpdateNodeSideEffects(copy);
+        if ((varNum != BAD_VAR_NUM) && copy->OperIsSsaDef())
+        {
+            fgAssignSetVarDef(copy);
+        }
     }
 
     /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
