@@ -6363,6 +6363,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
+    ClassLayout* GetLayout(Compiler* compiler) const;
+
     NamedIntrinsic GetHWIntrinsicId() const;
 
     //---------------------------------------------------------------------------------------
