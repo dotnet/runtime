@@ -497,7 +497,8 @@ namespace System.IO.Pipelines
                     Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
 
                     if (oldLength >= ResumeWriterThreshold &&
-                        _unconsumedBytes < ResumeWriterThreshold)
+                        (_unconsumedBytes < ResumeWriterThreshold ||
+                        (_unconsumedBytes == 0 && ResumeWriterThreshold == 0)))
                     {
                         _writerAwaitable.Complete(out completionData);
                     }
