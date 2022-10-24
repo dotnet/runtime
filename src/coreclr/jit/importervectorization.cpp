@@ -441,13 +441,13 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
 
         ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
         GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_INT, offset, value2, cmpMode, Xor);
-        secondIndir          = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_LONG);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
             return nullptr;
         }
 
+        secondIndir = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_LONG);
         return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
                              gtNewIconNode(0, TYP_LONG));
     }
