@@ -6244,13 +6244,14 @@ void
 mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 {
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	MonoMarshalLightweightCallbacks* local_cb = (MonoMarshalLightweightCallbacks*)malloc(sizeof(MonoMarshalLightweightCallbacks));
+	MonoMarshalLightweightCallbacks* local_cb = (MonoMarshalLightweightCallbacks*)g_malloc(sizeof(MonoMarshalLightweightCallbacks));
 	memcpy (local_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
+	mono_memory_barrier ();
 
-	if (mono_atomic_cas_ptr((void**)&marshal_lightweight_cb, local_cb, NULL))
+	if (mono_atomic_cas_ptr((void**)&marshal_lightweight_cb, local_cb, NULL) != NULL)
 	{
 		// cas failed
-		free(local_cb);
+		g_free(local_cb);
 	}
 }
 

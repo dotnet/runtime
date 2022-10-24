@@ -35,13 +35,14 @@ void
 mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb)
 {
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	MonoMarshalIlgenCallbacks* local_cb = (MonoMarshalIlgenCallbacks*)malloc(sizeof(MonoMarshalIlgenCallbacks));
+	MonoMarshalIlgenCallbacks* local_cb = (MonoMarshalIlgenCallbacks*)g_malloc(sizeof(MonoMarshalIlgenCallbacks));
 	memcpy (local_cb, cb, sizeof (MonoMarshalIlgenCallbacks));
+	mono_memory_barrier ();
 
-	if (mono_atomic_cas_ptr((void**)&ilgen_marshal_cb, local_cb, NULL  ))
+	if (mono_atomic_cas_ptr((void**)&ilgen_marshal_cb, local_cb, NULL  ) != NULL)
 	{
 		// cas failed
-		free(local_cb);
+		g_free(local_cb);
 	}
 }
 
