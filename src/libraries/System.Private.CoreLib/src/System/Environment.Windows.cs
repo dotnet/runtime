@@ -86,10 +86,10 @@ namespace System
 
         private static unsafe bool IsAdminProcess()
         {
-            SafeTokenHandle token;
-            if (Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), (int)Interop.Advapi32.TOKEN_ACCESS_LEVELS.Read, out token))
+            SafeTokenHandle? token = null;
+            try
             {
-                using (token)
+                if (Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), (int)Interop.Advapi32.TOKEN_ACCESS_LEVELS.Read, out token))
                 {
                     Interop.Advapi32.TOKEN_ELEVATION elevation = default;
 
@@ -103,6 +103,10 @@ namespace System
                         return elevation.TokenIsElevated != Interop.BOOL.FALSE;
                     }
                 }
+            }
+            finally
+            {
+                token?.Dispose();
             }
 
             throw Win32Marshal.GetExceptionForLastWin32Error();

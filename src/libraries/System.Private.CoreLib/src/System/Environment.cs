@@ -18,10 +18,24 @@ namespace System
         /// </summary>
         internal static bool IsSingleProcessor => ProcessorCount == 1;
 
+        private static bool s_privilegedProcess;
+        private static volatile int s_pendingPrivilegedProcess;
+
         /// <summary>
         /// Gets whether the current process is authorized to perform security-relevant functions.
         /// </summary>
-        public static bool IsPrivilegedProcess { get; } = IsAdminProcess();
+        public static bool IsPrivilegedProcess
+        {
+            get
+            {
+                if (s_pendingPrivilegedProcess == 0)
+                {
+                    s_privilegedProcess = IsAdminProcess();
+                    s_pendingPrivilegedProcess = 1;
+                }
+                return s_privilegedProcess;
+            }
+        }
 
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
