@@ -105,6 +105,7 @@ namespace ILCompiler
                 {
                     8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
                     16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    32 => ValueTypeShapeCharacteristics.Vector128Aggregate,
                     _ => ValueTypeShapeCharacteristics.None
                 };
             }

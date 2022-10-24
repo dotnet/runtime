@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_GCStress=0xC
+set DOTNET_GCStress=0xC
 ]]></CLRTestBatchPreCommands>
   </PropertyGroup>
   <ItemGroup>

@@ -287,6 +287,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
 
             if (result[0] != (double)(firstOp[0]))
             {
+                Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                 succeeded = false;
             }
             else
@@ -295,6 +296,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
                 {
                     if (result[i] != (double)(firstOp[i]))
                     {
+                        Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                         succeeded = false;
                         break;
                     }

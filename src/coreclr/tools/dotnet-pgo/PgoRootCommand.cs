@@ -218,7 +218,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 OutputFilePath,
             };
 
-            dumpCommand.SetHandler(context => TryExecuteWithContext(context, true));
+            dumpCommand.SetHandler(context =>
+            {
+                DumpMibc = true;
+                TryExecuteWithContext(context, true);
+            });
 
             AddCommand(dumpCommand);
 
@@ -229,11 +233,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 DumpWorstOverlapGraphsTo
             };
 
-            compareMbicCommand.SetHandler(context =>
-            {
-                DumpMibc = true;
-                TryExecuteWithContext(context, false);
-            });
+            compareMbicCommand.SetHandler(context => TryExecuteWithContext(context, false));
 
             AddCommand(compareMbicCommand);
 

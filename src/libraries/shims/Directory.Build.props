@@ -16,7 +16,7 @@
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <!-- Opt out of some features which are on by default. -->
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
-    <RunApiCompat>false</RunApiCompat>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
   </PropertyGroup>

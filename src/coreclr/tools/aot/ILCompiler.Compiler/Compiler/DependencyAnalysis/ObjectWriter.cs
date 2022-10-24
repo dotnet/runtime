@@ -815,48 +815,6 @@ namespace ILCompiler.DependencyAnalysis
             return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset), flags);
         }
 
-        public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
-        {
-            int nextRelocOffset = -1;
-            int nextRelocIndex = -1;
-            if (relocs.Length > 0)
-            {
-                nextRelocOffset = relocs[0].Offset;
-                nextRelocIndex = 0;
-            }
-
-            int i = 0;
-            while (i < blob.Length)
-            {
-                if (i == nextRelocOffset)
-                {
-                    Relocation reloc = relocs[nextRelocIndex];
-
-                    long delta;
-                    unsafe
-                    {
-                        fixed (void* location = &blob[i])
-                        {
-                            delta = Relocation.ReadValue(reloc.RelocType, location);
-                        }
-                    }
-                    int size = EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
-
-                    // Update nextRelocIndex/Offset
-                    if (++nextRelocIndex < relocs.Length)
-                    {
-                        nextRelocOffset = relocs[nextRelocIndex].Offset;
-                    }
-                    i += size;
-                }
-                else
-                {
-                    EmitIntValue(blob[i], 1);
-                    i++;
-                }
-            }
-        }
-
         public void EmitSymbolDefinition(int currentOffset)
         {
             List<ISymbolDefinitionNode> nodes;

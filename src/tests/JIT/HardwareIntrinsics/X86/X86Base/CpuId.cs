@@ -50,7 +50,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             int maxFunctionId = eax;
 
-            if ((maxFunctionId < 0x00000001) || (Environment.GetEnvironmentVariable("COMPlus_EnableHWIntrinsic") is null))
+            if ((maxFunctionId < 0x00000001) || (Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic") is null))
             {
                 Assert.Equal(Pass, testResult);
                 return;
@@ -187,7 +187,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
         static bool IsBitIncorrect(int register, int bitNumber, bool expectedResult, string name)
         {
             return ((register & (1 << bitNumber)) != ((expectedResult ? 1 : 0) << bitNumber))
-                && (Environment.GetEnvironmentVariable($"COMPlus_Enable{name}") is null);
+                && (Environment.GetEnvironmentVariable($"DOTNET_Enable{name}") is null);
         }
     }
 }

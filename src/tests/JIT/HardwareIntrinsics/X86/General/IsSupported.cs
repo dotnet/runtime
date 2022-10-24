@@ -15,7 +15,7 @@ namespace IntelHardwareIntrinsicTest.General
         {
             bool result = true;
 
-            if (Sse.IsSupported && int.TryParse(Environment.GetEnvironmentVariable("COMPlus_EnableIncompleteISAClass"), out var enableIncompleteIsa) && (enableIncompleteIsa != 0))
+            if (Sse.IsSupported && int.TryParse(Environment.GetEnvironmentVariable("DOTNET_EnableIncompleteISAClass"), out var enableIncompleteIsa) && (enableIncompleteIsa != 0))
             {
                 // X86 platforms
                 if (Vector<byte>.Count == 32 && !Avx2.IsSupported)
