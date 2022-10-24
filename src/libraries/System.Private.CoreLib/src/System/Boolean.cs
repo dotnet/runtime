@@ -202,9 +202,6 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? value, out bool result) =>
             TryParse(value.AsSpan(), out result);
 
-        // AggressiveOptimization here gives VM a hint to bypass Tier0 and have a version where Equals is unrolled by RyuJIT
-        // so we can parse configs on start quicker
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
             // Boolean.{Try}Parse allows for optional whitespace/null values before and
@@ -239,14 +236,14 @@ namespace System
                     if (value.Length != originalLength)
                     {
                         // Something was trimmed.  Try matching again.
-                        if (IsTrueStringIgnoreCase(value))
+                        if (value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             return true;
                         }
 
                         result = false;
-                        return IsFalseStringIgnoreCase(value);
+                        return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
                     }
                 }
 
