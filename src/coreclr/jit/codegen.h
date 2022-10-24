@@ -1430,13 +1430,16 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#ifdef TARGET_XARCH
+    void genStackPointerConstantAdjustment(ssize_t spDelta, bool canTrack);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool canTrack);
+    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool canTrack);
+    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
+#else // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
-
-#if defined(TARGET_XARCH)
-    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp);
-#endif // defined(TARGET_XARCH)
+#endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
 
