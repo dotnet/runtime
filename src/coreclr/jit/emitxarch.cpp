@@ -14833,7 +14833,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 break;
 
             case INS_sub:
-            case INS_sub_hide:
                 // Check for "sub ESP, icon"
                 if (id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
                 {
