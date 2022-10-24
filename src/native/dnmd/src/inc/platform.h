@@ -1,7 +1,9 @@
 #ifndef _SRC_INC_PLATFORM_H_
 #define _SRC_INC_PLATFORM_H_
 
-#if _MSC_VER
+#ifdef _MSC_VER
+
+#define BUILD_WINDOWS
 
 #include <Windows.h>
 

@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
+#include <fstream>
 #include <stdexcept>
 #include <memory>
 #include <dnmd.h>
@@ -21,6 +22,8 @@ public:
     span(T* ptr, size_t len)
         : _ptr{ ptr }, _size{ len }
     { }
+
+    span(span const & other) = default;
 
     span& operator=(span&& other) = default;
 
@@ -54,6 +57,12 @@ public:
     owning_span(T* ptr, size_t len)
         : span{ ptr, len }
     { }
+
+    owning_span(owning_span&& other)
+        : span{}
+    {
+        *this = other;
+    }
 
     ~owning_span()
     {
@@ -145,12 +154,28 @@ int main(int ac, char** av)
     return EXIT_SUCCESS;
 }
 
+uint32_t get_file_size(char const* path)
+{
+    uint32_t size_in_bytes = 0;
+#ifdef BUILD_WINDOWS
+    HANDLE handle = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (handle != INVALID_HANDLE_VALUE)
+    {
+        size_in_bytes = ::GetFileSize(handle, nullptr);
+        (void)::CloseHandle(handle);
+    }
+#else
+#error Not yet implemented
+#endif // !BUILD_WINDOWS
+
+    return size_in_bytes;
+}
+
 PIMAGE_SECTION_HEADER find_section_header(
-    PIMAGE_SECTION_HEADER section_headers,
-    size_t count,
+    span<IMAGE_SECTION_HEADER> section_headers,
     uint32_t rva)
 {
-    for (size_t i = 0; i < count; ++i)
+    for (size_t i = 0; i < section_headers.size(); ++i)
     {
         if (section_headers[i].VirtualAddress <= rva
             && rva < (section_headers[i].VirtualAddress + section_headers[i].SizeOfRawData))
@@ -164,68 +189,66 @@ PIMAGE_SECTION_HEADER find_section_header(
 
 bool get_metadata_from_pe(char const* file, malloc_span<byte>& b)
 {
-    FILE* fd;
-    errno_t ec = ::fopen_s(&fd, file, "rb");
-    if (ec)
-        return false;
+    // Read in the file and release ASAP.
+    {
+        std::ifstream fd{ file, std::ios::binary | std::ios::in };
+        if (!fd)
+            return false;
 
-    // [FIXME] Just a big block of bytes
-    size_t size = 12 * 1024 * 1024;
-    b = { (byte*)std::malloc(size), size };
-    size_t bytes_read = ::fread(b, 1, b.size(), fd);
-    if (bytes_read == 0 || bytes_read > size)
-        return false;
+        size_t size = get_file_size(file);
+        if (size == 0)
+            return false;
+
+        b = { (byte*)std::malloc(size), size };
+        fd.read((char*)(byte*)b, b.size());
+    }
 
     PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)(void*)b;
     bool is_pe = dos_header->e_magic == IMAGE_DOS_SIGNATURE;
-    assert(is_pe);
+    if (!is_pe)
+        return false;
 
     // Handle headers that are 32 or 64
     PIMAGE_DATA_DIRECTORY dotnet_dir;
     PIMAGE_SECTION_HEADER tgt_header;
-    size_t section_count;
+
     // Section headers begin immediately after the NT_HEADERS.
-    PIMAGE_SECTION_HEADER section_headers;
+    span<IMAGE_SECTION_HEADER> section_headers;
 
     PIMAGE_NT_HEADERS nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
     if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64)
     {
         PIMAGE_NT_HEADERS64 nt_header64 = (PIMAGE_NT_HEADERS64)nt_header_any;
         dotnet_dir = &nt_header64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-        section_count = nt_header64->FileHeader.NumberOfSections;
-        section_headers = (PIMAGE_SECTION_HEADER)&nt_header64[1];
+        section_headers = { (PIMAGE_SECTION_HEADER)&nt_header64[1], nt_header64->FileHeader.NumberOfSections };
     }
     else
     {
         PIMAGE_NT_HEADERS32 nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
         dotnet_dir = &nt_header32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-        section_count = nt_header32->FileHeader.NumberOfSections;
-        section_headers = (PIMAGE_SECTION_HEADER)&nt_header32[1];
+        section_headers = { (PIMAGE_SECTION_HEADER)&nt_header32[1], nt_header32->FileHeader.NumberOfSections };
     }
 
+    // Doesn't contain a .NET header
     bool is_dotnet = dotnet_dir->Size != 0;
     if (!is_dotnet)
-    {
-        ::fclose(fd);
         return false;
-    }
 
-    tgt_header = find_section_header(section_headers, section_count, dotnet_dir->VirtualAddress);
-
-    // [FIXME] Did we find the section to work in?
+    tgt_header = find_section_header(section_headers, dotnet_dir->VirtualAddress);
+    if (tgt_header == nullptr)
+        return false;
 
     PIMAGE_COR20_HEADER cor_header = (PIMAGE_COR20_HEADER)(b + (dotnet_dir->VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData);
-    tgt_header = find_section_header(section_headers, section_count, cor_header->MetaData.VirtualAddress);
-
-    // [FIXME] Did we find the section to work in?
+    tgt_header = find_section_header(section_headers, cor_header->MetaData.VirtualAddress);
+    if (tgt_header == nullptr)
+        return false;
 
     void* ptr = (void*)(b + (cor_header->MetaData.VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData);
     size_t metadata_length = cor_header->MetaData.Size;
 
-    byte* metadata = (byte*)std::malloc(metadata_length);
-    std::memcpy(metadata, ptr, metadata_length);
-    ::fclose(fd);
-
-    b = { metadata, metadata_length };
+    // Capture the metadata portion of the image.
+    malloc_span<byte> metadata = { (byte*)std::malloc(metadata_length), metadata_length };
+    std::memcpy(metadata, ptr, metadata.size());
+    b = std::move(metadata);
     return true;
 }

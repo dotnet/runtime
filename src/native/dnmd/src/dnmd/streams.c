@@ -226,6 +226,7 @@ bool initialize_tables(mdcxt_t* cxt)
 bool validate_tables(mdcxt_t* cxt)
 {
     assert(cxt != NULL);
+    (void*)cxt;
     // [TODO] Reference ECMA-335 and encode table verification.
     return true;
 }
