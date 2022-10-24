@@ -14,6 +14,8 @@
 
     <CoreBuildDependsOn />
     <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
+    <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</ExtractTestClassNamesForHelix>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,7 +30,8 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
-                      AdditionalProperties="RuntimeConfiguration=$(Configuration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir)" />
+                      AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir);
+                                            TestArchiveTestsDir=$(TestArchiveTestsDir);ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix)" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
