@@ -103,13 +103,13 @@ namespace System
                         return elevation.TokenIsElevated != Interop.BOOL.FALSE;
                     }
                 }
+
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
             finally
             {
                 token?.Dispose();
             }
-
-            throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         private static bool Is64BitOperatingSystemWhen32BitProcess =>
