@@ -5095,16 +5095,25 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 
     // Pass down the current mac; if non null we are computing an address
-    GenTree* result = fgMorphTree(tree, mac);
-    DBEXEC(result == fieldNode, result->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
-
-    // Quirk: preserve previous behavior with this NO_CSE.
-    if (isAddr && tree->OperIs(GT_COMMA))
+    GenTree* result;
+    if (tree->OperIsSimple())
     {
-        tree->SetDoNotCSE();
+        result = fgMorphSmpOp(tree, mac);
+        DBEXEC(result != fieldNode, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        // Quirk: preserve previous behavior with this NO_CSE.
+        if (isAddr && result->OperIs(GT_COMMA))
+        {
+            result->SetDoNotCSE();
+        }
+    }
+    else
+    {
+        result = fgMorphTree(tree, mac);
+        DBEXEC(result == fieldNode, result->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
     }
 
-    JITDUMP("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
+    JITDUMP("\nFinal value of Compiler::fgMorphField after morphing:\n");
     DISPTREE(result);
 
     return result;
