@@ -42,18 +42,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-        [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
         [ExpectedWarning("IL2026", "Message from attribute's type.")]
-        [ExpectedWarning("IL2026", "Message from attribute's type.", ProducedBy = ProducedBy.Analyzer)]
         [RequiresOnAttributeCtor]
         [RequiresOnAttributeType]
         [KeptMember(".ctor()")]
         public class Type
         {
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [ExpectedWarning("IL2026", "Message from attribute's type.")]
-            [ExpectedWarning("IL2026", "Message from attribute's type.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             [RequiresOnAttributeType]
             public void Method()
@@ -68,14 +64,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             public int Field;
 
             public int PropertyGetter
             {
                 [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-                [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
                 [RequiresOnAttributeCtor]
                 get { return 0; }
             }
@@ -83,7 +77,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public int PropertySetter
             {
                 [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-                [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
                 [RequiresOnAttributeCtor]
                 set { throw new NotImplementedException(); }
             }
@@ -92,7 +85,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 add { }
                 [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-                [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
                 [RequiresOnAttributeCtor]
                 remove { }
             }
@@ -100,21 +92,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public event EventHandler EventRemove
             {
                 [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-                [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
                 [RequiresOnAttributeCtor]
                 add { }
                 remove { }
             }
 
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             public interface Interface
             {
             }
 
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             public class NestedType : Interface
             {
@@ -122,7 +111,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-        [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
         [RequiresUnreferencedCode("RUC on TypeWithRequires")]
         [RequiresOnAttributeCtor]
         public class TypeWithRequires
@@ -138,14 +126,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             public interface Interface
             {
             }
 
             [ExpectedWarning("IL2026", "Message from attribute's ctor.")]
-            [ExpectedWarning("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
             [RequiresOnAttributeCtor]
             public class NestedType : Interface
             {

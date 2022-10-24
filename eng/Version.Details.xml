@@ -84,9 +84,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Mono.Cecil" Version="0.11.4-alpha.22514.1">
+    <Dependency Name="Mono.Cecil" Version="0.11.4-alpha.22520.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>a2bdfb0489ad1252b858a5f09f0f1e4070acb835</Sha>
+      <Sha>9abbff627af1e6093364ad6fc1a39e103824131d</Sha>
+    </Dependency>
+    <Dependency Name="Mono.Cecil.Pdb" Version="0.11.4-alpha.22520.2">
+      <Uri>https://github.com/dotnet/cecil</Uri>
+      <Sha>9abbff627af1e6093364ad6fc1a39e103824131d</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
