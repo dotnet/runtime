@@ -111,7 +111,7 @@ bool emitLocation::noDistanceWith(emitLocation& loc) const
         return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emitGetInsNumFromCodePos(loc.codePos) == 0);
     }
     // otherwise
-    return this->operator==(loc);
+    return *this == loc;
 }
 
 #ifdef DEBUG
