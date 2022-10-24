@@ -1804,13 +1804,13 @@ private:
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
-        RegRecord* regRecord = getRegisterRecord(regNum);
-        int regCount = regRecord->regCount;
-        regNumber currReg = regNum;
+        RegRecord*   regRecord = getRegisterRecord(regNum);
+        int          regCount  = regRecord->regCount;
+        regNumber    currReg   = regNum;
         LsraLocation loc       = MaxLocation;
         do
         {
-            loc = Min(loc, nextFixedRef[currReg]);
+            loc     = Min(loc, nextFixedRef[currReg]);
             currReg = REG_NEXT(currReg);
         } while (--regCount > 0);
 

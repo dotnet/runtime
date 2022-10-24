@@ -274,7 +274,6 @@ regMaskTP LinearScan::getRegMask(regNumber reg, Interval* interval)
     return mask;
 }
 
-
 regMaskTP LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
@@ -335,7 +334,7 @@ void LinearScan::clearNextIntervalRef(regNumber reg)
     nextIntervalRef[reg] = MaxLocation;
 }
 
-//TODO: Convert all these to something like this:
+// TODO: Convert all these to something like this:
 /* although it generates 3 comparisons, but may be
 *  branch predictor will optimize depending for the
 *  common paths where things are just 1.
@@ -374,22 +373,22 @@ void LinearScan::clearNextIntervalRef(regNumber reg, Referenceable* reference)
     do
     {
         nextIntervalRef[currReg] = MaxLocation;
-        currReg            = REG_NEXT(currReg);
+        currReg                  = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
 
 void LinearScan::updateNextIntervalRef(regNumber reg, Interval* interval)
 {
     LsraLocation nextRefLocation = interval->getNextRefLocation();
-    int       regCount           = interval->regCount;
-    regNumber currReg            = reg;
+    int          regCount        = interval->regCount;
+    regNumber    currReg         = reg;
 #ifdef TARGET_ARM
     assert((regCount == 1) || (interval->registerType == TYP_DOUBLE));
 #endif
     do
     {
         nextIntervalRef[currReg] = nextRefLocation;
-        currReg            = REG_NEXT(currReg);
+        currReg                  = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
 
@@ -397,7 +396,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 {
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
-    weight_t cost  = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+    weight_t  cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
     int       regCount = interval->regCount;
     regNumber currReg  = reg;
 #ifdef TARGET_ARM
@@ -5884,7 +5883,6 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
 
         updateNextIntervalRef(currReg, nextIntervalRef);
         updateSpillCost(currReg, spillCost);
-        
 
         currReg = REG_NEXT(currReg);
         --oldRegCount;
