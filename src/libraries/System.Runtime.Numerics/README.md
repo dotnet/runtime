@@ -21,7 +21,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 TODO: am I missing anything? For example, should we mention the globalization stuff for BigInteger that lives in [./src/System/Globalization](./src/System/Globalization)?
 
 ## Deployment
-[System.Runtime.Numerics](https://www.nuget.org/packages/System.Runtime.Numerics) is included in the shared framework. (TODO is this true?)
+[System.Runtime.Numerics](https://www.nuget.org/packages/System.Runtime.Numerics) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
 
 
 TODO Where is System.Numerics.Tensors? Do we need to discuss that?

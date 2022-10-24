@@ -16,5 +16,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 TODO why does `Vector<T>` live in numerics? Should we mention that somewhere in this README?
 
 ## Deployment
-[System.Runtime.Intrinsics](TODO where does this live?) is included in the shared framework. (TODO is this true?)
-TODO Do we need to separately mention the x86, Wasm, Arm as seperate packages?
+`System.Runtime.Intrinsics` is included in the shared framework.

@@ -12,4 +12,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 * [../../coreclr/System.Private.CoreLib/src/System](../../coreclr/System.Private.CoreLib/src/System)
 
 ## Deployment
-[System.Buffers](https://www.nuget.org/packages/System.Buffers) is included in the shared framework. (TODO is this true?)
+[System.Buffers](https://www.nuget.org/packages/System.Buffers) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.1; it only needs to be installed when targeting .NET Standard 2.0.
