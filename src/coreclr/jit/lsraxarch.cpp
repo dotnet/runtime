@@ -230,8 +230,6 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTree* cmp = tree->gtGetOp1();
             assert(cmp->isContained());
             assert(cmp->OperIsCompare());
-            assert(!cmp->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR));
-            assert(!cmp->gtGetOp2()->OperIs(GT_LCL_VAR_ADDR));
             srcCount = BuildCmp(cmp);
         }
         break;
