@@ -188,7 +188,21 @@ namespace System
         //
 
         // Custom string compares for early application use by config switches, etc
-        //
+#if !MONO
+        // RyuJIT is able to unroll these comparisons more effectively (with optimizations enabled)
+        // than the hand-written version below (it's kept here for Mono runtime).
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+#else
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
@@ -205,6 +219,7 @@ namespace System
                    (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
                     ((value[4] | 0x20) == 'e'));
         }
+#endif
 
         // Determines whether a String represents true or false.
         //
