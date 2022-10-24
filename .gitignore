@@ -342,10 +342,6 @@ jit32
 # performance testing sandbox
 sandbox
 
-#IL linker for testing
-linker
-src/tools/linker/test/Mono.Linker.Tests/TestResults.xml
-
 # Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
 #
 # On Windows, make your own by running these commands from the repo root:
