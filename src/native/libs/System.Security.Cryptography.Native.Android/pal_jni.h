@@ -432,6 +432,7 @@ extern jclass    g_SSLEngine;
 extern jmethodID g_SSLEngineBeginHandshake;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
+extern jmethodID g_SSLEngineGetHandshakeSession;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
 extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineGetSSLParameters;
@@ -483,6 +484,24 @@ extern jmethodID g_KeyAgreementGetInstance;
 extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
+
+// javax/net/ssl/TrustManagerFactory
+extern jclass    g_TrustManagerFactory;
+extern jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+extern jmethodID g_TrustManagerFactoryGetInstance;
+extern jmethodID g_TrustManagerFactoryInit;
+extern jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+extern jclass g_X509TrustManager;
+
+// java/security/cert/Certificate
+extern jclass    g_Certificate;
+extern jmethodID g_CertificateGetEncoded;
+
+// net/dot/android/crypto/DotnetProxyTrustManager
+extern jclass    g_DotnetProxyTrustManager;
+extern jmethodID g_DotnetProxyTrustManagerCtor;
 
 // Compatibility macros
 #if !defined (__mallocfunc)

@@ -11,6 +11,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetSecurity_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
     <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseManagedNtlm>
@@ -41,6 +42,7 @@
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.IO.cs" />
+    <Compile Include="System\Net\Security\RemoteCertificateVerification.cs" />
     <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
@@ -102,7 +104,7 @@
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
@@ -380,6 +382,7 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
+    <Compile Include="System\Net\Security\Pal.Android\TrustManagerProxy.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Android.cs" />

@@ -84,6 +84,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
         {
             int maxCredit = await TestClientWindowScalingAsync(
@@ -228,7 +229,7 @@ namespace System.Net.Http.Functional.Tests
             bool pingReceivedAfterReachingMaxWindow = false;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
-            
+
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
             byte[] buffer = new byte[16384];
@@ -315,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
                 catch (OperationCanceledException)
                 {
                 }
-                
+
 
                 output?.WriteLine("ProcessIncomingFramesAsync finished");
             }

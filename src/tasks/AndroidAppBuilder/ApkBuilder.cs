@@ -182,7 +182,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -247,7 +247,7 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libmonodroid.so` via cmake
+        // 1. Build libmonodroid.so via cmake
 
         string nativeLibraries = "";
         string monoRuntimeLib = "";
@@ -506,6 +506,17 @@ public class ApkBuilder
             Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+
+        // Include prebuilt .dex files
+        int sequence = 2;
+        var dexFiles = Directory.GetFiles(AppDir, "*.dex");
+        foreach (var dexFile in dexFiles)
+        {
+            var classesFileName = $"classes{sequence++}.dex";
+            File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
+            logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+        }
 
         // 4. Align APK
 

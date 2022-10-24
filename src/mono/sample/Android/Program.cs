@@ -3,11 +3,29 @@
 
 using System;
 
-public static class Program
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+var handler = new SocketsHttpHandler();
+handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+
+var client = new HttpClient(handler);
+
+var urls = new[]
 {
-    public static int Main(string[] args)
-    {
-        Console.WriteLine("Hello, Android!"); // logcat
-        return 42;
-    }
+    "https://self-signed.badssl.com",
+    "https://wrong.host.badssl.com",
+    "https://microsoft.com",
+};
+
+var allSucceeded = true;
+foreach (var url in urls)
+{
+    var response = await client.GetAsync(url);
+    Console.WriteLine($"{url} -> {response.StatusCode}");
+
+    allSucceeded &= response.IsSuccessStatusCode;
 }
+
+return allSucceeded ? 42 : 1;

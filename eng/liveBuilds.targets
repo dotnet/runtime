@@ -177,6 +177,10 @@
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Android'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)*.dex;"
+        IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;

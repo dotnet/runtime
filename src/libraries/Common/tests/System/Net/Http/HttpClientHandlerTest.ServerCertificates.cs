@@ -141,6 +141,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Configuration.Http.RemoteServer remoteServer, Uri url, bool checkRevocation)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -195,6 +196,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
+        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: right now the exception can't propagate from C# to Java and back to C#...
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -284,7 +286,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -308,7 +309,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

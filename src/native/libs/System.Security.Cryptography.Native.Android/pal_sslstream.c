@@ -3,6 +3,7 @@
 
 #include "pal_sslstream.h"
 #include "pal_ssl.h"
+#include "pal_trust_manager.h"
 
 // javax/net/ssl/SSLEngineResult$HandshakeStatus
 enum
@@ -283,17 +284,79 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(void)
+static jobject GetSSLContextInstance(JNIEnv* env)
 {
+    jobject sslContext = NULL;
+
+    // sslContext = SSLContext.getInstance("TLSv1.3");
+    jstring tls13 = make_java_string(env, "TLSv1.3");
+    sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls13);
+    if (TryClearJNIExceptions(env))
+    {
+        // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
+        // sslContext = SSLContext.getInstance("TLSv1.2");
+        jstring tls12 = make_java_string(env, "TLSv1.2");
+        sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
+        ReleaseLRef(env, tls12);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+
+cleanup:
+    ReleaseLRef(env, tls13);
+    return sslContext;
+}
+
+static jobject GetKeyStoreInstance(JNIEnv* env)
+{
+    jobject keyStore = NULL;
+    jstring ksType = NULL;
+
+    // String ksType = KeyStore.getDefaultType();
+    // KeyStore keyStore = KeyStore.getInstance(ksType);
+    // keyStore.load(null, null);
+    ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, keyStore, g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+cleanup:
+    ReleaseLRef(env, ksType);
+    return keyStore;
+}
+
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t dotnetRemoteCertificateValidatorHandle)
+{
+    SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
-    // SSLContext sslContext = SSLContext.getDefault();
-    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
-    if (CheckJNIExceptions(env))
-        return NULL;
+    INIT_LOCALS(loc, sslContext, keyStore, trustManagers);
 
-    SSLStream* sslStream = xcalloc(1, sizeof(SSLStream));
-    sslStream->sslContext = ToGRef(env, sslContext);
+    loc[sslContext] = GetSSLContextInstance(env);
+    if (loc[sslContext] == NULL)
+        goto cleanup;
+
+    // We only need to init the key store, we don't use it
+    IGNORE_RETURN(GetKeyStoreInstance(env));
+
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        // Init trust managers
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
+
+    // Init the SSLContext
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, NULL, loc[trustManagers], NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    sslStream = xcalloc(1, sizeof(SSLStream));
+    sslStream->sslContext = ToGRef(env, loc[sslContext]);
+    loc[sslContext] = NULL;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
     return sslStream;
 }
 
@@ -360,7 +423,8 @@ cleanup:
     return ret;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey,
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t dotnetRemoteCertificateValidatorHandle,
+                                                               uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
                                                                jobject* /*X509Certificate[]*/ certs,
@@ -369,29 +433,16 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
-    INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers);
+    INIT_LOCALS(loc, sslContext, keyStore, kmfType, kmf, keyManagers, trustManagers);
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-    loc[tls13] = make_java_string(env, "TLSv1.3");
-    loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, loc[tls13]);
-    if (TryClearJNIExceptions(env))
-    {
-        // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
-        // sslContext = SSLContext.getInstance("TLSv1.2");
-        jobject tls12 = make_java_string(env, "TLSv1.2");
-        loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
-        ReleaseLRef(env, tls12);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    }
+    loc[sslContext] = GetSSLContextInstance(env);
+    if (loc[sslContext] == NULL)
+        goto cleanup;
 
-    // String ksType = KeyStore.getDefaultType();
-    // KeyStore keyStore = KeyStore.getInstance(ksType);
-    // keyStore.load(null, null);
-    loc[ksType] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
-    loc[keyStore] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[ksType]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[keyStore], g_KeyStoreLoad, NULL, NULL);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[keyStore] = GetKeyStoreInstance(env);
+    if (loc[keyStore] == NULL)
+        goto cleanup;
 
     int32_t status =
         AddCertChainToStore(env, loc[keyStore], pkcs8PrivateKey, pkcs8PrivateKeyLen, algorithm, certs, certsLen);
@@ -409,10 +460,19 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // KeyManager[] keyManagers = kmf.getKeyManagers();
-    // sslContext.init(keyManagers, null, null);
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], NULL, NULL);
+
+    if (dotnetRemoteCertificateValidatorHandle != 0)
+    {
+        // TrustManager[] trustMangers = initTrustManagersWithCustomValidatorProxy(dotnetRemoteCertificateValidatorHandle);
+        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, dotnetRemoteCertificateValidatorHandle);
+        if (loc[trustManagers] == NULL)
+            goto cleanup;
+    }
+
+    // sslContext.init(keyManagers, trustManagers, null);
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     sslStream = xcalloc(1, sizeof(SSLStream));
@@ -737,6 +797,34 @@ cleanup:
     return ret;
 }
 
+static jobject getPeerCertificates(JNIEnv* env, SSLStream* sslStream)
+{
+    jobject certificates = NULL;
+    jobject sslSession = NULL;
+    bool isHandshaking = false;
+
+    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLession.
+
+    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    isHandshaking = IsHandshaking(handshakeStatus);
+    sslSession = isHandshaking
+        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+        : sslStream->sslSession;
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    certificates = (*env)->CallObjectMethod(env, sslSession, g_SSLSessionGetPeerCertificates);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+cleanup:
+    if (isHandshaking)
+        ReleaseLRef(env, sslSession);
+
+    return certificates;
+}
+
 jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream)
 {
     abort_if_invalid_pointer_argument (sslStream);
@@ -745,13 +833,11 @@ jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLS
     jobject ret = NULL;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
-    // out = certs[0];
-    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
-
-    // If there are no peer certificates, getPeerCertificates will throw. Return null to indicate no certificate.
-    if (TryClearJNIExceptions(env))
+    jobjectArray certs = getPeerCertificates(env, sslStream);
+    if (certs == NULL)
         goto cleanup;
 
+    // out = certs[0];
     jsize len = (*env)->GetArrayLength(env, certs);
     if (len > 0)
     {
@@ -761,7 +847,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLS
     }
 
 cleanup:
-    (*env)->DeleteLocalRef(env, certs);
+    ReleaseLRef(env, certs);
     return ret;
 }
 
@@ -776,15 +862,13 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
     *outLen = 0;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
+    jobjectArray certs = getPeerCertificates(env, sslStream);
+    if (certs == NULL)
+        goto cleanup;
+
     // for (int i = 0; i < certs.length; i++) {
     //     out[i] = certs[i];
     // }
-    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
-
-    // If there are no peer certificates, getPeerCertificates will throw. Return null and length of zero to indicate no certificates.
-    if (TryClearJNIExceptions(env))
-        goto cleanup;
-
     jsize len = (*env)->GetArrayLength(env, certs);
     *outLen = len;
     if (len > 0)
@@ -914,14 +998,30 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     bool ret = false;
     INIT_LOCALS(loc, name, verifier);
 
+    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLession.
+
+    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    bool isHandshaking = IsHandshaking(handshakeStatus);
+
+    jobject sslSession = isHandshaking
+        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+        : sslStream->sslSession;
+
+    if (CheckJNIExceptions(env))
+        return false;
+
     // HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
     // return verifier.verify(hostname, sslSession);
     loc[name] = make_java_string(env, hostname);
     loc[verifier] =
         (*env)->CallStaticObjectMethod(env, g_HttpsURLConnection, g_HttpsURLConnectionGetDefaultHostnameVerifier);
-    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslStream->sslSession);
+    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslSession);
 
     RELEASE_LOCALS(loc, env);
+    if (isHandshaking)
+        ReleaseLRef(env, sslSession);
+
     return ret;
 }
 

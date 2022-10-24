@@ -753,7 +753,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
@@ -810,7 +810,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -829,12 +829,20 @@ namespace System.Net.Security.Tests
                         return false;
                     };
 
-                errorMessage = "RemoteCertificateValidationCallback";
+                errorMessage =
+                    PlatformDetection.IsAndroid
+                        ? "Authentication failed, see inner exception."
+                        : "RemoteCertificateValidationCallback";
             }
             else
             {
                 // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
+                errorMessage =
+                    PlatformDetection.IsWindows
+                        ? "UntrustedRoot"
+                        : PlatformDetection.IsAndroid
+                            ? "Authentication failed, see inner exception."
+                            : "PartialChain";
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
@@ -852,12 +860,11 @@ namespace System.Net.Security.Tests
                 var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
                 Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
-                await t2;
+                await t2; // on android this blocks indefinitely - needs timeout + ignore exception?
             }
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {

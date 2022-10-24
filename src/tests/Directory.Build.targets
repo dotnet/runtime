@@ -169,12 +169,16 @@
       <!-- Filter static lib files for Windows -->
       <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
 
+      <!-- Filter .dex files for Android -->
+      <NativeProjectBinariesDexLibFilter Condition="'%(Extension)' == '.dex'" Include="@(NativeProjectBinariesMatched)" />
+
       <!-- Merge the filtered lists -->
       <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesDexLibFilter)" />
     </ItemGroup>
 
      <!-- There are currently no native project binaries on wasm or Android -->
@@ -297,7 +301,7 @@
         Lines="NoMonoAot"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
-  
+
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
         Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"

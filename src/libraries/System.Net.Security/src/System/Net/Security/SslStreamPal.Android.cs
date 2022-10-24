@@ -31,10 +31,11 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(verifier: null, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
+            RemoteCertificateVerification verifier,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -43,7 +44,7 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(verifier, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal Renegotiate(
@@ -168,6 +169,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
+            RemoteCertificateVerification? verifier,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -180,7 +182,7 @@ namespace System.Net.Security
 
                 if ((context == null) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(verifier, sslAuthenticationOptions);
                     sslContext = context;
                 }
 
