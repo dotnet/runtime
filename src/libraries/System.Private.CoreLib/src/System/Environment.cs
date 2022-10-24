@@ -18,8 +18,7 @@ namespace System
         /// </summary>
         internal static bool IsSingleProcessor => ProcessorCount == 1;
 
-        private static bool s_privilegedProcess;
-        private static volatile int s_pendingPrivilegedProcess;
+        private static volatile sbyte s_privilegedProcess;
 
         /// <summary>
         /// Gets whether the current process is authorized to perform security-relevant functions.
@@ -28,12 +27,11 @@ namespace System
         {
             get
             {
-                if (s_pendingPrivilegedProcess == 0)
+                if (s_privilegedProcess == 0)
                 {
-                    s_privilegedProcess = IsAdminProcess();
-                    s_pendingPrivilegedProcess = 1;
+                    s_privilegedProcess = IsAdminProcess() ? (sbyte)1 : (sbyte)-1;
                 }
-                return s_privilegedProcess;
+                return s_privilegedProcess > 0;
             }
         }
 
