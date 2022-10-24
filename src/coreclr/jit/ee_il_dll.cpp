@@ -646,16 +646,16 @@ void Compiler::eeSetLVcount(unsigned count)
 {
     assert(opts.compScopeInfo);
 
-    JITDUMP("VarLocInfo count is %d\n", count);
+    JITDUMP("VarLocInfo estimated count is %d\n", count);
 
     eeVarsCount = count;
     if (eeVarsCount)
     {
-        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(eeVarsCount * sizeof(eeVars[0]));
+        eeJitTempVars = new (this, CMK_DebugInfo) VarResultInfo[count];
     }
     else
     {
-        eeVars = nullptr;
+        eeJitTempVars = nullptr;
     }
 }
 
@@ -672,12 +672,12 @@ void Compiler::eeSetLVinfo(unsigned                          which,
     assert(eeVarsCount > 0);
     assert(which < eeVarsCount);
 
-    if (eeVars != nullptr)
+    if (eeJitTempVars != nullptr)
     {
-        eeVars[which].startOffset = startOffs;
-        eeVars[which].endOffset   = startOffs + length;
-        eeVars[which].varNumber   = varNum;
-        eeVars[which].loc         = varLoc;
+        eeJitTempVars[which].startOffset = startOffs;
+        eeJitTempVars[which].endOffset   = startOffs + length;
+        eeJitTempVars[which].varNumber   = varNum;
+        eeJitTempVars[which].loc         = varLoc;
     }
 }
 
@@ -686,6 +686,17 @@ void Compiler::eeSetLVdone()
     // necessary but not sufficient condition that the 2 struct definitions overlap
     assert(sizeof(eeVars[0]) == sizeof(ICorDebugInfo::NativeVarInfo));
     assert(opts.compScopeInfo);
+
+    if (eeVarsCount)
+    {
+        // Ask the vm for memory and copy the pre-calculated VarResultInfo into it
+        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(eeVarsCount * sizeof(eeVars[0]));
+        memcpy(eeVars, eeJitTempVars, eeVarsCount * sizeof(eeVars[0]));
+    }
+    else
+    {
+        eeVars = nullptr;
+    }
 
 #ifdef DEBUG
     if (verbose || opts.dspDebugInfo)

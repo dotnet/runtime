@@ -7718,7 +7718,12 @@ public:
         UNATIVE_OFFSET             endOffset;
         DWORD                      varNumber;
         CodeGenInterface::siVarLoc loc;
-    } * eeVars;
+    };
+    // We use a temporary buffer to copy all variable debug info,
+    // and once we know exactly the amount of info to report,
+    // we ask the vm for memory and copy it.
+    VarResultInfo* eeJitTempVars; // temporary buffer
+    VarResultInfo* eeVars;
     void eeSetLVcount(unsigned count);
     void eeSetLVinfo(unsigned                          which,
                      UNATIVE_OFFSET                    startOffs,
