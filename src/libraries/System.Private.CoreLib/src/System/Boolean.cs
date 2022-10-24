@@ -187,42 +187,6 @@ namespace System
         // Static Methods
         //
 
-        // Custom string compares for early application use by config switches, etc
-#if !MONO
-        // RyuJIT is able to unroll these comparisons more effectively (with optimizations enabled)
-        // than the hand-written version below (it's kept here for Mono runtime).
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
-        }
-#else
-        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
-            ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720074ul : 0x74007200750065ul;
-            return value.Length == 4 &&
-                   (MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == true_val;
-        }
-
-        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            // "fals" as a ulong, each char |'d with 0x0020 for case-insensitivity
-            ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610066ul : 0x660061006C0073ul;
-            return value.Length == 5 &&
-                   (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
-                    ((value[4] | 0x20) == 'e'));
-        }
-#endif
-
-        // Determines whether a String represents true or false.
-        //
         public static bool Parse(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -238,6 +202,9 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? value, out bool result) =>
             TryParse(value.AsSpan(), out result);
 
+        // AggressiveOptimization here gives VM a hint to bypass Tier0 and have a version where Equals is unrolled by RyuJIT
+        // so we can parse configs on start quicker
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
             // Boolean.{Try}Parse allows for optional whitespace/null values before and
@@ -247,13 +214,13 @@ namespace System
             // to trimming and making a second post-trimming attempt at matching those
             // same strings.
 
-            if (IsTrueStringIgnoreCase(value))
+            if (value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase))
             {
                 result = true;
                 return true;
             }
 
-            if (IsFalseStringIgnoreCase(value))
+            if (value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase))
             {
                 result = false;
                 return true;
