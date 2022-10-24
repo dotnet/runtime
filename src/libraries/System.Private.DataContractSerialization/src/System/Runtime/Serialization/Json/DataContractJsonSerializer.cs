@@ -117,18 +117,10 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_knownTypeCollection == null)
-                {
-                    if (knownTypeList != null)
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
-                    }
-                    else
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(Type.EmptyTypes);
-                    }
-                }
-                return _knownTypeCollection;
+                return _knownTypeCollection ??=
+                    knownTypeList != null ?
+                        new ReadOnlyCollection<Type>(knownTypeList) :
+                        ReadOnlyCollection<Type>.Empty;
             }
         }
 

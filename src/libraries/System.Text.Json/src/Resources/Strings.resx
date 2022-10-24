@@ -247,10 +247,10 @@
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
   <data name="TypeInfoImmutable" xml:space="preserve">
-    <value>JsonTypeInfo cannot be changed after first usage.</value>
+    <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
   </data>
   <data name="PropertyInfoImmutable" xml:space="preserve">
-    <value>JsonPropertyInfo cannot be changed after first usage.</value>
+    <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
   </data>
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
@@ -337,7 +337,7 @@
     <value>The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options.</value>
   </data>
   <data name="SerializerOptionsReadOnly" xml:space="preserve">
-    <value>Serializer options cannot be changed once serialization or deserialization has occurred.</value>
+    <value>This JsonSerializerOptions instance is read-only or has already been used in serialization or deserialization.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
     <value>Stream is not writable.</value>

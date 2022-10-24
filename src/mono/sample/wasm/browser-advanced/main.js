@@ -52,6 +52,9 @@ try {
     if (typeof Module.GL !== "object") {
         exit(-10, "Can't find GL");
     }
+    if (typeof Module.FS.filesystems.IDBFS !== "object") {
+        exit(-10, "Can't find FS.filesystems.IDBFS");
+    }
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;

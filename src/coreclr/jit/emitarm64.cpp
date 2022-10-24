@@ -3041,7 +3041,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             {
                 canEncode = true;
             }
-            if (allow_MSL)
+
+            // MSL is only supported for 32-bit.
+            if (allow_MSL && (size == EA_4BYTE))
             {
                 if ((bySh == 1) && (immCheck == 0xFF))
                 {

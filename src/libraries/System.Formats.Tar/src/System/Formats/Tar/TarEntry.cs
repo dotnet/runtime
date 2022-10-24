@@ -138,10 +138,12 @@ namespace System.Formats.Tar
         /// <remarks>The value in this field has no effect on Windows platforms.</remarks>
         public UnixFileMode Mode
         {
-            get => (UnixFileMode)_header._mode;
+            // Some paths do not use the setter, and we want to return valid UnixFileMode.
+            // This mask only keeps the least significant 12 bits.
+            get => (UnixFileMode)(_header._mode & (int)TarHelpers.ValidUnixFileModes);
             set
             {
-                if ((int)value is < 0 or > 4095) // 4095 in decimal is 7777 in octal
+                if ((value & ~TarHelpers.ValidUnixFileModes) != 0) // throw on invalid UnixFileModes
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }

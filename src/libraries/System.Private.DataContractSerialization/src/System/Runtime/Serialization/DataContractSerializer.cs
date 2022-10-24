@@ -152,18 +152,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_knownTypeCollection == null)
-                {
-                    if (_knownTypeList != null)
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(_knownTypeList);
-                    }
-                    else
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(Type.EmptyTypes);
-                    }
-                }
-                return _knownTypeCollection;
+                return _knownTypeCollection ??=
+                    _knownTypeList != null ?
+                        new ReadOnlyCollection<Type>(_knownTypeList) :
+                        ReadOnlyCollection<Type>.Empty;
             }
         }
 
