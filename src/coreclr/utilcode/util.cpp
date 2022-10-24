@@ -2895,7 +2895,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[GUID_STR_BUFFER_MIN_LEN];
+            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

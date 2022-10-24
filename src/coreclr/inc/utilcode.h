@@ -3421,7 +3421,7 @@ private:
 };
 
 // 38 characters + 1 null terminating.
-#define GUID_STR_BUFFER_MIN_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
+#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
 
 //*****************************************************************************
 // Convert a GUID into a pointer to a string

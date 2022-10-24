@@ -444,7 +444,7 @@ GuidToLPSTR(
     _Out_writes_(cchGuid) LPSTR szGuid,     // String into which the GUID is stored
                           DWORD  cchGuid)   // Count in chars
 {
-    if (cchGuid < GUID_STR_BUFFER_MIN_LEN)
+    if (cchGuid < GUID_STR_BUFFER_LEN)
         return 0;
 
     return sprintf_s(szGuid, cchGuid, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
@@ -508,7 +508,7 @@ GuidToLPWSTR(
     // successive fields break the GUID into the form DWORD-WORD-WORD-WORD-WORD.DWORD
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
-    if (cchGuid < GUID_STR_BUFFER_MIN_LEN)
+    if (cchGuid < GUID_STR_BUFFER_LEN)
         return 0;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
