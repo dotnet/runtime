@@ -237,7 +237,11 @@ declare type ModuleAPI = {
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
-interface IMemoryView {
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+interface IMemoryView extends IDisposable {
     /**
      * copies elements from provided source to the wasm memory.
      * target has to have the elements of the same type as the underlying C# array.
