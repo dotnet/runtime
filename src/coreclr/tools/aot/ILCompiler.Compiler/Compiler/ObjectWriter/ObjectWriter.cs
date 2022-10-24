@@ -94,15 +94,6 @@ namespace ILCompiler.ObjectWriter
             return sectionIndex;
         }
 
-        protected void GetSection(
-            int sectionIndex,
-            out Stream sectionStream,
-            out List<SymbolicRelocation> relocationList)
-        {
-            sectionStream = _sectionIndexToStream[sectionIndex];
-            relocationList = _sectionIndexToRelocations[sectionIndex];
-        }
-
         protected abstract void EmitRelocation(
             int sectionIndex,
             List<SymbolicRelocation> relocationList,
