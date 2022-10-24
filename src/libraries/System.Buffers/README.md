@@ -10,6 +10,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Source
 * [../../coreclr/System.Private.CoreLib/src/System](../../coreclr/System.Private.CoreLib/src/System)
+* Tests for this library live in [./tests](./tests). TODO do they live anywhere else?
 
 ## Deployment
 [System.Buffers](https://www.nuget.org/packages/System.Buffers) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.1; it only needs to be installed when targeting .NET Standard 2.0.

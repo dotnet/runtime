@@ -12,6 +12,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Source
 * [../../coreclr/System.Private.CoreLib/src/System](../../coreclr/System.Private.CoreLib/src/System)
+* Tests for this library live in [./tests](./tests). TODO do they live anywhere else?
 
 ## Deployment
 [System.Runtime](https://www.nuget.org/packages/System.Runtime) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

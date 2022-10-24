@@ -18,6 +18,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 ## Source
 * `BigInteger` and `Complex`: [./src/System/Numerics](./src/System/Numerics).
 * Everything else: [../../coreclr/System.Private.CoreLib/src/System/Numerics](../../coreclr/System.Private.CoreLib/src/System/Numerics)
+    * TODO: Where do the tests for these live?
 TODO: am I missing anything? For example, should we mention the globalization stuff for BigInteger that lives in [./src/System/Globalization](./src/System/Globalization)?
 
 ## Deployment

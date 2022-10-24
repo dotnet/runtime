@@ -10,9 +10,11 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Source
 * `Vector64/128/256/512`: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics)
+    * Tests live in [./tests/Vectors](./tests/Vectors)
 * `Arm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm)
 * `Wasm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm)
 * `x86` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86)
+TODO where do other tests for this library live?
 
 ## Deployment
 `System.Runtime.Intrinsics` is included in the shared framework.
