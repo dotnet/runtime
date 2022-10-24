@@ -335,28 +335,22 @@ namespace System.Xml.Schema
             return ToString(DurationType.Duration);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
-        {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            Format(ref sb, durationType);
-
-            return sb.TryCopyTo(destination, out charsWritten);
-        }
-
         /// <summary>
         /// Return the string representation according to xsd:duration rules, xdt:dayTimeDuration rules, or
         /// xdt:yearMonthDuration rules.
         /// </summary>
         internal string ToString(DurationType durationType)
         {
-            var vsb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            Format(ref vsb, durationType);
+            Span<char> destination = stackalloc char[CharStackBufferSize];
+            bool success = TryFormat(destination, out int _, durationType);
+            Debug.Assert(success);
 
-            return vsb.ToString();
+            return destination.ToString();
         }
 
-        private void Format(ref ValueStringBuilder vsb, DurationType durationType)
+        public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
         {
+            var vsb = new ValueStringBuilder(destination);
             int nanoseconds, digit, zeroIdx, len;
 
             if (IsNegative)
@@ -426,8 +420,9 @@ namespace System.Xml.Schema
                             }
 
                             vsb.EnsureCapacity(zeroIdx + 1);
-                            var nanoSpanLength = zeroIdx - len + 1;
-                            tmpSpan[..nanoSpanLength].TryCopyTo(vsb.AppendSpan(nanoSpanLength));
+                            int nanoSpanLength = zeroIdx - len + 1;
+                            bool successCopy = tmpSpan[..nanoSpanLength].TryCopyTo(vsb.AppendSpan(nanoSpanLength));
+                            Debug.Assert(successCopy);
                         }
                         vsb.Append('S');
                     }
@@ -443,6 +438,9 @@ namespace System.Xml.Schema
                 if (vsb[vsb.Length - 1] == 'P')
                     vsb.Append("0M");
             }
+
+            charsWritten = vsb.Length;
+            return destination.Length >= vsb.Length;
         }
 
         internal static Exception? TryParse(string s, out XsdDuration result)
