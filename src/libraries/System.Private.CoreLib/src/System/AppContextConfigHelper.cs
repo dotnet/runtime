@@ -15,10 +15,18 @@ namespace System
             if (!AppContext.TryGetSwitch(switchName, out bool ret))
             {
                 string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                ret = switchValue != null ? (switchValue.Equals("true", StringComparison.OrdinalIgnoreCase) || switchValue.Equals("1")) : defaultValue;
+                ret = switchValue != null ? (IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1")) : defaultValue;
             }
 
             return ret;
+        }
+
+        private static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
+            ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720074ul : 0x74007200750065ul;
+            return value.Length == 4 &&
+                   (MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == true_val;
         }
 
         internal static int GetInt32Config(string configName, int defaultValue, bool allowNegative = true)
