@@ -3478,38 +3478,21 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 {
     RegRecord* regRecToUnassign = regRec;
-#ifdef TARGET_ARM
-    RegRecord* anotherRegRec = nullptr;
+    RegRecord* firstRegRec      = getFirstRegRec(regRec);
+    regNumber  currReg          = firstRegRec->regNum;
+    int        regCount         = regRec->regCount;
 
-    if ((regRecToUnassign->assignedInterval != nullptr) &&
-        (regRecToUnassign->assignedInterval->registerType == TYP_DOUBLE))
+    do
     {
-        // If the register type of interval(being unassigned or new) is TYP_DOUBLE,
-        // It should have to be valid double register (even register)
-        if (!genIsValidDoubleReg(regRecToUnassign->regNum))
+        RegRecord* regRec        = getRegisterRecord(currReg);
+        if (regRec->assignedInterval != nullptr)
         {
-            regRecToUnassign = findAnotherHalfRegRec(regRec);
+            unassignPhysReg(regRec, regRec->assignedInterval->recentRefPosition);
         }
-    }
-    else
-    {
-        if (newRegType == TYP_DOUBLE)
-        {
-            anotherRegRec = getSecondHalfRegRec(regRecToUnassign);
-        }
-    }
-#endif
 
-    if (regRecToUnassign->assignedInterval != nullptr)
-    {
-        unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
-    }
-#ifdef TARGET_ARM
-    if ((anotherRegRec != nullptr) && (anotherRegRec->assignedInterval != nullptr))
-    {
-        unassignPhysReg(anotherRegRec, anotherRegRec->assignedInterval->recentRefPosition);
-    }
-#endif
+        currReg = REG_NEXT(currReg);
+
+    } while (--regCount > 0);
 }
 
 //------------------------------------------------------------------------
