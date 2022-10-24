@@ -7,8 +7,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
-    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
 
