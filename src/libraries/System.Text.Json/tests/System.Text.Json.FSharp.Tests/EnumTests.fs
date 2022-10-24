@@ -31,11 +31,16 @@ options.Converters.Add(new JsonStringEnumConverter())
 
 [<Fact>]
 let ``Deserialize With Exception If Enum Contains Special Char`` () =
-    Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
+    let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
+    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
+    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
+
 
 [<Fact>]
 let ``Serialize With Exception If Enum Contains Special Char`` () =
-    Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
+    let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
+    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
+    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
 
 [<Fact>]
 let ``Successful Deserialize Normal Enum`` () =
@@ -44,8 +49,12 @@ let ``Successful Deserialize Normal Enum`` () =
 
 [<Fact>]
 let ``Fail Deserialize Good Value Of Bad Enum Type`` () =
-    Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
+    let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
+    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
+    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
 
 [<Fact>]
 let ``Fail Serialize Good Value Of Bad Enum Type`` () =
-    Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
+    let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
+    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
+    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)

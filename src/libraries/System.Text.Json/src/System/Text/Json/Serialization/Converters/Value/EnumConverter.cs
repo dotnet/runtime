@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             // If enum contains special char, make it failed to serialize or deserialize.
             if (s_containsSpecialChar)
             {
-                ThrowHelper.ThrowJsonException();
+                ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T));
             }
 
             _converterOptions = converterOptions;

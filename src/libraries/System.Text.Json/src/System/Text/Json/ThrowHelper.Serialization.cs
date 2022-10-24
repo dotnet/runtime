@@ -812,6 +812,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name));
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_UnrecognizedTypeDiscriminator(object typeDiscriminator)
         {
             ThrowJsonException(SR.Format(SR.Polymorphism_UnrecognizedTypeDiscriminator, typeDiscriminator));
