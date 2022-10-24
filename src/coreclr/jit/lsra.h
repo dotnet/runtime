@@ -997,6 +997,10 @@ private:
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
 
+    regNumber getFirstRegNum(regNumber regNum, int regIdx);
+    RegRecord* getFirstRegRec(RegRecord* regRec);
+    regNumber getFirstRegNum(regNumber regNum);
+
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
@@ -1739,26 +1743,42 @@ private:
         makeRegsAvailable(regMask);
     }
 
+    void updateNextIntervalRef(regNumber reg, LsraLocation nextRefLocation);
+    void updateSpillCost(regNumber reg, weight_t spillCost);
+
     void updateNextIntervalRef(regNumber reg, Interval* interval);
     void updateSpillCost(regNumber reg, Interval* interval);
+
+    void clearSpillCost(regNumber reg);
+    void clearNextIntervalRef(regNumber reg);
 
     void clearSpillCost(regNumber reg, Referenceable* reference);
     void clearNextIntervalRef(regNumber reg, Referenceable* reference);
 
     regMaskTP m_RegistersWithConstants;
 
+    void clearConstantRegs(regMaskTP regMask)
+    {
+        m_RegistersWithConstants &= ~regMask;
+    }
+
     void clearConstantReg(regNumber reg, Interval* interval)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, interval);
+        clearConstantRegs(getRegMask(reg, interval));
     }
     void clearConstantReg(regNumber reg)
     {
         m_RegistersWithConstants &= ~getRegMask(reg);
     }
 
+    void setConstantRegs(regMaskTP regMask)
+    {
+        m_RegistersWithConstants |= regMask;
+    }
+
     void setConstantReg(regNumber reg, Interval* interval)
     {
-        m_RegistersWithConstants |= getRegMask(reg, interval);
+        setConstantRegs(getRegMask(reg, interval));
     }
     void setConstantReg(regNumber reg)
     {

@@ -325,6 +325,16 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
     return result;
 }
 
+void LinearScan::clearSpillCost(regNumber reg)
+{
+    spillCost[reg] = 0;
+}
+
+void LinearScan::clearNextIntervalRef(regNumber reg)
+{
+    nextIntervalRef[reg] = MaxLocation;
+}
+
 //TODO: Convert all these to something like this:
 /* although it generates 3 comparisons, but may be
 *  branch predictor will optimize depending for the
@@ -398,6 +408,16 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
         spillCost[currReg] = cost;
         currReg            = REG_NEXT(currReg);
     } while (--regCount > 0);
+}
+
+void LinearScan::updateNextIntervalRef(regNumber reg, LsraLocation nextRefLocation)
+{
+    nextIntervalRef[reg] = nextRefLocation;
+}
+
+void LinearScan::updateSpillCost(regNumber reg, weight_t spillCostForReg)
+{
+    spillCost[reg] = spillCostForReg;
 }
 
 //------------------------------------------------------------------------
@@ -3839,6 +3859,50 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 }
 #endif // DEBUG
 
+regNumber LinearScan::getFirstRegNum(regNumber regNum, int regIdx)
+{
+    switch (regIdx)
+    {
+        case 0:
+            return regNum;
+
+        case 3:
+            regNum = REG_PREV(regNum);
+            FALLTHROUGH;
+        case 2:
+            regNum = REG_PREV(regNum);
+            FALLTHROUGH;
+        case 1:
+            regNum = REG_PREV(regNum);
+            FALLTHROUGH;
+        default:
+            printf("%d registers are not supported.\n", regIdx);
+            assert(false);
+            break;
+    }
+    return regNum;
+}
+
+RegRecord* LinearScan::getFirstRegRec(RegRecord* regRec)
+{
+    // If regIdx > 0, this should be definitely consecutive
+    // registers case.
+    assert((regRec->regIdx == 0) || (regRec->regCount > 1));
+
+    return getRegisterRecord(getFirstRegNum(regRec->regNum, regRec->regIdx));
+}
+
+regNumber LinearScan::getFirstRegNum(regNumber regNum)
+{
+    RegRecord* regRec = getRegisterRecord(regNum);
+
+    // If regIdx > 0, this should be definitely consecutive
+    // registers case.
+    assert((regRec->regIdx == 0) || (regRec->regCount > 1));
+
+    return getFirstRegNum(regRec->regNum, regRec->regIdx);
+}
+
 #ifdef TARGET_ARM
 //--------------------------------------------------------------------------------------
 // isSecondHalfReg: Test if recRec is second half of double register
@@ -5789,43 +5853,68 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
 void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
 {
     assert(interval != nullptr);
+    // Need to have following cases for interval->regCount > 1
+    //  1.  If reg->regIdx == 0, we are start of the consecutive registers,
+    //      just iterate over regCount and `reg->assignedInterval = interval`.
+    //  2.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
+    //      and then just iterate over regCount and `reg->assignedInterval = interval`.
+    //
+    // Need to have following cases for interval->regCount == 1 and oldAssignedInterval->regCount > 1
+    //  3.  If reg->regIdx == 0, we are start of consecutive registers,
+    //      just iterate over regCount and `reg->assignedInterval = nullptr`.
+    //  4.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
+    //      and then just iterate over regCount and `reg->assignedInterval = nullptr`.
 
-#ifdef TARGET_ARM
-    // Update overlapping floating point register for TYP_DOUBLE.
-    Interval* oldAssignedInterval = reg->assignedInterval;
-    regNumber doubleReg           = REG_NA;
-    if (interval->registerType == TYP_DOUBLE)
-    {
-        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
-        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
-        anotherHalfReg->assignedInterval = interval;
-    }
-    else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
-    {
-        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
-        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
-        anotherHalfReg->assignedInterval = nullptr;
-    }
-    if (doubleReg != REG_NA)
-    {
-        clearNextIntervalRef(doubleReg, interval);
-        clearSpillCost(doubleReg, interval);
-        clearConstantReg(doubleReg, interval);
-    }
-#endif
+    int newRegCount = interval->regCount;
+    int oldRegCount = reg->assignedInterval == nullptr ? 0 : reg->assignedInterval->regCount;
 
-    reg->assignedInterval = interval;
-    setRegInUse(reg->regNum, interval);
+    regNumber firstRegNum = getFirstRegNum(reg->regNum);
+    regNumber currReg     = firstRegNum;
+    regMaskTP regsInUse   = 0;
+
+    LsraLocation nextIntervalRef = interval->getNextRefLocation();
+    weight_t     spillCost = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+
+    // We just to replace the oldAssignedInterval with new ones.
+    do
+    {
+        RegRecord* regRec        = getRegisterRecord(currReg);
+        regRec->assignedInterval = interval;
+        regsInUse |= genRegMask(currReg);
+
+        updateNextIntervalRef(currReg, nextIntervalRef);
+        updateSpillCost(currReg, spillCost);
+        
+
+        currReg = REG_NEXT(currReg);
+        --oldRegCount;
+    } while (--newRegCount > 0);
+
+    // If the oldAssignedInterval had more consecutive registers assigned,
+    // then reset them.
+    while (oldRegCount > 0)
+    {
+        RegRecord* regRec        = getRegisterRecord(currReg);
+        regRec->assignedInterval = nullptr;
+        regRec->regCount         = 0;
+        regRec->regIdx           = 1;
+
+        clearNextIntervalRef(currReg);
+        clearSpillCost(currReg);
+
+        currReg = REG_NEXT(currReg);
+        --oldRegCount;
+    }
+
+    setRegsInUse(regsInUse);
     if (interval->isConstant)
     {
-        setConstantReg(reg->regNum, interval);
+        setConstantRegs(regsInUse);
     }
     else
     {
-        clearConstantReg(reg->regNum, interval);
+        clearConstantRegs(regsInUse);
     }
-    updateNextIntervalRef(reg->regNum, interval);
-    updateSpillCost(reg->regNum, interval);
 }
 
 //-----------------------------------------------------------------------------
