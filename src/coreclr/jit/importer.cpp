@@ -3797,7 +3797,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // However, when we're allowed to perform quick opts we want to still have exact classes for boxed enums
         // in case if we hit Enum.HasFlag.
-        if (useSharedBoxTemp && opts.OptimizationEnabled(OPT_Lightweight) &&
+        const bool tooManyLocals = lvaCount > 128;
+        if (useSharedBoxTemp && opts.OptimizationEnabled(OPT_Lightweight) && !tooManyLocals &&
             (info.compCompHnd->getTypeForPrimitiveNumericClass(pResolvedToken->hClass) == CORINFO_TYPE_UNDEF))
         {
             useSharedBoxTemp = false;
