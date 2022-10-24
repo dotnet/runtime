@@ -16,6 +16,7 @@
     <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
     <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</ExtractTestClassNamesForHelix>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
+    <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
   </PropertyGroup>
 
   <PropertyGroup>
