@@ -997,6 +997,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
+#ifdef TARGET_ARM64
+	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+		return NULL;
+#endif
+
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
 		//check_no_intrinsic_cattr (cmethod);
