@@ -7118,6 +7118,7 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     GenTree* cmp = node->gtGetOp1();
 
     assert(cmp->OperIsCompare());
+    assert(!cmp->gtSetFlags());
 
     MakeSrcContained(node, cmp);
 }
