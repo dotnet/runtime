@@ -276,9 +276,8 @@ fi
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
 
+      <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
-$(CLRTestBashPreCommands)
-
 # Build wasm app containing the test dll
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
