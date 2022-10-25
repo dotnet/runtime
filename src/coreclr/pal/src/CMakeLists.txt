@@ -171,7 +171,6 @@ set(SOURCES
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
-  numa/numa.cpp
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp

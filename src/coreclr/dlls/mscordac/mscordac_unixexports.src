@@ -31,7 +31,6 @@ nativeStringResourceTable_mscorrc
 #PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
-#PAL_GetNumaProcessorNode
 #PAL_GetUnwindInfoSize
 #PAL_get_stdout
 #PAL_get_stderr
@@ -126,7 +125,6 @@ nativeStringResourceTable_mscorrc
 #GetFullPathNameW
 #GetLastError
 #GetModuleFileNameW
-#GetNumaHighestNodeNumber
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
@@ -168,7 +166,6 @@ nativeStringResourceTable_mscorrc
 #SwitchToThread
 #TerminateProcess
 #VirtualAlloc
-#VirtualAllocExNuma
 #VirtualFree
 #VirtualProtect
 #VirtualQuery
