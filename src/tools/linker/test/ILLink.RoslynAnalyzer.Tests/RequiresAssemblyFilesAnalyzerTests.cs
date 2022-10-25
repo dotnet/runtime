@@ -620,7 +620,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			    [RequiresAssemblyFiles("Calls Wrapper()")]
 			    Action M2()
 				{
-			        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Calls C.M1()")] void Wrapper () => M1();
+			        [RequiresAssemblyFiles("Calls C.M1()")] void Wrapper () => M1();
 					return Wrapper;
 				}
 			}

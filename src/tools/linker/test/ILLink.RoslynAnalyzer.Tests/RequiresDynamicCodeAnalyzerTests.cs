@@ -200,7 +200,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			    [RequiresDynamicCode("Calls Wrapper()")]
 			    Action M2()
 				{
-			        [global::System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Calls C.M1()")] void Wrapper () => M1();
+			        [RequiresDynamicCode("Calls C.M1()")] void Wrapper () => M1();
 					return Wrapper;
 				}
 			}

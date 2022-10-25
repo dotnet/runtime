@@ -236,7 +236,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 			    [RequiresUnreferencedCode("Calls Wrapper()")]
 			    Action M2()
 				{
-			        [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Calls C.M1()")] void Wrapper () => M1();
+			        [RequiresUnreferencedCode("Calls C.M1()")] void Wrapper () => M1();
 					return Wrapper;
 				}
 			}

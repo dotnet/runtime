@@ -4,7 +4,7 @@
   project. -->
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <Target Name="CopyILAsmTool" DependsOnTargets="ResolveIlasmToolPaths" Condition="'$(MonoBuild)' == ''">
