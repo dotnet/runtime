@@ -32,10 +32,8 @@ namespace ILCompiler.ObjectWriter
         private DwarfBuilder _dwarfBuilder;
 
         // Exception handling sections
-        private int _lsdaSectionIndex;
+        private SectionWriter _lsdaSectionWriter;
         private int _ehFrameSectionIndex;
-        private Stream _lsdaStream;
-        private List<SymbolicRelocation> _lsdaRelocations;
         private DwarfCie _dwarfCie;
         private DwarfEhFrame _dwarfEhFrame;
 
@@ -50,31 +48,25 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual bool EmitCompactUnwinding(DwarfFde fde) => false;
 
-        protected override void EmitUnwindInfo(int sectionIndex, long methodStart, INodeWithCodeInfo nodeWithCodeInfo)
+        protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
-                int lsdaSectionIndex;
-                Stream lsdaStream;
-                List<SymbolicRelocation> lsdaRelocations;
+                SectionWriter lsdaSectionWriter;
                 string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
                 Span<byte> tempBuffer = stackalloc byte[4];
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
-                    lsdaSectionIndex = GetOrCreateSection(
-                        GetSharedSection(LsdaSection, currentSymbolName),
-                        out lsdaStream, out lsdaRelocations);
+                    lsdaSectionWriter = GetOrCreateSection(GetSharedSection(LsdaSection, currentSymbolName));
                 }
                 else
                 {
-                    lsdaSectionIndex = _lsdaSectionIndex;
-                    lsdaStream = _lsdaStream;
-                    lsdaRelocations = _lsdaRelocations;
+                    lsdaSectionWriter = _lsdaSectionWriter;
                 }
 
-                long mainLsdaOffset = lsdaStream.Position;
+                long mainLsdaOffset = lsdaSectionWriter.Stream.Position;
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
@@ -87,24 +79,24 @@ namespace ILCompiler.ObjectWriter
                     string lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
-                    EmitSymbolDefinition(lsdaSymbolName, new SymbolDefinition(lsdaSectionIndex, lsdaStream.Position));
+                    lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
                     if (start != 0)
                     {
-                        EmitSymbolDefinition(framSymbolName, new SymbolDefinition(sectionIndex, methodStart + start, 0));
+                        sectionWriter.EmitSymbolDefinition(framSymbolName, start);
                     }
 
                     FrameInfoFlags flags = frameInfo.Flags;
 
                     if (i != 0)
                     {
-                        lsdaStream.WriteByte((byte)flags);
+                        lsdaSectionWriter.Stream.WriteByte((byte)flags);
 
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(mainLsdaOffset - lsdaStream.Position));
-                        lsdaStream.Write(tempBuffer);
+                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(mainLsdaOffset - lsdaSectionWriter.Stream.Position));
+                        lsdaSectionWriter.Stream.Write(tempBuffer);
 
                         // Emit relative offset from the main function
                         BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(start - frameInfos[0].StartOffset));
-                        lsdaStream.Write(tempBuffer);
+                        lsdaSectionWriter.Stream.Write(tempBuffer);
                     }
                     else
                     {
@@ -114,41 +106,23 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        lsdaStream.WriteByte((byte)flags);
+                        lsdaSectionWriter.Stream.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
                             string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
-                            tempBuffer.Clear();
-                            EmitRelocation(
-                                lsdaSectionIndex,
-                                lsdaRelocations,
-                                (int)lsdaStream.Position,
-                                tempBuffer,
-                                RelocType.IMAGE_REL_BASED_RELPTR32,
-                                symbolName,
-                                0);
-                            lsdaStream.Write(tempBuffer);
+                            lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 
                         if (ehInfo != null)
                         {
                             string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
-                            tempBuffer.Clear();
-                            EmitRelocation(
-                                lsdaSectionIndex,
-                                lsdaRelocations,
-                                (int)lsdaStream.Position,
-                                tempBuffer,
-                                RelocType.IMAGE_REL_BASED_RELPTR32,
-                                symbolName,
-                                0);
-                            lsdaStream.Write(tempBuffer);
+                            lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            lsdaStream.Write(nodeWithCodeInfo.GCInfo);
+                            lsdaSectionWriter.Stream.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 
@@ -159,9 +133,10 @@ namespace ILCompiler.ObjectWriter
                         LsdaSymbolName = lsdaSymbolName,
                     };
 
-                    _dwarfEhFrame.AddFde(fde);
-
-                    EmitCompactUnwinding(fde);
+                    if (!EmitCompactUnwinding(fde))
+                    {
+                        _dwarfEhFrame.AddFde(fde);
+                    }
                 }
             }
         }
@@ -200,15 +175,14 @@ namespace ILCompiler.ObjectWriter
 
         protected override void CreateEhSections()
         {
+            SectionWriter ehFrameSectionWriter;
+
             // Create sections for exception handling
-            _lsdaSectionIndex = GetOrCreateSection(
-                LsdaSection,
-                out _lsdaStream, out _lsdaRelocations);
-            _ehFrameSectionIndex = GetOrCreateSection(
-                new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null),
-                out var ehFrameStream, out var ehFrameRelocations);
-            UpdateSectionAlignment(_lsdaSectionIndex, 8, out _);
-            UpdateSectionAlignment(_ehFrameSectionIndex, 8, out _);
+            _lsdaSectionWriter = GetOrCreateSection(LsdaSection);
+            ehFrameSectionWriter = GetOrCreateSection(new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null));
+            UpdateSectionAlignment(_lsdaSectionWriter.SectionIndex, 8, out _);
+            UpdateSectionAlignment(ehFrameSectionWriter.SectionIndex, 8, out _);
+            _ehFrameSectionIndex = ehFrameSectionWriter.SectionIndex;
 
             // We always use the same CIE in DWARF EH frames, so create and emit it now
             bool is64Bit = _nodeFactory.Target.Architecture switch
@@ -219,10 +193,8 @@ namespace ILCompiler.ObjectWriter
             };
             _dwarfCie = new DwarfCie(_nodeFactory.Target.Architecture);
             _dwarfEhFrame = new DwarfEhFrame(
-                ehFrameStream,
-                (offset, data, relocType, symbolName) => EmitRelocation(
-                    _ehFrameSectionIndex, ehFrameRelocations,
-                    offset, data, relocType, symbolName, 0),
+                ehFrameSectionWriter.Stream,
+                (relocType, symbolName) => ehFrameSectionWriter.EmitSymbolReference(relocType, symbolName),
                 is64Bit);
             _dwarfEhFrame.AddCie(_dwarfCie);
         }

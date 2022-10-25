@@ -18,17 +18,17 @@ namespace ILCompiler.ObjectWriter
 {
     public class DwarfEhFrame
     {
-        public delegate void EmitRelocationAction(int offset, Span<byte> data, RelocType relocationType, string symbolName);
+        public delegate void EmitSymbolReferenceAction(RelocType relocationType, string symbolName);
 
         private Stream _stream;
-        private EmitRelocationAction _emitRelocation;
+        private EmitSymbolReferenceAction _emitSymbolReference;
         private bool _is64Bit;
         private Dictionary<DwarfCie, uint> _cieOffset;
 
-        public DwarfEhFrame(Stream stream, EmitRelocationAction emitRelocation, bool is64Bit)
+        public DwarfEhFrame(Stream stream, EmitSymbolReferenceAction emitSymbolReference, bool is64Bit)
         {
             _stream = stream;
-            _emitRelocation = emitRelocation;
+            _emitSymbolReference = emitSymbolReference;
             _is64Bit = is64Bit;
             _cieOffset = new Dictionary<DwarfCie, uint>();
         }
@@ -180,7 +180,6 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteAddress(byte encoding, string symbolName)
         {
-            Span<byte> address = stackalloc byte[(int)AddressSize(encoding)];
             if (symbolName != null)
             {
                 RelocType relocationType = encoding switch
@@ -189,9 +188,13 @@ namespace ILCompiler.ObjectWriter
                     DW_EH_PE_absptr => RelocType.IMAGE_REL_BASED_DIR64,
                     _ => throw new NotSupportedException()
                 };
-                _emitRelocation((int)_stream.Position, address, relocationType, symbolName);
+                _emitSymbolReference(relocationType, symbolName);
             }
-            _stream.Write(address);
+            else
+            {
+                Span<byte> address = stackalloc byte[(int)AddressSize(encoding)];
+                _stream.Write(address);
+            }
         }
 
         private void WriteSize(byte encoding, ulong size)
