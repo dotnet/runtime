@@ -32,7 +32,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -44,11 +44,24 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsTemplate: additional-steps-then-helix.yml
       extraStepsParameters:
+        additionalSteps:
+          - script: ./build$(scriptExt) -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=true
+            name: build_multithreaded
+            displayName: Build multithreaded runtime
+
+          - script: ./build$(scriptExt) -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnablePerfTracing=true
+            name: build_perftracing
+            displayName: Build PerfTracing runtime
+
+          # FIXME: this might repeat some part of the build
+          - script: ./build$(scriptExt) -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+            name: build_tests
+            displayName: Build Tests
+
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - buildwasmapps
-
