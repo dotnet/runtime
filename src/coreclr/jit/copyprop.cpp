@@ -77,11 +77,19 @@ void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
     JITDUMP("{ ");
     for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
-        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
         unsigned             defLclNum  = iter.Get();
-        unsigned             defSsaNum  = lvaGetDesc(defLclNum)->GetSsaNumForSsaDef(iter.GetValue()->Top().GetSsaDef());
+        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
+        LclSsaVarDsc*        ssaDef     = iter.GetValue()->Top().GetSsaDef();
 
-        JITDUMP("[%06d]:V%02u/%u ", dspTreeID(lclDefNode), defLclNum, defSsaNum);
+        if (ssaDef != nullptr)
+        {
+            unsigned defSsaNum = lvaGetDesc(defLclNum)->GetSsaNumForSsaDef(ssaDef);
+            JITDUMP("[%06d]:V%02u/%u ", dspTreeID(lclDefNode), defLclNum, defSsaNum);
+        }
+        else
+        {
+            JITDUMP("[%06d]:V%02u/NA ", dspTreeID(lclDefNode), defLclNum);
+        }
     }
     JITDUMP("}\n\n");
 }
