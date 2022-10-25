@@ -5,7 +5,6 @@ using System;
 using System.Xml;
 using System.Diagnostics;
 using System.Text;
-using static System.Xml.Schema.XsdDuration;
 
 namespace System.Xml.Schema
 {
