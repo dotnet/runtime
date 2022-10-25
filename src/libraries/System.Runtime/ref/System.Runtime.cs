@@ -385,6 +385,7 @@ namespace System
         public static int IndexOf<T>(T[] array, T value) { throw null; }
         public static int IndexOf<T>(T[] array, T value, int startIndex) { throw null; }
         public static int IndexOf<T>(T[] array, T value, int startIndex, int count) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The parameterless constructor may be trimmed from the array element type.")]
         public void Initialize() { }
         public static int LastIndexOf(System.Array array, object? value) { throw null; }
         public static int LastIndexOf(System.Array array, object? value, int startIndex) { throw null; }
