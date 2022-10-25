@@ -2456,6 +2456,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else
         {
+            assert(tree->AvailableTempRegCount() == 1);
             regCnt = tree->ExtractTempReg();
 
             // Above, we put the size in targetReg. Now, copy it to our new temp register if necessary.
@@ -2570,6 +2571,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
             else
             {
+                assert(tree->AvailableTempRegCount() == 1);
                 regCnt = tree->ExtractTempReg();
             }
         }
@@ -2597,6 +2599,9 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         instGen_Set_Reg_To_Imm(((size_t)(int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
+
+    // We should not have a temp register available at this point.
+    assert(tree->AvailableTempRegCount() == 0);
 
     if (compiler->info.compInitMem)
     {
