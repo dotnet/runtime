@@ -29,11 +29,12 @@ namespace ILCompiler.ObjectWriter
 
         protected NodeFactory _nodeFactory;
         protected ObjectWritingOptions _options;
+        protected bool _isSingleFileCompilation;
 
         private byte _insPaddingByte;
 
         // Standard sections
-        private Dictionary<string, int> _sectionNameToSectionIndex = new();
+        private Dictionary<(string, string), int> _sectionNameToSectionIndex = new();
         private List<Stream> _sectionIndexToStream = new();
         private List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
@@ -47,6 +48,7 @@ namespace ILCompiler.ObjectWriter
         {
             _nodeFactory = factory;
             _options = options;
+            _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
 
             // Padding byte for code sections (NOP for x86/x64)
             _insPaddingByte = factory.Target.Architecture switch
@@ -77,11 +79,11 @@ namespace ILCompiler.ObjectWriter
         {
             int sectionIndex;
 
-            if (!_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
+            if (!_sectionNameToSectionIndex.TryGetValue((section.Name, section.ComdatName), out sectionIndex))
             {
                 CreateSection(section, out sectionStream);
                 sectionIndex = _sectionNameToSectionIndex.Count;
-                _sectionNameToSectionIndex[section.Name] = sectionIndex;
+                _sectionNameToSectionIndex.Add((section.Name, section.ComdatName), sectionIndex);
                 _sectionIndexToStream.Add(sectionStream);
                 _sectionIndexToRelocations.Add(relocationList = new());
             }
@@ -92,6 +94,42 @@ namespace ILCompiler.ObjectWriter
             }
 
             return sectionIndex;
+        }
+
+        protected bool ShouldShareSymbol(ObjectNode node)
+        {
+            // TODO: Not supported yet
+            if (_nodeFactory.Target.OperatingSystem == TargetOS.OSX ||
+                _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
+                return false;
+
+            // Foldable sections are always COMDATs
+            ObjectNodeSection section = node.Section;
+            if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
+                section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
+                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+                return true;
+
+            if (_isSingleFileCompilation)
+                return false;
+
+            if (!(node is ISymbolNode))
+                return false;
+
+            // These intentionally clash with one another, but are merged with linker directives so should not be Comdat folded
+            if (node is ModulesSectionNode)
+                return false;
+
+            return true;
+        }
+
+        protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
+        {
+            string standardSectionPrefix = "";
+            if (section.IsStandardSection)
+                standardSectionPrefix = ".";
+
+            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
         protected abstract void EmitRelocation(
@@ -230,9 +268,17 @@ namespace ILCompiler.ObjectWriter
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
+                ObjectNodeSection section = node.Section;
+                if (ShouldShareSymbol(node))
+                {
+                    section = GetSharedSection(
+                        section,
+                        ExternCName(((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler)));
+                }
+
                 Stream sectionStream;
                 List<SymbolicRelocation> relocationList;
-                int sectionIndex = GetOrCreateSection(node.Section, out sectionStream, out relocationList);
+                int sectionIndex = GetOrCreateSection(section, out sectionStream, out relocationList);
 
                 EmitAlignment(sectionIndex, sectionStream, nodeContents.Alignment);
 

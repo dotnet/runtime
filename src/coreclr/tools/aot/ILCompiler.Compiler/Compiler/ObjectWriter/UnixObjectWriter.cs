@@ -41,6 +41,8 @@ namespace ILCompiler.ObjectWriter
 
         protected int EhFrameSectionIndex => _ehFrameSectionIndex;
 
+        private static ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly, null);
+
         protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
@@ -53,10 +55,26 @@ namespace ILCompiler.ObjectWriter
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
-                Span<byte> tempBuffer = stackalloc byte[4];
+                int lsdaSectionIndex;
+                Stream lsdaStream;
+                List<SymbolicRelocation> lsdaRelocations;
                 string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
-                long mainLsdaOffset = _lsdaStream.Position;
+                Span<byte> tempBuffer = stackalloc byte[4];
 
+                if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
+                {
+                    lsdaSectionIndex = GetOrCreateSection(
+                        GetSharedSection(LsdaSection, currentSymbolName),
+                        out lsdaStream, out lsdaRelocations);
+                }
+                else
+                {
+                    lsdaSectionIndex = _lsdaSectionIndex;
+                    lsdaStream = _lsdaStream;
+                    lsdaRelocations = _lsdaRelocations;
+                }
+
+                long mainLsdaOffset = lsdaStream.Position;
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
@@ -69,7 +87,7 @@ namespace ILCompiler.ObjectWriter
                     string lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
-                    EmitSymbolDefinition(lsdaSymbolName, new SymbolDefinition(_lsdaSectionIndex, _lsdaStream.Position));
+                    EmitSymbolDefinition(lsdaSymbolName, new SymbolDefinition(lsdaSectionIndex, lsdaStream.Position));
                     if (start != 0)
                     {
                         EmitSymbolDefinition(framSymbolName, new SymbolDefinition(sectionIndex, methodStart + start, 0));
@@ -79,14 +97,14 @@ namespace ILCompiler.ObjectWriter
 
                     if (i != 0)
                     {
-                        _lsdaStream.WriteByte((byte)flags);
+                        lsdaStream.WriteByte((byte)flags);
 
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(mainLsdaOffset - _lsdaStream.Position));
-                        _lsdaStream.Write(tempBuffer);
+                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(mainLsdaOffset - lsdaStream.Position));
+                        lsdaStream.Write(tempBuffer);
 
                         // Emit relative offset from the main function
                         BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(start - frameInfos[0].StartOffset));
-                        _lsdaStream.Write(tempBuffer);
+                        lsdaStream.Write(tempBuffer);
                     }
                     else
                     {
@@ -96,21 +114,21 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        _lsdaStream.WriteByte((byte)flags);
+                        lsdaStream.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
                             string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
                             tempBuffer.Clear();
                             EmitRelocation(
-                                _lsdaSectionIndex,
-                                _lsdaRelocations,
-                                (int)_lsdaStream.Position,
+                                lsdaSectionIndex,
+                                lsdaRelocations,
+                                (int)lsdaStream.Position,
                                 tempBuffer,
                                 RelocType.IMAGE_REL_BASED_RELPTR32,
                                 symbolName,
                                 0);
-                            _lsdaStream.Write(tempBuffer);
+                            lsdaStream.Write(tempBuffer);
                         }
 
                         if (ehInfo != null)
@@ -118,19 +136,19 @@ namespace ILCompiler.ObjectWriter
                             string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
                             tempBuffer.Clear();
                             EmitRelocation(
-                                _lsdaSectionIndex,
-                                _lsdaRelocations,
-                                (int)_lsdaStream.Position,
+                                lsdaSectionIndex,
+                                lsdaRelocations,
+                                (int)lsdaStream.Position,
                                 tempBuffer,
                                 RelocType.IMAGE_REL_BASED_RELPTR32,
                                 symbolName,
                                 0);
-                            _lsdaStream.Write(tempBuffer);
+                            lsdaStream.Write(tempBuffer);
                         }
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            _lsdaStream.Write(nodeWithCodeInfo.GCInfo);
+                            lsdaStream.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 
@@ -184,7 +202,7 @@ namespace ILCompiler.ObjectWriter
         {
             // Create sections for exception handling
             _lsdaSectionIndex = GetOrCreateSection(
-                new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly, null),
+                LsdaSection,
                 out _lsdaStream, out _lsdaRelocations);
             _ehFrameSectionIndex = GetOrCreateSection(
                 new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null),
