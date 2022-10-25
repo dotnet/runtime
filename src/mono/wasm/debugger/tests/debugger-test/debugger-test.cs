@@ -1512,7 +1512,7 @@ public class MultiThreadedTest
     public static void Run()
     {
         System.Collections.Generic.List<System.Threading.Thread> myThreads = new();
-        for (int i = 0 ; i < 5; i++)
+        for (int i = 0 ; i < 3; i++)
         {
             var t = new System.Threading.Thread (() => Write("y"));
             myThreads.Add(t);

@@ -26,7 +26,7 @@ namespace DebuggerTests
 
         ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
         ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
-        ConcurrentQueue<JObject> nextNotifications = new ();
+        ConcurrentQueue<JObject> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
         public CancellationToken Token { get; }
