@@ -117,7 +117,6 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     return value;
                 }
-
 #if NETCOREAPP
                 return ReadEnumUsingNamingPolicy(reader.GetString());
 #else
