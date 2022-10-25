@@ -47,19 +47,11 @@ namespace ILLink.RoslynAnalyzer
 					if (methodSymbol.IsStaticConstructor () && methodSymbol.HasAttribute (RequiresAttributeName))
 						ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
-					CheckAttributeInstantiation (symbolAnalysisContext, methodSymbol);
-					foreach (var typeParameter in methodSymbol.TypeParameters)
-						CheckAttributeInstantiation (symbolAnalysisContext, typeParameter);
-
 				}, SymbolKind.Method);
 
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var typeSymbol = (INamedTypeSymbol) symbolAnalysisContext.Symbol;
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
-					CheckAttributeInstantiation (symbolAnalysisContext, typeSymbol);
-					foreach (var typeParameter in typeSymbol.TypeParameters)
-						CheckAttributeInstantiation (symbolAnalysisContext, typeParameter);
-
 				}, SymbolKind.NamedType);
 
 
@@ -68,8 +60,6 @@ namespace ILLink.RoslynAnalyzer
 					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
 						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
 					}
-
-					CheckAttributeInstantiation (symbolAnalysisContext, propertySymbol);
 				}, SymbolKind.Property);
 
 				context.RegisterSymbolAction (symbolAnalysisContext => {
@@ -77,14 +67,7 @@ namespace ILLink.RoslynAnalyzer
 					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
 						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
 					}
-
-					CheckAttributeInstantiation (symbolAnalysisContext, eventSymbol);
 				}, SymbolKind.Event);
-
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var fieldSymbol = (IFieldSymbol) symbolAnalysisContext.Symbol;
-					CheckAttributeInstantiation (symbolAnalysisContext, fieldSymbol);
-				}, SymbolKind.Field);
 
 				context.RegisterOperationAction (operationContext => {
 					var methodInvocation = (IInvocationOperation) operationContext.Operation;
@@ -204,21 +187,6 @@ namespace ILLink.RoslynAnalyzer
 
 				foreach (var extraSymbolAction in ExtraSymbolActions)
 					context.RegisterSymbolAction (extraSymbolAction.Action, extraSymbolAction.SymbolKind);
-
-				void CheckAttributeInstantiation (
-					SymbolAnalysisContext symbolAnalysisContext,
-					ISymbol symbol)
-				{
-					if (symbol.IsInRequiresScope (RequiresAttributeName))
-						return;
-
-					foreach (var attr in symbol.GetAttributes ()) {
-						if (attr.AttributeConstructor?.DoesMemberRequire (RequiresAttributeName, out var requiresAttribute) == true) {
-							symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
-								symbol.Locations[0], attr.AttributeConstructor.GetDisplayName (), GetMessageFromAttribute (requiresAttribute), GetUrlFromAttribute (requiresAttribute)));
-						}
-					}
-				}
 
 				void CheckCalledMember (
 					OperationAnalysisContext operationContext,
