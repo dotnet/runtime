@@ -107,7 +107,6 @@ namespace System
                 throw new NotSupportedException(SR.NotSupported_OpenType);
         }
 
-        [RequiresUnreferencedCode("The parameterless constructor may be trimmed from the array element type.")]
         public unsafe void Initialize()
         {
             EETypePtr pElementEEType = ElementEEType;
