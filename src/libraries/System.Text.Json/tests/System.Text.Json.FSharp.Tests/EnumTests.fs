@@ -16,7 +16,7 @@ let badEnum = BadEnum.``There's a comma, in my name`` ||| BadEnum.``There's a co
 let badEnumJsonStr = $"\"{badEnum}\""
 
 let badEnumWithGoodValue = BadEnum.ThisisagoodEnumValue
-let badEnumWithGoodValueJsonStr = @$"""{badEnumWithGoodValue.ToString()}"""
+let badEnumWithGoodValueJsonStr = $"\"{badEnumWithGoodValue}\""
 
 [<Flags>]
 type GoodEnum =
