@@ -9,11 +9,11 @@ Hosting provides good integration for long-running console applications, windows
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.hosting.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 
 The APIs and functionality are mature and there is no active plan for investment but we are open to explore ideas to invest in it in more depth in the future. The ideal future investments here may be to:
 
-- Support all .NET Core application models like: WinForms, WPF, UWP, Xamarin, Short-running (batch) console jobs, Blazor (client), 
+- Support all .NET Core application models like: WinForms, WPF, UWP, Xamarin, Short-running (batch) console jobs, Blazor (client)
 - Support for idle/pause in hosted services.
 - Support more base-classes for hosted services like timer-based and trigger-based
 

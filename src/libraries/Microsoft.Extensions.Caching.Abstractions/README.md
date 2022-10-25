@@ -5,9 +5,9 @@ Caching is combined with a core caching abstraction under `Microsoft.Extensions.
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/caching.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 
 The APIs and functionality need more investment in the upcoming .NET releases.
 
 ## Deployment
-[Microsoft.Extensions.Caching](https://www.nuget.org/packages/Microsoft.Extensions.Caching) is not included in the shared framework. The package is deployed as out-of-band (OOB) and needs to be installed into projects directly.
+[Microsoft.Extensions.Caching.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Caching.Abstractions) is not included in the shared framework. The package is deployed as out-of-band (OOB) and needs to be installed into projects directly.

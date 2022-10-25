@@ -5,7 +5,7 @@
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/options.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 
 Although the types are mature, the code base continues to evolve for better performance.
 
