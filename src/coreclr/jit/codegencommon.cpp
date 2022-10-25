@@ -8797,7 +8797,7 @@ bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::isLastRangeEm
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::removeLastRange()
 {
     noway_assert(!m_VariableLiveRanges->empty());
-    JITDUMP("Removing last debug range entry\n");
+    JITDUMP("Removing last entry");
     m_VariableLiveRanges->erase(m_VariableLiveRanges->backPosition());
 }
 
