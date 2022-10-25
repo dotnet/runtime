@@ -91,29 +91,6 @@ bool emitLocation::IsLessOneInsAway(emitter* emit) const
     return false;
 }
 
-//------------------------------------------------------------------------
-// noDistanceWith: Returns true if no instruction was emitted between
-// both locations. This response is an approximation. There might be emitted
-// instructions that were removed after the emitLocatiosn were generated.
-//
-// Arguments:
-//  loc - an emitLocation instance
-//
-// Assumptions:
-//  this emitLocation was captured before loc.
-bool emitLocation::noDistanceWith(emitLocation& loc) const
-{
-    assert(Valid());
-    assert(loc.Valid());
-    // Spanning an IG boundary?
-    if (ig->igNext == loc.ig)
-    {
-        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emitGetInsNumFromCodePos(loc.codePos) == 0);
-    }
-    // otherwise
-    return this->operator==(loc);
-}
-
 #ifdef DEBUG
 void emitLocation::Print(LONG compMethodID) const
 {
