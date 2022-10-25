@@ -5790,6 +5790,7 @@ void LinearScan::allocateRegisters()
 //
 void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
 {
+    assert(interval != nullptr);
 #ifdef TARGET_ARM
     // Update overlapping floating point register for TYP_DOUBLE.
     Interval* oldAssignedInterval = reg->assignedInterval;
@@ -5877,8 +5878,8 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
     {
         RegRecord* regRec        = getRegisterRecord(currReg);
         regRec->assignedInterval = nullptr;
-        regRec->regCount         = 0;
-        regRec->regIdx           = 1;
+        regRec->regCount         = 1;
+        regRec->regIdx           = 0;
 
         clearNextIntervalRef(currReg);
         clearSpillCost(currReg);
