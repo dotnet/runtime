@@ -1647,7 +1647,7 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 
 	agent_config.enabled = TRUE;
 
-	mono_init_debugger_agent_common (prof);	
+	mono_init_debugger_agent_common (prof);
 }
 
 void
@@ -2845,9 +2845,9 @@ is_suspended (void)
 {
 #ifdef HOST_WASM
 	return true;
-#else	
+#else
 	return count_threads_to_wait_for () == 0;
-#endif	
+#endif
 }
 
 static void
@@ -3905,7 +3905,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	 */
 #ifndef HOST_WASM
 	suspend_current_func ();
-#endif	
+#endif
 }
 
 static void
