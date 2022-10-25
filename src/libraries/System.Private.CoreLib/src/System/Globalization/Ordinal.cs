@@ -125,7 +125,7 @@ namespace System.Globalization
 
                 if (!Utf16Utility.AllCharsInUInt32AreAscii(valueAu32 | valueBu32))
                 {
-                    goto NonAscii; // one of the inputs contains non-ASCII data
+                    goto NonAscii32; // one of the inputs contains non-ASCII data
                 }
 
                 // Generally, the caller has likely performed a first-pass check that the input strings
@@ -153,7 +153,7 @@ namespace System.Globalization
 
                 if ((valueAu32 | valueBu32) > 0x7Fu)
                 {
-                    goto NonAscii; // one of the inputs contains non-ASCII data
+                    goto NonAscii32; // one of the inputs contains non-ASCII data
                 }
 
                 if (valueAu32 == valueBu32)
@@ -173,12 +173,13 @@ namespace System.Globalization
             Debug.Assert(length == 0);
             return true;
 
-        NonAscii:
+        NonAscii32:
             // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
             if (Utf16Utility.AllCharsInUInt32AreAscii(valueAu32) != Utf16Utility.AllCharsInUInt32AreAscii(valueBu32))
             {
                 return false;
             }
+            goto NonAscii;
 
 #if TARGET_64BIT
         NonAscii64:
@@ -188,7 +189,7 @@ namespace System.Globalization
                 return false;
             }
 #endif
-
+        NonAscii:
             // The non-ASCII case is factored out into its own helper method so that the JIT
             // doesn't need to emit a complex prolog for its caller (this method).
             return CompareStringIgnoreCase(ref Unsafe.AddByteOffset(ref charA, byteOffset), length, ref Unsafe.AddByteOffset(ref charB, byteOffset), length) == 0;
