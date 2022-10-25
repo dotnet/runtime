@@ -23,7 +23,7 @@ namespace System.Xml.Schema
         private uint _nanoseconds;       // High bit is used to indicate whether duration is negative
 
         private const uint NegativeBit = 0x80000000;
-        private const int CharStackBufferSize = 20;
+        private const int CharStackBufferSize = 32;
 
         private enum Parts
         {
