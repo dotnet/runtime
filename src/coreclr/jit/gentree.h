@@ -4381,8 +4381,6 @@ public:
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
-    // TODO-ARGS: Reconsider whether we need this, it does not make much sense
-    // to have this instead of using just the type of the arg node.
     var_types ArgType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
