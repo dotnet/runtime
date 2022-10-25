@@ -15,6 +15,9 @@ pr:
     exclude:
     - src/coreclr/inc/jiteeversionguid.h
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
