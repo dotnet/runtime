@@ -15317,13 +15317,12 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
             int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
             if (cnsIndex >= 0)
             {
-                const int maxStrSize = 1024;
-                char16_t  str[maxStrSize];
+                char16_t  chr;
                 int       length =
-                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, str, maxStrSize);
-                if (cnsIndex < length)
+                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, &chr, 1, cnsIndex);
+                if (length > 0)
                 {
-                    return gtNewIconNode(str[cnsIndex]);
+                    return gtNewIconNode(chr);
                 }
             }
         }

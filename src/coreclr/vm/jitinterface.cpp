@@ -665,7 +665,8 @@ int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
         char16_t*                   buffer,
-        int                         bufferSize)
+        int                         bufferSize,
+        int                         startIndex)
 {
     CONTRACTL{
         THROWS;
@@ -676,6 +677,7 @@ int CEEInfo::getStringLiteral (
     Module* module = GetModule(moduleHnd);
 
     _ASSERTE(bufferSize >= 0);
+    _ASSERTE(startIndex >= 0);
 
     int result = -1;
 
@@ -688,10 +690,11 @@ int CEEInfo::getStringLiteral (
         if (strRef != NULL)
         {
             StringObject* strObj = STRINGREFToObject(strRef);
-            result = (int)strObj->GetStringLength();
-            if (buffer != NULL)
+            int length = (int)strObj->GetStringLength();
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, strObj->GetBuffer() + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -702,10 +705,11 @@ int CEEInfo::getStringLiteral (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-            result = (int)dwCharCount;
-            if (buffer != NULL)
+            int length = (int)dwCharCount;
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, pString + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
