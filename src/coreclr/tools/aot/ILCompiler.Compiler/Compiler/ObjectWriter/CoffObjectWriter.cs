@@ -194,7 +194,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         Name = sectionHeader.Name,
                         Value = 0,
-                        SectionIndex = (short)(1 + sectionIndex),
+                        SectionIndex = (uint)(1 + sectionIndex),
                         StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
                         NumberOfAuxiliaryRecords = 1
                     });
@@ -206,8 +206,8 @@ namespace ILCompiler.ObjectWriter
                         _symbols.Add(new CoffSymbol
                         {
                             Name = comdatName,
-                            Value = (int)definingSymbol.Value,
-                            SectionIndex = (short)(1 + definingSymbol.SectionIndex),
+                            Value = (uint)definingSymbol.Value,
+                            SectionIndex = (uint)(1 + definingSymbol.SectionIndex),
                             StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
                         });
                     }
@@ -223,8 +223,8 @@ namespace ILCompiler.ObjectWriter
                     _symbols.Add(new CoffSymbol
                     {
                         Name = symbolName,
-                        Value = (int)symbolDefinition.Value,
-                        SectionIndex = (short)(1 + symbolDefinition.SectionIndex),
+                        Value = (uint)symbolDefinition.Value,
+                        SectionIndex = (uint)(1 + symbolDefinition.SectionIndex),
                         StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
                     });
                 }
@@ -263,7 +263,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Name = "@feat.00",
                     StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
-                    SectionIndex = -1, // IMAGE_SYM_ABSOLUTE
+                    SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
                     Value = 0x800, // cfGuardCF flags this object as control flow guard aware
                 });
             }
@@ -499,13 +499,19 @@ namespace ILCompiler.ObjectWriter
         {
             using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             var stringTable = new CoffStringTable();
+            var coffHeader = new CoffHeader
+            {
+                Machine = _machine,
+                NumberOfSections = (uint)_sections.Count,
+                NumberOfSymbols = (uint)_symbols.Count,
+            };
 
             // Calculate size of section data and assign offsets
-            int dataOffset = CoffHeader.Size + _sections.Count * CoffSectionHeader.Size;
+            uint dataOffset = (uint)(coffHeader.Size + _sections.Count * CoffSectionHeader.Size);
             int sectionIndex = 0;
             foreach (var section in _sections)
             {
-                section.Header.SizeOfRawData = (int)section.Stream.Length;
+                section.Header.SizeOfRawData = (uint)section.Stream.Length;
 
                 // Section content
                 if (section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
@@ -520,21 +526,14 @@ namespace ILCompiler.ObjectWriter
 
                 // Section relocations
                 section.Header.PointerToRelocations = section.Relocations.Count > 0 ? dataOffset : 0;
-                dataOffset += section.Relocations.Count * CoffRelocation.Size;
+                dataOffset += (uint)(section.Relocations.Count * CoffRelocation.Size);
 
                 sectionIndex++;
             }
 
-            int symbolTableOffset = dataOffset;
+            coffHeader.PointerToSymbolTable = dataOffset;
 
             // Write COFF header
-            var coffHeader = new CoffHeader
-            {
-                Machine = _machine,
-                NumberOfSections = (ushort)_sections.Count,
-                PointerToSymbolTable = (uint)symbolTableOffset,
-                NumberOfSymbols = (uint)_symbols.Count,
-            };
             coffHeader.Write(outputFileStream);
 
             // Write COFF section headers
@@ -553,10 +552,6 @@ namespace ILCompiler.ObjectWriter
                     auxRecord.NumberOfRelocations = section.Header.NumberOfRelocations;
                     auxRecord.NumberOfLineNumbers = section.Header.NumberOfLineNumbers;
 
-                    /*Crc32 crc = new Crc32();
-                    section.Stream.Position = 0;
-                    crc.Append(section.Stream);
-                    auxRecord.CheckSum = BinaryPrimitives.ReadUInt32LittleEndian(crc.GetCurrentHash());*/
                     section.Stream.Position = 0;
                     auxRecord.CheckSum = JamCrc32.CalculateChecksum(section.Stream);
                 }
@@ -584,10 +579,10 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Write symbol table
-            Debug.Assert(outputFileStream.Position == symbolTableOffset);
+            Debug.Assert(outputFileStream.Position == coffHeader.PointerToSymbolTable);
             foreach (var coffSymbol in _symbols)
             {
-                coffSymbol.Write(outputFileStream, stringTable);
+                coffSymbol.Write(outputFileStream, stringTable, coffHeader.IsBigObj);
             }
 
             // Write string table
@@ -631,14 +626,25 @@ namespace ILCompiler.ObjectWriter
         private sealed class CoffHeader
         {
             public Machine Machine { get; set; }
-            public ushort NumberOfSections { get; set; }
+            public uint NumberOfSections { get; set; }
             public uint TimeDateStamp { get; set; }
             public uint PointerToSymbolTable { get; set; }
             public uint NumberOfSymbols { get; set; }
             public ushort SizeOfOptionalHeader { get; set; }
             public ushort Characteristics { get; set; }
 
-            public const int Size =
+            // Maximum number of section that can be handled Microsoft linker
+            // before it bails out. We automatically switch to big object file
+            // layout after that.
+            public bool IsBigObj => NumberOfSections > 65279;
+
+            private static ReadOnlySpan<byte> BigObjMagic => new byte[]
+            {
+                0xc7, 0xa1, 0xba, 0xd1, 0xee, 0xba, 0xa9, 0x4b,
+                0xaf, 0x20, 0xfa, 0xf6, 0x6a, 0xa4, 0xdc, 0xb8,
+            };
+
+            private const int RegularSize =
                 sizeof(ushort) + // Machine
                 sizeof(ushort) + // NumberOfSections
                 sizeof(uint) +   // TimeDateStamp
@@ -647,31 +653,70 @@ namespace ILCompiler.ObjectWriter
                 sizeof(ushort) + // SizeOfOptionalHeader
                 sizeof(ushort);  // Characteristics
 
+            private const int BigObjSize =
+                sizeof(ushort) + // Signature 1 (Machine = Unknown)
+                sizeof(ushort) + // Signature 2 (NumberOfSections = 0xffff)
+                sizeof(ushort) + // Version (2)
+                sizeof(ushort) + // Machine
+                sizeof(uint) +   // TimeDateStamp
+                16 +             // BigObjMagic
+                sizeof(uint) +   // Reserved1
+                sizeof(uint) +   // Reserved2
+                sizeof(uint) +   // Reserved3
+                sizeof(uint) +   // Reserved4
+                sizeof(uint) +   // NumberOfSections
+                sizeof(uint) +   // PointerToSymbolTable
+                sizeof(uint);    // NumberOfSymbols
+
+            public int Size => IsBigObj ? BigObjSize : RegularSize;
+
             public void Write(Stream stream)
             {
-                Span<byte> buffer = stackalloc byte[Size];
+                if (!IsBigObj)
+                {
+                    Span<byte> buffer = stackalloc byte[RegularSize];
 
-                BinaryPrimitives.WriteInt16LittleEndian(buffer, (short)Machine);
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), NumberOfSections);
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), TimeDateStamp);
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), PointerToSymbolTable);
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12), NumberOfSymbols);
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), SizeOfOptionalHeader);
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), Characteristics);
+                    BinaryPrimitives.WriteInt16LittleEndian(buffer, (short)Machine);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), (ushort)NumberOfSections);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4), TimeDateStamp);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), PointerToSymbolTable);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12), NumberOfSymbols);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), SizeOfOptionalHeader);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), Characteristics);
 
-                stream.Write(buffer);
+                    stream.Write(buffer);
+                }
+                else
+                {
+                    Span<byte> buffer = stackalloc byte[BigObjSize];
+
+                    buffer.Clear();
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), 0xffff);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), 2);
+                    BinaryPrimitives.WriteInt16LittleEndian(buffer.Slice(6), (short)Machine);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), TimeDateStamp);
+                    BigObjMagic.CopyTo(buffer.Slice(12));
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(44), NumberOfSections);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(48), PointerToSymbolTable);
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(52), NumberOfSymbols);
+
+                    Debug.Assert(SizeOfOptionalHeader == 0);
+                    Debug.Assert(Characteristics == 0);
+
+                    stream.Write(buffer);
+                }
             }
         }
 
         private sealed class CoffSectionHeader
         {
             public string Name { get; set; }
-            public int VirtualSize { get; set; }
-            public int VirtualAddress { get; set; }
-            public int SizeOfRawData { get; set; }
-            public int PointerToRawData { get; set; }
-            public int PointerToRelocations { get; set; }
-            public int PointerToLineNumbers { get; set; }
+            public uint VirtualSize { get; set; }
+            public uint VirtualAddress { get; set; }
+            public uint SizeOfRawData { get; set; }
+            public uint PointerToRawData { get; set; }
+            public uint PointerToRelocations { get; set; }
+            public uint PointerToLineNumbers { get; set; }
             public ushort NumberOfRelocations { get; set; }
             public ushort NumberOfLineNumbers { get; set; }
             public SectionCharacteristics SectionCharacteristics { get; set; }
@@ -679,16 +724,16 @@ namespace ILCompiler.ObjectWriter
             private const int NameSize = 8;
 
             public const int Size =
-                NameSize +      // Name size
-                sizeof(int) +   // VirtualSize
-                sizeof(int) +   // VirtualAddress
-                sizeof(int) +   // SizeOfRawData
-                sizeof(int) +   // PointerToRawData
-                sizeof(int) +   // PointerToRelocations
-                sizeof(int) +   // PointerToLineNumbers
-                sizeof(short) + // NumberOfRelocations
-                sizeof(short) + // NumberOfLineNumbers
-                sizeof(int);    // SectionCharacteristics
+                NameSize +       // Name size
+                sizeof(uint) +   // VirtualSize
+                sizeof(uint) +   // VirtualAddress
+                sizeof(uint) +   // SizeOfRawData
+                sizeof(uint) +   // PointerToRawData
+                sizeof(uint) +   // PointerToRelocations
+                sizeof(uint) +   // PointerToLineNumbers
+                sizeof(ushort) + // NumberOfRelocations
+                sizeof(ushort) + // NumberOfLineNumbers
+                sizeof(uint);    // SectionCharacteristics
 
             public void Write(Stream stream, CoffStringTable stringTable)
             {
@@ -712,15 +757,15 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize), VirtualSize);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 4), VirtualAddress);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 8), SizeOfRawData);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 12), PointerToRawData);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 16), PointerToRelocations);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 20), PointerToLineNumbers);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize), VirtualSize);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 4), VirtualAddress);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 8), SizeOfRawData);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 12), PointerToRawData);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 16), PointerToRelocations);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 20), PointerToLineNumbers);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(NameSize + 24), NumberOfRelocations);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(NameSize + 26), NumberOfLineNumbers);
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize + 28), (int)SectionCharacteristics);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 28), (uint)SectionCharacteristics);
 
                 stream.Write(buffer);
             }
@@ -791,31 +836,39 @@ namespace ILCompiler.ObjectWriter
 
         private abstract class CoffSymbolRecord
         {
-            public abstract void Write(Stream stream, CoffStringTable stringTable);
+            public abstract void Write(Stream stream, CoffStringTable stringTable, bool isBigObj);
         }
 
         private sealed class CoffSymbol : CoffSymbolRecord
         {
             public string Name { get; set; }
-            public int Value { get; set; }
-            public short SectionIndex { get; set; }
-            public short Type { get; set; }
+            public uint Value { get; set; }
+            public uint SectionIndex { get; set; }
+            public ushort Type { get; set; }
             public byte StorageClass { get; set; }
             public byte NumberOfAuxiliaryRecords { get; set; }
 
             private const int NameSize = 8;
 
-            private const int Size =
-                NameSize +      // Name size
-                sizeof(int) +   // Value
-                sizeof(short) + // Section index
-                sizeof(short) + // Type
-                sizeof(byte) +  // Storage class
-                sizeof(byte);   // Auxiliary symbol count
+            private const int RegularSize =
+                NameSize +       // Name size
+                sizeof(uint) +   // Value
+                sizeof(ushort) + // Section index
+                sizeof(ushort) + // Type
+                sizeof(byte) +   // Storage class
+                sizeof(byte);    // Auxiliary symbol count
 
-            public override void Write(Stream stream, CoffStringTable stringTable)
+            private const int BigObjSize =
+                NameSize +       // Name size
+                sizeof(uint) +   // Value
+                sizeof(uint) +   // Section index
+                sizeof(ushort) + // Type
+                sizeof(byte) +   // Storage class
+                sizeof(byte);    // Auxiliary symbol count
+
+            public override void Write(Stream stream, CoffStringTable stringTable, bool isBigObj)
             {
-                Span<byte> buffer = stackalloc byte[Size];
+                Span<byte> buffer = stackalloc byte[isBigObj ? BigObjSize : RegularSize];
 
                 int nameBytes = Encoding.UTF8.GetByteCount(Name);
                 if (nameBytes <= NameSize)
@@ -832,11 +885,22 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), stringTable.GetStringOffset(Name));
                 }
 
-                BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(NameSize), Value);
-                BinaryPrimitives.WriteInt16LittleEndian(buffer.Slice(NameSize + 4), SectionIndex);
-                BinaryPrimitives.WriteInt16LittleEndian(buffer.Slice(NameSize + 6), Type);
-                buffer[NameSize + 8] = StorageClass;
-                buffer[NameSize + 9] = NumberOfAuxiliaryRecords;
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize), Value);
+                int sliceIndex;
+                if (isBigObj)
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(NameSize + 4), SectionIndex);
+                    sliceIndex = NameSize + 8;
+                }
+                else
+                {
+                    Debug.Assert(SectionIndex == uint.MaxValue || SectionIndex < ushort.MaxValue);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(NameSize + 4), (ushort)SectionIndex);
+                    sliceIndex = NameSize + 6;
+                }
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(sliceIndex), Type);
+                buffer[sliceIndex + 2] = StorageClass;
+                buffer[sliceIndex + 3] = NumberOfAuxiliaryRecords;
 
                 stream.Write(buffer);
             }
@@ -854,14 +918,14 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class CoffSectionSymbol : CoffSymbolRecord
         {
-            public int SizeOfRawData { get; set; }
+            public uint SizeOfRawData { get; set; }
             public ushort NumberOfRelocations { get; set; }
             public ushort NumberOfLineNumbers { get; set; }
             public uint CheckSum { get; set; }
             public ushort Number { get; set; }
             public CoffComdatSelect Selection { get; set; }
 
-            private const int Size =
+            private const int RegularSize =
                 sizeof(uint) +   // SizeOfRawData
                 sizeof(ushort) + // NumberOfRelocations
                 sizeof(ushort) + // NumberOfLineNumbers
@@ -870,19 +934,19 @@ namespace ILCompiler.ObjectWriter
                 sizeof(byte) +   // Selection
                 3;               // Reserved
 
-            public override void Write(Stream stream, CoffStringTable stringTable)
-            {
-                Span<byte> buffer = stackalloc byte[Size];
+            private const int BigObjSize = RegularSize + 2;
 
-                BinaryPrimitives.WriteInt32LittleEndian(buffer, SizeOfRawData);
+            public override void Write(Stream stream, CoffStringTable stringTable, bool isBigObj)
+            {
+                Span<byte> buffer = stackalloc byte[isBigObj ? BigObjSize : RegularSize];
+
+                buffer.Clear();
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer, SizeOfRawData);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), NumberOfRelocations);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(6), NumberOfLineNumbers);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), CheckSum);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(12), Number);
                 buffer[14] = (byte)Selection;
-                buffer[15] = 0;
-                buffer[16] = 0;
-                buffer[17] = 0;
 
                 stream.Write(buffer);
             }
