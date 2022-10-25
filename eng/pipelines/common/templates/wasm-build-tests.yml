@@ -44,7 +44,7 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
-      extraStepsTemplate: additional-steps-then-helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
       extraStepsParameters:
         additionalSteps:
           - script: ./build$(scriptExt) -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=true
