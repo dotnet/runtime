@@ -726,12 +726,148 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				types[index].RequiresAll ();
 			}
 
+			class IndexWithTypeWithDam
+			{
+				class DamOnIndexOnly
+				{
+					int this[[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type idx] {
+						get => throw new NotImplementedException ();
+					}
+
+					[ExpectedWarning ("IL2067", "this[Type].get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL2067", "Item.get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+					static void ParamDoesNotMeetRequirements (Type t)
+					{
+						var x = new IndexWithTypeWithDam ();
+						_ = x[t];
+					}
+
+					static void ParamDoesMeetRequirements ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t)
+					{
+						var x = new IndexWithTypeWithDam ();
+						_ = x[t];
+					}
+
+					[ExpectedWarning ("IL2087", "this[Type].get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL2087", "Item.get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+					static void TypeParamDoesNotMeetRequirements<T> ()
+					{
+						var x = new IndexWithTypeWithDam ();
+						var t = typeof (T);
+						_ = x[t];
+					}
+
+					static void TypeParamDoesMeetRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+					{
+						var x = new IndexWithTypeWithDam ();
+						var t = typeof (T);
+						_ = x[t];
+					}
+
+					static void KnownTypeDoesMeetRequirements ()
+					{
+						var x = new IndexWithTypeWithDam ();
+						var t = typeof (int);
+						_ = x[t];
+					}
+					public static void Test ()
+					{
+						ParamDoesMeetRequirements (null);
+						ParamDoesNotMeetRequirements (null);
+						TypeParamDoesMeetRequirements<int> ();
+						TypeParamDoesNotMeetRequirements<int> ();
+						KnownTypeDoesMeetRequirements ();
+					}
+				}
+
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				Type this[[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type idx] {
+					get => throw new NotImplementedException ();
+					set => throw new NotImplementedException ();
+				}
+
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				static Type fieldWithMethods;
+
+				[ExpectedWarning ("IL2067", "this[Type].get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2067", "Item.get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+				static void ParamDoesNotMeetRequirements (Type t)
+				{
+					var x = new IndexWithTypeWithDam ();
+					fieldWithMethods = x[t];
+				}
+
+				static void ParamDoesMeetRequirements ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t)
+				{
+					var x = new IndexWithTypeWithDam ();
+					fieldWithMethods = x[t];
+				}
+
+				[ExpectedWarning ("IL2087", "this[Type].get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2087", "Item.get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+				static void TypeParamDoesNotMeetRequirements<T> ()
+				{
+					var x = new IndexWithTypeWithDam ();
+					var t = typeof (T);
+					fieldWithMethods = x[t];
+				}
+
+				static void TypeParamDoesMeetRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+				{
+					var x = new IndexWithTypeWithDam ();
+					var t = typeof (T);
+					fieldWithMethods = x[t];
+				}
+
+				static void KnownTypeDoesMeetRequirements ()
+				{
+					var x = new IndexWithTypeWithDam ();
+					var t = typeof (int);
+					fieldWithMethods = x[t];
+				}
+
+				[ExpectedWarning ("IL2067", "this[Type].set", nameof (t), "idx", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2067", "Item.set", nameof (t), "idx", ProducedBy = ProducedBy.Trimmer)]
+				static void ValueMeetsRequirementsIndexDoesNot (Type t)
+				{
+					var x = new IndexWithTypeWithDam ();
+					x[t] = fieldWithMethods;
+				}
+
+				[ExpectedWarning ("IL2067", "this[Type].set", nameof (tUnannotated), "value", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2067", "Item.set", nameof (tUnannotated), "value", ProducedBy = ProducedBy.Trimmer)]
+				static void ValueDoesNotMeetRequirementsIndexDoes ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t, Type tUnannotated)
+				{
+					var x = new IndexWithTypeWithDam ();
+					x[t] = tUnannotated;
+				}
+
+				static void ValueAndIndexMeetRequirements ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type tFields, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tMethods)
+				{
+					var x = new IndexWithTypeWithDam ();
+					x[tFields] = tMethods;
+				}
+
+				public static void Test ()
+				{
+					ParamDoesMeetRequirements (null);
+					ParamDoesNotMeetRequirements (null);
+					TypeParamDoesMeetRequirements<int> ();
+					TypeParamDoesNotMeetRequirements<int> ();
+					KnownTypeDoesMeetRequirements ();
+					ValueMeetsRequirementsIndexDoesNot (null);
+					ValueDoesNotMeetRequirementsIndexDoes (null, null);
+					ValueAndIndexMeetRequirements (null, null);
+					DamOnIndexOnly.Test ();
+				}
+			}
 			public static void Test ()
 			{
 				TestRead ();
 				TestWrite ();
 				TestNullCoalescingAssignment ();
 				TestSpanIndexerAccess ();
+				IndexWithTypeWithDam.Test ();
 			}
 		}
 

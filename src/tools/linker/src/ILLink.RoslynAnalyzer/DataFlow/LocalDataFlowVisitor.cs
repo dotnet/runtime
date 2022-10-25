@@ -199,7 +199,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// For now, just don't warn. https://github.com/dotnet/linker/issues/2731
 						break;
 					}
-					HandleMethodCall (setMethod, instanceValue, ImmutableArray.Create (value), operation);
+
+					// Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
+					ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
+					foreach (var val in propertyRef.Arguments)
+						arguments.Add (Visit (val, state));
+					arguments.Add (value);
+
+					HandleMethodCall (setMethod, instanceValue, arguments.ToImmutableArray (), operation);
 					// The return value of a property set expression is the value,
 					// even though a property setter has no return value.
 					return value;
@@ -340,7 +347,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
 			TValue instanceValue = Visit (operation.Instance, state);
 			IMethodSymbol? getMethod = operation.Property.GetGetMethod ();
-			return HandleMethodCall (getMethod!, instanceValue, ImmutableArray<TValue>.Empty, operation);
+
+			// Property may be an indexer, in which case there will be one or more index arguments
+			ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
+			foreach (var val in operation.Arguments)
+				arguments.Add (Visit (val, state));
+
+			return HandleMethodCall (getMethod!, instanceValue, arguments.ToImmutableArray (), operation);
 		}
 
 		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
