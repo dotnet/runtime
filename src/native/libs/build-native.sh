@@ -20,6 +20,11 @@ handle_arguments() {
             __StaticLibLink=1
             ;;
 
+        variant)
+            __variant="$2"
+            __ShiftArgs=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
@@ -38,6 +43,7 @@ __SkipConfigure=0
 __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
+__variant=
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
@@ -128,8 +134,8 @@ fi
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"
-__IntermediatesDir="$__RootBinDir/obj/native/$__outConfig"
-__BinDir="$__RootBinDir/bin/native/$__outConfig"
+__IntermediatesDir="$__RootBinDir/obj/${__variant}/native/$__outConfig"
+__BinDir="$__RootBinDir/bin/${__variant}/native/$__outConfig"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.

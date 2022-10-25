@@ -22,7 +22,7 @@
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
-      <_LocalMicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</_LocalMicrosoftNetCoreAppRuntimePackDir>
+      <_LocalMicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), $(MonoPathSuffix), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</_LocalMicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
       <ResolvedRuntimePack PackageDirectory="$(_LocalMicrosoftNetCoreAppRuntimePackDir)"

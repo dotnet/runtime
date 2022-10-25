@@ -784,6 +784,7 @@
   </Target>
 
   <PropertyGroup>
+    <!-- FIXME: -->
     <!-- Hardcode version paths in a global location. Condition on running OS to generate the right files for the Mono WASM cross tools. -->
     <NativeVersionFile Condition="'$(HostOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(HostOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
