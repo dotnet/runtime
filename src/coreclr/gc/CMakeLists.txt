@@ -27,12 +27,10 @@ set(GC_SOURCES
   handletablecache.cpp)
 
 if(CLR_CMAKE_HOST_UNIX)
+  add_subdirectory(unix)
   include(unix/configure.cmake)
   set (GC_SOURCES
-    ${GC_SOURCES}
-    unix/gcenv.unix.cpp
-    unix/events.cpp
-    unix/cgroup.cpp)
+    ${GC_SOURCES})
 else()
   set (GC_SOURCES
     ${GC_SOURCES}
@@ -101,7 +99,7 @@ if(CLR_CMAKE_HOST_WIN32)
     kernel32.lib
     advapi32.lib)
 else()
-  set (GC_LINK_LIBRARIES)
+  set (GC_LINK_LIBRARIES gc_unix)
 endif(CLR_CMAKE_HOST_WIN32)
 
 list(APPEND GC_SOURCES ${GC_HEADERS})
