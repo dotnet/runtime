@@ -32,7 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::impInit()
 {
-    impStmtList = impLastStmt = 0;
+    impStmtList = impLastStmt = nullptr;
 #ifdef DEBUG
     impInlinedCodeSize = 0;
 #endif // DEBUG
