@@ -20,6 +20,9 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Compile Include="System\IO\Hashing\XxHash64.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Numerics\Crc32ReflectedTable.cs">
+      <Link>Common\System\Numerics\Crc32ReflectedTable.cs</Link>
+    </Compile>
     <Compile Include="System\IO\Hashing\BitOperations.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>

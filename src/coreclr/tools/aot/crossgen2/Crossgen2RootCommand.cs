@@ -16,11 +16,11 @@ namespace ILCompiler
     internal class Crossgen2RootCommand : RootCommand
     {
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
-            new("input-file-path", result => Helpers.BuildPathDictionay(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
+            new("input-file-path", result => Helpers.BuildPathDictionary(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
-            new(new[] { "--unrooted-input-file-paths", "-u" }, result => Helpers.BuildPathDictionay(result.Tokens, true), true, SR.UnrootedInputFilesToCompile);
+            new(new[] { "--unrooted-input-file-paths", "-u" }, result => Helpers.BuildPathDictionary(result.Tokens, true), true, SR.UnrootedInputFilesToCompile);
         public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, SR.ReferenceFiles);
+            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, SR.ReferenceFiles);
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, SR.InstructionSets);
         public Option<string[]> MibcFilePaths { get; } =
@@ -40,7 +40,7 @@ namespace ILCompiler
         public Option<bool> InputBubble { get; } =
             new(new[] { "--inputbubble" }, SR.InputBubbleOption);
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
-            new(new[] { "--inputbubbleref" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, SR.InputBubbleReferenceFiles);
+            new(new[] { "--inputbubbleref" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, SR.InputBubbleReferenceFiles);
         public Option<bool> Composite { get; } =
             new(new[] { "--composite" }, SR.CompositeBuildMode);
         public Option<string> CompositeKeyFile { get; } =

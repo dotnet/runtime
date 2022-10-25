@@ -7531,6 +7531,7 @@ namespace System.Collections.ObjectModel
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
         public int Count { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> Empty { get { throw null; } }
         public T this[int index] { get { throw null; } }
         protected System.Collections.Generic.IList<T> Items { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
@@ -7564,6 +7565,7 @@ namespace System.Collections.ObjectModel
         public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
         public int Count { get { throw null; } }
         protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> Empty { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
@@ -10217,6 +10219,14 @@ namespace System.Numerics
         public static int TrailingZeroCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, byte data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, ushort data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, uint data) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Crc32C(uint crc, ulong data) { throw null; }
     }
     public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {

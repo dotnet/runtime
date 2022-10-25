@@ -30,7 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
-    isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
+    ignoreStoredConfig = false;
 }
 
 MethodContext::~MethodContext()
@@ -1180,46 +1180,43 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
                                                         const char**          namespaceName,
                                                         const char**          enclosingClassName)
 {
-    const char* result = nullptr;
-    Agnostic_CORINFO_METHODNAME_TOKENout value;
     Agnostic_CORINFO_METHODNAME_TOKENin key;
+
     key.ftn = CastHandle(ftn);
     key.className = (moduleName != nullptr);
     key.namespaceName = (namespaceName != nullptr);
     key.enclosingClassName = (enclosingClassName != nullptr);
 
-    int itemIndex = -1;
-    if (GetMethodNameFromMetadata != nullptr)
-        itemIndex = GetMethodNameFromMetadata->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapAndKeyExist(
+        GetMethodNameFromMetadata,
+        key,
+        ": ftn-%016llX className-%u namespaceName-%u enclosingClassName-%u",
+        key.ftn,
+        key.className,
+        key.namespaceName,
+        key.enclosingClassName);
+
+    Agnostic_CORINFO_METHODNAME_TOKENout value = GetMethodNameFromMetadata->Get(key);
+
+    DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
+
+    const char* result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+
+    if (moduleName != nullptr)
     {
-        if (moduleName != nullptr)
-        {
-            *moduleName = nullptr;
-        }
+        *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.className);
     }
-    else
+
+    if (namespaceName != nullptr)
     {
-        value  = GetMethodNameFromMetadata->Get(key);
-        DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
-
-        result = (const char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
-
-        if (moduleName != nullptr)
-        {
-            *moduleName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.className);
-        }
-
-        if (namespaceName != nullptr)
-        {
-            *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
-        }
-
-        if (enclosingClassName != nullptr)
-        {
-            *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
-        }
+        *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
     }
+
+    if (enclosingClassName != nullptr)
+    {
+        *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    }
+
     return result;
 }
 
@@ -1236,7 +1233,6 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     //       zero.
     GetJitFlags->Add(0, value);
     DEBUG_REC(dmpGetJitFlags(0, value));
-    InitReadyToRunFlag(jitFlags);
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
@@ -1261,7 +1257,6 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
-    InitReadyToRunFlag(resultFlags);
     return value.B;
 }
 
@@ -2185,6 +2180,75 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     DEBUG_REP(dmpGetUnBoxHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
+}
+
+void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
+{
+    if (GetRuntimeTypePointer == nullptr)
+        GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = (DWORDLONG)result;
+    GetRuntimeTypePointer->Add(key, value);
+    DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
+}
+void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
+}
+void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
+    DWORDLONG value = GetRuntimeTypePointer->Get(key);
+    DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
+    return (void*)value;
+}
+
+void MethodContext::recIsObjectImmutable(void* objPtr, bool result)
+{
+    if (IsObjectImmutable == nullptr)
+        IsObjectImmutable = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORD value = (DWORD)result;
+    IsObjectImmutable->Add(key, value);
+    DEBUG_REC(dmpIsObjectImmutable(key, value));
+}
+void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
+{
+    printf("IsObjectImmutable key obj-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsObjectImmutable(void* objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    AssertMapAndKeyExist(IsObjectImmutable, key, ": key %016llX", key);
+    DWORD value = IsObjectImmutable->Get(key);
+    DEBUG_REP(dmpIsObjectImmutable(key, value));
+    return (bool)value;
+}
+
+void MethodContext::recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result)
+{
+    if (GetObjectType == nullptr)
+        GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG value = (DWORDLONG)result;
+    GetObjectType->Add(key, value);
+    DEBUG_REC(dmpGetObjectType(key, value));
+}
+void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetObjectType key obj-%016llX, value res-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);
+    DWORDLONG value = GetObjectType->Get(key);
+    DEBUG_REP(dmpGetObjectType(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
 }
 
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -3535,70 +3599,13 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
         value.ppIndirection = CastPointer(*ppIndirection);
     value.fieldAddress      = CastPointer(result);
 
-    value.fieldValue = (DWORD)-1;
-
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized, EXCEPTIONCODE_MC,
-                  "ReadyToRun flag should be initialized");
-
-    // Make an attempt at stashing a copy of the value, Jit can try to access
-    // a static readonly field value.
-    if (isReadyToRunCompilation == ReadyToRunCompilation::NotReadyToRun &&
-        result > (void*)0xffff)
-    {
-        DWORDLONG scratch = 0x4242424242424242;
-        switch (cit)
-        {
-            case CORINFO_TYPE_BOOL:
-            case CORINFO_TYPE_BYTE:
-            case CORINFO_TYPE_UBYTE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(BYTE),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_CHAR:
-            case CORINFO_TYPE_SHORT:
-            case CORINFO_TYPE_USHORT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(WORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_INT:
-            case CORINFO_TYPE_UINT:
-            case CORINFO_TYPE_FLOAT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_LONG:
-            case CORINFO_TYPE_ULONG:
-            case CORINFO_TYPE_DOUBLE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORDLONG),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_NATIVEINT:
-            case CORINFO_TYPE_NATIVEUINT:
-            case CORINFO_TYPE_PTR:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(size_t),
-                                                      true); // important to not merge two fields into one address
-                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we
-                                                                                     // can read it back "safetly"
-                                                                                     // on x64
-                break;
-            default:
-                break;
-        }
-    }
-
     DWORDLONG key = CastHandle(field);
     GetFieldAddress->Add(key, value);
     DEBUG_REC(dmpGetFieldAddress(key, value));
 }
 void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value)
 {
-    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX val-%u", key, value.ppIndirection,
-           value.fieldAddress, value.fieldValue);
+    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX", key, value.ppIndirection, value.fieldAddress);
 }
 void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -3608,26 +3615,57 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     Agnostic_GetFieldAddress value = GetFieldAddress->Get(key);
     DEBUG_REP(dmpGetFieldAddress(key, value));
 
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized,
-        EXCEPTIONCODE_MC, "isReadyToRunCompilation should be initialized");
-
     if (ppIndirection != nullptr)
     {
         *ppIndirection = (void*)value.ppIndirection;
     }
-    void* temp;
+    return (void*)value.fieldAddress;
+}
 
-    if (value.fieldValue != (DWORD)-1)
-    {
-        temp = (void*)GetFieldAddress->GetBuffer(value.fieldValue);
-        cr->recAddressMap((void*)value.fieldAddress, temp, toCorInfoSize(repGetFieldType(field, nullptr, nullptr)));
-    }
-    else
-    {
-        temp = (void*)value.fieldAddress;
-    }
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result)
+{
+    if (GetReadonlyStaticFieldValue == nullptr)
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLD, DD>();
 
-    return temp;
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
+
+    DWORD tmpBuf = (DWORD)-1;
+    if (buffer != nullptr && result)
+        tmpBuf = (DWORD)GetReadonlyStaticFieldValue->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)tmpBuf;
+
+    GetReadonlyStaticFieldValue->Add(key, value);
+    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
+}
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLD key, DD value)
+{
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, result-%u", key.A, key.B, value.A);
+    GetReadonlyStaticFieldValue->Unlock();
+}
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
+
+    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
+
+    DD value = GetReadonlyStaticFieldValue->Get(key);
+    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
+    if (buffer != nullptr && (bool)value.A)
+    {
+        uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, bufferSize);
+    }
+    return (bool)value.A;
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
@@ -4843,35 +4881,82 @@ void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 
 int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
 {
-    if (GetStringLiteral == nullptr)
-    {
-        return -1;
-    }
-
     DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
 
-    int itemIndex = GetStringLiteral->GetIndex(key);
-    if (itemIndex < 0)
+    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d", key.A, key.B, key.C);
+
+    DD value = GetStringLiteral->Get(key);
+    DEBUG_REP(dmpGetStringLiteral(key, value));
+    int srcBufferLength = (int)value.A;
+    if (buffer != nullptr && srcBufferLength > 0)
     {
-        return -1;
+        char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
     }
-    else
+    return srcBufferLength;
+}
+
+void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    if (PrintObjectDescription == nullptr)
+        PrintObjectDescription = new LightWeightMap<DLDL, Agnostic_PrintObjectDescriptionResult>();
+
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    DWORD strBuf = (DWORD)-1;
+    if (buffer != nullptr && bytesWritten > 0)
     {
-        DD value = GetStringLiteral->Get(key);
-        DEBUG_REP(dmpGetStringLiteral(key, value));
-        int srcBufferLength = (int)value.A;
-        if (buffer != nullptr && srcBufferLength > 0)
-        {
-            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
-        }
-        return srcBufferLength;
+        size_t bufferRealSize = min(bytesWritten, bufferSize - 1);
+        strBuf = (DWORD)PrintObjectDescription->AddBuffer((unsigned char*)buffer, (DWORD)bufferRealSize);
     }
+
+    Agnostic_PrintObjectDescriptionResult value;
+    value.bytesWritten = (DWORDLONG)bytesWritten;
+    value.requiredBufferSize = (DWORDLONG)(pRequiredBufferSize == nullptr ? 0 : *pRequiredBufferSize);
+    value.buffer = (DWORD)strBuf;
+
+    PrintObjectDescription->Add(key, value);
+    DEBUG_REC(dmpPrintObjectDescription(key, value));
+}
+void MethodContext::dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value)
+{
+    printf("PrintObjectDescription key hnd-%016llX bufSize-%u, bytesWritten-%u, pRequiredBufferSize-%u", key.A, (unsigned)key.B, (unsigned)value.bytesWritten, (unsigned)value.requiredBufferSize);
+    PrintObjectDescription->Unlock();
+}
+size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    DLDL key;
+    key.A = CastHandle(handle);
+    key.B = (DWORDLONG)bufferSize;
+
+    AssertMapAndKeyExist(PrintObjectDescription, key, ": key handle-%016llX bufferSize-%016llX", key.A, key.B);
+
+    Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
+    DEBUG_REP(dmpPrintObjectDescription(key, value));
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = (size_t)value.requiredBufferSize;
+    }
+
+    size_t bytesWritten = 0;
+
+    BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
+    if (bufferSize > 0)
+    {
+        bytesWritten = min(bufferSize - 1, (size_t)value.bytesWritten);
+        memcpy(buffer, srcBuffer, bytesWritten);
+
+        // Always null-terminate
+        buffer[bytesWritten] = 0;
+    }
+    return bytesWritten;
 }
 
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
@@ -5517,7 +5602,6 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     HRESULT result = (HRESULT)value.result;
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
-    size_t maxOffset = 0;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.countSchemaItems; iSchema++)
     {
         // Everything but `Offset` field is an IN argument, so verify it against what we stored (since we didn't use these
@@ -5545,26 +5629,41 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
         }
 
         pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
-
-        if (pSchema[iSchema].Offset > maxOffset)
-            maxOffset = pSchema[iSchema].Offset;
     }
 
-    // Allocate a scratch buffer, linked to method context via AllocPgoInstrumentationBySchema, so it gets
-    // cleaned up when the method context does.
-    //
-    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
-    // But we need a writeable buffer because the jit will store IL offsets inside.
-    //
-    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
-    // jit completion so we can snapshot the offsets the jit writes.
-    //
-    // Add 16 bytes of represent writeable space
-    size_t bufSize = maxOffset + 16;
-    *pInstrumentationData = (BYTE*)AllocJitTempBuffer(bufSize);
-    cr->recAddressMap((void*)value.instrumentationDataAddress, (void*)*pInstrumentationData, (unsigned)bufSize);
+    // We assume JIT does not write or read from this buffer, only generate
+    // code that uses it.
+    *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
     return result;
 }
+
+// The following are from <pgo_formatprocessing.h> which we can't include.
+
+static ICorJitInfo::PgoInstrumentationKind operator&(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
+{
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+static unsigned InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+    {
+        case ICorJitInfo::PgoInstrumentationKind::None:
+            return 0;
+        case ICorJitInfo::PgoInstrumentationKind::FourByte:
+            return 4;
+        case ICorJitInfo::PgoInstrumentationKind::EightByte:
+            return 8;
+        case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+            return sizeof(uintptr_t);
+        default:
+            LogError("Unexpected pgo schema data size (kind = %d)", kind);
+            return 0;
+    }
+}
+
+// End of pseudo-include
 
 void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
                                                     ICorJitInfo::PgoInstrumentationSchema** pSchema,
@@ -5585,13 +5684,14 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     size_t maxOffset = 0;
     for (UINT32 i = 0; i < (*pCountSchemaItems); i++)
     {
-        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * sizeof(uintptr_t));
-
         agnosticSchema[i].Offset              = (DWORDLONG)pInSchema[i].Offset;
         agnosticSchema[i].InstrumentationKind = (DWORD)pInSchema[i].InstrumentationKind;
         agnosticSchema[i].ILOffset            = (DWORD)pInSchema[i].ILOffset;
         agnosticSchema[i].Count               = (DWORD)pInSchema[i].Count;
         agnosticSchema[i].Other               = (DWORD)pInSchema[i].Other;
+
+        unsigned const dataSize = InstrumentationKindToSize(pInSchema[i].InstrumentationKind);
+        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * dataSize);
     }
     value.schema_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
     free(agnosticSchema);
@@ -6903,6 +7003,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -6955,6 +7058,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 
@@ -7339,20 +7445,6 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
         return (prev == curr);
     }
 }
-
-void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
-{
-    if (jitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN))
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::ReadyToRun;
-    }
-    else
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
-    }
-
-}
-
 
 bool g_debugRec = false;
 bool g_debugRep = false;

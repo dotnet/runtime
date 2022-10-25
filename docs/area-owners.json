@@ -938,11 +938,10 @@
       "label": "area-System.IO.Compression"
     },
     {
-      "lead": "kevinpi",
+      "lead": "adityamandaleeka",
       "owners": [
         "davidfowl",
-        "halter73",
-        "jkotalik"
+        "halter73"
       ],
       "label": "area-System.IO.Pipelines"
     },
@@ -1283,6 +1282,7 @@
     {
       "lead": "jeffhandley",
       "owners": [
+        "ericstj",
         "jeffhandley"
       ],
       "label": "area-System.Speech"

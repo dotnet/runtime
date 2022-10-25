@@ -383,19 +383,21 @@ DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 
 #ifndef DACCESS_COMPILE
 
-NOINLINE static void FailFastOnApiErrorWithHandle(const WCHAR *apiName, HANDLE handle)
+NOINLINE static void FailFastOnApiErrorWithHandle(const CHAR *apiName, HANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
     DWORD errorCode = GetLastError();
-    WCHAR message[128] = W("\0");
-    swprintf_s(
-        message,
-        sizeof(message) / sizeof(message[0]),
-        W("%s failed with error %u. Handle: 0x%Ix"),
+    CHAR messageUtf8[128] = "\0";
+    sprintf_s(
+        messageUtf8,
+        ARRAY_SIZE(messageUtf8),
+        "%s failed with error %u. Handle: 0x%p",
         apiName,
         errorCode,
-        (SIZE_T)handle);
+        (void*)handle);
+
+    MAKE_WIDEPTR_FROMUTF8_NOTHROW(message, messageUtf8);
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, message);
 }
 
@@ -407,7 +409,7 @@ DWORD ClrSuspendThread(HANDLE hThread)
     DWORD result = SuspendThread(hThread);
     if (result == (DWORD)-1)
     {
-        FailFastOnApiErrorWithHandle(W("SuspendThread"), hThread);
+        FailFastOnApiErrorWithHandle("SuspendThread", hThread);
     }
 
     return result;
@@ -421,7 +423,7 @@ DWORD ClrResumeThread(HANDLE hThread)
     DWORD result = ResumeThread(hThread);
     if (result == (DWORD)-1)
     {
-        FailFastOnApiErrorWithHandle(W("ResumeThread"), hThread);
+        FailFastOnApiErrorWithHandle("ResumeThread", hThread);
     }
 
     return result;
