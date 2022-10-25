@@ -24,7 +24,7 @@ type GoodEnum =
   | Thereisnocommaevenhere_2 = 2
 
 let goodEnum = GoodEnum.Thereisnocommainmyname_1 ||| GoodEnum.Thereisnocommaevenhere_2
-let goodEnumJsonStr = @$"""{goodEnum.ToString()}"""
+let goodEnumJsonStr = $"\"{goodEnum}\""
 
 let options = new JsonSerializerOptions()
 options.Converters.Add(new JsonStringEnumConverter())
