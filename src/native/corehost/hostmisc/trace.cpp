@@ -13,19 +13,32 @@
 //  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=1          implies g_trace_verbosity = 1.  // Trace "enabled".  error() messages will be produced
 static int g_trace_verbosity = 0;
 static FILE * g_trace_file = stderr;
-static pal::mutex_t* g_trace_mutex;
 thread_local static trace::error_writer_fn g_error_writer = nullptr;
 
 namespace
 {
-    pal::mutex_t& get_mutex()
+    class spin_lock
     {
-        static pal::mutex_t* mutex = new pal::mutex_t();
-        if (g_trace_mutex == nullptr)
-            g_trace_mutex = mutex;
+    public:
+        spin_lock() = default;
+        spin_lock(const spin_lock&) = delete;
+        spin_lock& operator=(const spin_lock&) = delete;
 
-        return *g_trace_mutex;
-    }
+        void lock()
+        {
+            while (flag.test_and_set(std::memory_order_acquire)) { /*spin*/ }
+        }
+
+        void unlock()
+        {
+            flag.clear(std::memory_order_release);
+        }
+
+    private:
+        std::atomic_flag flag = ATOMIC_FLAG_INIT;
+    };
+
+    spin_lock g_trace_lock;
 }
 
 //
@@ -62,7 +75,7 @@ bool trace::enable()
     }
     else
     {
-        std::lock_guard<pal::mutex_t> lock(get_mutex());
+        std::lock_guard<spin_lock> lock(g_trace_lock);
 
         g_trace_file = stderr;
         if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
@@ -107,7 +120,7 @@ void trace::verbose(const pal::char_t* format, ...)
 {
     if (g_trace_verbosity > 3)
     {
-        std::lock_guard<pal::mutex_t> lock(get_mutex());
+        std::lock_guard<spin_lock> lock(g_trace_lock);
 
         va_list args;
         va_start(args, format);
@@ -120,7 +133,7 @@ void trace::info(const pal::char_t* format, ...)
 {
     if (g_trace_verbosity > 2)
     {
-        std::lock_guard<pal::mutex_t> lock(get_mutex());
+        std::lock_guard<spin_lock> lock(g_trace_lock);
 
         va_list args;
         va_start(args, format);
@@ -131,7 +144,7 @@ void trace::info(const pal::char_t* format, ...)
 
 void trace::error(const pal::char_t* format, ...)
 {
-    std::lock_guard<pal::mutex_t> lock(get_mutex());
+    std::lock_guard<spin_lock> lock(g_trace_lock);
 
     // Always print errors
     va_list args;
@@ -168,7 +181,7 @@ void trace::error(const pal::char_t* format, ...)
 
 void trace::println(const pal::char_t* format, ...)
 {
-    std::lock_guard<pal::mutex_t> lock(get_mutex());
+    std::lock_guard<spin_lock> lock(g_trace_lock);
 
     va_list args;
     va_start(args, format);
@@ -185,7 +198,7 @@ void trace::warning(const pal::char_t* format, ...)
 {
     if (g_trace_verbosity > 1)
     {
-        std::lock_guard<pal::mutex_t> lock(get_mutex());
+        std::lock_guard<spin_lock> lock(g_trace_lock);
 
         va_list args;
         va_start(args, format);
@@ -196,11 +209,7 @@ void trace::warning(const pal::char_t* format, ...)
 
 void trace::flush()
 {
-    // Nothing to flush if we haven't written anything
-    if (g_trace_mutex == nullptr)
-        return;
-
-    std::lock_guard<pal::mutex_t> lock(get_mutex());
+    std::lock_guard<spin_lock> lock(g_trace_lock);
 
     pal::file_flush(g_trace_file);
     pal::err_flush();
