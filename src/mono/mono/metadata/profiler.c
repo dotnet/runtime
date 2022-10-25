@@ -22,6 +22,10 @@ typedef void (*MonoProfilerInitializer) (const char *);
 #define OLD_INITIALIZER_NAME "mono_profiler_startup"
 #define NEW_INITIALIZER_NAME "mono_profiler_init"
 
+#if defined(TARGET_WASM) && defined(MONO_CROSS_COMPILE)
+MONO_API void mono_profiler_init_browser (const char *desc);
+#endif
+
 static gboolean
 load_profiler (MonoDl *module, const char *name, const char *desc)
 {
@@ -170,6 +174,14 @@ mono_profiler_load (const char *desc)
 	} else {
 		mname = g_strdup (desc);
 	}
+
+#if defined(TARGET_WASM) && defined(MONO_CROSS_COMPILE)
+	printf ("mono_profiler_load %s\n", mname);
+	if(strcmp (mname, "browser") == 0){
+		mono_profiler_init_browser (desc);
+		goto done;
+	}
+#endif
 
 	if (load_profiler_from_executable (mname, desc))
 		goto done;
