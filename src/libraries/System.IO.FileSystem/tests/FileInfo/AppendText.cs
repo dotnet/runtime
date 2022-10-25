@@ -23,5 +23,17 @@ namespace System.IO.Tests
             writer.Write(content);
             writer.Dispose();
         }
+
+        [Fact]
+        public void FileInfoInvalidAfterAppendText()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testFilePath = Path.Combine(testDir.FullName, GetTestFileName());
+            FileInfo info = new FileInfo(testFilePath);
+            using (StreamWriter streamWriter = info.AppendText())
+            {
+                Assert.True(info.Exists);
+            }
+        }
     }
 }
