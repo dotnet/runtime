@@ -569,35 +569,39 @@ namespace DebuggerTests
             string asm_file = Path.Combine (DebuggerTestAppPath, asm_name + ".dll");
             string pdb_file = Path.Combine (DebuggerTestAppPath, asm_name + ".pdb");
             string asm_file_hot_reload = Path.Combine (DebuggerTestAppPath, "..", "wasm", asm_name+ ".dll");
-            _testOutput.WriteLine ("aleksey 123");
             var pause_location = await LoadAssemblyAndTestHotReload(asm_file, pdb_file, asm_file_hot_reload, "AddInstanceFields", "StaticMethod1",
                                                                     expectBpResolvedEvent: false, sourcesToWait: new string [] { "MethodBody2.cs" });
             var frame = pause_location["callFrames"][0];
             var locals = await GetProperties(frame["callFrameId"].Value<string>());
             await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
-            //var c_props = await GetObjectOnFrame (frame, "c");
-            //_testOutput.WriteLine ("aleksey cprops ---- {0}", c_props.ToString());
-            //await CheckProps (c_props, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields.C"), "c", num_fields: 0);
-            _testOutput.WriteLine ("aleksey 234");
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
-                                           //var c_props1 = await GetObjectOnFrame (locals, "c");
-                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", locals);
-                                           //await CheckProps (locals, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c", num_fields: 1);
                                            await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+#if true
                                            var c = await GetObjectOnLocals(locals, "c");
-                                           // TODO: get the field "Field1" from "c" and check its value
                                            await CheckProps (c, new {
                                                            Field1 = TNumber(123),
                                                    }, "c", num_fields: 1);
+                                           var cObj = GetAndAssertObjectWithName (locals, "c");
+                                           await SetValueOnObject (cObj, "Field1", "456.5");
+
+                                           c = await GetObjectOnLocals(locals, "c");
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber("456.5", isDecimal: true),
+                                                   }, "c", num_fields: 1);
+#endif
                                        });
-#if false
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
-                                           var c_props2 = await GetObjectOnFrame (locals, "c");
-                                           await CheckProps (c_props2, TObject("ApplyUpdateReferencedAssembly.AddInstanceFields+C"), "c2", num_fields: 2);
+                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", locals);
+                                           await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+                                           var c = await GetObjectOnLocals(locals, "c");
+                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", c);
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber(123),
+                                                           Field2 = TString("spqr"),
+                                                   }, "c", num_fields: 2);
                                        });
-#endif
         }
     }
 }
