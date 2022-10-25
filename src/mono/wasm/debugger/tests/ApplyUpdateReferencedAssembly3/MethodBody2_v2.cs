@@ -9,6 +9,7 @@ namespace ApplyUpdateReferencedAssembly
     public class AddInstanceFields {
         public static string StaticMethod1 () {
             C c = new();
+            c.Field2 = "spqr";
             Debugger.Break();
             return "OLD STRING";
         }
