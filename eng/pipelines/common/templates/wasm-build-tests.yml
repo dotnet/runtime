@@ -32,7 +32,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /:BrowserHost=$(_hostedOs)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
