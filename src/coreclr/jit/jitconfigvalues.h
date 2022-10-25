@@ -418,6 +418,7 @@ CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop i
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
+CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -588,6 +589,9 @@ CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
 // 1: Use dispatcher on all platforms that support it
 // 2: Default behavior, depends on platform (yes on x64, no on arm64)
 CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
+
+// Enable tail merging
+CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
