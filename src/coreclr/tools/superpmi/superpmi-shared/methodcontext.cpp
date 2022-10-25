@@ -1705,6 +1705,47 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
     LogException(EXCEPTIONCODE_MC, "Didn't find key %016llX.", methodHandle);
 }
 
+void MethodContext::recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    if (ExpandRawHandleIntrinsic == nullptr)
+        ExpandRawHandleIntrinsic = new LightWeightMap<Agnostic_CORINFO_RESOLVED_TOKENin, Agnostic_CORINFO_GENERICHANDLE_RESULT>;
+
+    Agnostic_CORINFO_RESOLVED_TOKENin key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value;
+    value.lookup            = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
+    value.compileTimeHandle = CastHandle(pResult->compileTimeHandle);
+    value.handleType        = (DWORD)pResult->handleType;
+
+    ExpandRawHandleIntrinsic->Add(key, value);
+    DEBUG_REC(dmpExpandRawHandleIntrinsic(key, value));
+}
+void MethodContext::dmpExpandRawHandleIntrinsic(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result)
+{
+    printf("ExpandRawHandleIntrinsic key: %s, value %s cth-%016llx ht-%u",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(result.lookup).c_str(),
+        result.compileTimeHandle,
+        result.handleType);
+}
+void MethodContext::repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    Agnostic_CORINFO_RESOLVED_TOKENin key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+
+    AssertMapAndKeyExist(ExpandRawHandleIntrinsic, key, ": key %x", pResolvedToken->token);
+
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value = ExpandRawHandleIntrinsic->Get(key);
+    DEBUG_REP(dmpExpandRawHandleIntrinsic(key, value));
+
+    pResult->lookup            = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
+    pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)value.compileTimeHandle;
+    pResult->handleType        = (CorInfoGenericHandleType)value.handleType;
+}
+
 void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsIntrinsicType == nullptr)
