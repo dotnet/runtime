@@ -188,13 +188,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void GenericTypeWithStaticMethodWhichRequires () { }
 			}
 
-			// NativeAOT doesnt produce Requires warnings in Generics https://github.com/dotnet/runtime/issues/68688
-			// [ExpectedWarning("IL2026", "--GenericTypeWithStaticMethodWhichRequires--"]
-			[ExpectedWarning ("IL2026", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			// [ExpectedWarning("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
-			// [ExpectedWarning("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning("IL2026", "--GenericTypeWithStaticMethodWhichRequires--")]
+			[ExpectedWarning("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			[ExpectedWarning("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 			public static void GenericTypeWithStaticMethodViaLdftn ()
 			{
 				var _ = new Action (GenericWithStaticMethod<TestType>.GenericTypeWithStaticMethodWhichRequires);

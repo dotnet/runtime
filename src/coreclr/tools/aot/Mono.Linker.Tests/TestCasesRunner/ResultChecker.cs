@@ -220,8 +220,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+										if (actualName.StartsWith ($"[test]{expectedMember.DeclaringType.FullName.Replace ("/", ".")}") &&
+											actualName.Contains (".cctor") &&
+											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
