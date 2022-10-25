@@ -959,15 +959,7 @@ namespace System
             }
         }
 
-        /// <summary>Searches for the first index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
-        /// <typeparam name="T">The type of the span and values.</typeparam>
-        /// <param name="span">The span to search.</param>
-        /// <param name="lowInclusive">A lower bound, inclusive, of the range for which to search.</param>
-        /// <param name="highInclusive">A upper bound, inclusive, of the range for which to search.</param>
-        /// <returns>
-        /// The index in the span of the first occurrence of any value in the specified range.
-        /// If all of the values are outside of the specified range, returns -1.
-        /// </returns>
+        /// <inheritdoc cref="IndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
             where T : IComparable<T> =>
@@ -1033,15 +1025,7 @@ namespace System
             return SpanHelpers.IndexOfAnyInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
         }
 
-        /// <summary>Searches for the first index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
-        /// <typeparam name="T">The type of the span and values.</typeparam>
-        /// <param name="span">The span to search.</param>
-        /// <param name="lowInclusive">A lower bound, inclusive, of the excluded range.</param>
-        /// <param name="highInclusive">A upper bound, inclusive, of the excluded range.</param>
-        /// <returns>
-        /// The index in the span of the first occurrence of any value outside of the specified range.
-        /// If all of the values are inside of the specified range, returns -1.
-        /// </returns>
+        /// <inheritdoc cref="IndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
             where T : IComparable<T> =>
@@ -1107,15 +1091,7 @@ namespace System
             return SpanHelpers.IndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
         }
 
-        /// <summary>Searches for the last index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
-        /// <typeparam name="T">The type of the span and values.</typeparam>
-        /// <param name="span">The span to search.</param>
-        /// <param name="lowInclusive">A lower bound, inclusive, of the range for which to search.</param>
-        /// <param name="highInclusive">A upper bound, inclusive, of the range for which to search.</param>
-        /// <returns>
-        /// The index in the span of the last occurrence of any value in the specified range.
-        /// If all of the values are outside of the specified range, returns -1.
-        /// </returns>
+        /// <inheritdoc cref="LastIndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
             where T : IComparable<T> =>
@@ -1181,15 +1157,7 @@ namespace System
             return SpanHelpers.LastIndexOfAnyInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
         }
 
-        /// <summary>Searches for the last index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
-        /// <typeparam name="T">The type of the span and values.</typeparam>
-        /// <param name="span">The span to search.</param>
-        /// <param name="lowInclusive">A lower bound, inclusive, of the excluded range.</param>
-        /// <param name="highInclusive">A upper bound, inclusive, of the excluded range.</param>
-        /// <returns>
-        /// The index in the span of the last occurrence of any value outside of the specified range.
-        /// If all of the values are inside of the specified range, returns -1.
-        /// </returns>
+        /// <inheritdoc cref="LastIndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
             where T : IComparable<T> =>

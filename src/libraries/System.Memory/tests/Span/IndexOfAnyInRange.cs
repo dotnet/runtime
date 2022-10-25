@@ -26,20 +26,22 @@ namespace System.SpanTests
         [Fact]
         public void NullBound_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => IndexOfAnyInRange(Array.Empty<RefType>(), null, new RefType { Value = 42 }));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => LastIndexOfAnyInRange(Array.Empty<RefType>(), null, new RefType { Value = 42 }));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => IndexOfAnyExceptInRange(Array.Empty<RefType>(), null, new RefType { Value = 42 }));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => LastIndexOfAnyExceptInRange(Array.Empty<RefType>(), null, new RefType { Value = 42 }));
+            foreach ((RefType low, RefType high) in new (RefType,RefType)[] { (null, new RefType { Value = 42 }), (null, null), (new RefType { Value = 42 }, null) })
+            {
+                string argName = low is null ? "lowInclusive" : "highInclusive";
 
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => IndexOfAnyInRange(Array.Empty<RefType>(), null, null));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => LastIndexOfAnyInRange(Array.Empty<RefType>(), null, null));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => IndexOfAnyExceptInRange(Array.Empty<RefType>(), null, null));
-            AssertExtensions.Throws<ArgumentNullException>("lowInclusive", () => LastIndexOfAnyExceptInRange(Array.Empty<RefType>(), null, null));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.IndexOfAnyInRange(Span<RefType>.Empty, low, high));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.IndexOfAnyInRange(ReadOnlySpan<RefType>.Empty, low, high));
 
-            AssertExtensions.Throws<ArgumentNullException>("highInclusive", () => IndexOfAnyInRange(Array.Empty<RefType>(), new RefType { Value = 42 }, null));
-            AssertExtensions.Throws<ArgumentNullException>("highInclusive", () => LastIndexOfAnyInRange(Array.Empty<RefType>(), new RefType { Value = 42 }, null));
-            AssertExtensions.Throws<ArgumentNullException>("highInclusive", () => IndexOfAnyExceptInRange(Array.Empty<RefType>(), new RefType { Value = 42 }, null));
-            AssertExtensions.Throws<ArgumentNullException>("highInclusive", () => LastIndexOfAnyExceptInRange(Array.Empty<RefType>(), new RefType { Value = 42 }, null));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.LastIndexOfAnyInRange(Span<RefType>.Empty, low, high));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.LastIndexOfAnyInRange(ReadOnlySpan<RefType>.Empty, low, high));
+
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.IndexOfAnyExceptInRange(Span<RefType>.Empty, low, high));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.IndexOfAnyExceptInRange(ReadOnlySpan<RefType>.Empty, low, high));
+
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.LastIndexOfAnyExceptInRange(Span<RefType>.Empty, low, high));
+                AssertExtensions.Throws<ArgumentNullException>(argName, () => MemoryExtensions.LastIndexOfAnyExceptInRange(ReadOnlySpan<RefType>.Empty, low, high));
+            }
         }
 
         [Fact]
@@ -68,7 +70,7 @@ namespace System.SpanTests
         protected abstract T Create(int value);
 
         [Fact]
-        public void EmptyInput_ReturnsNegative1()
+        public void EmptyInput_ReturnsMinus1()
         {
             T[] array = Array.Empty<T>();
             T low = Create(0);
@@ -81,7 +83,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public void NotFound_ReturnsNegative1()
+        public void NotFound_ReturnsMinus1()
         {
             T fillValue = Create(42);
             for (int length = 0; length < 128; length++)
@@ -96,9 +98,9 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public void FindValueInSequence_ReturnsFoundIndexOrNegative1()
+        public void FindValueInSequence_ReturnsFoundIndexOrMinus1()
         {
-            foreach (int length in Enumerable.Range(1, 64))
+            for (int length = 1; length <= 64; length++)
             {
                 T[] array = Enumerable.Range(0, length).Select(Create).ToArray();
 
