@@ -65,14 +65,13 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 }
 
 //------------------------------------------------------------------------
-// IsLessOneInsAway: Returns true if the emitter is on the same or next
-// emitted location. That means the same or next instruction at the same
-// group as this emitLocation or at the beginning of the next group.
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
 //
 // Arguments:
 //  emit - an emitter* instance
 //
-bool emitLocation::IsLessOneInsAway(emitter* emit) const
+bool emitLocation::IsPreviousInsNum(emitter* emit) const
 {
     assert(Valid());
 
@@ -85,7 +84,7 @@ bool emitLocation::IsLessOneInsAway(emitter* emit) const
     // Spanning an IG boundary?
     if (ig->igNext == emit->emitCurIG)
     {
-        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emit->emitCurIGinsCnt <= 1);
+        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emit->emitCurIGinsCnt == 1);
     }
 
     return false;
