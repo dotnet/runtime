@@ -583,7 +583,7 @@ The general rule of thumb that only 10-20% of methods make it to Tier1 and about
 
 ## 1) A large web app (internal Microsoft service)
 
-| Metric           | Number of methods | Share, % | Total size, Mb | Share, % |
+| Metric           | Number of methods | Share, % | Total size, MB | Share, % |
 |------------------|-------------------|----------|----------------|----------|
 | **Tier0**        |            115862 |   59.36% |          60.06 |   83.89% |
 | **Tier1**        |             30942 |   15.85% |           8.22 |   11.48% |
@@ -592,33 +592,35 @@ The general rule of thumb that only 10-20% of methods make it to Tier1 and about
 | **Total jitted** |            195188 |  100.00% |          71.60 |  100.00% |
 
 
-![IL Histogram 1](DynamicPgo-Tier0Instrumenteds-ilsize-histogram1.png)
+![IL Histogram 1](DynamicPgo-InstrumentedTiers-ilsize-histogram1.png)
 
-In this app Tier1 code occupies 8.22mb in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that instrumentated tier is expected to add a similar amount (~13Mb). The total working set of the service is 10Gb so instrumentated tiers contribute ~0.1% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
+In this app Tier1 code occupies 8.22MB in the loader heap (we can add a few megabytes on top of it for call counting stubs, jump-stubs, etc.) meaning that instrumentated tier is expected to add a similar amount (~13MB). The total working set of the service is 10GB so instrumentated tiers contribute ~0.1% of that. We're adding +30k new jit compilations which we can fully compensate with https://github.com/dotnet/runtime/issues/76402 work to avoid potential problems connected with too big queues of methods pending call counting installation/promotions to tier1.
 
 ## 2) A desktop OSS application [AvaloniaILSpy](https://github.com/icsharpcode/AvaloniaILSpy)
 
 `ReadyToRun=0`:
 
-| Metric           | Number of methods | Share, % | Total size, Mb | Share, % |
+| Metric           | Number of methods |        % | Total size, MB |        % |
 |------------------|-------------------|----------|----------------|----------|
 | **Tier0**        |             19968 |   79.09% |           4.58 |   84.69% |
 | **Tier1**        |              4978 |   19.72% |           **0.75** |   13.90% |
 | **FullOpts**     |               300 |    1.19% |           0.08 |    1.39% |
-| **Contains OSR** |                 2 |    0.01% |           0.00 |    0.02% |
-| **Total jitted** |             25248 |  100.00% |           5.41 |  100.00% |
+| **OSR**          |                 2 |    0.01% |           0.00 |    0.02% |
+|                  |                   |          |                |          |
+|        **Total** |             25248 |  100.00% |           5.41 |  100.00% |
 
 `ReadyToRun=1`:
 
-| Metric           | Number of methods | Share, % | Total size, Mb | Share, % |
+| Metric           | Number of methods |        % | Total size, MB |        % |
 |------------------|-------------------|----------|----------------|----------|
 | **Tier0**        |              4713 |   62.45% |           0.84 |   58.34% |
 | **Tier1**        |              2516 |   33.34% |           0.56 |   38.75% |
 | **FullOpts**     |               318 |    4.21% |           0.04 |    2.92% |
-| **Contains OSR** |                 0 |    0.00% |           0.00 |    0.00% |
-| **Total jitted** |              7547 |  100.00% |           1.44 |  100.00% |
+| **OSR**          |                 0 |    0.00% |           0.00 |    0.00% |
+|                  |                   |          |                |          |
+|        **Total** |              7547 |  100.00% |           1.44 |  100.00% |
 
-In case of AvaloniaILSpy, instrumented tiers add around 1Mb (stubs included) to the total working set and around 5k of new jit compilations.
+In case of AvaloniaILSpy, instrumented tiers add around 1MB (stubs included) to the total working set and around 5k of new jit compilations.
 
 # Start time and performance impact
 
@@ -626,7 +628,7 @@ In case of AvaloniaILSpy, instrumented tiers add around 1Mb (stubs included) to 
 
 Overall, it is expected from instrumented tiers to improve startup speed when Dynamic PGO is enabled and improve performance (e.g. Latency/Throughput) for prejitted code. A good example demonstrating both is the following TechEmpower benchmark (plaintext-plaintext):
 
-![Plaintext](DynamicPgo-Tier0Instrumenteds-Plaintext.png)
+![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext.png)
 
 Legend:
 * Red    - `DOTNET_TieredPGO=0`, `DOTNET_ReadyToRun=1`
@@ -635,7 +637,7 @@ Legend:
 
 Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentated tiers for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
 
-![Plaintext](DynamicPgo-Tier0Instrumenteds-Plaintext-opt.png)
+![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext-opt.png)
 (_Predicted results according to local runs_)
 
 ## AvaloniaILSpy
@@ -649,3 +651,13 @@ For this experiment we modified the source code of the app to send an event once
 | R2R=0, PGO=1, Instr. Tiers |      2.03s |
 
 As we can see, instrumentated tiers help to mitigate the start time regression from Dynamic PGO.
+
+## Microsoft internal service
+
+Throughput of the service after startup:
+
+![Plaintext](DynamicPgo-InstrumentedTiers-msft-service.png)
+
+X axis - time in seconds after start, Y axis - Throughput in MB/s.
+
+Here Dynamic PGO without instrumented tiers (red line) is not able to show benefits because the service is prejitted thus prejitted code doesn't benefit from Dynamic PGO. Instrumented tiers help with that by instrumenting hot R2R code to achieve the best performance, hence, the throughput is higher (green line).
