@@ -26,8 +26,7 @@ namespace System
 
         public static string UserName => Interop.Sys.GetUserNameFromPasswd(Interop.Sys.GetEUid());
 
-        private static bool IsPrivilegedProcessCore() => Interop.Sys.GetEUid() == 0 ;
-        }
+        private static bool IsPrivilegedProcessCore() => Interop.Sys.GetEUid() == 0;
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => Interop.Sys.GetPid();
