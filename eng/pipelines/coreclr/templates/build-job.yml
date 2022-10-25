@@ -35,8 +35,8 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
-    pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
+    pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}
