@@ -17,8 +17,6 @@ namespace System.Text.Json.Serialization.Converters
 
         private static readonly char[] s_specialChars = new[] { ',', ' ' };
 
-        private static readonly bool s_containsSpecialChar = ContainsSpecialChar();
-
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
@@ -56,12 +54,6 @@ namespace System.Text.Json.Serialization.Converters
 
         public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions serializerOptions)
         {
-            // If enum contains special char, make it failed to serialize or deserialize.
-            if (s_containsSpecialChar)
-            {
-                ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T));
-            }
-
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
             _nameCacheForWriting = new ConcurrentDictionary<ulong, JsonEncodedText>();
@@ -95,6 +87,12 @@ namespace System.Text.Json.Serialization.Converters
                 string jsonName = FormatJsonName(name, namingPolicy);
                 _nameCacheForWriting.TryAdd(key, JsonEncodedText.Encode(jsonName, encoder));
                 _nameCacheForReading?.TryAdd(jsonName, value);
+
+                // If enum contains special char, make it failed to serialize or deserialize.
+                if (name.IndexOfAny(s_specialChars) != -1)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T), name);
+                }
             }
         }
 
@@ -514,25 +512,6 @@ namespace System.Text.Json.Serialization.Converters
                 new string[] { ValueSeparator }, StringSplitOptions.None
 #endif
                 );
-        }
-
-        private static bool ContainsSpecialChar()
-        {
-#if NETCOREAPP
-            string[] names = Enum.GetNames<T>();
-#else
-            string[] names = Enum.GetNames(typeof(T));
-#endif
-
-            foreach (string name in names)
-            {
-                if (name.IndexOfAny(s_specialChars) != -1)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

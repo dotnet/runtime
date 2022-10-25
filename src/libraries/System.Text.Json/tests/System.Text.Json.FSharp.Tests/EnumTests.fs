@@ -33,14 +33,14 @@ options.Converters.Add(new JsonStringEnumConverter())
 let ``Deserialize With Exception If Enum Contains Special Char`` () =
     let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
 
 
 [<Fact>]
 let ``Serialize With Exception If Enum Contains Special Char`` () =
     let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
 
 [<Fact>]
 let ``Successful Deserialize Normal Enum`` () =
@@ -51,10 +51,10 @@ let ``Successful Deserialize Normal Enum`` () =
 let ``Fail Deserialize Good Value Of Bad Enum Type`` () =
     let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
 
 [<Fact>]
 let ``Fail Serialize Good Value Of Bad Enum Type`` () =
     let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("'BadEnum' is an invalid enum type which contains special character.", ex.InnerException.Message)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
