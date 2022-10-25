@@ -102,8 +102,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString () is string mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
-					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
 						continue;
@@ -159,10 +157,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							bool expectedWarningFound = false;
 
 							foreach (var loggedMessage in loggedMessages) {
-								if (loggedMessage.ToString ().Contains ("RequiresInCompilerGeneratedCode.SuppressInLambda")) {
-									Debug.WriteLine ("Print 2");
-								}
-
 								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
 									continue;
 
