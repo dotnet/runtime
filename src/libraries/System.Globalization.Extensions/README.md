@@ -10,7 +10,7 @@ Nothing should be added here except if there is a good reason to do so.
 Globalization documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.globalization?view=net-7.0.
 
 ## Contribution Bar
-- [x] [We consider new features, Bug fixes, new APIs and performance changes](../../libraries/README.md#primary-bar). The development should be done in [System.Private.Corelib](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Globalization).
+- [x] [We consider new features, bug fixes, new APIs and performance changes](../../libraries/README.md#primary-bar). The development should be done in [System.Private.Corelib](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Private.CoreLib/src/System/Globalization).
 - [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
 
 ## Source
