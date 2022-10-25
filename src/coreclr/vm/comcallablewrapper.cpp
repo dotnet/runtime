@@ -3652,7 +3652,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        CHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
+        CHAR rIID[GUID_STR_BUFFER_LEN];
         GuidToLPSTR(m_IID, rIID);
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
@@ -4703,7 +4703,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
+            CHAR rIID[GUID_STR_BUFFER_LEN];
             GuidToLPSTR(IClassXIID, rIID);
             SString ssName;
             thClass.GetName(ssName);
