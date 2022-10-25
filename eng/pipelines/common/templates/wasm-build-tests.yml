@@ -47,16 +47,16 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
       extraStepsParameters:
         additionalSteps:
-          - script: ./build$(scriptExt) -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=true
+          - script: ./build$(scriptExt) -ci -os Browser -arch wasm -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnableThreads=true
             name: build_multithreaded
             displayName: Build multithreaded runtime
 
-          - script: ./build$(scriptExt) -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnablePerfTracing=true
+          - script: ./build$(scriptExt) -ci -os Browser -arch wasm -s mono+libs+host+packs -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) /p:WasmEnablePerfTracing=true
             name: build_perftracing
             displayName: Build PerfTracing runtime
 
           # FIXME: this might repeat some part of the build
-          - script: ./build$(scriptExt) -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+          - script: ./build$(scriptExt) -ci -os Browser -arch wasm -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
             name: build_tests
             displayName: Build Tests
 
