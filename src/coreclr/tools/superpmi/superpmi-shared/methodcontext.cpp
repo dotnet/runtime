@@ -4847,16 +4847,17 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value != 0;
 }
 
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex, int length)
 {
     if (GetStringLiteral == nullptr)
-        GetStringLiteral = new LightWeightMap<DLDD, DD>();
+        GetStringLiteral = new LightWeightMap<DLDDD, DD>();
 
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
+    key.D = (DWORD)startIndex;
 
     DWORD strBuf = (DWORD)-1;
     if (buffer != nullptr && length != -1)
@@ -4873,21 +4874,22 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     DEBUG_REC(dmpGetStringLiteral(key, value));
 }
 
-void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
+void MethodContext::dmpGetStringLiteral(DLDDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, startIndex-%u, len-%u", key.A, key.B, key.C, key.D, value.A);
     GetStringLiteral->Unlock();
 }
 
-int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
+int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex)
 {
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
+    key.D = (DWORD)startIndex;
 
-    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d", key.A, key.B, key.C);
+    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d startIndex-%d", key.A, key.B, key.C, key.D);
 
     DD value = GetStringLiteral->Get(key);
     DEBUG_REP(dmpGetStringLiteral(key, value));

@@ -47,7 +47,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTokenTypeAsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
-    int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
+    int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
     size_t (* printObjectDescription)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -560,10 +560,11 @@ public:
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          int startIndex)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, buffer, bufferSize);
+    int temp = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, buffer, bufferSize, startIndex);
     if (pException != nullptr) throw pException;
     return temp;
 }
