@@ -12,14 +12,14 @@
     <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <PropertyGroup>
     <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnableThreads)' == 'true'">multithread</MonoWasmBuildVariant>
     <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnablePerfTracing)' == 'true'">perftrace</MonoWasmBuildVariant>
 
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">-st</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'multithreaded'">-mt</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">-pt</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == ''">-unknown-variant</MonoPathSuffix>
+    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">st</MonoPathSuffix>
+    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'multithread'">mt</MonoPathSuffix>
+    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">pt</MonoPathSuffix>
+    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == ''">unknown-variant</MonoPathSuffix>
   </PropertyGroup>
 
   <!-- Set up default live asset paths if no overrides provided. -->
