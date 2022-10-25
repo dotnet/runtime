@@ -2216,12 +2216,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //
 // Arguments:
 //    spDelta                 - the value to add to SP. Must be negative or zero.
-//    canTrack                - x86 only: whether or not to track the SP adjustment
+//    trackSpAdjustments      - x86 only: whether or not to track the SP adjustment
 //
 // Return Value:
 //    None.
 //
-void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool canTrack)
+void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments)
 {
     assert(spDelta < 0);
 
@@ -2231,10 +2231,10 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool canTrack)
 
 #ifdef TARGET_AMD64
     // We always track the SP adjustment on X64.
-    canTrack = true;
+    trackSpAdjustments = true;
 #endif // TARGET_AMD64
 
-    if (canTrack)
+    if (trackSpAdjustments)
     {
         inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
     }
@@ -2253,15 +2253,15 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, bool canTrack)
 // Arguments:
 //    spDelta                 - the value to add to SP. Must be negative or zero. If zero, the probe happens,
 //                              but the stack pointer doesn't move.
-//    canTrack                - x86 only: whether or not to track the SP adjustment
+//    trackSpAdjustments      - x86 only: whether or not to track the SP adjustment
 //
 // Return Value:
 //    None.
 //
-void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool canTrack)
+void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments)
 {
     GetEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
-    genStackPointerConstantAdjustment(spDelta, canTrack);
+    genStackPointerConstantAdjustment(spDelta, trackSpAdjustments);
 }
 
 //------------------------------------------------------------------------
@@ -2275,12 +2275,12 @@ void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool c
 //
 // Arguments:
 //    spDelta                 - the value to add to SP. Must be negative.
-//    canTrack                - x86 only: whether or not to track the SP adjustment
+//    trackSpAdjustments      - x86 only: whether or not to track the SP adjustment
 //
 // Return Value:
 //    Offset in bytes from SP to last probed address.
 //
-target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool canTrack)
+target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments)
 {
     assert(spDelta < 0);
 
@@ -2290,7 +2290,7 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
     do
     {
         ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
-        genStackPointerConstantAdjustmentWithProbe(spOneDelta, canTrack);
+        genStackPointerConstantAdjustmentWithProbe(spOneDelta, trackSpAdjustments);
         spRemainingDelta -= spOneDelta;
     } while (spRemainingDelta < 0);
 
@@ -2519,7 +2519,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         if ((amount > 0) && !initMemOrLargeAlloc)
         {
-            lastTouchDelta      = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* canTrack */ true);
+            lastTouchDelta      = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* trackSpAdjustments */ true);
             stackAdjustment     = 0;
             locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
             goto ALLOC_DONE;
@@ -2582,7 +2582,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             assert(amount < compiler->eeGetPageSize()); // must be < not <=
             lastTouchDelta =
-                genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* canTrack */ regCnt == REG_NA);
+                genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, /* trackSpAdjustments */ regCnt == REG_NA);
             goto ALLOC_DONE;
         }
 
@@ -2653,11 +2653,11 @@ ALLOC_DONE:
             (stackAdjustment + (target_size_t)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
              compiler->eeGetPageSize()))
         {
-            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, /* canTrack */ true);
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, /* trackSpAdjustments */ true);
         }
         else
         {
-            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, /* canTrack */ true);
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, /* trackSpAdjustments */ true);
         }
     }
 
@@ -7848,7 +7848,7 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
         if ((argSize >= ARG_STACK_PROBE_THRESHOLD_BYTES) ||
             compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5))
         {
-            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)argSize, /* canTrack */ true);
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)argSize, /* trackSpAdjustments */ true);
         }
         else
         {

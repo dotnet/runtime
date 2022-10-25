@@ -1431,9 +1431,9 @@ protected:
     void genReturn(GenTree* treeNode);
 
 #ifdef TARGET_XARCH
-    void genStackPointerConstantAdjustment(ssize_t spDelta, bool canTrack);
-    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool canTrack);
-    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool canTrack);
+    void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments);
     void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
 #else  // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
