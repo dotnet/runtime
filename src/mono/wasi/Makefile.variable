@@ -14,3 +14,5 @@ WASMTIME_DIR=$(TOP)/artifacts/bin/$(WASMTIME_DIR_NAME)
 
 NINJA_VERSION=v1.11.0
 NINJA_DIR=$(TOP)/artifacts/bin/ninja
+
+MONO_VARIANT_DIR_NAME=st

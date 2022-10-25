@@ -15,6 +15,6 @@ DOTNET_ROOT=$(TOP)/.dotnet
 echo "DOTNET_ROOT is undefined. Example: export DOTNET_ROOT=~/dotnet7. Defaulting to $(DOTNET_ROOT)
 endif
 ifndef BROWSER_WASM_RUNTIME_PATH
-BROWSER_WASM_RUNTIME_PATH=$(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm
+BROWSER_WASM_RUNTIME_PATH=$(TOP)/artifacts/bin/$(MONO_VARIANT_DIR_NAME)/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm
 echo "BROWSER_WASM_RUNTIME_PATH is undefined. Example: export BROWSER_WASM_RUNTIME_PATH=$(DOTNET_ROOT)/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/7.0.0-alpha.1.22061.11/runtimes/browser-wasm). Defaulting to $(BROWSER_WASM_RUNTIME_PATH)"
 endif

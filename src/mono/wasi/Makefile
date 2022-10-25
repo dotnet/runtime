@@ -1,7 +1,5 @@
 include Makefile.variable
 
-MONO_VARIANT_DIR_NAME=st
-
 all: build-all
 
 build-all: $(WASI_SDK_CLANG)
