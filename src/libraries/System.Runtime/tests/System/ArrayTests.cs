@@ -4447,7 +4447,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] // Array.Initialize
         public static void Array_Initialize()
         {
             var array = new StructWithDefaultConstructor[10, 10];
