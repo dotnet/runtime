@@ -221,6 +221,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnableThreads)' == 'true'">multithreaded</MonoWasmBuildVariant>
+    <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnablePerfTracing)' == 'true'">perftrace</MonoWasmBuildVariant>
+
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">st</MonoPathSuffix>
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'multithreaded'">mt</MonoPathSuffix>
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">pt</MonoPathSuffix>

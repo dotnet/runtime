@@ -13,6 +13,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnableThreads)' == 'true'">multithread</MonoWasmBuildVariant>
+    <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnablePerfTracing)' == 'true'">perftrace</MonoWasmBuildVariant>
+
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">-st</MonoPathSuffix>
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'multithreaded'">-mt</MonoPathSuffix>
     <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">-pt</MonoPathSuffix>
