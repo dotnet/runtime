@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -30,7 +28,6 @@ namespace System.Buffers.Text
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            Debug.Assert((uint)month < 12);
             FormattingHelpers.CopyFourBytes("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), destination.Slice(8));
 
             FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 12);
