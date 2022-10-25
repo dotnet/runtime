@@ -57,7 +57,6 @@
       <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', $(_Regex)))" />
       <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(_TestLines0.Identity)))" />
     </ItemGroup>
-    <Message Text="L: %(TestClassName.Identity)" Importance="High" />
 
     <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
                       Lines="@(TestClassName->Distinct())" />
