@@ -46,6 +46,7 @@ namespace System.Collections.ObjectModel
     public partial class ReadOnlyObservableCollection<T> : System.Collections.ObjectModel.ReadOnlyCollection<T>, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
     {
         public ReadOnlyObservableCollection(System.Collections.ObjectModel.ObservableCollection<T> list) : base (default(System.Collections.Generic.IList<T>)) { }
+        public static new System.Collections.ObjectModel.ReadOnlyObservableCollection<T> Empty { get { throw null; } }
         protected virtual event System.Collections.Specialized.NotifyCollectionChangedEventHandler? CollectionChanged { add { } remove { } }
         protected virtual event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
         event System.Collections.Specialized.NotifyCollectionChangedEventHandler? System.Collections.Specialized.INotifyCollectionChanged.CollectionChanged { add { } remove { } }

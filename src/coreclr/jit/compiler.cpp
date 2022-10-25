@@ -1947,7 +1947,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // DEBUG
 
     vnStore                    = nullptr;
-    m_opAsgnVarDefSsaNums      = nullptr;
+    m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgVNPassesCompleted        = 0;
@@ -2252,33 +2252,39 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                    = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
-
-    // The VM will set the ISA flags depending on actual hardware support
-    // and any specified config switches specified by the user. The exception
-    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
-    // don't actually exist. The JIT is in charge of adding those and ensuring
-    // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
+// The VM will set the ISA flags depending on actual hardware support
+// and any specified config switches specified by the user. The exception
+// here is for certain "artificial ISAs" such as Vector64/128/256 where they
+// don't actually exist. The JIT is in charge of adding those and ensuring
+// the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+    }
+#elif defined(TARGET_ARM64)
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
 #endif // TARGET_ARM64
 
-    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
     opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
@@ -5090,14 +5096,44 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            // There are two special cases:
+            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+            //    region range.
+            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+            //    can't add alignment because we can't add instructions in that block. In the
+            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+            //
+            // Currently, we don't align loops for these cases.
             //
             if (bbHavingAlign == nullptr)
             {
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+#if FEATURE_EH_CALLFINALLY_THUNKS
+                if (block->bbJumpKind == BBJ_CALLFINALLY)
                 {
+                    // It must be a retless BBJ_CALLFINALLY if we get here.
+                    assert(!block->isBBCallAlwaysPair());
+
+                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                    // BBJ_CALLFINALLY), we allow it.
+                    isSpecialCallFinally = true;
+                }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+                if (isSpecialCallFinally)
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                    madeChanges = true;
+                }
+                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
+                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    // In some odd cases we may see blocks within the loop before we see the
+                    // top block of the loop. Just bail on aligning such loops.
+                    //
                     loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
                     madeChanges = true;
                 }
@@ -5290,11 +5326,10 @@ void Compiler::ResetOptAnnotations()
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    m_blockToEHPreds      = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore              = nullptr;
+    m_blockToEHPreds     = nullptr;
+    fgSsaPassesCompleted = 0;
+    fgVNPassesCompleted  = 0;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -7110,7 +7145,7 @@ struct WrapICorJitInfo : public ICorJitInfo
             {
                 // If you get a build error here due to 'WrapICorJitInfo' being
                 // an abstract class, it's very likely that the wrapper bodies
-                // in ICorJitInfo_API_wrapper.hpp are no longer in sync with
+                // in ICorJitInfo_wrapper_generated.hpp are no longer in sync with
                 // the EE interface; please be kind and update the header file.
                 wrap = new (inst, jitstd::placement_t()) WrapICorJitInfo();
 
@@ -7130,7 +7165,7 @@ private:
     COMP_HANDLE wrapHnd; // the "real thing"
 
 public:
-#include "ICorJitInfo_API_wrapper.hpp"
+#include "ICorJitInfo_wrapper_generated.hpp"
 };
 
 #endif // MEASURE_CLRAPI_CALLS
@@ -7810,10 +7845,6 @@ const char* PhaseEnums[] = {
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseEnumsW[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
-#include "compphases.h"
-};
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
@@ -8134,7 +8165,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
 
         static const char* APInames[] = {
 #define DEF_CLR_API(name) #name,
-#include "ICorJitInfo_API_names.h"
+#include "ICorJitInfo_names_generated.h"
         };
 
         unsigned shownCalls  = 0;

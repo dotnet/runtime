@@ -445,12 +445,13 @@ bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                                        unsigned              metaTOK,   /* IN  */
                                        char16_t*             buffer,    /* OUT */
-                                       int                   bufferSize /* IN  */
+                                       int                   bufferSize,/* IN  */
+                                       int                   startIndex /* IN  */
                                        )
 {
     mc->cr->AddCall("getStringLiteral");
-    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
-    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, temp);
+    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex, temp);
     return temp;
 }
 

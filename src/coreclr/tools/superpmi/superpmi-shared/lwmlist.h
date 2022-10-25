@@ -152,7 +152,7 @@ LWM(ExpandRawHandleIntrinsic, Agnostic_CORINFO_RESOLVED_TOKENin, Agnostic_CORINF
 LWM(IsIntrinsicType, DWORDLONG, DWORD)
 LWM(IsSDArray, DWORDLONG, DWORD)
 LWM(IsValidStringRef, DLD, DWORD)
-LWM(GetStringLiteral, DLDD, DD)
+LWM(GetStringLiteral, DLDDD, DD)
 LWM(PrintObjectDescription, DLDL, Agnostic_PrintObjectDescriptionResult)
 LWM(IsValidToken, DLD, DWORD)
 LWM(IsValueClass, DWORDLONG, DWORD)

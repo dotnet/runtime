@@ -74,7 +74,6 @@ nativeStringResourceTable_mscorrc
 #_wcsicmp
 #_stricmp
 #sprintf_s
-#swprintf_s
 #vsprintf_s
 #_snprintf_s
 #_snwprintf_s
@@ -99,7 +98,6 @@ nativeStringResourceTable_mscorrc
 #CloseHandle
 #DebugBreak
 #DeleteCriticalSection
-#DeleteFileW
 #DuplicateHandle
 #EnterCriticalSection
 #FindClose
@@ -112,7 +110,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -141,7 +138,6 @@ nativeStringResourceTable_mscorrc
 #LoadLibraryExW
 #MapViewOfFile
 #MapViewOfFileEx
-#MoveFileExW
 #MultiByteToWideChar
 #OpenProcess
 #OutputDebugStringW

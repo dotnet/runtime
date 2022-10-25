@@ -380,11 +380,12 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                              unsigned              metaTOK,   /* IN  */
                              char16_t*             buffer,    /* OUT */
-                             int                   bufferSize /* IN  */
+                             int                   bufferSize,/* IN  */
+                             int                   startIndex
                              )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
 size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */

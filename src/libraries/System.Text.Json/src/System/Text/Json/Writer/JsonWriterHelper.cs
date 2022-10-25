@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Unicode;
 
 namespace System.Text.Json
 {
@@ -228,6 +230,64 @@ namespace System.Text.Json
                     SR.Format(SR.ExpectedEndOfDigitNotFound, ThrowHelper.GetPrintableString(utf8FormattedNumber[i])),
                     nameof(utf8FormattedNumber));
             }
+        }
+
+        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        public static unsafe bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
+        {
+            try
+            {
+#if NETCOREAPP
+                s_utf8Encoding.GetCharCount(bytes);
+#else
+                if (!bytes.IsEmpty)
+                {
+                    fixed (byte* ptr = bytes)
+                    {
+                        s_utf8Encoding.GetCharCount(ptr, bytes.Length);
+                    }
+                }
+#endif
+                return true;
+            }
+            catch (DecoderFallbackException)
+            {
+                return false;
+            }
+        }
+
+        internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
+        {
+#if NETCOREAPP
+            OperationStatus status = Utf8.FromUtf16(source, destination, out int charsRead, out written, replaceInvalidSequences: false, isFinalBlock: true);
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall or OperationStatus.InvalidData);
+            Debug.Assert(charsRead == source.Length || status is not OperationStatus.Done);
+            return status;
+#else
+            written = 0;
+            try
+            {
+                if (!source.IsEmpty)
+                {
+                    fixed (char* charPtr = source)
+                    fixed (byte* destPtr = destination)
+                    {
+                        written = s_utf8Encoding.GetBytes(charPtr, source.Length, destPtr, destination.Length);
+                    }
+                }
+
+                return OperationStatus.Done;
+            }
+            catch (EncoderFallbackException)
+            {
+                return OperationStatus.InvalidData;
+            }
+            catch (ArgumentException)
+            {
+                return OperationStatus.DestinationTooSmall;
+            }
+#endif
         }
     }
 }
