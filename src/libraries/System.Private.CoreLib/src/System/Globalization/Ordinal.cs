@@ -175,7 +175,7 @@ namespace System.Globalization
 
         NonAscii32:
             // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
-            if (Utf16Utility.AllCharsInUInt32AreAscii(valueAu32) != Utf16Utility.AllCharsInUInt32AreAscii(valueBu32))
+            if (Utf16Utility.AllCharsInUInt32AreAscii(valueAu32) || Utf16Utility.AllCharsInUInt32AreAscii(valueBu32))
             {
                 return false;
             }
@@ -184,7 +184,7 @@ namespace System.Globalization
 #if TARGET_64BIT
         NonAscii64:
             // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
-            if (Utf16Utility.AllCharsInUInt64AreAscii(valueAu64) != Utf16Utility.AllCharsInUInt64AreAscii(valueBu64))
+            if (Utf16Utility.AllCharsInUInt64AreAscii(valueAu64) || Utf16Utility.AllCharsInUInt64AreAscii(valueBu64))
             {
                 return false;
             }
