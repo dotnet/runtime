@@ -31,6 +31,7 @@ if /i [%1] == [arm64]       ( set __BuildArch=arm64&&shift&goto Arg_Loop)
 if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [variant] ( set __variant=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
@@ -59,10 +60,10 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYP
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__artifactsDir%\bin\native\%__outConfig%"
+    set "__CMakeBinDir=%__artifactsDir%\bin\%__variant%\native\%__outConfig%"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__artifactsDir%\obj\native\%__outConfig%"
+    set "__IntermediatesDir=%__artifactsDir%\obj\%__variant%\native\%__outConfig%"
 )
 if %__Ninja% == 0 (
     set "__IntermediatesDir=%__IntermediatesDir%\ide"
