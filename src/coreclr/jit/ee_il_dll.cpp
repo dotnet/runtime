@@ -853,9 +853,8 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    gtDispLclVar(var->varNumber, false);
-    printf("(%10s) : From %08Xh to %08Xh, in ", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name),
-           var->startOffset, var->endOffset);
+    printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
+           (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
