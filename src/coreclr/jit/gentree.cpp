@@ -592,6 +592,7 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 {
     assert(varTypeIsStruct(TypeGet()));
 
+    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
     switch (OperGet())
     {
         case GT_LCL_VAR:
@@ -604,12 +605,31 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
         case GT_BLK:
             return AsBlk()->GetLayout();
 
+        case GT_COMMA:
+            return AsOp()->gtOp2->GetLayout(compiler);
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->GetLayout(compiler);
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_MKREFANY:
-            return compiler->typGetObjLayout(compiler->impGetRefAnyClass());
+            structHnd = compiler->impGetRefAnyClass();
+            break;
+
+        case GT_FIELD:
+            compiler->eeGetFieldType(AsField()->gtFldHnd, &structHnd);
+            break;
+
+        case GT_CALL:
+            structHnd = AsCall()->gtRetClsHnd;
+            break;
 
         default:
             unreached();
     }
+
+    return compiler->typGetObjLayout(structHnd);
 }
 
 //-----------------------------------------------------------
@@ -2482,9 +2502,18 @@ AGAIN:
                         return false;
                     }
                     break;
+
                 case GT_BLK:
                 case GT_OBJ:
-                    if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
+                    {
+                        return false;
+                    }
+                    FALLTHROUGH;
+
+                case GT_IND:
+                case GT_NULLCHECK:
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
                     {
                         return false;
                     }
@@ -7364,7 +7393,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags)
+GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -7372,14 +7401,10 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     node->gtInlineCandidate = inlineCandidate;
 
-    node->bbFlags = bbFlags;
+    node->gtSubstExpr = nullptr;
+    node->gtSubstBB   = nullptr;
 
-    if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
-    {
-        node->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
-    }
-
-    // GT_RET_EXPR node eventually might be bashed back to GT_CALL (when inlining is aborted for example).
+    // GT_RET_EXPR node eventually might be turned back into GT_CALL (when inlining is aborted for example).
     // Therefore it should carry the GTF_CALL flag so that all the rules about spilling can apply to it as well.
     // For example, impImportLeave or CEE_POP need to spill GT_RET_EXPR before empty the evaluation stack.
     node->gtFlags |= GTF_CALL;
@@ -8781,6 +8806,10 @@ DONE:
         // Update side effect flags since they may be different from the source side effect flags.
         // For example, we may have replaced some locals with constants and made indirections non-throwing.
         gtUpdateNodeSideEffects(copy);
+        if ((varNum != BAD_VAR_NUM) && copy->OperIsSsaDef())
+        {
+            fgAssignSetVarDef(copy);
+        }
     }
 
     /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
@@ -11502,10 +11531,16 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
         {
-            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
-            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
-            printTreeID(associatedTree);
+            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(for ");
+            printTreeID(inlineCand);
             printf(")");
+
+            if (tree->AsRetExpr()->gtSubstExpr != nullptr)
+            {
+                printf(" -> ");
+                printTreeID(tree->AsRetExpr()->gtSubstExpr);
+            }
         }
         break;
 
@@ -15291,13 +15326,12 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
             int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
             if (cnsIndex >= 0)
             {
-                const int maxStrSize = 1024;
-                char16_t  str[maxStrSize];
-                int       length =
-                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, str, maxStrSize);
-                if (cnsIndex < length)
+                char16_t chr;
+                int      length =
+                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, &chr, 1, cnsIndex);
+                if (length > 0)
                 {
-                    return gtNewIconNode(str[cnsIndex]);
+                    return gtNewIconNode(chr);
                 }
             }
         }
@@ -17446,7 +17480,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
             case GT_RET_EXPR:
-                structHnd = tree->AsRetExpr()->gtRetClsHnd;
+                structHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
                 break;
             case GT_FIELD:
                 info.compCompHnd->getFieldType(tree->AsField()->gtFldHnd, &structHnd);
@@ -22845,6 +22879,43 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
     return OperIsMemoryLoad() || OperIsMemoryStore();
+}
+
+//------------------------------------------------------------------------
+// GetLayout: Get the layout for this TYP_STRUCT HWI node.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//
+// Return Value:
+//    The struct layout for the node.
+//
+// Notes:
+//    Currently, this method synthesizes block layouts, since there is not
+//    enough space in the GenTreeHWIntrinsic node to store a proper layout
+//    pointer or number.
+//
+ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
+{
+    assert(TypeIs(TYP_STRUCT));
+
+    switch (GetHWIntrinsicId())
+    {
+#ifdef TARGET_ARM64
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector64:
+        case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            return compiler->typGetBlkLayout(16);
+
+        case NI_AdvSimd_Arm64_LoadPairVector128:
+        case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            return compiler->typGetBlkLayout(32);
+#endif // TARGET_ARM64
+
+        default:
+            unreached();
+    }
 }
 
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicId() const

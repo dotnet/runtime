@@ -411,33 +411,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-class GuidString final
-{
-    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
-public:
-    static void Create(const GUID& g, GuidString& ret)
-    {
-        // Ensure we always have a null
-        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
-        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            g.Data1, g.Data2, g.Data3,
-            g.Data4[0], g.Data4[1],
-            g.Data4[2], g.Data4[3],
-            g.Data4[4], g.Data4[5],
-            g.Data4[6], g.Data4[7]);
-    }
-
-    const char* AsString() const
-    {
-        return _buffer;
-    }
-
-    operator const char*() const
-    {
-        return _buffer;
-    }
-};
-
 inline
 LPWSTR DuplicateString(
     LPCWSTR wszString,
@@ -957,25 +930,6 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
-
-void    MakePath(_Out_ CQuickWSTR &path,
-                 _In_ LPCWSTR drive,
-                 _In_ LPCWSTR dir,
-                 _In_ LPCWSTR fname,
-                 _In_ LPCWSTR ext);
-
-WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
-
-//*****************************************************************************
-//
-// SString version of the path functions.
-//
-//*****************************************************************************
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext);
 
 #include "ostype.h"
 
@@ -3466,6 +3420,9 @@ private:
     BYTE m_inited;
 };
 
+// 38 characters + 1 null terminating.
+#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
+
 //*****************************************************************************
 // Convert a GUID into a pointer to a string
 //*****************************************************************************
@@ -4433,13 +4390,6 @@ inline T* InterlockedCompareExchangeT(
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
 HRESULT GetClrModuleDirectory(SString& wszPath);
-HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
-
-HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
-// This is a slight variation that can be used for anything else
-typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
-void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
 
 namespace Clr { namespace Util
 {

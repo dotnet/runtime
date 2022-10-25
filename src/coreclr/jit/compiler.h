@@ -1021,8 +1021,6 @@ public:
         return structHnd;
     }
 
-    CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
-
 private:
     ClassLayout* m_layout; // layout info for structs
 
@@ -2594,7 +2592,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
+    GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -3374,10 +3372,6 @@ public:
             structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
         }
 
-#ifdef DEBUG
-        void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
-#endif // DEBUG
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -3392,12 +3386,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef DEBUG
-        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
-                                 RetypedAsScalarFieldsMap;
-        RetypedAsScalarFieldsMap retypedFieldsMap;
-#endif // DEBUG
     };
 
     StructPromotionHelper* structPromotionHelper;
@@ -5236,6 +5224,8 @@ public:
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
+    PhaseStatus fgTailMerge();
+
     enum FG_RELOCATE_TYPE
     {
         FG_RELOCATE_TRY,    // relocate the 'try' region
@@ -5866,7 +5856,6 @@ private:
 #endif
 
     PhaseStatus fgPromoteStructs();
-    void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
     // Reset the refCount for implicit byrefs.

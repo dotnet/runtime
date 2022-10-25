@@ -4549,6 +4549,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     if (opts.OptimizationEnabled())
     {
+        // Tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+
         // Merge common throw blocks
         //
         DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
@@ -4649,6 +4653,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
+
+        // Second pass of tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
 
         // Compute reachability sets and dominators.
         //

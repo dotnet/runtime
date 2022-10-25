@@ -648,7 +648,7 @@ typedef enum _TimeConversionConstants
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, uint64_t* val);
+PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
 #ifdef __APPLE__
 bool

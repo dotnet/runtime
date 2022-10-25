@@ -414,7 +414,8 @@ OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
 
-OPDEF(MINT_GETITEM_SPAN, "getitem.span", 7, 1, 2, MintOpTwoShorts)
+OPDEF(MINT_GETITEM_SPAN, "getitem.span", 5, 1, 2, MintOpTwoShorts)
+OPDEF(MINT_GETITEM_LOCALSPAN, "getitem.localspan", 5, 1, 2, MintOpTwoShorts)
 
 /* binops */
 OPDEF(MINT_ADD_I4, "add.i4", 4, 1, 2, MintOpNoArgs)

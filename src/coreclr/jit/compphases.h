@@ -53,8 +53,10 @@ CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,       "Compute edge weights (1, f
 #if defined(FEATURE_EH_FUNCLETS)
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,            "Create EH funclets",             false, -1, false)
 #endif // FEATURE_EH_FUNCLETS
+CompPhaseNameMacro(PHASE_TAIL_MERGE,                 "Tail merge",                     false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",             false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)
+CompPhaseNameMacro(PHASE_TAIL_MERGE2,                "Post-morph tail merge",          false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",          false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,            "Optimize layout",                false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,       "Compute blocks reachability",    false, -1, false)

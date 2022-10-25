@@ -6901,11 +6901,11 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 		res = (gconstpointer)no_icall_table;
 		goto exit;
 	} else {
-		gboolean uses_handles = FALSE;
+		MonoInternalCallFlags icall_flags;
 		g_assert (icall_table->lookup);
-		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
-		if (res && flags && uses_handles)
-			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
+		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &icall_flags);
+		if (res && flags)
+			*flags = *flags | icall_flags;
 		mono_icall_unlock ();
 		locked = FALSE;
 
@@ -7191,6 +7191,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #define ICALL_TYPE(id,name,first) /* nothing */
 #define ICALL(id,name,func) /* nothing */
 #define NOHANDLES(inner)  /* nothing */
+#define NOHANDLES_FLAGS(inner,flags)  /* nothing */
 
 #define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) MONO_HANDLE_REGISTER_ICALL_IMPLEMENT (func, ret, nargs, argtypes)
 
@@ -7212,4 +7213,5 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #undef ICALL_TYPE
 #undef ICALL
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL
