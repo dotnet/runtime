@@ -130,19 +130,17 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(TargetApiLevel))
             TargetApiLevel = DefaultTargetApiLevel;
 
-        // make sure BuildApiLevel >= TargetApiLevel >= MinApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi) &&
-            int.TryParse(TargetApiLevel, out int intTargetApi) &&
-            intApi < intTargetApi)
+        bool hasBuildApiLevel = int.TryParse(BuildApiLevel, out int intApi);
+        bool hasMinApiLevel = int.TryParse(MinApiLevel, out int minApiLevel);
+        bool hasTargetApiLevel = int.TryParse(TargetApiLevel, out int targetApiLevel);
+
+        if (hasBuildApiLevel && hasMinApiLevel && intApi < minApiLevel)
         {
-            throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+            throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
                 "Make sure you've downloaded some recent build-tools in Android SDK");
         }
-        else if (
-            int.TryParse(TargetApiLevel, out int targetApiLevel) &&
-            int.TryParse(MinApiLevel, out int minApiLevel) &&
-            targetApiLevel < minApiLevel)
+        else if (hasTargetApiLevel && hasMinApiLevel && targetApiLevel < minApiLevel)
         {
             throw new ArgumentException($"TargetApiLevel={TargetApiLevel} < MinApiLevel={MinApiLevel}.");
         }
