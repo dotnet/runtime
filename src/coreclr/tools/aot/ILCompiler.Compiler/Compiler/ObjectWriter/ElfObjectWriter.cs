@@ -438,6 +438,12 @@ namespace ILCompiler.ObjectWriter
                 _sectionIndexToElfSection[_bssSectionIndex].Size = (ulong)_bssStream.Length;
             }
 
+            _objectFile.AddSection(new ElfBinarySection(Stream.Null)
+            {
+                Name = ".note.GNU-stack",
+                Type = ElfSectionType.ProgBits,
+            });
+
             var elfDiagnostics = new DiagnosticBag();
             _objectFile.UpdateLayout(elfDiagnostics);
             Debug.Assert(!elfDiagnostics.HasErrors);
