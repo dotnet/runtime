@@ -330,7 +330,6 @@ namespace System
             SetValueImpl(value, (int)index);
         }
 
-        [RequiresUnreferencedCode("The parameterless constructor may be trimmed from the array element type.")]
         public void Initialize()
         {
             object arr = this;
