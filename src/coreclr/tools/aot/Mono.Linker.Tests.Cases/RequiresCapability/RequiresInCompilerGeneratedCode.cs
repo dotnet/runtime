@@ -2111,9 +2111,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Warnings for Reflection access to methods with Requires
-
-			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--")]
+			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--")]
 			// NonPublicMethods doesn't warn for lambdas emitted into display class types.
 			static void TestNonPublicMethods ()
 			{
