@@ -39,4 +39,8 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg,
 	      MonoType **conv_arg_type, MarshalAction action,  MonoMarshalLightweightCallbacks* lightweigth_cb);
 
+
+void
+mono_marshal_ilgen_init_internal (void);
+ 
 #endif // __MARSHAL_ILGEN_H__

@@ -2717,13 +2717,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static MonoMarshalIlgenCallbacks *
 get_marshal_cb (void)
 {
-	if (G_UNLIKELY (!ilgen_cb_inited)) {
-#ifdef ENABLE_ILGEN
-		mono_marshal_ilgen_init ();
-#else
-		mono_marshal_noilgen_init_heavyweight ();
-#endif
-	}
+	g_assert(ilgen_cb_inited);
 	return &ilgen_marshal_cb;
 }
 
@@ -2804,7 +2798,7 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 void
-mono_marshal_ilgen_init (void)
+mono_marshal_ilgen_init_internal (void)
 {
 	MonoMarshalIlgenCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
