@@ -9103,7 +9103,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             return false;
         }
 
-        if (m_testInfo1.compTree->gtOper == GT_EQ)
+        if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
         {
             // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
             // So we will branch to BX if (c1&c2)!=0
@@ -9111,7 +9111,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_NE;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_LT)
+        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE)
         {
             // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
             // So we will branch to BX if (c1|c2)>=0
@@ -9123,13 +9123,17 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         {
             return false;
         }
-        else
+        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
         {
             // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
             // So we will branch to BX if (c1|c2)==0
 
             foldOp = GT_OR;
             cmpOp  = GT_EQ;
+        }
+        else
+        {
+            return false;
         }
     }
 
