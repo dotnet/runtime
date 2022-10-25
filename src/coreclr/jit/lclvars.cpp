@@ -1668,12 +1668,7 @@ bool Compiler::lvaFieldOffsetCmp::operator()(const lvaStructFieldInfo& field1, c
 // Arguments:
 //   compiler - pointer to a compiler to get access to an allocator, compHandle etc.
 //
-Compiler::StructPromotionHelper::StructPromotionHelper(Compiler* compiler)
-    : compiler(compiler)
-    , structPromotionInfo()
-#ifdef DEBUG
-    , retypedFieldsMap(compiler->getAllocator(CMK_DebugOnly))
-#endif // DEBUG
+Compiler::StructPromotionHelper::StructPromotionHelper(Compiler* compiler) : compiler(compiler), structPromotionInfo()
 {
 }
 
@@ -1705,27 +1700,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
     }
     return false;
 }
-
-#ifdef DEBUG
-//--------------------------------------------------------------------------------------------
-// CheckRetypedAsScalar - check that the fldType for this fieldHnd was retyped as requested type.
-//
-// Arguments:
-//   fieldHnd      - the field handle;
-//   requestedType - as which type the field was accessed;
-//
-// Notes:
-//   For example it can happen when such struct A { struct B { long c } } is compiled and we access A.B.c,
-//   it could look like "GT_FIELD struct B.c -> ADDR -> GT_FIELD struct A.B -> ADDR -> LCL_VAR A" , but
-//   "GT_FIELD struct A.B -> ADDR -> LCL_VAR A" can be promoted to "LCL_VAR long A.B" and then
-//   there is type mistmatch between "GT_FIELD struct B.c" and  "LCL_VAR long A.B".
-//
-void Compiler::StructPromotionHelper::CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType)
-{
-    assert(retypedFieldsMap.Lookup(fieldHnd));
-    assert(retypedFieldsMap[fieldHnd] == requestedType);
-}
-#endif // DEBUG
 
 //--------------------------------------------------------------------------------------------
 // CanPromoteStructType - checks if the struct type can be promoted.
@@ -2285,9 +2259,6 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
             {
                 fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
                 fieldInfo.fldSize = simdSize;
-#ifdef DEBUG
-                retypedFieldsMap.Set(fieldInfo.fldHnd, fieldInfo.fldType, RetypedAsScalarFieldsMap::Overwrite);
-#endif // DEBUG
             }
         }
     }
@@ -2388,9 +2359,7 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
     // (tracked by #10019).
     fieldInfo.fldType = fieldVarType;
     fieldInfo.fldSize = fieldSize;
-#ifdef DEBUG
-    retypedFieldsMap.Set(fieldInfo.fldHnd, fieldInfo.fldType, RetypedAsScalarFieldsMap::Overwrite);
-#endif // DEBUG
+
     return true;
 }
 
@@ -2472,7 +2441,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvType          = pFieldInfo->fldType;
         fieldVarDsc->lvExactSize     = pFieldInfo->fldSize;
         fieldVarDsc->lvIsStructField = true;
-        fieldVarDsc->lvFieldHnd      = pFieldInfo->fldHnd;
         fieldVarDsc->lvFldOffset     = pFieldInfo->fldOffset;
         fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
         fieldVarDsc->lvParentLcl     = lclNum;
