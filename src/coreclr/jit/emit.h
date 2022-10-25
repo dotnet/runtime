@@ -191,7 +191,6 @@ public:
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
     bool IsLessOneInsAway(emitter* emit) const;
-    bool noDistanceWith(emitLocation& lhs) const;
 
 #ifdef DEBUG
     void Print(LONG compMethodID) const;
