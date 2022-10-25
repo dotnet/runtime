@@ -15317,8 +15317,8 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
             int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
             if (cnsIndex >= 0)
             {
-                char16_t  chr;
-                int       length =
+                char16_t chr;
+                int      length =
                     info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, &chr, 1, cnsIndex);
                 if (length > 0)
                 {
