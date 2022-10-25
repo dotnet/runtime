@@ -224,18 +224,18 @@
     <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnableThreads)' == 'true'">multithread</MonoWasmBuildVariant>
     <MonoWasmBuildVariant Condition="'$(MonoWasmBuildVariant)' == '' and '$(WasmEnablePerfTracing)' == 'true'">perftrace</MonoWasmBuildVariant>
 
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">st</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'multithread'">mt</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">pt</MonoPathSuffix>
-    <MonoPathSuffix Condition="'$(MonoPathSuffix)' == ''">unknown-variant</MonoPathSuffix>
+    <MonoVariantDirName Condition="'$(MonoVariantDirName)' == '' and ('$(MonoWasmBuildVariant)' == '' or '$(MonoWasmBuildVariant)' == 'singlethreaded')">st</MonoVariantDirName>
+    <MonoVariantDirName Condition="'$(MonoVariantDirName)' == '' and '$(MonoWasmBuildVariant)' == 'multithread'">mt</MonoVariantDirName>
+    <MonoVariantDirName Condition="'$(MonoVariantDirName)' == '' and '$(MonoWasmBuildVariant)' == 'perftrace'">pt</MonoVariantDirName>
+    <MonoVariantDirName Condition="'$(MonoVariantDirName)' == ''">unknown-variant</MonoVariantDirName>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
+    <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', $(MonoVariantDirName), 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
     <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
 
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', $(MonoPathSuffix), 'microsoft.netcore.app.runtime.$(PackageRID)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', $(MonoVariantDirName), 'microsoft.netcore.app.runtime.$(PackageRID)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
