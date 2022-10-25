@@ -404,32 +404,27 @@ namespace System
                 arrayType.GenericCache = cache;
             }
 
+            delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = pArrayMT->ComponentSize;
 
             for (int i = 0; i < Length; i++)
             {
-                cache.InvokeConstructor(ref arrayRef);
+                constructorFtn(ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }
 
         private sealed unsafe partial class ArrayInitializeCache
         {
-            private readonly delegate*<ref byte, void> _constructorEntrypoint;
+            internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
             public ArrayInitializeCache(RuntimeType arrayType)
             {
-                _constructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void InvokeConstructor(ref byte thisAddress)
-            {
-                _constructorEntrypoint(ref thisAddress);
+                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
             }
         }
     }
