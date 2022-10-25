@@ -27,11 +27,12 @@ namespace System
         {
             get
             {
-                if (s_privilegedProcess == 0)
+                sbyte privilegedProcess = s_privilegedProcess;
+                if (privilegedProcess == 0)
                 {
-                    s_privilegedProcess = IsAdminProcess() ? (sbyte)1 : (sbyte)-1;
+                    s_privilegedProcess = privilegedProcess = IsPrivilegedProcessCore() ? (sbyte)1 : (sbyte)-1;
                 }
-                return s_privilegedProcess > 0;
+                return privilegedProcess > 0;
             }
         }
 

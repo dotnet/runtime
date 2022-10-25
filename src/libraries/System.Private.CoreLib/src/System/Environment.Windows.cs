@@ -84,7 +84,7 @@ namespace System
             return builder.ToString();
         }
 
-        private static unsafe bool IsAdminProcess()
+        private static unsafe bool IsPrivilegedProcessCore()
         {
             SafeTokenHandle? token = null;
             try

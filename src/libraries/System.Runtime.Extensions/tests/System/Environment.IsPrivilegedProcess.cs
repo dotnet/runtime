@@ -12,14 +12,7 @@ namespace System.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support geteuid")]
         public void TestIsPrivilegedProcess()
         {
-            if (AdminHelpers.IsProcessElevated())
-            {
-                Assert.True(Environment.IsPrivilegedProcess);
-            }
-            else
-            {
-                Assert.False(Environment.IsPrivilegedProcess);
-            }
+            Assert.Equal(AdminHelpers.IsProcessElevated(), Environment.IsPrivilegedProcess);
         }
     }
 }
