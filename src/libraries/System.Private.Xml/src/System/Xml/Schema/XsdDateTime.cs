@@ -5,6 +5,7 @@ using System;
 using System.Xml;
 using System.Diagnostics;
 using System.Text;
+using static System.Xml.Schema.XsdDuration;
 
 namespace System.Xml.Schema
 {
@@ -496,22 +497,17 @@ namespace System.Xml.Schema
         /// </summary>
         public override string ToString()
         {
-            var vsb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            Format(ref vsb);
+            Span<char> destination = stackalloc char[CharStackBufferSize];
+            bool success = TryFormat(destination, out int charsWritten);
+            Debug.Assert(success);
 
-            return vsb.ToString();
+            return destination.Slice(0, charsWritten).ToString();
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            Format(ref sb);
+            var vsb = new ValueStringBuilder(destination);
 
-            return sb.TryCopyTo(destination, out charsWritten);
-        }
-
-        private void Format(ref ValueStringBuilder vsb)
-        {
             switch (InternalTypeCode)
             {
                 case DateTimeTypeCode.DateTime:
@@ -550,6 +546,9 @@ namespace System.Xml.Schema
                     break;
             }
             PrintZone(ref vsb);
+
+            charsWritten = vsb.Length;
+            return destination.Length >= vsb.Length;
         }
 
         // Serialize year, month and day

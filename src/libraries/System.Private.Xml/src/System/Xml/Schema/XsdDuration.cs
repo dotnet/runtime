@@ -342,10 +342,10 @@ namespace System.Xml.Schema
         internal string ToString(DurationType durationType)
         {
             Span<char> destination = stackalloc char[CharStackBufferSize];
-            bool success = TryFormat(destination, out int _, durationType);
+            bool success = TryFormat(destination, out int charsWritten, durationType);
             Debug.Assert(success);
 
-            return destination.ToString();
+            return destination.Slice(0, charsWritten).ToString();
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
