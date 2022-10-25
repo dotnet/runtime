@@ -9095,9 +9095,6 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     }
     else
     {
-        // The m_b1 condition must be the reverse of the m_b2 condition because the only operators
-        // that we will see here are GT_EQ/GT_NE/GT_GE/GT_LT. So, if they are not the same, we have one of each.
-
         if (m_testInfo1.compTree->gtOper == m_testInfo2.compTree->gtOper)
         {
             return false;
