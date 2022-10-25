@@ -299,7 +299,7 @@ namespace ILLink.RoslynAnalyzer
 				&& methodSymbol.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None
 				// None on parameter of 'set' matches unannotated
 				|| methodSymbol.MethodKind == MethodKind.PropertySet
-				&& methodSymbol.Parameters[0].GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
+				&& methodSymbol.Parameters[methodSymbol.Parameters.Length - 1].GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
 					methodSymbol.AssociatedSymbol!.Locations[0],

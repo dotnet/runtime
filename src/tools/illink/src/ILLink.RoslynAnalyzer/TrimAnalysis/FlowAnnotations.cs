@@ -41,12 +41,16 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			var damt = parameter.GetDynamicallyAccessedMemberTypes ();
 
-			// Is this a property setter parameter?
 			var parameterMethod = (IMethodSymbol) parameter.ContainingSymbol;
 			Debug.Assert (parameterMethod != null);
+
 			// If there are conflicts between the setter and the property annotation,
 			// the setter annotation wins. (But DAMT.None is ignored)
-			if (parameterMethod!.MethodKind == MethodKind.PropertySet && damt == DynamicallyAccessedMemberTypes.None) {
+
+			// Is this a property setter `value` parameter?
+			if (parameterMethod!.MethodKind == MethodKind.PropertySet
+				&& damt == DynamicallyAccessedMemberTypes.None
+				&& parameter.Ordinal == parameterMethod.Parameters.Length - 1) {
 				var property = (IPropertySymbol) parameterMethod.AssociatedSymbol!;
 				Debug.Assert (property != null);
 				damt = property!.GetDynamicallyAccessedMemberTypes ();
