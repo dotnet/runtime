@@ -35,12 +35,8 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
 
         // Exception handling
-        private int _xdataSectionIndex;
-        private int _pdataSectionIndex;
-        private Stream _xdataStream;
-        private Stream _pdataStream;
-        private List<SymbolicRelocation> _xdataRelocations;
-        private List<SymbolicRelocation> _pdataRelocations;
+        private SectionWriter _xdataSectionWriter;
+        private SectionWriter _pdataSectionWriter;
 
         private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
         private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
@@ -243,7 +239,7 @@ namespace ILCompiler.ObjectWriter
             if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard))
             {
                 // Create section with control flow guard symbols
-                GetOrCreateSection(GfidsSection, out var sectionStream, out _);
+                SectionWriter gfidsSectionWriter = GetOrCreateSection(GfidsSection);
 
                 Span<byte> tempBuffer = stackalloc byte[4];
                 foreach (var (symbolName, symbolDefinition) in GetDefinedSymbols())
@@ -254,7 +250,7 @@ namespace ILCompiler.ObjectWriter
                     if (symbolDefinition.Size > 0)
                     {
                         BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
-                        sectionStream.Write(tempBuffer);
+                        gfidsSectionWriter.Stream.Write(tempBuffer);
                     }
                 }
 
@@ -339,34 +335,25 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitUnwindInfo(int sectionIndex, long methodStart, INodeWithCodeInfo nodeWithCodeInfo)
+        protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
-                int xdataSectionIndex, pdataSectionIndex;
-                Stream xdataStream, pdataStream;
-                List<SymbolicRelocation> xdataRelocations, pdataRelocations;
+                SectionWriter xdataSectionWriter;
+                SectionWriter pdataSectionWriter;
                 string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
                 Span<byte> tempBuffer = stackalloc byte[4];
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
-                    xdataSectionIndex = GetOrCreateSection(
-                        GetSharedSection(ObjectNodeSection.XDataSection, currentSymbolName),
-                        out xdataStream, out xdataRelocations);
-                    pdataSectionIndex = GetOrCreateSection(
-                        GetSharedSection(PDataSection, currentSymbolName),
-                        out pdataStream, out pdataRelocations);
+                    xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, currentSymbolName));
+                    pdataSectionWriter = GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName));
                 }
                 else
                 {
-                    xdataSectionIndex = _xdataSectionIndex;
-                    xdataStream = _xdataStream;
-                    xdataRelocations = _xdataRelocations;
-                    pdataSectionIndex = _pdataSectionIndex;
-                    pdataStream = _pdataStream;
-                    pdataRelocations = _pdataRelocations;
+                    xdataSectionWriter = _xdataSectionWriter;
+                    pdataSectionWriter = _pdataSectionWriter;
                 }
 
                 for (int i = 0; i < frameInfos.Length; i++)
@@ -378,27 +365,22 @@ namespace ILCompiler.ObjectWriter
                     byte[] blob = frameInfo.BlobData;
 
                     string unwindSymbolName = $"_unwind{i}{currentSymbolName}";
-                    string framSymbolName = $"_fram{i}{currentSymbolName}";
 
                     // Need to emit the UNWIND_INFO at 4-byte alignment to ensure that the
                     // pointer has the lower two bits in .pdata section set to zero. On ARM64
                     // non-zero bits would mean a compact encoding.
-                    EmitAlignment(xdataSectionIndex, xdataStream, 4);
+                    xdataSectionWriter.EmitAlignment(4);
 
-                    EmitSymbolDefinition(unwindSymbolName, new SymbolDefinition(xdataSectionIndex, xdataStream.Position));
-                    if (start != 0)
-                    {
-                        EmitSymbolDefinition(framSymbolName, new SymbolDefinition(sectionIndex, methodStart + start, 0));
-                    }
+                    xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
 
                     // Emit UNWIND_INFO
-                    xdataStream.Write(blob);
+                    xdataSectionWriter.Stream.Write(blob);
 
                     FrameInfoFlags flags = frameInfo.Flags;
 
                     if (i != 0)
                     {
-                        xdataStream.WriteByte((byte)flags);
+                        xdataSectionWriter.Stream.WriteByte((byte)flags);
                     }
                     else
                     {
@@ -408,85 +390,35 @@ namespace ILCompiler.ObjectWriter
                         flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                         flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
-                        xdataStream.WriteByte((byte)flags);
+                        xdataSectionWriter.Stream.WriteByte((byte)flags);
 
                         if (associatedDataNode != null)
                         {
                             string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
-                            tempBuffer.Clear();
-                            EmitRelocation(
-                                xdataSectionIndex,
-                                xdataRelocations,
-                                (int)xdataStream.Position,
-                                tempBuffer,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB,
-                                symbolName,
-                                0);
-                            xdataStream.Write(tempBuffer);
+                            xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, symbolName, 0);
                         }
 
                         if (ehInfo != null)
                         {
                             string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
-                            tempBuffer.Clear();
-                            EmitRelocation(
-                                xdataSectionIndex,
-                                xdataRelocations,
-                                (int)xdataStream.Position,
-                                tempBuffer,
-                                RelocType.IMAGE_REL_BASED_ADDR32NB,
-                                symbolName,
-                                0);
-                            xdataStream.Write(tempBuffer);
+                            xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, symbolName, 0);
                         }
 
                         if (nodeWithCodeInfo.GCInfo != null)
                         {
-                            xdataStream.Write(nodeWithCodeInfo.GCInfo);
+                            xdataSectionWriter.Stream.Write(nodeWithCodeInfo.GCInfo);
                         }
                     }
 
                     // Emit RUNTIME_FUNCTION
-
-                    // Start
-                    tempBuffer.Clear();
-                    EmitRelocation(
-                        pdataSectionIndex,
-                        pdataRelocations,
-                        (int)pdataStream.Position,
-                        tempBuffer,
-                        RelocType.IMAGE_REL_BASED_ADDR32NB,
-                        currentSymbolName,
-                        start);
-                    pdataStream.Write(tempBuffer);
-
+                    pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
                     // Only x64 has the End symbol
                     if (_machine == Machine.Amd64)
                     {
-                        // End
-                        tempBuffer.Clear();
-                        EmitRelocation(
-                            pdataSectionIndex,
-                            pdataRelocations,
-                            (int)pdataStream.Position,
-                            tempBuffer,
-                            RelocType.IMAGE_REL_BASED_ADDR32NB,
-                            currentSymbolName,
-                            end);
-                        pdataStream.Write(tempBuffer);
+                        pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
                     }
-
                     // Unwind info pointer
-                    tempBuffer.Clear();
-                    EmitRelocation(
-                        pdataSectionIndex,
-                        pdataRelocations,
-                        (int)pdataStream.Position,
-                        tempBuffer,
-                        RelocType.IMAGE_REL_BASED_ADDR32NB,
-                        unwindSymbolName,
-                        0);
-                    pdataStream.Write(tempBuffer);
+                    pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, unwindSymbolName, 0);
                 }
             }
         }
@@ -592,8 +524,8 @@ namespace ILCompiler.ObjectWriter
         protected override void CreateEhSections()
         {
             // Create .xdata and .pdata
-            _xdataSectionIndex = GetOrCreateSection(ObjectNodeSection.XDataSection, out _xdataStream, out _xdataRelocations);
-            _pdataSectionIndex = GetOrCreateSection(PDataSection, out _pdataStream, out _pdataRelocations);
+            _xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection);
+            _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 
         protected override ITypesDebugInfoWriter CreateDebugInfoBuilder() => null;

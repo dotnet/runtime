@@ -72,12 +72,11 @@ namespace ILCompiler.ObjectWriter
 
         protected abstract void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable);
 
-        protected int GetOrCreateSection(
-            ObjectNodeSection section,
-            out Stream sectionStream,
-            out List<SymbolicRelocation> relocationList)
+        protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
         {
             int sectionIndex;
+            Stream sectionStream;
+            List<SymbolicRelocation> relocationList;
 
             if (!_sectionNameToSectionIndex.TryGetValue((section.Name, section.ComdatName), out sectionIndex))
             {
@@ -93,7 +92,11 @@ namespace ILCompiler.ObjectWriter
                 relocationList = _sectionIndexToRelocations[sectionIndex];
             }
 
-            return sectionIndex;
+            return new SectionWriter(
+                this,
+                sectionIndex,
+                sectionStream,
+                relocationList);
         }
 
         protected bool ShouldShareSymbol(ObjectNode node)
@@ -157,23 +160,7 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual string ExternCName(string name) => name;
 
-        protected void EmitSymbolDefinition(string name, SymbolDefinition definition)
-        {
-            _definedSymbols.Add(name, definition);
-        }
-
-        protected abstract void EmitUnwindInfo(int sectionIndex, long methodStart, INodeWithCodeInfo nodeWithCodeInfo);
-
-        protected void EmitAlignment(int sectionIndex, Stream sectionStream, int alignment)
-        {
-            UpdateSectionAlignment(sectionIndex, alignment, out bool isExecutable);
-
-            int padding = (int)(((sectionStream.Position + alignment - 1) & ~(alignment - 1)) - sectionStream.Position);
-            Span<byte> buffer = stackalloc byte[padding];
-            byte paddingByte = isExecutable ? _insPaddingByte : (byte)0;
-            buffer.Fill(paddingByte);
-            sectionStream.Write(buffer);
-        }
+        protected abstract void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo);
 
         protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
         {
@@ -239,14 +226,14 @@ namespace ILCompiler.ObjectWriter
         protected void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
-            GetOrCreateSection(ObjectNodeSection.TextSection, out _, out _);
+            GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
-                GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection, out _, out _);
+                GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection);
             }
             else
             {
-                GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection, out _, out _);
+                GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection);
             }
 
             // Create sections for exception handling
@@ -276,25 +263,23 @@ namespace ILCompiler.ObjectWriter
                         ExternCName(((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler)));
                 }
 
-                Stream sectionStream;
-                List<SymbolicRelocation> relocationList;
-                int sectionIndex = GetOrCreateSection(section, out sectionStream, out relocationList);
+                SectionWriter sectionWriter = GetOrCreateSection(section);
 
-                EmitAlignment(sectionIndex, sectionStream, nodeContents.Alignment);
-
-                long methodStart = sectionStream.Position;
+                sectionWriter.EmitAlignment(nodeContents.Alignment);
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
-                    var symbolDefinition = new SymbolDefinition(
-                        sectionIndex,
-                        methodStart + n.Offset,
+                    sectionWriter.EmitSymbolDefinition(
+                        ExternCName(n.GetMangledName(_nodeFactory.NameMangler)),
+                        n.Offset,
                         isMethod ? nodeContents.Data.Length : 0);
-                    EmitSymbolDefinition(ExternCName(n.GetMangledName(_nodeFactory.NameMangler)), symbolDefinition);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
-                        EmitSymbolDefinition(ExternCName(alternateName), symbolDefinition);
+                        sectionWriter.EmitSymbolDefinition(
+                            ExternCName(alternateName),
+                            n.Offset,
+                            isMethod ? nodeContents.Data.Length : 0);
                     }
                 }
 
@@ -302,10 +287,8 @@ namespace ILCompiler.ObjectWriter
                 {
                     foreach (var reloc in nodeContents.Relocs)
                     {
-                        EmitRelocation(
-                            sectionIndex,
-                            relocationList,
-                            (int)(methodStart + reloc.Offset),
+                        sectionWriter.EmitRelocation(
+                            reloc.Offset,
                             nodeContents.Data.AsSpan(reloc.Offset),
                             reloc.RelocType,
                             ExternCName(reloc.Target.GetMangledName(_nodeFactory.NameMangler)),
@@ -313,13 +296,15 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                sectionStream.Write(nodeContents.Data);
-
                 // Emit unwinding frames and LSDA
                 if (node is INodeWithCodeInfo nodeWithCodeInfo)
                 {
-                    EmitUnwindInfo(sectionIndex, methodStart, nodeWithCodeInfo);
+                    EmitUnwindInfo(sectionWriter, nodeWithCodeInfo);
                 }
+
+                // Write the data. Note that this has to be done last as not to advance
+                // the section writer position.
+                sectionWriter.Stream.Write(nodeContents.Data);
             }
 
             EmitSectionsAndLayout();
@@ -368,6 +353,82 @@ namespace ILCompiler.ObjectWriter
             }
 
             EmitObjectFile(objectFilePath);
+        }
+
+        protected struct SectionWriter
+        {
+            private ObjectWriter _objectWriter;
+
+            public int SectionIndex { get; init; }
+            public Stream Stream { get; init; }
+            public List<SymbolicRelocation> Relocations { get; init; }
+
+            public SectionWriter(
+                ObjectWriter objectWriter,
+                int sectionIndex,
+                Stream stream,
+                List<SymbolicRelocation> relocations)
+            {
+                _objectWriter = objectWriter;
+                SectionIndex = sectionIndex;
+                Stream = stream;
+                Relocations = relocations;
+            }
+
+            public void EmitAlignment(int alignment)
+            {
+                _objectWriter.UpdateSectionAlignment(SectionIndex, alignment, out bool isExecutable);
+
+                int padding = (int)(((Stream.Position + alignment - 1) & ~(alignment - 1)) - Stream.Position);
+                Span<byte> buffer = stackalloc byte[padding];
+                byte paddingByte = isExecutable ? _objectWriter._insPaddingByte : (byte)0;
+                buffer.Fill(paddingByte);
+                Stream.Write(buffer);
+            }
+
+            public void EmitRelocation(
+                int relativeOffset,
+                Span<byte> data,
+                RelocType relocType,
+                string symbolName,
+                int addend)
+            {
+                _objectWriter.EmitRelocation(
+                    SectionIndex,
+                    Relocations,
+                    (int)Stream.Position + relativeOffset,
+                    data,
+                    relocType,
+                    symbolName,
+                    addend);
+            }
+
+            public void EmitSymbolDefinition(
+                string symbolName,
+                int relativeOffset = 0,
+                int size = 0)
+            {
+                var symbolDefinition = new SymbolDefinition(SectionIndex, Stream.Position + relativeOffset, size);
+                _objectWriter._definedSymbols.Add(symbolName, symbolDefinition);
+            }
+
+            public void EmitSymbolReference(
+                RelocType relocType,
+                string symbolName,
+                int addend = 0)
+            {
+                Span<byte> buffer = stackalloc byte[relocType == RelocType.IMAGE_REL_BASED_DIR64 ? sizeof(ulong) : sizeof(uint)];
+                buffer.Clear();
+                _objectWriter.EmitRelocation(
+                    SectionIndex,
+                    Relocations,
+                    (int)Stream.Position,
+                    buffer,
+                    relocType,
+                    symbolName,
+                    addend);
+                Stream.Write(buffer);
+            }
         }
     }
 }
