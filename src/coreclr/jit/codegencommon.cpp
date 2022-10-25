@@ -8733,7 +8733,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
 
     if (!m_VariableLiveRanges->empty() &&
         siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
-        m_VariableLiveRanges->back().m_EndEmitLocation.IsLessOneInsAway(emit))
+        m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
     {
         JITDUMP("Extending debug range...\n");
 
