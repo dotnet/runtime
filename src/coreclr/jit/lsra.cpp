@@ -3523,49 +3523,38 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     bool      intervalIsAssigned = (assignedInterval->physReg == thisRegNum);
     regNumber regToUnassign      = thisRegNum;
 
-#ifdef TARGET_ARM
-    RegRecord* anotherRegRec = nullptr;
+    int newRegCount = assignedInterval->regCount;
+    //int oldRegCount = reg->assignedInterval == nullptr ? 0 : reg->assignedInterval->regCount;
 
-    // Prepare second half RegRecord of a double register for TYP_DOUBLE
-    if (assignedInterval->registerType == TYP_DOUBLE)
+    regNumber firstRegNum = getFirstRegNum(regToUnassign);
+    regNumber currReg     = firstRegNum;
+    regMaskTP regsAvailable = 0;
+
+    do
     {
-        assert(isFloatRegType(regRec->registerType));
-        RegRecord* doubleRegRec;
-        if (genIsValidDoubleReg(thisRegNum))
-        {
-            anotherRegRec = getSecondHalfRegRec(regRec);
-            doubleRegRec  = regRec;
-        }
-        else
-        {
-            regToUnassign = REG_PREV(thisRegNum);
-            anotherRegRec = getRegisterRecord(regToUnassign);
-            doubleRegRec  = anotherRegRec;
-        }
+        //TODO: get quick method to get regMask of consecutive register
+        // something like getRegMask(currReg, 3) <-- meaning get mask starting from
+        // currReg and then further 3 more registers.
+        regsAvailable |= getRegMask(currReg);
+        intervalIsAssigned |= (assignedInterval->physReg == getRegisterRecord(currReg)->regNum);
 
-        // Both RegRecords should have been assigned to the same interval.
-        assert(assignedInterval == anotherRegRec->assignedInterval);
-        if (!intervalIsAssigned && (assignedInterval->physReg == anotherRegRec->regNum))
-        {
-            intervalIsAssigned = true;
-        }
+        currReg = REG_NEXT(currReg);
+    } while (--newRegCount > 0);
 
-        clearNextIntervalRef(regToUnassign, assignedInterval);
-        clearSpillCost(regToUnassign, assignedInterval);
-        checkAndClearInterval(doubleRegRec, spillRefPosition);
+    checkAndClearInterval(getRegisterRecord(firstRegNum), spillRefPosition);
 
-        // Both RegRecords should have been unassigned together.
+#ifdef DEBUG
+    currReg = firstRegNum;
+    do
+    {
+        // Verify all regRecord's assignedInterval has been reset.
+        RegRecord* regRec        = getRegisterRecord(currReg);
         assert(regRec->assignedInterval == nullptr);
-        assert(anotherRegRec->assignedInterval == nullptr);
-    }
-    else
-#endif // TARGET_ARM
-    {
-        clearNextIntervalRef(thisRegNum, assignedInterval);
-        clearSpillCost(thisRegNum, assignedInterval);
-        checkAndClearInterval(regRec, spillRefPosition);
-    }
-    makeRegAvailable(regToUnassign, assignedInterval);
+        currReg = REG_NEXT(currReg);
+    } while (--newRegCount > 0);
+#endif
+
+    makeRegsAvailable(regsAvailable);
 
     RefPosition* nextRefPosition = nullptr;
     if (spillRefPosition != nullptr)
