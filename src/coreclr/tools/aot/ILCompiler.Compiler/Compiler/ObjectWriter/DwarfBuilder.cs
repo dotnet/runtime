@@ -36,7 +36,7 @@ namespace ILCompiler.ObjectWriter
 
         public DwarfFile DwarfFile => _dwarfFile;
 
-        public DwarfBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture)
+        public DwarfBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, bool useDwarf5)
         {
             _nameMangler = nameMangler;
             _architecture = targetArchitecture;
@@ -73,7 +73,8 @@ namespace ILCompiler.ObjectWriter
             var compilationUnit = new DwarfCompilationUnit()
             {
                 AddressSize = _targetPointerSize == 8 ? DwarfAddressSize.Bit64 : DwarfAddressSize.Bit32,
-                Root = _rootDIE
+                Root = _rootDIE,
+                Version = (ushort)(useDwarf5 ? 5u : 4u),
             };
 
             _dwarfFile.InfoSection.AddUnit(compilationUnit);

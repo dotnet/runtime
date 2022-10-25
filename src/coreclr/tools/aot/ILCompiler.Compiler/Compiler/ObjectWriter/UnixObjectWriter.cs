@@ -201,7 +201,10 @@ namespace ILCompiler.ObjectWriter
 
         protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
-            return _dwarfBuilder = new DwarfBuilder(_nodeFactory.NameMangler, _nodeFactory.Target.Architecture);
+            return _dwarfBuilder = new DwarfBuilder(
+                _nodeFactory.NameMangler,
+                _nodeFactory.Target.Architecture,
+                _options.HasFlag(ObjectWritingOptions.UseDwarf5));
         }
 
         protected override void EmitDebugStaticVars()
