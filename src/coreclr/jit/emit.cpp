@@ -79,7 +79,7 @@ bool emitLocation::IsLessOneInsAway(emitter* emit) const
     // Within the same IG?
     if (ig == emit->emitCurIG)
     {
-        return (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+        return emitGetInsNumFromCodePos(emit->emitCurOffset()) <= emitGetInsNumFromCodePos(codePos) - 1;
     }
 
     // Spanning an IG boundary?
