@@ -4032,8 +4032,6 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 GPtrArray*
 ves_icall_RuntimeType_GetPropertiesByName_native (MonoQCallTypeHandle type_handle, gchar *propname, guint32 bflags, guint32 mlisttype, MonoError *error)
 {
-	// Fetch non-public properties as well because they can hide public properties with the same name in base classes
-	bflags |= BFLAGS_NonPublic;
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type))
@@ -4072,11 +4070,9 @@ handle_parent:
 			(prop->set && ((prop->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if (bflags & BFLAGS_NonPublic) {
-			if (property_accessor_nonpublic(prop->get, startklass == klass) ||
+		} else if (property_accessor_nonpublic(prop->get, startklass == klass) ||
 				property_accessor_nonpublic(prop->set, startklass == klass)) {
 				match++;
-			}
 		}
 		if (!match)
 			continue;
