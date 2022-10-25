@@ -1021,8 +1021,6 @@ public:
         return structHnd;
     }
 
-    CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
-
 private:
     ClassLayout* m_layout; // layout info for structs
 
@@ -3374,10 +3372,6 @@ public:
             structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
         }
 
-#ifdef DEBUG
-        void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
-#endif // DEBUG
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -3392,12 +3386,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef DEBUG
-        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
-                                 RetypedAsScalarFieldsMap;
-        RetypedAsScalarFieldsMap retypedFieldsMap;
-#endif // DEBUG
     };
 
     StructPromotionHelper* structPromotionHelper;
@@ -5866,7 +5854,6 @@ private:
 #endif
 
     PhaseStatus fgPromoteStructs();
-    void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
     // Reset the refCount for implicit byrefs.

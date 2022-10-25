@@ -3967,7 +3967,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
     int                 cch         = 0;
-    CHAR                szIID[64];
+    CHAR                szIID[GUID_STR_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

@@ -411,33 +411,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-class GuidString final
-{
-    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
-public:
-    static void Create(const GUID& g, GuidString& ret)
-    {
-        // Ensure we always have a null
-        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
-        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            g.Data1, g.Data2, g.Data3,
-            g.Data4[0], g.Data4[1],
-            g.Data4[2], g.Data4[3],
-            g.Data4[4], g.Data4[5],
-            g.Data4[6], g.Data4[7]);
-    }
-
-    const char* AsString() const
-    {
-        return _buffer;
-    }
-
-    operator const char*() const
-    {
-        return _buffer;
-    }
-};
-
 inline
 LPWSTR DuplicateString(
     LPCWSTR wszString,
@@ -3446,6 +3419,9 @@ private:
 
     BYTE m_inited;
 };
+
+// 38 characters + 1 null terminating.
+#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
 
 //*****************************************************************************
 // Convert a GUID into a pointer to a string
