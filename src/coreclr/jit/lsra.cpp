@@ -5791,32 +5791,57 @@ void LinearScan::allocateRegisters()
 void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
 {
     assert(interval != nullptr);
-#ifdef TARGET_ARM
-    // Update overlapping floating point register for TYP_DOUBLE.
-    Interval* oldAssignedInterval = reg->assignedInterval;
-    regNumber doubleReg           = REG_NA;
-    if (interval->registerType == TYP_DOUBLE)
+    // Need to have following cases for interval->regCount > 1
+    //  1.  If reg->regIdx == 0, we are start of the consecutive registers,
+    //      just iterate over regCount and `reg->assignedInterval = interval`.
+    //  2.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
+    //      and then just iterate over regCount and `reg->assignedInterval = interval`.
+    //
+    // Need to have following cases for interval->regCount == 1 and oldAssignedInterval->regCount > 1
+    //  3.  If reg->regIdx == 0, we are start of consecutive registers,
+    //      just iterate over regCount and `reg->assignedInterval = nullptr`.
+    //  4.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
+    //      and then just iterate over regCount and `reg->assignedInterval = nullptr`.
+
+    int newRegCount = interval->regCount;
+    int oldRegCount = reg->assignedInterval == nullptr ? 0 : reg->assignedInterval->regCount;
+
+    regNumber firstRegNum = getFirstRegNum(reg->regNum);
+    regNumber currReg     = firstRegNum;
+    regMaskTP regsInUse   = 0;
+
+    // We just to replace the oldAssignedInterval with new ones.
+    do
     {
-        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
-        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
-        anotherHalfReg->assignedInterval = nullptr;
-    }
-    else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
+        RegRecord* regRec        = getRegisterRecord(currReg);
+        regRec->assignedInterval = nullptr;
+        regRec->regCount         = 1;
+        regRec->regIdx           = 0;
+
+        clearNextIntervalRef(currReg);
+        clearSpillCost(currReg);
+        clearConstantReg(currReg);
+
+        currReg = REG_NEXT(currReg);
+        --oldRegCount;
+    } while (--newRegCount > 0);
+
+    // If the oldAssignedInterval had more consecutive registers assigned,
+    // then reset them.
+    while (oldRegCount > 0)
     {
-        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
-        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
-        anotherHalfReg->assignedInterval = nullptr;
+        RegRecord* regRec        = getRegisterRecord(currReg);
+        regRec->assignedInterval = nullptr;
+        regRec->regCount         = 1;
+        regRec->regIdx           = 0;
+
+        clearNextIntervalRef(currReg);
+        clearSpillCost(currReg);
+        clearConstantReg(currReg);
+
+        currReg = REG_NEXT(currReg);
+        --oldRegCount;
     }
-    if (doubleReg != REG_NA)
-    {
-        clearNextIntervalRef(doubleReg, interval);
-        clearSpillCost(doubleReg, interval);
-        clearConstantReg(doubleReg, interval);
-    }
-#endif
-    reg->assignedInterval = nullptr;
-    clearNextIntervalRef(reg->regNum, reg);
-    clearSpillCost(reg->regNum, reg);
 }
 
 //-----------------------------------------------------------------------------
