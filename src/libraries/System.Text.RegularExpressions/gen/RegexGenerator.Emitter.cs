@@ -3068,7 +3068,7 @@ namespace System.Text.RegularExpressions.Generator
                         (literal.String is not null ||
                          literal.SetChars is not null ||
                          literal.Range.LowInclusive == literal.Range.HighInclusive ||
-                         (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive)))
+                         (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive))) // for ranges, only allow when the range overlaps with the target, since there's no accelerated way to search for the union
                     {
                         // e.g. "<[^>]*?>"
 
@@ -3149,7 +3149,7 @@ namespace System.Text.RegularExpressions.Generator
                                 _ => $"{indexOfAnyName}({Literal(literal2.SetChars)});",
                             } :
                             literal2.Range.LowInclusive == literal2.Range.HighInclusive ? $"{indexOfName}({Literal(literal2.Range.LowInclusive)});" :
-                            $"{indexOfAnyName}({Literal(literal2.Range.LowInclusive)}, {Literal(literal2.Range.HighInclusive)});");
+                            $"{indexOfAnyName}InRange({Literal(literal2.Range.LowInclusive)}, {Literal(literal2.Range.HighInclusive)});");
 
                         using (EmitBlock(writer, $"if ({startingPos} < 0)"))
                         {
