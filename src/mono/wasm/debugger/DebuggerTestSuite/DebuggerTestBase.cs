@@ -925,6 +925,18 @@ namespace DebuggerTests
             return await GetProperties(objectId);
         }
 
+        internal void AssertInternalUseFieldsAreRemoved(JToken item)
+        {
+            if (item is JObject jobj && jobj.Count != 0)
+            {
+                foreach (JProperty jp in jobj.Properties())
+                {
+                    Assert.False(InternalUseFieldName.IsKnown(jp.Name),
+                     $"Property {jp.Name} of object: {jobj} is for internal proxy use and should not be exposed externally.");
+                }
+            }
+        }
+
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
         internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
@@ -978,6 +990,7 @@ namespace DebuggerTests
             {
                 foreach (var p in locals)
                 {
+                    AssertInternalUseFieldsAreRemoved(p);
                     if (p["name"]?.Value<string>() == "length" && p["enumerable"]?.Value<bool>() != true)
                     {
                         p.Remove();
@@ -1035,6 +1048,7 @@ namespace DebuggerTests
             {
                 foreach (var p in locals)
                 {
+                    AssertInternalUseFieldsAreRemoved(p);
                     if (p["name"]?.Value<string>() == "length" && p["enumerable"]?.Value<bool>() != true)
                     {
                         p.Remove();
@@ -1451,17 +1465,17 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        public async Task<JObject> WaitForBreakpointResolvedEvent()
+        public Task<JObject> WaitForBreakpointResolvedEvent() => WaitForEventAsync("Debugger.breakpointResolved");
+
+        public async Task<JObject> WaitForEventAsync(string eventName)
         {
             try
             {
-                var res = await insp.WaitForEvent("Debugger.breakpointResolved");
-                _testOutput.WriteLine ($"breakpoint resolved to {res}");
-                return res;
+                return await insp.WaitForEvent(eventName);
             }
             catch (TaskCanceledException)
             {
-                throw new XunitException($"Timed out waiting for Debugger.breakpointResolved event");
+                throw new XunitException($"Timed out waiting for {eventName} event");
             }
         }
 

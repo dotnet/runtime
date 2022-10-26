@@ -8,10 +8,12 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
-    isRollingBuild: ${{ variables.isRollingBuild }}
+    jobs:
+    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+      parameters:
+        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+        isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+        isRollingBuild: ${{ variables.isRollingBuild }}

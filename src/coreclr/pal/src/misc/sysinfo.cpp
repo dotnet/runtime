@@ -438,7 +438,7 @@ GlobalMemoryStatusEx(
         {
             // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
             // if we have failed to access the file or the file didn't contain the MemAvailable value.
-            tryReadMemInfo = ReadMemAvailable(&lpBuffer->ullAvailPhys);
+            tryReadMemInfo = ReadMemAvailable((uint64_t*)&lpBuffer->ullAvailPhys);
         }
 
         if (!tryReadMemInfo)
@@ -504,7 +504,7 @@ PAL_HasGetCurrentProcessorNumber()
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char *line = nullptr;
@@ -585,11 +585,11 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            if (PAL_ReadMemoryValueFromFile(path_to_size_file, &size))
             {
                 path_to_level_file[index] = (char)(48 + i);
 
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
+                if (PAL_ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }

@@ -19,7 +19,7 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="s" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static abstract TSelf Parse(string s, IFormatProvider? provider);
 
-        /// <summary>Tries to parses a string into a value.</summary>
+        /// <summary>Tries to parse a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
         /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>

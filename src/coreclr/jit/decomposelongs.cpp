@@ -414,7 +414,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
 
     GenTree* tree = use.Def();
     GenTree* rhs  = tree->gtGetOp1();
-    if (rhs->OperIs(GT_CALL) || (rhs->OperIs(GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
+    if (rhs->OperIs(GT_CALL, GT_MUL_LONG))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
         // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal
@@ -1905,24 +1905,19 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
 
     if (user->OperGet() == GT_STORE_LCL_VAR)
     {
-        // If parent is already a STORE_LCL_VAR, we can skip it if
-        // it is already marked as lvIsMultiRegRet.
-        unsigned varNum = user->AsLclVarCommon()->GetLclNum();
-        if (m_compiler->lvaTable[varNum].lvIsMultiRegRet)
-        {
-            return tree->gtNext;
-        }
-        else if (!m_compiler->lvaTable[varNum].lvPromoted)
-        {
-            // If var wasn't promoted, we can just set lvIsMultiRegRet.
-            m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
-            return tree->gtNext;
-        }
+        // If parent is already a STORE_LCL_VAR, just mark it lvIsMultiRegRet.
+        m_compiler->lvaGetDesc(user->AsLclVar())->lvIsMultiRegRet = true;
+        return tree->gtNext;
     }
 
     // Otherwise, we need to force var = call()
-    unsigned varNum                              = use.ReplaceWithLclVar(m_compiler);
-    m_compiler->lvaTable[varNum].lvIsMultiRegRet = true;
+    unsigned lclNum                              = use.ReplaceWithLclVar(m_compiler);
+    m_compiler->lvaTable[lclNum].lvIsMultiRegRet = true;
+
+    if (m_compiler->lvaEnregMultiRegVars)
+    {
+        TryPromoteLongVar(lclNum);
+    }
 
     // Decompose the new LclVar use
     return DecomposeLclVar(use);
@@ -2058,12 +2053,6 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
 //------------------------------------------------------------------------
 // PromoteLongVars: "Struct promote" all register candidate longs as if they are structs of two ints.
 //
-// Arguments:
-//    None.
-//
-// Return Value:
-//    None.
-//
 void DecomposeLongs::PromoteLongVars()
 {
     if (!m_compiler->compEnregLocals())
@@ -2080,81 +2069,8 @@ void DecomposeLongs::PromoteLongVars()
         {
             continue;
         }
-        if (varDsc->lvDoNotEnregister)
-        {
-            continue;
-        }
-        if (varDsc->lvRefCnt() == 0)
-        {
-            continue;
-        }
-        if (varDsc->lvIsStructField)
-        {
-            continue;
-        }
-        if (m_compiler->fgNoStructPromotion)
-        {
-            continue;
-        }
-        if (m_compiler->fgNoStructParamPromotion && varDsc->lvIsParam)
-        {
-            continue;
-        }
 
-        assert(!varDsc->lvIsMultiRegArgOrRet());
-        varDsc->lvFieldCnt      = 2;
-        varDsc->lvFieldLclStart = m_compiler->lvaCount;
-        varDsc->lvPromoted      = true;
-        varDsc->lvContainsHoles = false;
-
-        JITDUMP("\nPromoting long local V%02u:", lclNum);
-
-        bool isParam = varDsc->lvIsParam;
-
-        for (unsigned index = 0; index < 2; ++index)
-        {
-            // Grab the temp for the field local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-            char buf[200];
-            sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
-                      index * 4);
-
-            // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-            size_t len  = strlen(buf) + 1;
-            char*  bufp = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-            strcpy_s(bufp, len, buf);
-#endif
-
-            unsigned varNum =
-                m_compiler->lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
-                                                               // they are long lifetime temps.
-
-            varDsc                       = m_compiler->lvaGetDesc(lclNum);
-            LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(varNum);
-            fieldVarDsc->lvType          = TYP_INT;
-            fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
-            fieldVarDsc->lvIsStructField = true;
-            fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
-            fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
-            fieldVarDsc->lvParentLcl     = lclNum;
-
-            // Currently we do not support enregistering incoming promoted aggregates with more than one field.
-            if (isParam)
-            {
-                fieldVarDsc->lvIsParam = true;
-                m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LongParamField));
-
-#if FEATURE_MULTIREG_ARGS
-                if (varDsc->lvIsRegArg)
-                {
-                    fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
-                    fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
-                }
-#endif // FEATURE_MULTIREG_ARGS
-            }
-        }
+        TryPromoteLongVar(lclNum);
     }
 
 #ifdef DEBUG
@@ -2164,5 +2080,92 @@ void DecomposeLongs::PromoteLongVars()
         m_compiler->lvaTableDump();
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// PromoteLongVar: Try to promote a long variable into two INT fields.
+//
+// Promotion can fail, most commonly because it would not be profitable.
+//
+// Arguments:
+//    lclNum - Number denoting the variable to promote
+//
+void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
+{
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+    assert(varDsc->TypeGet() == TYP_LONG);
+
+    if (varDsc->lvDoNotEnregister)
+    {
+        return;
+    }
+    if (varDsc->lvRefCnt() == 0)
+    {
+        return;
+    }
+    if (varDsc->lvIsStructField)
+    {
+        return;
+    }
+    if (m_compiler->fgNoStructPromotion)
+    {
+        return;
+    }
+    if (m_compiler->fgNoStructParamPromotion && varDsc->lvIsParam)
+    {
+        return;
+    }
+
+    varDsc->lvFieldCnt      = 2;
+    varDsc->lvFieldLclStart = m_compiler->lvaCount;
+    varDsc->lvPromoted      = true;
+    varDsc->lvContainsHoles = false;
+
+    bool isParam = varDsc->lvIsParam;
+
+    JITDUMP("\nPromoting long local V%02u:", lclNum);
+
+    for (unsigned index = 0; index < 2; ++index)
+    {
+        // Grab the temp for the field local.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+        char buf[200];
+        sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
+                  index * 4);
+
+        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
+        size_t len  = strlen(buf) + 1;
+        char*  bufp = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
+        strcpy_s(bufp, len, buf);
+#endif
+
+        // Lifetime of field locals might span multiple BBs, so they are long lifetime temps.
+        unsigned fieldLclNum = m_compiler->lvaGrabTemp(false DEBUGARG(bufp));
+        varDsc               = m_compiler->lvaGetDesc(lclNum);
+
+        LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(fieldLclNum);
+        fieldVarDsc->lvType          = TYP_INT;
+        fieldVarDsc->lvIsStructField = true;
+        fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
+        fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
+        fieldVarDsc->lvParentLcl     = lclNum;
+        // Currently we do not support enregistering incoming promoted aggregates with more than one field.
+        if (isParam)
+        {
+            fieldVarDsc->lvIsParam = true;
+            m_compiler->lvaSetVarDoNotEnregister(fieldLclNum DEBUGARG(DoNotEnregisterReason::LongParamField));
+
+#if FEATURE_MULTIREG_ARGS
+            if (varDsc->lvIsRegArg)
+            {
+                fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
+                fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
+            }
+#endif // FEATURE_MULTIREG_ARGS
+        }
+    }
 }
 #endif // !defined(TARGET_64BIT)

@@ -21,17 +21,8 @@ namespace System.Net
             return name;
         }
 
-        internal static bool ContainsNonAsciiChars(string token)
-        {
-            for (int i = 0; i < token.Length; ++i)
-            {
-                if ((token[i] < 0x20) || (token[i] > 0x7e))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        internal static bool ContainsNonAsciiChars(string token) =>
+            token.AsSpan().IndexOfAnyExceptInRange((char)0x20, (char)0x7e) >= 0;
 
         internal static bool IsValidToken(string token)
         {

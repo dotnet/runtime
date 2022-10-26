@@ -592,6 +592,7 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 {
     assert(varTypeIsStruct(TypeGet()));
 
+    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
     switch (OperGet())
     {
         case GT_LCL_VAR:
@@ -604,12 +605,31 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
         case GT_BLK:
             return AsBlk()->GetLayout();
 
+        case GT_COMMA:
+            return AsOp()->gtOp2->GetLayout(compiler);
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->GetLayout(compiler);
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_MKREFANY:
-            return compiler->typGetObjLayout(compiler->impGetRefAnyClass());
+            structHnd = compiler->impGetRefAnyClass();
+            break;
+
+        case GT_FIELD:
+            compiler->eeGetFieldType(AsField()->gtFldHnd, &structHnd);
+            break;
+
+        case GT_CALL:
+            structHnd = AsCall()->gtRetClsHnd;
+            break;
 
         default:
             unreached();
     }
+
+    return compiler->typGetObjLayout(structHnd);
 }
 
 //-----------------------------------------------------------
@@ -2482,9 +2502,18 @@ AGAIN:
                         return false;
                     }
                     break;
+
                 case GT_BLK:
                 case GT_OBJ:
-                    if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
+                    {
+                        return false;
+                    }
+                    FALLTHROUGH;
+
+                case GT_IND:
+                case GT_NULLCHECK:
+                    if ((op1->gtFlags & (GTF_IND_FLAGS)) != (op2->gtFlags & (GTF_IND_FLAGS)))
                     {
                         return false;
                     }
@@ -6995,8 +7024,8 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenString();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
+            setMethodHasFrozenObjects();
+            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
@@ -7364,7 +7393,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags)
+GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -7372,14 +7401,10 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     node->gtInlineCandidate = inlineCandidate;
 
-    node->bbFlags = bbFlags;
+    node->gtSubstExpr = nullptr;
+    node->gtSubstBB   = nullptr;
 
-    if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
-    {
-        node->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
-    }
-
-    // GT_RET_EXPR node eventually might be bashed back to GT_CALL (when inlining is aborted for example).
+    // GT_RET_EXPR node eventually might be turned back into GT_CALL (when inlining is aborted for example).
     // Therefore it should carry the GTF_CALL flag so that all the rules about spilling can apply to it as well.
     // For example, impImportLeave or CEE_POP need to spill GT_RET_EXPR before empty the evaluation stack.
     node->gtFlags |= GTF_CALL;
@@ -8781,6 +8806,10 @@ DONE:
         // Update side effect flags since they may be different from the source side effect flags.
         // For example, we may have replaced some locals with constants and made indirections non-throwing.
         gtUpdateNodeSideEffects(copy);
+        if ((varNum != BAD_VAR_NUM) && copy->OperIsSsaDef())
+        {
+            fgAssignSetVarDef(copy);
+        }
     }
 
     /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
@@ -11042,6 +11071,32 @@ void Compiler::gtDispLclVarStructType(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// gtDispSsaName: Display the SSA use/def for a given local.
+//
+// Arguments:
+//   lclNum - The local's number.
+//   ssaNum - The SSA number.
+//   isDef  - Whether this is a def.
+//
+void Compiler::gtDispSsaName(unsigned lclNum, unsigned ssaNum, bool isDef)
+{
+    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+    {
+        if (isDef)
+        {
+            unsigned oldDefSsaNum = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+            if (oldDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                printf("ud:%d->%d", oldDefSsaNum, ssaNum);
+                return;
+            }
+        }
+
+        printf("%s:%d", isDef ? "d" : "u", ssaNum);
+    }
+}
+
+//------------------------------------------------------------------------
 // gtDispClassLayout: Print size and type information about a layout.
 //
 // Arguments:
@@ -11075,18 +11130,11 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
-                // If *str points to a '\0' then don't print the string's values
-                if ((str != nullptr) && (*str != '\0'))
-                {
-                    printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
-                }
-                else // We can't print the value of the string
-                {
-                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
-                    // and instead always returns nullptr
-                    printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
-                }
+                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
+            }
+            else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            {
+                eePrintObjectDescriptionDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {
@@ -11101,7 +11149,7 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        assert(doesMethodHaveFrozenString());
+                        assert(doesMethodHaveFrozenObjects());
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
@@ -11153,8 +11201,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
                             break;
+                        case GTF_ICON_OBJ_HDL:
                         case GTF_ICON_STR_HDL:
-                            unreached(); // This case is handled above
+                            unreached(); // These cases are handled above
                             break;
                         case GTF_ICON_CONST_PTR:
                             printf(" const ptr");
@@ -11355,19 +11404,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             printf(" ");
             const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
             const LclVarDsc* varDsc = lvaGetDesc(varNum);
+            const bool       isDef  = (tree->gtFlags & GTF_VAR_DEF) != 0;
+
             gtDispLclVar(varNum);
-            if (tree->AsLclVarCommon()->HasSsaName())
-            {
-                if (tree->gtFlags & GTF_VAR_USEASG)
-                {
-                    assert(tree->gtFlags & GTF_VAR_DEF);
-                    printf("ud:%d->%d", tree->AsLclVarCommon()->GetSsaNum(), GetSsaNumForLocalVarDef(tree));
-                }
-                else
-                {
-                    printf("%s:%d", (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->AsLclVarCommon()->GetSsaNum());
-                }
-            }
+            gtDispSsaName(varNum, tree->AsLclVarCommon()->GetSsaNum(), isDef);
 
             if (isLclFld)
             {
@@ -11393,15 +11433,15 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 }
                 else
                 {
-
-                    for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+                    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                     {
-                        LclVarDsc*  fieldVarDsc = lvaGetDesc(i);
+                        unsigned    fieldLclNum = varDsc->lvFieldLclStart + index;
+                        LclVarDsc*  fieldVarDsc = lvaGetDesc(fieldLclNum);
                         const char* fieldName;
 #if !defined(TARGET_64BIT)
                         if (varTypeIsLong(varDsc))
                         {
-                            fieldName = (i == 0) ? "lo" : "hi";
+                            fieldName = (index == 0) ? "lo" : "hi";
                         }
                         else
 #endif // !defined(TARGET_64BIT)
@@ -11417,7 +11457,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         printIndent(indentStack);
                         printf("    %-6s V%02u.%s (offs=0x%02x) -> ", varTypeName(fieldVarDsc->TypeGet()),
                                tree->AsLclVarCommon()->GetLclNum(), fieldName, fieldVarDsc->lvFldOffset);
-                        gtDispLclVar(i);
+                        gtDispLclVar(fieldLclNum);
+                        gtDispSsaName(fieldLclNum, tree->AsLclVarCommon()->GetSsaNum(this, index), isDef);
 
                         if (fieldVarDsc->lvRegister)
                         {
@@ -11426,7 +11467,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         }
 
                         if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
-                            tree->AsLclVar()->IsLastUse(i - varDsc->lvFieldLclStart))
+                            tree->AsLclVar()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }
@@ -11490,10 +11531,16 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
         {
-            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
-            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
-            printTreeID(associatedTree);
+            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(for ");
+            printTreeID(inlineCand);
             printf(")");
+
+            if (tree->AsRetExpr()->gtSubstExpr != nullptr)
+            {
+                printf(" -> ");
+                printTreeID(tree->AsRetExpr()->gtSubstExpr);
+            }
         }
         break;
 
@@ -15279,13 +15326,12 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
             int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
             if (cnsIndex >= 0)
             {
-                const int maxStrSize = 1024;
-                char16_t  str[maxStrSize];
-                int       length =
-                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, str, maxStrSize);
-                if (cnsIndex < length)
+                char16_t chr;
+                int      length =
+                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, &chr, 1, cnsIndex);
+                if (length > 0)
                 {
-                    return gtNewIconNode(str[cnsIndex]);
+                    return gtNewIconNode(chr);
                 }
             }
         }
@@ -15429,12 +15475,11 @@ GenTree* Compiler::gtNewTempAssign(
     CORINFO_CLASS_HANDLE valStructHnd = gtGetStructHandleIfPresent(val);
     if (varTypeIsStruct(varDsc) && (valStructHnd == NO_CLASS_HANDLE) && !varTypeIsSIMD(valTyp))
     {
-        // There are 2 special cases:
-        // 1. we have lost classHandle from a FIELD node  because the parent struct has overlapping fields,
-        //     the field was transformed as IND opr GT_LCL_FLD;
-        // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
-        // in these cases, we can use the type of the merge return for the assignment.
-        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
+        // There are some cases where we do not have a struct handle on the return value:
+        // 1. Handle-less IND/BLK/LCL_FLD<struct> nodes.
+        // 2. The zero constant created by local assertion propagation.
+        // In these cases, we can use the type of the merge return for the assignment.
+        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_BLK, GT_LCL_FLD, GT_CNS_INT));
         assert(tmp == genReturnLocal);
         valStructHnd = lvaGetStruct(genReturnLocal);
         assert(valStructHnd != NO_CLASS_HANDLE);
@@ -16373,9 +16418,8 @@ bool GenTree::IsPhiNode()
 
 bool GenTree::IsPhiDefn()
 {
-    bool res = ((OperGet() == GT_ASG) && (AsOp()->gtOp2 != nullptr) && (AsOp()->gtOp2->OperGet() == GT_PHI)) ||
-               ((OperGet() == GT_STORE_LCL_VAR) && (AsOp()->gtOp1 != nullptr) && (AsOp()->gtOp1->OperGet() == GT_PHI));
-    assert(!res || OperGet() == GT_STORE_LCL_VAR || AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
+    bool res = OperIs(GT_ASG) && AsOp()->gtOp2->OperIs(GT_PHI);
+    assert(!res || AsOp()->gtOp1->OperIs(GT_LCL_VAR));
     return res;
 }
 
@@ -16414,7 +16458,8 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //    that "LocalAddressVisitor" recognizes, as it is used to detect which
 //    trees can define tracked locals.
 //
-bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
+bool GenTree::DefinesLocal(
+    Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
 {
     assert((pOffset == nullptr) || (*pOffset == 0));
 
@@ -16428,17 +16473,39 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 
         // Return early for the common case.
         //
-        if (lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (lhs->OperIs(GT_LCL_VAR))
         {
             *pLclVarTree = lhs->AsLclVarCommon();
             if (pIsEntire != nullptr)
             {
-                *pIsEntire = !lhs->IsPartialLclFld(comp);
+                *pIsEntire = true;
             }
-
             if (pOffset != nullptr)
             {
-                *pOffset = lhs->AsLclVarCommon()->GetLclOffs();
+                *pOffset = 0;
+            }
+            if (pSize != nullptr)
+            {
+                *pSize = comp->lvaLclExactSize(lhs->AsLclVarCommon()->GetLclNum());
+            }
+
+            return true;
+        }
+
+        if (lhs->OperIs(GT_LCL_FLD))
+        {
+            *pLclVarTree = lhs->AsLclVarCommon();
+            if (pIsEntire != nullptr)
+            {
+                *pIsEntire = !lhs->AsLclFld()->IsPartialLclFld(comp);
+            }
+            if (pOffset != nullptr)
+            {
+                *pOffset = lhs->AsLclFld()->GetLclOffs();
+            }
+            if (pSize != nullptr)
+            {
+                *pSize = lhs->AsLclFld()->GetSize();
             }
 
             return true;
@@ -16503,6 +16570,11 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     if (pOffset != nullptr)
     {
         *pOffset = offset;
+    }
+
+    if (pSize != nullptr)
+    {
+        *pSize = storeSize;
     }
 
     return true;
@@ -17352,6 +17424,41 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
     return fieldTyp != TYP_REF;
 }
 
+//------------------------------------------------------------------------
+// gtStoreDefinesField: Does the given parent store modify the given field?
+//
+// Arguments:
+//    fieldVarDsc       - The field local
+//    offset            - Offset of the store, relative to the parent
+//    size              - Size of the store in bytes
+//    pFieldStoreOffset - [out] parameter for the store's offset relative
+//                        to the field local itself
+//    pFileStoreSize    - [out] parameter for the amount of the field's
+//                        local's bytes affected by the store
+//
+// Return Value:
+//    If the given store affects the given field local, "true, "false"
+//    otherwise.
+//
+bool Compiler::gtStoreDefinesField(
+    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize)
+{
+    ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
+    unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
+
+    ssize_t storeEndOffset = offset + static_cast<ssize_t>(size);
+    ssize_t fieldEndOffset = fieldOffset + static_cast<ssize_t>(fieldSize);
+    if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
+    {
+        *pFieldStoreOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
+        *pFileStoreSize    = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
+
+        return true;
+    }
+
+    return false;
+}
+
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 {
     CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
@@ -17373,7 +17480,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
             case GT_RET_EXPR:
-                structHnd = tree->AsRetExpr()->gtRetClsHnd;
+                structHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
                 break;
             case GT_FIELD:
                 info.compCompHnd->getFieldType(tree->AsField()->gtFldHnd, &structHnd);
@@ -17508,6 +17615,20 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             break;
         }
 
+        case GT_CNS_INT:
+        {
+            if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            {
+                objClass = info.compCompHnd->getObjectType((void*)tree->AsIntCon()->IconValue());
+                if (objClass != NO_CLASS_HANDLE)
+                {
+                    // if we managed to get a class handle it's definitely not null
+                    *pIsNonNull = true;
+                }
+            }
+            break;
+        }
+
         case GT_RET_EXPR:
         {
             // If we see a RET_EXPR, recurse through to examine the
@@ -17529,7 +17650,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
 
-                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
+                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call);
                 if (specialObjClass != nullptr)
                 {
                     objClass    = specialObjClass;
@@ -17684,12 +17805,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     GenTree* op1 = base->AsOp()->gtOp1;
                     GenTree* op2 = base->AsOp()->gtOp2;
 
-                    const bool op1IsStaticFieldBase = gtIsStaticGCBaseHelperCall(op1);
-
-                    if (op1IsStaticFieldBase && (op2->OperGet() == GT_CNS_INT))
+                    if (op2->IsCnsIntOrI())
                     {
                         FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-
                         if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
@@ -17959,55 +18077,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
     }
 
     return fieldClass;
-}
-
-//------------------------------------------------------------------------
-// gtIsGCStaticBaseHelperCall: true if tree is fetching the gc static base
-//    for a subsequent static field access
-//
-// Arguments:
-//    tree - tree to consider
-//
-// Return Value:
-//    true if the tree is a suitable helper call
-//
-// Notes:
-//    Excludes R2R helpers as they specify the target field in a way
-//    that is opaque to the jit.
-
-bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
-{
-    if (tree->OperGet() != GT_CALL)
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-
-    if (call->gtCallType != CT_HELPER)
-    {
-        return false;
-    }
-
-    const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
-
-    switch (helper)
-    {
-        // We are looking for a REF type so only need to check for the GC base helpers
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            return true;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -22812,6 +22881,43 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
     return OperIsMemoryLoad() || OperIsMemoryStore();
 }
 
+//------------------------------------------------------------------------
+// GetLayout: Get the layout for this TYP_STRUCT HWI node.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//
+// Return Value:
+//    The struct layout for the node.
+//
+// Notes:
+//    Currently, this method synthesizes block layouts, since there is not
+//    enough space in the GenTreeHWIntrinsic node to store a proper layout
+//    pointer or number.
+//
+ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
+{
+    assert(TypeIs(TYP_STRUCT));
+
+    switch (GetHWIntrinsicId())
+    {
+#ifdef TARGET_ARM64
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector64:
+        case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            return compiler->typGetBlkLayout(16);
+
+        case NI_AdvSimd_Arm64_LoadPairVector128:
+        case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            return compiler->typGetBlkLayout(32);
+#endif // TARGET_ARM64
+
+        default:
+            unreached();
+    }
+}
+
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicId() const
 {
     NamedIntrinsic id             = gtHWIntrinsicId;
@@ -22897,8 +23003,6 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 {
     assert(!m_inited);
 
-#if FEATURE_MULTIREG_RET
-
     assert(retClsHnd != NO_CLASS_HANDLE);
     unsigned structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
@@ -22924,8 +23028,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             // We should have an hfa struct type
             assert(varTypeIsValidHfaType(hfaType));
 
-            // Note that the retail build issues a warning about a potential division by zero without this Max function
-            unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
+            // Note that the retail build issues a warning about a potential divsion by zero without this "max",
+            unsigned elemSize = max(1, genTypeSize(hfaType));
 
             // The size of this struct should be evenly divisible by elemSize
             assert((structSize % elemSize) == 0);
@@ -23028,24 +23132,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             //
             NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
 
-#endif // UNIX_AMD64_ABI
-
+#endif             // UNIX_AMD64_ABI
             break; // for case SPK_ByValue
         }
 
         case Compiler::SPK_ByReference:
-
-            // We are returning using the return buffer argument
-            // There are no return registers
+            // We are returning using the return buffer argument, there are no return registers.
             break;
 
         default:
-
             unreached(); // By the contract of getReturnTypeForStruct we should never get here.
 
     } // end of switch (howToReturnStruct)
-
-#endif //  FEATURE_MULTIREG_RET
 
 #ifdef DEBUG
     m_inited = true;
@@ -23075,6 +23173,40 @@ void ReturnTypeDesc::InitializeLongReturnType()
 #ifdef DEBUG
     m_inited = true;
 #endif
+}
+
+//---------------------------------------------------------------------------------------
+// InitializeReturnType: Initialize the descriptor for a method that returns any type.
+//
+// Arguments:
+//    comp      - The Compiler instance
+//    type      - The return type as specififed by the signature
+//    retClsHnd - Handle for struct return types
+//    callConv  - Method's calling convention
+//
+void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
+                                          var_types                type,
+                                          CORINFO_CLASS_HANDLE     retClsHnd,
+                                          CorInfoCallConvExtension callConv)
+{
+    if (varTypeIsStruct(type))
+    {
+        InitializeStructReturnType(comp, retClsHnd, callConv);
+    }
+    else if (type == TYP_LONG)
+    {
+        InitializeLongReturnType();
+    }
+    else
+    {
+        if (type != TYP_VOID)
+        {
+            assert(varTypeIsEnregisterable(type));
+            m_regType[0] = type;
+        }
+
+        INDEBUG(m_inited = true);
+    }
 }
 
 //-------------------------------------------------------------------
@@ -23142,6 +23274,10 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
             }
         }
     }
+#elif defined(WINDOWS_AMD64_ABI)
+
+    assert(idx == 0);
+    resultReg = varTypeUsesFloatReg(GetReturnRegType(0)) ? REG_FLOATRET : REG_INTRET;
 
 #elif defined(TARGET_X86)
 
@@ -23313,6 +23449,150 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     regMaskTP tempRegMask = genFindLowestBit(availableSet);
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
+}
+
+//------------------------------------------------------------------------
+// GetNum: Get the SSA number for a given field.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//    index    - The field index
+//
+// Return Value:
+//    The SSA number corresponding to the field at "index".
+//
+unsigned SsaNumInfo::GetNum(Compiler* compiler, unsigned index) const
+{
+    assert(IsComposite());
+    if (HasCompactFormat())
+    {
+        return (m_value >> (index * BITS_PER_SIMPLE_NUM)) & SIMPLE_NUM_MASK;
+    }
+
+    // We expect this case to be very rare (outside stress).
+    return *GetOutlinedNumSlot(compiler, index);
+}
+
+//------------------------------------------------------------------------
+// GetOutlinedNumSlot: Get a pointer the "outlined" SSA number for a field.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//    index    - The field index
+//
+// Return Value:
+//    Pointer to the SSA number corresponding to the field at "index".
+//
+unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) const
+{
+    assert(IsComposite() && !HasCompactFormat());
+
+    // The "outlined" format for a composite number encodes a 30-bit-sized index.
+    // First, extract it: this will need "bit stitching" from the two parts.
+    unsigned outIndexLow  = m_value & OUTLINED_INDEX_LOW_MASK;
+    unsigned outIndexHigh = (m_value & OUTLINED_INDEX_HIGH_MASK) >> 1;
+    unsigned outIndex     = outIndexLow | outIndexHigh;
+
+    return &compiler->m_outlinedCompositeSsaNums->GetRefNoExpand(outIndex + index);
+}
+
+//------------------------------------------------------------------------
+// NumCanBeEncodedCompactly: Can the given field ref be encoded compactly?
+//
+// Arguments:
+//    ssaNum - The SSA number
+//    index  - The field index
+//
+// Return Value:
+//    Whether the ref of the field at "index" can be encoded through the
+//    "compact" encoding scheme.
+//
+// Notes:
+//    Under stress, we randomly reduce the number of refs that can be
+//    encoded compactly, to stress the outlined encoding logic.
+//
+/* static */ bool SsaNumInfo::NumCanBeEncodedCompactly(unsigned index, unsigned ssaNum)
+{
+#ifdef DEBUG
+    if (JitTls::GetCompiler()->compStressCompile(Compiler::STRESS_SSA_INFO, 20))
+    {
+        return (ssaNum - 2) < index;
+    }
+#endif // DEBUG
+
+    assert(index < MAX_NumOfFieldsInPromotableStruct);
+
+    return (ssaNum <= MAX_SIMPLE_NUM) &&
+           ((index < SIMPLE_NUM_COUNT) || (SIMPLE_NUM_COUNT <= MAX_NumOfFieldsInPromotableStruct));
+}
+
+//------------------------------------------------------------------------
+// Composite: Form a composite SSA number, one capable of representing refs
+//    to more than one SSA local.
+//
+// Arguments:
+//    baseNum      - The SSA number to base the new one on (composite/invalid)
+//    compiler     - The Compiler instance
+//    parentLclNum - The promoted local representing a "whole" ref
+//    index        - The field index
+//    ssaNum       - The SSA number
+//
+// Return Value:
+//    A new, always composite, SSA number that represents all of the refs
+//    in "baseNum", with the field at "index" set to "ssaNum".
+//
+// Notes:
+//    It is assumed that the new number represents the same "whole" ref as
+//    the old one (the same parent local). If the SSA number needs to be
+//    reset fully, a new, RESERVED one should be created, and composed from
+//    with the appropriate parent reference.
+//
+/* static */ SsaNumInfo SsaNumInfo::Composite(
+    SsaNumInfo baseNum, Compiler* compiler, unsigned parentLclNum, unsigned index, unsigned ssaNum)
+{
+    assert(baseNum.IsInvalid() || baseNum.IsComposite());
+    assert(compiler->lvaGetDesc(parentLclNum)->lvPromoted);
+
+    if (NumCanBeEncodedCompactly(index, ssaNum) && (baseNum.IsInvalid() || baseNum.HasCompactFormat()))
+    {
+        unsigned ssaNumEncoded = ssaNum << (index * BITS_PER_SIMPLE_NUM);
+        if (baseNum.IsInvalid())
+        {
+            return SsaNumInfo(COMPOSITE_ENCODING_BIT | ssaNumEncoded);
+        }
+
+        return SsaNumInfo(ssaNumEncoded | baseNum.m_value);
+    }
+
+    if (!baseNum.IsInvalid())
+    {
+        *baseNum.GetOutlinedNumSlot(compiler, index) = ssaNum;
+        return baseNum;
+    }
+
+    // This is the only path where we can encounter a null table.
+    if (compiler->m_outlinedCompositeSsaNums == nullptr)
+    {
+        CompAllocator alloc                  = compiler->getAllocator(CMK_SSA);
+        compiler->m_outlinedCompositeSsaNums = new (alloc) JitExpandArrayStack<unsigned>(alloc);
+    }
+
+    // Allocate a new chunk for the field numbers. Once allocated, it cannot be expanded.
+    int                            count              = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
+    JitExpandArrayStack<unsigned>* table              = compiler->m_outlinedCompositeSsaNums;
+    int                            outIdx             = table->Size();
+    unsigned*                      pLastSlot          = &table->GetRef(outIdx + count - 1); // This will grow the table.
+    pLastSlot[-(count - 1) + static_cast<int>(index)] = ssaNum;
+
+    // Split the index if it does not fit into a small encoding.
+    if ((outIdx & ~OUTLINED_INDEX_LOW_MASK) != 0)
+    {
+        int outIdxLow  = outIdx & OUTLINED_INDEX_LOW_MASK;
+        int outIdxHigh = (outIdx << 1) & OUTLINED_INDEX_HIGH_MASK;
+        outIdx         = outIdxLow | outIdxHigh;
+    }
+
+    return SsaNumInfo(COMPOSITE_ENCODING_BIT | OUTLINED_ENCODING_BIT | outIdx);
 }
 
 //------------------------------------------------------------------------
