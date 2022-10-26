@@ -17,6 +17,7 @@ namespace System.Globalization.Tests
 
 
         [ConditionalFact(nameof(SupportsIcuPackageDownload))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77485", TestPlatforms.Windows)]
         public void TestIcuAppLocal()
         {
             // We define this switch dynamically during the runtime using RemoteExecutor.
