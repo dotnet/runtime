@@ -93,23 +93,11 @@ mono_profiler_init_browser (const char *desc)
 	}
 
 #ifdef HOST_WASM
+	// install this only in production run, not in AOT run
 	mono_profiler_set_method_enter_callback (handle, method_enter);
 	mono_profiler_set_method_leave_callback (handle, method_leave);
 	mono_profiler_set_method_tail_call_callback (handle, tail_call);
 	mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
-
-	// TODO 
-	// MONO_PROFILER_RAISE (assembly_loading, (ass));
-	// MONO_PROFILER_RAISE (assembly_loaded, (ass));
-
-	// MONO_PROFILER_RAISE (class_loading, (klass));
-	// MONO_PROFILER_RAISE (class_failed, (klass));
-	// MONO_PROFILER_RAISE (class_failed, (klass));
-
-	// MONO_PROFILER_RAISE (gc_finalizing, ());
-	// MONO_PROFILER_RAISE (gc_finalized, ());
-
-	// MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END
 #endif /* HOST_WASM */
 }
 

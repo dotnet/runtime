@@ -1498,8 +1498,6 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 	return I52_ERROR_NONE;
 }
 
-//extern const char* mono_method_get_full_name (MonoMethod *method);
-
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
 	return mono_method_full_name(method, 0);
 }
