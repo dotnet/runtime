@@ -1988,6 +1988,12 @@
         "unix-loongarch64"
       ]
     },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -4053,6 +4059,11 @@
       ]
     },
     "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-riscv64": {
       "#import": [
         "unix"
       ]
