@@ -12697,6 +12697,10 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
     const ptrdiff_t MIN_PTR_DIFF = ((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-1);
     const ptrdiff_t MAX_PTR_DIFF = (((((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-2))-1)<<1)+1;
 
+#ifdef TRACE_GC
+    const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
+#endif // TRACE_GC
+
     while (true)
     {
         // figure out which are the heaps with the minimum and maximum committed space relative to the budget
@@ -12711,11 +12715,12 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
 
             ptrdiff_t heap_committed = hp->free_regions[kind].get_size_committed_in_free() - heap_budget_in_region_units[i][kind]*region_size;
 
-            dprintf (REGIONS_LOG, ("kind: %d, heap %d committed %Id budget %Id",
-                kind,
+            dprintf (REGIONS_LOG, ("%s regions: heap %d committed %Id budget %Id difference %Id",
+                kind_name[kind],
                 i,
                 hp->free_regions[kind].get_size_committed_in_free(),
-                heap_budget_in_region_units[i][kind]*region_size));
+                heap_budget_in_region_units[i][kind]*region_size,
+                heap_committed));
 
             if (min_committed > heap_committed)
             {
@@ -12738,8 +12743,8 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
         // so swap a region with hopefully small commit from the end of the free list of the heap with small commit
         // and a region with hopefully large commit from the start of the free list of the heap with large commit
         assert (min_committed < max_committed);
-        dprintf (REGIONS_LOG, ("kind %d: heap %d has %Id committed in free, heap %d has %Id committed in free",
-            kind,
+        dprintf (REGIONS_LOG, ("%s regions: heap %d has %Id committed in free, heap %d has %Id committed in free",
+            kind_name[kind],
             min_hp->heap_number,
             min_committed,
             max_hp->heap_number,
@@ -12763,8 +12768,8 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
             break;
         }
 
-        dprintf (REGIONS_LOG, ("kind %d: moving %Id bytes of commit from heap %d to heap %d",
-            kind,
+        dprintf (REGIONS_LOG, ("%s regions: moving %Id bytes of commit from heap %d to heap %d",
+            kind_name[kind],
             diff_committed,
             max_hp->heap_number,
             min_hp->heap_number));
