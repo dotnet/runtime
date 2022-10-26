@@ -2869,9 +2869,15 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 		return mono_static_field_get_addr (vt, field);
 	else {
-		/* TODO: metadata-update: implement support for added fields */
-		g_assert (!m_field_is_from_update (field));
-		return (guint8*)obj + m_field_get_offset (field);
+		if (G_LIKELY (!m_field_is_from_update (field)))
+                        return (guint8*)obj + m_field_get_offset (field);
+                else {
+                        ERROR_DECL (error);
+                        uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+                        gpointer addr = mono_metadata_update_added_field_ldflda (obj, field->type, token, error);
+                        mono_error_assert_ok (error);
+                        return addr;
+                }
 	}
 }
 
