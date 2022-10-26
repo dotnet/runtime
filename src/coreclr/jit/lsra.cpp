@@ -324,16 +324,6 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
     return result;
 }
 
-void LinearScan::clearSpillCost(regNumber reg)
-{
-    spillCost[reg] = 0;
-}
-
-void LinearScan::clearNextIntervalRef(regNumber reg)
-{
-    nextIntervalRef[reg] = MaxLocation;
-}
-
 // TODO: Convert all these to something like this:
 /* although it generates 3 comparisons, but may be
 *  branch predictor will optimize depending for the
@@ -349,30 +339,41 @@ void LinearScan::clearNextIntervalRef(regNumber reg)
 *       break;
 * }
 */
-void LinearScan::clearSpillCost(regNumber reg, Referenceable* reference)
+void LinearScan::clearSpillCost(regNumber reg)
 {
-    int       regCount = reference->regCount;
+    spillCost[reg] = 0;
+}
+
+void LinearScan::clearNextIntervalRef(regNumber reg)
+{
+    nextIntervalRef[reg] = MaxLocation;
+}
+
+void LinearScan::clearSpillCost(regNumber reg, Interval* interval)
+{
+    int       regCount = interval->regCount;
     regNumber currReg  = reg;
 #ifdef TARGET_ARM
-    assert((regCount == 1) || (reference->registerType == TYP_DOUBLE));
+    assert((regCount == 1) || (interval->registerType == TYP_DOUBLE));
 #endif
+    // TODO: Need to somehow make sure that we are not crossing the lower/upper boundary
     do
     {
-        spillCost[currReg] = 0;
+        clearSpillCost(currReg);
         currReg            = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
 
-void LinearScan::clearNextIntervalRef(regNumber reg, Referenceable* reference)
+void LinearScan::clearNextIntervalRef(regNumber reg, Interval* interval)
 {
-    int       regCount = reference->regCount;
+    int       regCount = interval->regCount;
     regNumber currReg  = reg;
 #ifdef TARGET_ARM
-    assert((regCount == 1) || (reference->registerType == TYP_DOUBLE));
+    assert((regCount == 1) || (interval->registerType == TYP_DOUBLE));
 #endif
     do
     {
-        nextIntervalRef[currReg] = MaxLocation;
+        clearNextIntervalRef(currReg);
         currReg                  = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
@@ -387,7 +388,7 @@ void LinearScan::updateNextIntervalRef(regNumber reg, Interval* interval)
 #endif
     do
     {
-        nextIntervalRef[currReg] = nextRefLocation;
+        updateNextIntervalRef(currReg, nextRefLocation);
         currReg                  = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
@@ -404,7 +405,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 #endif
     do
     {
-        spillCost[currReg] = cost;
+        updateSpillCost(currReg, cost);
         currReg            = REG_NEXT(currReg);
     } while (--regCount > 0);
 }
@@ -3479,20 +3480,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
 {
     RegRecord* regRecToUnassign = regRec;
     RegRecord* firstRegRec      = getFirstRegRec(regRec);
-    regNumber  currReg          = firstRegRec->regNum;
-    int        regCount         = regRec->regCount;
-
-    do
+    if (firstRegRec->assignedInterval != nullptr)
     {
-        RegRecord* regRec        = getRegisterRecord(currReg);
-        if (regRec->assignedInterval != nullptr)
-        {
-            unassignPhysReg(regRec, regRec->assignedInterval->recentRefPosition);
-        }
-
-        currReg = REG_NEXT(currReg);
-
-    } while (--regCount > 0);
+        unassignPhysReg(firstRegRec, firstRegRec->assignedInterval->recentRefPosition);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3544,6 +3535,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     checkAndClearInterval(getRegisterRecord(firstRegNum), spillRefPosition);
 
 #ifdef DEBUG
+    newRegCount = assignedInterval->regCount;
     currReg = firstRegNum;
     do
     {
@@ -3648,6 +3640,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     }
     else if (canRestorePreviousInterval(regRec, assignedInterval))
     {
+        //TODO: Update regCount and regIdx for RegRecord?
         regRec->assignedInterval = regRec->previousInterval;
         regRec->previousInterval = nullptr;
         if (regRec->assignedInterval->physReg != thisRegNum)
@@ -3669,6 +3662,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         {
             RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(regRec);
 
+            // TODO: Update regCount and regIdx for RegRecord?
             anotherHalfRegRec->assignedInterval = regRec->assignedInterval;
             anotherHalfRegRec->previousInterval = nullptr;
         }
@@ -3845,7 +3839,7 @@ regNumber LinearScan::getFirstRegNum(regNumber regNum, int regIdx)
             FALLTHROUGH;
         case 1:
             regNum = REG_PREV(regNum);
-            FALLTHROUGH;
+            break;
         default:
             printf("%d registers are not supported.\n", regIdx);
             assert(false);
@@ -4097,12 +4091,12 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
-            clearNextIntervalRef(reg, physRegRecord);
-            clearSpillCost(reg, physRegRecord);
+            clearNextIntervalRef(reg);
+            clearSpillCost(reg);
             if (assignedInterval != nullptr)
             {
                 assert(assignedInterval->isConstant);
-                physRegRecord->assignedInterval = nullptr;
+                physRegRecord->reset();
             }
         }
         return;
@@ -4523,7 +4517,7 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 {
     Interval* assignedInterval = physRegRecord->assignedInterval;
     makeRegAvailable(physRegRecord->regNum);
-    clearSpillCost(physRegRecord->regNum, physRegRecord);
+    clearSpillCost(physRegRecord->regNum);
     makeRegisterInactive(physRegRecord);
 
     if (assignedInterval != nullptr)
@@ -4677,8 +4671,8 @@ void LinearScan::allocateRegisters()
         }
         else
         {
-            clearNextIntervalRef(reg, physRegRecord);
-            clearSpillCost(reg, physRegRecord);
+            clearNextIntervalRef(reg);
+            clearSpillCost(reg);
         }
     }
 
@@ -4731,7 +4725,7 @@ void LinearScan::allocateRegisters()
             tempRegsToMakeInactive &= ~nextRegBit;
             regNumber  nextReg   = genRegNumFromMask(nextRegBit);
             RegRecord* regRecord = getRegisterRecord(nextReg);
-            clearSpillCost(regRecord->regNum, regRecord);
+            clearSpillCost(regRecord->regNum);
             makeRegisterInactive(regRecord);
         }
         if (currentRefPosition.nodeLocation > prevLocation)
@@ -4999,7 +4993,7 @@ void LinearScan::allocateRegisters()
                 if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
                 {
                     clearConstantReg(regRecord->regNum, assignedInterval);
-                    regRecord->assignedInterval  = nullptr;
+                    regRecord->reset();
                     spillCost[regRecord->regNum] = 0;
 
 #ifdef TARGET_ARM
@@ -5008,7 +5002,7 @@ void LinearScan::allocateRegisters()
                     {
                         RegRecord* otherRegRecord = findAnotherHalfRegRec(regRecord);
                         assert(otherRegRecord->assignedInterval == assignedInterval);
-                        otherRegRecord->assignedInterval  = nullptr;
+                        otherRegRecord->reset();
                         spillCost[otherRegRecord->regNum] = 0;
                     }
 #endif // TARGET_ARM
@@ -5803,9 +5797,7 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
     do
     {
         RegRecord* regRec        = getRegisterRecord(currReg);
-        regRec->assignedInterval = nullptr;
-        regRec->regCount         = 1;
-        regRec->regIdx           = 0;
+        regRec->reset();
 
         clearNextIntervalRef(currReg);
         clearSpillCost(currReg);
@@ -5820,9 +5812,7 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
     while (oldRegCount > 0)
     {
         RegRecord* regRec        = getRegisterRecord(currReg);
-        regRec->assignedInterval = nullptr;
-        regRec->regCount         = 1;
-        regRec->regIdx           = 0;
+        regRec->reset();
 
         clearNextIntervalRef(currReg);
         clearSpillCost(currReg);
@@ -5868,6 +5858,7 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
     regNumber firstRegNum = getFirstRegNum(reg->regNum);
     regNumber currReg     = firstRegNum;
     regMaskTP regsInUse   = 0;
+    int       idx         = 0;
 
     LsraLocation nextIntervalRef = interval->getNextRefLocation();
     weight_t     spillCost = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
@@ -5877,6 +5868,8 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
     {
         RegRecord* regRec        = getRegisterRecord(currReg);
         regRec->assignedInterval = interval;
+        regRec->regCount         = interval->regCount;
+        regRec->regIdx           = idx++;
         regsInUse |= genRegMask(currReg);
 
         updateNextIntervalRef(currReg, nextIntervalRef);
@@ -5891,9 +5884,7 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
     while (oldRegCount > 0)
     {
         RegRecord* regRec        = getRegisterRecord(currReg);
-        regRec->assignedInterval = nullptr;
-        regRec->regCount         = 1;
-        regRec->regIdx           = 0;
+        regRec->reset();
 
         clearNextIntervalRef(currReg);
         clearSpillCost(currReg);
@@ -6861,7 +6852,7 @@ void LinearScan::resolveRegisters()
                 assignedInterval->assignedReg = nullptr;
                 assignedInterval->physReg     = REG_NA;
             }
-            physRegRecord->assignedInterval  = nullptr;
+            physRegRecord->reset();
             physRegRecord->recentRefPosition = nullptr;
         }
 
@@ -10603,7 +10594,7 @@ void LinearScan::verifyFinalAllocation()
     for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord        = getRegisterRecord(reg);
-        physRegRecord->assignedInterval = nullptr;
+        physRegRecord->reset();
     }
 
     for (Interval& interval : intervals_1)
@@ -10713,7 +10704,7 @@ void LinearScan::verifyFinalAllocation()
                     for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
                     {
                         RegRecord* physRegRecord        = getRegisterRecord(reg);
-                        physRegRecord->assignedInterval = nullptr;
+                        physRegRecord->reset();
                     }
 
                     // Now, record the locations at the beginning of this block.
@@ -10830,7 +10821,7 @@ void LinearScan::verifyFinalAllocation()
                             assert(interval->assignedReg != nullptr);
                             if (interval->assignedReg->assignedInterval == interval)
                             {
-                                interval->assignedReg->assignedInterval = nullptr;
+                                interval->assignedReg->reset();
                             }
                             interval->physReg     = REG_NA;
                             interval->assignedReg = nullptr;
@@ -10863,9 +10854,10 @@ void LinearScan::verifyFinalAllocation()
                 else if (currentRefPosition.moveReg)
                 {
                     assert(interval->assignedReg != nullptr);
-                    interval->assignedReg->assignedInterval = nullptr;
+                    interval->assignedReg->reset();
                     interval->physReg                       = regNum;
                     interval->assignedReg                   = regRecord;
+                    //TODO: What about regCount, etc.?
                     regRecord->assignedInterval             = interval;
                     if (VERBOSE)
                     {
@@ -10910,6 +10902,7 @@ void LinearScan::verifyFinalAllocation()
                     }
                     else if (currentRefPosition.copyReg)
                     {
+                        // TODO: What about regCount, etc.?
                         regRecord->assignedInterval = interval;
                     }
                     else
@@ -10920,11 +10913,12 @@ void LinearScan::verifyFinalAllocation()
                             // Clear the assigned interval of current register.
                             if (interval->physReg != REG_NA && interval->physReg != regNum)
                             {
-                                interval->assignedReg->assignedInterval = nullptr;
+                                interval->assignedReg->reset();
                             }
                         }
                         interval->physReg           = regNum;
                         interval->assignedReg       = regRecord;
+                        // TODO: What about regCount, etc.?
                         regRecord->assignedInterval = interval;
                     }
                 }
@@ -10967,7 +10961,7 @@ void LinearScan::verifyFinalAllocation()
                 if (currentRefPosition.copyReg)
                 {
                     assert(interval->physReg != regNum);
-                    regRecord->assignedInterval = nullptr;
+                    regRecord->reset();
                     assert(interval->assignedReg != nullptr);
                     regRecord = interval->assignedReg;
                 }
@@ -10981,7 +10975,7 @@ void LinearScan::verifyFinalAllocation()
                         // register got spilled), then clear the assigned interval of current register.
                         if (interval->physReg != REG_NA && interval->physReg != regNum)
                         {
-                            interval->assignedReg->assignedInterval = nullptr;
+                            interval->assignedReg->reset();
                         }
                     }
 
@@ -10991,7 +10985,7 @@ void LinearScan::verifyFinalAllocation()
                     // regRegcord could be null if the RefPosition does not require a register.
                     if (regRecord != nullptr)
                     {
-                        regRecord->assignedInterval = nullptr;
+                        regRecord->reset();
                     }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     else if (interval->isUpperVector && !currentRefPosition.RegOptional())
@@ -11038,7 +11032,7 @@ void LinearScan::verifyFinalAllocation()
             for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
             {
                 RegRecord* physRegRecord        = getRegisterRecord(reg);
-                physRegRecord->assignedInterval = nullptr;
+                physRegRecord->reset();
             }
 
             // Set the incoming register assignments

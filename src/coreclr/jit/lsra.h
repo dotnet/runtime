@@ -553,6 +553,13 @@ public:
     // If this RegRecord is participating in consecutive register, the index of the
     // register in sequence. When no consecutive register, this should be 0.
     unsigned int regIdx : 2;
+
+    void reset()
+    {
+        assignedInterval = nullptr;
+        regCount = 1;
+        regIdx = 0;
+    }
 };
 
 inline bool leafInRange(GenTree* leaf, int lower, int upper)
@@ -1751,9 +1758,8 @@ private:
 
     void clearSpillCost(regNumber reg);
     void clearNextIntervalRef(regNumber reg);
-
-    void clearSpillCost(regNumber reg, Referenceable* reference);
-    void clearNextIntervalRef(regNumber reg, Referenceable* reference);
+    void clearSpillCost(regNumber reg, Interval* interval);
+    void clearNextIntervalRef(regNumber reg, Interval* interval);
 
     regMaskTP m_RegistersWithConstants;
 
