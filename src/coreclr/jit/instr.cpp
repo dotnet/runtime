@@ -69,6 +69,10 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
+#elif defined(TARGET_RISCV64)
+        #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
 #else
 #error "Unknown TARGET"
 #endif
@@ -327,6 +331,8 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 #ifdef TARGET_LOONGARCH64
     // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
     NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("inst_RV-----unused on RISCV64----");
 #else
     GetEmitter()->emitIns_R(ins, size, reg);
 #endif
@@ -343,7 +349,7 @@ void CodeGen::inst_Mov(var_types dstType,
                        emitAttr  size,
                        insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
     {
         if (dstType == TYP_FLOAT)
@@ -365,6 +371,7 @@ void CodeGen::inst_Mov(var_types dstType,
         else
         {
             NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+            NYI_RISCV64("CodeGen::inst_Mov dstType");
         }
     }
 #endif
@@ -457,7 +464,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -533,7 +540,7 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_tst);
     assert(ins != INS_mov);
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !TARGET_ARM
 #ifdef TARGET_AMD64
@@ -591,7 +598,11 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
 #if CPU_LOAD_STORE_ARCH
     assert(GetEmitter()->emitInsIsStore(ins));
 #endif
+#ifdef TARGET_RISCV64
+    GetEmitter()->emitIns_S_R(ins, size, reg, REG_NA, varNum, 0);
+#else
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
+#endif
 }
 
 /*****************************************************************************
@@ -913,10 +924,12 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
             break;
 
         case OperandKind::Reg:
+#if !defined(TARGET_RISCV64)
             if (emit->IsMovInstruction(ins))
             {
                 emit->emitIns_Mov(ins, size, op1Reg, op2Desc.GetReg(), /* canSkip */ true);
             }
+#endif // !TARGET_RISCV64
             else
             {
                 emit->emitIns_R_R(ins, size, op1Reg, op2Desc.GetReg());
@@ -1067,7 +1080,11 @@ void CodeGen::inst_RV_RV_TT(
 
 void CodeGen::inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type)
 {
+#ifdef TARGET_RISCV64
+    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, REG_NA, tmp->tdTempNum(), ofs);
+#else
     GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
+#endif
 }
 
 #ifdef TARGET_XARCH
@@ -1231,6 +1248,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
     NYI_LOONGARCH64("ins_Move_Extend");
+    NYI_RISCV64("ins_Move_Extend");
 
     instruction ins = INS_invalid;
 
@@ -1445,6 +1463,19 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         {
             assert(!"unhandled floating type");
         }
+#elif defined(TARGET_RISCV64)
+        if (srcType == TYP_DOUBLE)
+        {
+            return INS_fld;
+        }
+        else if (srcType == TYP_FLOAT)
+        {
+            return INS_flw;
+        }
+        else
+        {
+            assert(!"unhandled floating type");
+        }
 #else
         assert(!varTypeIsFloating(srcType));
 #endif
@@ -1506,6 +1537,29 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     {
         ins = INS_ld_d; // default ld_d.
     }
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lbu;
+        else
+            ins = INS_lb;
+    }
+    else if (varTypeIsShort(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lhu;
+        else
+            ins = INS_lh;
+    }
+    else if (TYP_INT == srcType)
+    {
+        ins = INS_lw;
+    }
+    else
+    {
+        ins = INS_ld; // default ld.
+    }
 #else
     NYI("ins_Load");
 #endif
@@ -1566,8 +1620,17 @@ instruction CodeGen::ins_Copy(var_types dstType)
     {
         return INS_mov;
     }
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsFloating(dstType))
+    {
+        return dstType == TYP_FLOAT ? INS_fsgnj_s : INS_fsgnj_d;
+    }
+    else
+    {
+        return INS_mov;
+    }
 #else // TARGET_*
-#error "Unknown TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -1630,6 +1693,9 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         assert(genIsValidFloatReg(srcReg));
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("TODO RISCV64");
+    return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"
 #endif
@@ -1705,6 +1771,19 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return aligned ? INS_fstx_s : INS_fst_s;
         }
     }
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(dstType));
+    if (varTypeIsFloating(dstType))
+    {
+        if (dstType == TYP_DOUBLE)
+        {
+            return INS_fsd;
+        }
+        else if (dstType == TYP_FLOAT)
+        {
+            return INS_fsw;
+        }
+    }
 #else
     assert(!varTypeIsSIMD(dstType));
     assert(!varTypeIsFloating(dstType));
@@ -1728,6 +1807,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = aligned ? INS_stx_w : INS_st_w;
     else
         ins = aligned ? INS_stx_d : INS_st_d;
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(dstType))
+        ins = INS_sb;
+    else if (varTypeIsShort(dstType))
+        ins = INS_sh;
+    else if (TYP_INT == dstType)
+        ins = INS_sw;
+    else
+        ins = INS_sd;
 #else
     NYI("ins_Store");
 #endif
@@ -2037,6 +2125,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
 #else
 #error "Unknown TARGET"
 #endif

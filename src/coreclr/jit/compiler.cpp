@@ -535,12 +535,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifdef TARGET_64BIT
         case 4:
@@ -548,14 +548,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_INT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64 || TARGET_RISCV64
 #endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
@@ -747,7 +747,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
@@ -775,7 +775,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -900,7 +900,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif TARGET_LOONGARCH64
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
@@ -1058,7 +1058,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
@@ -2230,7 +2230,7 @@ void Compiler::compSetProcessor()
 #if defined(TARGET_ARM)
     info.genCPU = CPU_ARM;
 #elif defined(TARGET_ARM64)
-    info.genCPU      = CPU_ARM64;
+    info.genCPU = CPU_ARM64;
 #elif defined(TARGET_AMD64)
     info.genCPU = CPU_X64;
 #elif defined(TARGET_X86)
@@ -2239,7 +2239,9 @@ void Compiler::compSetProcessor()
     else
         info.genCPU = CPU_X86;
 #elif defined(TARGET_LOONGARCH64)
-    info.genCPU                   = CPU_LOONGARCH64;
+    info.genCPU = CPU_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+    info.genCPU = CPU_RISCV64;
 #endif
 
     //
@@ -3236,10 +3238,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_CFI_SUPPORT
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Hot/cold splitting is not being tested on LoongArch64.
     opts.compProcedureSplitting = false;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -3996,7 +3998,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4043,6 +4045,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
 #elif defined(TARGET_LOONGARCH64)
     JITDUMP(" Returning true (LOONGARCH64)\n\n");
+    return true; // just always assume we'll need it, for now
+
+#elif defined(TARGET_RISCV64)
+    JITDUMP(" Returning true (RISCV64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // TARGET_ARM
@@ -4168,7 +4174,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings

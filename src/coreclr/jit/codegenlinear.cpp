@@ -1214,7 +1214,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // Load local variable from its home location.
             // Never allow truncating the locals here, otherwise a subsequent
             // use of the local with a wider type would see the truncated
@@ -1869,7 +1869,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 #endif // FEATURE_SIMD
         {
             emitAttr attr = emitTypeSize(type);
+#ifdef TARGET_RISCV64
+            GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, REG_NA, outArgVarNum, thisFieldOffset);
+#else
             GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+#endif
         }
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use
@@ -2061,7 +2065,12 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.
+#ifdef TARGET_RISCV64
+        assert(!compiler->isSIMDTypeLocalAligned(varNum));
+        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum, REG_NA,
+#else
         GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
+#endif
                                   varNum, 0);
     }
 }
@@ -2477,7 +2486,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_checkKind = CHECK_NONE;
         }
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
         // the upper 32bits be sign-extended to 64 bits.
         m_extendKind = SIGN_EXTEND_INT;
@@ -2582,12 +2591,17 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
     noway_assert((loVal->GetRegNum() != REG_NA) && (hiVal->GetRegNum() != REG_NA));
 
+#ifdef TARGET_RISCV64
+    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), REG_NA, lclNum, 0);
+    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), REG_NA, lclNum, genTypeSize(TYP_INT));
+#else
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), lclNum, 0);
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), lclNum, genTypeSize(TYP_INT));
+#endif
 }
 #endif // !defined(TARGET_64BIT)
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.
@@ -2645,4 +2659,4 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->GetRegNum());
     genProduceReg(setcc);
 }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64

@@ -446,7 +446,12 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
         }
 //  otherwise will we pass this struct by value in multiple registers
 #elif !defined(TARGET_ARM)
-        NYI("unknown target");
+        // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
+        if (structSize > MAX_PASS_MULTIREG_BYTES)
+        {
+            // This struct is passed by reference using a single 'slot'
+            return TARGET_POINTER_SIZE;
+        }
 #endif // defined(TARGET_XXX)
 #endif // FEATURE_MULTIREG_ARGS
 
