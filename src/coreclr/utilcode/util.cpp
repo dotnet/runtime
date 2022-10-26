@@ -513,6 +513,8 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return pResult;
 }
 
+#ifdef HOST_WINDOWS
+
 //******************************************************************************
 // NumaNodeInfo
 //******************************************************************************
@@ -524,7 +526,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
 }
 
-#ifdef HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
     return ::GetNumaProcessorNodeEx(proc_no, node_no);
@@ -566,6 +567,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 #endif // HOST_WINDOWS
 #endif
 
+#ifdef HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
 /*static*/ uint16_t NumaNodeInfo::m_nNodes = 0;
 /*static*/ BOOL NumaNodeInfo::InitNumaNodeInfoAPI()
@@ -599,7 +601,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     m_enableGCNumaAware = InitNumaNodeInfoAPI();
 }
 
-#ifdef HOST_WINDOWS
 
 //******************************************************************************
 // CPUGroupInfo
@@ -2895,7 +2896,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[39];
+            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

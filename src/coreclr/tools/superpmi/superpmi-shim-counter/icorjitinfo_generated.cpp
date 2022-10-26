@@ -308,10 +308,11 @@ int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          int startIndex)
 {
     mcs->AddCall("getStringLiteral");
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
 size_t interceptor_ICJI::printObjectDescription(

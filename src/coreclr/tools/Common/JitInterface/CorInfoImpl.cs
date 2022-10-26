@@ -1816,19 +1816,21 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size, int startIndex)
         {
             Debug.Assert(size >= 0);
+            Debug.Assert(startIndex >= 0);
 
             MethodILScope methodIL = HandleToObject(module);
             string str = (string)methodIL.GetObject((int)metaTOK);
 
-            if (buffer != null)
+            int result = (str.Length >= startIndex) ? (str.Length - startIndex) : 0;
+            if (buffer != null && result != 0)
             {
                 // Copy str's content to buffer
-                str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+                str.AsSpan(startIndex, Math.Min(size, result)).CopyTo(new Span<char>(buffer, size));
             }
-            return str.Length;
+            return result;
         }
 
         private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)

@@ -332,6 +332,8 @@ namespace System
 
         public void Initialize()
         {
+            object arr = this;
+            InitializeInternal(ObjectHandleOnStack.Create(ref arr));
         }
 
         private static int IndexOfImpl<T>(T[] array, T value, int startIndex, int count)
@@ -404,6 +406,9 @@ namespace System
         // CAUTION! No bounds checking!
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void SetValueImpl(object? value, int pos);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void InitializeInternal(ObjectHandleOnStack arr);
 
         // CAUTION! No bounds checking!
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -424,6 +424,24 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
 }
 
+#ifdef DEBUG
+namespace
+{
+const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
+{
+    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+    if (utf8Len == 0)
+        return nullptr;
+
+    char* alloc = (char*)allocator.allocate<char>(utf8Len);
+    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+        return nullptr;
+
+    return alloc;
+}
+}
+#endif
+
 //------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
@@ -451,14 +469,14 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
 //
-FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
+FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type)
 {
     FILE*       fgxFile;
-    LPCWSTR     prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
-    LPCWSTR     postPhasePattern = W("*");  // post-phase: default (used in Release) is dump all phases
+    const char* prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
+    const char* postPhasePattern = "*";     // post-phase: default (used in Release) is dump all phases
     bool        dumpFunction     = true;    // default (used in Release) is always dump
-    LPCWSTR     filename         = nullptr;
-    LPCWSTR     pathname         = nullptr;
+    const char* filename         = nullptr;
+    const char* pathname         = nullptr;
     const char* escapedString;
 
     if (fgBBcount <= 1)
@@ -468,11 +486,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
-    filename     = JitConfig.JitDumpFgFile();
-    pathname     = JitConfig.JitDumpFgDir();
 
-    prePhasePattern  = JitConfig.JitDumpFgPrePhase();
-    postPhasePattern = JitConfig.JitDumpFgPhase();
+    CompAllocator allocator = getAllocatorDebugOnly();
+    filename                = ConvertToUtf8(JitConfig.JitDumpFgFile(), allocator);
+    pathname                = ConvertToUtf8(JitConfig.JitDumpFgDir(), allocator);
+    prePhasePattern         = ConvertToUtf8(JitConfig.JitDumpFgPrePhase(), allocator);
+    postPhasePattern        = ConvertToUtf8(JitConfig.JitDumpFgPhase(), allocator);
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -480,7 +499,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         return nullptr;
     }
 
-    LPCWSTR phaseName = PhaseEnumsW[phase] + strlen("PHASE_");
+    const char* phaseName = PhaseEnums[phase] + strlen("PHASE_");
 
     if (pos == PhasePosition::PrePhase)
     {
@@ -489,9 +508,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             // If pre-phase pattern is not specified, then don't dump for any pre-phase.
             return nullptr;
         }
-        else if (*prePhasePattern != W('*'))
+        else if (*prePhasePattern != '*')
         {
-            if (wcsstr(prePhasePattern, phaseName) == nullptr)
+            if (strstr(prePhasePattern, phaseName) == nullptr)
             {
                 return nullptr;
             }
@@ -514,9 +533,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
                 return nullptr;
             }
         }
-        else if (*postPhasePattern != W('*'))
+        else if (*postPhasePattern != '*')
         {
-            if (wcsstr(postPhasePattern, phaseName) == nullptr)
+            if (strstr(postPhasePattern, phaseName) == nullptr)
             {
                 return nullptr;
             }
@@ -525,10 +544,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
     if (filename == nullptr)
     {
-        filename = W("default");
+        filename = "default";
     }
 
-    if (wcscmp(filename, W("profiled")) == 0)
+    if (strcmp(filename, "profiled") == 0)
     {
         if (fgFirstBB->hasProfileWeight())
         {
@@ -539,7 +558,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             return nullptr;
         }
     }
-    if (wcscmp(filename, W("hot")) == 0)
+    if (strcmp(filename, "hot") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_HOT)
         {
@@ -550,7 +569,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("cold")) == 0)
+    else if (strcmp(filename, "cold") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_COLD)
         {
@@ -561,7 +580,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("jit")) == 0)
+    else if (strcmp(filename, "jit") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_JIT)
         {
@@ -572,13 +591,13 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("all")) == 0)
+    else if (strcmp(filename, "all") == 0)
     {
 
     ONE_FILE_PER_METHOD:;
 
-#define FILENAME_PATTERN W("%S-%S-%s-%S.%s")
-#define FILENAME_PATTERN_WITH_NUMBER W("%S-%S-%s-%S~%d.%s")
+#define FILENAME_PATTERN "%s-%s-%s-%s.%s"
+#define FILENAME_PATTERN_WITH_NUMBER "%s-%s-%s-%s~%d.%s"
 
         const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
 
@@ -590,39 +609,39 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         const char*  phasePositionString    = phasePositionStrings[(unsigned)pos];
         const size_t phasePositionStringLen = strlen(phasePositionString);
         const char*  tierName               = compGetTieringName(true);
-        size_t       wCharCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + wcslen(phaseName) + 1 +
-                            strlen(tierName) + strlen("~999") + 1 + wcslen(type) + 1;
+        size_t       charCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + strlen(phaseName) + 1 +
+                           strlen(tierName) + strlen("~999") + 1 + strlen(type) + 1;
 
-        if (wCharCount > MaxFileNameLength)
+        if (charCount > MaxFileNameLength)
         {
             // Crop the escapedString.
-            wCharCount -= escapedStringLen;
-            size_t newEscapedStringLen = MaxFileNameLength - wCharCount;
+            charCount -= escapedStringLen;
+            size_t newEscapedStringLen = MaxFileNameLength - charCount;
             char*  newEscapedString    = getAllocator(CMK_DebugOnly).allocate<char>(newEscapedStringLen + 1);
             strncpy_s(newEscapedString, newEscapedStringLen + 1, escapedString, newEscapedStringLen);
             newEscapedString[newEscapedStringLen] = '\0';
             escapedString                         = newEscapedString;
             escapedStringLen                      = newEscapedStringLen;
-            wCharCount += escapedStringLen;
+            charCount += escapedStringLen;
         }
 
         if (pathname != nullptr)
         {
-            wCharCount += wcslen(pathname) + 1;
+            charCount += strlen(pathname) + 1;
         }
-        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
+        filename = (const char*)_alloca(charCount * sizeof(char));
 
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN, pathname, escapedString,
-                       phasePositionString, phaseName, tierName, type);
+            sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN, pathname, escapedString, phasePositionString,
+                      phaseName, tierName, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
-                       tierName, type);
+            sprintf_s((char*)filename, charCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
+                      tierName, type);
         }
-        fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+        fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
         if (fgxFile == nullptr)
         {
             // This filename already exists, so create a different one by appending ~2, ~3, etc...
@@ -630,15 +649,15 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             {
                 if (pathname != nullptr)
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN_WITH_NUMBER, pathname,
-                               escapedString, phasePositionString, phaseName, tierName, i, type);
+                    sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN_WITH_NUMBER, pathname, escapedString,
+                              phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
-                               phasePositionString, phaseName, tierName, i, type);
+                    sprintf_s((char*)filename, charCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
+                              phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+                fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
                 if (fgxFile != nullptr)
                 {
                     break;
@@ -652,34 +671,34 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         }
         *wbDontClose = false;
     }
-    else if (wcscmp(filename, W("stdout")) == 0)
+    else if (strcmp(filename, "stdout") == 0)
     {
         fgxFile      = jitstdout;
         *wbDontClose = true;
     }
-    else if (wcscmp(filename, W("stderr")) == 0)
+    else if (strcmp(filename, "stderr") == 0)
     {
         fgxFile      = stderr;
         *wbDontClose = true;
     }
     else
     {
-        LPCWSTR origFilename = filename;
-        size_t  wCharCount   = wcslen(origFilename) + wcslen(type) + 2;
+        const char* origFilename = filename;
+        size_t      charCount    = strlen(origFilename) + strlen(type) + 2;
         if (pathname != nullptr)
         {
-            wCharCount += wcslen(pathname) + 1;
+            charCount += strlen(pathname) + 1;
         }
-        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
+        filename = (char*)_alloca(charCount * sizeof(char));
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%s.%s"), pathname, origFilename, type);
+            sprintf_s((char*)filename, charCount, "%s\\%s.%s", pathname, origFilename, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s.%s"), origFilename, type);
+            sprintf_s((char*)filename, charCount, "%s.%s", origFilename, type);
         }
-        fgxFile      = _wfopen(filename, W("a+"));
+        fgxFile      = fopen(filename, "a+");
         *wbDontClose = false;
     }
 
@@ -760,7 +779,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     const bool             displayBlockFlags = false;
 #endif // !DEBUG
 
-    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? W("dot") : W("fgx"));
+    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? "dot" : "fgx");
     if (fgxFile == nullptr)
     {
         return false;

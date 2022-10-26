@@ -665,7 +665,8 @@ int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
         char16_t*                   buffer,
-        int                         bufferSize)
+        int                         bufferSize,
+        int                         startIndex)
 {
     CONTRACTL{
         THROWS;
@@ -676,6 +677,7 @@ int CEEInfo::getStringLiteral (
     Module* module = GetModule(moduleHnd);
 
     _ASSERTE(bufferSize >= 0);
+    _ASSERTE(startIndex >= 0);
 
     int result = -1;
 
@@ -688,10 +690,11 @@ int CEEInfo::getStringLiteral (
         if (strRef != NULL)
         {
             StringObject* strObj = STRINGREFToObject(strRef);
-            result = (int)strObj->GetStringLength();
-            if (buffer != NULL)
+            int length = (int)strObj->GetStringLength();
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, strObj->GetBuffer() + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -702,10 +705,11 @@ int CEEInfo::getStringLiteral (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-            result = (int)dwCharCount;
-            if (buffer != NULL)
+            int length = (int)dwCharCount;
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, pString + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -6299,11 +6303,23 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
     } CONTRACTL_END;
 
     const char* result = NULL;
-    const char* classResult = NULL;
-    const char* namespaceResult = NULL;
-    const char* enclosingResult = NULL;
 
     JIT_TO_EE_TRANSITION();
+
+    if (className != NULL)
+    {
+        *className = NULL;
+    }
+
+    if (namespaceName != NULL)
+    {
+        *namespaceName = NULL;
+    }
+
+    if (enclosingClassName != NULL)
+    {
+        *enclosingClassName = NULL;
+    }
 
     MethodDesc *ftn = GetMethod(ftnHnd);
     mdMethodDef token = ftn->GetMemberDef();
@@ -6314,28 +6330,16 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         IMDInternalImport* pMDImport = pMT->GetMDImport();
 
         IfFailThrow(pMDImport->GetNameOfMethodDef(token, &result));
-        IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), &classResult, &namespaceResult));
+        if (className != NULL || namespaceName != NULL)
+        {
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), className, namespaceName));
+        }
         // Query enclosingClassName when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if (pMT->GetClass()->IsNested())
+        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
         {
-            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), &enclosingResult, &namespaceResult));
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
         }
-    }
-
-    if (className != NULL)
-    {
-        *className = classResult;
-    }
-
-    if (namespaceName != NULL)
-    {
-        *namespaceName = namespaceResult;
-    }
-
-    if (enclosingClassName != NULL)
-    {
-        *enclosingClassName = enclosingResult;
     }
 
     EE_TO_JIT_TRANSITION();
