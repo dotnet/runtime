@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -770,6 +771,71 @@ namespace System.SpanTests
                 ReadOnlySpan<char> values = new ReadOnlySpan<char>(new char[] { (char)99, (char)99, (char)99, (char)99, (char)99, (char)99 });
                 int index = span.IndexOfAny(values);
                 Assert.Equal(-1, index);
+            }
+        }
+
+        [Fact]
+        public static void TestIndexOfAny_RandomInputs_Char()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: IndexOfAnyReferenceImpl,
+                actual: (searchSpace, values) => searchSpace.IndexOfAny(values));
+
+            static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
+            {
+                for (int i = 0; i < searchSpace.Length; i++)
+                {
+                    if (values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+    }
+
+    public static class IndexOfAnyCharTestHelper
+    {
+        public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values);
+
+        public static void TestRandomInputs(IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
+        {
+            TestRandomInputs(127, expected, actual);
+            TestRandomInputs(char.MaxValue, expected, actual);
+        }
+
+        private static void TestRandomInputs(int maxNeedleValue, IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
+        {
+            maxNeedleValue++;
+
+            Span<char> needleSpace = stackalloc char[8];
+            Span<char> haystackSpace = stackalloc char[40];
+            var rng = new Random();
+
+            for (int iterations = 0; iterations < 100_000; iterations++)
+            {
+                Span<char> needle = needleSpace.Slice(0, rng.Next(needleSpace.Length + 1));
+                Span<char> haystack = haystackSpace.Slice(0, rng.Next(haystackSpace.Length + 1));
+
+                for (int i = 0; i < needle.Length; i++)
+                {
+                    needle[i] = (char)rng.Next(0, maxNeedleValue);
+                }
+
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(haystack));
+
+                int expectedIndex = expected(haystack, needle);
+                int actualIndex = actual(haystack, needle);
+
+                if (expectedIndex != actualIndex)
+                {
+                    string readableNeedle = string.Join(", ", needle.ToString().Select(c => (int)c));
+                    string readableHaystack = string.Join(", ", haystack.ToString().Select(c => (int)c));
+
+                    Assert.True(false, $"Expected {expectedIndex}, got {actualIndex} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                }
             }
         }
     }
