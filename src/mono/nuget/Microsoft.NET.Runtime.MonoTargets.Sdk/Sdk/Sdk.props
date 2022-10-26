@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)\ILStripTask.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\ILStripTask.props" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)\RuntimeConfigParserTask.props" />
   <Import Project="$(MSBuildThisFileDirectory)\RuntimeComponentManifest.props" />
 </Project>
