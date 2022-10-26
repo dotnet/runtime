@@ -27,9 +27,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileInfoInvalidAfterAppendText()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string testFilePath = Path.Combine(testDir.FullName, GetTestFileName());
-            FileInfo info = new FileInfo(testFilePath);
+            FileInfo info = new FileInfo(GetTestFilePath());
             using (StreamWriter streamWriter = info.AppendText())
             {
                 Assert.True(info.Exists);

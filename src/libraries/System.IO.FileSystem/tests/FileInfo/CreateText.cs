@@ -10,9 +10,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileInfoInvalidAfterCreateText()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string testFilePath = Path.Combine(testDir.FullName, GetTestFileName());
-            FileInfo info = new FileInfo(testFilePath);
+            FileInfo info = new FileInfo(GetTestFilePath());
             using (StreamWriter streamWriter = info.CreateText())
             {
                 Assert.True(info.Exists);
