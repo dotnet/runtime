@@ -2027,7 +2027,7 @@ ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, Mono
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (m_field_get_parent (class_field));
 
-	/* TODO: metadata-update: figure out what CoreCLR does in this situation. */
+	/* metadata-update: mono only calls this for ExplicitLayout types */
 	g_assert (!m_field_is_from_update (class_field));
 
 	return m_field_get_offset (class_field) - MONO_ABI_SIZEOF (MonoObject);

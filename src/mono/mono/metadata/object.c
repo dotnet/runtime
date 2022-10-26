@@ -7823,6 +7823,7 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
+        /* metadata-update: no added fields in valuetypes */
 	g_assert (!m_field_is_from_update (field));
 	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 }
