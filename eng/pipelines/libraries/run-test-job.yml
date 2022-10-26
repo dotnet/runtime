@@ -177,6 +177,7 @@ jobs:
                 scenarios:
                 - defaultpgo
               ${{ else }}:
+                scenarios:
                 - fullpgo
                 - fullpgo_methodprofiling
                 - fullpgo_random_gdv
