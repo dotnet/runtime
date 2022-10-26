@@ -2456,8 +2456,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else
         {
-            assert(tree->AvailableTempRegCount() == 1);
-            regCnt = tree->ExtractTempReg();
+            regCnt = tree->GetSingleTempReg();
 
             // Above, we put the size in targetReg. Now, copy it to our new temp register if necessary.
             inst_Mov(size->TypeGet(), regCnt, targetReg, /* canSkip */ true);
