@@ -1546,9 +1546,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 context.SdbAgent.ResetStore(store);
                 return store;
             }
-            catch (DebuggerAgentException)
+            catch (DebuggerAgentException e)
             {
                 //it's not a wasm page then the command throws an error
+                if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                    logger.LogDebug($"Unexpected error on RuntimeReady {e}");
                 return null;
             }
             catch (Exception e)
