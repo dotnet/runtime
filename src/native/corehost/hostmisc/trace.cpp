@@ -3,6 +3,7 @@
 
 #include "trace.h"
 #include <mutex>
+#include <thread>
 
 // g_trace_verbosity is used to encode COREHOST_TRACE and COREHOST_TRACE_VERBOSITY to selectively control output of
 //    trace::warn(), trace::info(), and trace::verbose()
@@ -26,7 +27,12 @@ namespace
 
         void lock()
         {
-            while (flag.test_and_set(std::memory_order_acquire)) { /*spin*/ }
+            uint32_t spin = 0;
+            while (flag.test_and_set(std::memory_order_acquire))
+            {
+                if (spin++ % 1024 == 0)
+                    std::this_thread::yield();
+            }
         }
 
         void unlock()
