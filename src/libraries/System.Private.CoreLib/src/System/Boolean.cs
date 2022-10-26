@@ -187,6 +187,42 @@ namespace System
         // Static Methods
         //
 
+        // Custom string compares for early application use by config switches, etc
+        //
+#if MONO
+        // We have to keep these implementations for Mono here because MemoryExtensions.Equals("True", OrdinalIgnoreCase)
+        // triggers CompareInfo static initialization which is not desired when we parse configs on start.
+        // TODO: Remove once Mono aligns its behavior with CoreCLR around .beforefieldinit
+        // https://github.com/dotnet/runtime/issues/77513
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
+            ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720074ul : 0x74007200750065ul;
+            return value.Length == 4 &&
+                   (MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == true_val;
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // "fals" as a ulong, each char |'d with 0x0020 for case-insensitivity
+            ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610066ul : 0x660061006C0073ul;
+            return value.Length == 5 &&
+                   (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
+                    ((value[4] | 0x20) == 'e'));
+        }
+#else
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // JIT inlines and unrolls this, see https://github.com/dotnet/runtime/pull/77398
+            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+#endif
+
         // Determines whether a String represents true or false.
         //
         public static bool Parse(string value)
@@ -213,13 +249,13 @@ namespace System
             // to trimming and making a second post-trimming attempt at matching those
             // same strings.
 
-            if (value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase))
+            if (IsTrueStringIgnoreCase(value))
             {
                 result = true;
                 return true;
             }
 
-            if (value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase))
+            if (IsFalseStringIgnoreCase(value))
             {
                 result = false;
                 return true;
@@ -238,14 +274,14 @@ namespace System
                     if (value.Length != originalLength)
                     {
                         // Something was trimmed.  Try matching again.
-                        if (value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase))
+                        if (IsTrueStringIgnoreCase(value))
                         {
                             result = true;
                             return true;
                         }
 
                         result = false;
-                        return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+                        return IsFalseStringIgnoreCase(value);
                     }
                 }
 

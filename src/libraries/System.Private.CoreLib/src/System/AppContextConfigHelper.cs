@@ -15,7 +15,7 @@ namespace System
             if (!AppContext.TryGetSwitch(switchName, out bool ret))
             {
                 string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                ret = switchValue != null ? (switchValue.Equals("True", StringComparison.OrdinalIgnoreCase) || switchValue.Equals("1")) : defaultValue;
+                ret = switchValue != null ? (bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1")) : defaultValue;
             }
 
             return ret;
