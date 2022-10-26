@@ -1,3 +1,6 @@
+// Never permit debugging the column lookup logic.
+// Communicate this request by defining the following macro.
+#define MDTABLES_BUILD
 #include "internal.h"
 
 // Computed values from II.24.2.6
@@ -123,162 +126,162 @@ bool initialize_table_details(
     switch (id)
     {
     case mdtid_Module: // II.22.30
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = string_index;
-        table->column_details[2] = guid_index;
-        table->column_details[3] = guid_index;
-        table->column_details[4] = guid_index;
+        table->column_details[mdtModule_Generation] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtModule_Name] = string_index;
+        table->column_details[mdtModule_Mvid] = guid_index;
+        table->column_details[mdtModule_EncId] = guid_index;
+        table->column_details[mdtModule_EncBaseId] = guid_index;
         table->column_count = 5;
         break;
     case mdtid_TypeRef: // II.22.38
-        table->column_details[0] = compute_coded_index(CODED_INDEX_ARGS(mdci_ResolutionScope));
-        table->column_details[1] = string_index;
-        table->column_details[2] = string_index;
+        table->column_details[mdtTypeRef_ResolutionScope] = compute_coded_index(CODED_INDEX_ARGS(mdci_ResolutionScope));
+        table->column_details[mdtTypeRef_TypeName] = string_index;
+        table->column_details[mdtTypeRef_TypeNamespace] = string_index;
         table->column_count = 3;
         break;
     case mdtid_TypeDef: // II.22.37
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = string_index;
-        table->column_details[2] = string_index;
-        table->column_details[3] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
-        table->column_details[4] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
-        table->column_details[5] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_details[mdtTypeDef_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtTypeDef_TypeName] = string_index;
+        table->column_details[mdtTypeDef_TypeNamespace] = string_index;
+        table->column_details[mdtTypeDef_Extends] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
+        table->column_details[mdtTypeDef_FieldList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
+        table->column_details[mdtTypeDef_MethodList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
         table->column_count = 6;
         break;
     case mdtid_Field: // II.22.15
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = string_index;
-        table->column_details[2] = blob_index;
+        table->column_details[mdtField_Flags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtField_Name] = string_index;
+        table->column_details[mdtField_Signature] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_MethodDef: // II.22.26
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = mdtc_constant | mdtc_b2;
-        table->column_details[2] = mdtc_constant | mdtc_b2;
-        table->column_details[3] = string_index;
-        table->column_details[4] = blob_index;
-        table->column_details[5] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
+        table->column_details[mdtMethodDef_Rva] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtMethodDef_ImplFlags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtMethodDef_Flags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtMethodDef_Name] = string_index;
+        table->column_details[mdtMethodDef_Signature] = blob_index;
+        table->column_details[mdtMethodDef_ParamList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
         table->column_count = 6;
         break;
     case mdtid_Param: // II.22.33
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = mdtc_constant | mdtc_b2;
-        table->column_details[2] = string_index;
+        table->column_details[mdtParam_Flags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtParam_Sequence] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtParam_Name] = string_index;
         table->column_count = 3;
         break;
     case mdtid_InterfaceImpl: // II.22.23
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
+        table->column_details[mdtInterfaceImpl_Class] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtInterfaceImpl_Interface] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
         table->column_count = 2;
         break;
     case mdtid_MemberRef: // II.22.25
-        table->column_details[0] = compute_coded_index(CODED_INDEX_ARGS(mdci_MemberRefParent));
-        table->column_details[1] = string_index;
-        table->column_details[2] = blob_index;
+        table->column_details[mdtMemberRef_Class] = compute_coded_index(CODED_INDEX_ARGS(mdci_MemberRefParent));
+        table->column_details[mdtMemberRef_Name] = string_index;
+        table->column_details[mdtMemberRef_Signature] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_Constant: // II.22.9
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasConstant));
-        table->column_details[2] = blob_index;
+        table->column_details[mdtConstant_Type] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtConstant_Parent] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasConstant));
+        table->column_details[mdtConstant_Value] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_CustomAttribute: // II.22.10
-        table->column_details[0] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasCustomAttribute));
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_CustomAttributeType));
-        table->column_details[2] = blob_index;
+        table->column_details[mdtCustomAttribute_Parent] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasCustomAttribute));
+        table->column_details[mdtCustomAttribute_Type] = compute_coded_index(CODED_INDEX_ARGS(mdci_CustomAttributeType));
+        table->column_details[mdtCustomAttribute_Value] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_FieldMarshal: // II.22.17
-        table->column_details[0] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasFieldMarshall));
-        table->column_details[1] = blob_index;
+        table->column_details[mdtFieldMarshal_Parent] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasFieldMarshall));
+        table->column_details[mdtFieldMarshal_NativeType] = blob_index;
         table->column_count = 2;
         break;
     case mdtid_DeclSecurity: // II.22.11
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasDeclSecurity));
-        table->column_details[2] = blob_index;
+        table->column_details[mdtDeclSecurity_Action] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtDeclSecurity_Parent] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasDeclSecurity));
+        table->column_details[mdtDeclSecurity_PermissionSet] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_ClassLayout: // II.22.8
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = mdtc_constant | mdtc_b4;
-        table->column_details[2] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtClassLayout_PackingSize] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtClassLayout_ClassSize] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtClassLayout_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
         table->column_count = 3;
         break;
     case mdtid_FieldLayout: // II.22.16
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
+        table->column_details[mdtFieldLayout_Offset] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtFieldLayout_Field] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
         table->column_count = 2;
         break;
     case mdtid_StandAloneSig: // II.22.36
-        table->column_details[0] = blob_index;
+        table->column_details[mdtStandAloneSig_Signature] = blob_index;
         table->column_count = 1;
         break;
     case mdtid_EventMap: // II.22.12
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
+        table->column_details[mdtEventMap_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtEventMap_EventList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
         table->column_count = 2;
         break;
     case mdtid_Event:// II.22.13
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = string_index;
-        table->column_details[2] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
+        table->column_details[mdtEvent_EventFlags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtEvent_Name] = string_index;
+        table->column_details[mdtEvent_EventType] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
         table->column_count = 3;
         break;
     case mdtid_PropertyMap: // II.22.35
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
+        table->column_details[mdtPropertyMap_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtPropertyMap_PropertyList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
         table->column_count = 2;
         break;
     case mdtid_Property: // II.22.34
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = string_index;
-        table->column_details[2] = blob_index;
+        table->column_details[mdtProperty_Flags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtProperty_Name] = string_index;
+        table->column_details[mdtProperty_Type] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_MethodSemantics: // II.22.28
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
-        table->column_details[2] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasSemantics));
+        table->column_details[mdtMethodSemantics_Semantics] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtMethodSemantics_Method] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_details[mdtMethodSemantics_Association] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasSemantics));
         table->column_count = 3;
         break;
     case mdtid_MethodImpl: // II.22.27
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
-        table->column_details[2] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
+        table->column_details[mdtMethodImpl_Class] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtMethodImpl_MethodBody] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
+        table->column_details[mdtMethodImpl_MethodDeclaration] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
         table->column_count = 3;
         break;
     case mdtid_ModuleRef: // II.22.31
-        table->column_details[0] = string_index;
+        table->column_details[mdtModuleRef_Name] = string_index;
         table->column_count = 1;
         break;
     case mdtid_TypeSpec: // II.22.39
-        table->column_details[0] = blob_index;
+        table->column_details[mdtTypeSpec_Signature] = blob_index;
         table->column_count = 1;
         break;
     case mdtid_ImplMap: // II.22.22
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_MemberForwarded));
-        table->column_details[2] = string_index;
-        table->column_details[3] = compute_table_index(TABLE_INDEX_ARGS(mdtid_ModuleRef));
+        table->column_details[mdtImplMap_MappingFlags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtImplMap_MemberForwarded] = compute_coded_index(CODED_INDEX_ARGS(mdci_MemberForwarded));
+        table->column_details[mdtImplMap_ImportName] = string_index;
+        table->column_details[mdtImplMap_ImportScope] = compute_table_index(TABLE_INDEX_ARGS(mdtid_ModuleRef));
         table->column_count = 4;
         break;
     case mdtid_FieldRva: // II.22.18
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
+        table->column_details[mdtFieldRva_Rva] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtFieldRva_Field] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
         table->column_count = 2;
         break;
     case mdtid_Assembly: // II.22.2
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = mdtc_constant | mdtc_b2;
-        table->column_details[2] = mdtc_constant | mdtc_b2;
-        table->column_details[3] = mdtc_constant | mdtc_b2;
-        table->column_details[4] = mdtc_constant | mdtc_b2;
-        table->column_details[5] = mdtc_constant | mdtc_b4;
-        table->column_details[6] = blob_index;
-        table->column_details[7] = string_index;
-        table->column_details[8] = string_index;
+        table->column_details[mdtAssembly_HashAlgId] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtAssembly_MajorVersion] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssembly_MinorVersion] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssembly_BuildNumber] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssembly_RevisionNumber] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssembly_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtAssembly_PublicKey] = blob_index;
+        table->column_details[mdtAssembly_Name] = string_index;
+        table->column_details[mdtAssembly_Culture] = string_index;
         table->column_count = 9;
         break;
     case mdtid_AssemblyProcessor: // II.22.3
@@ -292,15 +295,15 @@ bool initialize_table_details(
         table->column_count = 3;
         break;
     case mdtid_AssemblyRef: // II.22.5
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = mdtc_constant | mdtc_b2;
-        table->column_details[2] = mdtc_constant | mdtc_b2;
-        table->column_details[3] = mdtc_constant | mdtc_b2;
-        table->column_details[4] = mdtc_constant | mdtc_b4;
-        table->column_details[5] = blob_index;
-        table->column_details[6] = string_index;
-        table->column_details[7] = string_index;
-        table->column_details[8] = blob_index;
+        table->column_details[mdtAssemblyRef_MajorVersion] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssemblyRef_MinorVersion] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssemblyRef_BuildNumber] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssemblyRef_RevisionNumber] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtAssemblyRef_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtAssemblyRef_PublicKeyOrToken] = blob_index;
+        table->column_details[mdtAssemblyRef_Name] = string_index;
+        table->column_details[mdtAssemblyRef_Culture] = string_index;
+        table->column_details[mdtAssemblyRef_HashValue] = blob_index;
         table->column_count = 9;
         break;
     case mdtid_AssemblyRefProcessor: // II.22.7
@@ -316,46 +319,46 @@ bool initialize_table_details(
         table->column_count = 4;
         break;
     case mdtid_File: // II.22.19
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = string_index;
-        table->column_details[2] = blob_index;
+        table->column_details[mdtFile_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtFile_Name] = string_index;
+        table->column_details[mdtFile_HashValue] = blob_index;
         table->column_count = 3;
         break;
     case mdtid_ExportedType: // II.22.14
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = mdtc_constant | mdtc_b4;
-        table->column_details[2] = string_index;
-        table->column_details[3] = string_index;
-        table->column_details[4] = compute_coded_index(CODED_INDEX_ARGS(mdci_Implementation));
+        table->column_details[mdtExportedType_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtExportedType_TypeDefId] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtExportedType_TypeName] = string_index;
+        table->column_details[mdtExportedType_TypeNamespace] = string_index;
+        table->column_details[mdtExportedType_Implementation] = compute_coded_index(CODED_INDEX_ARGS(mdci_Implementation));
         table->column_count = 5;
         break;
     case mdtid_ManifestResource: // II.22.24
-        table->column_details[0] = mdtc_constant | mdtc_b4;
-        table->column_details[1] = mdtc_constant | mdtc_b4;
-        table->column_details[2] = string_index;
-        table->column_details[3] = compute_coded_index(CODED_INDEX_ARGS(mdci_Implementation));
+        table->column_details[mdtManifestResource_Offset] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtManifestResource_Flags] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtManifestResource_Name] = string_index;
+        table->column_details[mdtManifestResource_Implementation] = compute_coded_index(CODED_INDEX_ARGS(mdci_Implementation));
         table->column_count = 4;
         break;
     case mdtid_NestedClass: // II.22.32
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[1] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtNestedClass_NestedClass] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
+        table->column_details[mdtNestedClass_EnclosingClass] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
         table->column_count = 2;
         break;
     case mdtid_GenericParam: // II.22.20
-        table->column_details[0] = mdtc_constant | mdtc_b2;
-        table->column_details[1] = mdtc_constant | mdtc_b2;
-        table->column_details[2] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeOrMethodDef));
-        table->column_details[3] = string_index;
+        table->column_details[mdtGenericParam_Number] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtGenericParam_Flags] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtGenericParam_Owner] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeOrMethodDef));
+        table->column_details[mdtGenericParam_Name] = string_index;
         table->column_count = 4;
         break;
     case mdtid_MethodSpec: // II.22.29
-        table->column_details[0] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
-        table->column_details[1] = blob_index;
+        table->column_details[mdtMethodSpec_Method] = compute_coded_index(CODED_INDEX_ARGS(mdci_MethodDefOrRef));
+        table->column_details[mdtMethodSpec_Instantiation] = blob_index;
         table->column_count = 2;
         break;
     case mdtid_GenericParamConstraint: // II.22.21
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_GenericParam));
-        table->column_details[1] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
+        table->column_details[mdtGenericParamConstraint_Owner] = compute_table_index(TABLE_INDEX_ARGS(mdtid_GenericParam));
+        table->column_details[mdtGenericParamConstraint_Constraint] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
         table->column_count = 2;
         break;
     default:

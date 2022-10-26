@@ -1,6 +1,14 @@
 #ifndef _SRC_INC_PLATFORM_H_
 #define _SRC_INC_PLATFORM_H_
 
+// Defining "DEBUG" since NDEBUG is the only
+// macro mentioned by the standard.
+#ifndef DEBUG
+#ifndef NDEBUG
+#define DEBUG
+#endif
+#endif // DEBUG
+
 #ifdef _MSC_VER
 
 #define BUILD_WINDOWS

@@ -7,10 +7,6 @@
 #include <assert.h>
 #include <string.h>
 
-#ifndef NDEBUG
-#define DEBUG
-#endif
-
 #include <dnmd.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
@@ -152,59 +148,7 @@ bool validate_tables(mdcxt_t* cxt);
 // Tables
 //
 
-// II.22 all tables
-typedef enum
-{
-    mdtid_Unused = -1,
-    mdtid_Module = 0x0,
-    mdtid_TypeRef = 0x01,
-    mdtid_TypeDef = 0x02,
-
-    mdtid_Field = 0x04,
-
-    mdtid_MethodDef = 0x06,
-
-    mdtid_Param = 0x08,
-    mdtid_InterfaceImpl = 0x09,
-    mdtid_MemberRef = 0x0a,
-    mdtid_Constant = 0x0b,
-    mdtid_CustomAttribute = 0x0c,
-    mdtid_FieldMarshal = 0x0d,
-    mdtid_DeclSecurity = 0x0e,
-    mdtid_ClassLayout = 0x0f,
-    mdtid_FieldLayout = 0x10,
-    mdtid_StandAloneSig = 0x11,
-    mdtid_EventMap = 0x12,
-
-    mdtid_Event = 0x14,
-    mdtid_PropertyMap = 0x15,
-
-    mdtid_Property = 0x17,
-    mdtid_MethodSemantics = 0x18,
-    mdtid_MethodImpl = 0x19,
-    mdtid_ModuleRef = 0x1a,
-    mdtid_TypeSpec = 0x1b,
-    mdtid_ImplMap = 0x1c,
-    mdtid_FieldRva = 0x1d,
-
-    mdtid_Assembly = 0x20,
-    mdtid_AssemblyProcessor = 0x21,
-    mdtid_AssemblyOS = 0x22,
-    mdtid_AssemblyRef = 0x23,
-    mdtid_AssemblyRefProcessor = 0x24,
-    mdtid_AssemblyRefOS = 0x25,
-    mdtid_File = 0x26,
-    mdtid_ExportedType = 0x27,
-    mdtid_ManifestResource = 0x28,
-    mdtid_NestedClass = 0x29,
-    mdtid_GenericParam = 0x2a,
-    mdtid_MethodSpec = 0x2b,
-    mdtid_GenericParamConstraint = 0x2c,
-
-    mdtid_First = mdtid_Module,
-    mdtid_Last = mdtid_GenericParamConstraint
-} mdtable_id_t;
-
+// Validate the public table enumeration
 static_assert(mdtid_Last < MDTABLE_MAX_COUNT, "Last ID should be less than max count");
 
 // Coded index collections - II.24.2.6

@@ -120,7 +120,7 @@ bool md_create_handle(void* data, size_t data_len, mdhandle_t* handle)
     if (pcxt == NULL)
         return false;
 
-    memcpy(pcxt, &cxt, sizeof(mdcxt_t));
+    memcpy(pcxt, &cxt, sizeof(cxt));
 #ifdef DEBUG
     memset(&cxt, 0xcc, sizeof(cxt));
 #endif //DEBUG
@@ -174,6 +174,13 @@ static bool dump_table_rows(mdtable_t* table)
     uint32_t constant;
     mdToken tk;
 
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    uint32_t const embedded_tid = table->table_id << 8;
+#define IDX(x) (embedded_tid | x)
+#else
+#define IDX(x) x
+#endif
+
     // Create a cursor to the first row.
     mdcursor_t cursor = create_cursor(table, 1);
 
@@ -183,12 +190,12 @@ static bool dump_table_rows(mdtable_t* table)
         {
             if (table->column_details[j] & mdtc_hstring)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, j, &str));
+                IF_FALSE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, IDX(j), &str));
                 PRINTF("'%s' ", str);
             }
             else if (table->column_details[j] & mdtc_hguid)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_guid(cursor, j, &guid));
+                IF_FALSE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), &guid));
                 PRINTF("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} ",
                     guid.Data1, guid.Data2, guid.Data3,
                     guid.Data4[0], guid.Data4[1],
@@ -198,17 +205,17 @@ static bool dump_table_rows(mdtable_t* table)
             }
             else if (table->column_details[j] & mdtc_hblob)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_blob(cursor, j, &blob, &blob_len));
+                IF_FALSE_REPORT_RETURN(md_get_column_value_as_blob(cursor, IDX(j), &blob, &blob_len));
                 PRINTF("0x%p [len: %u] ", blob, blob_len);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_token(cursor, j, &tk));
+                IF_FALSE_REPORT_RETURN(md_get_column_value_as_token(cursor, IDX(j), &tk));
                 PRINTF("0x%08x (mdToken) ", tk);
             }
             else if (table->column_details[j] & mdtc_constant)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_constant(cursor, j, &constant));
+                IF_FALSE_REPORT_RETURN(md_get_column_value_as_constant(cursor, IDX(j), &constant));
                 PRINTF("0x%08x ", constant);
             }
         }
@@ -217,6 +224,7 @@ static bool dump_table_rows(mdtable_t* table)
             return false;
     }
     PRINTF("\n");
+#undef IF_FALSE_REPORT_RETURN
 #undef PRINTF
 
     return true;

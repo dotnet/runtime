@@ -149,17 +149,29 @@ typedef struct _query_cxt_t
     size_t data_len;
 } query_cxt_t;
 
-static bool create_query_context(mdcursor_t c, uint32_t col_idx, query_cxt_t* qcxt)
+static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
     mdtable_t* table = (mdtable_t*)c._reserved1;
     if (table == NULL)
         return false;
 
-    if (col_idx >= table->column_count)
+    uint32_t idx = (uint32_t)col_idx;
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    mdtable_id_t tgt_table_id = col_idx >> 8;
+    if (tgt_table_id != table->table_id)
+    {
+        assert(!"Unexpected table/column indexing");
+        return false;
+    }
+    idx = (col_idx & 0xff);
+#endif
+
+    assert(idx <= MDTABLE_MAX_COLUMN_COUNT);
+    if (idx >= table->column_count)
         return false;
 
-    mdtcol_t cd = table->column_details[col_idx];
+    mdtcol_t cd = table->column_details[idx];
 
     uint32_t offset = ExtractOffset(cd);
     // Metadata row indexing is 1-based, minus 1.
@@ -259,21 +271,21 @@ static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
     return true;
 }
 
-bool md_get_column_value_as_token(mdcursor_t c, uint32_t col_idx, mdToken* tk)
+bool md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, mdToken* tk)
 {
     if (tk == NULL)
         return false;
     return get_column_value_as_token_or_cursor(c, col_idx, tk, NULL);
 }
 
-bool md_get_column_value_as_cursor(mdcursor_t c, uint32_t col_idx, mdcursor_t* cursor)
+bool md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor)
 {
     if (cursor == NULL)
         return false;
     return get_column_value_as_token_or_cursor(c, col_idx, NULL, cursor);
 }
 
-bool md_get_column_value_as_constant(mdcursor_t c, uint32_t col_idx, uint32_t* constant)
+bool md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t* constant)
 {
     if (constant == NULL)
         return false;
@@ -289,7 +301,7 @@ bool md_get_column_value_as_constant(mdcursor_t c, uint32_t col_idx, uint32_t* c
     return read_column_data(&qcxt, constant);
 }
 
-bool md_get_column_value_as_utf8(mdcursor_t c, uint32_t col_idx, char const** str)
+bool md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const** str)
 {
     if (str == NULL)
         return false;
@@ -309,7 +321,7 @@ bool md_get_column_value_as_utf8(mdcursor_t c, uint32_t col_idx, char const** st
     return try_get_string(qcxt.table->cxt, offset, str);
 }
 
-bool md_get_column_value_as_wchar(mdcursor_t c, uint32_t col_idx, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte)
+bool md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte)
 {
     if (str == NULL || str_chars == NULL || final_byte == NULL)
         return false;
@@ -329,7 +341,7 @@ bool md_get_column_value_as_wchar(mdcursor_t c, uint32_t col_idx, WCHAR const** 
     return try_get_user_string(qcxt.table->cxt, offset, str, str_chars, final_byte);
 }
 
-bool md_get_column_value_as_blob(mdcursor_t c, uint32_t col_idx, uint8_t const** blob, uint32_t* blob_len)
+bool md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const** blob, uint32_t* blob_len)
 {
     if (blob == NULL || blob_len == NULL)
         return false;
@@ -349,7 +361,7 @@ bool md_get_column_value_as_blob(mdcursor_t c, uint32_t col_idx, uint8_t const**
     return try_get_blob(qcxt.table->cxt, offset, blob, blob_len);
 }
 
-bool md_get_column_value_as_guid(mdcursor_t c, uint32_t col_idx, GUID* guid)
+bool md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, GUID* guid)
 {
     if (guid == NULL)
         return false;
