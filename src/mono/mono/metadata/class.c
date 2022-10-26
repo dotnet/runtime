@@ -2539,6 +2539,7 @@ mono_class_get_field_token (MonoClassField *field)
 static int
 mono_field_get_index (MonoClassField *field)
 {
+	/* metadata-update: the callers of this method need changes to support updates */
 	g_assert (!m_field_is_from_update (field));
 	int index = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 	g_assert (index >= 0 && GINT_TO_UINT32(index) < mono_class_get_field_count (m_field_get_parent (field)));
@@ -2568,6 +2569,9 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 
 		mono_class_set_field_def_values (klass, def_values);
 	}
+
+	/* TODO: metadata-update - added literal fields */
+	g_assert (!m_field_is_from_update (field));
 
 	field_index = mono_field_get_index (field);
 
@@ -5547,7 +5551,7 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
 
-	/* TODO: metadata-update: make this work. */
+	/* metadata-update: TODO support added static fields with initializers. */
 	g_assert (!m_field_is_from_update (field));
 
 	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
