@@ -35,6 +35,8 @@ namespace System.Net
                 ? GCHandle.ToIntPtr(handle)
                 : throw new ObjectDisposedException(nameof(TrustManagerProxy));
 
+        public Exception? CaughtException { get; private set; }
+
         private static unsafe void RegisterTrustManagerCallback()
         {
             lock (s_initializationLock)
@@ -72,6 +74,8 @@ namespace System.Net
             {
                 Debug.WriteLine($"Remote certificate verification has thrown an exception: {exception}");
                 Debug.WriteLine(exception.StackTrace);
+
+                proxy.CaughtException = exception;
                 return false;
             }
             finally

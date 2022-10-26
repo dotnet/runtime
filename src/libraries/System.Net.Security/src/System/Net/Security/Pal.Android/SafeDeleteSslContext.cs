@@ -36,6 +36,7 @@ namespace System.Net
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
+        public Exception? CaughtException => _trustManagerProxy?.CaughtException;
 
         public SafeDeleteSslContext(RemoteCertificateVerification? verifier, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)

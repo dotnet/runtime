@@ -196,7 +196,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: right now the exception can't propagate from C# -> C -> Java -> C#
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
             HttpClientHandler handler = CreateHttpClientHandler();

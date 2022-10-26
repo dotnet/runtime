@@ -313,6 +313,13 @@ namespace System.Net.Security
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, message.Status);
 
+#if TARGET_ANDROID
+                        if (_securityContext?.CaughtException is Exception caughtException)
+                        {
+                            throw new AuthenticationException(SR.net_auth_SSPI, caughtException);
+                        }
+#endif
+
                         if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
                         {
