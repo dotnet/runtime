@@ -4113,12 +4113,6 @@ public:
     size_t heap_hard_limit_oh[total_oh_count];
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_heap;
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_bookkeeping;
-
-    PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
 
     PER_HEAP_ISOLATED
@@ -4131,10 +4125,6 @@ public:
     PER_HEAP
     size_t committed_by_oh_per_heap[total_oh_count];
 #endif // _DEBUG && MULTIPLE_HEAPS
-
-    // This is what GC uses for its own bookkeeping.
-    PER_HEAP_ISOLATED
-    size_t current_total_committed_bookkeeping;
 
     // This is if large pages should be used.
     PER_HEAP_ISOLATED
