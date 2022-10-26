@@ -2572,8 +2572,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
             else
             {
-                assert(tree->AvailableTempRegCount() == 1);
-                regCnt = tree->ExtractTempReg();
+                regCnt = tree->GetSingleTempReg();
             }
         }
 
