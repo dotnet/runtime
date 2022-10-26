@@ -81,7 +81,7 @@
 #endif
 
 #ifdef HAVE_SCHED_GETAFFINITY
-#  ifndef GLIBC_HAS_CPU_COUNT
+#  ifndef HAVE_GNU_CPU_COUNT
 static int
 CPU_COUNT(cpu_set_t *set)
 {

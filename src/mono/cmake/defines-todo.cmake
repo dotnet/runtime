@@ -4,7 +4,6 @@
 
 #option (MAJOR_IN_MKDEV "Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.")
 #option (MAJOR_IN_SYSMACROS "Define to 1 if `major', `minor', and `makedev' are declared in <sysmacros.h>.")
-#option (STRERROR_R_CHAR_P "Define to 1 if strerror_r returns char *.")
 #option (HAVE_LIBICONV "Define to 1 if you have the `iconv' library (-liconv).")
 #option (ANDROID_UNIFIED_HEADERS "Whether Android NDK unified headers are used")
 #option (MONO_DL_NEED_USCORE "Does dlsym require leading underscore.")
