@@ -182,7 +182,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");

@@ -173,6 +173,7 @@
         $(LibrariesNativeArtifactsPath)*.a;
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dex;
+        $(LibrariesNativeArtifactsPath)*.jar;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"

@@ -6,7 +6,7 @@ using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class AndroidDexBuilderTask : Task
+public class AndroidLibBuilderTask : Task
 {
     public ITaskItem[] JavaFiles { get; set; } = Array.Empty<ITaskItem>();
 
@@ -15,6 +15,9 @@ public class AndroidDexBuilderTask : Task
 
     [Required]
     public string DexFileName { get; set; } = ""!;
+
+    [Required]
+    public string JarFileName { get; set; } = ""!;
 
     public string? AndroidSdk { get; set; }
 
@@ -25,6 +28,9 @@ public class AndroidDexBuilderTask : Task
     [Output]
     public string DexFilePath { get; set; } = ""!;
 
+    [Output]
+    public string JarFilePath { get; set; } = ""!;
+
     public override bool Execute()
     {
         var androidSdk = new AndroidSdkHelper(
@@ -33,6 +39,7 @@ public class AndroidDexBuilderTask : Task
             buildToolsVersion: BuildToolsVersion);
 
         var compiler = new JavaCompiler(Log, androidSdk, workingDir: OutputDir);
+        var jarBuilder = new JarBuilder(Log, workingDir: OutputDir);
         var dexBuilder = new DexBuilder(Log, androidSdk, workingDir: OutputDir);
 
         var objDir = "obj";
@@ -46,8 +53,10 @@ public class AndroidDexBuilderTask : Task
                 compiler.Compile(file.ItemSpec, outputDir: objDir);
             }
 
-            dexBuilder.Build(inputDir: objDir, outputFileName: DexFileName);
+            jarBuilder.Build(inputDir: objDir, outputFileName: JarFileName);
+            JarFilePath = Path.Combine(OutputDir, JarFileName);
 
+            dexBuilder.Build(inputDir: objDir, outputFileName: DexFileName);
             DexFilePath = Path.Combine(OutputDir, DexFileName);
             return true;
         }

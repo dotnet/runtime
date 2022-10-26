@@ -55,7 +55,7 @@
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
   </Target>
 
-  <UsingTask TaskName="AndroidDexBuilderTask"
+  <UsingTask TaskName="AndroidLibBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
   <Target Name="BuildNativeAndroid"
           BeforeTargets="BuildNativeUnix"
@@ -64,12 +64,13 @@
       <_JavaFile Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android/RemoteCertificateVerificationProxyTrustManager.java" />
     </ItemGroup>
 
-    <AndroidDexBuilderTask
+    <AndroidLibBuilderTask
       JavaFiles="@(_JavaFile)"
       DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
+      JarFileName="libSystem.Security.Cryptography.Native.Android.jar"
       OutputDir="$(MSBuildThisFileDirectory)../../../artifacts/bin/native/$(_BuildNativeOutConfig)">
       <Output TaskParameter="DexFilePath" PropertyName="DexFilePath" />
-    </AndroidDexBuilderTask>
+    </AndroidLibBuilderTask>
 
     <Message Text="Built $(DexFilePath)" />
   </Target>

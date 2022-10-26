@@ -169,8 +169,9 @@
       <!-- Filter static lib files for Windows -->
       <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
 
-      <!-- Filter .dex files for Android -->
+      <!-- Filter .dex and .jar files for Android -->
       <NativeProjectBinariesDexLibFilter Condition="'%(Extension)' == '.dex'" Include="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesDexLibFilter Condition="'%(Extension)' == '.jar'" Include="@(NativeProjectBinariesMatched)" />
 
       <!-- Merge the filtered lists -->
       <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
