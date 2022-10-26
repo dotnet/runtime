@@ -1188,6 +1188,7 @@ public:
     size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
+    heap_segment* get_last_free_region() { return tail_free_region; }
     static void unlink_region (heap_segment* region);
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
     static void add_region_descending (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
@@ -2096,6 +2097,11 @@ protected:
     PER_HEAP
     void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    PER_HEAP_ISOLATED
+    void distribute_committed_in_free_across_heaps(free_region_kind kind, size_t region_size,
+                                                   size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2]);
+#endif //MULTIPLE_HEAPS && REGIONS
     PER_HEAP_ISOLATED
     void distribute_free_regions();
 #ifdef BACKGROUND_GC

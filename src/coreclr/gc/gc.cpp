@@ -12644,6 +12644,96 @@ void region_free_list::sort_by_committed_and_age()
     }
     tail_free_region = prev;
 }
+
+#ifdef MULTIPLE_HEAPS
+void gc_heap::distribute_committed_in_free_across_heaps(free_region_kind kind, size_t region_size,
+                                                        size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2])
+{
+    const ptrdiff_t MIN_PTR_DIFF = ((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-1);
+    const ptrdiff_t MAX_PTR_DIFF = (((((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-2))-1)<<1)+1;
+
+    while (true)
+    {
+        // figure out which are the heaps with the minimum and maximum committed space relative to the budget
+        gc_heap* min_hp = nullptr;
+        gc_heap* max_hp = nullptr;
+        ptrdiff_t min_committed = MAX_PTR_DIFF;
+        ptrdiff_t max_committed = MIN_PTR_DIFF;
+
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            ptrdiff_t heap_committed = hp->free_regions[kind].get_size_committed_in_free() - heap_budget_in_region_units[i][kind]*region_size;
+
+            dprintf (REGIONS_LOG, ("kind: %d, heap %d committed %Id budget %Id",
+                kind,
+                i,
+                hp->free_regions[kind].get_size_committed_in_free(),
+                heap_budget_in_region_units[i][kind]*region_size));
+
+            if (min_committed > heap_committed)
+            {
+                min_committed = heap_committed;
+                min_hp = hp;
+            }
+            if (max_committed < heap_committed)
+            {
+                max_committed = heap_committed;
+                max_hp = hp;
+            }
+        }
+
+        if (min_hp == max_hp)
+        {
+            break;
+        }
+
+        // the free regions should be sorted by decreasing commit,
+        // so swap a region with hopefully small commit from the end of the free list of the heap with small commit
+        // and a region with hopefully large commit from the start of the free list of the heap with large commit
+        assert (min_committed < max_committed);
+        dprintf (REGIONS_LOG, ("kind %d: heap %d has %Id committed in free, heap %d has %Id committed in free",
+            kind,
+            min_hp->heap_number,
+            min_committed,
+            max_hp->heap_number,
+            max_committed));
+
+        heap_segment *small_region = min_hp->free_regions[kind].get_last_free_region();
+        heap_segment *big_region   = max_hp->free_regions[kind].get_first_free_region();
+        if (small_region == nullptr || big_region == nullptr)
+        {
+            break;
+        }
+
+        ptrdiff_t small_committed = heap_segment_committed (small_region) - get_region_start (small_region);
+        ptrdiff_t big_committed   = heap_segment_committed (big_region)   - get_region_start (big_region);
+
+        ptrdiff_t diff_committed = big_committed - small_committed;
+
+        // stop working if we are no longer improving balance
+        if ((diff_committed <= 0) || (diff_committed*2 >= max_committed - min_committed))
+        {
+            break;
+        }
+
+        dprintf (REGIONS_LOG, ("kind %d: moving %Id bytes of commit from heap %d to heap %d",
+            kind,
+            diff_committed,
+            max_hp->heap_number,
+            min_hp->heap_number));
+
+        // unlink both regions from their heaps and add them to the other heap
+        region_free_list::unlink_region (small_region);
+        region_free_list::unlink_region (big_region);
+
+        min_hp->free_regions[kind].add_region_in_descending_order (big_region);
+        max_hp->free_regions[kind].add_region_in_descending_order (small_region);
+    }
+}
+#endif //MULTIPLE_HEAPS
+
 #endif //USE_REGIONS
 
 void gc_heap::distribute_free_regions()
@@ -12990,6 +13080,10 @@ void gc_heap::distribute_free_regions()
             }
             hp->free_regions[kind].sort_by_committed_and_age();
         }
+
+#ifdef MULTIPLE_HEAPS
+        distribute_committed_in_free_across_heaps ((free_region_kind)kind, region_size[kind], heap_budget_in_region_units);
+#endif //MULTIPLE_HEAPS
 
         if (surplus_regions[kind].get_num_free_regions() > 0)
         {
