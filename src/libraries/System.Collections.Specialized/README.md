@@ -5,7 +5,6 @@ Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/syste
 
 ## Contribution Bar
 - [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
-- [x] [We don't accept refactoring changes due to new language features](../../libraries/README.md#secondary-bars)
 
 ## Deployment
 `System.Collections.Specialized` is included in the shared framework and also provided as a [NuGet package](https://www.nuget.org/packages/System.Collections.Specialized).
