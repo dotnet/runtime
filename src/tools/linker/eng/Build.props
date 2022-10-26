@@ -14,5 +14,6 @@
     <ProjectToBuild Include="$(RepoRoot)src\linker\ref\Mono.Linker.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\tlens\tlens.csproj" />
 
+
   </ItemGroup>
 </Project>
