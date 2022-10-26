@@ -1,7 +1,7 @@
 # System.DirectoryServices.Protocols
-This assembly contains types that provide a managed implementation of the Lightweight Directory Access Protocol (LDAP) version 3 and Markup Language (DSML) version 2.0 (V2) standards. The main type used for interacting with an LDAP server is [LdapConnection](https://learn.microsoft.com/en-us/dotnet/api/system.directoryservices.protocols.ldapconnection) which uses some system native libraries to create a TCP/IP or UDP LDAP connection to a server, and is able to perform different types of requests to communicate to it. This assembly is supported both in Windows and Unix environments.
+This assembly contains types that provide a managed implementation of the Lightweight Directory Access Protocol (LDAP) version 3 and Directory Services Markup Language (DSML) version 2.0 (V2) standards. The main type used for interacting with an LDAP server is [LdapConnection](https://learn.microsoft.com/dotnet/api/system.directoryservices.protocols.ldapconnection) which uses some system native libraries to create a TCP/IP or UDP LDAP connection to a server, and is able to perform different types of requests to communicate to it. This assembly is supported both in Windows and Unix environments.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.directoryservices.protocols.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.directoryservices.protocols.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
