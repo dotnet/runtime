@@ -56,6 +56,12 @@ enum instruction : unsigned
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_RISCV64)
+    // TODO RISCV64
+    #define INST(id, nm, ldst, e1) INS_##id,
+    #include "instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -158,7 +164,7 @@ enum insFlags : uint64_t
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -337,6 +343,17 @@ enum insBarrier : unsigned
     INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
     INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
 };
+#elif defined(TARGET_RISCV64)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+};
+
+enum insBarrier : unsigned
+{
+    INS_BARRIER_FULL  =  0,
+};
+
 #endif
 
 #if defined(TARGET_XARCH)

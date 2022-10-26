@@ -164,6 +164,25 @@ struct TransitionBlock
     };
     //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
+#elif defined(TARGET_RISCV64)
+    union {
+        CalleeSavedRegisters m_calleeSavedRegisters;
+        struct {
+            TADDR m_ReturnAddress;
+            INT64 s0; // frame pointer
+            INT64 s1;
+            INT64 s2;
+            INT64 s3;
+            INT64 s4;
+            INT64 s5;
+            INT64 s6;
+            INT64 s7;
+            INT64 s8;
+            INT64 tp;
+        };
+    };
+    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    ArgumentRegisters       m_argumentRegisters;
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
@@ -505,6 +524,8 @@ public:
 #elif defined(TARGET_LOONGARCH64)
         // Composites greater than 16 bytes are passed by reference
         return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
+#elif defined(TARGET_RISCV64)
+        return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::IsArgPassedByRef");
         return FALSE;
@@ -564,6 +585,13 @@ public:
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        }
+        return FALSE;
+#elif defined(TARGET_RISCV64)
+        if (m_argType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!m_argTypeHandle.IsNull());
+            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
         }
         return FALSE;
 #else
@@ -627,7 +655,7 @@ public:
 
     ArgLocDesc* GetArgLocDescForStructInRegs()
     {
-#if defined(UNIX_AMD64_ABI) || defined (TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined (TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined (TARGET_RISCV64)
         return m_hasArgLocDescForStructInRegs ? &m_argLocDescForStructInRegs : NULL;
 #else
         return NULL;
@@ -876,6 +904,13 @@ public:
 
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        // TODO RISCV64
+    }
+#endif // TARGET_RISCV64
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -886,10 +921,10 @@ protected:
     CorElementType      m_argType;
     int                 m_argSize;
     TypeHandle          m_argTypeHandle;
-#if (defined(TARGET_AMD64) && defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if (defined(TARGET_AMD64) && defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     ArgLocDesc          m_argLocDescForStructInRegs;
     bool                m_hasArgLocDescForStructInRegs;
-#endif // (TARGET_AMD64 && UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // (TARGET_AMD64 && UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     int                 m_ofsStack;           // Current position of the stack iterator, in bytes
 
@@ -920,6 +955,11 @@ protected:
 #ifdef TARGET_LOONGARCH64
     int             m_idxGenReg;        // Next general register to be assigned a value
     int             m_idxStack;         // Next stack slot to be assigned a value
+    int             m_idxFPReg;         // Next FP register to be assigned a value
+#endif
+
+#ifdef TARGET_RISCV64
+    int             m_idxGenReg;        // Next general register to be assigned a value
     int             m_idxFPReg;         // Next FP register to be assigned a value
 #endif
 
@@ -1170,6 +1210,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
+#elif defined(TARGET_RISCV64)
+        m_idxGenReg = numRegistersUsed;
+        m_ofsStack = 0;
+
+        m_idxFPReg = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif
@@ -1199,7 +1244,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_argSize = argSize;
     m_argTypeHandle = thValueType;
 
-#if defined(UNIX_AMD64_ABI) || defined (TARGET_ARM64) || defined (TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined (TARGET_ARM64) || defined (TARGET_LOONGARCH64) || defined (TARGET_RISCV64)
     m_hasArgLocDescForStructInRegs = false;
 #endif
 
@@ -1751,6 +1796,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;
+#elif defined(TARGET_RISCV64)
+// #error TODO RISCV64
+    return TransitionBlock::InvalidOffset;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;

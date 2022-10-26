@@ -650,6 +650,7 @@ protected:
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_RISCV64)
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -685,6 +686,16 @@ protected:
         void idInsFmt(insFormat insFmt)
         {
         }
+#elif defined(TARGET_RISCV64)
+        insFormat idInsFmt() const
+        {
+            _ASSERTE(!"TODO RISCV64 NYI");
+            return (insFormat)0;
+        }
+        void idInsFmt(insFormat insFmt)
+        {
+            _ASSERTE(!"TODO RISCV64 NYI");
+        }
 #else
         insFormat   idInsFmt() const
         {
@@ -714,11 +725,11 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
         opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
-#endif // ARM || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
         // On System V a call could return a struct in 2 registers. The instrDescCGCA struct below has  member that
@@ -773,6 +784,13 @@ protected:
         unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
+#ifdef TARGET_RISCV64
+        // TODO RISCV64
+        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6; // options for instructions
+        unsigned _idLclVar : 1; // access a local on stack
+#endif
+
 #ifdef TARGET_ARM
         insSize  _idInsSize : 2;   // size of instruction: 16, 32 or 48 bits
         insFlags _idInsFlags : 1;  // will this instruction set the flags
@@ -799,7 +817,7 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
 #define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) // TODO RISCV64
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -1097,6 +1115,16 @@ protected:
             assert(sz <= 16);
             _idCodeSize = sz;
         }
+#elif defined(TARGET_RISCV64)
+        unsigned    idCodeSize() const
+        {
+            _ASSERTE(!"TODO RISCV64 NYI");
+            return 0;
+        }
+        void idCodeSize(unsigned sz)
+        {
+            _ASSERTE(!"TODO RISCV64 NYI");
+        }
 #endif // TARGET_LOONGARCH64
 
         emitAttr idOpSize()
@@ -1280,6 +1308,37 @@ protected:
 
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+        insOpts idInsOpt() const
+        {
+            _ASSERTE(!"RISCV64: NYI");
+        }
+        void idInsOpt(insOpts opt)
+        {
+            _ASSERTE(!"RISCV64: NYI");
+        }
+
+        regNumber idReg3() const
+        {
+            _ASSERTE(!"RISCV64: NYI");
+            return REG_NA;
+        }
+        void idReg3(regNumber reg)
+        {
+            _ASSERTE(!"RISCV64: NYI");
+        }
+        regNumber idReg4() const
+        {
+            _ASSERTE(!"RISCV64: NYI");
+            return REG_NA;
+        }
+        void idReg4(regNumber reg)
+        {
+            _ASSERTE(!"RISCV64: NYI");
+        }
+
+#endif // TARGET_RISCV64
+
         inline static bool fitsInSmallCns(ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
@@ -1378,6 +1437,18 @@ protected:
             _idLclVar = 1;
         }
 #endif // TARGET_LOONGARCH64
+
+#ifdef TARGET_RISCV64
+        bool idIsLclVar() const
+        {
+            _ASSERTE(!"RISCV64: NYI");
+            return true;
+        }
+        void idSetIsLclVar()
+        {
+            _ASSERTE(!"RISCV64: NYI");
+        }
+#endif // TARGET_RISCV64
 
         bool idIsCnsReloc() const
         {
@@ -2341,7 +2412,7 @@ private:
     void emitPrintLabel(insGroup* ig);
     const char* emitLabelString(insGroup* ig);
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
 
@@ -2559,6 +2630,9 @@ public:
     // Returns "true" if instruction "id->idIns()" writes to a LclVar stack slot pair.
     bool emitInsWritesToLclVarStackLocPair(instrDesc* id);
 #elif defined(TARGET_LOONGARCH64)
+    bool emitInsMayWriteToGCReg(instruction ins);
+    bool emitInsWritesToLclVarStackLoc(instrDesc* id);
+#elif defined(TARGET_RISCV64)
     bool emitInsMayWriteToGCReg(instruction ins);
     bool emitInsWritesToLclVarStackLoc(instrDesc* id);
 #endif // TARGET_LOONGARCH64
@@ -2867,7 +2941,9 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
+#ifndef TARGET_RISCV64 // TODO RISCV64
     C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+#endif // TARGET_RISCV64
 }
 
 /*****************************************************************************

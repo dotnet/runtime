@@ -6218,6 +6218,9 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
         return nullptr;
+#elif defined(TARGET_RISCV64)
+        NYI_RISCV64("TODO RISCV64");
+        return nullptr;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7439,7 +7442,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
     bool           useNullCheck          = false;

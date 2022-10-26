@@ -4,4 +4,4 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"

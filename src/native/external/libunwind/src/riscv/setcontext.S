@@ -53,7 +53,7 @@ _Uriscv_setcontext:
 	LOAD_FP fs11, FREG(27)
 #endif
 
-	LOAD t1, REG(0)
+	LOAD t1, REG(0) // TODO RISCV64
 	LOAD ra, REG(1)
 	LOAD sp, REG(2)
 	LOAD s0, REG(8)

@@ -7,7 +7,7 @@
 // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-dwarf.adoc
 // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
-#error "TODO-RISCV64: review this when other files are ported in this directory"
+// #error "TODO-RISCV64: review this when other files are ported in this directory"
 
 #define CONTEXT_RISCV64   0x04000000L
 
@@ -61,9 +61,24 @@
 
 #define CONTEXT_Pc           CONTEXT_X31 + SIZEOF_RISCV64_INTR
 #define CONTEXT_FPU_OFFSET   CONTEXT_Pc + SIZEOF_RISCV64_INTR
+#define CONTEXT_Ra           CONTEXT_X1
 #define CONTEXT_Sp           CONTEXT_X2
+#define CONTEXT_Gp           CONTEXT_X3
 #define CONTEXT_Tp           CONTEXT_X4
 #define CONTEXT_Fp           CONTEXT_X8
+
+#define CONTEXT_S0           CONTEXT_X8
+#define CONTEXT_S1           CONTEXT_X9
+#define CONTEXT_S2           CONTEXT_X18
+#define CONTEXT_S3           CONTEXT_X19
+#define CONTEXT_S4           CONTEXT_X20
+#define CONTEXT_S5           CONTEXT_X21
+#define CONTEXT_S6           CONTEXT_X22
+#define CONTEXT_S7           CONTEXT_X23
+#define CONTEXT_S8           CONTEXT_X24
+#define CONTEXT_S9           CONTEXT_X25
+#define CONTEXT_S10           CONTEXT_X26
+#define CONTEXT_S11           CONTEXT_X27
 
 #define CONTEXT_F0           0
 #define CONTEXT_F1           CONTEXT_F1 + SIZEOF_RISCV64_FPR

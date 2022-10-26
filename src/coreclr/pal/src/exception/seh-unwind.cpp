@@ -154,7 +154,7 @@ enum
     ASSIGN_REG(S8)
 #elif (defined(HOST_UNIX) && defined(HOST_RISCV64))
 
-#error "TODO-RISCV64: review this"
+// #error "TODO-RISCV64: review this"
 
 // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
@@ -165,7 +165,7 @@ enum
     ASSIGN_REG(Gp)         \
     ASSIGN_REG(Tp)         \
     ASSIGN_REG(Pc)         \
-    ASSIGN_REG(S0)         \
+    ASSIGN_REG(Fp)         \
     ASSIGN_REG(S1)         \
     ASSIGN_REG(S2)         \
     ASSIGN_REG(S3)         \
@@ -473,7 +473,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
     unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
 #elif (defined(HOST_UNIX) && defined(HOST_RISCV64))
-#error "TODO-RISCV64: review this"
+// #error "TODO-RISCV64: review this"
 
     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
@@ -484,7 +484,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_RISCV_X5, (unw_word_t *) &winContext->T0);
     unw_get_reg(cursor, UNW_RISCV_X6, (unw_word_t *) &winContext->T1);
     unw_get_reg(cursor, UNW_RISCV_X7, (unw_word_t *) &winContext->T2);
-    unw_get_reg(cursor, UNW_RISCV_X8, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_RISCV_X8, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_RISCV_X9, (unw_word_t *) &winContext->S1);
     unw_get_reg(cursor, UNW_RISCV_X10, (unw_word_t *) &winContext->A0);
     unw_get_reg(cursor, UNW_RISCV_X11, (unw_word_t *) &winContext->A1);
@@ -627,7 +627,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, (SIZE_T **)&contextPointers->S7);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, (SIZE_T **)&contextPointers->S8);
 #elif (defined(HOST_UNIX) && defined(HOST_RISCV64))
-#error "TODO-RISCV64: review this"
+// #error "TODO-RISCV64: review this"
 
     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
@@ -635,7 +635,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_RISCV_X4, (SIZE_T **)&contextPointers->Tp);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X5, (SIZE_T **)&contextPointers->T0);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X7, (SIZE_T **)&contextPointers->T1);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X8, (SIZE_T **)&contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X8, (SIZE_T **)&contextPointers->Fp);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X9, (SIZE_T **)&contextPointers->S1);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X10, (SIZE_T **)&contextPointers->A0);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X11, (SIZE_T **)&contextPointers->A1);

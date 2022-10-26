@@ -139,6 +139,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 #define WAIT_FAILED             0xFFFFFFFF
 
 #if defined(_MSC_VER)
+jungdongheon
  #if defined(HOST_ARM)
 
   __forceinline void YieldProcessor() { }
@@ -225,6 +226,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
  #define MemoryBarrier __sync_synchronize
 #endif // __loongarch64
+
+#ifdef __riscv // TODO RISCV64
+ #define YieldProcessor() asm volatile( "wfi");
+ #define MemoryBarrier __sync_synchronize
+#endif // __riscv64
 
 #endif // _MSC_VER
 

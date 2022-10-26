@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 _Uriscv_getcontext:
 	.cfi_startproc
 
-	STORE ra, REG(0)
+	STORE ra, REG(0) // TODO RISCV64
 	STORE ra, REG(1)
 	STORE sp, REG(2)
 	STORE s0, REG(8)

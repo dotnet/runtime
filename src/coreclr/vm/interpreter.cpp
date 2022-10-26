@@ -91,7 +91,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     }
 #endif
 
-#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     // ...or it fits into two registers.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= 2 * sizeof(void*))
     {
@@ -537,6 +537,10 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
 #elif defined(HOST_LOONGARCH64)
         callerArgStackSlots += numSlots;
         ClrSafeInt<short> offset(-callerArgStackSlots);
+#elif defined(HOST_RISCV64)
+        callerArgStackSlots += numSlots;
+        ClrSafeInt<short> offset(-callerArgStackSlots);
+        assert(!"Unimplemented on RISCV64 yet");
 #endif
         offset *= static_cast<short>(sizeof(void*));
         _ASSERTE(!offset.IsOverflow());
@@ -700,7 +704,8 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
         fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
     }
     numFPRegArgSlots += numSlots;
-
+#elif defined(HOST_RISCV64)
+    assert(!"Unimplemented on RISCV64 yet");
 #else
 #error "Unsupported architecture"
 #endif
@@ -1125,7 +1130,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_ARM)
                     // LONGS have 2-reg alignment; inc reg if necessary.
                     argState.AddArg(k, 2, /*noReg*/false, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddArg(k);
 #else
 #error unknown platform
@@ -1138,7 +1143,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 1, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 1, /*twoSlotAlign*/false);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1151,7 +1156,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 2, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64) // TODO RISCV64
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1194,6 +1199,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                         }
 #elif defined(HOST_LOONGARCH64)
                         argState.AddArg(k, static_cast<short>(szSlots));
+#elif defined(HOST_RISCV64)
+                        assert(!"Unimplemented on RISCV64 yet");
 #else
 #error unknown platform
 #endif
@@ -1250,6 +1257,9 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             // See StubLinkerCPU::EmitProlog for the layout of the stack
             unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
             unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
+#elif defined(HOST_RISCV64)
+            unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
+            unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1300,6 +1310,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
 #elif defined(HOST_LOONGARCH64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
+#elif defined(HOST_RISCV64)
+                    assert(!"Unimplemented on RISCV64 yet");
 #else
 #error unsupported platform
 #endif
@@ -1614,7 +1626,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
 #elif defined(HOST_LOONGARCH64)
         assert(!"unimplemented on LOONGARCH yet");
-
+#elif defined(HOST_RISCV64)
+        assert(!"Unimplemented on RISCV64 yet");
 #else
 #error unsupported platform
 #endif
@@ -6308,6 +6321,9 @@ void Interpreter::MkRefany()
 #elif defined(HOST_LOONGARCH64)
     tbr = NULL;
     NYI_INTERP("Unimplemented code: MkRefAny on LOONGARCH");
+#elif defined(HOST_RISCV64)
+    tbr = NULL;
+    NYI_INTERP("Unimplemented code: MkRefAny on RISCV64");
 #else
 #error "unsupported platform"
 #endif
@@ -9445,6 +9461,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #elif defined(HOST_AMD64)
     unsigned totalArgSlots = nSlots;
 #elif defined(HOST_LOONGARCH64)
+    unsigned totalArgSlots = nSlots;
+#elif defined(HOST_RISCV64)
     unsigned totalArgSlots = nSlots;
 #else
 #error "unsupported platform"

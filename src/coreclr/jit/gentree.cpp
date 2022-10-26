@@ -4311,6 +4311,8 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_RISCV64)
+        _ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif
@@ -4760,6 +4762,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_RISCV64)
+            case GT_CNS_STR:
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                costEx = 1;
+                costSz = 4;
+                _ASSERTE(!"TODO RISCV64 NYI");
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -4833,6 +4843,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-LoongArch64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
+#elif defined(TARGET_RISCV64)
+                costEx = 2;
+                costSz = 8;
+                _ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5036,6 +5050,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-LoongArch64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
+#elif defined(TARGET_RISCV64)
+                    _ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif

@@ -59,6 +59,8 @@ ThreadInfo::Initialize()
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
 #elif defined(__loongarch64)
     TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.gpr[3]);
+#elif defined(__riscv)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.sp);
 #else
 #error "Unsupported architecture"
 #endif
@@ -243,6 +245,8 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         memcpy(context->F, m_fpRegisters.fpregs, sizeof(context->F));
         context->Fcsr = m_fpRegisters.fpscr;
     }
+#elif defined(__riscv)
+    _ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error Platform not supported
 #endif

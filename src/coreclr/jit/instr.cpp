@@ -69,6 +69,10 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
+#elif defined(TARGET_RISCV64)
+        #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
 #else
 #error "Unknown TARGET"
 #endif
@@ -340,6 +344,8 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 #ifdef TARGET_LOONGARCH64
     // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
     NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("inst_RV-----unused on RISCV64----");
 #else
     GetEmitter()->emitIns_R(ins, size, reg);
 #endif
@@ -1571,8 +1577,11 @@ instruction CodeGen::ins_Copy(var_types dstType)
     {
         return INS_mov;
     }
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("TODO RISCV64");
+    return INS_invalid;
 #else // TARGET_*
-#error "Unknown TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -1635,6 +1644,9 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         assert(genIsValidFloatReg(srcReg));
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("TODO RISCV64");
+    return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"
 #endif
@@ -2042,6 +2054,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("TODO RISCV64");
 #else
 #error "Unknown TARGET"
 #endif

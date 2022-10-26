@@ -1786,7 +1786,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
@@ -1801,7 +1801,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
@@ -7839,6 +7839,10 @@ public:
 #elif defined(TARGET_LOONGARCH64)
             reg     = REG_T8;
             regMask = RBM_T8;
+#elif defined(TARGET_RISCV64)
+            _ASSERTE(!"TODO RISCV NYI");
+            reg     = REG_T6;
+            regMask = RBM_T6;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8195,6 +8199,16 @@ public:
     void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);
     void unwindReturn(regNumber reg);
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_RISCV64)
+    void unwindNop();
+    void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
+                          // instruction and the current location.
+    void unwindSaveReg(regNumber reg, int offset);
+    void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);
+    void unwindReturn(regNumber reg);
+#endif // defined(TARGET_RISCV64)
+
 
     //
     // Private "helper" functions for the unwind implementation.
@@ -9880,6 +9894,8 @@ public:
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
 #define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
+
+#define CPU_RISCV64 0x1000 // The generic RISCV64 CPU
 
         unsigned genCPU; // What CPU are we running on
 
@@ -11675,6 +11691,10 @@ const instruction INS_MULADD     = INS_fmadd_d; // NOTE: default is double.
 const instruction INS_ABS        = INS_fabs_d;  // NOTE: default is double.
 const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 #endif                                          // TARGET_LOONGARCH64
+
+#ifdef TARGET_RISCV64
+const instruction INS_BREAKPOINT = (instruction)0;
+#endif                                          // TARGET_RISCV64
 
 /*****************************************************************************/
 

@@ -232,6 +232,8 @@ ShimRemoteDataTarget::GetPlatform(
          *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
      #elif defined(TARGET_LOONGARCH64)
          *pPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
+     #elif defined(TARGET_RISCV64)
+         *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;
      #else
          #error Unknown Processor.
      #endif

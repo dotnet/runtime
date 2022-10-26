@@ -9,4 +9,12 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO RISCV64: missing implementation"
+LEAF_ENTRY RtlRestoreContext, _TEXT
+LEAF_END RtlRestoreContext, _TEXT
+
+LEAF_ENTRY RtlCaptureContext, _TEXT
+LEAF_END RtlCaptureContext, _TEXT
+
+LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
+LEAF_END CONTEXT_CaptureContext, _TEXT

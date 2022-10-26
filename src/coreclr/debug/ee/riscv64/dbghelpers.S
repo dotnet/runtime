@@ -4,4 +4,19 @@
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"
+
+//
+// hijacking stub used to perform a func-eval, see Debugger::FuncEvalSetup() for use.
+//
+
+// @dbgtodo- once we port Funceval, use the ExceptionHijack stub instead of this func-eval stub.
+NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
+// TODO RISCV64 NYI
+NESTED_END FuncEvalHijack
+
+// This is the general purpose hijacking stub. The DacDbi Hijack primitive will
+// set up the stack and then set the IP here, and so this just makes the call.
+NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
+// TODO RISCV64 NYI
+NESTED_END ExceptionHijack, _TEXT

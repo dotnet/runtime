@@ -2348,6 +2348,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         passUsingFloatRegs    = varTypeUsesFloatReg(argSigType);
         DWORD floatFieldFlags = STRUCT_NO_FLOAT_FIELD;
 
+#elif defined(TARGET_RISCV64)
+        assert(!callIsVararg && !isHfaArg);
+        passUsingFloatRegs    = varTypeUsesFloatReg(argSigType);
+        NYI_RISCV64("TODO RISCV64");
+
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -2395,7 +2400,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 
 #endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (isStructArg)
         {
             if (isHfaArg)

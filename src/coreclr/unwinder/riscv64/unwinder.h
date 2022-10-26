@@ -8,6 +8,6 @@
 
 #include "baseunwinder.h"
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"
 
 #endif // __unwinder_riscv64__

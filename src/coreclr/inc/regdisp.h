@@ -210,6 +210,29 @@ typedef struct _Loongarch64VolatileContextPointer
 } Loongarch64VolatileContextPointer;
 #endif
 
+#if defined(TARGET_RISCV64)
+typedef struct _Riscv64VolatileContextPointer
+{
+    PDWORD64 R0;
+    PDWORD64 A0;
+    PDWORD64 A1;
+    PDWORD64 A2;
+    PDWORD64 A3;
+    PDWORD64 A4;
+    PDWORD64 A5;
+    PDWORD64 A6;
+    PDWORD64 A7;
+    PDWORD64 T0;
+    PDWORD64 T1;
+    PDWORD64 T2;
+    PDWORD64 T3;
+    PDWORD64 T4;
+    PDWORD64 T5;
+    PDWORD64 T6;
+    PDWORD64 X0;
+} Riscv64VolatileContextPointer;
+#endif
+
 struct REGDISPLAY : public REGDISPLAY_BASE {
 #ifdef TARGET_ARM64
     Arm64VolatileContextPointer     volatileCurrContextPointers;
@@ -217,6 +240,10 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 #ifdef TARGET_LOONGARCH64
     Loongarch64VolatileContextPointer    volatileCurrContextPointers;
+#endif
+
+#ifdef TARGET_RISCV64
+    Riscv64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 
     REGDISPLAY()

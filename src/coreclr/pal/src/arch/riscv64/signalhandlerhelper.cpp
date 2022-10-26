@@ -26,5 +26,5 @@ Parameters :
 --*/
 void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, size_t customSp, SignalHandlerWorkerReturnPoint* returnPoint)
 {
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"
 }

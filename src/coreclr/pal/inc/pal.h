@@ -2100,7 +2100,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_RISCV64)
 
-#error "TODO-RISCV64: review this when src/coreclr/pal/src/arch/riscv64/asmconstants.h is ported"
+// #error "TODO-RISCV64: review this when src/coreclr/pal/src/arch/riscv64/asmconstants.h is ported"
 
 // Please refer to src/coreclr/pal/src/arch/riscv64/asmconstants.h
 #define CONTEXT_RISCV64 0x04000000L
@@ -2150,6 +2150,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Integer registers.
     //
+    DWORD64 R0;
     DWORD64 Ra;
     DWORD64 Sp;
     DWORD64 Gp;
@@ -2157,7 +2158,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 T0;
     DWORD64 T1;
     DWORD64 T2;
-    DWORD64 S0;
+    DWORD64 Fp;
     DWORD64 S1;
     DWORD64 A0;
     DWORD64 A1;
@@ -2198,10 +2199,13 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
     PDWORD64 Ra;
+    PDWORD64 Sp;
+    PDWORD64 Gp;
     PDWORD64 Tp;
     PDWORD64 T0;
     PDWORD64 T1;
-    PDWORD64 S0;
+    PDWORD64 T2;
+    PDWORD64 Fp;
     PDWORD64 S1;
     PDWORD64 A0;
     PDWORD64 A1;

@@ -44,6 +44,11 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
+#elif defined(HOST_RISCV64)
+
+#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
+#define OFFSETOF_PRECODE_TYPE       0
+
 #endif // HOST_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -63,6 +68,8 @@ struct InvalidPrecode
     static const int Type = 0;
 #elif defined(HOST_LOONGARCH64)
     static const int Type = 0xff;
+#elif defined(HOST_RISCV64)
+    static const int Type = 0x50;
 #endif
 };
 
@@ -98,6 +105,9 @@ struct StubPrecode
 #elif defined(HOST_LOONGARCH64)
     static const int Type = 0x4;
     static const int CodeSize = 24;
+#elif defined(HOST_RISCV64)
+    static const int Type = 0x51;
+    static const int CodeSize = 24; // TODO RISCV64
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -234,6 +244,10 @@ struct FixupPrecode
     static const int Type = 0x3;
     static const int CodeSize = 32;
     static const int FixupCodeOffset = 12;
+#elif defined(HOST_RISCV64)
+    static const int Type = 0x52;
+    static const int CodeSize = 24; // TODO RISCV64
+    static const int FixupCodeOffset = 8;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];

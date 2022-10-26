@@ -2056,6 +2056,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #elif defined(HOST_LOONGARCH64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_RISCV64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.
 #endif

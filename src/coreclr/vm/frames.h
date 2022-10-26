@@ -863,6 +863,9 @@ public:
 #elif defined(TARGET_LOONGARCH64)
             Object** firstIntReg = (Object**)&this->GetContext()->Tp;
             Object** lastIntReg  = (Object**)&this->GetContext()->S8;
+#elif defined(TARGET_RISCV64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Gp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->T6;
 #else
             _ASSERTE(!"nyi for platform");
 #endif

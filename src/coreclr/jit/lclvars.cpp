@@ -6130,6 +6130,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             argOffs += TARGET_POINTER_SIZE;
         }
 
+#elif defined(TARGET_RISCV64)
+        _ASSERTE(!"TODO RISCV64 NYI");
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*

@@ -50,6 +50,8 @@
 #define DTCONTEXT_IS_ARM64
 #elif defined (TARGET_LOONGARCH64)
 #define DTCONTEXT_IS_LOONGARCH64
+#elif defined (TARGET_RISCV64)
+#define DTCONTEXT_IS_RISCV64
 #endif
 
 #if defined(DTCONTEXT_IS_X86)
@@ -293,6 +295,7 @@ typedef struct DECLSPEC_ALIGN(16) {
 #define DT_ARM_MAX_BREAKPOINTS     8
 #define DT_ARM_MAX_WATCHPOINTS     1
 
+
 typedef struct {
     ULONGLONG Low;
     LONGLONG High;
@@ -512,6 +515,71 @@ typedef DECLSPEC_ALIGN(16) struct {
     //
     ULONGLONG F[32];
 } DT_CONTEXT;
+
+#elif defined(DTCONTEXT_IS_RISCV64)
+#define DT_CONTEXT_RISCV64 0x01000000L
+
+#define DT_CONTEXT_CONTROL         (DT_CONTEXT_RISCV64 | 0x1L)
+#define DT_CONTEXT_INTEGER         (DT_CONTEXT_RISCV64 | 0x2L)
+#define DT_CONTEXT_FLOATING_POINT  (DT_CONTEXT_RISCV64 | 0x4L)
+#define DT_CONTEXT_DEBUG_REGISTERS (DT_CONTEXT_RISCV64 | 0x8L)
+
+#define DT_CONTEXT_FULL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT)
+#define DT_CONTEXT_ALL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_DEBUG_REGISTERS)
+
+#define DT_RISCV64_MAX_BREAKPOINTS     8
+#define DT_RISCV64_MAX_WATCHPOINTS     2
+
+typedef DECLSPEC_ALIGN(16) struct {
+    //
+    // Control flags.
+    //
+
+    /* +0x000 */ DWORD ContextFlags;
+
+    //
+    // Integer registers
+    //
+    DWORD64 ZR;
+    DWORD64 RA;
+    DWORD64 SP;
+    DWORD64 GP;
+    DWORD64 TP;
+    DWORD64 T0;
+    DWORD64 T1;
+    DWORD64 T2;
+    DWORD64 FP;
+    DWORD64 S1;
+    DWORD64 A0;
+    DWORD64 A1;
+    DWORD64 A2;
+    DWORD64 A3;
+    DWORD64 A4;
+    DWORD64 A5;
+    DWORD64 A6;
+    DWORD64 A7;
+    DWORD64 S2;
+    DWORD64 S3;
+    DWORD64 S4;
+    DWORD64 S5;
+    DWORD64 S6;
+    DWORD64 S7;
+    DWORD64 S8;
+    DWORD64 S9;
+    DWORD64 S10;
+    DWORD64 S11;
+    DWORD64 T3;
+    DWORD64 T4;
+    DWORD64 T5;
+    DWORD64 T6;
+    DWORD64 PC;
+
+    //
+    // Floating Point Registers
+    //
+    ULONGLONG F[32];
+} DT_CONTEXT;
+
 
 #else
 #error Unsupported platform
