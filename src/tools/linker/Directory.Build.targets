@@ -1,0 +1,96 @@
+<Project>
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <Import Project="$(_ToolsProjectTargets)" Condition="Exists('$(_ToolsProjectTargets)')" />
+
+  <Target Name="VSTestIfTestProject">
+    <CallTarget Targets="VSTest" Condition="'$(IsTestProject)' == 'true'" />
+  </Target>
+
+
+  <!-- Shared logic for reference assemblies. This enables apicompat and
+       packaging logic for projects that have corresponding reference assemblies. -->
+  <PropertyGroup>
+    <ContractProject Condition="'$(ContractProject)' == ''">$(MSBuildProjectDirectory)\ref\$(MSBuildProjectName).csproj</ContractProject>
+    <HasMatchingContract Condition="Exists('$(ContractProject)')">true</HasMatchingContract>
+    <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
+    <TargetsForTfmSpecificContentInPackage Condition="'$(HasMatchingContract)' == 'true'">$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+  <!-- Work around ApiCompat breaking change https://github.com/dotnet/arcade/issues/5361 -->
+  <ItemGroup Condition="'$(RunApiCompat)' == 'true'">
+    <_DependencyDirectories Include="$(IntermediateOutputPath)" />
+  </ItemGroup>
+  <!-- Add a ProjectReference to the reference assembly project for ApiCompat. -->
+  <!-- This also ensures that it is built when the current project gets packaged. -->
+  <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
+    <ProjectReference Include="$(ContractProject)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>ResolvedMatchingContract</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- The default pack logic will include the implementation assembly in lib.
+       This also adds the reference assembly under ref. -->
+  <Target Name="_AddReferenceAssemblyToPackage">
+    <!-- Get the build output of the reference project, which has been built due to the ProjectReference. -->
+    <MSBuild Projects="$(ContractProject)" Targets="BuiltProjectOutputGroup" Properties="TargetFramework=$(TargetFramework)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ReferenceAssemblies" />
+    </MSBuild>
+    <!-- Check just to be safe. -->
+    <Error Condition="!Exists('%(_ReferenceAssemblies.Identity)')" Text="Reference assembly %(Identity) does not exist. Ensure it has been built before packaging." />
+    <!-- Add it to the package. -->
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_ReferenceAssemblies)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- Shared logic to publish multiple projects in the same
+       package. Pack doesn't support including project references
+       (https://github.com/NuGet/Home/issues/3891), so we work around
+       this by explicitly including the publish output in the
+       package. -->
+  <PropertyGroup>
+    <IncludePublishOutput Condition="'$(IncludePublishOutput)' == ''">false</IncludePublishOutput>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IncludePublishOutput)' == 'true'">
+    <!-- Don't include the build output. Instead, we want to include the TargetFramework-specific publish output. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Suppress NuGet warning for package which sets IncludeBuildOutput=false, see https://github.com/NuGet/Home/issues/8583 -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Option to include Json files in the package. Default is to just include dlls. -->
+    <IncludeJsonFilesInPackage Condition="'$(IncludeJsonFilesInPackage)' == ''">false</IncludeJsonFilesInPackage>
+    <!-- Use a NuGet extension point to publish and set up the package files. -->
+    <!-- We can't use TargetsForTfmSpecificBuildOutput, because it doesn't run when IncludeBuildOutput is false. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddPublishOutputToPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="_AddPublishOutputToPackage">
+    <PropertyGroup>
+      <PublishDir>$(BaseOutputPath)$(TargetFramework)</PublishDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectsToPublish Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=$(TargetFramework);PublishDir=$(PublishDir)</AdditionalProperties>
+      </ProjectsToPublish>
+    </ItemGroup>
+    <!-- Clean the publish directory in case there are any left-over artifacts (publish does not work incrementally). -->
+    <ItemGroup>
+      <_FilesToDelete Remove="@(_FilesToDelete)" />
+      <_FilesToDelete Include="$(PublishDir)/*.dll" />
+      <_FilesToDelete Include="$(PublishDir)/*.json" />
+    </ItemGroup>
+    <Delete Files="@(_FilesToDelete)" />
+    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
+    <ItemGroup>
+      <_PublishOutputInPackage Include="$(PublishDir)/*.dll" />
+      <_PublishOutputInPackage Include="$(PublishDir)/*.json" Condition="'$(IncludeJsonFilesInPackage)' == 'true'" />
+    </ItemGroup>
+    <!-- Sanity check. -->
+    <Error Condition="@(_PublishOutputInPackage->Count()) == 0" Text="No publish output included in package." />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_PublishOutputInPackage)" PackagePath="$(BuildOutputTargetFolder)\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.808.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tlens", "tlens.csproj", "{CEEB03BB-5035-4244-A032-63793109BFA8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CEEB03BB-5035-4244-A032-63793109BFA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEEB03BB-5035-4244-A032-63793109BFA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEEB03BB-5035-4244-A032-63793109BFA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEEB03BB-5035-4244-A032-63793109BFA8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {17F7CC84-B3AB-4BE7-BF7D-77146CDC4DF5}
+	EndGlobalSection
+EndGlobal

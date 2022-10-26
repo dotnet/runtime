@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Used in testcase to check the cecil package version. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>CecilPackageVersion</_Parameter1>
+      <_Parameter2>$(MonoCecilVersion)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+    <Folder Include="TestCasesRunner\" />
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.ILVerification" Version="$(MicrosoftILVerificationVersion)" />
+    <PackageReference Include="nunit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
+    <!-- This reference is purely so that the linker can resolve this
+         dependency of mscorlib. It is not actually required to build
+         the tests. -->
+    <PackageReference Include="System.Threading.AccessControl" Version="5.0.0" />
+  </ItemGroup>
+
+  <Target Name="PrepareTools" BeforeTargets="Build">
+    <!-- Restore ilasm using ilasm.ilproj. Restore must be done
+         separately from copy with a different set of input
+         properties, to force MSBuild to re-evaluate using new props
+         and targets from the restored package. -->
+    <PropertyGroup>
+      <IlasmProject>$(MSBuildThisFileDirectory)../../eng/ilasm.ilproj</IlasmProject>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(IlasmProject)" Targets="Restore" />
+    <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" />
+  </Target>
+
+  <ItemGroup>
+    <None Update="TestCases\Dependencies\PInvokesExpectations.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
