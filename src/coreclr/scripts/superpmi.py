@@ -1703,8 +1703,8 @@ class SuperPMIReplayAsmDiffs:
                         with ChangeDir(self.coreclr_args.core_root):
 
                             async def create_one_artifact(jit_path: str, location: str, flags) -> str:
-                                command = [self.superpmi_path] + flags + ["-jitoption", "force", "JitStdOutFile=" + item_path] + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(context_index, extension))
+                                command = [self.superpmi_path] + flags + ["-jitoption", "force", "JitStdOutFile=" + item_path] + [jit_path, mch_file]
                                 modified_env = env.copy()
                                 modified_env['DOTNET_JitStdOutFile'] = item_path
                                 logging.debug("%sGenerating %s", print_prefix, item_path)
