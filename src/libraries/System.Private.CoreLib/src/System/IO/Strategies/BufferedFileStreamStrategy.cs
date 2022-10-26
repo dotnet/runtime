@@ -769,27 +769,21 @@ namespace System.IO.Strategies
             {
                 FlushWrite();
             }
-            else if (_readPos < _readLen)
+            else if (_readLen > 0)
             {
+                // If the underlying strategy is not seekable AND we have something in the read buffer, then FlushRead would throw.
+                // We can either throw away the buffer resulting in data loss (!) or ignore the Flush.
+                // We cannot throw because it would be a breaking change. We opt into ignoring the Flush in that situation.
                 if (_strategy.CanSeek)
                 {
                     FlushRead();
                 }
-                else
-                {
-                    // If the underlying strategy is not seekable AND we have something in the read buffer, then FlushRead would throw.
-                    // We can either throw away the buffer resulting in data loss (!) or ignore the Flush.
-                    // We cannot throw because it would be a breaking change. We opt into ignoring the Flush in that situation.
-                    return;
-                }
-
-                // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
-                Debug.Assert(_writePos == 0 && (!_strategy.CanSeek || (_readPos == 0 && _readLen == 0)));
             }
 
             // We still need to tell the underlying strategy to flush. It's NOP for !flushToDisk or !CanWrite.
             _strategy.Flush(flushToDisk);
-            _writePos = _readPos = _readLen = 0;
+            // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
+            Debug.Assert(_writePos == 0 && (!_strategy.CanSeek || (_readPos == 0 && _readLen == 0)));
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
