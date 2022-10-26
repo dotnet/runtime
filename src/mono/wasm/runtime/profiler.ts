@@ -63,7 +63,6 @@ export const enum MeasuredBlock {
     callCsFunction = "mono.callCsFunction:",
     getAssemblyExports = "mono.getAssemblyExports:",
     instantiateAsset = "mono.instantiateAsset:",
-    interp = "interp:",
 }
 
 export type TimeStamp = {
@@ -101,7 +100,7 @@ export function mono_wasm_profiler_leave(method: MonoMethod): void {
         let methodName = methodNames.get(method as any);
         if (!methodName) {
             const chars = cwraps.mono_wasm_method_get_name(method);
-            methodName = MeasuredBlock.interp + Module.UTF8ToString(chars);
+            methodName = Module.UTF8ToString(chars);
             methodNames.set(method as any, methodName);
             Module._free(chars as any);
         }

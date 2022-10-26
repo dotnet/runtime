@@ -42,8 +42,8 @@
 void core_initialize_internals ();
 #endif
 
-extern double mono_wasm_profiler_enter ();
-extern void mono_wasm_profiler_leave (MonoMethod *method, double start);
+extern void mono_wasm_profiler_enter ();
+extern void mono_wasm_profiler_leave (MonoMethod *method);
 
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
