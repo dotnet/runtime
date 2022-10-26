@@ -203,7 +203,7 @@ namespace System.IO
 
         private StreamWriter CreateStreamWriter(bool append)
         {
-            StreamWriter streamWriter = new StreamWriter(NormalizedPath);
+            StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
             Invalidate();
             return streamWriter;
         }
