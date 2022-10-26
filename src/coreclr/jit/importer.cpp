@@ -66,7 +66,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo = ti;
     verCurrentState.esStack[verCurrentState.esStackDepth++].val      = tree;
 
-    if ((tree->gtType == TYP_LONG) && (compLongUsed == false))
+    if ((tree->gtType == TYP_LONG) && !compLongUsed)
     {
         compLongUsed = true;
     }
