@@ -66,7 +66,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo = ti;
     verCurrentState.esStack[verCurrentState.esStackDepth++].val      = tree;
 
-    if ((tree->gtType == TYP_LONG) && !compLongUsed)
+    if ((tree->gtType == TYP_LONG) && (compLongUsed == false))
     {
         compLongUsed = true;
     }
@@ -300,18 +300,18 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
 
                 switch (tree->gtOper)
                 {
-                        case GT_CNS_INT:
-                        case GT_CNS_LNG:
-                        case GT_CNS_DBL:
-                        case GT_CNS_STR:
-                        case GT_CNS_VEC:
-                        case GT_LCL_VAR:
-                            table->val         = gtCloneExpr(tree);
-                            break;
+                    case GT_CNS_INT:
+                    case GT_CNS_LNG:
+                    case GT_CNS_DBL:
+                    case GT_CNS_STR:
+                    case GT_CNS_VEC:
+                    case GT_LCL_VAR:
+                        table->val = gtCloneExpr(tree);
+                        break;
 
-                        default:
-                            assert(!"Bad oper - Not covered by impValidSpilledStackEntry()");
-                            break;
+                    default:
+                        assert(!"Bad oper - Not covered by impValidSpilledStackEntry()");
+                        break;
                 }
             }
         }
