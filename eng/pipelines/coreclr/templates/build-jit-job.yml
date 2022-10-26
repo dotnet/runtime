@@ -5,6 +5,7 @@ parameters:
   crossBuild: false
   osGroup: ''
   osSubgroup: ''
+  condition: true
   pool: ''
   stagedBuild: false
   timeoutInMinutes: ''
@@ -20,6 +21,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    condition: ${{ parameters.condition }}
     helixType: 'build/product/'
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
