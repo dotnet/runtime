@@ -12691,8 +12691,8 @@ void region_free_list::sort_by_committed_and_age()
 }
 
 #ifdef MULTIPLE_HEAPS
-void gc_heap::distribute_committed_in_free_across_heaps(free_region_kind kind, size_t region_size,
-                                                        size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2])
+void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t region_size,
+                                                   size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2])
 {
     const ptrdiff_t MIN_PTR_DIFF = ((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-1);
     const ptrdiff_t MAX_PTR_DIFF = (((((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-2))-1)<<1)+1;
@@ -12752,8 +12752,8 @@ void gc_heap::distribute_committed_in_free_across_heaps(free_region_kind kind, s
             break;
         }
 
-        ptrdiff_t small_committed = heap_segment_committed (small_region) - get_region_start (small_region);
-        ptrdiff_t big_committed   = heap_segment_committed (big_region)   - get_region_start (big_region);
+        ptrdiff_t small_committed = get_region_committed_size (small_region);
+        ptrdiff_t big_committed   = get_region_committed_size (big_region);
 
         ptrdiff_t diff_committed = big_committed - small_committed;
 
@@ -13127,7 +13127,7 @@ void gc_heap::distribute_free_regions()
         }
 
 #ifdef MULTIPLE_HEAPS
-        distribute_committed_in_free_across_heaps ((free_region_kind)kind, region_size[kind], heap_budget_in_region_units);
+        distribute_committed_in_free_regions ((free_region_kind)kind, region_size[kind], heap_budget_in_region_units);
 #endif //MULTIPLE_HEAPS
 
         if (surplus_regions[kind].get_num_free_regions() > 0)

@@ -2099,8 +2099,8 @@ protected:
 #endif //!USE_REGIONS
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     PER_HEAP_ISOLATED
-    void distribute_committed_in_free_across_heaps(free_region_kind kind, size_t region_size,
-                                                   size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2]);
+    void distribute_committed_in_free_regions(free_region_kind kind, size_t region_size,
+                                              size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2]);
 #endif //MULTIPLE_HEAPS && REGIONS
     PER_HEAP_ISOLATED
     void distribute_free_regions();
