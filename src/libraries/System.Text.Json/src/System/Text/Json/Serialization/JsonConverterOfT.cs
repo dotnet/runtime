@@ -17,24 +17,10 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
-        protected internal JsonConverter() : this(initialize: true)
-        { }
-
-        internal JsonConverter(bool initialize)
+        protected internal JsonConverter()
         {
             IsValueType = typeof(T).IsValueType;
-            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
-            // Initialize uses abstract members, in order for them to be initialized correctly
-            // without throwing we might need to delay call to Initialize
-            if (initialize)
-            {
-                Initialize();
-            }
-        }
-
-        private protected void Initialize()
-        {
             if (HandleNull)
             {
                 HandleNullOnRead = true;
@@ -48,9 +34,6 @@ namespace System.Text.Json.Serialization
                 // 2) A converter overrode HandleNull and returned false so HandleNullOnRead and HandleNullOnWrite
                 // will be their default values of false.
             }
-
-            CanUseDirectReadOrWrite = ConverterStrategy == ConverterStrategy.Value && IsInternalConverter;
-            RequiresReadAhead = ConverterStrategy == ConverterStrategy.Value;
         }
 
         /// <summary>
@@ -66,7 +49,7 @@ namespace System.Text.Json.Serialization
             return typeToConvert == typeof(T);
         }
 
-        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Value;
 
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -138,12 +121,12 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Does the converter want to be called when reading null tokens.
         /// </summary>
-        internal bool HandleNullOnRead { get; private set; }
+        internal bool HandleNullOnRead { get; private protected set; }
 
         /// <summary>
         /// Does the converter want to be called for null values.
         /// </summary>
-        internal bool HandleNullOnWrite { get; private set; }
+        internal bool HandleNullOnWrite { get; private protected set; }
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
