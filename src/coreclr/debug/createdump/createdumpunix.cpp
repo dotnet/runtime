@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;
 #endif
 
@@ -19,7 +19,7 @@ CreateDump(const CreateDumpOptions& options)
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
     g_pageSize = sysconf(_SC_PAGESIZE);
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);

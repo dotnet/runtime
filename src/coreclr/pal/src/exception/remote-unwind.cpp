@@ -124,7 +124,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -1895,6 +1895,22 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_PPC64_R29, (SIZE_T **)&contextPointers->R29);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
+#elif defined(TARGET_RISCV64)
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X1, (SIZE_T **)&contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X3, (SIZE_T **)&contextPointers->Gp);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X4, (SIZE_T **)&contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X8, (SIZE_T **)&contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X9, (SIZE_T **)&contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X18, (SIZE_T **)&contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X19, (SIZE_T **)&contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X20, (SIZE_T **)&contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X21, (SIZE_T **)&contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X22, (SIZE_T **)&contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X23, (SIZE_T **)&contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X24, (SIZE_T **)&contextPointers->S8);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X25, (SIZE_T **)&contextPointers->S9);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X26, (SIZE_T **)&contextPointers->S10);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X27, (SIZE_T **)&contextPointers->S11);
 #else
 #error unsupported architecture
 #endif
@@ -2003,6 +2019,25 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
+#elif defined(TARGET_RISCV64)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_RISCV_X1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_RISCV_X3, (unw_word_t *) &winContext->Gp);
+    unw_get_reg(cursor, UNW_RISCV_X4, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_RISCV_X8, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_RISCV_X9, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_RISCV_X18, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_RISCV_X19, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_RISCV_X20, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_RISCV_X21, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_RISCV_X22, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_RISCV_X23, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_RISCV_X24, (unw_word_t *) &winContext->S8);
+    unw_get_reg(cursor, UNW_RISCV_X25, (unw_word_t *) &winContext->S9);
+    unw_get_reg(cursor, UNW_RISCV_X26, (unw_word_t *) &winContext->S10);
+    unw_get_reg(cursor, UNW_RISCV_X27, (unw_word_t *) &winContext->S11);
+    TRACE("sp %p gp %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Gp, winContext->Fp, winContext->Tp, winContext->Ra);
 #else
 #error unsupported architecture
 #endif
@@ -2138,6 +2173,23 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_PPC64_R30:    *valp = (unw_word_t)winContext->R30; break;
     case UNW_PPC64_R31:    *valp = (unw_word_t)winContext->R31; break;
     case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
+#elif defined(TARGET_RISCV64)
+    case UNW_RISCV_X1:     *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_RISCV_X3:     *valp = (unw_word_t)winContext->Gp; break;
+    case UNW_RISCV_X4:     *valp = (unw_word_t)winContext->Tp; break;
+    case UNW_RISCV_X8:     *valp = (unw_word_t)winContext->Fp; break;
+    case UNW_RISCV_X9:     *valp = (unw_word_t)winContext->S1; break;
+    case UNW_RISCV_X18:    *valp = (unw_word_t)winContext->S2; break;
+    case UNW_RISCV_X19:    *valp = (unw_word_t)winContext->S3; break;
+    case UNW_RISCV_X20:    *valp = (unw_word_t)winContext->S4; break;
+    case UNW_RISCV_X21:    *valp = (unw_word_t)winContext->S5; break;
+    case UNW_RISCV_X22:    *valp = (unw_word_t)winContext->S6; break;
+    case UNW_RISCV_X23:    *valp = (unw_word_t)winContext->S7; break;
+    case UNW_RISCV_X24:    *valp = (unw_word_t)winContext->S8; break;
+    case UNW_RISCV_X25:    *valp = (unw_word_t)winContext->S9; break;
+    case UNW_RISCV_X26:    *valp = (unw_word_t)winContext->S10; break;
+    case UNW_RISCV_X27:    *valp = (unw_word_t)winContext->S11; break;
+    case UNW_RISCV_PC:    *valp = (unw_word_t)winContext->Pc; break;
 #else
 #error unsupported architecture
 #endif
