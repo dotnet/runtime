@@ -107,6 +107,10 @@ jobs:
       include:
       - src/tests/*
 
+    - subset: tools_linker
+      include:
+      - src/tools/linker/*
+
     - subset: non_runtimetests
       exclude:
       - src/tests/*
