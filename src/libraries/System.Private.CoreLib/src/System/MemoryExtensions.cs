@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -956,6 +957,278 @@ namespace System
 
                     return -1;
             }
+        }
+
+        /// <inheritdoc cref="IndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T> =>
+            IndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
+
+        /// <summary>Searches for the first index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="lowInclusive">A lower bound, inclusive, of the range for which to search.</param>
+        /// <param name="highInclusive">A upper bound, inclusive, of the range for which to search.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value in the specified range.
+        /// If all of the values are outside of the specified range, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T>
+        {
+            if (lowInclusive is null || highInclusive is null)
+            {
+                ThrowNullLowHighInclusive(lowInclusive, highInclusive);
+            }
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                if (lowInclusive is byte or sbyte)
+                {
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref lowInclusive),
+                        Unsafe.As<T, byte>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is short or ushort or char)
+                {
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ushort>(ref lowInclusive),
+                        Unsafe.As<T, ushort>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, uint>(ref lowInclusive),
+                        Unsafe.As<T, uint>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ulong>(ref lowInclusive),
+                        Unsafe.As<T, ulong>(ref highInclusive),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.IndexOfAnyInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
+        }
+
+        /// <inheritdoc cref="IndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T> =>
+            IndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
+
+        /// <summary>Searches for the first index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="lowInclusive">A lower bound, inclusive, of the excluded range.</param>
+        /// <param name="highInclusive">A upper bound, inclusive, of the excluded range.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value outside of the specified range.
+        /// If all of the values are inside of the specified range, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T>
+        {
+            if (lowInclusive is null || highInclusive is null)
+            {
+                ThrowNullLowHighInclusive(lowInclusive, highInclusive);
+            }
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                if (lowInclusive is byte or sbyte)
+                {
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref lowInclusive),
+                        Unsafe.As<T, byte>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is short or ushort or char)
+                {
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ushort>(ref lowInclusive),
+                        Unsafe.As<T, ushort>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, uint>(ref lowInclusive),
+                        Unsafe.As<T, uint>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ulong>(ref lowInclusive),
+                        Unsafe.As<T, ulong>(ref highInclusive),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.IndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
+        }
+
+        /// <inheritdoc cref="LastIndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T> =>
+            LastIndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
+
+        /// <summary>Searches for the last index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="lowInclusive">A lower bound, inclusive, of the range for which to search.</param>
+        /// <param name="highInclusive">A upper bound, inclusive, of the range for which to search.</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value in the specified range.
+        /// If all of the values are outside of the specified range, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T>
+        {
+            if (lowInclusive is null || highInclusive is null)
+            {
+                ThrowNullLowHighInclusive(lowInclusive, highInclusive);
+            }
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                if (lowInclusive is byte or sbyte)
+                {
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref lowInclusive),
+                        Unsafe.As<T, byte>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is short or ushort or char)
+                {
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ushort>(ref lowInclusive),
+                        Unsafe.As<T, ushort>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, uint>(ref lowInclusive),
+                        Unsafe.As<T, uint>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ulong>(ref lowInclusive),
+                        Unsafe.As<T, ulong>(ref highInclusive),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.LastIndexOfAnyInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
+        }
+
+        /// <inheritdoc cref="LastIndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T> =>
+            LastIndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
+
+        /// <summary>Searches for the last index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="lowInclusive">A lower bound, inclusive, of the excluded range.</param>
+        /// <param name="highInclusive">A upper bound, inclusive, of the excluded range.</param>
+        /// <returns>
+        /// The index in the span of the last occurrence of any value outside of the specified range.
+        /// If all of the values are inside of the specified range, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
+            where T : IComparable<T>
+        {
+            if (lowInclusive is null || highInclusive is null)
+            {
+                ThrowNullLowHighInclusive(lowInclusive, highInclusive);
+            }
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                if (lowInclusive is byte or sbyte)
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref lowInclusive),
+                        Unsafe.As<T, byte>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is short or ushort or char)
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ushort>(ref lowInclusive),
+                        Unsafe.As<T, ushort>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, uint>(ref lowInclusive),
+                        Unsafe.As<T, uint>(ref highInclusive),
+                        span.Length);
+                }
+
+                if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                        ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ulong>(ref lowInclusive),
+                        Unsafe.As<T, ulong>(ref highInclusive),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.LastIndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), lowInclusive, highInclusive, span.Length);
+        }
+
+        /// <summary>Throws an <see cref="ArgumentNullException"/> for <paramref name="lowInclusive"/> or <paramref name="highInclusive"/> being null.</summary>
+        [DoesNotReturn]
+        private static void ThrowNullLowHighInclusive<T>(T? lowInclusive, T? highInclusive)
+        {
+            Debug.Assert(lowInclusive is null || highInclusive is null);
+            throw new ArgumentNullException(lowInclusive is null ? nameof(lowInclusive) : nameof(highInclusive));
         }
 
         /// <summary>
