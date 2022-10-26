@@ -431,8 +431,6 @@ namespace System.Globalization
         // Get native two digit year max
         internal static int GetTwoDigitYearMax(CalendarId calendarId)
         {
-            Debug.Assert(GlobalizationMode.UseNls);
-
             return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
                     CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
                         twoDigitYearMax :
