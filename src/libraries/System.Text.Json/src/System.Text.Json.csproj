@@ -111,6 +111,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonPrimitiveConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserializing.cs" />
