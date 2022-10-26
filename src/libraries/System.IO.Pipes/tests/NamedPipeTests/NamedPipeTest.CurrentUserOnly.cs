@@ -20,6 +20,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateServer_CurrentUserOnly()
         {
             // Should not throw.
@@ -27,6 +28,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateServer_ConnectClient()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -41,6 +43,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateServer_ConnectClient_UsingUnixAbsolutePath()
         {
             string name = Path.Combine("/tmp", PipeStreamConformanceTests.GetUniquePipeName());
@@ -62,6 +65,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.InOut)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.In)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void Connection_UnderSameUser_CurrentUserOnly_Works(PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientDirection)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -79,6 +83,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateMultipleServers_ConnectMultipleClients()
         {
             string name1 = PipeStreamConformanceTests.GetUniquePipeName();
@@ -100,6 +105,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateMultipleServers_ConnectMultipleClients_MultipleThreads()
         {
             List<Task> tasks = new List<Task>();
@@ -125,6 +131,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeOptions.CurrentUserOnly)]
         [InlineData(PipeOptions.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77469", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateMultipleConcurrentServers_ConnectMultipleClients(PipeOptions extraPipeOptions)
         {
             var pipeServers = new NamedPipeServerStream[5];
