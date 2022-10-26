@@ -5154,7 +5154,7 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     ULONG iCount = VAL32(CORHeader->CodeManagerTable.Size) / sizeof(GUID);
     for (ULONG i=0;  i<iCount;  i++)
     {
-        CHAR         rcguid[128];
+        CHAR         rcguid[GUID_STR_BUFFER_LEN];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
         GuidToLPSTR(Guid, rcguid);

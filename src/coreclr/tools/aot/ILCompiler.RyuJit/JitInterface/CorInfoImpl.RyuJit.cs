@@ -1818,17 +1818,25 @@ namespace Internal.JitInterface
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+            pResult.compileTimeHandle = null;
+
             switch (method.Name)
             {
                 case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
                 case "DefaultConstructorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
                     break;
                 case "AllocatorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
+                    break;
+                default:
+                    Debug.Fail("Unexpected raw handle intrinsic");
                     break;
             }
         }
