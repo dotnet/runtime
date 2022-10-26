@@ -606,6 +606,12 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PG
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
+
+// TieredPGO_InstrumentOnlyHotCode values:
+//
+// 0) Instrument all IL-only code, R2R'd code is never instrumented
+// 1) Instrument only hot IL-only and hot R2R code (use optimizations in the instrumented tier for hot R2R and no optimizations for hot IL-only)
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode, W("TieredPGO_InstrumentOnlyHotCode"), 1, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
 #endif
 
 ///
