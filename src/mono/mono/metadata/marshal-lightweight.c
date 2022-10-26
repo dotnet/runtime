@@ -68,17 +68,17 @@ get_method_image (MonoMethod *method)
 	return m_class_get_image (method->klass);
 }
 
-static gboolean embedder_requests_ilgen_callbacks = FALSE;
+static gboolean ilgen_callbacks_requested = FALSE;
 MONO_API void
 mono_marshal_ilgen_init (void)
 {
-  	embedder_requests_ilgen_callbacks = TRUE;
+  	ilgen_callbacks_requested = TRUE;
 }
 
 gboolean
-mono_marshal_did_embedder_request_ilgen_callbacks (void)
+mono_marshal_is_ilgen_requested (void)
 {
-	return embedder_requests_ilgen_callbacks;
+	return ilgen_callbacks_requested;
 }
 
 /**
