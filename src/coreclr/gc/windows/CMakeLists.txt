@@ -6,4 +6,4 @@ set(GC_PAL_SOURCES
     gcenv.windows.cpp
 )
 
-add_library(gc_pal STATIC ${GC_PAL_SOURCES} Native.rc)
+add_library(gc_pal STATIC ${GC_PAL_SOURCES})
