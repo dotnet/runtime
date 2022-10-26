@@ -589,6 +589,8 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeViewNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeViewTypesBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\DwarfBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\DwarfCie.cs" />
     <Compile Include="Compiler\ObjectWriter\DwarfEhFrame.cs" />

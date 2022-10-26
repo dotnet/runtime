@@ -38,8 +38,14 @@ namespace ILCompiler.ObjectWriter
         private SectionWriter _xdataSectionWriter;
         private SectionWriter _pdataSectionWriter;
 
+        // Debugging
+        private SectionWriter _debugTypesSectionWriter;
+        //private SectionWriter _debugSymbolSectionWriter;
+
         private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
         private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
+        private ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
+        //private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
         protected CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -76,6 +82,12 @@ namespace ILCompiler.ObjectWriter
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
                     SectionCharacteristics.ContainsUninitializedData;
+            }
+            else if (section == DebugTypesSection)
+            {
+                sectionHeader.SectionCharacteristics =
+                    SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |
+                    SectionCharacteristics.MemDiscardable;
             }
 
             if (section.ComdatName != null)
@@ -528,7 +540,14 @@ namespace ILCompiler.ObjectWriter
             _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 
-        protected override ITypesDebugInfoWriter CreateDebugInfoBuilder() => null;
+        protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
+        {
+            _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
+            _debugTypesSectionWriter.EmitAlignment(4);
+            return new CodeViewTypesBuilder(
+                _nodeFactory.NameMangler, _nodeFactory.Target.Architecture,
+                _debugTypesSectionWriter.Stream);
+        }
 
         protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
@@ -548,9 +567,6 @@ namespace ILCompiler.ObjectWriter
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            // Not supported yet
-            options &= ~ObjectWritingOptions.GenerateDebugInfo;
-
             using CoffObjectWriter objectWriter = new CoffObjectWriter(factory, options);
             objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
         }
