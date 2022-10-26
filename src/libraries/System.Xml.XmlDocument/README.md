@@ -5,7 +5,6 @@ Documentation can be found at https://learn.microsoft.com/dotnet/standard/serial
 
 ## Contribution Bar
 - [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
-- [x] [We don't accept refactoring changes due to new language features](../../libraries/README.md#secondary-bars)
 
 ## Deployment
-The `System.Xml.XMLDocument` library is included in the shared framework and also shipped as a [NuGet package](https://www.nuget.org/packages/System.Xml.XMLDocument).
+The `System.Xml.XMLDocument` library is included in the shared framework and also shipped as a [NuGet package](https://www.nuget.org/packages/System.Xml.XMLDocument). The NuGet package is considered "legacy" and should not be referenced by projects compatible with .NET Standard 2.0.
