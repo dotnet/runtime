@@ -4473,7 +4473,7 @@ mini_init (const char *filename)
 	mono_marshal_lightweight_init ();
   	mono_marshal_ilgen_init_internal ();
 #else
-	if(! mono_marshal_did_embedder_request_ilgen_callbacks ())
+	if(! mono_marshal_is_ilgen_requested ())
   	{
 		mono_marshal_lightweight_init ();
   		mono_marshal_ilgen_init_internal ();
