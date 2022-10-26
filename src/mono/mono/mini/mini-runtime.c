@@ -4470,13 +4470,13 @@ mini_init (const char *filename)
 
 
 #ifdef ENABLE_ILGEN
-	mono_marshal_lightweight_init();
-  	mono_marshal_ilgen_init_internal();
+	mono_marshal_lightweight_init ();
+  	mono_marshal_ilgen_init_internal ();
 #else
-	if(! mono_marshal_did_embedder_request_ilgen_callbacks())
+	if(! mono_marshal_did_embedder_request_ilgen_callbacks ())
   	{
-		mono_marshal_lightweight_init();
-  		mono_marshal_ilgen_init_internal();
+		mono_marshal_lightweight_init ();
+  		mono_marshal_ilgen_init_internal ();
  	}
 	else{
 		mono_marshal_noilgen_init_lightweight();
