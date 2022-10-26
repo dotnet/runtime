@@ -20,7 +20,7 @@ static mdtable_t* type_to_table(mdcxt_t* cxt, CorTokenType tk_type)
     assert(cxt != NULL);
     uint32_t type = ExtractTokenType(tk_type);
     if (type >= MDTABLE_MAX_COUNT)
-        return NULL;;
+        return NULL;
     return &cxt->tables[type];
 }
 
@@ -250,19 +250,21 @@ static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
     if (table_id >= MDTABLE_MAX_COUNT)
         return false;
 
-    mdtable_t* table = &qcxt.table->cxt->tables[table_id];
-
-    // Indices into tables begin at 1 - see II.22.
-    // Indices may point to (row count + 1) to indicate none - see II.22.1.
-    if (table_row > (table->row_count + 1))
-        return false;
-
+    mdtable_t* table;
     if (tk != NULL)
     {
         *tk = CreateTokenType(table_id) | CreateTokenIndex(table_row);
     }
     else
     {
+        // Returning a cursor means pointing directly into a table
+        // so we must validate the cursor is valid prior to creation.
+        table = &qcxt.table->cxt->tables[table_id];
+
+        // Indices into tables begin at 1 - see II.22.
+        if (table_row > table->row_count)
+            return false;
+
         assert(cursor != NULL);
         cursor->_reserved1 = (intptr_t)table;
         cursor->_reserved2 = table_row;

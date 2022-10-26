@@ -103,8 +103,20 @@ typedef enum
     mdtid_MethodSpec = 0x2b,
     mdtid_GenericParamConstraint = 0x2c,
 
+#ifdef DNMD_PORTABLE_PDB
+    // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
+    mdtid_Document = 0x30,
+    mdtid_MethodDebugInformation = 0x31,
+    mdtid_LocalScope = 0x32,
+    mdtid_LocalVariable = 0x33,
+    mdtid_LocalConstant = 0x34,
+    mdtid_ImportScope = 0x35,
+    mdtid_StateMachineMethod = 0x36,
+    mdtid_CustomDebugInformation = 0x37,
+#endif // DNMD_PORTABLE_PDB
+
+    mdtid_Last,
     mdtid_First = mdtid_Module,
-    mdtid_Last = mdtid_GenericParamConstraint
 } mdtable_id_t;
 
 // Define to help debug table indexing
@@ -271,10 +283,46 @@ typedef enum
 
     MDTABLE_COLUMN(GenericParamConstraint, Owner, 0),
     MDTABLE_COLUMN(GenericParamConstraint, Constraint, 1),
+
+#ifdef DNMD_PORTABLE_PDB
+    MDTABLE_COLUMN(Document, Name, 0),
+    MDTABLE_COLUMN(Document, HashAlgorithm, 1),
+    MDTABLE_COLUMN(Document, Hash, 2),
+    MDTABLE_COLUMN(Document, Language, 3),
+
+    MDTABLE_COLUMN(MethodDebugInformation, Document, 0),
+    MDTABLE_COLUMN(MethodDebugInformation, SequencePoints, 1),
+
+    MDTABLE_COLUMN(LocalScope, Method, 0),
+    MDTABLE_COLUMN(LocalScope, ImportScope, 1),
+    MDTABLE_COLUMN(LocalScope, VariableList, 2),
+    MDTABLE_COLUMN(LocalScope, ConstantList, 3),
+    MDTABLE_COLUMN(LocalScope, StartOffset, 4),
+    MDTABLE_COLUMN(LocalScope, Length, 5),
+
+    MDTABLE_COLUMN(LocalVariable, Attributes, 0),
+    MDTABLE_COLUMN(LocalVariable, Index, 1),
+    MDTABLE_COLUMN(LocalVariable, Name, 2),
+
+    MDTABLE_COLUMN(LocalConstant, Name, 0),
+    MDTABLE_COLUMN(LocalConstant, Signature, 1),
+
+    MDTABLE_COLUMN(ImportScope, Parent, 0),
+    MDTABLE_COLUMN(ImportScope, Imports, 1),
+
+    MDTABLE_COLUMN(StateMachineMethod, MoveNextMethod, 0),
+    MDTABLE_COLUMN(StateMachineMethod, KickoffMethod, 1),
+
+    MDTABLE_COLUMN(CustomDebugInformation, Parent, 0),
+    MDTABLE_COLUMN(CustomDebugInformation, Kind, 1),
+    MDTABLE_COLUMN(CustomDebugInformation, Value, 2),
+#endif // DNMD_PORTABLE_PDB
+
 } col_index_t;
 
 // Query row's column values
 bool md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, mdToken* tk);
+// The returned cursor will always be valid for indexing if "true" is returned.
 bool md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor);
 bool md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t* constant);
 bool md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const** str);

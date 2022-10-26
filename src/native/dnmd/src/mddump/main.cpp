@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <memory>
+#include <array>
 #include <dnmd.h>
 
 template<typename T>
@@ -121,13 +122,24 @@ bool create_mdhandle(malloc_span<byte>& buffer, mdhandle_lifetime& handle)
     return true;
 }
 
-bool get_metadata_from_pe(char const* file, malloc_span<byte>& b);
+bool read_in_file(char const* file, malloc_span<byte>& b);
+bool get_metadata_from_pe(malloc_span<byte>& b);
+bool get_metadata_from_file(malloc_span<byte>& b);
 
 void dump(char const* p)
 {
     malloc_span<byte> b;
-    if (!get_metadata_from_pe(p, b))
+    if (!read_in_file(p, b))
+    {
+        std::fprintf(stderr, "Failed to read in '%s'\n", p);
         return;
+    }
+
+    if (!get_metadata_from_pe(b) && !get_metadata_from_file(b))
+    {
+        std::fprintf(stderr, "Failed to read file as PE or metadata blob.\n");
+        return;
+    }
 
     std::printf("%s = 0x%p, size %zu\n", p, &b, b.size());
 
@@ -187,21 +199,26 @@ PIMAGE_SECTION_HEADER find_section_header(
     return NULL;
 }
 
-bool get_metadata_from_pe(char const* file, malloc_span<byte>& b)
+bool read_in_file(char const* file, malloc_span<byte>& b)
 {
-    // Read in the file and release ASAP.
-    {
-        std::ifstream fd{ file, std::ios::binary | std::ios::in };
-        if (!fd)
-            return false;
+    // Read in the entire file
+    std::ifstream fd{ file, std::ios::binary | std::ios::in };
+    if (!fd)
+        return false;
 
-        size_t size = get_file_size(file);
-        if (size == 0)
-            return false;
+    size_t size = get_file_size(file);
+    if (size == 0)
+        return false;
 
-        b = { (byte*)std::malloc(size), size };
-        fd.read((char*)(byte*)b, b.size());
-    }
+    b = { (byte*)std::malloc(size), size };
+    fd.read((char*)(byte*)b, b.size());
+    return true;
+}
+
+bool get_metadata_from_pe(malloc_span<byte>& b)
+{
+    if (b.size() < sizeof(IMAGE_DOS_HEADER))
+        return false;
 
     PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)(void*)b;
     bool is_pe = dos_header->e_magic == IMAGE_DOS_SIGNATURE;
@@ -250,5 +267,23 @@ bool get_metadata_from_pe(char const* file, malloc_span<byte>& b)
     malloc_span<byte> metadata = { (byte*)std::malloc(metadata_length), metadata_length };
     std::memcpy(metadata, ptr, metadata.size());
     b = std::move(metadata);
+    return true;
+}
+
+bool get_metadata_from_file(malloc_span<byte>& b)
+{
+    // Defined in II.24.2.1 - defined in physical byte order
+    std::array<byte, 4> const metadata_sig = { 0x42, 0x53, 0x4A, 0x42 };
+
+    if (b.size() < metadata_sig.size())
+        return false;
+
+    // If the header doesn't match, the file is unknown.
+    for (size_t i = 0; i < metadata_sig.size(); ++i)
+    {
+        if (b[i] != metadata_sig[i])
+            return false;
+    }
+
     return true;
 }

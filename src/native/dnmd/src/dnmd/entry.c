@@ -99,6 +99,13 @@ bool md_create_handle(void* data, size_t data_len, mdhandle_t* handle)
             cxt.guid_heap.ptr = base + offset;
             cxt.guid_heap.size = stream_size;
         }
+#ifdef DNMD_PORTABLE_PDB
+        else if (strncmp((char const*)curr, "#Pdb", name_len) == 0)
+        {
+            cxt.pdb.ptr = base + offset;
+            cxt.pdb.size = stream_size;
+        }
+#endif // DNMD_PORTABLE_PDB
         else
         {
             assert(!"Unknown stream");

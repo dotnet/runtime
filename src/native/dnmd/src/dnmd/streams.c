@@ -196,6 +196,16 @@ bool initialize_tables(mdcxt_t* cxt)
     if (curr != table_begin)
         return false;
 
+#ifdef DNMD_PORTABLE_PDB
+    md_pdb_t pdb;
+    if (cxt->pdb.size != 0 && !try_get_pdb(cxt, &pdb))
+        return false;
+
+    // Merge in the PDB reference row counts
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+        row_counts[i] += pdb.type_system_table_rows[i];
+#endif // DNMD_PORTABLE_PDB
+
     mdtable_t* table;
     valid = valid_tables;
     for (size_t i = 0; valid; ++i)
@@ -229,4 +239,61 @@ bool validate_tables(mdcxt_t* cxt)
     (void*)cxt;
     // [TODO] Reference ECMA-335 and encode table verification.
     return true;
+}
+
+bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb)
+{
+#ifdef DNMD_PORTABLE_PDB
+    assert(cxt != NULL && pdb != NULL);
+
+    mdstream_t* h = &cxt->pdb;
+    if (h->size == 0)
+        return false;
+
+    uint8_t const* curr = h->ptr;
+    size_t curr_len = h->size;
+
+    uint8_t const* pdb_id_maybe = curr;
+    if (!advance_stream(&curr, &curr_len, ARRAY_SIZE(pdb->pdb_id)))
+        return false;
+
+    memcpy(&pdb->pdb_id, pdb_id_maybe, ARRAY_SIZE(pdb->pdb_id));
+
+    uint64_t tables;
+    if (!read_u32(&curr, &curr_len, &pdb->entry_point)
+        || !read_u64(&curr, &curr_len, &tables))
+    {
+        return false;
+    }
+
+    pdb->referenced_type_system_tables = tables;
+    size_t n = count_set_bits(tables);
+    uint8_t const* pdb_end = curr + (n * sizeof(uint32_t));
+
+    // Read in all row data defined by the references bits.
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        if (tables & 1)
+        {
+            // Read in the row count for referenced tables
+            if (!read_u32(&curr, &curr_len, &pdb->type_system_table_rows[i]))
+                return false;
+        }
+        else
+        {
+            pdb->type_system_table_rows[i] = 0;
+        }
+        tables = tables >> 1;
+    }
+
+    // Validate we processed the row counts properly
+
+    if (curr != pdb_end)
+        return false;
+    return true;
+#else
+    (void)cxt;
+    (void)pdb;
+    return false;
+#endif // !DNMD_PORTABLE_PDB
 }

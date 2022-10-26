@@ -110,6 +110,9 @@ typedef struct _mdcxt_t
     mdstream_t blob_heap;
     mdstream_t user_string_heap;
     mdstream_t tables_heap;
+#ifdef DNMD_PORTABLE_PDB
+    mdstream_t pdb;
+#endif // DNMD_PORTABLE_PDB
 
     // Metadata tables - II.22
     uint8_t heap_sizes; // 1 = "#Strings", 2 = "#GUID", 4 = "#Blob"
@@ -144,12 +147,25 @@ bool validate_guid_heap(mdcxt_t* cxt);
 bool initialize_tables(mdcxt_t* cxt);
 bool validate_tables(mdcxt_t* cxt);
 
+// PDB heap, #Pdb - https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#pdb-stream
+typedef struct _md_pdb_t
+{
+    uint8_t pdb_id[20];
+    mdToken entry_point;
+    uint64_t referenced_type_system_tables;
+    uint32_t type_system_table_rows[MDTABLE_MAX_COUNT];
+} md_pdb_t;
+
+// Interpret in the PDB data stream
+// The md_pdb_t will be fully initialized if "true" is returned.
+bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb);
+
 //
 // Tables
 //
 
 // Validate the public table enumeration
-static_assert(mdtid_Last < MDTABLE_MAX_COUNT, "Last ID should be less than max count");
+static_assert(mdtid_Last <= MDTABLE_MAX_COUNT, "Last ID cannot exceed max count");
 
 // Coded index collections - II.24.2.6
 typedef enum
@@ -166,7 +182,11 @@ typedef enum
     mdci_Implementation,
     mdci_CustomAttributeType,
     mdci_ResolutionScope,
-    mdci_TypeOrMethodDef
+    mdci_TypeOrMethodDef,
+#ifdef DNMD_PORTABLE_PDB
+    mdci_HasCustomDebugInformation,
+#endif // DNMD_PORTABLE_PDB
+    mdci_Count
 } md_coded_idx_t;
 
 typedef struct _coded_index_entry
@@ -179,7 +199,7 @@ typedef struct _coded_index_entry
     uint8_t const bit_encoding_size;
 } coded_index_entry;
 
-extern coded_index_entry const coded_index_map[13];
+extern coded_index_entry const coded_index_map[mdci_Count];
 
 // Initialize the supplied table details
 bool initialize_table_details(

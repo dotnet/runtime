@@ -41,7 +41,39 @@ static mdtable_id_t const CustomAttributeType[] = { mdtid_Unused, mdtid_Unused, 
 static mdtable_id_t const ResolutionScope[] = { mdtid_Module, mdtid_ModuleRef, mdtid_AssemblyRef, mdtid_TypeRef };
 static mdtable_id_t const TypeOrMethodDef[] = { mdtid_TypeDef, mdtid_MethodDef };
 
-coded_index_entry const coded_index_map[13] =
+#ifdef DNMD_PORTABLE_PDB
+static mdtable_id_t const HasCustomDebugInformation[] = {
+    mdtid_MethodDef,
+    mdtid_Field,
+    mdtid_TypeRef,
+    mdtid_TypeDef,
+    mdtid_Param,
+    mdtid_InterfaceImpl,
+    mdtid_MemberRef,
+    mdtid_Module,
+    mdtid_DeclSecurity,
+    mdtid_Property,
+    mdtid_Event,
+    mdtid_StandAloneSig,
+    mdtid_ModuleRef,
+    mdtid_TypeSpec,
+    mdtid_Assembly,
+    mdtid_AssemblyRef,
+    mdtid_File,
+    mdtid_ExportedType,
+    mdtid_ManifestResource,
+    mdtid_GenericParam,
+    mdtid_GenericParamConstraint,
+    mdtid_MethodSpec,
+    mdtid_Document,
+    mdtid_LocalScope,
+    mdtid_LocalVariable,
+    mdtid_LocalConstant,
+    mdtid_ImportScope,
+};
+#endif // DNMD_PORTABLE_PDB
+
+coded_index_entry const coded_index_map[] =
 {
     { TypeDefOrRef, ARRAY_SIZE(TypeDefOrRef), 2},
     { HasConstant, ARRAY_SIZE(HasConstant), 2},
@@ -56,6 +88,9 @@ coded_index_entry const coded_index_map[13] =
     { CustomAttributeType, ARRAY_SIZE(CustomAttributeType), 3 },
     { ResolutionScope, ARRAY_SIZE(ResolutionScope), 2 },
     { TypeOrMethodDef, ARRAY_SIZE(TypeOrMethodDef), 1 },
+#ifdef DNMD_PORTABLE_PDB
+    { HasCustomDebugInformation, ARRAY_SIZE(HasCustomDebugInformation), 5 },
+#endif // DNMD_PORTABLE_PDB
 };
 
 // Compute the row size and embed the offset for
@@ -97,7 +132,7 @@ static mdtcol_t compute_coded_index(uint32_t const* row_counts, md_coded_idx_t c
 
 static mdtcol_t compute_table_index(uint32_t const* row_counts, mdtable_id_t id)
 {
-    assert(row_counts != NULL && (mdtid_First <= id && id <= mdtid_Last));
+    assert(row_counts != NULL && (mdtid_First <= id && id < mdtid_Last));
     return InsertTable(id) | (row_counts[id] < (1 << 16) ? mdtc_b2 : mdtc_b4) | mdtc_idx_table;
 }
 
@@ -108,7 +143,7 @@ bool initialize_table_details(
     bool is_sorted,
     mdtable_t* table)
 {
-    assert(all_table_row_counts != NULL && (mdtid_First <= id && id <= mdtid_Last) && table != NULL);
+    assert(all_table_row_counts != NULL && (mdtid_First <= id && id < mdtid_Last) && table != NULL);
     assert(all_table_row_counts[id] != 0 && "Unable to initialize a table with a row count of 0.");
     if (all_table_row_counts[id] == 0)
         return false;
@@ -361,6 +396,59 @@ bool initialize_table_details(
         table->column_details[mdtGenericParamConstraint_Constraint] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
         table->column_count = 2;
         break;
+
+#ifdef DNMD_PORTABLE_PDB
+    // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
+    case mdtid_Document:
+        table->column_details[mdtDocument_Name] = blob_index;
+        table->column_details[mdtDocument_HashAlgorithm] = guid_index;
+        table->column_details[mdtDocument_Hash] = blob_index;
+        table->column_details[mdtDocument_Language] = guid_index;
+        table->column_count = 4;
+        break;
+    case mdtid_MethodDebugInformation:
+        table->column_details[mdtMethodDebugInformation_Document] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDebugInformation));
+        table->column_details[mdtMethodDebugInformation_SequencePoints] = blob_index;
+        table->column_count = 2;
+        break;
+    case mdtid_LocalScope:
+        table->column_details[mdtLocalScope_Method] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_details[mdtLocalScope_ImportScope] = compute_table_index(TABLE_INDEX_ARGS(mdtid_ImportScope));
+        table->column_details[mdtLocalScope_VariableList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_LocalVariable));
+        table->column_details[mdtLocalScope_ConstantList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_LocalConstant));
+        table->column_details[mdtLocalScope_StartOffset] = mdtc_constant | mdtc_b4;
+        table->column_details[mdtLocalScope_Length] = mdtc_constant | mdtc_b4;
+        table->column_count = 6;
+        break;
+    case mdtid_LocalVariable:
+        table->column_details[mdtLocalVariable_Attributes] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtLocalVariable_Index] = mdtc_constant | mdtc_b2;
+        table->column_details[mdtLocalVariable_Name] = string_index;
+        table->column_count = 3;
+        break;
+    case mdtid_LocalConstant:
+        table->column_details[mdtLocalConstant_Name] = string_index;
+        table->column_details[mdtLocalConstant_Signature] = blob_index;
+        table->column_count = 2;
+        break;
+    case mdtid_ImportScope:
+        table->column_details[mdtImportScope_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_ImportScope));
+        table->column_details[mdtImportScope_Imports] = blob_index;
+        table->column_count = 2;
+        break;
+    case mdtid_StateMachineMethod:
+        table->column_details[mdtStateMachineMethod_MoveNextMethod] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_details[mdtStateMachineMethod_KickoffMethod] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_count = 2;
+        break;
+    case mdtid_CustomDebugInformation:
+        table->column_details[mdtCustomDebugInformation_Parent] = compute_coded_index(CODED_INDEX_ARGS(mdci_HasCustomDebugInformation));
+        table->column_details[mdtCustomDebugInformation_Kind] = guid_index;
+        table->column_details[mdtCustomDebugInformation_Value] = blob_index;
+        table->column_count = 3;
+        break;
+#endif DNMD_PORTABLE_PDB
+
     default:
         assert(!"Unknown metadata table ID");
         return false;
