@@ -3848,6 +3848,9 @@ _SetMinOpts:
     {
         opts.compFlags &= ~CLFLG_MAXOPT;
         opts.compFlags |= CLFLG_MINOPT;
+
+        lvaEnregEHVars &= compEnregLocals();
+        lvaEnregMultiRegVars &= compEnregLocals();
     }
 
     if (!compIsForInlining())
