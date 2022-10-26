@@ -72,6 +72,9 @@ PCSTR GetRegName (UINT32 regnum)
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
     return "???";
+#elif defined(TARGET_RISCV64)
+    assert(!"unimplemented on RISCV64 yet");
+    return "???";
 #endif
 }
 

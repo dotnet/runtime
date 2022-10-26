@@ -9439,6 +9439,8 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 #if defined(TARGET_LOONGARCH64)
     size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+#elif defined(TARGET_RISCV64)
+    size = (uint32_t)MethodTable::GetRiscv64PassStructInRegisterFlags(cls);
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -11024,6 +11026,12 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 
     // Add space for personality routine, it must be 4-byte aligned.
     unwindSize += sizeof(ULONG);
+#elif defined(TARGET_RISCV64)
+    // The JIT passes in a 4-byte aligned block of unwind data.
+    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+
+    // Add space for personality routine, it must be 4-byte aligned.
+    unwindSize += sizeof(ULONG);
 #else
     PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
 #endif // !defined(TARGET_AMD64)
@@ -11245,6 +11253,14 @@ void CEEJitInfo::allocUnwindInfo (
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+
+#elif defined(TARGET_RISCV64)
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+
+;
 
 #endif
 

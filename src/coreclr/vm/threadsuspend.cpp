@@ -3722,7 +3722,7 @@ void Thread::CommitGCStressInstructionUpdate()
         else
             *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
@@ -4881,7 +4881,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -4900,7 +4900,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // Note that the JIT always pushes LR even for leaf methods to make hijacking
                         // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                         if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
                         if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
@@ -4939,7 +4939,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // This is the case of IP being inside the method body and LR is
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
 #else
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;

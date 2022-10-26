@@ -807,7 +807,7 @@ ExecutionManager::DeleteRange
 
 //-----------------------------------------------------------------------------
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
 #endif
 
@@ -890,6 +890,29 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
     // 4. No prologs or epilogs: First unwind code is Phantom prolog  (Starting with an end_c, indicating an empty prolog)
     //
 
+    int EpilogCount = (int)(unwindHeader >> 22) & 0x1F;
+    int CodeWords = unwindHeader >> 27;
+    PTR_DWORD pUnwindCodes = (PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
+    // Skip header.
+    pUnwindCodes++;
+
+    // Skip extended header.
+    if ((CodeWords == 0) && (EpilogCount == 0))
+    {
+        EpilogCount = (*pUnwindCodes) & 0xFFFF;
+        pUnwindCodes++;
+    }
+
+    // Skip epilog scopes.
+    BOOL Ebit = (unwindHeader >> 21) & 0x1;
+    if (!Ebit && (EpilogCount != 0))
+    {
+        // EpilogCount is the number of exception scopes defined right after the unwindHeader
+        pUnwindCodes += EpilogCount;
+    }
+
+    return ((*pUnwindCodes & 0xFF) == 0xE5);
+#elif defined(TARGET_RISCV64)
     int EpilogCount = (int)(unwindHeader >> 22) & 0x1F;
     int CodeWords = unwindHeader >> 27;
     PTR_DWORD pUnwindCodes = (PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
@@ -1115,6 +1138,44 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     *pSize = size;
     return xdata;
 
+#elif defined(TARGET_RISCV64)
+    // TODO: maybe optimize further.
+    // if this function uses packed unwind data then at least one of the two least significant bits
+    // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
+    _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
+
+    // compute the size of the unwind info
+    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    ULONG epilogScopes = 0;
+    ULONG unwindWords  = 0;
+    ULONG size = 0;
+
+    //If both Epilog Count and Code Word is not zero
+    //Info of Epilog and Unwind scopes are given by 1 word header
+    //Otherwise this info is given by a 2 word header
+    if ((xdata[0] >> 27) != 0)
+    {
+        size = 4;
+        epilogScopes = (xdata[0] >> 22) & 0x1f;
+        unwindWords = (xdata[0] >> 27) & 0x1f;
+    }
+    else
+    {
+        size = 8;
+        epilogScopes = xdata[1] & 0xffff;
+        unwindWords = (xdata[1] >> 16) & 0xff;
+    }
+
+    if (!(xdata[0] & (1 << 21)))
+        size += 4 * epilogScopes;
+
+    size += 4 * unwindWords;
+
+    _ASSERTE(xdata[0] & (1 << 20)); // personality routine should be always present
+    size += 4;                      // exception handler RVA
+
+    *pSize = size;
+    return xdata;
 
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
@@ -2246,6 +2307,8 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
 #elif defined(TARGET_LOONGARCH64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_loongarch64_loongarch64"));
+#elif defined(TARGET_RISCV64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_riscv64_riscv64"));
 #endif
 #endif // TARGET_WINDOWS
 
@@ -2634,7 +2697,7 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2686,7 +2749,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
 #endif
     pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
@@ -2733,7 +2796,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
@@ -2886,7 +2949,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     reserveSize += JUMP_ALLOCATE_SIZE;
 #endif
 
@@ -4442,7 +4505,7 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         if (RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) <= address && address < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, baseAddress))
         {
 
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
             // If we might have fragmented unwind, and we're on ARM64/LoongArch64,
             // make sure to returning the root record,
             // as the trailing records don't have prolog unwind codes.

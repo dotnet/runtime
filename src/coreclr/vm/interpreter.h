@@ -996,6 +996,8 @@ private:
 #endif
 #elif defined(HOST_LOONGARCH64)
         static const int MaxNumFPRegArgSlots = 8;
+#elif defined(HOST_RISCV64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()
@@ -2055,6 +2057,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #elif defined(HOST_LOONGARCH64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_RISCV64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

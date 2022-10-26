@@ -561,7 +561,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -591,7 +591,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -672,7 +672,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     USHORT groupCount = 0;
 
     // On Windows 11+ and Windows Server 2022+, a process is no longer restricted to a single processor group by default.
@@ -758,7 +758,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -789,7 +789,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -838,7 +838,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -880,7 +880,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
