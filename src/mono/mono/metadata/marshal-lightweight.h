@@ -10,6 +10,6 @@ MONO_API void
 mono_marshal_lightweight_init (void);
 
 gboolean
-mono_marshal_did_embedder_request_ilgen_callbacks (void);
+mono_marshal_is_ilgen_requested (void);
 
 #endif // __MONO_MARSHAL_LIGHTWEIGHT_H__
