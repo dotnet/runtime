@@ -124,7 +124,12 @@
     <ItemGroup>
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant="
+                      Descriptor="Ref pack"/>
+
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.%(_BuildVariants.Identity).$(PackageVersionForWorkloadManifests).nupkg"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant=%(_BuildVariants.Identity)"
                       Descriptor="Ref pack"/>
 
       <!-- AOT Cross compiler -->
