@@ -101,8 +101,8 @@ typedef struct _mdcxt_t
     // Metadata root details - II.24.2.1
     uint16_t major_ver;
     uint16_t minor_ver;
-    char const* version;
     uint16_t flags;
+    char const* version;
 
     // Metadata heaps - II.24.2.2
     mdstream_t strings_heap;

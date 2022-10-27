@@ -447,7 +447,7 @@ bool initialize_table_details(
         table->column_details[mdtCustomDebugInformation_Value] = blob_index;
         table->column_count = 3;
         break;
-#endif DNMD_PORTABLE_PDB
+#endif // DNMD_PORTABLE_PDB
 
     default:
         assert(!"Unknown metadata table ID");
