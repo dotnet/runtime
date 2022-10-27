@@ -178,11 +178,11 @@ jobs:
                 - defaultpgo
               ${{ else }}:
                 scenarios:
+                - defaultpgo
                 - fullpgo
                 - fullpgo_methodprofiling
                 - fullpgo_random_gdv
                 - fullpgo_random_gdv_methodprofiling_only
-                - fullpgo_random_edge
                 - fullpgo_random_gdv_edge
                 - jitosr_stress
                 - jitosr_stress_random
