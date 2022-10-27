@@ -1410,7 +1410,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-
         case NI_Vector128_get_Zero:
         case NI_Vector256_get_Zero:
         {

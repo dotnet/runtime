@@ -7227,7 +7227,7 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
         case TYP_SIMD16:
         case TYP_SIMD32:
         {
-            GenTreeVecCon* vecCon     = gtNewVconNode(type);
+            GenTreeVecCon* vecCon = gtNewVconNode(type);
 
             unsigned simdSize   = genTypeSize(type);
             uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
