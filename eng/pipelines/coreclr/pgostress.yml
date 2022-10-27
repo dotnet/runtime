@@ -28,7 +28,7 @@ extends:
         - windows_x86
         - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
         jobParameters:
-          testGroup: pgo-extra
+          testGroup: pgostress
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -37,7 +37,7 @@ extends:
         platforms:
         - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
         jobParameters:
-          testGroup: pgo-extra
+          testGroup: pgostress
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -55,5 +55,5 @@ extends:
         helixQueueGroup: ci
         helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         jobParameters:
-          testGroup: pgo-extra
+          testGroup: pgostress
           liveLibrariesBuildConfig: Release
