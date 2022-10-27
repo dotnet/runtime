@@ -215,7 +215,6 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
-    <Compile Include="Interop\Windows\Interop.Kernel32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
     <Compile Include="Interop\Windows\Interop.Winspool.cs" />
 
@@ -271,10 +270,16 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
              Link="Common\Interop\Windows\Gdi32\Interop.SaveDC.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.SelectClipRgn.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.SelectClipRgn.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemDefaultLCID.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemDefaultLCID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalAlloc.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GlobalAlloc.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalFree.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GlobalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalLock.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SelectObject.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SelectObject.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.BitBlt.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.BitBlt.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.STATSTG.cs"
