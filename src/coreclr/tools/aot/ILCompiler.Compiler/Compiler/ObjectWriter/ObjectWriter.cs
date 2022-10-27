@@ -352,13 +352,14 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode && node is ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        uint methodTypeIndex = _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method);
-                        string methodName = ExternCName(methodNode.GetMangledName(_nodeFactory.NameMangler));
+                        uint methodTypeIndex = node is IMethodNode methodNode ?
+                            _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
+                            0;
+                        string methodName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
 
-                        if (node is INodeWithDebugInfo debugNode &&
-                            _definedSymbols.TryGetValue(methodName, out var methodSymbol))
+                        if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
                             EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode);
                         }
