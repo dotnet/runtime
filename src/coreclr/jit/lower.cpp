@@ -7273,13 +7273,21 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+        const bool isContainable = false;
+        if (ind->Addr() != nullptr)
+        {
+            const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+        }
 #else
-        const bool isContainable         = true;
+        const bool isContainable     = true;
 #endif
 
-        TryCreateAddrMode(ind->Addr(), isContainable, ind);
-        ContainCheckIndir(ind);
+        if (!ind->OperIs(GT_NOP))
+        {
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+            ContainCheckIndir(ind);
+        }
+        
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
