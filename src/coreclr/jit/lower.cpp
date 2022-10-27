@@ -7279,7 +7279,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
             const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
         }
 #else
-        const bool isContainable     = true;
+        const bool isContainable         = true;
 #endif
 
         if (!ind->OperIs(GT_NOP))
@@ -7287,7 +7287,6 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
             TryCreateAddrMode(ind->Addr(), isContainable, ind);
             ContainCheckIndir(ind);
         }
-        
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
