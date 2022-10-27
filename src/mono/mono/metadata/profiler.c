@@ -152,6 +152,9 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
  *
  * This function may \b only be called by embedders prior to running managed
  * code.
+ *
+ * This could could be triggered by \c MONO_PROFILE env variable in normal mono process or
+ * by \c --profile=foo argument to mono-aot-cross.exe command line.
  */
 void
 mono_profiler_load (const char *desc)
@@ -176,8 +179,9 @@ mono_profiler_load (const char *desc)
 	}
 
 #if defined(TARGET_WASM) && defined(MONO_CROSS_COMPILE)
-	printf ("mono_profiler_load %s\n", mname);
-	if(strcmp (mname, "browser") == 0){
+	// this code could be running as part of mono-aot-cross.exe
+	// in case of WASM we staticaly link in the browser.c profiler plugin
+	if(strcmp (mname, "browser") == 0) {
 		mono_profiler_init_browser (desc);
 		goto done;
 	}

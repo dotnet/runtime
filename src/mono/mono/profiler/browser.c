@@ -7,6 +7,8 @@
 
 #include <config.h>
 
+#ifdef TARGET_WASM
+
 #include "browser.h"
 #include "helper.h"
 
@@ -26,8 +28,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/jit/jit.h>
-
-#ifdef TARGET_WASM
 
 struct _MonoProfiler {
 	gboolean verbose;
