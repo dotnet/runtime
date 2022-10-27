@@ -665,7 +665,8 @@ int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
         char16_t*                   buffer,
-        int                         bufferSize)
+        int                         bufferSize,
+        int                         startIndex)
 {
     CONTRACTL{
         THROWS;
@@ -676,6 +677,7 @@ int CEEInfo::getStringLiteral (
     Module* module = GetModule(moduleHnd);
 
     _ASSERTE(bufferSize >= 0);
+    _ASSERTE(startIndex >= 0);
 
     int result = -1;
 
@@ -688,10 +690,11 @@ int CEEInfo::getStringLiteral (
         if (strRef != NULL)
         {
             StringObject* strObj = STRINGREFToObject(strRef);
-            result = (int)strObj->GetStringLength();
-            if (buffer != NULL)
+            int length = (int)strObj->GetStringLength();
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, strObj->GetBuffer() + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -702,10 +705,11 @@ int CEEInfo::getStringLiteral (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-            result = (int)dwCharCount;
-            if (buffer != NULL)
+            int length = (int)dwCharCount;
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, pString + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -6028,6 +6032,57 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
     return pointer;
 }
 
+
+/***********************************************************************/
+bool CEEInfo::isObjectImmutable(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+#ifdef DEBUG
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    MethodTable* type = obj->GetMethodTable();
+
+    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
+
+    EE_TO_JIT_TRANSITION();
+#endif
+
+     // All currently allocated frozen objects can be treated as immutable
+    return true;
+}
+
+/***********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(objPtr != nullptr);
+
+    CORINFO_CLASS_HANDLE handle = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    VALIDATEOBJECT(obj);
+    handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
+
+    EE_TO_JIT_TRANSITION();
+
+    return handle;
+}
+
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
@@ -6248,11 +6303,23 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
     } CONTRACTL_END;
 
     const char* result = NULL;
-    const char* classResult = NULL;
-    const char* namespaceResult = NULL;
-    const char* enclosingResult = NULL;
 
     JIT_TO_EE_TRANSITION();
+
+    if (className != NULL)
+    {
+        *className = NULL;
+    }
+
+    if (namespaceName != NULL)
+    {
+        *namespaceName = NULL;
+    }
+
+    if (enclosingClassName != NULL)
+    {
+        *enclosingClassName = NULL;
+    }
 
     MethodDesc *ftn = GetMethod(ftnHnd);
     mdMethodDef token = ftn->GetMemberDef();
@@ -6263,28 +6330,16 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         IMDInternalImport* pMDImport = pMT->GetMDImport();
 
         IfFailThrow(pMDImport->GetNameOfMethodDef(token, &result));
-        IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), &classResult, &namespaceResult));
+        if (className != NULL || namespaceName != NULL)
+        {
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), className, namespaceName));
+        }
         // Query enclosingClassName when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if (pMT->GetClass()->IsNested())
+        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
         {
-            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), &enclosingResult, &namespaceResult));
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
         }
-    }
-
-    if (className != NULL)
-    {
-        *className = classResult;
-    }
-
-    if (namespaceName != NULL)
-    {
-        *namespaceName = namespaceResult;
-    }
-
-    if (enclosingClassName != NULL)
-    {
-        *enclosingClassName = enclosingResult;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -11822,6 +11877,71 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(fieldHnd != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+    _ASSERTE(field->IsStatic());
+    _ASSERTE((unsigned)bufferSize == field->GetSize());
+
+    MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
+    _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
+    _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+
+    // Allocate space for the local class if necessary, but don't trigger
+    // class construction.
+    DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
+    pLocalModule->PopulateClass(pEnclosingMT);
+
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    {
+        GCX_COOP();
+        if (field->IsObjRef())
+        {
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            if (fieldObj != NULL)
+            {
+                Object* obj = OBJECTREFToObject(fieldObj);
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                {
+                    intptr_t ptr = (intptr_t)obj;
+                    memcpy(buffer, &ptr, sizeof(intptr_t));
+                    result = true;
+                }
+            }
+            else
+            {
+                memset(buffer, 0, sizeof(intptr_t));
+                result = true;
+            }
+        }
+        else
+        {
+            void* fldAddr = field->GetCurrentStaticAddress();
+            _ASSERTE(fldAddr != nullptr);
+            memcpy(buffer, fldAddr, bufferSize);
+            result = true;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                             bool* pIsSpeculative)
@@ -12706,23 +12826,6 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
 #endif // ARM_SOFTFP
 
 #ifdef FEATURE_PGO
-
-    // Instrument, if
-    //
-    // * We're writing pgo data and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we are jitting an OSR method.
-    //
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
-        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
-    else if ((g_pConfig->TieredPGO())
-        && (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR)))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {

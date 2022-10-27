@@ -360,13 +360,13 @@ namespace System.Net.WebSockets
 
             if (options.ClientMaxWindowBits > original.ClientMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_ClientWindowBitsNegotiationFailure,
+                throw new WebSocketException(SR.Format(SR.net_WebSockets_ClientWindowBitsNegotiationFailure,
                     original.ClientMaxWindowBits, options.ClientMaxWindowBits));
             }
 
             if (options.ServerMaxWindowBits > original.ServerMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_ServerWindowBitsNegotiationFailure,
+                throw new WebSocketException(SR.Format(SR.net_WebSockets_ServerWindowBitsNegotiationFailure,
                     original.ServerMaxWindowBits, options.ServerMaxWindowBits));
             }
 

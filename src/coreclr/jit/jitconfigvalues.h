@@ -41,8 +41,8 @@ CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithTypeTests, W("JitCloneLoopsWithTypeTests"), 1) // If 0, don't clone loops based on
-                                                                               // invariant type tests
+CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
+                                                                             // invariant type/method address tests
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -297,8 +297,9 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the Alt
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
-CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
-                                                                   // defined or used in a multireg context.
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)   // Enable the enregistration of locals that are
+                                                                     // defined or used in a multireg context.
+CONFIG_INTEGER(JitStressEVEXEncoding, W("JitStressEVEXEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
 
 // clang-format off
 
@@ -418,6 +419,7 @@ CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop i
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
+CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -588,6 +590,9 @@ CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
 // 1: Use dispatcher on all platforms that support it
 // 2: Default behavior, depends on platform (yes on x64, no on arm64)
 CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
+
+// Enable tail merging
+CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

@@ -334,9 +334,9 @@ namespace ILCompiler
                             }
                             Console.Write(instructionSet.Name);
                         }
-
-                        Console.WriteLine();
                     }
+
+                    Console.WriteLine();
                 }
 
                 Console.WriteLine();

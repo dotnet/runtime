@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
     internal abstract class JsonCollectionConverter<TCollection, TElement> : JsonResumableConverter<TCollection>
     {
         internal override bool SupportsCreateObjectDelegate => true;
-        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.Enumerable;
+        private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Enumerable;
         internal override Type ElementType => typeof(TElement);
 
         protected abstract void Add(in TElement value, ref ReadStack state);

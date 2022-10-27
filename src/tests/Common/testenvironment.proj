@@ -6,77 +6,77 @@
   -->
 
 
-  <!-- COMPlus_* variables that can be specified for a test scenario -->
-  <!-- There is a non-COMPlus variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
+  <!-- DOTNET_* variables that can be specified for a test scenario -->
+  <!-- There is a non-DOTNET variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
        The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
-       The COMPlus_ processing handling below allows for variables not prefixed by 'COMPlus_'.
+       The DOTNET_ processing handling below allows for variables not prefixed by 'DOTNET_'.
   -->
   <PropertyGroup>
-    <COMPlusVariables>
-      COMPlus_TieredCompilation;
-      COMPlus_DbgEnableMiniDump;
-      COMPlus_DbgEnableElfDumpOnMacOS;
-      COMPlus_DbgMiniDumpName;
-      COMPlus_EnableAES;
-      COMPlus_EnableAVX;
-      COMPlus_EnableAVX2;
-      COMPlus_EnableBMI1;
-      COMPlus_EnableBMI2;
-      COMPlus_EnableFMA;
-      COMPlus_EnableHWIntrinsic;
-      COMPlus_EnableIncompleteISAClass;
-      COMPlus_EnableLZCNT;
-      COMPlus_EnablePCLMULQDQ;
-      COMPlus_EnablePOPCNT;
-      COMPlus_EnableSSE;
-      COMPlus_EnableSSE2;
-      COMPlus_EnableSSE3;
-      COMPlus_EnableSSE3_4;
-      COMPlus_EnableSSE41;
-      COMPlus_EnableSSE42;
-      COMPlus_EnableSSSE3;
-      COMPlus_ForceRelocs;
-      COMPlus_GCStress;
-      COMPlus_GCName;
-      COMPlus_gcServer;
-      COMPlus_HeapVerify;
-      COMPlus_JITMinOpts;
-      COMPlus_JitELTHookEnabled;
-      COMPlus_JitFakeProcedureSplitting;
-      COMPlus_JitStress;
-      COMPlus_JitStressProcedureSplitting;
-      COMPlus_JitStressRegs;
-      COMPlus_TailcallStress;
-      COMPlus_ReadyToRun;
-      COMPlus_ZapDisable;
-      COMPlus_TC_OnStackReplacement;
-      COMPlus_TC_QuickJitForLoops;
-      COMPlus_TC_OnStackReplacement_InitialCounter;
-      COMPlus_TC_PartialCompilation;
-      COMPlus_OSR_HitLimit;
-      COMPlus_TieredPGO;
-      COMPlus_JitEnableGuardedDevirtualization;
-      COMPlus_EnableEHWriteThru;
-      COMPlus_JitObjectStackAllocation;
-      COMPlus_JitInlinePolicyProfile;
-      COMPlus_JitClassProfiling;
-      COMPlus_JitDelegateProfiling;
-      COMPlus_JitVTableProfiling;
-      COMPlus_JitEdgeProfiling;
-      COMPlus_JitRandomGuardedDevirtualization;
-      COMPlus_JitRandomEdgeCounts;
-      COMPlus_JitRandomOnStackReplacement;
-      COMPlus_JitRandomlyCollect64BitCounts;
-      COMPlus_JitForceControlFlowGuard;
-      COMPlus_JitCFGUseDispatcher;
+    <DOTNETVariables>
+      DOTNET_TieredCompilation;
+      DOTNET_DbgEnableMiniDump;
+      DOTNET_DbgEnableElfDumpOnMacOS;
+      DOTNET_DbgMiniDumpName;
+      DOTNET_EnableAES;
+      DOTNET_EnableAVX;
+      DOTNET_EnableAVX2;
+      DOTNET_EnableBMI1;
+      DOTNET_EnableBMI2;
+      DOTNET_EnableFMA;
+      DOTNET_EnableHWIntrinsic;
+      DOTNET_EnableIncompleteISAClass;
+      DOTNET_EnableLZCNT;
+      DOTNET_EnablePCLMULQDQ;
+      DOTNET_EnablePOPCNT;
+      DOTNET_EnableSSE;
+      DOTNET_EnableSSE2;
+      DOTNET_EnableSSE3;
+      DOTNET_EnableSSE3_4;
+      DOTNET_EnableSSE41;
+      DOTNET_EnableSSE42;
+      DOTNET_EnableSSSE3;
+      DOTNET_ForceRelocs;
+      DOTNET_GCStress;
+      DOTNET_GCName;
+      DOTNET_gcServer;
+      DOTNET_HeapVerify;
+      DOTNET_JITMinOpts;
+      DOTNET_JitELTHookEnabled;
+      DOTNET_JitFakeProcedureSplitting;
+      DOTNET_JitStress;
+      DOTNET_JitStressProcedureSplitting;
+      DOTNET_JitStressRegs;
+      DOTNET_TailcallStress;
+      DOTNET_ReadyToRun;
+      DOTNET_ZapDisable;
+      DOTNET_TC_OnStackReplacement;
+      DOTNET_TC_QuickJitForLoops;
+      DOTNET_TC_OnStackReplacement_InitialCounter;
+      DOTNET_TC_PartialCompilation;
+      DOTNET_OSR_HitLimit;
+      DOTNET_TieredPGO;
+      DOTNET_JitEnableGuardedDevirtualization;
+      DOTNET_EnableEHWriteThru;
+      DOTNET_JitObjectStackAllocation;
+      DOTNET_JitInlinePolicyProfile;
+      DOTNET_JitClassProfiling;
+      DOTNET_JitDelegateProfiling;
+      DOTNET_JitVTableProfiling;
+      DOTNET_JitEdgeProfiling;
+      DOTNET_JitRandomGuardedDevirtualization;
+      DOTNET_JitRandomEdgeCounts;
+      DOTNET_JitRandomOnStackReplacement;
+      DOTNET_JitRandomlyCollect64BitCounts;
+      DOTNET_JitForceControlFlowGuard;
+      DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
-    </COMPlusVariables>
+    </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
-    <COMPlusVariable Include="$(COMPlusVariables)" />
+    <DOTNETVariable Include="$(DOTNETVariables)" />
   </ItemGroup>
 
-  <!-- Default values for some COMPlus_* variables -->
+  <!-- Default values for some DOTNET_* variables -->
   <ItemDefinitionGroup>
     <TestEnvironment>
       <TieredCompilation>0</TieredCompilation>
@@ -86,10 +86,10 @@
     </TestEnvironment>
   </ItemDefinitionGroup>
 
-  <!-- TestEnvironment is a mapping between Scenario and COMPlus_* environment variable values that are written to __TestEnv file -->
+  <!-- TestEnvironment is a mapping between Scenario and DOTNET_* environment variable values that are written to __TestEnv file -->
   <ItemGroup>
-    <!-- "normal" scenario doesn't define any COMPlus_* variables and uses the coreclr runtime default values
-         while other scenarios use the default values of COMPlus_* variables defined in ItemDefinitionGroup above -->
+    <!-- "normal" scenario doesn't define any DOTNET_* variables and uses the coreclr runtime default values
+         while other scenarios use the default values of DOTNET_* variables defined in ItemDefinitionGroup above -->
     <TestEnvironment Include="normal" TieredCompilation="" />
     <TestEnvironment Include="jitminopts" JITMinOpts="1" />
     <TestEnvironment Include="no_tiered_compilation" TieredCompilation="0" />
@@ -228,7 +228,7 @@
   <!-- Create a random number for use by random JitStress. Note that we want to define a random value here,
        instead of letting the JIT create one, so the random number shows up in the log file for use reproducing
        any failures. The number doesn't need to be too random for the purpose of JitStress. We only create a single
-       random number because we don't expect to need multiple different random numbers for different COMPlus
+       random number because we don't expect to need multiple different random numbers for different DOTNET
        variables. The number is hexadecimal because that's how CLR config values are interpreted.
        Using the milliseconds component of the current time is the current random number. That only gives us a
        range of 0-999. Probably better, if it matters, would be to use `Ticks` and "mod" it into an appropriate range.
@@ -237,58 +237,58 @@
     <RandomNumber>$([System.DateTime]::Now.Millisecond.ToString("x"))</RandomNumber>
   </PropertyGroup>
 
-  <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
+  <!-- We use target batching on the DOTNETVariable items to iterate over the all DOTNET_* environment variables
        that can be specified by a test scenario. -->
-  <Target Name="OutputCOMPlusVariables" Inputs="@(COMPlusVariable)" Outputs="%(COMPlusVariable.Identity)">
+  <Target Name="OutputDOTNETVariables" Inputs="@(DOTNETVariable)" Outputs="%(DOTNETVariable.Identity)">
     <PropertyGroup>
-      <_COMPlusVariable>%(COMPlusVariable.Identity)</_COMPlusVariable>
-      <_COMPlusVariableMetadataName>$(_COMPlusVariable.Replace('COMPlus_', ''))</_COMPlusVariableMetadataName>
+      <_DOTNETVariable>%(DOTNETVariable.Identity)</_DOTNETVariable>
+      <_DOTNETVariableMetadataName>$(_DOTNETVariable.Replace('DOTNET_', ''))</_DOTNETVariableMetadataName>
     </PropertyGroup>
 
     <ItemGroup>
       <_TestEnvironment Include="@(TestEnvironment)" Condition="'%(Identity)' == '$(Scenario)'" />
-      <_TestEnvironmentWithMetadata Include="@(_TestEnvironment->HasMetadata($(_COMPlusVariableMetadataName)))" />
+      <_TestEnvironmentWithMetadata Include="@(_TestEnvironment->HasMetadata($(_DOTNETVariableMetadataName)))" />
 
       <!-- _TestEnvironmentWithMetadata can be either empty or contain one item:
 
        1) If _TestEnvironmentWithMetadata is empty, then this suggests that the test scenario with identity $(Scenario)
-          doesn't define COMPlus_* environment variable with name $(_COMPlusVariable);
+          doesn't define DOTNET_* environment variable with name $(_DOTNETVariable);
 
-       2) Otherwise, the test scenario defines such COMPlus_* environment variable and the specified value
+       2) Otherwise, the test scenario defines such DOTNET_* environment variable and the specified value
           of this variable can be extracted by using Metadata() item function.
       
-       3) This is where we process a pseudo-value of "random" in the COMPlus table into an actual random number.
+       3) This is where we process a pseudo-value of "random" in the DOTNET table into an actual random number.
       -->
 
-      <_COMPlusVariable Include="$(_COMPlusVariable)" Condition="@(_TestEnvironmentWithMetadata->Count()) == 1">
-        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))' == 'random'">$(RandomNumber)</Value>
-        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))' != 'random'">@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))</Value>
-      </_COMPlusVariable>
+      <_DOTNETVariable Include="$(_DOTNETVariable)" Condition="@(_TestEnvironmentWithMetadata->Count()) == 1">
+        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_DOTNETVariableMetadataName)))' == 'random'">$(RandomNumber)</Value>
+        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_DOTNETVariableMetadataName)))' != 'random'">@(_TestEnvironmentWithMetadata->Metadata($(_DOTNETVariableMetadataName)))</Value>
+      </_DOTNETVariable>
     </ItemGroup>
 
-    <!-- Conceptually, this target creates a collection of _COMPlusVariable items that corresponds to
-         COMPlus_* environment variables specified for the test scenario with identity $(Scenario) -->
+    <!-- Conceptually, this target creates a collection of _DOTNETVariable items that corresponds to
+         DOTNET_* environment variables specified for the test scenario with identity $(Scenario) -->
 
   </Target>
 
-  <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
+  <Target Name="CreateTestEnvFile" DependsOnTargets="OutputDOTNETVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="@(_DOTNETVariable->'set %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- CLR interpreter -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterJITThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_TC_CallCountThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterDoLoopMethods=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterHWIntrinsicsIsSupportedFalse=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterJITThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_TC_CallCountThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
       <_TestEnvFileLine Include="#!/usr/bin/env bash" />
-      <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="@(_DOTNETVariable->'export %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
@@ -301,11 +301,11 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <!-- CLR interpreter -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterJITThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_TC_CallCountThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterDoLoopMethods=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterHWIntrinsicsIsSupportedFalse=1" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterJITThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_TC_CallCountThreshold=0x1000" />
+      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />

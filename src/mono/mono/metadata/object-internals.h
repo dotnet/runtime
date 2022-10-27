@@ -176,6 +176,7 @@ struct _MonoArray {
 	} name;
 
 MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfVoid, void)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 

@@ -92,6 +92,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "Runtime.consoleAPICalled":
                     {
+                        // Don't process events from sessions we aren't tracking
+                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                            return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
                         {
@@ -110,7 +113,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     {
                                         // The optional 3rd argument is the stringified assembly
                                         // list so that we don't have to make more round trips
-                                        ExecutionContext context = GetContext(sessionId);
                                         string loaded = a[2]?["value"]?.ToString();
                                         if (loaded != null)
                                             context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
@@ -208,22 +210,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.breakpointResolved":
                     {
-                        break;
-                    }
-
-                case "Debugger.scriptParsed":
-                    {
-                        string url = args?["url"]?.Value<string>() ?? "";
-
-                        switch (url)
-                        {
-                            case var _ when url == "":
-                            {
-                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
-                                return true;
-                            }
-                        }
-                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
 
@@ -756,15 +742,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 switch (objectId.Scheme)
                 {
+                    // ToDo: fix Exception types here
                     case "scope":
-                        Result resScope = await GetScopeProperties(id, objectId.Value, token);
-                        return resScope.IsOk
-                            ? ValueOrError<GetMembersResult>.WithValue(
-                                new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
-                            : ValueOrError<GetMembersResult>.WithError(resScope);
+                        GetMembersResult resScope = await GetScopeProperties(id, objectId.Value, token);
+                        resScope.CleanUp();
+                        return ValueOrError<GetMembersResult>.WithValue(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
                             context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        resValue?.CleanUp();
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -779,6 +765,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "object":
                         var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
                             context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        resObj.CleanUp();
                         return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
@@ -1407,14 +1394,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
+        internal async Task<GetMembersResult> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
         {
             try
             {
                 ExecutionContext context = GetContext(msg_id);
                 Frame scope = context.CallStack.FirstOrDefault(s => s.Id == scopeId);
                 if (scope == null)
-                    return Result.Err(JObject.FromObject(new { message = $"Could not find scope with id #{scopeId}" }));
+                    throw new Exception($"Could not find scope with id #{scopeId}");
 
                 VarInfo[] varIds = scope.Method.Info.GetLiveVarsAt(scope.Location.IlLocation.Offset);
 
@@ -1422,21 +1409,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (values != null)
                 {
                     if (values == null || values.Count == 0)
-                        return Result.OkFromObject(new { result = Array.Empty<object>() });
+                        return new GetMembersResult();
 
                     PerScopeCache frameCache = context.GetCacheForScope(scopeId);
                     foreach (JObject value in values)
                     {
                         frameCache.Locals[value["name"]?.Value<string>()] = value;
                     }
-                    return Result.OkFromObject(new { result = values });
+                    return GetMembersResult.FromValues(values);
                 }
-                return Result.OkFromObject(new { result = Array.Empty<object>() });
+                return new GetMembersResult();
             }
             catch (Exception exception)
             {
-                Log("verbose", $"Error resolving scope properties {exception.Message}");
-                return Result.Exception(exception);
+                throw new Exception($"Error resolving scope properties {exception.Message}");
             }
         }
 

@@ -293,8 +293,8 @@ collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help=
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
-collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets COMPlus_ZapDisable=1 and COMPlus_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
-collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets COMPlus_TieredCompilation=1 when doing collections.")
+collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -323,7 +323,7 @@ replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
-replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
+replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading DOTNET_")
 
 # common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
@@ -331,15 +331,15 @@ base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. D
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading COMPlus_")
-base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
-base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading DOTNET_")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading DOTNET_...")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading DOTNET_...")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
-asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump).")
+asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets DOTNET_JitGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets DOTNET_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
@@ -773,7 +773,7 @@ class SuperPMICollect:
         if not self.coreclr_args.skip_collect_mc_files:
             assert os.path.isdir(self.temp_location)
 
-            # Set environment variables. For crossgen2, we need to pass the COMPlus variables as arguments to the JIT using
+            # Set environment variables. For crossgen2, we need to pass the DOTNET variables as arguments to the JIT using
             # the `-codegenopt` argument.
 
             env_copy = os.environ.copy()
@@ -782,28 +782,28 @@ class SuperPMICollect:
             root_env["SuperPMIShimLogPath"] = self.temp_location
             root_env["SuperPMIShimPath"] = self.jit_path
 
-            complus_env = {}
-            complus_env["EnableExtraSuperPmiQueries"] = "1"
+            dotnet_env = {}
+            dotnet_env["EnableExtraSuperPmiQueries"] = "1"
 
             if not self.coreclr_args.tiered_compilation:
-                complus_env["TieredCompilation"] = "0"
+                dotnet_env["TieredCompilation"] = "0"
 
             if self.coreclr_args.use_zapdisable:
-                complus_env["ZapDisable"] = "1"
-                complus_env["ReadyToRun"] = "0"
+                dotnet_env["ZapDisable"] = "1"
+                dotnet_env["ReadyToRun"] = "0"
 
             logging.debug("Starting collection.")
             logging.debug("")
 
-            def set_and_report_env(env, root_env, complus_env = None):
+            def set_and_report_env(env, root_env, dotnet_env = None):
                 for var, value in root_env.items():
                     env[var] = value
                     print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, var, value)
-                if complus_env is not None:
-                    for var, value in complus_env.items():
-                        complus_var = "COMPlus_" + var
-                        env[complus_var] = value
-                        print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, complus_var, value)
+                if dotnet_env is not None:
+                    for var, value in dotnet_env.items():
+                        dotnet_var = "DOTNET_" + var
+                        env[dotnet_var] = value
+                        print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, dotnet_var, value)
 
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
@@ -825,13 +825,13 @@ class SuperPMICollect:
                 begin_time = datetime.datetime.now()
 
                 collection_command_env = env_copy.copy()
-                collection_complus_env = complus_env.copy()
+                collection_dotnet_env = dotnet_env.copy()
                 # In debug/checked builds we have the JitPath variable that the runtime will prefer.
                 # We still specify JitName for release builds, but this requires the user to manually
                 # copy the shim next to coreclr.
-                collection_complus_env["JitPath"] = self.collection_shim_path
-                collection_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(collection_command_env, root_env, collection_complus_env)
+                collection_dotnet_env["JitPath"] = self.collection_shim_path
+                collection_dotnet_env["JitName"] = self.collection_shim_name
+                set_and_report_env(collection_command_env, root_env, collection_dotnet_env)
 
                 logging.info("Collecting using command:")
                 logging.info("  %s %s", self.collection_command, " ".join(self.collection_args))
@@ -905,12 +905,12 @@ class SuperPMICollect:
 
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
-                pmi_complus_env = complus_env.copy()
+                pmi_dotnet_env = dotnet_env.copy()
                 # In debug/checked builds we have the JitPath variable that the runtime will prefer.
                 # We still specify JitName for release builds, but this requires the user to manually
                 # copy the shim next to coreclr.
-                pmi_complus_env["JitPath"] = self.collection_shim_path
-                pmi_complus_env["JitName"] = self.collection_shim_name
+                pmi_dotnet_env["JitPath"] = self.collection_shim_path
+                pmi_dotnet_env["JitName"] = self.collection_shim_name
 
                 if self.coreclr_args.pmi_path is not None:
                     pmi_root_env = root_env.copy()
@@ -918,7 +918,7 @@ class SuperPMICollect:
                 else:
                     pmi_root_env = root_env
 
-                set_and_report_env(pmi_command_env, pmi_root_env, pmi_complus_env)
+                set_and_report_env(pmi_command_env, pmi_root_env, pmi_dotnet_env)
 
                 old_env = os.environ.copy()
                 os.environ.update(pmi_command_env)
@@ -962,7 +962,7 @@ class SuperPMICollect:
                     # -r:<Core_Root>\System.Private.CoreLib.dll
                     # -r:<Core_Root>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
-                    # --codegenopt:<option>=<value>   /// for each member of complus_env
+                    # --codegenopt:<option>=<value>   /// for each member of dotnet_env
                     #
                     # invoke with:
                     #
@@ -983,7 +983,7 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
-                        for var, value in complus_env.items():
+                        for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
                     # Log what is in the response file
@@ -1489,33 +1489,33 @@ class SuperPMIReplayAsmDiffs:
 
         # Set up some settings we'll use below.
 
-        asm_complus_vars = {
-            "COMPlus_JitDisasm": "*",
-            "COMPlus_JitUnwindDump": "*",
-            "COMPlus_JitEHDump": "*",
-            "COMPlus_JitDiffableDasm": "1",
-            "COMPlus_JitEnableNoWayAssert": "1",
-            "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitDisasmWithGC": "1" }
+        asm_dotnet_vars = {
+            "DOTNET_JitDisasm": "*",
+            "DOTNET_JitUnwindDump": "*",
+            "DOTNET_JitEHDump": "*",
+            "DOTNET_JitDiffableDasm": "1",
+            "DOTNET_JitEnableNoWayAssert": "1",
+            "DOTNET_JitNoForceFallback": "1",
+            "DOTNET_JitDisasmWithGC": "1" }
 
         if self.coreclr_args.gcinfo:
-            asm_complus_vars.update({
-                "COMPlus_JitGCDump": "*" })
+            asm_dotnet_vars.update({
+                "DOTNET_JitGCDump": "*" })
 
         if self.coreclr_args.debuginfo:
-            asm_complus_vars.update({
-                "COMPlus_JitDebugDump": "*",
-                "COMPlus_JitDisasmWithDebugInfo": "1" })
+            asm_dotnet_vars.update({
+                "DOTNET_JitDebugDump": "*",
+                "DOTNET_JitDisasmWithDebugInfo": "1" })
 
-        jit_dump_complus_vars = asm_complus_vars.copy()
-        jit_dump_complus_vars.update({
-            "COMPlus_JitDump": "*" })
+        jit_dump_dotnet_vars = asm_dotnet_vars.copy()
+        jit_dump_dotnet_vars.update({
+            "DOTNET_JitDump": "*" })
 
-        asm_complus_vars_full_env = os.environ.copy()
-        asm_complus_vars_full_env.update(asm_complus_vars)
+        asm_dotnet_vars_full_env = os.environ.copy()
+        asm_dotnet_vars_full_env.update(asm_dotnet_vars)
 
-        jit_dump_complus_vars_full_env = os.environ.copy()
-        jit_dump_complus_vars_full_env.update(jit_dump_complus_vars)
+        jit_dump_dotnet_vars_full_env = os.environ.copy()
+        jit_dump_dotnet_vars_full_env.update(jit_dump_dotnet_vars)
 
         target_flags = []
         if self.coreclr_args.arch != self.coreclr_args.target_arch:
@@ -1691,10 +1691,7 @@ class SuperPMIReplayAsmDiffs:
                         """
                         # Setup flags to call SuperPMI for both the diff jit and the base jit
 
-                        flags = [
-                            "-c", str(context_index),
-                            "-v", "q"  # only log from the jit.
-                        ]
+                        flags = ["-c", str(context_index)]
                         flags += altjit_replay_flags
 
                         # Change the working directory to the core root we will call SuperPMI from.
@@ -1706,14 +1703,24 @@ class SuperPMIReplayAsmDiffs:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(context_index, extension))
                                 modified_env = env.copy()
-                                modified_env['COMPlus_JitStdOutFile'] = item_path
+                                modified_env['DOTNET_JitStdOutFile'] = item_path
                                 logging.debug("%sGenerating %s", print_prefix, item_path)
                                 logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                proc = await asyncio.create_subprocess_shell(" ".join(command), stderr=asyncio.subprocess.PIPE, env=modified_env)
-                                await proc.communicate()
-                                with open(item_path, 'r') as file_handle:
-                                    generated_txt = file_handle.read()
-                                return generated_txt
+                                proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=modified_env)
+                                (stdout, stderr) = await proc.communicate()
+
+                                def create_exception():
+                                    return Exception("Failure while creating JitStdOutFile.\nExit code: {}\nstdout:\n{}\n\nstderr:\n{}".format(proc.returncode, stdout.decode(), stderr.decode()))
+
+                                if proc.returncode != 0:
+                                    # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
+                                    raise create_exception()
+
+                                try:
+                                    with open(item_path, 'r') as file_handle:
+                                        return file_handle.read()
+                                except BaseException as err:
+                                    raise create_exception() from err
 
                             # Generate diff and base JIT dumps
                             base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
@@ -1726,16 +1733,16 @@ class SuperPMIReplayAsmDiffs:
                     logging.info("Creating dasm files: %s %s", base_asm_location, diff_asm_location)
                     dasm_contexts = self.pick_contexts_to_disassemble(diffs)
                     subproc_helper = AsyncSubprocessHelper(dasm_contexts, verbose=True)
-                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
+                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_dotnet_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
                     if self.coreclr_args.diff_jit_dump:
                         logging.info("Creating JitDump files: %s %s", base_dump_location, diff_dump_location)
-                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
+                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_dotnet_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
                     logging.info("Differences found. To replay SuperPMI use:".format(len(diffs)))
 
                     logging.info("")
-                    for var, value in asm_complus_vars.items():
+                    for var, value in asm_dotnet_vars.items():
                         print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                     logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                     logging.info("")
@@ -1743,7 +1750,7 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.diff_jit_dump:
                         logging.info("To generate JitDump with SuperPMI use:")
                         logging.info("")
-                        for var, value in jit_dump_complus_vars.items():
+                        for var, value in jit_dump_dotnet_vars.items():
                             print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")

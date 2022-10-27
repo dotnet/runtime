@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -211,7 +212,9 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [Fact]
+        // This test requires precise GC to ensure that we're accurately testing that we aren't
+        // keeping the Compilation alive.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive()
         {
             string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";

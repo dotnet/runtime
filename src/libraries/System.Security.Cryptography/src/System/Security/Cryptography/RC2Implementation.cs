@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // CFB not supported at all
-            throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
         }
 
         private int GetPaddingSize()

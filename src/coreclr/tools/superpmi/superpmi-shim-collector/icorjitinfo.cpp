@@ -253,6 +253,7 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -444,12 +445,13 @@ bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                                        unsigned              metaTOK,   /* IN  */
                                        char16_t*             buffer,    /* OUT */
-                                       int                   bufferSize /* IN  */
+                                       int                   bufferSize,/* IN  */
+                                       int                   startIndex /* IN  */
                                        )
 {
     mc->cr->AddCall("getStringLiteral");
-    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
-    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, temp);
+    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex, temp);
     return temp;
 }
 
@@ -796,6 +798,22 @@ void* interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("getRuntimeTypePointer");
     void* temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
     mc->recGetRuntimeTypePointer(cls, temp);
+    return temp;
+}
+
+bool interceptor_ICJI::isObjectImmutable(void* typeObj)
+{
+    mc->cr->AddCall("isObjectImmutable");
+    bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
+    mc->recIsObjectImmutable(typeObj, temp);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(void* typeObj)
+{
+    mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getObjectType(typeObj);
+    mc->recGetObjectType(typeObj, temp);
     return temp;
 }
 
@@ -1722,6 +1740,14 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     CorInfoType          cit = getFieldType(field, &cch, NULL);
     mc->recGetFieldAddress(field, ppIndirection, temp, cit);
     return temp;
+}
+
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+{
+    mc->cr->AddCall("getReadonlyStaticFieldValue");
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize);
+    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, result);
+    return result;
 }
 
 // return the class handle for the current value of a static field

@@ -84,7 +84,7 @@
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromiumDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -97,7 +97,7 @@
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromiumDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">
@@ -161,14 +161,19 @@
     </When>
   </Choose>
 
-  <Import Project="$(RepositoryEngineeringDir)testing\ProvisioningVersions.props" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and !Exists($(ChromeDir))"
+           Text="Could not find chrome at $(ChromeDir)" />
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and !Exists($(ChromeDriverDir))"
+           Text="Could not find chromedriver at $(ChromeDriverDir)" />
+
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromium" Uri="$(ChromiumUrl)" />
-      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDir)" />
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
 
       <!--<HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="firefox" Uri="$(FirefoxUrl)" />-->
       <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxForHelixPayload)" />

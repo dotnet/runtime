@@ -35,6 +35,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        public TypeDesc ObjectType => _data.Type;
+
+        public bool IsKnownImmutable => _data.IsKnownImmutable;
+
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset
@@ -101,5 +105,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
+
+        public override string ToString() => $"Frozen {_data.Type.GetDisplayNameWithoutNamespace()} object";
     }
 }

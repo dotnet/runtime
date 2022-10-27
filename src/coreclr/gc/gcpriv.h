@@ -52,7 +52,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -3134,15 +3134,15 @@ protected:
     void copy_mark_bits_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
 #endif //BACKGROUND_GC
 
+    PER_HEAP_ISOLATED
+    bool is_in_find_object_range (uint8_t* o);
+
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
     PER_HEAP_ISOLATED
     bool is_in_condemned_gc (uint8_t* o);
-    // requires checking if o is in the heap range first.
-    PER_HEAP_ISOLATED
-    bool is_in_condemned (uint8_t* o);
     PER_HEAP_ISOLATED
     bool should_check_brick_for_reloc (uint8_t* o);
 #endif //USE_REGIONS
@@ -5653,6 +5653,7 @@ struct gap_reloc_pair
 
 struct DECLSPEC_ALIGN(8) aligned_plug_and_gap
 {
+    size_t       additional_pad;
     plug_and_gap plugandgap;
 };
 

@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
             }
 
             // check to see if there are upgrades available for the requested CSP
-            string providerNameString = new string(providerName.AsSpan().Slice(0, providerName.AsSpan().IndexOf('\0')));
+            string providerNameString = new string(providerName.AsSpan(0, providerName.AsSpan().IndexOf('\0')));
             string? wszUpgrade = null;
             if (dwType == (int)ProviderType.PROV_RSA_FULL)
             {

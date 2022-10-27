@@ -61,6 +61,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/jit-info.h"
+#include "mono/metadata/icall-internals.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -3382,8 +3383,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	ERROR_DECL (emitted_error);
 	WrapperInfo *info;
 
-
-
 	g_assert (method != NULL);
 	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
@@ -3408,6 +3407,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		guint32 icall_flags = 0;
+		if (mono_lookup_internal_call_full_with_flags (method, FALSE, &icall_flags)) {
+			if (icall_flags & MONO_ICALL_FLAGS_NO_EXCEPTION)
+				check_exceptions = FALSE;
+		}
+	}
 
 	if (MONO_CLASS_IS_IMPORT (method->klass)) {
 		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
