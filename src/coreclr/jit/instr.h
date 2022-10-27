@@ -341,7 +341,7 @@ enum insBarrier : unsigned
 
 #if defined(TARGET_XARCH)
 // Represents tupletype attribute of instruction.
-// This is used in determining factor N while calculated compressed displacement in EVEX encoding
+// This is used in determining factor N while calculating compressed displacement in EVEX encoding
 // Reference: Section 2.6.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
 enum insTupleType : uint32_t
 {
@@ -353,13 +353,13 @@ enum insTupleType : uint32_t
     INS_TT_TUPLE1_SCALAR    = 0x00020,
     INS_TT_TUPLE1_FIXED     = 0x00040,
     INS_TT_TUPLE2           = 0x00080,
-    INS_TT_TUPLE4           = 0x01000,
-    INS_TT_TUPLE8           = 0x02000,
-    INS_TT_HALF_MEM         = 0x04000,
-    INS_TT_QUARTER_MEM      = 0x08000,
-    INS_TT_EIGHTH_MEM       = 0x10000,
-    INS_TT_MEM128           = 0x20000,
-    INS_TT_MOVDDUP          = 0x40000,
+    INS_TT_TUPLE4           = 0x00100,
+    INS_TT_TUPLE8           = 0x00200,
+    INS_TT_HALF_MEM         = 0x00400,
+    INS_TT_QUARTER_MEM      = 0x00800,
+    INS_TT_EIGHTH_MEM       = 0x01000,
+    INS_TT_MEM128           = 0x02000,
+    INS_TT_MOVDDUP          = 0x04000,
     INS_TT_IS_NON_BROADCAST = 0x7FFFC
 };
 #endif

@@ -101,7 +101,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsAVXInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
         retbuf = buf[curBuf];
@@ -1788,7 +1788,17 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     }
 }
 
-// Conversions to or from floating point values
+//------------------------------------------------------------------------
+// ins_FloatConv: Conversions to or from floating point values.
+//
+// Arguments:
+//    to - Destination type.
+//    from - Source type.
+//    attr - Input size.
+//
+// Returns:
+//    The correct conversion instruction to use based on src and dst types.
+//
 instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
     // AVX: For now we support only conversion from Int/Long -> float
@@ -1887,7 +1897,7 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     }
 }
 
-instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
+instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
     switch (from)
     {

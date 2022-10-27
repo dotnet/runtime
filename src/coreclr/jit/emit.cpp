@@ -3999,7 +3999,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     UNATIVE_OFFSET actualSize = (UNATIVE_OFFSET)(*dp - curInsAdr);
 
     unsigned estimatedSize = id->idCodeSize();
-
     if (actualSize != estimatedSize)
     {
         // It is fatal to under-estimate the instruction size, except for alignment instructions

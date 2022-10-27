@@ -15,6 +15,7 @@
  *          rm      -- base encoding for reg,R/M  addressing mode
  *          a4      -- base encoding for eax,i32  addressing mode
  *          rr      -- base encoding for register addressing mode
+ *          tt      -- the tupletype for the instruction
  *          flags   -- flags, see INS_FLAGS_* enum
  *
 ******************************************************************************/
@@ -64,7 +65,7 @@ INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     
 
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
 // See comment around quarter way through this file for more information.
-INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None )
+INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_TT_NONE,    INS_FLAGS_None )
 
 //    id                nm                  um      mr            mi            rm            a4                         tt              flags
 INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )

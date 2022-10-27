@@ -7110,7 +7110,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // Note that we need to specify dstType here so that it will determine
     // the size of destination integer register and also the rex.w prefix.
     genConsumeOperands(treeNode->AsOp());
-    instruction ins = ins_FloatConv(TYP_INT, srcType, emitTypeSize(dstType));
+    instruction ins = ins_FloatConv(TYP_INT, srcType, emitTypeSize(srcType));
     GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
