@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true,
+    },
+    "extends": "../tsconfig.shared.json",
+    "include": [
+        "../../**/*.ts",
+        "../../**/*.d.ts"
+    ]
+}
