@@ -4464,8 +4464,8 @@ namespace System.Text.RegularExpressions.Generator
             // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [A-Za-z].
             // This can be implemented as if it were a single range, with an additional bitwise operation.
             if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
-                IsAsciiLetter(rangeUpper.LowInclusive) &&
-                IsAsciiLetter(rangeUpper.HighInclusive) &&
+                CharExtensions.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                CharExtensions.IsAsciiLetter(rangeUpper.HighInclusive) &&
                 (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
                 (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
             {
@@ -4632,11 +4632,6 @@ namespace System.Text.RegularExpressions.Generator
                     $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
             }
         }
-
-        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        /// <remarks>Needed because RegexGenerator targets netstandard2.0, and can't use char.IsAsciiLetter.</remarks>
-        private static bool IsAsciiLetter(char c) =>
-            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>
         /// Replaces <see cref="AdditionalDeclarationsPlaceholder"/> in <paramref name="writer"/> with
