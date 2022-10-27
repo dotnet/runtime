@@ -108,15 +108,24 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitRelocation(
+        protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
+        {
+            var elfSection = _sectionIndexToElfSection[sectionIndex];
+            elfSection.Alignment = Math.Max(elfSection.Alignment, (uint)alignment);
+        }
+
+        protected internal override void EmitRelocation(
             int sectionIndex,
-            List<SymbolicRelocation> relocationList,
             int offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
             int addend)
         {
+            // We read the addend from the data and clear it. This is necessary
+            // to produce correct addends in the `.rela` sections which override
+            // the destination with the addend from relocation table.
+
             if (relocType == RelocType.IMAGE_REL_BASED_REL32 ||
                 relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
             {
@@ -140,7 +149,8 @@ namespace ILCompiler.ObjectWriter
             {
                 throw new NotSupportedException($"Unsupported relocation: {relocType}");
             }
-            relocationList.Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+
+            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
         protected override void EmitSymbolTable()
@@ -268,13 +278,6 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(relocationList.Count == 0);
             }
-        }
-
-        protected override void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable)
-        {
-            var elfSection = _sectionIndexToElfSection[sectionIndex];
-            elfSection.Alignment = Math.Max(elfSection.Alignment, (uint)alignment);
-            isExecutable = elfSection.Flags.HasFlag(ElfSectionFlags.Executable);
         }
 
         protected override ulong GetSectionVirtualAddress(int sectionIndex)

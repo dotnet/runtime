@@ -70,13 +70,12 @@ namespace ILCompiler.ObjectWriter
 
         protected abstract void CreateSection(ObjectNodeSection section, out Stream sectionStream);
 
-        protected abstract void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable);
+        protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
         protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
         {
             int sectionIndex;
             Stream sectionStream;
-            List<SymbolicRelocation> relocationList;
 
             if (!_sectionNameToSectionIndex.TryGetValue((section.Name, section.ComdatName), out sectionIndex))
             {
@@ -84,19 +83,18 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex = _sectionNameToSectionIndex.Count;
                 _sectionNameToSectionIndex.Add((section.Name, section.ComdatName), sectionIndex);
                 _sectionIndexToStream.Add(sectionStream);
-                _sectionIndexToRelocations.Add(relocationList = new());
+                _sectionIndexToRelocations.Add(new());
             }
             else
             {
                 sectionStream = _sectionIndexToStream[sectionIndex];
-                relocationList = _sectionIndexToRelocations[sectionIndex];
             }
 
             return new SectionWriter(
                 this,
                 sectionIndex,
                 sectionStream,
-                relocationList);
+                section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
         }
 
         protected bool ShouldShareSymbol(ObjectNode node)
@@ -135,19 +133,23 @@ namespace ILCompiler.ObjectWriter
             return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
-        protected abstract void EmitRelocation(
+        /// <summary>
+        /// Emits a single relocation into a given section.
+        /// </summary>
+        /// <remarks>
+        /// The relocation is not resolved until <see cref="EmitRelocations" /> is called
+        /// later when symbol table is already generated.
+        /// </remarks>
+        protected internal virtual void EmitRelocation(
             int sectionIndex,
-            List<SymbolicRelocation> relocationList,
             int offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
-            int addend);
-
-        /// <summary>
-        /// Emit symbolic definitions into object file symbols.
-        /// </summary>
-        protected abstract void EmitSymbolTable();
+            int addend)
+        {
+            _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+        }
 
         /// <summary>
         /// Emit symbolic relocations into object file as format specific
@@ -157,6 +159,31 @@ namespace ILCompiler.ObjectWriter
         /// This methods is guaranteed to run after <see cref="EmitSymbolTable" />.
         /// </remarks>
         protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList);
+
+        /// <summary>
+        /// Emit new symbol definition at specified location in a given section.
+        /// </summary>
+        /// <remarks>
+        /// The symbols are emitted into the object file representation later by
+        /// <see cref="EmitSymbolTable" />. Various formats have restrictions on
+        /// the order of the symbols so any necessary sorting is done when the
+        /// symbol table is created.
+        /// </remarks>
+        protected internal void EmitSymbolDefinition(
+            int sectionIndex,
+            string symbolName,
+            int offset = 0,
+            int size = 0)
+        {
+            _definedSymbols.Add(
+                symbolName,
+                new SymbolDefinition(sectionIndex, offset, size));
+        }
+
+        /// <summary>
+        /// Emit symbolic definitions into object file symbols.
+        /// </summary>
+        protected abstract void EmitSymbolTable();
 
         protected virtual string ExternCName(string name) => name;
 
@@ -353,82 +380,6 @@ namespace ILCompiler.ObjectWriter
             }
 
             EmitObjectFile(objectFilePath);
-        }
-
-        protected struct SectionWriter
-        {
-            private ObjectWriter _objectWriter;
-
-            public int SectionIndex { get; init; }
-            public Stream Stream { get; init; }
-            public List<SymbolicRelocation> Relocations { get; init; }
-
-            public SectionWriter(
-                ObjectWriter objectWriter,
-                int sectionIndex,
-                Stream stream,
-                List<SymbolicRelocation> relocations)
-            {
-                _objectWriter = objectWriter;
-                SectionIndex = sectionIndex;
-                Stream = stream;
-                Relocations = relocations;
-            }
-
-            public void EmitAlignment(int alignment)
-            {
-                _objectWriter.UpdateSectionAlignment(SectionIndex, alignment, out bool isExecutable);
-
-                int padding = (int)(((Stream.Position + alignment - 1) & ~(alignment - 1)) - Stream.Position);
-                Span<byte> buffer = stackalloc byte[padding];
-                byte paddingByte = isExecutable ? _objectWriter._insPaddingByte : (byte)0;
-                buffer.Fill(paddingByte);
-                Stream.Write(buffer);
-            }
-
-            public void EmitRelocation(
-                int relativeOffset,
-                Span<byte> data,
-                RelocType relocType,
-                string symbolName,
-                int addend)
-            {
-                _objectWriter.EmitRelocation(
-                    SectionIndex,
-                    Relocations,
-                    (int)Stream.Position + relativeOffset,
-                    data,
-                    relocType,
-                    symbolName,
-                    addend);
-            }
-
-            public void EmitSymbolDefinition(
-                string symbolName,
-                int relativeOffset = 0,
-                int size = 0)
-            {
-                var symbolDefinition = new SymbolDefinition(SectionIndex, Stream.Position + relativeOffset, size);
-                _objectWriter._definedSymbols.Add(symbolName, symbolDefinition);
-            }
-
-            public void EmitSymbolReference(
-                RelocType relocType,
-                string symbolName,
-                int addend = 0)
-            {
-                Span<byte> buffer = stackalloc byte[relocType == RelocType.IMAGE_REL_BASED_DIR64 ? sizeof(ulong) : sizeof(uint)];
-                buffer.Clear();
-                _objectWriter.EmitRelocation(
-                    SectionIndex,
-                    Relocations,
-                    (int)Stream.Position,
-                    buffer,
-                    relocType,
-                    symbolName,
-                    addend);
-                Stream.Write(buffer);
-            }
         }
     }
 }

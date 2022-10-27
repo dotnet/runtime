@@ -160,15 +160,25 @@ namespace ILCompiler.ObjectWriter
             _segment.Sections.Add(machSection);
         }
 
-        protected override void EmitRelocation(
+        protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
+        {
+            var machSection = _segment.Sections[sectionIndex];
+            Debug.Assert(BitOperations.IsPow2(alignment));
+            machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
+        }
+
+        protected internal override void EmitRelocation(
             int sectionIndex,
-            List<SymbolicRelocation> relocationList,
             int offset,
             Span<byte> data,
             RelocType relocType,
             string symbolName,
             int addend)
         {
+            // For most relocations we write the addend directly into the
+            // data. The exceptions are IMAGE_REL_BASED_ARM64_PAGEBASE_REL21
+            // and IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A.
+
             if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
             {
                 Debug.Assert(_objectFile.CpuType == MachCpuType.Arm64);
@@ -182,6 +192,7 @@ namespace ILCompiler.ObjectWriter
                         data,
                         BinaryPrimitives.ReadInt64LittleEndian(data) +
                         addend);
+                    addend = 0;
                 }
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
@@ -215,6 +226,7 @@ namespace ILCompiler.ObjectWriter
                             addend);
                     }
                 }
+                addend = 0;
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_REL32)
             {
@@ -225,10 +237,11 @@ namespace ILCompiler.ObjectWriter
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
                         addend);
+                    addend = 0;
                 }
             }
 
-            relocationList.Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
         protected override void EmitSymbolTable()
@@ -541,14 +554,6 @@ namespace ILCompiler.ObjectWriter
             ));
 
             return false;
-        }
-
-        protected override void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable)
-        {
-            var machSection = _segment.Sections[sectionIndex];
-            Debug.Assert(BitOperations.IsPow2(alignment));
-            machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
-            isExecutable = machSection.Attributes.HasFlag(MachSectionAttributes.SomeInstructions);
         }
 
         protected override ulong GetSectionVirtualAddress(int sectionIndex)

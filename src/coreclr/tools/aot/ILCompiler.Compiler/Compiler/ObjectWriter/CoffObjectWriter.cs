@@ -100,7 +100,7 @@ namespace ILCompiler.ObjectWriter
             _sections.Add((sectionHeader, sectionStream, new List<CoffRelocation>(), section.ComdatName));
         }
 
-        protected override void UpdateSectionAlignment(int sectionIndex, int alignment, out bool isExecutable)
+        protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             Debug.Assert(alignment > 0 && BitOperations.IsPow2((uint)alignment));
             int minimumAlignment = BitOperations.Log2((uint)alignment) << 20;
@@ -112,13 +112,10 @@ namespace ILCompiler.ObjectWriter
                     (_sections[sectionIndex].Header.SectionCharacteristics & ~SectionCharacteristics.AlignMask) |
                     (SectionCharacteristics)minimumAlignment;
             }
-
-            isExecutable = _sections[sectionIndex].Header.SectionCharacteristics.HasFlag(SectionCharacteristics.MemExecute);
         }
 
-        protected override void EmitRelocation(
+        protected internal override void EmitRelocation(
             int sectionIndex,
-            List<SymbolicRelocation> relocationList,
             int offset,
             Span<byte> data,
             RelocType relocType,
@@ -139,6 +136,7 @@ namespace ILCompiler.ObjectWriter
                         data,
                         BinaryPrimitives.ReadInt64LittleEndian(data) +
                         addend);
+                    addend = 0;
                 }
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
@@ -150,6 +148,7 @@ namespace ILCompiler.ObjectWriter
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
                         addend);
+                    addend = 0;
                 }
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_REL32 ||
@@ -162,6 +161,7 @@ namespace ILCompiler.ObjectWriter
                         data,
                         BinaryPrimitives.ReadInt32LittleEndian(data) +
                         addend);
+                    addend = 0;
                 }
             }
             else
@@ -169,7 +169,7 @@ namespace ILCompiler.ObjectWriter
                 throw new NotSupportedException($"Unsupported relocation: {relocType}");
             }
 
-            relocationList.Add(new SymbolicRelocation(offset, relocType, symbolName, 0));
+            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
 
         protected override void EmitSymbolTable()
