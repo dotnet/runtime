@@ -15,10 +15,21 @@ pr:
     exclude:
     - src/coreclr/inc/jiteeversionguid.h
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
     jobs:
+
+    - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      - template: /eng/pipelines/common/evaluate-paths-job.yml
+        parameters:
+          paths:
+          - subset: jiteeversionguid
+            include:
+            - src/coreclr/inc/jiteeversionguid.h
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -29,6 +40,7 @@ extends:
         - windows_x86
         jobParameters:
           uploadAs: 'pipelineArtifacts'
+          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -39,3 +51,5 @@ extends:
         - windows_x86
         helixQueueGroup: ci
         helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+        jobParameters:
+          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
