@@ -214,7 +214,6 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
     <Compile Include="misc\GDI\DeviceContextType.cs" />
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
-    <Compile Include="Interop\Windows\Interop.Comdlg32.cs" />
     <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
     <Compile Include="Interop\Windows\Interop.Kernel32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
@@ -224,6 +223,8 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Comdlg32\Interop.PrintDlg.cs"
+             Link="Common\Interop\Windows\Comdlg32\Interop.PrintDlg.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.CombineRgn.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.CombineRgn.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.CreateCompatibleDC.cs"
