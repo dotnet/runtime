@@ -18,24 +18,20 @@ namespace ILCompiler.ObjectWriter
 {
     public class DwarfEhFrame
     {
-        public delegate void EmitSymbolReferenceAction(RelocType relocationType, string symbolName);
-
-        private Stream _stream;
-        private EmitSymbolReferenceAction _emitSymbolReference;
+        private SectionWriter _sectionWriter;
         private bool _is64Bit;
         private Dictionary<DwarfCie, uint> _cieOffset;
 
-        public DwarfEhFrame(Stream stream, EmitSymbolReferenceAction emitSymbolReference, bool is64Bit)
+        public DwarfEhFrame(SectionWriter sectionWriter, bool is64Bit)
         {
-            _stream = stream;
-            _emitSymbolReference = emitSymbolReference;
+            _sectionWriter = sectionWriter;
             _is64Bit = is64Bit;
             _cieOffset = new Dictionary<DwarfCie, uint>();
         }
 
         public void AddCie(DwarfCie cie)
         {
-            _cieOffset.Add(cie, (uint)_stream.Position);
+            _cieOffset.Add(cie, (uint)_sectionWriter.Stream.Position);
             WriteCie(cie);
         }
 
@@ -57,6 +53,7 @@ namespace ILCompiler.ObjectWriter
             Utf8StringBuilder augmentationString = new Utf8StringBuilder();
             uint augmentationLength = 0;
             Span<byte> tempBuffer = stackalloc byte[8];
+            var stream = _sectionWriter.Stream;
 
             if (cie.FdesHaveAugmentationData)
             {
@@ -95,38 +92,39 @@ namespace ILCompiler.ObjectWriter
             uint padding = ((length + 7u) & ~7u) - length;
 
             BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, length + padding - 4u);
-            _stream.Write(tempBuffer);
+            stream.Write(tempBuffer);
 
-            _stream.WriteByte(cie.ReturnAddressRegister < 0x7f ? (byte)1u : (byte)3u); // Version
-            _stream.Write(augmentationString.UnderlyingArray);
+            stream.WriteByte(cie.ReturnAddressRegister < 0x7f ? (byte)1u : (byte)3u); // Version
+            stream.Write(augmentationString.UnderlyingArray);
 
-            _stream.WriteULEB128(cie.CodeAlignFactor);
-            _stream.WriteILEB128(cie.DataAlignFactor);
-            _stream.WriteULEB128(cie.ReturnAddressRegister);
+            stream.WriteULEB128(cie.CodeAlignFactor);
+            stream.WriteILEB128(cie.DataAlignFactor);
+            stream.WriteULEB128(cie.ReturnAddressRegister);
 
-            _stream.WriteULEB128(augmentationLength);
+            stream.WriteULEB128(augmentationLength);
             if (cie.PersonalitySymbolName != null)
             {
-                _stream.WriteByte(cie.PersonalityEncoding);
+                stream.WriteByte(cie.PersonalityEncoding);
                 WriteAddress(cie.PersonalityEncoding, cie.PersonalitySymbolName);
             }
             if (cie.LsdaEncoding != 0)
             {
-                _stream.WriteByte(cie.LsdaEncoding);
+                stream.WriteByte(cie.LsdaEncoding);
             }
             if (cie.PointerEncoding != 0)
             {
-                _stream.WriteByte(cie.PointerEncoding);
+                stream.WriteByte(cie.PointerEncoding);
             }
 
-            _stream.Write(cie.Instructions);
+            stream.Write(cie.Instructions);
 
-            _stream.Write(stackalloc byte[(int)padding]);
+            stream.Write(stackalloc byte[(int)padding]);
         }
 
         private void WriteFde(DwarfFde fde, uint cieOffset)
         {
             Span<byte> tempBuffer = stackalloc byte[8];
+            var stream = _sectionWriter.Stream;
 
             uint augmentationLength =
                 fde.Cie.FdesHaveAugmentationData ?
@@ -144,15 +142,15 @@ namespace ILCompiler.ObjectWriter
             uint padding = ((length + 7u) & ~7u) - length;
 
             BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, length + padding - 4u);
-            _stream.Write(tempBuffer.Slice(0, 4));
-            BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(_stream.Position - cieOffset));
-            _stream.Write(tempBuffer.Slice(0, 4));
+            stream.Write(tempBuffer.Slice(0, 4));
+            BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(stream.Position - cieOffset));
+            stream.Write(tempBuffer.Slice(0, 4));
             WriteAddress(fde.Cie.PointerEncoding, fde.PcStartSymbolName);
             WriteSize(fde.Cie.PointerEncoding, fde.PcLength);
 
             if (fde.Cie.FdesHaveAugmentationData)
             {
-                _stream.WriteByte((byte)(augmentationLength - 1));
+                stream.WriteByte((byte)(augmentationLength - 1));
                 if (fde.Cie.PersonalityEncoding != 0)
                 {
                     WriteAddress(fde.Cie.PersonalityEncoding, fde.PersonalitySymbolName);
@@ -163,8 +161,8 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            _stream.Write(fde.Instructions);
-            _stream.Write(stackalloc byte[(int)padding]);
+            stream.Write(fde.Instructions);
+            stream.Write(stackalloc byte[(int)padding]);
         }
 
         private uint AddressSize(byte encoding)
@@ -188,12 +186,12 @@ namespace ILCompiler.ObjectWriter
                     DW_EH_PE_absptr => RelocType.IMAGE_REL_BASED_DIR64,
                     _ => throw new NotSupportedException()
                 };
-                _emitSymbolReference(relocationType, symbolName);
+                _sectionWriter.EmitSymbolReference(relocationType, symbolName);
             }
             else
             {
                 Span<byte> address = stackalloc byte[(int)AddressSize(encoding)];
-                _stream.Write(address);
+                _sectionWriter.Stream.Write(address);
             }
         }
 
@@ -208,7 +206,7 @@ namespace ILCompiler.ObjectWriter
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(buffer, size);
             }
-            _stream.Write(buffer);
+            _sectionWriter.Stream.Write(buffer);
         }
     }
 }
