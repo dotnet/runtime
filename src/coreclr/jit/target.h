@@ -61,7 +61,11 @@ inline bool compUnixX86Abi()
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 16
+
+#elif defined(TARGET_XARCH)
 #define REGMASK_BITS 32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
@@ -135,7 +139,7 @@ enum _regMask_enum : unsigned __int64
 
 #elif defined(TARGET_AMD64)
 
-enum _regNumber_enum : unsigned
+enum _regNumber_enum : unsigned 
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
@@ -146,7 +150,7 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned
+enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 
@@ -192,7 +196,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -528,7 +532,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1 << reg;
+    regMaskTP result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
