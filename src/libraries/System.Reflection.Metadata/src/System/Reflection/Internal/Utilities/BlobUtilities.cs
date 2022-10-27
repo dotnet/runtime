@@ -34,50 +34,20 @@ namespace System.Reflection
             buffer[start] = value;
         }
 
-        public static void WriteUInt16(this byte[] buffer, int start, ushort value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref buffer[start], value);
-        }
+        public static void WriteUInt16(this byte[] buffer, int start, ushort value) =>
+            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
-        public static void WriteUInt16BE(this byte[] buffer, int start, ushort value)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref buffer[start], value);
-        }
+        public static void WriteUInt16BE(this byte[] buffer, int start, ushort value) =>
+            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
-        public static void WriteUInt32BE(this byte[] buffer, int start, uint value)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref buffer[start], value);
-        }
+        public static void WriteUInt32BE(this byte[] buffer, int start, uint value) =>
+            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
-        public static void WriteUInt32(this byte[] buffer, int start, uint value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref buffer[start], value);
-        }
+        public static void WriteUInt32(this byte[] buffer, int start, uint value) =>
+            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
-        public static void WriteUInt64(this byte[] buffer, int start, ulong value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref buffer[start], value);
-        }
+        public static void WriteUInt64(this byte[] buffer, int start, ulong value) =>
+            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
         public const int SizeOfSerializedDecimal = sizeof(byte) + 3 * sizeof(uint);
 
