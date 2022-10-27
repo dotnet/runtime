@@ -163,9 +163,6 @@ function_name() to call the system's implementation
 
 /* C runtime functions needed to be renamed to avoid duplicate definition
    of those functions when including standard C header files */
-#if !defined(_DEBUG)
-#define memcpy DUMMY_memcpy
-#endif //!defined(_DEBUG)
 #define memcmp DUMMY_memcmp
 #define memset DUMMY_memset
 #define memmove DUMMY_memmove

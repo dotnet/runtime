@@ -50,7 +50,6 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_memcpy
 #PAL_malloc
 #PAL_realloc
 #PAL_printf
