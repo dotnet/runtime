@@ -7629,7 +7629,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     assert((intrinsicName == NI_Array_Address) || (intrinsicName == NI_Array_Get) || (intrinsicName == NI_Array_Set));
 
     // If we are generating SMALL_CODE, we don't want to use intrinsics, as it generates fatter code.
-    if (opts.OptLevel() < OPT_Blended)
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
         return nullptr;

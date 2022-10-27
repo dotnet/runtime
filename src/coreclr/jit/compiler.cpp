@@ -2406,7 +2406,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
-    if (opts.compDbgCode || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    if (opts.compDbgCode || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
     {
         // MinOpts level in case of explicit miopts mode or debug-friendly codegen request
         opts.compOptLevel = OPT_MinOpts;
@@ -2414,12 +2414,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
              !compIsForInlining())
     {
-        // Don't waste time on static cctors (unless prejitted)
+        // Don't waste time on static cctors in JIT mode
         opts.compOptLevel = OPT_MinOpts;
     }
     else
     {
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
         {
             // TODO: use this for Tier0
             opts.compOptLevel = OPT_SizeAndThroughput;

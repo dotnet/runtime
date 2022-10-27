@@ -2717,7 +2717,7 @@ PhaseStatus Compiler::fgAddInternal()
         // We are allowed to have multiple individual exits
         // However we can still decide to have a single return
         //
-        if ((opts.OptLevel() == OPT_SizeAndThroughput) || stressMerging)
+        if ((opts.OptLevelIs(OPT_SizeAndThroughput)) || stressMerging)
         {
             // Under stress or for Small_Code case we always
             // generate a single return block when we have multiple

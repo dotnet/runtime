@@ -9114,6 +9114,15 @@ public:
         {
             return compOptLevel;
         }
+        bool OptLevelIs(Compiler::OptLevel lvl) const
+        {
+            return compOptLevel == lvl;
+        }
+        template <typename... T>
+        bool OptLevelIs(Compiler::OptLevel lvl, T... rest) const
+        {
+            return OptLevel() == lvl || OptLevelIs(rest...);
+        }
         void SetMinOpts()
         {
             compOptLevel = OPT_MinOpts;

@@ -1885,14 +1885,8 @@ void CodeGen::genGenerateMachineCode()
 
     unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
 
-    GetEmitter()->emitBegFN(isFramePointerUsed()
-#if defined(DEBUG)
-                                ,
-                            (compiler->opts.OptLevel() >= Compiler::OPT_Blended) &&
-                                !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
-#endif
-                                ,
-                            maxTmpSize);
+    GetEmitter()->emitBegFN(isFramePointerUsed(),
+                            INDEBUG_COMMA(!compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) maxTmpSize);
 
     /* Now generate code for the function */
     genCodeForBBlist();

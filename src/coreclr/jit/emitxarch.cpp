@@ -12814,8 +12814,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
         // we expect the same alignment as the size of the constant.
 
-        assert((emitChkAlign == false) || (ins == INS_lea) ||
-               ((emitComp->opts.OptLevel() < Compiler::OPT_Blended) && (((size_t)addr & 3) == 0)) ||
+        assert((emitChkAlign == false) || (ins == INS_lea) || ((((size_t)addr & 3) == 0)) ||
                (((size_t)addr & (byteSize - 1)) == 0));
 #endif // DEBUG
     }

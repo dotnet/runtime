@@ -95,7 +95,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
     }
 
     const bool isPrejit   = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool isSpeedOpt = compiler->opts.OptLevel() == Compiler::OPT_Speed;
+    const bool isSpeedOpt = compiler->opts.OptLevelIs(Compiler::OPT_Speed);
 
     if ((JitConfig.JitExtDefaultPolicy() != 0))
     {

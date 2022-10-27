@@ -12579,13 +12579,6 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             return mul;
         }
 
-#ifdef TARGET_XARCH
-        // Should we try to replace integer multiplication with lea/add/shift sequences?
-        bool mulShiftOpt = opts.OptLevel() != OPT_SizeAndThroughput;
-#else  // !TARGET_XARCH
-        bool mulShiftOpt = false;
-#endif // !TARGET_XARCH
-
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
         size_t lowestBit     = genFindLowestBit(abs_mult);
         bool   changeToShift = false;
@@ -12612,7 +12605,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
             changeToShift = true;
         }
-        else if (mulShiftOpt && (lowestBit > 1) && jitIsScaleIndexMul(lowestBit))
+        else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit))
         {
             int     shift  = genLog2(lowestBit);
             ssize_t factor = abs_mult >> shift;
