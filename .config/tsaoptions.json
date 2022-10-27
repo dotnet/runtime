@@ -2,9 +2,9 @@
     "instanceUrl": "https://devdiv.visualstudio.com/",
     "template": "TFSDEVDIV",
     "projectName": "DEVDIV",
-    "areaPath": "DevDiv\\NET Runtime\\Reliability\\Docs",
+    "areaPath": "DevDiv\\NET Libraries",
     "iterationPath": "DevDiv",
     "notificationAliases": [ "runtimerepo-infra@microsoft.com" ],
-    "repositoryName":"Runtime",
+    "repositoryName": "Runtime",
     "codebaseName": "Runtime"
 }

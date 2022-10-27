@@ -10,22 +10,17 @@ schedules:
     always: true
 
 variables:
-- template: /eng/pipelines/common/variables.yml
-# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
-- name: TeamName
-  value: dotnet-core-acquisition
-- name: PostBuildSign
-  value: true
-- name: Codeql.Enabled
-  value: True
-- name: Codeql.Cadence
-  value: 0
-- name: Codeql.TSAEnabled
-  value: True
-- name: Codeql.BuildIdentifier
-  value: $(System.JobDisplayName)
-- name: Codeql.Language
-  value: cpp,csharp,java,python
+  - template: /eng/pipelines/common/variables.yml
+  - name: Codeql.Enabled
+    value: True
+  - name: Codeql.Cadence
+    value: 0
+  - name: Codeql.TSAEnabled
+    value: True
+  - name: Codeql.BuildIdentifier
+    value: $(System.JobDisplayName)
+  - name: Codeql.Language
+    value: cpp,csharp,java,python
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
