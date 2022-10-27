@@ -1700,7 +1700,7 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-    instruction ins_FloatConv(var_types to, var_types from);
+    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);

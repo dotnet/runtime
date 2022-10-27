@@ -747,6 +747,20 @@ bool emitter::Is4ByteSSEInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// TakesSimdPrefix: Checks if the instruction should be VEX or EVEX encoded.
+//
+// Arguments:
+//    instruction -- processor instruction to check
+//
+// Return Value:
+//    true if this instruction requires a VEX or EVEX prefix.
+//
+bool emitter::TakesSimdPrefix(instruction ins) const
+{
+    return TakesEvexPrefix(ins) || TakesVexPrefix(ins);
+}
+
+//------------------------------------------------------------------------
 // TakesEvexPrefix: Checks if the instruction should be EVEX encoded.
 // TODO-XArch-AVX512: This check needs to be updated once AVX512 instructions are added.
 // Eventually, this should evolve to return 'TRUE' for the following cases:
@@ -1000,8 +1014,8 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_cvttss2si:
             case INS_cvtsd2si:
             case INS_cvtss2si:
-            case INS_cvtsi2sd:
-            case INS_cvtsi2ss:
+            case INS_cvtsi2sd64:
+            case INS_cvtsi2ss64:
             case INS_movnti:
             case INS_mulx:
             case INS_pdep:
@@ -1176,6 +1190,16 @@ emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 
 emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
 {
+    if (UseEvexEncoding() && IsAvx512Instruction(ins))
+    {
+        if (TakesEvexPrefix(ins))
+        {
+            // X-bit is available in 4-byte EVEX prefix that starts with byte 62.
+            assert(hasEvexPrefix(code));
+            // X-bit is added in bit-inverted form.
+            return code & 0xFFBFFFFFFFFFFFFFULL;
+        }
+    }
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         if (TakesVexPrefix(ins))
@@ -2216,12 +2240,12 @@ inline ssize_t emitter::emitGetInsCIdisp(instrDesc* id)
 // clang-format off
 const insFlags      CodeGenInterface::instInfo[] =
 {
-    #define INST0(id, nm, um, mr,                 flags) static_cast<insFlags>(flags),
-    #define INST1(id, nm, um, mr,                 flags) static_cast<insFlags>(flags),
-    #define INST2(id, nm, um, mr, mi,             flags) static_cast<insFlags>(flags),
-    #define INST3(id, nm, um, mr, mi, rm,         flags) static_cast<insFlags>(flags),
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) static_cast<insFlags>(flags),
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) static_cast<insFlags>(flags),
+    #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
+    #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
+    #define INST2(id, nm, um, mr, mi,             tt, flags) static_cast<insFlags>(flags),
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) static_cast<insFlags>(flags),
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) static_cast<insFlags>(flags),
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) static_cast<insFlags>(flags),
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -2240,12 +2264,12 @@ const insFlags      CodeGenInterface::instInfo[] =
 // clang-format off
 const BYTE          emitter::emitInsModeFmtTab[] =
 {
-    #define INST0(id, nm, um, mr,                 flags) um,
-    #define INST1(id, nm, um, mr,                 flags) um,
-    #define INST2(id, nm, um, mr, mi,             flags) um,
-    #define INST3(id, nm, um, mr, mi, rm,         flags) um,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) um,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) um,
+    #define INST0(id, nm, um, mr,                 tt, flags) um,
+    #define INST1(id, nm, um, mr,                 tt, flags) um,
+    #define INST2(id, nm, um, mr, mi,             tt, flags) um,
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) um,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) um,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) um,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -2340,12 +2364,12 @@ inline size_t insCode(instruction ins)
     const static
     size_t          insCodes[] =
     {
-        #define INST0(id, nm, um, mr,                 flags) mr,
-        #define INST1(id, nm, um, mr,                 flags) mr,
-        #define INST2(id, nm, um, mr, mi,             flags) mr,
-        #define INST3(id, nm, um, mr, mi, rm,         flags) mr,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     flags) mr,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) mr,
+        #define INST0(id, nm, um, mr,                 tt, flags) mr,
+        #define INST1(id, nm, um, mr,                 tt, flags) mr,
+        #define INST2(id, nm, um, mr, mi,             tt, flags) mr,
+        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mr,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mr,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mr,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -2373,12 +2397,12 @@ inline size_t insCodeACC(instruction ins)
     const static
     size_t          insCodesACC[] =
     {
-        #define INST0(id, nm, um, mr,                 flags)
-        #define INST1(id, nm, um, mr,                 flags)
-        #define INST2(id, nm, um, mr, mi,             flags)
-        #define INST3(id, nm, um, mr, mi, rm,         flags)
-        #define INST4(id, nm, um, mr, mi, rm, a4,     flags) a4,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) a4,
+        #define INST0(id, nm, um, mr,                 tt, flags)
+        #define INST1(id, nm, um, mr,                 tt, flags)
+        #define INST2(id, nm, um, mr, mi,             tt, flags)
+        #define INST3(id, nm, um, mr, mi, rm,         tt, flags)
+        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) a4,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) a4,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -2406,12 +2430,12 @@ inline size_t insCodeRR(instruction ins)
     const static
     size_t          insCodesRR[] =
     {
-        #define INST0(id, nm, um, mr,                 flags)
-        #define INST1(id, nm, um, mr,                 flags)
-        #define INST2(id, nm, um, mr, mi,             flags)
-        #define INST3(id, nm, um, mr, mi, rm,         flags)
-        #define INST4(id, nm, um, mr, mi, rm, a4,     flags)
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) rr,
+        #define INST0(id, nm, um, mr,                 tt, flags)
+        #define INST1(id, nm, um, mr,                 tt, flags)
+        #define INST2(id, nm, um, mr, mi,             tt, flags)
+        #define INST3(id, nm, um, mr, mi, rm,         tt, flags)
+        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags)
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) rr,
         #include "instrs.h"
         #undef  INST0
         #undef  INST1
@@ -2432,12 +2456,12 @@ inline size_t insCodeRR(instruction ins)
 const static
 size_t          insCodesRM[] =
 {
-    #define INST0(id, nm, um, mr,                 flags)
-    #define INST1(id, nm, um, mr,                 flags)
-    #define INST2(id, nm, um, mr, mi,             flags)
-    #define INST3(id, nm, um, mr, mi, rm,         flags) rm,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) rm,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) rm,
+    #define INST0(id, nm, um, mr,                 tt, flags)
+    #define INST1(id, nm, um, mr,                 tt, flags)
+    #define INST2(id, nm, um, mr, mi,             tt, flags)
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) rm,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) rm,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) rm,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -2472,12 +2496,12 @@ inline size_t insCodeRM(instruction ins)
 const static
 size_t          insCodesMI[] =
 {
-    #define INST0(id, nm, um, mr,                 flags)
-    #define INST1(id, nm, um, mr,                 flags)
-    #define INST2(id, nm, um, mr, mi,             flags) mi,
-    #define INST3(id, nm, um, mr, mi, rm,         flags) mi,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) mi,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) mi,
+    #define INST0(id, nm, um, mr,                 tt, flags)
+    #define INST1(id, nm, um, mr,                 tt, flags)
+    #define INST2(id, nm, um, mr, mi,             tt, flags) mi,
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mi,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mi,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mi,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -2512,12 +2536,12 @@ inline size_t insCodeMI(instruction ins)
 const static
 size_t          insCodesMR[] =
 {
-    #define INST0(id, nm, um, mr,                 flags)
-    #define INST1(id, nm, um, mr,                 flags) mr,
-    #define INST2(id, nm, um, mr, mi,             flags) mr,
-    #define INST3(id, nm, um, mr, mi, rm,         flags) mr,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) mr,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) mr,
+    #define INST0(id, nm, um, mr,                 tt, flags)
+    #define INST1(id, nm, um, mr,                 tt, flags) mr,
+    #define INST2(id, nm, um, mr, mi,             tt, flags) mr,
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) mr,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) mr,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) mr,
     #include "instrs.h"
     #undef  INST0
     #undef  INST1
@@ -2548,6 +2572,56 @@ inline size_t insCodeMR(instruction ins)
     return insCodesMR[ins];
 }
 
+// clang-format off
+const static
+insTupleType insTupleTypeInfos[] =
+{
+    #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
+    #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
+    #define INST2(id, nm, um, mr, mi,             tt, flags) static_cast<insTupleType>(tt),
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) static_cast<insTupleType>(tt),
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) static_cast<insTupleType>(tt),
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) static_cast<insTupleType>(tt),
+    #include "instrs.h"
+    #undef  INST0
+    #undef  INST1
+    #undef  INST2
+    #undef  INST3
+    #undef  INST4
+    #undef  INST5
+};
+// clang-format on
+//------------------------------------------------------------------------
+// hasTupleTypeInfo: Checks if the instruction has tuple type info.
+//
+// Arguments:
+//    instruction -- processor instruction to check
+//
+// Return Value:
+//    true if this instruction has tuple type info.
+//
+inline bool hasTupleTypeInfo(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(insTupleTypeInfos));
+    return ((insTupleTypeInfos[ins] != INS_TT_NONE));
+}
+
+//------------------------------------------------------------------------
+// insTupleTypeInfo: Returns the tuple type info for a given CPU instruction.
+//
+// Arguments:
+//    instruction -- processor instruction to check
+//
+// Return Value:
+//    the tuple type info for a given CPU instruction.
+//
+inline insTupleType insTupleTypeInfo(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(insTupleTypeInfos));
+    assert((insTupleTypeInfos[ins] != INS_TT_NONE));
+    return insTupleTypeInfos[ins];
+}
+
 // Return true if the instruction uses the SSE38 or SSE3A macro in instrsXArch.h.
 bool emitter::EncodedBySSE38orSSE3A(instruction ins)
 {
@@ -2557,7 +2631,7 @@ bool emitter::EncodedBySSE38orSSE3A(instruction ins)
 
     size_t insCode = 0;
 
-    if (!IsSSEOrAVXInstruction(ins))
+    if (!IsAvx512OrPriorInstruction(ins))
     {
         return false;
     }
@@ -3092,9 +3166,19 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     return sz;
 }
 
-/*****************************************************************************/
-
-inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
+//------------------------------------------------------------------------
+// emitInsSizeSVCalcDisp: Calculate instruction size.
+//
+// Arguments:
+//    id -- Instruction descriptor.
+//    code -- The current opcode and any known prefixes
+//    var - Stack variable
+//    dsp -- Displacemnt.
+//
+// Return Value:
+//    Estimated instruction size.
+//
+inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp)
 {
     UNATIVE_OFFSET size = emitInsSize(code, /* includeRexPrefixSize */ true);
     UNATIVE_OFFSET offs;
@@ -3214,6 +3298,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     offs -= emitMaxTmpSize;
                 }
 
+                // Check whether we can use compressed displacement if EVEX.
+                if (TakesEvexPrefix(id->idIns()))
+                {
+                    bool compressedFitsInByte = false;
+                    TryEvexCompressDisp8Byte(id, ssize_t(offs), &compressedFitsInByte);
+                    return size + (compressedFitsInByte ? sizeof(char) : sizeof(int));
+                }
+
                 if ((int)offs < 0)
                 {
                     // offset is negative
@@ -3255,14 +3347,22 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-//  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
-//         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
+    //  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
+    //         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
 
+    bool useSmallEncoding = false;
+    if (TakesEvexPrefix(id->idIns()))
+    {
+        TryEvexCompressDisp8Byte(id, ssize_t(offs), &useSmallEncoding);
+    }
+    else
+    {
 #ifdef TARGET_AMD64
-    bool useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
+        useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
 #else
-    bool useSmallEncoding = (offs <= size_t(SCHAR_MAX));
+        useSmallEncoding = (offs <= size_t(SCHAR_MAX));
 #endif
+    }
 
     // If it is ESP based, and the offset is zero, we will not encode the disp part.
     if (!EBPbased && offs == 0)
@@ -3280,7 +3380,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins      = id->idIns();
     emitAttr       attrSize = id->idOpSize();
-    UNATIVE_OFFSET prefix   = emitGetAdjustedSize(ins, attrSize, code);
+    UNATIVE_OFFSET prefix   = emitGetAdjustedSizeEvexAware(ins, attrSize, code);
 
     // REX prefix
     if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
@@ -3289,7 +3389,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
         prefix += emitGetRexPrefixSize(ins);
     }
 
-    return prefix + emitInsSizeSV(code, var, dsp);
+    return prefix + emitInsSizeSVCalcDisp(id, code, var, dsp);
 }
 
 inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val)
@@ -3298,7 +3398,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     instruction    ins       = id->idIns();
     emitAttr       attrSize  = id->idOpSize();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(attrSize);
-    UNATIVE_OFFSET prefix    = emitGetAdjustedSize(ins, attrSize, code);
+    UNATIVE_OFFSET prefix    = emitGetAdjustedSizeEvexAware(ins, attrSize, code);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
@@ -3334,7 +3434,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
         prefix += emitGetRexPrefixSize(ins);
     }
 
-    return prefix + valSize + emitInsSizeSV(code, var, dsp);
+    return prefix + valSize + emitInsSizeSVCalcDisp(id, code, var, dsp);
 }
 
 /*****************************************************************************/
@@ -3402,6 +3502,13 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         dspInByte = false; // relocs can't be placed in a byte
         dspIsZero = false; // relocs won't always be zero
     }
+    else
+    {
+        if (TakesEvexPrefix(ins))
+        {
+            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+        }
+    }
 
     if (code & 0xFF000000)
     {
@@ -3424,7 +3531,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size = 2;
     }
 
-    size += emitGetAdjustedSize(ins, attrSize, code);
+    size += emitGetAdjustedSizeEvexAware(ins, attrSize, code);
 
     if (hasRexPrefix(code))
     {
@@ -10488,7 +10595,8 @@ void emitter::emitDispIns(
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
             }
-            else if ((ins == INS_cvtsi2ss) || (ins == INS_cvtsi2sd))
+            else if ((ins == INS_cvtsi2ss32) || (ins == INS_cvtsi2sd32) || (ins == INS_cvtsi2ss64) ||
+                     (ins == INS_cvtsi2sd64))
             {
                 printf(" %s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
             }
@@ -11236,7 +11344,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         if (id->idIsCallRegPtr())
         {
             code = insEncodeMRreg(ins, reg, EA_PTRSIZE, code);
-            dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputWord(dst, code);
             goto DONE;
         }
@@ -11262,7 +11370,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // And emit the REX prefix
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
 #endif // TARGET_AMD64
 
@@ -11281,7 +11389,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // SSE/AVX do not need to modify opcode
         if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
-            if (id->idInsFmt() != IF_ARW_SHF && !IsSSEOrAVXInstruction(ins))
+            if (id->idInsFmt() != IF_ARW_SHF && !IsAvx512OrPriorInstruction(ins))
             {
                 code |= 2;
             }
@@ -11325,13 +11433,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 #endif // TARGET_X86
 
-    // Emit VEX prefix if required
-    // There are some callers who already add VEX prefix and call this routine.
-    // Therefore, add VEX prefix is one is not already present.
-    code = AddVexPrefixIfNeededAndNotPresent(ins, code, size);
+    // Emit SIMD prefix if required
+    // There are some callers who already add SIMD prefix and call this routine.
+    // Therefore, add SIMD prefix is one is not already present.
+    code = AddSimdPrefixIfNeededAndNotPresent(ins, code, size);
 
     // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-    if (TakesVexPrefix(ins))
+    if (TakesSimdPrefix(ins))
     {
         if (IsDstDstSrcAVXInstruction(ins))
         {
@@ -11365,7 +11473,10 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Emit the REX prefix if required
-    if (TakesRexWPrefix(ins, size))
+    // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
+    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix(). Not doind so currently
+    // since we cannot differentiate EVEX vs VEX without 'code' untill all paths have EVEX support.
+    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(ins)))
     {
         code = AddRexWPrefix(ins, code);
     }
@@ -11421,9 +11532,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseSimdEncoding() && (ins != INS_crc32))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -11449,7 +11560,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Output the REX prefix
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest word of the opcode
         // We need to check again as in case of AVX instructions leading opcode bytes are stripped off
@@ -11466,7 +11577,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert(ins != INS_bt);
 
         // Output the REX prefix
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest byte of the opcode
         if (code & 0x00FF0000)
@@ -11534,19 +11645,29 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Output the REX prefix
-    dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
     // Get the displacement value
     dsp = emitGetInsAmdAny(id);
 
 GOT_DSP:
 
-    dspInByte = ((signed char)dsp == (ssize_t)dsp);
     dspIsZero = (dsp == 0);
 
     if (id->idIsDspReloc())
     {
         dspInByte = false; // relocs can't be placed in a byte
+    }
+    else
+    {
+        if (TakesEvexPrefix(ins))
+        {
+            dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+        }
+        else
+        {
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+        }
     }
 
     if (isMoffset)
@@ -12160,11 +12281,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         ssize_t cval = addc->cnsVal;
 
         // Does the constant fit in a byte?
-        // SSE/AVX do not need to modify opcode
+        // SSE/AVX/AVX512 do not need to modify opcode
         if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
             if ((id->idInsFmt() != IF_SRW_SHF) && (id->idInsFmt() != IF_RRW_SRD_CNS) &&
-                (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsSSEOrAVXInstruction(ins))
+                (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsAvx512OrPriorInstruction(ins))
             {
                 code |= 2;
             }
@@ -12173,13 +12294,17 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
     }
 
-    // Add VEX prefix if required.
-    // There are some callers who already add VEX prefix and call this routine.
-    // Therefore, add VEX prefix is one is not already present.
-    code = AddVexPrefixIfNeededAndNotPresent(ins, code, size);
+    // Add VEX or EVEX prefix if required.
+    // There are some callers who already add prefix and call this routine.
+    // Therefore, add VEX or EVEX prefix if one is not already present.
+    code = AddSimdPrefixIfNeededAndNotPresent(ins, code, size);
 
     // Compute the REX prefix
-    if (TakesRexWPrefix(ins, size))
+    // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
+    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix().
+    // Not doing so currently since we cannot differentiate EVEX vs VEX without
+    // 'code' until all paths have EVEX support.
+    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(ins)))
     {
         code = AddRexWPrefix(ins, code);
     }
@@ -12212,9 +12337,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseSimdEncoding() && (ins != INS_crc32))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -12240,7 +12365,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Output the REX prefix
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest word of the opcode
         // We need to check again because in case of AVX instructions the leading
@@ -12257,7 +12382,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert(ins != INS_bt);
 
         // Output the REX prefix
-        dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest byte of the opcode.
         // We need to check again because in case of AVX instructions the leading
@@ -12283,7 +12408,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code += 4;
         }
     }
-    else if (!IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+    else if (!IsSSEInstruction(ins) && !IsAVXInstruction(ins) && !IsAvx512Instruction(ins))
     {
         // Is the operand size larger than a byte?
         switch (size)
@@ -12329,7 +12454,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Output the REX prefix
-    dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
 
     // Figure out the variable's frame position
     int varNum = id->idAddr()->iiaLclVar.lvaVarNum();
@@ -12337,7 +12462,18 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     adr = emitComp->lvaFrameAddress(varNum, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
-    dspInByte = ((signed char)dsp == (int)dsp);
+    // TODO-XARCH-AVX512 : working to wrap up all adjusted disp8 compression logic into the following
+    // function, to which the remainder of the emitter logic should handle properly.
+    // TODO-XARCH-AVX512 : embedded broadcast might change this
+    int dspAsByte = dsp;
+    if (TakesEvexPrefix(ins))
+    {
+        dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
+    }
+    else
+    {
+        dspInByte = ((signed char)dsp == (ssize_t)dsp);
+    }
     dspIsZero = (dsp == 0);
 
     // for stack variables the dsp should never be a reloc
@@ -12351,7 +12487,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             if (dspInByte)
             {
                 dst += emitOutputByte(dst, code | 0x45);
-                dst += emitOutputByte(dst, dsp);
+                dst += emitOutputByte(dst, dspAsByte);
             }
             else
             {
@@ -12364,7 +12500,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             if (dspInByte)
             {
                 dst += emitOutputWord(dst, code | 0x4500);
-                dst += emitOutputByte(dst, dsp);
+                dst += emitOutputByte(dst, dspAsByte);
             }
             else
             {
@@ -12381,7 +12517,21 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         dsp += emitCurStackLvl;
 #endif
 
-        dspInByte = ((signed char)dsp == (int)dsp);
+        // TODO-XARCH-AVX512 : working to wrap up all adjusted disp8 compression logic into the following
+        // function, to which the remainder of the emitter logic should handle properly.
+        // TODO-XARCH-AVX512 : embedded broadcast might change this
+        if (TakesEvexPrefix(ins))
+        {
+            dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
+        }
+        else
+        {
+            dspInByte = ((signed char)dsp == (ssize_t)dsp);
+            if (dspInByte)
+            {
+                dspAsByte = dsp;
+            }
+        }
         dspIsZero = (dsp == 0);
 
         // Does the offset fit in a byte?
@@ -12398,7 +12548,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     dst += emitOutputByte(dst, code | 0x44);
                     dst += emitOutputByte(dst, 0x24);
-                    dst += emitOutputByte(dst, dsp);
+                    dst += emitOutputByte(dst, dspAsByte);
                 }
             }
             else
@@ -12421,7 +12571,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     dst += emitOutputWord(dst, code | 0x4400);
                     dst += emitOutputByte(dst, 0x24);
-                    dst += emitOutputByte(dst, dsp);
+                    dst += emitOutputByte(dst, dspAsByte);
                 }
             }
             else
@@ -14529,6 +14679,168 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     return dst;
 }
 
+//------------------------------------------------------------------------
+// GetInputSizeInBytes: Get size of input for instruction in bytes.
+//
+// Arguments:
+//    id -- Instruction descriptor.
+//
+// Return Value:
+//    size in bytes.
+//
+ssize_t emitter::GetInputSizeInBytes(instrDesc* id)
+{
+    insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
+    switch (inputSize)
+    {
+        case 0:
+            return EA_SIZE_IN_BYTES(id->idOpSize());
+        case Input_8Bit:
+            return 1;
+        case Input_16Bit:
+            return 2;
+        case Input_32Bit:
+            return 4;
+        case Input_64Bit:
+            return 8;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// TryEvexCompressDisp8Byte: Do we do compressed displacement encoding for EVEX.
+//
+// Arguments:
+//    id -- Instruction descriptor.
+//    dsp -- Displacemnt.
+//    dspInByte[out] - TRUE if compressed displacement
+//
+// Return Value:
+//    compressed displacement value if dspInByte ===  TRUE.
+//    Original dsp otherwise.
+//
+ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte)
+{
+    assert(TakesEvexPrefix(id->idIns()));
+    insTupleType tt = insTupleTypeInfo(id->idIns());
+    assert(hasTupleTypeInfo(id->idIns()));
+
+    // if dsp is 0, no need for all of this
+    if (dsp == 0)
+    {
+        *dspInByte = true;
+        return dsp;
+    }
+
+    // Only handling non-broadcast forms right now
+    ssize_t vectorLength = EA_SIZE_IN_BYTES(id->idOpSize());
+
+    ssize_t inputSize = GetInputSizeInBytes(id);
+
+    ssize_t disp8Compression = 1;
+
+    switch (tt)
+    {
+        case INS_TT_FULL:
+            assert(inputSize == 4 || inputSize == 8);
+            if (HasEmbeddedBroadcast(id))
+            {
+                // N = input size in bytes
+                disp8Compression = inputSize;
+            }
+            else
+            {
+                // N = vector length in bytes
+                disp8Compression = vectorLength;
+            }
+            break;
+        case INS_TT_HALF:
+            assert(inputSize == 4);
+            if (HasEmbeddedBroadcast(id))
+            {
+                // N = input size in bytes
+                disp8Compression = inputSize;
+            }
+            else
+            {
+                // N = vector length in bytes
+                disp8Compression = vectorLength / 2;
+            }
+            break;
+        case INS_TT_FULL_MEM:
+            // N = vector length in bytes
+            disp8Compression = vectorLength;
+            break;
+        case INS_TT_TUPLE1_SCALAR:
+        {
+            disp8Compression = inputSize;
+            break;
+        }
+        case INS_TT_TUPLE1_FIXED:
+            // N = input size in bytes, 32bit and 64bit only
+            assert(inputSize == 4 || inputSize == 8);
+            disp8Compression = inputSize;
+            break;
+        case INS_TT_TUPLE2:
+            // N = input size in bytes * 2, 32bit and 64bit for 256 bit and 512 bit only
+            assert((inputSize == 4) || (inputSize == 8 && vectorLength >= 32));
+            disp8Compression = inputSize * 2;
+            break;
+        case INS_TT_TUPLE4:
+            // N = input size in bytes * 4, 32bit for 256 bit and 512 bit, 64bit for 512 bit
+            assert((inputSize == 4 && vectorLength >= 32) || (inputSize == 8 && vectorLength >= 64));
+            disp8Compression = inputSize * 4;
+            break;
+        case INS_TT_TUPLE8:
+            // N = input size in bytes * 4, 32bit for 512 only
+            assert((inputSize == 4 && vectorLength >= 64));
+            disp8Compression = inputSize * 4;
+            break;
+        case INS_TT_HALF_MEM:
+            // N = vector length in bytes / 2
+            disp8Compression = vectorLength / 2;
+            break;
+        case INS_TT_QUARTER_MEM:
+            // N = vector length in bytes / 4
+            disp8Compression = vectorLength / 4;
+            break;
+        case INS_TT_EIGHTH_MEM:
+            // N = vector length in bytes / 8
+            disp8Compression = vectorLength / 8;
+            break;
+        case INS_TT_MEM128:
+            // N = 16
+            disp8Compression = 16;
+            break;
+        case INS_TT_MOVDDUP:
+            // N = vector length in bytes / 2
+            disp8Compression = (vectorLength == 16) ? (vectorLength / 2) : vectorLength;
+            break;
+        default:
+            unreached();
+    }
+
+    // If we can evenly divide dsp by the disp8Compression, we can attempt to use it in a disp8 byte form
+    if (dsp % disp8Compression != 0)
+    {
+        *dspInByte = false;
+        return dsp;
+    }
+
+    ssize_t compressedDsp = dsp / disp8Compression;
+
+    *dspInByte = ((signed char)compressedDsp == (ssize_t)compressedDsp);
+    if (*dspInByte)
+    {
+        return compressedDsp;
+    }
+    else
+    {
+        return dsp;
+    }
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -15138,7 +15450,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddVexPrefixIfNeeded(ins, code, size);
+                code    = AddSimdPrefixIfNeeded(ins, code, size);
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
@@ -15166,7 +15478,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddVexPrefixIfNeeded(ins, code, size);
+                code    = AddSimdPrefixIfNeeded(ins, code, size);
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
@@ -15195,7 +15507,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddVexPrefixIfNeeded(ins, code, size);
+                code    = AddSimdPrefixIfNeeded(ins, code, size);
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
@@ -15207,7 +15519,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_AWR_RRD:
         case IF_ARW_RRD:
             code    = insCodeMR(ins);
-            code    = AddVexPrefixIfNeeded(ins, code, size);
+            code    = AddSimdPrefixIfNeeded(ins, code, size);
             regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
             dst     = emitOutputAM(dst, id, code | regcode);
             sz      = emitSizeOfInsDsc(id);
@@ -15216,7 +15528,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_AWR_RRD_RRD:
         {
             code = insCodeMR(ins);
-            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = AddSimdPrefixIfNeeded(ins, code, size);
             dst  = emitOutputAM(dst, id, code);
             sz   = emitSizeOfInsDsc(id);
             break;
@@ -15285,7 +15597,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(IsSSEOrAVXInstruction(ins));
+            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+            assert(UseSimdEncoding());
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
@@ -15305,7 +15618,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
+                code = AddSimdPrefixIfNeeded(ins, code, size);
 
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
@@ -15340,7 +15653,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
+                code = AddSimdPrefixIfNeeded(ins, code, size);
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
@@ -15358,11 +15671,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_RRD_SRD:
         {
-            // This should only be called on AVX instructions
-            assert(IsAVXInstruction(ins));
+            assert(IsSimdInstruction(ins));
 
             code = insCodeRM(ins);
-            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = AddSimdPrefixIfNeeded(ins, code, size);
             code = insEncodeReg3456(ins, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -15388,7 +15700,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsCns(id, &cnsVal);
 
             code = insCodeRM(ins);
-            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = AddSimdPrefixIfNeeded(ins, code, size);
             code = insEncodeReg3456(ins, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -15412,7 +15724,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SWR_RRD:
         case IF_SRW_RRD:
             code = insCodeMR(ins);
-            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = AddSimdPrefixIfNeeded(ins, code, size);
 
             // In case of AVX instructions that take 3 operands, encode reg1 as first source.
             // Note that reg1 is both a source and a destination.
@@ -16810,8 +17122,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_cvttsd2si:
         case INS_cvtsd2si:
-        case INS_cvtsi2sd:
-        case INS_cvtsi2ss:
+        case INS_cvtsi2sd32:
+        case INS_cvtsi2ss32:
+        case INS_cvtsi2sd64:
+        case INS_cvtsi2ss64:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
             break;

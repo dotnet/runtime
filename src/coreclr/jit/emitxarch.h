@@ -39,7 +39,7 @@ struct CnsVal
 };
 
 UNATIVE_OFFSET emitInsSize(code_t code, bool includeRexPrefixSize);
-UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
+UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);
@@ -430,6 +430,14 @@ bool HasKMaskRegisterDest(instruction ins) const
         case INS_cmpss:
         case INS_cmppd:
         case INS_cmpsd:
+        case INS_vpgatherdd:
+        case INS_vpgatherqd:
+        case INS_vpgatherdq:
+        case INS_vpgatherqq:
+        case INS_vgatherdps:
+        case INS_vgatherqps:
+        case INS_vgatherdpd:
+        case INS_vgatherqpd:
         {
             return true;
         }
@@ -459,6 +467,17 @@ bool UseEvexEncoding() const
 void SetUseEvexEncoding(bool value)
 {
     useEvexEncodings = value;
+}
+
+//------------------------------------------------------------------------
+// UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
+// contains Evex prefix.
+//
+// Returns:
+//    TRUE if target supports either.
+bool UseSimdEncoding() const
+{
+    return UseVEXEncoding() || UseEvexEncoding();
 }
 
 // 4-byte EVEX prefix starts with byte 0x62
@@ -491,7 +510,7 @@ code_t AddEvexPrefix(instruction ins, code_t code, emitAttr attr);
 //    size - operand size
 //
 // Returns:
-//    TRUE if code has an Evex prefix.
+//    code with prefix added.
 code_t AddSimdPrefixIfNeeded(instruction ins, code_t code, emitAttr size)
 {
     if (TakesEvexPrefix(ins))
@@ -504,6 +523,32 @@ code_t AddSimdPrefixIfNeeded(instruction ins, code_t code, emitAttr size)
     }
     return code;
 }
+
+//------------------------------------------------------------------------
+// AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
+// Check if the prefix already exists befpre adding.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+// Returns:
+//    TRUE if code has an Evex prefix.
+code_t AddSimdPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr size)
+{
+    if (TakesEvexPrefix(ins))
+    {
+        code = !hasEvexPrefix(code) ? AddEvexPrefix(ins, code, size) : code;
+    }
+    else if (TakesVexPrefix(ins))
+    {
+        code = !hasVexPrefix(code) ? AddVexPrefix(ins, code, size) : code;
+    }
+    return code;
+}
+
+bool TakesSimdPrefix(instruction ins) const;
 
 //------------------------------------------------------------------------
 // hasVexOrEvexPrefix: Returns true if the instruction encoding already
@@ -519,6 +564,8 @@ bool hasVexOrEvexPrefix(code_t code)
     return (hasVexPrefix(code) || hasEvexPrefix(code));
 }
 
+ssize_t TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte);
+
 //------------------------------------------------------------------------
 // codeEvexMigrationCheck: Temporary check to use when adding EVEX codepaths
 // TODO-XArch-AVX512: Remove implementation and uses once all Evex paths are
@@ -533,6 +580,8 @@ bool codeEvexMigrationCheck(code_t code)
 {
     return hasEvexPrefix(code);
 }
+
+ssize_t GetInputSizeInBytes(instrDesc* id);
 
 bool containsAVXInstruction = false;
 bool ContainsAVX()
@@ -952,6 +1001,20 @@ inline bool emitIsUncondJump(instrDesc* jmp)
     assert(jmp->idInsFmt() == IF_LABEL);
 
     return (ins == INS_jmp);
+}
+
+//------------------------------------------------------------------------
+// HasEmbeddedBroadcast: Do we consider embedded broadcast while encoding.
+// TODO-XArch-AVX512: Add eventual check on the instrDesc
+//
+// Arguments:
+//    id - Instruction descriptor.
+//
+// Returns:
+//    TRUE if the instruction does embeddded broadcast.
+inline bool HasEmbeddedBroadcast(instrDesc* id)
+{
+    return false;
 }
 
 #endif // TARGET_XARCH
