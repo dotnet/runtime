@@ -9114,7 +9114,7 @@ public:
         {
             return compOptLevel;
         }
-        void SetMinOpts(bool val)
+        void SetMinOpts()
         {
             compOptLevel = OPT_MinOpts;
         }

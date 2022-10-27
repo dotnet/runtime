@@ -2421,6 +2421,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
         {
+            // TODO: use this for Tier0
             opts.compOptLevel = OPT_SizeAndThroughput;
         }
         else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
@@ -3853,7 +3854,10 @@ void Compiler::compSetOptimizationLevel()
 _SetMinOpts:
 
     // Set the MinOpts value
-    opts.SetMinOpts(theMinOptsValue);
+    if (theMinOptsValue)
+    {
+        opts.SetMinOpts();
+    }
 
     // Notify the VM if MinOpts is being used when not requested
     if (theMinOptsValue && !compIsForInlining() && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
