@@ -217,7 +217,6 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
     <Compile Include="Interop\Windows\Interop.Comdlg32.cs" />
     <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
     <Compile Include="Interop\Windows\Interop.Kernel32.cs" />
-    <Compile Include="Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="Interop\Windows\Interop.Shell32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
     <Compile Include="Interop\Windows\Interop.Winspool.cs" />
