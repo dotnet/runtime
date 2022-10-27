@@ -192,10 +192,7 @@ namespace ILCompiler.ObjectWriter
                 _ => true
             };
             _dwarfCie = new DwarfCie(_nodeFactory.Target.Architecture);
-            _dwarfEhFrame = new DwarfEhFrame(
-                ehFrameSectionWriter.Stream,
-                (relocType, symbolName) => ehFrameSectionWriter.EmitSymbolReference(relocType, symbolName),
-                is64Bit);
+            _dwarfEhFrame = new DwarfEhFrame(ehFrameSectionWriter, is64Bit);
             _dwarfEhFrame.AddCie(_dwarfCie);
         }
 
