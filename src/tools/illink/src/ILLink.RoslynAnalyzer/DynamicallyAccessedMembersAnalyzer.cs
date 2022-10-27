@@ -204,79 +204,79 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
-		static void VerifyDamOnMethodsMatch (SymbolAnalysisContext context, IMethodSymbol method, IMethodSymbol overriddenMethod)
+		static void VerifyDamOnMethodsMatch (SymbolAnalysisContext context, IMethodSymbol overrideMethod, IMethodSymbol baseMethod)
 		{
-			var methodReturnAnnotations = FlowAnnotations.GetMethodReturnValueAnnotation (method);
-			var overriddenMethodReturnAnnotations = FlowAnnotations.GetMethodReturnValueAnnotation (overriddenMethod);
-			if (methodReturnAnnotations != overriddenMethodReturnAnnotations) {
+			var overrideMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation (overrideMethod);
+			var baseMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation (baseMethod);
+			if (overrideMethodReturnAnnotation != baseMethodReturnAnnotation) {
 
-				(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (method,
-					overriddenMethod, methodReturnAnnotations, overriddenMethodReturnAnnotations);
+				(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod,
+					baseMethod, overrideMethodReturnAnnotation, baseMethodReturnAnnotation);
 
 				Location attributableSymbolLocation = attributableMethod.Locations[0];
 
 				// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
 				(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-					|| (method.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-						&& overriddenMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+					|| (overrideMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
+						&& baseMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
 						) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
 
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
-					method.Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (), method.GetDisplayName (), overriddenMethod.GetDisplayName ()));
+					overrideMethod.Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (), overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
 			}
 
-			for (int i = 0; i < method.Parameters.Length; i++) {
-				var methodParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation (method.Parameters[i]);
-				var overriddenParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation (overriddenMethod.Parameters[i]);
-				if (methodParameterAnnotation != overriddenParameterAnnotation) {
+			foreach (var overrideParam in overrideMethod.GetMetadataParameters ()) {
+				var baseParam = baseMethod.GetParameter (overrideParam.Index);
+				var baseParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation (baseParam);
+				var overrideParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation (overrideParam);
+				if (overrideParameterAnnotation != baseParameterAnnotation) {
+					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod,
+						baseMethod, overrideParameterAnnotation, baseParameterAnnotation);
 
-					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (method,
-						overriddenMethod, methodParameterAnnotation, overriddenParameterAnnotation);
-
-					Location attributableSymbolLocation = attributableMethod.Parameters[i].Locations[0];
+					Location attributableSymbolLocation = attributableMethod.GetParameter (overrideParam.Index).Location!;
 
 					// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
 					(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-						|| (method.Parameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-							&& overriddenMethod.Parameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+						|| (overrideParam.ParameterSymbol!.TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
+							&& baseParam.ParameterSymbol!.TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
 							) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
 
 					context.ReportDiagnostic (Diagnostic.Create (
 						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides),
-						method.Parameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
-						method.Parameters[i].GetDisplayName (), method.GetDisplayName (), overriddenMethod.Parameters[i].GetDisplayName (), overriddenMethod.GetDisplayName ()));
+						overrideParam.Location, sourceLocation, DAMArgs?.ToImmutableDictionary (),
+						overrideParam.GetDisplayName (), overrideMethod.GetDisplayName (), baseParam.GetDisplayName (), baseMethod.GetDisplayName ()));
 				}
 			}
 
-			for (int i = 0; i < method.TypeParameters.Length; i++) {
-				var methodTypeParameterAnnotation = method.TypeParameters[i].GetDynamicallyAccessedMemberTypes ();
-				var overriddenMethodTypeParameterAnnotation = overriddenMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes ();
+			for (int i = 0; i < overrideMethod.TypeParameters.Length; i++) {
+				var methodTypeParameterAnnotation = overrideMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes ();
+				var overriddenMethodTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes ();
 				if (methodTypeParameterAnnotation != overriddenMethodTypeParameterAnnotation) {
 
-					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (method, overriddenMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
+					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
 
 					Location attributableSymbolLocation = attributableMethod.TypeParameters[i].Locations[0];
 
 					// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
 					(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-						|| (method.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-							&& overriddenMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+						|| (overrideMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
+							&& baseMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
 							) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
 
 					context.ReportDiagnostic (Diagnostic.Create (
 						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
-						method.TypeParameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
-						method.TypeParameters[i].GetDisplayName (), method.GetDisplayName (),
-						overriddenMethod.TypeParameters[i].GetDisplayName (), overriddenMethod.GetDisplayName ()));
+						overrideMethod.TypeParameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
+						overrideMethod.TypeParameters[i].GetDisplayName (), overrideMethod.GetDisplayName (),
+						baseMethod.TypeParameters[i].GetDisplayName (), baseMethod.GetDisplayName ()));
 				}
 			}
 
-			if (!method.IsStatic && method.GetDynamicallyAccessedMemberTypes () != overriddenMethod.GetDynamicallyAccessedMemberTypes ())
+			if (!overrideMethod.IsStatic && overrideMethod.GetDynamicallyAccessedMemberTypes () != baseMethod.GetDynamicallyAccessedMemberTypes ())
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides),
-					method.Locations[0],
-					method.GetDisplayName (), overriddenMethod.GetDisplayName ()));
+					overrideMethod.Locations[0],
+					overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
 		}
 
 		static void VerifyDamOnInterfaceAndImplementationMethodsMatch (SymbolAnalysisContext context, INamedTypeSymbol type)

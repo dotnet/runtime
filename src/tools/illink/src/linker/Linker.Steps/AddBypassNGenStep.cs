@@ -102,7 +102,7 @@ namespace Mono.Linker.Steps
 				bypassNGenAttributeDef.Methods.Add (bypassNGenAttributeDefaultConstructor);
 			} else {
 				foreach (MethodDefinition method in bypassNGenAttributeDef.Methods) {
-					if (method.IsConstructor && !method.IsStatic && !method.HasParameters) {
+					if (method.IsConstructor && !method.IsStatic && !method.HasMetadataParameters ()) {
 						bypassNGenAttributeDefaultConstructor = method;
 						break;
 					}

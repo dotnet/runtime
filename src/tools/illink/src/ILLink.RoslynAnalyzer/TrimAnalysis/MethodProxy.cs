@@ -19,14 +19,15 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsDeclaredOnType (string fullTypeName) => IsTypeOf (Method.ContainingType, fullTypeName);
 
-		internal partial bool HasParameters () => Method.Parameters.Length > 0;
+		internal partial bool HasMetadataParameters () => Method.Parameters.Length > 0;
 
-		internal partial int GetParametersCount () => Method.Parameters.Length;
+		internal partial int GetMetadataParametersCount () => Method.GetMetadataParametersCount ();
 
-		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName)
-			=> Method.Parameters.Length > parameterIndex && IsTypeOf (Method.Parameters[parameterIndex].Type, fullTypeName);
+		internal partial int GetParametersCount () => Method.GetParametersCount ();
 
-		internal partial string GetParameterDisplayName (int parameterIndex) => Method.Parameters[parameterIndex].GetDisplayName ();
+		internal partial ParameterProxyEnumerable GetParameters () => Method.GetParameters ();
+
+		internal partial ParameterProxy GetParameter (ParameterIndex index) => Method.GetParameter (index);
 
 		internal partial bool HasGenericParameters () => Method.IsGenericMethod;
 
@@ -47,6 +48,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsStatic () => Method.IsStatic;
 
+		internal partial bool HasImplicitThis () => Method.HasImplicitThis ();
+
 		internal partial bool ReturnsVoid () => Method.ReturnType.SpecialType == SpecialType.System_Void;
 
 		static bool IsTypeOf (ITypeSymbol type, string fullTypeName)
@@ -56,14 +59,6 @@ namespace ILLink.Shared.TypeSystemProxy
 
 			return namedType.HasName (fullTypeName);
 		}
-
-		public ReferenceKind ParameterReferenceKind (int index)
-			=> Method.Parameters[index].RefKind switch {
-				RefKind.In => ReferenceKind.In,
-				RefKind.Out => ReferenceKind.Out,
-				RefKind.Ref => ReferenceKind.Ref,
-				_ => ReferenceKind.None
-			};
 
 		public override string ToString () => Method.ToString ();
 	}

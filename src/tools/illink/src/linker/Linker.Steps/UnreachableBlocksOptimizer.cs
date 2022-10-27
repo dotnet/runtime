@@ -238,7 +238,7 @@ namespace Mono.Linker.Steps
 			MethodResult? value;
 
 			MethodDefinition method = callee.Method;
-			if (!method.HasParameters || callee.HasUnknownArguments) {
+			if (!method.HasMetadataParameters () || callee.HasUnknownArguments) {
 				if (!_cache_method_results.TryGetValue (method, out value) && !IsDeepStack (callStack)) {
 					value = AnalyzeMethodForConstantResult (callee, callStack);
 					_cache_method_results.Add (method, value);
@@ -310,21 +310,21 @@ namespace Mono.Linker.Steps
 
 		static Instruction[]? GetArgumentsOnStack (MethodDefinition method, Collection<Instruction> instructions, int index)
 		{
-			if (!method.HasParameters)
+			if (!method.HasMetadataParameters ())
 				return Array.Empty<Instruction> ();
 
 			Instruction[]? result = null;
-			for (int i = method.Parameters.Count, pos = 0; i != 0; --i, ++pos) {
+			for (int i = method.GetMetadataParametersCount (), pos = 0; i != 0; --i, ++pos) {
 				Instruction instr = instructions[index - i];
 				if (!IsConstantValue (instr))
 					return null;
 
-				result ??= new Instruction[method.Parameters.Count];
+				result ??= new Instruction[method.GetMetadataParametersCount ()];
 
 				result[pos] = instr;
 			}
 
-			if (result != null && HasJumpIntoTargetRange (instructions, index - method.Parameters.Count + 1, index))
+			if (result != null && HasJumpIntoTargetRange (instructions, index - method.GetMetadataParametersCount () + 1, index))
 				return null;
 
 			return result;
@@ -415,7 +415,7 @@ namespace Mono.Linker.Steps
 			if (type == null)
 				return null;
 
-			return type.Methods.First (l => !l.HasParameters && l.IsStatic && l.Name == "get_Size");
+			return type.Methods.First (l => !l.HasMetadataParameters () && l.IsStatic && l.Name == "get_Size");
 		}
 
 		readonly struct CallInliner
@@ -465,7 +465,7 @@ namespace Mono.Linker.Steps
 						}
 
 						if (!md.IsStatic) {
-							if (!md.HasParameters && CanInlineInstanceCall (instrs, i)) {
+							if (!md.HasMetadataParameters () && CanInlineInstanceCall (instrs, i)) {
 								processor.Replace (i - 1, Instruction.Create (OpCodes.Nop));
 								processor.Replace (i, result.GetPrototype ()!);
 								changed = true;
@@ -474,11 +474,11 @@ namespace Mono.Linker.Steps
 							continue;
 						}
 
-						if (md.HasParameters) {
+						if (md.HasMetadataParameters ()) {
 							if (!IsCalledWithoutSideEffects (md, instrs, i))
 								continue;
 
-							for (int p = 1; p <= md.Parameters.Count; ++p) {
+							for (int p = 1; p <= md.GetMetadataParametersCount (); ++p) {
 								processor.Replace (i - p, Instruction.Create (OpCodes.Nop));
 							}
 						}
@@ -516,7 +516,7 @@ namespace Mono.Linker.Steps
 
 			static bool IsCalledWithoutSideEffects (MethodDefinition method, Collection<Instruction> instructions, int index)
 			{
-				for (int i = 1; i <= method.Parameters.Count; ++i) {
+				for (int i = 1; i <= method.GetMetadataParametersCount (); ++i) {
 					if (!IsSideEffectFreeLoad (instructions[index - i]))
 						return false;
 				}
@@ -1655,7 +1655,7 @@ namespace Mono.Linker.Steps
 								return false;
 
 							Instruction[]? args;
-							if (!md.HasParameters) {
+							if (!md.HasMetadataParameters ()) {
 								args = Array.Empty<Instruction> ();
 							} else {
 								//
@@ -1816,7 +1816,7 @@ namespace Mono.Linker.Steps
 
 			Instruction[]? GetArgumentsOnStack (MethodDefinition method)
 			{
-				int length = method.Parameters.Count;
+				int length = method.GetMetadataParametersCount ();
 				Debug.Assert (length != 0);
 				if (stack_instr?.Count < length)
 					return null;

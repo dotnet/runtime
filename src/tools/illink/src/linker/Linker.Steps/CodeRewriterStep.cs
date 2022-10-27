@@ -157,8 +157,10 @@ namespace Mono.Linker.Steps
 		{
 			var body = new MethodBody (method);
 
+#pragma warning disable RS0030 // MethodReference.Parameters is banned. This code already works and doesn't need to be changed
 			if (method.HasParameters && method.Parameters.Any (l => l.IsOut))
 				throw new NotSupportedException ($"Cannot replace body of method '{method.GetDisplayName ()}' because it has an out parameter.");
+#pragma warning restore RS0030
 
 			var il = body.GetLinkerILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {

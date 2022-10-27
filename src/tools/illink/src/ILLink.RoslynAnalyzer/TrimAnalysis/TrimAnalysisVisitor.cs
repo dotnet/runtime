@@ -113,7 +113,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
 			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
-				return new MethodThisParameterValue (Method);
+				return new MethodParameterValue (Method, (ParameterIndex) 0, Method.GetDynamicallyAccessedMemberTypes ());
 
 			return TopValue;
 		}

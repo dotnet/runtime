@@ -564,8 +564,10 @@ namespace Mono.Linker
 
 				if (!isNameOnly || !acceptName) {
 					// check parameters unless we are matching a name only
+#pragma warning disable RS0030 // Do not used banned APIs
 					if (!AllParametersMatch (method.Parameters, parameters, resolver))
 						continue;
+#pragma warning restore RS0030 // Do not used banned APIs
 				}
 
 				results.Add (method);

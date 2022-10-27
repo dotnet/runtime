@@ -1,16 +1,19 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class MethodDefinitionExtensions
+	[SuppressMessage ("ApiDesign", "RS0030:Do not used banned APIs", Justification = "This class provides wrapper methods around the banned Parameters property")]
+	internal static class MethodDefinitionExtensions
 	{
 		public static bool IsDefaultConstructor (this MethodDefinition method)
 		{
-			return IsInstanceConstructor (method) && !method.HasParameters;
+			return IsInstanceConstructor (method) && !method.HasMetadataParameters ();
 		}
 
 		public static bool IsInstanceConstructor (this MethodDefinition method)
@@ -97,6 +100,51 @@ namespace Mono.Linker
 				di.Scope.Constants.Clear ();
 				di.Scope = null;
 			}
+		}
+
+		public static bool HasParameterOfType (this MethodDefinition method, ParameterIndex index, string typeName)
+			=> method.TryGetParameter (index)?.ParameterType?.IsTypeOf (typeName) is true;
+
+		/// <summary>
+		/// Tries to get the <see cref="ParameterProxy"/> representing the parameter at index <paramref name="index"/> of method <paramref name="method"/>.
+		/// Returns null if <paramref name="index"/> is not a valid parameter index for <paramref name="method"/>.
+		/// <see cref="GetParameter(MethodDefinition, ParameterIndex)"/> for a non-nullable version if you know the index is valid.
+		/// </summary>
+		public static ParameterProxy? TryGetParameter (this MethodDefinition method, ParameterIndex index)
+		{
+			if (method.GetParametersCount () <= (int) index || (int) index < 0)
+				return null;
+			return new (new (method), index);
+		}
+
+		/// <summary>
+		/// Gets the <see cref="ParameterProxy"/> representing the parameter at index <paramref name="index"/> of method <paramref name="method"/>.
+		/// Throws if <paramref name="index"/> is not a valid parameter index for <paramref name="method"/>.
+		/// <see cref="TryGetParameter(MethodDefinition, ParameterIndex)"/> for a non-throwing version if you're not sure the parameter exists on the method.
+		/// </summary>
+		public static ParameterProxy GetParameter (this MethodDefinition method, ParameterIndex index)
+		{
+			if (method.TryGetParameter (index) is not ParameterProxy param)
+				throw new InvalidOperationException ($"Cannot get parameter #{(int) index} of method {method.GetDisplayName ()} with {method.GetParametersCount ()} parameters");
+			return param;
+		}
+
+		/// <summary>
+		/// Returns a foreach-enumerable collection of the parameters pushed onto the stack before the method call (including the implicit 'this' parameter)
+		/// </summary>
+		public static ParameterProxyEnumerable GetParameters (this MethodDefinition method)
+		{
+			int implicitThisOffset = method.HasImplicitThis () ? 1 : 0;
+			return new ParameterProxyEnumerable (0, method.Parameters.Count + implicitThisOffset, method);
+		}
+
+		/// <summary>
+		/// Returns a list of ParameterProxy representing the parameters listed in the "Parameters" metadata section (i.e. not including the implicit 'this' parameter)
+		/// </summary>
+		public static ParameterProxyEnumerable GetMetadataParameters (this MethodDefinition method)
+		{
+			int implicitThisOffset = method.HasImplicitThis () ? 1 : 0;
+			return new ParameterProxyEnumerable (implicitThisOffset, method.Parameters.Count + implicitThisOffset, method);
 		}
 	}
 }

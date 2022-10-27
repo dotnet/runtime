@@ -198,12 +198,12 @@ namespace Mono.Linker.Steps
 			}
 
 			sb.Append ("(");
-			if (meth.HasParameters) {
-				for (int i = 0; i < meth.Parameters.Count; i++) {
-					if (i > 0)
+			if (meth.HasMetadataParameters ()) {
+				int i = 0;
+				foreach (var p in meth.GetMetadataParameters ()) {
+					if (i++ > 0)
 						sb.Append (",");
-
-					sb.Append (meth.Parameters[i].ParameterType.FullName);
+					sb.Append (p.ParameterType.FullName);
 				}
 			}
 			sb.Append (")");

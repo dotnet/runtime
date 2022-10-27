@@ -52,10 +52,10 @@ namespace ILLink.Shared.TrimAnalysis
 					// Ignore - probably unreachable path as it would fail at runtime anyway.
 				} else {
 					DiagnosticId diagnosticId = targetValue switch {
+						MethodParameterValue maybeThis when maybeThis.IsThisParameter () => DiagnosticId.ImplicitThisCannotBeStaticallyDetermined,
 						MethodParameterValue => DiagnosticId.MethodParameterCannotBeStaticallyDetermined,
 						MethodReturnValue => DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined,
 						FieldValue => DiagnosticId.FieldValueCannotBeStaticallyDetermined,
-						MethodThisParameterValue => DiagnosticId.ImplicitThisCannotBeStaticallyDetermined,
 						GenericParameterValue => DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined,
 						_ => throw new NotImplementedException ($"unsupported target value {targetValue}")
 					};

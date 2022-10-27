@@ -51,7 +51,7 @@ namespace Mono.Linker
 			if (method.Name != "Dispose" || method.ReturnType.MetadataType != MetadataType.Void)
 				return false;
 
-			if (method.HasParameters || method.HasGenericParameters || method.IsStatic)
+			if (method.HasMetadataParameters () || method.HasGenericParameters || method.IsStatic)
 				return false;
 
 			if (!method.IsFinal)

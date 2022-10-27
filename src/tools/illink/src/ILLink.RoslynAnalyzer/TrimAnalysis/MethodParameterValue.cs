@@ -1,10 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using ILLink.RoslynAnalyzer;
-using ILLink.Shared.DataFlow;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
@@ -12,21 +10,22 @@ namespace ILLink.Shared.TrimAnalysis
 	partial record MethodParameterValue
 	{
 		public MethodParameterValue (IParameterSymbol parameterSymbol)
-			: this (parameterSymbol, FlowAnnotations.GetMethodParameterAnnotation (parameterSymbol)) { }
+			: this (new ParameterProxy (parameterSymbol)) { }
+		public MethodParameterValue (IMethodSymbol methodSymbol, ParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: this (new (new (methodSymbol), parameterIndex), dynamicallyAccessedMemberTypes) { }
 
-		public MethodParameterValue (IParameterSymbol parameterSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> (ParameterSymbol, DynamicallyAccessedMemberTypes) = (parameterSymbol, dynamicallyAccessedMemberTypes);
+		public MethodParameterValue (ParameterProxy parameter)
+			: this (parameter, FlowAnnotations.GetMethodParameterAnnotation (parameter)) { }
 
-		public readonly IParameterSymbol ParameterSymbol;
+		public MethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+		{
+			Parameter = parameter;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			_overrideIsThis = overrideIsThis;
+		}
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { ParameterSymbol.GetDisplayName (), ParameterSymbol.ContainingSymbol.GetDisplayName () };
-
-		public override SingleValue DeepCopy () => this; // This value is immutable
-
-		public override string ToString ()
-			=> this.ValueToString (ParameterSymbol, DynamicallyAccessedMemberTypes);
+		public IMethodSymbol MethodSymbol => Parameter.Method.Method;
 	}
 }

@@ -82,13 +82,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			if (methodSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresUnreferencedCodeAttributeData))
 				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresUnreferencedCodeAttributeData, methodSymbol);
-
-			if (!methodSymbol.IsStatic && methodSymbol.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None)
-				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
 			else if (methodSymbol.IsVirtual && FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol) != DynamicallyAccessedMemberTypes.None)
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
 			else {
-				foreach (var parameter in methodSymbol.Parameters) {
+				foreach (var parameter in methodSymbol.GetParameters ()) {
 					if (FlowAnnotations.GetMethodParameterAnnotation (parameter) != DynamicallyAccessedMemberTypes.None) {
 						diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
 						break;

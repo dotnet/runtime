@@ -106,8 +106,8 @@ namespace Mono.Linker
 			foreach (VariableDefinition var in body.Variables)
 				AddIfResolved (types, var.VariableType);
 
-			foreach (var parameter in body.Method.Parameters)
-				AddIfResolved (types, parameter.ParameterType);
+			foreach (var param in method.GetParameters ())
+				AddIfResolved (types, param.ParameterType);
 
 			foreach (ExceptionHandler eh in body.ExceptionHandlers) {
 				if (eh.HandlerType == ExceptionHandlerType.Catch) {
@@ -128,8 +128,8 @@ namespace Mono.Linker
 
 					var resolvedMethod = context.TryResolve (methodReference);
 					if (resolvedMethod != null) {
-						if (resolvedMethod.HasParameters) {
-							foreach (var param in resolvedMethod.Parameters)
+						if (resolvedMethod.HasMetadataParameters ()) {
+							foreach (var param in resolvedMethod.GetParameters ())
 								AddIfResolved (types, param.ParameterType);
 						}
 

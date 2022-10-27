@@ -93,16 +93,11 @@ namespace Mono.Linker.Dataflow
 			Debug.Fail ("Invalid IL or a bug in the scanner");
 		}
 
-		protected override ValueWithDynamicallyAccessedMembers GetMethodThisParameterValue (MethodDefinition method)
-			=> _annotations.GetMethodThisParameterValue (method);
+		protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue (ParameterProxy parameter)
+			=> GetMethodParameterValue (parameter, _context.Annotations.FlowAnnotations.GetParameterAnnotation (parameter));
 
-		protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, SourceParameterIndex parameterIndex)
-			=> GetMethodParameterValue (method, parameterIndex, _annotations.GetParameterAnnotation (method, parameterIndex));
-
-		ValueWithDynamicallyAccessedMembers GetMethodParameterValue (MethodDefinition method, SourceParameterIndex parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			return _annotations.GetMethodParameterValue (method, parameterIndex, dynamicallyAccessedMemberTypes);
-		}
+		MethodParameterValue GetMethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> _annotations.GetMethodParameterValue (parameter, dynamicallyAccessedMemberTypes);
 
 		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
 
@@ -119,9 +114,6 @@ namespace Mono.Linker.Dataflow
 
 		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore);
-
-		protected override void HandleStoreMethodThisParameter (MethodDefinition method, MethodThisParameterValue thisParameter, Instruction operation, MultiValue valueToStore)
-			=> HandleStoreValueWithDynamicallyAccessedMembers (thisParameter, operation, valueToStore);
 
 		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
@@ -446,9 +438,11 @@ namespace Mono.Linker.Dataflow
 		private static bool ComDangerousMethod (MethodDefinition methodDefinition, LinkContext context)
 		{
 			bool comDangerousMethod = IsComInterop (methodDefinition.MethodReturnType, methodDefinition.ReturnType, context);
+#pragma warning disable RS0030 // MethodDefinition.Parameters is banned. Here we iterate through the parameters and don't need to worry about the 'this' parameter.
 			foreach (ParameterDefinition pd in methodDefinition.Parameters) {
 				comDangerousMethod |= IsComInterop (pd, pd.ParameterType, context);
 			}
+#pragma warning restore RS0030
 
 			return comDangerousMethod;
 		}

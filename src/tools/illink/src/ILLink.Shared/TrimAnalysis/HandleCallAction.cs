@@ -316,7 +316,7 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
-					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
+					if (calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
 					else
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
@@ -371,12 +371,12 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
-					if (calledMethod.HasParametersCount (1)) {
+					if (calledMethod.HasMetadataParametersCount (1)) {
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
 						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
-					} else if (calledMethod.HasParametersCount (2) && calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
+					} else if (calledMethod.HasMetadataParametersCount (2) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
-					else if (calledMethod.HasParametersCount (3) && calledMethod.HasParameterOfType (2, "System.Reflection.BindingFlags")) {
+					else if (calledMethod.HasMetadataParametersCount (3) && calledMethod.HasParameterOfType ((ParameterIndex) 3, "System.Reflection.BindingFlags")) {
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[2]);
 					} else // Non recognized intrinsic
 						throw new ArgumentException ($"Reflection call '{calledMethod.GetDisplayName ()}' inside '{GetContainingSymbolDisplayName ()}' is an unexpected intrinsic.");
@@ -423,9 +423,9 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
-					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
+					if (calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
-					else if (calledMethod.HasParameterOfType (2, "System.Reflection.BindingFlags"))
+					else if (calledMethod.HasParameterOfType ((ParameterIndex) 3, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[2]);
 					else
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
@@ -471,7 +471,7 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
-					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
+					if (calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
 					else
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
@@ -544,7 +544,7 @@ namespace ILLink.Shared.TrimAnalysis
 						_ => throw new ArgumentException ($"Reflection call '{calledMethod.GetDisplayName ()}' inside '{GetContainingSymbolDisplayName ()}' is of unexpected member type."),
 					};
 
-					var targetValue = _annotations.GetMethodParameterValue (calledMethod, 0, requiredMemberTypes);
+					var targetValue = _annotations.GetMethodParameterValue (new (calledMethod, (ParameterIndex) 1), requiredMemberTypes);
 
 					foreach (var value in argumentValues[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
@@ -593,7 +593,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// static New (Type)
 			//
 			case IntrinsicId.Expression_New: {
-					var targetValue = _annotations.GetMethodParameterValue (calledMethod, 0, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
+					var targetValue = _annotations.GetMethodParameterValue (new (calledMethod, (ParameterIndex) 0), DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 					foreach (var value in argumentValues[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
 							MarkConstructorsOnType (systemTypeValue.RepresentedType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parameterCount: null);
@@ -609,7 +609,7 @@ namespace ILLink.Shared.TrimAnalysis
 			//
 			// static Property (Expression, MethodInfo)
 			//
-			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"): {
+			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Reflection.MethodInfo"): {
 					if (argumentValues[1].IsEmpty ()) {
 						returnValue = MultiValueLattice.Top;
 						break;
@@ -629,7 +629,7 @@ namespace ILLink.Shared.TrimAnalysis
 						// In all other cases we may not even know which type this is about, so there's nothing we can do
 						// report it as a warning.
 						_diagnosticContext.AddDiagnostic (DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined,
-							_annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) 1, DynamicallyAccessedMemberTypes.None).GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
+							_annotations.GetMethodParameterValue (new (calledMethod, (ParameterIndex) 1), DynamicallyAccessedMemberTypes.None).GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
 					}
 				}
 				break;
@@ -651,7 +651,7 @@ namespace ILLink.Shared.TrimAnalysis
 						break;
 					}
 
-					var targetValue = _annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) 1, memberTypes);
+					var targetValue = _annotations.GetMethodParameterValue (new (calledMethod, (ParameterIndex) 1), memberTypes);
 					foreach (var value in argumentValues[1]) {
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in argumentValues[2]) {
@@ -684,8 +684,7 @@ namespace ILLink.Shared.TrimAnalysis
 					BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
 
 					var targetValue = _annotations.GetMethodParameterValue (
-						calledMethod,
-						0,
+						new ParameterProxy (calledMethod, (ParameterIndex) 0),
 						GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags));
 
 					// This is true even if we "don't know" - so it's only false if we're sure that there are no type arguments
@@ -763,8 +762,8 @@ namespace ILLink.Shared.TrimAnalysis
 						break;
 					}
 
-					if ((calledMethod.HasParametersCount (3) && calledMethod.HasParameterOfType (2, "System.Boolean") && argumentValues[2].AsConstInt () != 0) ||
-						(calledMethod.HasParametersCount (5) && argumentValues[4].AsConstInt () != 0)) {
+					if ((calledMethod.HasMetadataParametersCount (3) && calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Boolean") && argumentValues[2].AsConstInt () != 0) ||
+						(calledMethod.HasMetadataParametersCount (5) && argumentValues[4].AsConstInt () != 0)) {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName ());
 						returnValue = MultiValueLattice.Top; // This effectively disables analysis of anything which uses the return value
 						break;
@@ -939,13 +938,13 @@ namespace ILLink.Shared.TrimAnalysis
 					}
 
 					BindingFlags? bindingFlags;
-					if (calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags"))
+					if (calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[0]);
 					else
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
 						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
-					int? ctorParameterCount = calledMethod.GetParametersCount () switch {
+					int? ctorParameterCount = calledMethod.GetMetadataParametersCount () switch {
 						1 => (argumentValues[0].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
 						2 => (argumentValues[1].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
 						4 => (argumentValues[2].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
@@ -1017,8 +1016,8 @@ namespace ILLink.Shared.TrimAnalysis
 			case IntrinsicId.Activator_CreateInstance__Type: {
 					int? ctorParameterCount = null;
 					BindingFlags bindingFlags = BindingFlags.Instance;
-					if (calledMethod.GetParametersCount () > 1) {
-						if (calledMethod.HasParameterOfType (1, "System.Boolean")) {
+					if (calledMethod.GetMetadataParametersCount () > 1) {
+						if (calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Boolean")) {
 							// The overload that takes a "nonPublic" bool
 							bool nonPublic = argumentValues[1].AsConstInt () != 0;
 
@@ -1029,7 +1028,7 @@ namespace ILLink.Shared.TrimAnalysis
 							ctorParameterCount = 0;
 						} else {
 							// Overload that has the parameters as the second or fourth argument
-							int argsParam = calledMethod.HasParametersCount (2) || calledMethod.HasParametersCount (3) ? 1 : 3;
+							int argsParam = calledMethod.HasMetadataParametersCount (2) || calledMethod.HasMetadataParametersCount (3) ? 1 : 3;
 
 							if (argumentValues.Count > argsParam) {
 								if (argumentValues[argsParam].AsSingleValue () is ArrayValue arrayValue &&
@@ -1039,7 +1038,7 @@ namespace ILLink.Shared.TrimAnalysis
 									ctorParameterCount = 0;
 							}
 
-							if (calledMethod.GetParametersCount () > 3) {
+							if (calledMethod.GetMetadataParametersCount () > 3) {
 								if (argumentValues[1].AsConstInt () is int constInt)
 									bindingFlags |= (BindingFlags) constInt;
 								else
@@ -1069,7 +1068,7 @@ namespace ILLink.Shared.TrimAnalysis
 								requiredMemberTypes |= DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 							}
 
-							var targetValue = _annotations.GetMethodParameterValue (calledMethod, 0, requiredMemberTypes);
+							var targetValue = _annotations.GetMethodParameterValue (new (calledMethod, (ParameterIndex) 0), requiredMemberTypes);
 
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 						}
@@ -1140,13 +1139,14 @@ namespace ILLink.Shared.TrimAnalysis
 			case IntrinsicId.None:
 				// Verify the argument values match the annotations on the parameter definition
 				if (requiresDataFlowAnalysis) {
-					if (!calledMethod.IsStatic ()) {
-						_requireDynamicallyAccessedMembersAction.Invoke (instanceValue, _annotations.GetMethodThisParameterValue (calledMethod));
-					}
-					for (int argumentIndex = 0; argumentIndex < argumentValues.Count; argumentIndex++) {
-						if (argumentIndex >= calledMethod.GetParametersCount () || calledMethod.ParameterReferenceKind (argumentIndex) == ReferenceKind.Out)
+					foreach (var parameter in calledMethod.GetParameters ()) {
+						if (parameter.GetReferenceKind () is ReferenceKind.Out)
 							continue;
-						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[argumentIndex], _annotations.GetMethodParameterValue (calledMethod, (SourceParameterIndex) argumentIndex));
+						if (parameter.IsImplicitThis) {
+							_requireDynamicallyAccessedMembersAction.Invoke (instanceValue, _annotations.GetMethodThisParameterValue (calledMethod));
+							continue;
+						}
+						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[parameter.MetadataIndex], _annotations.GetMethodParameterValue (parameter));
 					}
 				}
 				break;
@@ -1255,7 +1255,7 @@ namespace ILLink.Shared.TrimAnalysis
 						// https://github.com/dotnet/linker/issues/2428
 						// We need to report the target as "this" - as that was the previous behavior
 						// but with the annotation from the generic parameter.
-						var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, GetGenericParameterEffectiveMemberTypes (genericParameters[i]));
+						var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, GetGenericParameterEffectiveMemberTypes (genericParameters[i]), overrideIsThis: true);
 						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 					}
 				}
@@ -1308,7 +1308,8 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 			bool parameterlessConstructor = true;
-			if (calledMethod.HasParametersCount (8) && calledMethod.HasParameterOfType (2, "System.Boolean")) {
+			int offset = calledMethod.HasImplicitThis () ? 1 : 0;
+			if (calledMethod.HasMetadataParametersCount (8) && calledMethod.HasParameterOfType ((ParameterIndex) 2 + offset, "System.Boolean")) {
 				parameterlessConstructor = false;
 				bindingFlags = BindingFlags.Instance;
 				if (argumentValues[3].AsConstInt () is int bindingFlagsInt)
@@ -1339,11 +1340,11 @@ namespace ILLink.Shared.TrimAnalysis
 
 							MarkConstructorsOnType (resolvedType, bindingFlags, parameterlessConstructor ? 0 : null);
 						} else {
-							_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName (1), calledMethod.GetDisplayName ());
+							_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, new ParameterProxy (calledMethod, (ParameterIndex) 1 + offset).GetDisplayName (), calledMethod.GetDisplayName ());
 						}
 					}
 				} else {
-					_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName (0), calledMethod.GetDisplayName ());
+					_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, new ParameterProxy (calledMethod, (ParameterIndex) 0 + offset).GetDisplayName (), calledMethod.GetDisplayName ());
 				}
 			}
 		}
