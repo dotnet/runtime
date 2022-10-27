@@ -12918,41 +12918,27 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 // Remarks:
 //   This is a variant of GenTree::IsLocalAddrExpr that is more suitable for
-//   use during import. Unlike that function, this one handles GT_FIELD nodes.
+//   use during import. Unlike that function, this one handles field nodes.
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    if (tree->gtOper != GT_ADDR)
-    {
-        return false;
-    }
-
-    GenTree* op = tree->AsOp()->gtOp1;
-    while (op->gtOper == GT_FIELD)
+    const GenTree* op = tree;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsField()->IsInstance())
     {
         op = op->AsField()->GetFldObj();
-        if (op && op->gtOper == GT_ADDR) // Skip static fields where op will be NULL.
-        {
-            op = op->AsOp()->gtOp1;
-        }
-        else
-        {
-            return false;
-        }
     }
 
-    if (op->gtOper == GT_LCL_VAR)
+    if (op->OperIs(GT_ADDR) && op->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
         if (lclVarTreeOut != nullptr)
         {
-            *lclVarTreeOut = op;
+            *lclVarTreeOut = op->AsUnOp()->gtOp1;
         }
+
         return true;
     }
-    else
-    {
-        return false;
-    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
