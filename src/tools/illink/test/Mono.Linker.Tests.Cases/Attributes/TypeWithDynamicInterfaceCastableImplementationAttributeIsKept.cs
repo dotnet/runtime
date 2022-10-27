@@ -16,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.Attributes
 	[KeptMemberInAssembly ("impl", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssemblyImpl", "Foo()")]
 	[KeptInterfaceOnTypeInAssembly ("impl", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssemblyImpl",
 		"interface", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssembly")]
+	[SetupLinkerTrimMode ("link")]
+	[IgnoreDescriptors (false)]
 	public class TypeWithDynamicInterfaceCastableImplementationAttributeIsKept
 	{
 		public static void Main ()
@@ -54,6 +56,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 #if NETCOREAPP
 	[Kept]
 	[KeptMember (".ctor()")]
+	[KeptInterface (typeof (IDynamicInterfaceCastable))]
 	class Foo : IDynamicInterfaceCastable
 	{
 		[Kept]
@@ -74,6 +77,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 
 	[Kept]
 	[KeptMember (".ctor()")]
+	[KeptInterface (typeof (IDynamicInterfaceCastable))]
 	class DynamicCastableImplementedInOtherAssembly : IDynamicInterfaceCastable
 	{
 		[Kept]

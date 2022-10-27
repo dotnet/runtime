@@ -37,10 +37,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			public int InstanceMethod () => 0;
 		}
 
+		// Keep MyType without marking it relevant to variant casting
+		[Kept]
+		static void KeepMyType (MyType x)
+		{ }
+
 		[Kept]
 		static void Test ()
 		{
-			var x = typeof (MyType); // The only use of MyType
+			KeepMyType (null);
 		}
 	}
 }

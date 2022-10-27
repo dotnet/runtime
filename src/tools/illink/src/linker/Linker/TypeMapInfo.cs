@@ -40,7 +40,7 @@ namespace Mono.Linker
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
 		readonly LinkContext context;
-		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
 
@@ -58,6 +58,9 @@ namespace Mono.Linker
 				MapType (type);
 		}
 
+		/// <summary>
+		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
+		/// </summary>
 		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
@@ -65,10 +68,17 @@ namespace Mono.Linker
 			return overrides;
 		}
 
-		public List<MethodDefinition>? GetBaseMethods (MethodDefinition method)
+		/// <summary>
+		/// Returns all base methods that <paramref name="method"/> overrides.
+		/// This includes the closest overridden virtual method on <paramref name="method"/>'s base types
+		/// methods on an interface that <paramref name="method"/>'s declaring type implements,
+		/// and methods an interface implemented by a derived type of <paramref name="method"/>'s declaring type if the derived type uses <paramref name="method"/> as the implementing method.
+		/// The list may be incomplete if there are derived types in assemblies that havent been processed yet that use <paramref name="method"/> to implement an interface.
+		/// </summary>
+		public List<OverrideInformation>? GetBaseMethods (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
-			base_methods.TryGetValue (method, out List<MethodDefinition>? bases);
+			base_methods.TryGetValue (method, out List<OverrideInformation>? bases);
 			return bases;
 		}
 
@@ -78,14 +88,14 @@ namespace Mono.Linker
 			return ret;
 		}
 
-		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
+		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementation? matchingInterfaceImplementation)
 		{
-			if (!base_methods.TryGetValue (method, out List<MethodDefinition>? methods)) {
-				methods = new List<MethodDefinition> ();
+			if (!base_methods.TryGetValue (method, out List<OverrideInformation>? methods)) {
+				methods = new List<OverrideInformation> ();
 				base_methods[method] = methods;
 			}
 
-			methods.Add (@base);
+			methods.Add (new OverrideInformation (@base, method, context, matchingInterfaceImplementation));
 		}
 
 		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation? matchingInterfaceImplementation = null)
@@ -205,7 +215,7 @@ namespace Mono.Linker
 
 		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
-			AddBaseMethod (@override, @base);
+			AddBaseMethod (@override, @base, matchingInterfaceImplementation);
 			AddOverride (@base, @override, matchingInterfaceImplementation);
 		}
 

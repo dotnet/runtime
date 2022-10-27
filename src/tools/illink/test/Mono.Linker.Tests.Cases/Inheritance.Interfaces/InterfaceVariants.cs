@@ -21,14 +21,19 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			t = typeof (UninstantiatedPublicClassWithPrivateInterface);
 			t = typeof (ImplementsUsedStaticInterface.InterfaceMethodUnused);
 
-			ImplementsUnusedStaticInterface.Test (); ;
+			ImplementsUnusedStaticInterface.Test ();
 			GenericMethodThatCallsInternalStaticInterfaceMethod
 				<ImplementsUsedStaticInterface.InterfaceMethodUsedThroughInterface> ();
 			// Use all public interfaces - they're marked as public only to denote them as "used"
 			typeof (IPublicInterface).RequiresPublicMethods ();
 			typeof (IPublicStaticInterface).RequiresPublicMethods ();
-			var ___ = new InstantiatedClassWithInterfaces ();
+			_ = new InstantiatedClassWithInterfaces ();
+			MarkIFormattable (null);
 		}
+
+		[Kept]
+		static void MarkIFormattable (IFormattable x)
+		{ }
 
 		[Kept]
 		internal static void GenericMethodThatCallsInternalStaticInterfaceMethod<T> () where T : IStaticInterfaceUsed
@@ -113,8 +118,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			}
 		}
 
+		// Interfaces are kept despite being uninstantiated because it is relevant to variant casting
 		[Kept]
-		[KeptInterface (typeof (IEnumerator))]
 		[KeptInterface (typeof (IPublicInterface))]
 		[KeptInterface (typeof (IPublicStaticInterface))]
 		[KeptInterface (typeof (ICopyLibraryInterface))]
@@ -151,18 +156,12 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
 
 
-			[Kept]
-			[ExpectBodyModified]
 			bool IEnumerator.MoveNext () { throw new PlatformNotSupportedException (); }
 
-			[Kept]
 			object IEnumerator.Current {
-				[Kept]
-				[ExpectBodyModified]
 				get { throw new PlatformNotSupportedException (); }
 			}
 
-			[Kept]
 			void IEnumerator.Reset () { }
 
 			[Kept]
@@ -198,7 +197,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 		}
 
 		[Kept]
-		[KeptInterface (typeof (IEnumerator))]
 		[KeptInterface (typeof (IPublicInterface))]
 		[KeptInterface (typeof (IPublicStaticInterface))]
 		[KeptInterface (typeof (ICopyLibraryInterface))]
@@ -235,13 +233,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
 
-			[Kept]
 			bool IEnumerator.MoveNext () { throw new PlatformNotSupportedException (); }
 
-			[Kept]
-			object IEnumerator.Current { [Kept] get { throw new PlatformNotSupportedException (); } }
+			object IEnumerator.Current { get { throw new PlatformNotSupportedException (); } }
 
-			[Kept]
 			void IEnumerator.Reset () { }
 
 			[Kept]

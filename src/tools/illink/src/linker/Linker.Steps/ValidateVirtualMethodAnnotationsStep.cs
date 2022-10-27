@@ -13,11 +13,11 @@ namespace Mono.Linker.Steps
 		{
 			var annotations = Context.Annotations;
 			foreach (var method in annotations.VirtualMethodsWithAnnotationsToValidate) {
-				var baseMethods = annotations.GetBaseMethods (method);
-				if (baseMethods != null) {
-					foreach (var baseMethod in baseMethods) {
-						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (method, baseMethod);
-						ValidateMethodRequiresUnreferencedCodeAreSame (method, baseMethod);
+				var baseOverrideInformations = annotations.GetBaseMethods (method);
+				if (baseOverrideInformations != null) {
+					foreach (var baseOv in baseOverrideInformations) {
+						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (method, baseOv.Base);
+						ValidateMethodRequiresUnreferencedCodeAreSame (method, baseOv.Base);
 					}
 				}
 
