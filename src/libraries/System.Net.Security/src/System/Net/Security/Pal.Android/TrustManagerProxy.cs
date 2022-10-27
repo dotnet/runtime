@@ -60,7 +60,7 @@ namespace System.Net
             IntPtr trustManagerProxyHandle,
             int certificatesCount,
             int* certificateLengths,
-            byte** rawCertificates)
+            byte* rawCertificates)
         {
             var proxy = (TrustManagerProxy?)GCHandle.FromIntPtr(trustManagerProxyHandle).Target;
             Debug.Assert(proxy is not null);
@@ -114,13 +114,16 @@ namespace System.Net
             }
         }
 
-        private static unsafe X509Certificate2[] ConvertCertificates(int count, int* lengths, byte** rawData)
+        private static unsafe X509Certificate2[] ConvertCertificates(int count, int* lengths, byte* rawData)
         {
             var certificates = new X509Certificate2[count];
 
+            int offset = 0;
             for (int i = 0; i < count; i++)
             {
-                var rawCertificate = new ReadOnlySpan<byte>(rawData[i], lengths[i]);
+                var rawCertificate = new ReadOnlySpan<byte>(rawData, offset + lengths[i]).Slice(offset);
+                offset += lengths[i];
+
                 certificates[i] = new X509Certificate2(rawCertificate);
             }
 

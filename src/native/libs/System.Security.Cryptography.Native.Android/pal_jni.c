@@ -6,6 +6,9 @@
 
 JavaVM* gJvm;
 
+// byte[]
+jclass    g_ByteArray;
+
 // java/io/ByteArrayInputStream
 jclass    g_ByteArrayInputStreamClass;
 jmethodID g_ByteArrayInputStreamCtor;
@@ -676,6 +679,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     JNIEnv* env = GetJNIEnv();
 
     // cache some classes and methods while we're in the thread-safe JNI_OnLoad
+    g_ByteArray =   GetClassGRef(env, "[B");
+
     g_ByteArrayInputStreamClass =   GetClassGRef(env, "java/io/ByteArrayInputStream");
     g_ByteArrayInputStreamCtor =    GetMethod(env, false, g_ByteArrayInputStreamClass, "<init>", "([B)V");
     g_ByteArrayInputStreamReset =    GetMethod(env, false, g_ByteArrayInputStreamClass, "reset", "()V");

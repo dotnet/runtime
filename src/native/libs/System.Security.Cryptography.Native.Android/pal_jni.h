@@ -15,6 +15,9 @@
 
 extern JavaVM* gJvm;
 
+// byte[]
+extern jclass g_ByteArray;
+
 // java/io/ByteArrayInputStream
 extern jclass    g_ByteArrayInputStreamClass;
 extern jmethodID g_ByteArrayInputStreamCtor;

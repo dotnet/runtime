@@ -284,7 +284,7 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-static jobject GetSSLContextInstance(JNIEnv* env)
+ARGS_NON_NULL_ALL static jobject GetSSLContextInstance(JNIEnv* env)
 {
     jobject sslContext = NULL;
 
@@ -306,7 +306,7 @@ cleanup:
     return sslContext;
 }
 
-static jobject GetKeyStoreInstance(JNIEnv* env)
+ARGS_NON_NULL_ALL static jobject GetKeyStoreInstance(JNIEnv* env)
 {
     jobject keyStore = NULL;
     jstring ksType = NULL;
@@ -333,17 +333,14 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t trustManagerProxyHandle)
     INIT_LOCALS(loc, sslContext, keyStore, trustManagers);
 
     loc[sslContext] = GetSSLContextInstance(env);
-    if (loc[sslContext] == NULL)
+    if (!loc[sslContext])
         goto cleanup;
-
-    // We only need to init the key store, we don't use it
-    IGNORE_RETURN(GetKeyStoreInstance(env));
 
     if (trustManagerProxyHandle != 0)
     {
         // Init trust managers
-        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
-        if (loc[trustManagers] == NULL)
+        loc[trustManagers] = InitTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
+        if (!loc[trustManagers])
             goto cleanup;
     }
 
@@ -437,11 +434,11 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t trustMan
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
     loc[sslContext] = GetSSLContextInstance(env);
-    if (loc[sslContext] == NULL)
+    if (!loc[sslContext])
         goto cleanup;
 
     loc[keyStore] = GetKeyStoreInstance(env);
-    if (loc[keyStore] == NULL)
+    if (!loc[keyStore])
         goto cleanup;
 
     int32_t status =
@@ -465,9 +462,9 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t trustMan
 
     if (trustManagerProxyHandle != 0)
     {
-        // TrustManager[] trustMangers = initTrustManagersWithCustomValidatorProxy(trustManagerProxyHandle);
-        loc[trustManagers] = initTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
-        if (loc[trustManagers] == NULL)
+        // TrustManager[] trustMangers = InitTrustManagersWithCustomValidatorProxy(trustManagerProxyHandle);
+        loc[trustManagers] = InitTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
+        if (!loc[trustManagers])
             goto cleanup;
     }
 
@@ -797,7 +794,7 @@ cleanup:
     return ret;
 }
 
-static jobject getPeerCertificates(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static jobject getPeerCertificates(JNIEnv* env, SSLStream* sslStream)
 {
     jobject certificates = NULL;
     jobject sslSession = NULL;
@@ -863,7 +860,7 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
 
     // Certificate[] certs = sslSession.getPeerCertificates();
     jobjectArray certs = getPeerCertificates(env, sslStream);
-    if (certs == NULL)
+    if (!certs)
         goto cleanup;
 
     // for (int i = 0; i < certs.length; i++) {
