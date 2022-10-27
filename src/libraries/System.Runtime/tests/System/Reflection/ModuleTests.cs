@@ -41,6 +41,7 @@ namespace System.Reflection.Tests
 {
     public class ModuleTests
     {
+        public const string ConstField = "Value";
         public static Module Module => typeof(ModuleTests).Module;
         public static Module TestModule => typeof(TestModule.Dummy).Module;
 
