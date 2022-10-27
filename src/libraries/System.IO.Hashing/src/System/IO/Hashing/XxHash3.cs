@@ -16,6 +16,10 @@ using System.Runtime.Intrinsics.X86;
 namespace System.IO.Hashing
 {
     /// <summary>Provides an implementation of the XXH3 hash algorithm.</summary>
+    /// <remarks>
+    /// For methods that persist the computed numerical hash value as bytes,
+    /// the value is written in the Big Endian byte order.
+    /// </remarks>
 #if NET5_0_OR_GREATER
     [SkipLocalsInit]
 #endif
@@ -25,11 +29,10 @@ namespace System.IO.Hashing
         private new const int HashLengthInBytes = 8;
         private const int StripeLengthBytes = 64;
         private const int SecretLengthBytes = 192;
-        private const int SecretLimitBytes = SecretLengthBytes - StripeLengthBytes;
         private const int SecretLastAccStartBytes = 7;
         private const int SecretConsumeRateBytes = 8;
         private const int SecretMergeAccsStartBytes = 11;
-        private const int NumStripesPerBlock = SecretLimitBytes / SecretConsumeRateBytes;
+        private const int NumStripesPerBlock = (SecretLengthBytes - StripeLengthBytes) / SecretConsumeRateBytes;
         private const int AccumulatorCount = StripeLengthBytes / sizeof(ulong);
         private const int MidSizeMaxBytes = 240;
         private const int InternalBufferStripes = InternalBufferLengthBytes / StripeLengthBytes;
@@ -68,12 +71,12 @@ namespace System.IO.Hashing
 
         private State _state;
 
-        /// <summary>Initializes a new instance of the XXH3 class using the default seed value 0.</summary>
+        /// <summary>Initializes a new instance of the <see cref="XxHash3"/> class using the default seed value 0.</summary>
         public XxHash3() : this(0)
         {
         }
 
-        /// <summary>Initializes a new instance of the XXH3 class using the specified seed.</summary>
+        /// <summary>Initializes a new instance of the <see cref="XxHash3"/> class using the specified seed.</summary>
         public XxHash3(long seed) : base(HashLengthInBytes)
         {
             _state.Seed = (ulong)seed;
@@ -93,16 +96,16 @@ namespace System.IO.Hashing
             Reset();
         }
 
-        /// <summary>Computes the XXH3 hash of the provided data.</summary>
+        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data.</summary>
         /// <param name="source">The data to hash.</param>
-        /// <returns>The XXH3 64-bit hash code of the provided data, written in little-endian order.</returns>
+        /// <returns>The XXH3 64-bit hash code of the provided data.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source) => Hash(source, seed: 0);
 
         /// <summary>Computes the XXH3 hash of the provided data using the provided seed.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation.</param>
-        /// <returns>The XXH3 64-bit hash code of the provided data, written in little-endian order.</returns>
+        /// <returns>The XXH3 64-bit hash code of the provided data.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source, long seed)
         {
@@ -118,42 +121,51 @@ namespace System.IO.Hashing
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
 
-        /// <summary>Computes the XXH3 hash of the provided data using the optionally provided seed.</summary>
+        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
-        /// <returns>The XXH3 64-bit hash code of the provided data, written in little-endian order.</returns>
+        /// <returns>The XXH3 64-bit hash code of the provided data.</returns>
         public static byte[] Hash(ReadOnlySpan<byte> source, long seed = 0)
         {
             byte[] result = new byte[HashLengthInBytes];
-            BinaryPrimitives.WriteInt64LittleEndian(result, HashToInt64(source, seed));
+            BinaryPrimitives.WriteInt64BigEndian(result, HashToInt64(source, seed));
             return result;
         }
 
-        /// <summary>Computes the XXH3 hash of the provided data into the provided destination using the optionally provided seed.</summary>
+        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
-        /// <param name="destination">The buffer that receives the computed 64-bit hash code, written in little-endian order.</param>
+        /// <param name="destination">The buffer that receives the computed 64-bit hash code.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
-        /// <returns>The number of bytes written to destination.</returns>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="destination"/> is shorter than <see cref="HashLengthInBytes"/> (8 bytes).</exception>
         public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination, long seed = 0)
         {
-            if (!BinaryPrimitives.TryWriteInt64LittleEndian(destination, HashToInt64(source, seed)))
+            if (!TryHash(source, destination, out int bytesWritten, seed))
             {
                 ThrowDestinationTooShort();
             }
 
-            return HashLengthInBytes;
+            return bytesWritten;
         }
 
-        /// <summary>Attempts to compute the XXH3 hash of the provided data into the provided destination using the optionally provided seed.</summary>
+        /// <summary>Attempts to compute the XXH3 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
-        /// <param name="destination">The buffer that receives the computed 64-bit hash code, written in little-endian order.</param>
+        /// <param name="destination">The buffer that receives the computed 64-bit hash code.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination"/>.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
-        /// <returns>true if destination is long enough to receive the computed hash value (8 bytes); otherwise, false.</returns>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> is long enough to receive the computed hash value (8 bytes); otherwise, <see langword="false"/>.</returns>
         public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, long seed = 0)
         {
-            if (BinaryPrimitives.TryWriteInt64LittleEndian(destination, HashToInt64(source, seed)))
+            if (destination.Length >= sizeof(long))
             {
+                long hash = HashToInt64(source, seed);
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    hash = BinaryPrimitives.ReverseEndianness(hash);
+                }
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), hash);
+
                 bytesWritten = HashLengthInBytes;
                 return true;
             }
@@ -191,7 +203,7 @@ namespace System.IO.Hashing
         public override void Reset()
         {
             _state.BufferedCount = 0;
-            _state.NumStripesProcessed = 0;
+            _state.StripesProcessedInCurrentBlock = 0;
             _state.TotalLength = 0;
 
             fixed (ulong* accumulators = _state.Accumulators)
@@ -231,7 +243,7 @@ namespace System.IO.Hashing
                         source.Slice(0, loadSize).CopyTo(new Span<byte>(buffer + _state.BufferedCount, loadSize));
                         sourceIndex = loadSize;
 
-                        ConsumeStripes(accumulators, ref _state.NumStripesProcessed, NumStripesPerBlock, buffer, InternalBufferStripes, secret);
+                        ConsumeStripes(accumulators, ref _state.StripesProcessedInCurrentBlock, NumStripesPerBlock, buffer, InternalBufferStripes, secret);
                         _state.BufferedCount = 0;
                     }
                     Debug.Assert(sourceIndex < source.Length);
@@ -240,33 +252,33 @@ namespace System.IO.Hashing
                     if (source.Length - sourceIndex > NumStripesPerBlock * StripeLengthBytes)
                     {
                         ulong stripes = (ulong)(source.Length - sourceIndex - 1) / StripeLengthBytes;
-                        Debug.Assert(NumStripesPerBlock >= _state.NumStripesProcessed);
+                        Debug.Assert(NumStripesPerBlock >= _state.StripesProcessedInCurrentBlock);
 
-                        // join to current block's end
-                        ulong stripesToEnd = NumStripesPerBlock - _state.NumStripesProcessed;
+                        // Join to current block's end.
+                        ulong stripesToEnd = NumStripesPerBlock - _state.StripesProcessedInCurrentBlock;
                         Debug.Assert(stripesToEnd <= stripes);
-                        Accumulate(accumulators, sourcePtr + sourceIndex, secret + ((int)_state.NumStripesProcessed * SecretConsumeRateBytes), (int)stripesToEnd);
-                        ScrambleAccumulators(accumulators, secret + (SecretLimitBytes));
-                        _state.NumStripesProcessed = 0;
+                        Accumulate(accumulators, sourcePtr + sourceIndex, secret + ((int)_state.StripesProcessedInCurrentBlock * SecretConsumeRateBytes), (int)stripesToEnd);
+                        ScrambleAccumulators(accumulators, secret + (SecretLengthBytes - StripeLengthBytes));
+                        _state.StripesProcessedInCurrentBlock = 0;
                         sourceIndex += (int)stripesToEnd * StripeLengthBytes;
                         stripes -= stripesToEnd;
 
-                        // Consume per entire blocks.
+                        // Consume entire blocks.
                         while (stripes >= NumStripesPerBlock)
                         {
                             Accumulate(accumulators, sourcePtr + sourceIndex, secret, NumStripesPerBlock);
-                            ScrambleAccumulators(accumulators, secret + (SecretLimitBytes));
+                            ScrambleAccumulators(accumulators, secret + (SecretLengthBytes - StripeLengthBytes));
                             sourceIndex += NumStripesPerBlock * StripeLengthBytes;
                             stripes -= NumStripesPerBlock;
                         }
 
-                        // Consume last partial block.
+                        // Consume complete stripes in the last partial block.
                         Accumulate(accumulators, sourcePtr + sourceIndex, secret, (int)stripes);
                         sourceIndex += (int)stripes * StripeLengthBytes;
                         Debug.Assert(sourceIndex < source.Length);  // at least some bytes left
-                        _state.NumStripesProcessed = stripes;
+                        _state.StripesProcessedInCurrentBlock = stripes;
 
-                        // Buffer predecessor of last partial stripe.
+                        // Copy the last stripe into the end of the buffer so it is available to GetCurrentHashCore when processing the "stripe from the end".
                         source.Slice(sourceIndex - StripeLengthBytes, StripeLengthBytes).CopyTo(new Span<byte>(buffer + InternalBufferLengthBytes - StripeLengthBytes, StripeLengthBytes));
                     }
                     else if (source.Length - sourceIndex > InternalBufferLengthBytes)
@@ -274,27 +286,28 @@ namespace System.IO.Hashing
                         // Content to consume <= block size. Consume source by a multiple of internal buffer size.
                         do
                         {
-                            ConsumeStripes(accumulators, ref _state.NumStripesProcessed, NumStripesPerBlock, sourcePtr + sourceIndex, InternalBufferStripes, secret);
+                            ConsumeStripes(accumulators, ref _state.StripesProcessedInCurrentBlock, NumStripesPerBlock, sourcePtr + sourceIndex, InternalBufferStripes, secret);
                             sourceIndex += InternalBufferLengthBytes;
                         }
                         while (source.Length - sourceIndex > InternalBufferLengthBytes);
 
-                        // Buffer predecessor of last partial stripe.
+                        // Copy the last stripe into the end of the buffer so it is available to GetCurrentHashCore when processing the "stripe from the end".
                         source.Slice(sourceIndex - StripeLengthBytes, StripeLengthBytes).CopyTo(new Span<byte>(buffer + InternalBufferLengthBytes - StripeLengthBytes, StripeLengthBytes));
                     }
 
                     // Buffer the remaining input.
+                    Span<byte> remaining = new Span<byte>(buffer, source.Length - sourceIndex);
                     Debug.Assert(sourceIndex < source.Length);
-                    Debug.Assert(source.Length - sourceIndex <= InternalBufferLengthBytes);
+                    Debug.Assert(remaining.Length <= InternalBufferLengthBytes);
                     Debug.Assert(_state.BufferedCount == 0);
-                    source.Slice(sourceIndex).CopyTo(new Span<byte>(buffer, source.Length - sourceIndex));
-                    _state.BufferedCount = (uint)(source.Length - sourceIndex);
+                    source.Slice(sourceIndex).CopyTo(remaining);
+                    _state.BufferedCount = (uint)remaining.Length;
                 }
             }
         }
 
         /// <summary>Writes the computed 64-bit hash value to <paramref name="destination"/> without modifying accumulated state.</summary>
-        /// <param name="destination">The buffer that receives the computed hash value, written in little-endian order.</param>
+        /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
             ulong current;
@@ -342,7 +355,7 @@ namespace System.IO.Hashing
                 }
             }
 
-            BinaryPrimitives.WriteUInt64LittleEndian(destination, current);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, current);
 
             void DigestLong(ulong* accumulators, byte* secret)
             {
@@ -354,7 +367,7 @@ namespace System.IO.Hashing
                     if (_state.BufferedCount >= StripeLengthBytes)
                     {
                         uint stripes = (_state.BufferedCount - 1) / StripeLengthBytes;
-                        ulong stripesSoFar = _state.NumStripesProcessed;
+                        ulong stripesSoFar = _state.StripesProcessedInCurrentBlock;
 
                         ConsumeStripes(accumulators, ref stripesSoFar, NumStripesPerBlock, buffer, stripes, secret);
 
@@ -371,7 +384,7 @@ namespace System.IO.Hashing
                         accumulateData = lastStripe;
                     }
 
-                    Accumulate512(accumulators, accumulateData, secret + SecretLimitBytes - SecretLastAccStartBytes);
+                    Accumulate512(accumulators, accumulateData, secret + (SecretLengthBytes - StripeLengthBytes - SecretLastAccStartBytes));
                 }
             }
         }
@@ -424,7 +437,7 @@ namespace System.IO.Hashing
             uint inputLow = ReadUInt32LE(source);
             uint inputHigh = ReadUInt32LE(source + length - sizeof(uint));
 
-            ulong bitflip = 0xC73AB174C5ECD5A2 - seed; // DefaultSecretUInt64[0] ^ DefaultSecretUInt64[1]
+            ulong bitflip = 0xC73AB174C5ECD5A2 - seed; // DefaultSecretUInt64[1] ^ DefaultSecretUInt64[2]
             ulong input64 = inputHigh + (((ulong)inputLow) << 32);
 
             return Rrmxmx(input64 ^ bitflip, length);
@@ -463,81 +476,79 @@ namespace System.IO.Hashing
         {
             Debug.Assert(length >= 17 && length <= 128);
 
-            ulong accumulators = length * XxHash64.Prime64_1;
+            ulong hash = length * XxHash64.Prime64_1;
 
-            if (length > 32)
+            switch ((length - 1) / 32)
             {
-                if (length > 64)
-                {
-                    if (length > 96)
-                    {
-                        accumulators += Mix16Bytes(source + 48, 0x3F349CE33F76FAA8, 0x1D4F0BC7C7BBDCF9, seed); // DefaultSecretUInt64[12], DefaultSecretUInt64[13]
-                        accumulators += Mix16Bytes(source + length - 64, 0x3159B4CD4BE0518A, 0x647378D9C97E9FC8, seed); // DefaultSecretUInt64[14], DefaultSecretUInt64[15]
-                    }
-
-                    accumulators += Mix16Bytes(source + 32, 0xCB00C391BB52283C, 0xA32E531B8B65D088, seed); // DefaultSecretUInt64[8], DefaultSecretUInt64[9]
-                    accumulators += Mix16Bytes(source + length - 48, 0x4EF90DA297486471, 0xD8ACDEA946EF1938, seed); // DefaultSecretUInt64[10], DefaultSecretUInt64[11]
-                }
-
-                accumulators += Mix16Bytes(source + 16, 0x78E5C0CC4EE679CB, 0x2172FFCC7DD05A82, seed); // DefaultSecretUInt64[4], DefaultSecretUInt64[5]
-                accumulators += Mix16Bytes(source + length - 32, 0x8E2443F7744608B8, 0x4C263A81E69035E0, seed); // DefaultSecretUInt64[6], DefaultSecretUInt64[7]
+                default: // case 3
+                    hash += Mix16Bytes(source + 48, 0x3F349CE33F76FAA8, 0x1D4F0BC7C7BBDCF9, seed); // DefaultSecretUInt64[12], DefaultSecretUInt64[13]
+                    hash += Mix16Bytes(source + length - 64, 0x3159B4CD4BE0518A, 0x647378D9C97E9FC8, seed); // DefaultSecretUInt64[14], DefaultSecretUInt64[15]
+                    goto case 2;
+                case 2:
+                    hash += Mix16Bytes(source + 32, 0xCB00C391BB52283C, 0xA32E531B8B65D088, seed); // DefaultSecretUInt64[8], DefaultSecretUInt64[9]
+                    hash += Mix16Bytes(source + length - 48, 0x4EF90DA297486471, 0xD8ACDEA946EF1938, seed); // DefaultSecretUInt64[10], DefaultSecretUInt64[11]
+                    goto case 1;
+                case 1:
+                    hash += Mix16Bytes(source + 16, 0x78E5C0CC4EE679CB, 0x2172FFCC7DD05A82, seed); // DefaultSecretUInt64[4], DefaultSecretUInt64[5]
+                    hash += Mix16Bytes(source + length - 32, 0x8E2443F7744608B8, 0x4C263A81E69035E0, seed); // DefaultSecretUInt64[6], DefaultSecretUInt64[7]
+                    goto case 0;
+                case 0:
+                    hash += Mix16Bytes(source, 0xBE4BA423396CFEB8, 0x1CAD21F72C81017C, seed); // DefaultSecretUInt64[0], DefaultSecretUInt64[1]
+                    hash += Mix16Bytes(source + length - 16, 0xDB979083E96DD4DE, 0x1F67B3B7A4A44072, seed); // DefaultSecretUInt64[2], DefaultSecretUInt64[3]
+                    break;
             }
 
-            accumulators += Mix16Bytes(source, 0xBE4BA423396CFEB8, 0x1CAD21F72C81017C, seed); // DefaultSecretUInt64[0], DefaultSecretUInt64[1]
-            accumulators += Mix16Bytes(source + length - 16, 0xDB979083E96DD4DE, 0x1F67B3B7A4A44072, seed); // DefaultSecretUInt64[2], DefaultSecretUInt64[3]
-
-            return Avalanche(accumulators);
+            return Avalanche(hash);
         }
 
         private static ulong HashLength129To240(byte* source, uint length, ulong seed)
         {
             Debug.Assert(length >= 129 && length <= 240);
 
-            ulong accumulators = length * XxHash64.Prime64_1;
+            ulong hash = length * XxHash64.Prime64_1;
 
-            accumulators += Mix16Bytes(source + (16 * 0), 0xBE4BA423396CFEB8, 0x1CAD21F72C81017C, seed); // DefaultSecretUInt64[0], DefaultSecretUInt64[1]
-            accumulators += Mix16Bytes(source + (16 * 1), 0xDB979083E96DD4DE, 0x1F67B3B7A4A44072, seed); // DefaultSecretUInt64[2], DefaultSecretUInt64[3]
-            accumulators += Mix16Bytes(source + (16 * 2), 0x78E5C0CC4EE679CB, 0x2172FFCC7DD05A82, seed); // DefaultSecretUInt64[4], DefaultSecretUInt64[5]
-            accumulators += Mix16Bytes(source + (16 * 3), 0x8E2443F7744608B8, 0x4C263A81E69035E0, seed); // DefaultSecretUInt64[6], DefaultSecretUInt64[7]
-            accumulators += Mix16Bytes(source + (16 * 4), 0xCB00C391BB52283C, 0xA32E531B8B65D088, seed); // DefaultSecretUInt64[8], DefaultSecretUInt64[9]
-            accumulators += Mix16Bytes(source + (16 * 5), 0x4EF90DA297486471, 0xD8ACDEA946EF1938, seed); // DefaultSecretUInt64[10], DefaultSecretUInt64[11]
-            accumulators += Mix16Bytes(source + (16 * 6), 0x3F349CE33F76FAA8, 0x1D4F0BC7C7BBDCF9, seed); // DefaultSecretUInt64[12], DefaultSecretUInt64[13]
-            accumulators += Mix16Bytes(source + (16 * 7), 0x3159B4CD4BE0518A, 0x647378D9C97E9FC8, seed); // DefaultSecretUInt64[14], DefaultSecretUInt64[15]
+            hash += Mix16Bytes(source + (16 * 0), 0xBE4BA423396CFEB8, 0x1CAD21F72C81017C, seed); // DefaultSecretUInt64[0], DefaultSecretUInt64[1]
+            hash += Mix16Bytes(source + (16 * 1), 0xDB979083E96DD4DE, 0x1F67B3B7A4A44072, seed); // DefaultSecretUInt64[2], DefaultSecretUInt64[3]
+            hash += Mix16Bytes(source + (16 * 2), 0x78E5C0CC4EE679CB, 0x2172FFCC7DD05A82, seed); // DefaultSecretUInt64[4], DefaultSecretUInt64[5]
+            hash += Mix16Bytes(source + (16 * 3), 0x8E2443F7744608B8, 0x4C263A81E69035E0, seed); // DefaultSecretUInt64[6], DefaultSecretUInt64[7]
+            hash += Mix16Bytes(source + (16 * 4), 0xCB00C391BB52283C, 0xA32E531B8B65D088, seed); // DefaultSecretUInt64[8], DefaultSecretUInt64[9]
+            hash += Mix16Bytes(source + (16 * 5), 0x4EF90DA297486471, 0xD8ACDEA946EF1938, seed); // DefaultSecretUInt64[10], DefaultSecretUInt64[11]
+            hash += Mix16Bytes(source + (16 * 6), 0x3F349CE33F76FAA8, 0x1D4F0BC7C7BBDCF9, seed); // DefaultSecretUInt64[12], DefaultSecretUInt64[13]
+            hash += Mix16Bytes(source + (16 * 7), 0x3159B4CD4BE0518A, 0x647378D9C97E9FC8, seed); // DefaultSecretUInt64[14], DefaultSecretUInt64[15]
 
-            accumulators = Avalanche(accumulators);
+            hash = Avalanche(hash);
 
-            if (length >= 16 * 9)
+            switch ((length - (16 * 8)) / 16)
             {
-                accumulators += Mix16Bytes(source + (16 * 8), 0x81017CBE4BA42339, 0x6DD4DE1CAD21F72C, seed); // DefaultSecret[3], DefaultSecret[11]
-                if (length >= 16 * 10)
-                {
-                    accumulators += Mix16Bytes(source + (16 * 9), 0xA44072DB979083E9, 0xE679CB1F67B3B7A4, seed); // DefaultSecret[19], DefaultSecret[27]
-                    if (length >= 16 * 11)
-                    {
-                        accumulators += Mix16Bytes(source + (16 * 10), 0xD05A8278E5C0CC4E, 0x4608B82172FFCC7D, seed); // DefaultSecret[35], DefaultSecret[43]
-                        if (length >= 16 * 12)
-                        {
-                            accumulators += Mix16Bytes(source + (16 * 11), 0x9035E08E2443F774, 0x52283C4C263A81E6, seed); // DefaultSecret[51], DefaultSecret[59]
-                            if (length >= 16 * 13)
-                            {
-                                accumulators += Mix16Bytes(source + (16 * 12), 0x65D088CB00C391BB, 0x486471A32E531B8B, seed); // DefaultSecret[67], DefaultSecret[75]
-                                if (length >= 16 * 14)
-                                {
-                                    accumulators += Mix16Bytes(source + (16 * 13), 0xEF19384EF90DA297, 0x76FAA8D8ACDEA946, seed); // DefaultSecret[83], DefaultSecret[91]
-                                    if (length >= 16 * 15)
-                                    {
-                                        accumulators += Mix16Bytes(source + (16 * 14), 0xBBDCF93F349CE33F, 0xE0518A1D4F0BC7C7, seed); // DefaultSecret[99], DefaultSecret[107]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                default: // case 7
+                    Debug.Assert((length - 16 * 8) / 16 == 7);
+                    hash += Mix16Bytes(source + (16 * 14), 0xBBDCF93F349CE33F, 0xE0518A1D4F0BC7C7, seed); //  Read<ulong>(ref DefaultSecret[99]),  Read<ulong>(ref DefaultSecret[107])
+                    goto case 6;
+                case 6:
+                    hash += Mix16Bytes(source + (16 * 13), 0xEF19384EF90DA297, 0x76FAA8D8ACDEA946, seed); //  Read<ulong>(ref DefaultSecret[83]),  Read<ulong>(ref DefaultSecret[91])
+                    goto case 5;
+                case 5:
+                    hash += Mix16Bytes(source + (16 * 12), 0x65D088CB00C391BB, 0x486471A32E531B8B, seed); //  Read<ulong>(ref DefaultSecret[67]),  Read<ulong>(ref DefaultSecret[75])
+                    goto case 4;
+                case 4:
+                    hash += Mix16Bytes(source + (16 * 11), 0x9035E08E2443F774, 0x52283C4C263A81E6, seed); //  Read<ulong>(ref DefaultSecret[51]),  Read<ulong>(ref DefaultSecret[59])
+                    goto case 3;
+                case 3:
+                    hash += Mix16Bytes(source + (16 * 10), 0xD05A8278E5C0CC4E, 0x4608B82172FFCC7D, seed); //  Read<ulong>(ref DefaultSecret[35]),  Read<ulong>(ref DefaultSecret[43])
+                    goto case 2;
+                case 2:
+                    hash += Mix16Bytes(source + (16 * 9), 0xA44072DB979083E9, 0xE679CB1F67B3B7A4, seed); //  Read<ulong>(ref DefaultSecret[19]),  Read<ulong>(ref DefaultSecret[27])
+                    goto case 1;
+                case 1:
+                    hash += Mix16Bytes(source + (16 * 8), 0x81017CBE4BA42339, 0x6DD4DE1CAD21F72C, seed); // Read<ulong>(ref DefaultSecret[3]),  Read<ulong>(ref DefaultSecret[11])
+                    goto case 0;
+                case 0:
+                    break;
             }
 
             // Handle the last 16 bytes.
-            accumulators += Mix16Bytes(source + length - 16, 0x7378D9C97E9FC831, 0xEBD33483ACC5EA64, seed); // DefaultSecret[119], DefaultSecret[127]
-            return Avalanche(accumulators);
+            hash += Mix16Bytes(source + length - 16, 0x7378D9C97E9FC831, 0xEBD33483ACC5EA64, seed); // DefaultSecret[119], DefaultSecret[127]
+            return Avalanche(hash);
         }
 
         private static ulong HashLengthOver240(byte* source, uint length, ulong seed)
@@ -569,9 +580,9 @@ namespace System.IO.Hashing
                     offset += BlockLen;
                 }
 
-                int stripesNumber = (int)((length - 1 - (BlockLen * blocksNum)) / StripeLengthBytes);
+                int stripesNumber = (int)((length - 1 - offset) / StripeLengthBytes);
                 Accumulate(accumulators, source + offset, secret, stripesNumber);
-                Accumulate512(accumulators, source + length - StripeLengthBytes, secret + (SecretLengthBytes - StripeLengthBytes - 7));
+                Accumulate512(accumulators, source + length - StripeLengthBytes, secret + (SecretLengthBytes - StripeLengthBytes - SecretLastAccStartBytes));
 
                 return MergeAccumulators(accumulators, secret + 11, length * XxHash64.Prime64_1);
             }
@@ -582,13 +593,13 @@ namespace System.IO.Hashing
             Debug.Assert(stripes <= stripesPerBlock); // can handle max 1 scramble per invocation
             Debug.Assert(stripesSoFar < stripesPerBlock);
 
-            if (stripesPerBlock - stripesSoFar <= stripes)
+            ulong stripesToEndOfBlock = stripesPerBlock - stripesSoFar;
+            if (stripesToEndOfBlock <= stripes)
             {
                 // need a scrambling operation
-                ulong stripesToEndOfBlock = stripesPerBlock - stripesSoFar;
                 ulong stripesAfterBlock = stripes - stripesToEndOfBlock;
                 Accumulate(accumulators, source, secret + ((int)stripesSoFar * SecretConsumeRateBytes), (int)stripesToEndOfBlock);
-                ScrambleAccumulators(accumulators, secret + SecretLimitBytes);
+                ScrambleAccumulators(accumulators, secret + (SecretLengthBytes - StripeLengthBytes));
                 Accumulate(accumulators, source + ((int)stripesToEndOfBlock * StripeLengthBytes), secret, (int)stripesAfterBlock);
                 stripesSoFar = stripesAfterBlock;
             }
@@ -645,7 +656,7 @@ namespace System.IO.Hashing
         private static ulong Mix16Bytes(byte* source, ulong secretLow, ulong secretHigh, ulong seed) =>
             Multiply64To128ThenFold(
                 ReadUInt64LE(source) ^ (secretLow + seed),
-                ReadUInt64LE(source + 8) ^ (secretHigh - seed));
+                ReadUInt64LE(source + sizeof(ulong)) ^ (secretHigh - seed));
 
         /// <summary>Calculates a 32-bit to 64-bit long multiply.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -715,9 +726,9 @@ namespace System.IO.Hashing
 
         /// <summary>Loops over <see cref="Accumulate512"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesPerBlock)
+        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess)
         {
-            for (int i = 0; i < stripesPerBlock; i++)
+            for (int i = 0; i < stripesToProcess; i++)
             {
                 Accumulate512Inlined(accumulators, source + (i * StripeLengthBytes), secret + (i * SecretConsumeRateBytes));
             }
@@ -860,25 +871,25 @@ namespace System.IO.Hashing
         private struct State
         {
             /// <summary>The accumulators. Length is <see cref="AccumulatorCount"/>.</summary>
-            public fixed ulong Accumulators[AccumulatorCount];
+            internal fixed ulong Accumulators[AccumulatorCount];
 
             /// <summary>Used to store a custom secret generated from a seed. Length is <see cref="SecretLengthBytes"/>.</summary>
-            public fixed byte Secret[SecretLengthBytes];
+            internal fixed byte Secret[SecretLengthBytes];
 
             /// <summary>The internal buffer. Length is <see cref="InternalBufferLengthBytes"/>.</summary>
-            public fixed byte Buffer[InternalBufferLengthBytes];
+            internal fixed byte Buffer[InternalBufferLengthBytes];
 
             /// <summary>The amount of memory in <see cref="Buffer"/>.</summary>
-            public uint BufferedCount;
+            internal uint BufferedCount;
 
-            /// <summary>Number of stripes processed.</summary>
-            public ulong NumStripesProcessed;
+            /// <summary>Number of stripes processed in the current block.</summary>
+            internal ulong StripesProcessedInCurrentBlock;
 
             /// <summary>Total length hashed.</summary>
-            public ulong TotalLength;
+            internal ulong TotalLength;
 
             /// <summary>The seed employed (possibly 0).</summary>
-            public ulong Seed;
+            internal ulong Seed;
         };
     }
 }

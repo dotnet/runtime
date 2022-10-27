@@ -33,11 +33,11 @@ namespace System.IO.Hashing.Tests
                 // Validate `byte[] XxHash3.Hash` with and without a seed
                 if (test.Seed == 0)
                 {
-                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(XxHash3.Hash(input)));
-                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(XxHash3.Hash((ReadOnlySpan<byte>)input)));
+                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash(input)));
+                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash((ReadOnlySpan<byte>)input)));
                 }
-                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(XxHash3.Hash(input, test.Seed)));
-                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(XxHash3.Hash((ReadOnlySpan<byte>)input, test.Seed)));
+                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash(input, test.Seed)));
+                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash((ReadOnlySpan<byte>)input, test.Seed)));
 
                 Assert.False(XxHash3.TryHash(input, destination.AsSpan(0, destination.Length - 1), out int bytesWritten, test.Seed));
                 Assert.Equal(0, bytesWritten);
@@ -48,23 +48,23 @@ namespace System.IO.Hashing.Tests
                     Array.Clear(destination, 0, destination.Length);
                     Assert.True(XxHash3.TryHash(input, destination, out bytesWritten));
                     Assert.Equal(8, bytesWritten);
-                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(destination));
+                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));
                 }
                 Array.Clear(destination, 0, destination.Length);
                 Assert.True(XxHash3.TryHash(input, destination, out bytesWritten, test.Seed));
                 Assert.Equal(8, bytesWritten);
-                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(destination));
+                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));
 
                 // Validate `XxHash3.Hash(span, out int)` with and without a seed
                 if (test.Seed == 0)
                 {
                     Array.Clear(destination, 0, destination.Length);
                     Assert.Equal(8, XxHash3.Hash(input, destination));
-                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(destination));
+                    Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));
                 }
                 Array.Clear(destination, 0, destination.Length);
                 Assert.Equal(8, XxHash3.Hash(input, destination, test.Seed));
-                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(destination));
+                Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));
             }
         }
 
@@ -111,7 +111,7 @@ namespace System.IO.Hashing.Tests
                         // Validate the final hash code.
                         Array.Clear(destination, 0, destination.Length);
                         Assert.Equal(8, hash.GetHashAndReset(destination));
-                        Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64LittleEndian(destination));
+                        Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));
                     }
                 }
             }
