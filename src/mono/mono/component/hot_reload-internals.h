@@ -87,7 +87,6 @@ typedef struct _MonoClassMetadataUpdateEvent {
 } MonoClassMetadataUpdateEvent;
 
 typedef struct _MonoMethodMetadataUpdateParamInfo {
-	uint32_t method_token; /* which method is this about */
 	uint32_t first_param_token; /* a Param token */
 	uint32_t param_count;
 } MonoMethodMetadataUpdateParamInfo;

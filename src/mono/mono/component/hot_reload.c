@@ -2392,11 +2392,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			 */
 			if (is_addition) {
 				g_assert (add_field_method != 0);
-				/* 			
-				 * FIXME: we need a lookaside table (like member_parent) for every place
-				 * that looks at MONO_METHOD_PARAMLIST
-				 */
-
 				uint32_t parent_type_token = hot_reload_method_parent (image_base, add_field_method);
 				g_assert (parent_type_token != 0); // we added a parameter to a method that was added
 				if (pass2_context_is_skeleton (ctx, parent_type_token)) {

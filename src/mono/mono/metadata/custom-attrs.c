@@ -2250,7 +2250,6 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 		return NULL;
 	ca = &image->tables [MONO_TABLE_METHOD];
 
-	/* FIXME: metadata-update - lookup added params */
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
 	if (G_UNLIKELY (param_list == 0 && image->has_updates)) {
 		uint32_t count;
