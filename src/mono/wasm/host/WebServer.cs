@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,7 +16,7 @@ public class WebServer
 {
     internal static async Task<(ServerURLs, IWebHost)> StartAsync(WebServerOptions options, ILogger logger, CancellationToken token)
     {
-        string[] urls = options.Urls;
+        TaskCompletionSource<ServerURLs> realUrlsAvailableTcs = new();
 
         IWebHostBuilder builder = new WebHostBuilder()
             .UseKestrel()
@@ -43,9 +39,10 @@ public class WebServer
                 }
                 services.AddSingleton(logger);
                 services.AddSingleton(Options.Create(options));
+                services.AddSingleton(realUrlsAvailableTcs);
                 services.AddRouting();
             })
-            .UseUrls(urls);
+            .UseUrls(options.Urls);
 
         if (options.ContentRootPath != null)
             builder.UseContentRoot(options.ContentRootPath);
@@ -53,27 +50,11 @@ public class WebServer
         IWebHost? host = builder.Build();
         await host.StartAsync(token);
 
-        ICollection<string>? addresses = host.ServerFeatures
-                            .Get<IServerAddressesFeature>()?
-                            .Addresses;
+        if (token.CanBeCanceled)
+            token.Register(async () => await host.StopAsync());
 
-        string? ipAddress =
-                        addresses?
-                        .Where(a => a.StartsWith("http:", StringComparison.InvariantCultureIgnoreCase))
-                        .Select(a => new Uri(a))
-                        .Select(uri => uri.ToString())
-                        .FirstOrDefault();
-
-        string? ipAddressSecure =
-                        addresses?
-                        .Where(a => a.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
-                        .Select(a => new Uri(a))
-                        .Select(uri => uri.ToString())
-                        .FirstOrDefault();
-
-        return ipAddress == null || ipAddressSecure == null
-            ? throw new InvalidOperationException("Failed to determine web server's IP address or port")
-            : (new ServerURLs(ipAddress, ipAddressSecure), host);
+        ServerURLs serverUrls = await realUrlsAvailableTcs.Task;
+        return (serverUrls, host);
     }
 
 }

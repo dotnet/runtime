@@ -1,5 +1,9 @@
 <Project>
 
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+  </PropertyGroup>
+
   <!-- Uses the Microsoft.DotNet.Build.Tasks.TargetFramework package to filter out target frameworks from ProjectReferences. -->
   <PropertyGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
     <BuildDependsOn>$(BuildDependsOn);ResolveP2PReferences</BuildDependsOn>

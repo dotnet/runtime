@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -269,18 +270,19 @@ internal sealed class JObjectValueCreator
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
-        var type_id = await _sdbAgent.GetTypeIdsForObject(objectId, false, token);
-        string className = await _sdbAgent.GetTypeName(type_id[0], token);
+        var typeIds = await _sdbAgent.GetTypeIdsForObject(objectId, withParents: true, token);
+        string className = await _sdbAgent.GetTypeName(typeIds[0], token);
         string debuggerDisplayAttribute = null;
         if (!forDebuggerDisplayAttribute)
             debuggerDisplayAttribute = await _sdbAgent.GetValueFromDebuggerDisplayAttribute(
-                new DotnetObjectId("object", objectId), type_id[0], token);
+                new DotnetObjectId("object", objectId), typeIds[0], token);
         var description = className.ToString();
 
         if (debuggerDisplayAttribute != null)
+        {
             description = debuggerDisplayAttribute;
-
-        if (await _sdbAgent.IsDelegate(objectId, token))
+        }
+        else if (await _sdbAgent.IsDelegate(objectId, token))
         {
             if (typeIdFromAttribute != -1)
             {
@@ -292,6 +294,12 @@ internal sealed class JObjectValueCreator
             {
                 return Create(value: className, type: "symbol", description: className);
             }
+        }
+        else
+        {
+            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, token);
+            if (toString != null)
+                description = toString;
         }
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
     }

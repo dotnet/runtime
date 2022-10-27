@@ -34,7 +34,7 @@ namespace Microsoft.Interop
 
         public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
         {
-            return this with { ContainingSyntax = ContainingSyntax.Add(nestedType) };
+            return this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
         }
 
         private static ImmutableArray<ContainingSyntax> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
@@ -42,7 +42,6 @@ namespace Microsoft.Interop
             ImmutableArray<ContainingSyntax>.Builder containingTypeInfoBuilder = ImmutableArray.CreateBuilder<ContainingSyntax>();
             for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
             {
-
                 containingTypeInfoBuilder.Add(new ContainingSyntax(typeDeclaration.Modifiers.StripTriviaFromTokens(), typeDeclaration.Kind(), typeDeclaration.Identifier.WithoutTrivia(),
                     typeDeclaration.TypeParameterList));
             }
@@ -75,7 +74,15 @@ namespace Microsoft.Interop
                 && ContainingNamespace == other.ContainingNamespace;
         }
 
-        public override int GetHashCode() => throw new UnreachableException();
+        public override int GetHashCode()
+        {
+            int code = ContainingNamespace?.GetHashCode() ?? 0;
+            foreach (ContainingSyntax containingSyntax in ContainingSyntax)
+            {
+                code ^= containingSyntax.Identifier.Value.GetHashCode();
+            }
+            return code;
+        }
 
         public MemberDeclarationSyntax WrapMemberInContainingSyntaxWithUnsafeModifier(MemberDeclarationSyntax member)
         {

@@ -8,6 +8,7 @@ namespace System
         internal sealed class EnumInfo
         {
             public readonly bool HasFlagsAttribute;
+            public readonly bool ValuesAreSequentialFromZero;
             public readonly ulong[] Values;
             public readonly string[] Names;
 
@@ -17,6 +18,17 @@ namespace System
                 HasFlagsAttribute = hasFlagsAttribute;
                 Values = values;
                 Names = names;
+
+                // Store whether all of the values are sequential starting from zero.
+                ValuesAreSequentialFromZero = true;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    if (values[i] != (ulong)i)
+                    {
+                        ValuesAreSequentialFromZero = false;
+                        break;
+                    }
+                }
             }
         }
     }

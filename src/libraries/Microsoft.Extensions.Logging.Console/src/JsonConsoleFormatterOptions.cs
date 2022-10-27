@@ -10,6 +10,9 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public class JsonConsoleFormatterOptions : ConsoleFormatterOptions
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonConsoleFormatterOptions"/> class.
+        /// </summary>
         public JsonConsoleFormatterOptions() { }
 
         /// <summary>

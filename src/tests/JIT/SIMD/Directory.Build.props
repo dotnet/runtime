@@ -5,14 +5,14 @@
     <CLRTestBatchPreCommands>
       <![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_JitFuncInfoLogFile=SIMD.log
+set DOTNET_JitFuncInfoLogFile=SIMD.log
 if EXIST SIMD.log (del SIMD.log)
 ]]>
     </CLRTestBatchPreCommands>
     <BashCLRTestPreCommands>
       <![CDATA[
 $(BashCLRTestPreCommands)
-export COMPlus_JitFuncInfoLogFile=SIMD.log
+export DOTNET_JitFuncInfoLogFile=SIMD.log
 rm -f SIMD.log
 ]]>
     </BashCLRTestPreCommands>

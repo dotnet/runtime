@@ -19,6 +19,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task MultipleImportAsync()
+        {
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            Assert.NotNull(first);
+            Assert.NotNull(second);
+            Assert.Equal("object", first.GetTypeOfProperty("instance"));
+            var instance1 = first.GetPropertyAsJSObject("instance");
+            var instance2 = second.GetPropertyAsJSObject("instance");
+            Assert.Same(instance1, instance2);
+        }
+
+        [Fact]
         public unsafe void GlobalThis()
         {
             Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));
@@ -1462,6 +1475,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportSleep()
         {
             await JavaScriptTestHelper.sleep(100);
+        }
+
+        [Fact]
+        public async Task JsImportTaskTypes()
+        {
+            object a = new object();
+            Exception e = new Exception();
+            JSObject j = JSHost.GlobalThis;
+            Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+            Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+            Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
         }
 
         [Fact]

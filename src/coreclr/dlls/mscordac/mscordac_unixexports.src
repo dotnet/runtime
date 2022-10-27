@@ -28,10 +28,8 @@ nativeStringResourceTable_mscorrc
 #PAL_fflush
 #PAL__flushall
 #PAL_free
-#PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
-#PAL_GetNumaProcessorNode
 #PAL_GetUnwindInfoSize
 #PAL_get_stdout
 #PAL_get_stderr
@@ -75,7 +73,6 @@ nativeStringResourceTable_mscorrc
 #_wcsicmp
 #_stricmp
 #sprintf_s
-#swprintf_s
 #vsprintf_s
 #_snprintf_s
 #_snwprintf_s
@@ -100,7 +97,6 @@ nativeStringResourceTable_mscorrc
 #CloseHandle
 #DebugBreak
 #DeleteCriticalSection
-#DeleteFileW
 #DuplicateHandle
 #EnterCriticalSection
 #FindClose
@@ -113,7 +109,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -126,7 +121,6 @@ nativeStringResourceTable_mscorrc
 #GetFullPathNameW
 #GetLastError
 #GetModuleFileNameW
-#GetNumaHighestNodeNumber
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
@@ -142,7 +136,6 @@ nativeStringResourceTable_mscorrc
 #LoadLibraryExW
 #MapViewOfFile
 #MapViewOfFileEx
-#MoveFileExW
 #MultiByteToWideChar
 #OpenProcess
 #OutputDebugStringW
@@ -168,7 +161,6 @@ nativeStringResourceTable_mscorrc
 #SwitchToThread
 #TerminateProcess
 #VirtualAlloc
-#VirtualAllocExNuma
 #VirtualFree
 #VirtualProtect
 #VirtualQuery

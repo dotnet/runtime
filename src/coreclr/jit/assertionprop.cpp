@@ -175,6 +175,17 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 
+        case GT_CNS_INT:
+            if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
+            {
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            }
+            break;
+
+        case GT_QMARK:
+            return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
+                         ForNode(node->AsQmark()->ElseNode(), compiler));
+
         case GT_CAST:
             return ForCastOutput(node->AsCast());
 
@@ -428,6 +439,12 @@ bool IntegralRange::Contains(int64_t value) const
     }
 
     return {lowerBound, upperBound};
+}
+
+/* static */ IntegralRange IntegralRange::Union(IntegralRange range1, IntegralRange range2)
+{
+    return IntegralRange(min(range1.GetLowerBound(), range2.GetLowerBound()),
+                         max(range1.GetUpperBound(), range2.GetUpperBound()));
 }
 
 #ifdef DEBUG
@@ -1489,22 +1506,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             goto DONE_ASSERTION; // Don't make an assertion
         }
 
-        // If the local is a promoted struct and has an exposed field then bail.
-        //
-        if (lclVar->lvPromoted)
-        {
-            for (unsigned childLclNum = lclVar->lvFieldLclStart;
-                 childLclNum < lclVar->lvFieldLclStart + lclVar->lvFieldCnt; ++childLclNum)
-            {
-                LclVarDsc* const childVar = lvaGetDesc(childLclNum);
-
-                if (childVar->IsAddressExposed())
-                {
-                    goto DONE_ASSERTION;
-                }
-            }
-        }
-
         if (helperCallArgs)
         {
             //
@@ -1722,22 +1723,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
-                    }
-
-                    // If the local is a promoted struct and has an exposed field then bail.
-                    //
-                    if (lclVar2->lvPromoted)
-                    {
-                        for (unsigned childLclNum = lclVar2->lvFieldLclStart;
-                             childLclNum < lclVar2->lvFieldLclStart + lclVar2->lvFieldCnt; ++childLclNum)
-                        {
-                            LclVarDsc* const childVar = lvaGetDesc(childLclNum);
-
-                            if (childVar->IsAddressExposed())
-                            {
-                                goto DONE_ASSERTION;
-                            }
-                        }
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
@@ -2149,7 +2134,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
@@ -3423,7 +3408,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     if (tree->TypeIs(TYP_BYREF))
                     {
@@ -3835,33 +3820,12 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
             break;
         }
 
-        // See if the variable is equal to another variable or a constant.
+        // See if the variable is equal to another variable.
         //
         AssertionDsc* const curAssertion = optGetAssertion(assertionIndex);
-        if (!curAssertion->CanPropLclVar())
-        {
-            continue;
-        }
-
-        // Copy prop
-        //
-        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
+        if (curAssertion->CanPropLclVar() && (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             GenTree* const newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
-            if (newTree != nullptr)
-            {
-                return newTree;
-            }
-
-            continue;
-        }
-
-        // Constant prop
-        //
-        if (curAssertion->op1.lcl.lclNum == tree->GetLclNum())
-        {
-            GenTree* const newTree = optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
-
             if (newTree != nullptr)
             {
                 return newTree;
@@ -6164,6 +6128,16 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_CAST:
         case GT_INTRINSIC:
             break;
+
+        case GT_IND:
+        {
+            const ValueNum vn = tree->GetVN(VNK_Conservative);
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) || (vnStore->VNNormalValue(vn) != vn))
+            {
+                return WALK_CONTINUE;
+            }
+        }
+        break;
 
         case GT_JTRUE:
             break;
