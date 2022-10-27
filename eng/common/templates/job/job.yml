@@ -120,9 +120,6 @@ jobs:
         continueOnError: ${{ parameters.continueOnError }}
         condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
 
-  - task: CodeQL3000Init@0
-    displayName: CodeQL Initialize
-
   - ${{ if and(eq(parameters.runAsPublic, 'false'), eq(variables['System.TeamProject'], 'internal')) }}:
     - task: NuGetAuthenticate@0
 
@@ -230,6 +227,3 @@ jobs:
         PackageVersion: ${{ parameters.packageVersion}}
         BuildDropPath: ${{ parameters.buildDropPath }}
         IgnoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
-
-  - task: CodeQL3000Finalize@0
-    displayName: CodeQL Finalize

@@ -44,6 +44,7 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
+            isManualCodeQLBuild: true
 
       #
       # Build Mono runtime packs
@@ -61,3 +62,4 @@ extends:
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
+            isManualCodeQLBuild: true
