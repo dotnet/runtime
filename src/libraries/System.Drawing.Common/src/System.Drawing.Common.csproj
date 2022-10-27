@@ -216,7 +216,6 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
-    <Compile Include="Interop\Windows\Interop.Winspool.cs" />
 
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
@@ -304,6 +303,12 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
              Link="Common\Interop\Windows\User32\Interop.NONCLIENTMETRICS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.WindowFromDC.cs"
              Link="Common\Interop\Windows\User32\Interop.WindowFromDC.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Winspool\Interop.DeviceCapabilities.cs"
+             Link="Common\Interop\Windows\Winspool\Interop.DeviceCapabilities.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Winspool\Interop.DocumentProperties.cs"
+             Link="Common\Interop\Windows\Winspool\Interop.DocumentProperties.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Winspool\Interop.EnumPrinters.cs"
+             Link="Common\Interop\Windows\Winspool\Interop.EnumPrinters.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT.cs"
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
