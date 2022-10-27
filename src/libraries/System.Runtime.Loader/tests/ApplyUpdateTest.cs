@@ -638,14 +638,18 @@ namespace System.Reflection.Metadata
                 var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
                 var assm = ty.Assembly;
 
-                var allMethods = ty.GetMethods();
+		var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+                var allMethods = ty.GetMethods(bindingFlags);
 
-                const int objectMethods = 4;
+                int objectMethods = typeof(object).GetMethods(bindingFlags).Length;
                 Assert.Equal (objectMethods + 1, allMethods.Length);
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
 
-                allMethods = ty.GetMethods();
+                ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+
+                allMethods = ty.GetMethods(bindingFlags);
                 Assert.Equal (objectMethods + 2, allMethods.Length);
 
                 var mi = ty.GetMethod ("AddedNewMethod");
