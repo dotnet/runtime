@@ -183,6 +183,10 @@ namespace System.Text.Json.Nodes
         {
             // Even though _list initialization can be subject to races,
             // ensure that contending threads use a coherent view of jsonElement.
+            //
+            // Because JsonElement cannot be read atomically there can be torn reads,
+            // however the order of read/write operations guarantees that it's only
+            // possible if the value of _list is non-null.
 
             JsonElement? jsonElement = _jsonElement;
             Interlocked.MemoryBarrier();

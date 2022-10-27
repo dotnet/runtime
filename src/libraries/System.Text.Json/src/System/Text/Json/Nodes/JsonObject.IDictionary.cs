@@ -264,6 +264,10 @@ namespace System.Text.Json.Nodes
         {
             // Even though _dictionary initialization can be subject to races,
             // ensure that contending threads use a coherent view of jsonElement.
+            //
+            // Because JsonElement cannot be read atomically there can be torn reads,
+            // however the order of read/write operations guarantees that it's only
+            // possible if the value of _dictionary is non-null.
 
             JsonElement? jsonElement = _jsonElement;
             Interlocked.MemoryBarrier();
@@ -271,13 +275,13 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                _dictionary = InitializeIfRequiredCore(jsonElement);
+                _dictionary = InitializeCore(jsonElement);
                 Interlocked.MemoryBarrier();
                 _jsonElement = null;
             }
         }
 
-        private JsonPropertyDictionary<JsonNode?> InitializeIfRequiredCore(JsonElement? jsonElement)
+        private JsonPropertyDictionary<JsonNode?> InitializeCore(JsonElement? jsonElement)
         {
             bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
             var dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
