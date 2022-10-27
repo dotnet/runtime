@@ -9522,11 +9522,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
-
-                        // TODO-ADDR: use FIELD_ADDR for all fields, not just those of classes.
-                        //
-                        if (isLoadAddress && ((typeFlags & CORINFO_FLG_VALUECLASS) == 0))
+                        if (isLoadAddress)
                         {
                             op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
                                                      obj, fieldInfo.offset);
@@ -9548,15 +9544,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        if (StructHasOverlappingFields(typeFlags))
+                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
                             op1->AsField()->gtFldMayOverlap = true;
-                        }
-
-                        // Wrap it in a address of operator if necessary.
-                        if (isLoadAddress && op1->OperIs(GT_FIELD))
-                        {
-                            op1 = gtNewOperNode(GT_ADDR, varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, op1);
                         }
 
                         if (!isLoadAddress && compIsForInlining() &&
