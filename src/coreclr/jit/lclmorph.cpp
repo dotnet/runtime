@@ -377,7 +377,7 @@ public:
     {
         GenTree* const node = *use;
 
-        if (node->OperIs(GT_IND, GT_FIELD))
+        if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
         {
             MorphStructField(node, user);
         }
@@ -1094,18 +1094,18 @@ private:
     //    FIELD(ADDR(LCL_VAR))) to a GT_LCL_VAR that references the struct field.
     //
     // Arguments:
-    //    indir - the GT_IND/GT_FIELD node
-    //    user  - the node that uses the field
+    //    node - the GT_IND/GT_FIELD/GT_FIELD_ADDR node
+    //    user - the node that uses the field
     //
     // Notes:
     //    This does not do anything if the access does not denote a promoted
     //    struct field.
     //
-    void MorphStructField(GenTree* indir, GenTree* user)
+    void MorphStructField(GenTree* node, GenTree* user)
     {
-        assert(indir->OperIs(GT_IND, GT_FIELD));
+        assert(node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR));
 
-        GenTree* objRef = indir->AsUnOp()->gtOp1;
+        GenTree* objRef = node->AsUnOp()->gtOp1;
         GenTree* obj    = ((objRef != nullptr) && objRef->OperIs(GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
 
         // TODO-Bug: this code does not pay attention to "GTF_IND_VOLATILE".
@@ -1115,7 +1115,7 @@ private:
 
             if (varDsc->lvPromoted)
             {
-                unsigned fieldOffset = indir->OperIs(GT_FIELD) ? indir->AsField()->gtFldOffset : 0;
+                unsigned fieldOffset = node->OperIs(GT_IND) ? 0 : node->AsField()->gtFldOffset;
                 unsigned fieldLclNum = m_compiler->lvaGetFieldLocal(varDsc, fieldOffset);
 
                 if (fieldLclNum == BAD_VAR_NUM)
@@ -1128,16 +1128,21 @@ private:
                 const LclVarDsc* fieldDsc    = m_compiler->lvaGetDesc(fieldLclNum);
                 var_types        fieldType   = fieldDsc->TypeGet();
                 GenTree*         lclVarNode  = nullptr;
-                GenTreeFlags     lclVarFlags = indir->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+                GenTreeFlags     lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+                assert(fieldType != TYP_STRUCT); // Promoted LCL_VAR can't have a struct type.
 
-                assert(fieldType != TYP_STRUCT); // promoted LCL_VAR can't have a struct type.
-                if ((indir->TypeGet() == fieldType) || ((user != nullptr) && user->OperIs(GT_ADDR)))
+                if (node->OperIs(GT_FIELD_ADDR))
                 {
-                    lclVarNode = indir;
+                    node->ChangeOper(GT_ADDR);
+                    node->AsUnOp()->gtOp1 = obj;
 
+                    lclVarNode = obj;
+                }
+                else if ((node->TypeGet() == fieldType) || ((user != nullptr) && user->OperIs(GT_ADDR)))
+                {
                     if (user != nullptr)
                     {
-                        if (user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == indir))
+                        if (user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == node))
                         {
                             lclVarFlags |= GTF_VAR_DEF;
                         }
@@ -1147,6 +1152,8 @@ private:
                             lclVarFlags &= ~GTF_DONT_CSE;
                         }
                     }
+
+                    lclVarNode = node;
                 }
                 else // Here we will turn "FIELD/IND(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
                 {
@@ -1155,26 +1162,26 @@ private:
                     // the promoted local would look like "{ int a, B }", while the IR would contain "FIELD"
                     // nodes for the outer struct "A".
                     //
-                    if (indir->TypeIs(TYP_STRUCT))
+                    if (node->TypeIs(TYP_STRUCT))
                     {
                         // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
-                        if (indir->OperIs(GT_IND))
+                        if (node->OperIs(GT_IND))
                         {
                             // We do not have a layout for this node.
                             return;
                         }
 
-                        ClassLayout* layout = indir->GetLayout(m_compiler);
-                        indir->SetOper(GT_OBJ);
-                        indir->AsBlk()->SetLayout(layout);
-                        indir->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+                        ClassLayout* layout = node->GetLayout(m_compiler);
+                        node->SetOper(GT_OBJ);
+                        node->AsBlk()->SetLayout(layout);
+                        node->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
 #ifndef JIT32_GCENCODER
-                        indir->AsBlk()->gtBlkOpGcUnsafe = false;
+                        node->AsBlk()->gtBlkOpGcUnsafe = false;
 #endif // !JIT32_GCENCODER
                     }
                     else
                     {
-                        indir->SetOper(GT_IND);
+                        node->SetOper(GT_IND);
                     }
 
                     lclVarNode = obj;
