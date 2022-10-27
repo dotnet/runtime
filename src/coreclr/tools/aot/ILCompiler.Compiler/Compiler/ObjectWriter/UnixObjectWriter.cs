@@ -180,8 +180,8 @@ namespace ILCompiler.ObjectWriter
             // Create sections for exception handling
             _lsdaSectionWriter = GetOrCreateSection(LsdaSection);
             ehFrameSectionWriter = GetOrCreateSection(new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null));
-            UpdateSectionAlignment(_lsdaSectionWriter.SectionIndex, 8, out _);
-            UpdateSectionAlignment(ehFrameSectionWriter.SectionIndex, 8, out _);
+            _lsdaSectionWriter.EmitAlignment(8);
+            ehFrameSectionWriter.EmitAlignment(8);
             _ehFrameSectionIndex = ehFrameSectionWriter.SectionIndex;
 
             // We always use the same CIE in DWARF EH frames, so create and emit it now
