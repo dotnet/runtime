@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization.Converters;
+using System.Threading;
 
 namespace System.Text.Json.Nodes
 {
@@ -261,18 +262,28 @@ namespace System.Text.Json.Nodes
 
         private void InitializeIfRequired()
         {
-            if (_dictionary != null)
-            {
-                return;
-            }
+            // Even though _dictionary initialization can be subject to races,
+            // ensure that contending threads use a coherent view of jsonElement.
 
+            JsonElement? jsonElement = _jsonElement;
+            Interlocked.MemoryBarrier();
+            JsonPropertyDictionary<JsonNode?>? dictionary = _dictionary;
+
+            if (dictionary is null)
+            {
+                _dictionary = InitializeIfRequiredCore(jsonElement);
+                Interlocked.MemoryBarrier();
+                _jsonElement = null;
+            }
+        }
+
+        private JsonPropertyDictionary<JsonNode?> InitializeIfRequiredCore(JsonElement? jsonElement)
+        {
             bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
             var dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
-            if (_jsonElement.HasValue)
+            if (jsonElement.HasValue)
             {
-                JsonElement jElement = _jsonElement.Value;
-
-                foreach (JsonProperty jElementProperty in jElement.EnumerateObject())
+                foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
                 {
                     JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
                     if (node != null)
@@ -282,11 +293,9 @@ namespace System.Text.Json.Nodes
 
                     dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
                 }
-
-                _jsonElement = null;
             }
 
-            _dictionary = dictionary;
+            return dictionary;
         }
     }
 }

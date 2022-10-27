@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
+using System.Threading;
 
 namespace System.Text.Json.Nodes
 {
@@ -85,7 +86,7 @@ namespace System.Text.Json.Nodes
             throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array)));
         }
 
-        internal JsonArray (JsonElement element, JsonNodeOptions? options = null) : base(options)
+        internal JsonArray(JsonElement element, JsonNodeOptions? options = null) : base(options)
         {
             Debug.Assert(element.ValueKind == JsonValueKind.Array);
             _jsonElement = element;
@@ -180,34 +181,41 @@ namespace System.Text.Json.Nodes
 
         private void CreateNodes()
         {
-            if (_list == null)
+            // Even though _list initialization can be subject to races,
+            // ensure that contending threads use a coherent view of jsonElement.
+
+            JsonElement? jsonElement = _jsonElement;
+            Interlocked.MemoryBarrier();
+            List<JsonNode?>? list = _list;
+
+            if (list is null)
             {
-                List<JsonNode?> list;
-
-                if (_jsonElement == null)
-                {
-                    list = new List<JsonNode?>();
-                }
-                else
-                {
-                    JsonElement jElement = _jsonElement.Value;
-                    Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
-
-                    list = new List<JsonNode?>(jElement.GetArrayLength());
-
-                    foreach (JsonElement element in jElement.EnumerateArray())
-                    {
-                        JsonNode? node = JsonNodeConverter.Create(element, Options);
-                        node?.AssignParent(this);
-                        list.Add(node);
-                    }
-
-                    // Clear since no longer needed.
-                    _jsonElement = null;
-                }
-
-                _list = list;
+                _list = CreateNodesCore(jsonElement);
+                Interlocked.MemoryBarrier();
+                _jsonElement = null;
             }
+        }
+
+        private List<JsonNode?> CreateNodesCore(JsonElement? jsonElement)
+        {
+            List<JsonNode?> list = new();
+
+            if (jsonElement.HasValue)
+            {
+                JsonElement jElement = jsonElement.Value;
+                Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
+
+                list = new List<JsonNode?>(jElement.GetArrayLength());
+
+                foreach (JsonElement element in jElement.EnumerateArray())
+                {
+                    JsonNode? node = JsonNodeConverter.Create(element, Options);
+                    node?.AssignParent(this);
+                    list.Add(node);
+                }
+            }
+
+            return list;
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
