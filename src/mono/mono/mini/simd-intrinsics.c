@@ -582,7 +582,6 @@ static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
 static MonoInst*
 emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_type, MonoInst *arg)
 {
-	MonoClass *arg_class = mono_class_from_mono_type_internal (vector_type);
 	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
 
 	int instc0 = -1;
@@ -636,12 +635,13 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	if (!is_SIMD_feature_supported (cfg, feature))
 		return NULL;	
 
-	MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+	int vector_size = mono_class_value_size (vector_class, NULL);
+	MonoType *etype = mono_class_get_context (vector_class)->class_inst->type_argv [0];
 	int elem_size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-	int num_elems = size / elem_size;
+	int num_elems = vector_size / elem_size;
 	int num_rounds = fast_log2[num_elems];
 
-	MonoInst *tmp = emit_xzero (cfg, arg_class);
+	MonoInst *tmp = emit_xzero (cfg, vector_class);
 	MonoInst *ins = arg;
 	// HorizontalAdds over vector log2(num_elems) times
 	for (int i = 0; i < num_rounds; ++i) {
