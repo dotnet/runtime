@@ -545,8 +545,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Create:
         case NI_Vector64_CreateScalarUnsafe:
+        {
+            if (genTypeSize(simdBaseType) == 8)
+            {
+                intrinsic = NI_Vector64_Create;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_Create:
         case NI_Vector128_Create:
         case NI_Vector128_CreateScalarUnsafe:
         {
