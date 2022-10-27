@@ -2255,6 +2255,8 @@ size_t      gc_heap::current_total_committed = 0;
 
 size_t      gc_heap::committed_by_oh[recorded_committed_bucket_counts];
 
+size_t      gc_heap::current_total_committed_bookkeeping = 0;
+
 #ifdef FEATURE_EVENT_TRACE
 bool gc_heap::informational_event_enabled_p = false;
 
@@ -6963,6 +6965,8 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 #endif // _DEBUG && MULTIPLE_HEAPS
             committed_by_oh[bucket] += size;
             current_total_committed += size;
+            if (h_number < 0)
+                current_total_committed_bookkeeping += size;
         }
 
         check_commit_cs.Leave();
@@ -6997,6 +7001,11 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         dprintf (1, ("commit failed, updating %Id to %Id",
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
+        if (h_number < 0)
+        {
+            assert (current_total_committed_bookkeeping >= size);
+            current_total_committed_bookkeeping -= size;
+        }
 
         check_commit_cs.Leave();
     }
@@ -7037,6 +7046,11 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
 #endif // _DEBUG && MULTIPLE_HEAPS
         assert (current_total_committed >= size);
         current_total_committed -= size;
+        if (bucket == recorded_committed_bookkeeping_bucket)
+        {
+            assert (current_total_committed_bookkeeping >= size);
+            current_total_committed_bookkeeping -= size;
+        }
         check_commit_cs.Leave();
     }
 
@@ -14365,6 +14379,8 @@ gc_heap::init_gc_heap (int h_number)
 #endif //CARD_BUNDLE
 
 #ifdef BACKGROUND_GC
+    background_saved_highest_address = nullptr;
+    background_saved_lowest_address = nullptr;
     if (gc_can_use_concurrent)
         mark_array = translate_mark_array (card_table_mark_array (&g_gc_card_table[card_word (card_of (g_gc_lowest_address))]));
     else
@@ -21706,10 +21722,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 #ifdef USE_REGIONS
-    if (!(settings.concurrent))
-    {
-        last_gc_before_oom = FALSE;
-    }
+    last_gc_before_oom = FALSE;
 #endif //USE_REGIONS
 }
 
@@ -40362,11 +40375,11 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                 {
                     size_t allocated = 0;
                     size_t committed = uoh_committed_size (gen_number, &allocated);
-                    dprintf (1, ("GC#%Id h%d, GMI: UOH budget, UOH commit %Id (obj %Id, frag %Id), total commit: %Id",
+                    dprintf (1, ("GC#%Id h%d, GMI: UOH budget, UOH commit %Id (obj %Id, frag %Id), total commit: %Id (recorded: %Id)",
                         (size_t)settings.gc_index, heap_number,
                         committed, allocated,
                         dd_fragmentation (dynamic_data_of (gen_number)),
-                        get_total_committed_size()));
+                        get_total_committed_size(), (current_total_committed - current_total_committed_bookkeeping)));
                 }
 #endif //TRACE_GC
                 if (heap_number == 0)
@@ -46705,9 +46718,11 @@ void gc_heap::do_pre_gc()
     if (heap_hard_limit)
     {
         size_t total_heap_committed = get_total_committed_size();
-        dprintf (1, ("(%d)GC commit BEG #%Id: %Id",
+        size_t total_heap_committed_recorded = current_total_committed - current_total_committed_bookkeeping;
+        dprintf (1, ("(%d)GC commit BEG #%Id: %Id (recorded: %Id = %Id-%Id)",
             settings.condemned_generation,
-            (size_t)settings.gc_index, total_heap_committed));
+            (size_t)settings.gc_index, total_heap_committed, total_heap_committed_recorded,
+            current_total_committed, current_total_committed_bookkeeping));
     }
 #endif //TRACE_GC
 
@@ -47178,9 +47193,11 @@ void gc_heap::do_post_gc()
 #ifdef TRACE_GC
     if (heap_hard_limit)
     {
-        dprintf (1, ("(%d)GC commit END #%Id: %Id, heap %Id, frag: %Id",
+        size_t total_heap_committed_recorded = current_total_committed - current_total_committed_bookkeeping;
+        dprintf (1, ("(%d)GC commit END #%Id: %Id (recorded: %Id=%Id-%Id), heap %Id, frag: %Id",
             settings.condemned_generation,
-            (size_t)settings.gc_index, total_heap_committed,
+            (size_t)settings.gc_index, total_heap_committed, total_heap_committed_recorded,
+            current_total_committed, current_total_committed_bookkeeping,
             last_gc_info->heap_size, last_gc_info->fragmentation));
     }
 #endif //TRACE_GC

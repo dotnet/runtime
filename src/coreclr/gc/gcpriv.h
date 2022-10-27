@@ -4126,6 +4126,10 @@ public:
     size_t committed_by_oh_per_heap[total_oh_count];
 #endif // _DEBUG && MULTIPLE_HEAPS
 
+    // This is what GC uses for its own bookkeeping.
+    PER_HEAP_ISOLATED
+    size_t current_total_committed_bookkeeping;
+
     // This is if large pages should be used.
     PER_HEAP_ISOLATED
     bool use_large_pages_p;
