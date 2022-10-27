@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+    <PropertyGroup>
+        <ArchPrefix Condition="'$(HostOS)' == 'OSX'">arch -x86_64 </ArchPrefix>
+        <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+    </PropertyGroup>
+    <!-- specify all known runtimes needed for each workload to install -->
+    <ItemGroup>
+        <TargetRuntime Condition="'$(Workload)' == 'ios'" Include="ios-arm" />
+        <TargetRuntime Condition="'$(Workload)' == 'ios'" Include="ios-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'ios'" Include="iossimulator-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'ios'" Include="iossimulator-x64" />
+        <TargetRuntime Condition="'$(Workload)' == 'ios'" Include="iossimulator-x86" />
+        <TargetRuntime Condition="'$(Workload)' == 'tvos'" Include="tvos-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'tvos'" Include="tvossimulator-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'tvos'" Include="tvossimulator-x64" />
+        <TargetRuntime Condition="'$(Workload)' == 'maccatalyst'" Include="maccatalyst-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'maccatalyst'" Include="maccatalyst-x64" />
+        <TargetRuntime Condition="'$(Workload)' == 'android'" Include="android-arm" />
+        <TargetRuntime Condition="'$(Workload)' == 'android'" Include="android-arm64" />
+        <TargetRuntime Condition="'$(Workload)' == 'android'" Include="android-x64" />
+        <TargetRuntime Condition="'$(Workload)' == 'android'" Include="android-x86" />
+    </ItemGroup>
+    <Target Name="ValidateWorkload" AfterTargets="Build">
+        <Error Condition="'%(TargetRuntime.Identity)' == ''" Text="Could not determine runtimes from requested workload: $(Workload)" />
+    </Target>
+    <Target Name="BuildAllRuntimes" AfterTargets="ValidateWorkload">
+        <MSBuild Targets="BuildRuntime"
+                Projects="$(MSBuildThisFileFullPath)"
+                BuildInParallel="true"
+                Properties="TargetRid=%(TargetRuntime.Identity)" />
+    </Target>
+    <Target Name="BuildRuntime">
+        <PropertyGroup>
+            <RuntimeTargetOS>$(TargetRid.Substring(0,$(TargetRid.LastIndexOf('-'))))</RuntimeTargetOS>
+            <RuntimeTargetArchitecture>$(TargetRid.Substring($([MSBuild]::Add(1, $(TargetRid.LastIndexOf('-'))))))</RuntimeTargetArchitecture>
+        </PropertyGroup>
+
+        <Message Text="*** Building runtime for $(TargetRid)" Importance="high" />
+        <Exec ConsoleToMsBuild="true" WorkingDirectory="$(MSBuildThisFileDirectory)\..\..\.."
+              Command="$(ArchPrefix) ./build.sh mono+libs+host+packs+mono.mscordbi -os $(RuntimeTargetOS) -arch $(RuntimeTargetArchitecture) -c $(Configuration) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true" />
+    </Target>
+    <Target Name="BuildCross" AfterTargets="ValidateWorkload">
+        <!-- Always x64, pending https://github.com/dotnet/runtime/pull/74428 -->
+        <Message Text="*** Building cross for $(HostOS)-x64" Importance="high"/>
+        <Exec ConsoleToMsBuild="true" WorkingDirectory="$(MSBuildThisFileDirectory)\..\..\.."
+              Command="$(ArchPrefix) ./build.sh -arch x64 -os $(HostOS) -s mono+packs -c $(Configuration) /p:MonoCrossAOTTargetOS=$(Workload) /p:BuildMonoAOTCrossCompilerOnly=true /p:CrossBuild=false"/>
+    </Target>
+    <Target Name="BuildTests">
+        <Error Condition="'$(TestOS)' == '' or '$(TestArchitecture)' == ''" Text="You need to specify a value for both TestOS and TestArchitecture properties to build a test"/>
+        <Exec ConsoleToMsBuild="true" WorkingDirectory="$(MSBuildThisFileDirectory)\..\..\.."
+              Command="$(ArchPrefix) ./build.sh -os $(TestOS) -arch $(TestArchitecture) -s libs.tests -c $(Configuration) /p:ArchiveTests=true /p:TestWorkloadBuildTests=true /p:TestAssemblies=false /p:RunSmokeTestsOnly=$(RunSmokeTestsOnly) /p:CrossBuild=false /p:BuildMonoAOTCrossCompiler=false /p:InstallWorkloadForTesting=true /p:TestUsingWorkloads=true --binaryLog /p:DevTeamProvisioning=$(DevTeamProvisioning)" />
+    </Target>
+</Project>

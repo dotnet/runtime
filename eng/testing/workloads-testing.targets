@@ -22,9 +22,17 @@
 
   <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
-    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'browser'">
+    <WorkloadCombinationsToInstall Include="latest" Variants="latest" />
+    <WorkloadIdForTesting Include="$(TargetOS.ToLower())"
+                          ManifestName="Microsoft.NET.Workload.Mono.Toolchain"
+                          Variant="latest"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
   </ItemGroup>
 
   <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
