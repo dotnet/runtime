@@ -5005,7 +5005,7 @@ protected:
     region_free_list global_regions_to_decommit[count_free_region_kinds];
 
     PER_HEAP_ISOLATED
-    region_free_list global_free_huge_regions;
+    region_free_list global_free_regions[count_free_region_kinds];
 #endif //USE_REGIONS
 
     PER_HEAP
