@@ -629,5 +629,52 @@ namespace System.Reflection.Metadata
                 System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass.ExistingMethod ();
             });
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewMethod()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+		var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+                var assm = ty.Assembly;
+
+                var allMethods = ty.GetMethods();
+
+		foreach (var m in allMethods) {
+		    Console.WriteLine ($"method: {m.Name}");
+		}
+		const int objectMethods = 4;
+		Assert.Equal (objectMethods + 1, allMethods.Length);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+		allMethods = ty.GetMethods();
+		Assert.Equal (objectMethods + 2, allMethods.Length);
+
+		var mi = ty.GetMethod ("AddedNewMethod");
+
+		Assert.NotNull (mi);
+
+		var retParm = mi.ReturnParameter;
+		Assert.NotNull (retParm);
+		Console.WriteLine ($"return parm: {retParm}");
+		var retCas = retParm.GetCustomAttributes();
+		foreach (var rca in retCas) {
+		    Console.WriteLine ($" - ca: {rca}");
+		}
+
+		var parms = mi.GetParameters();
+
+		foreach (var parm in parms) {
+		    Console.WriteLine ($"parm: {parm}");
+		    var cas = parm.GetCustomAttributes();
+		    foreach (var ca in cas) {
+			Console.WriteLine ($" - ca: {ca}");
+		    }
+		}
+
+		Assert.Equal (5, parms.Length);
+	    });
+	} 
     }
 }
