@@ -94,6 +94,7 @@ namespace System.Formats.Tar.Tests
         internal const string FourBytesCharacter = "\uD83D\uDE12";
         internal const char Separator = '/';
         internal const int MaxPathComponent = 255;
+        internal const long LegacyMaxFileSize = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         private static readonly string[] V7TestCaseNames = new[]
         {

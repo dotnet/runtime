@@ -572,7 +572,8 @@
             "area-System.Speech"
           ],
           "mentionees": [
-            "danmoseley"
+            "ericstj",
+            "jeffhandley"
           ]
         },
         {
@@ -1410,7 +1411,7 @@
         {
           "name": "noActivitySince",
           "parameters": {
-            "days": 1827
+            "days": 1644
           }
         },
         {

@@ -309,18 +309,18 @@ namespace SuperPMICollection
             Console.WriteLine("Setting environment variables:");
             Console.WriteLine("    SuperPMIShimLogPath=" + s_tempDir);
             Console.WriteLine("    SuperPMIShimPath=" + Global.JitPath);
-            Console.WriteLine("    COMPlus_JitName=" + Global.CollectorShimName);
+            Console.WriteLine("    DOTNET_JitName=" + Global.CollectorShimName);
 
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", s_tempDir);
             Environment.SetEnvironmentVariable("SuperPMIShimPath", Global.JitPath);
-            Environment.SetEnvironmentVariable("COMPlus_JitName", Global.CollectorShimName);
+            Environment.SetEnvironmentVariable("DOTNET_JitName", Global.CollectorShimName);
 
             RunProgramsWhileCollecting(runProgramPath, runProgramArguments);
 
             // Un-set environment variables
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", "");
             Environment.SetEnvironmentVariable("SuperPMIShimPath", "");
-            Environment.SetEnvironmentVariable("COMPlus_JitName", "");
+            Environment.SetEnvironmentVariable("DOTNET_JitName", "");
 
             // Did any .mc files get generated?
             string[] mcFiles = Directory.GetFiles(s_tempDir, "*.mc");
@@ -599,7 +599,7 @@ namespace SuperPMICollection
             Console.WriteLine("If -mch is not given, all generated files are deleted, and the result is simply the exit code");
             Console.WriteLine("indicating whether the collection succeeded. This is useful as a test.");
             Console.WriteLine("");
-            Console.WriteLine("If the COMPlus_JitName or COMPlus_JitPath variable is already set, it is assumed SuperPMI collection is already happening,");
+            Console.WriteLine("If the DOTNET_JitName or DOTNET_JitPath variable is already set, it is assumed SuperPMI collection is already happening,");
             Console.WriteLine("and the program exits with success.");
             Console.WriteLine("");
             Console.WriteLine("On success, the return code is 100.");

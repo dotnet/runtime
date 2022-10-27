@@ -220,7 +220,7 @@ namespace CoreclrTestLib
             {
                 createdump.StartInfo.FileName = "sudo";
                 createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
-                createdump.StartInfo.EnvironmentVariables.Add("COMPlus_DbgEnableElfDumpOnMacOS", "1");
+                createdump.StartInfo.EnvironmentVariables.Add("DOTNET_DbgEnableElfDumpOnMacOS", "1");
             }
 
             createdump.StartInfo.UseShellExecute = false;
