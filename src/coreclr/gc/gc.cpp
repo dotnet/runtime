@@ -35683,7 +35683,7 @@ void gc_heap::revisit_written_page (uint8_t* page,
                                         no_more_loop_p = TRUE;
                                         goto end_limit;
                                     }
-                                    uint8_t* oo = *poo;
+                                    uint8_t* oo = VolatileLoadWithoutBarrier(poo);
 
                                     num_marked_objects++;
                                     background_mark_object (oo THREAD_NUMBER_ARG);
