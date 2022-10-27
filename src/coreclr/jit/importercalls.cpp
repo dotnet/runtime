@@ -4303,7 +4303,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
 bool Compiler::impCanPInvokeInline()
 {
-    return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (opts.OptLevel() >= OPT_Blended) &&
+    return getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
            (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }

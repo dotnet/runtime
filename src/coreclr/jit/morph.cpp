@@ -12581,7 +12581,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
 #ifdef TARGET_XARCH
         // Should we try to replace integer multiplication with lea/add/shift sequences?
-        bool mulShiftOpt = opts.OptLevel() >= OPT_Blended;
+        bool mulShiftOpt = opts.OptLevel() != OPT_SizeAndThroughput;
 #else  // !TARGET_XARCH
         bool mulShiftOpt = false;
 #endif // !TARGET_XARCH
