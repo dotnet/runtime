@@ -1472,6 +1472,11 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 		param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
+		if (G_UNLIKELY (param_index == 0)) {
+			/* TODO: metadata-dupate: get the method param rows */
+			return;
+		}
+
 		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
@@ -1566,6 +1571,11 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
+
+		if (G_UNLIKELY (param_index == 0)) {
+			/* TODO metadata-update: can we have marshaling info on added methods? */
+			return;
+		}
 
 		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
