@@ -27,9 +27,12 @@ namespace ILCompiler.ObjectWriter
 
         private uint _classVTableTypeIndex;
         private uint _vfuncTabTypeIndex;
+        private List<(string, uint)> _userDefinedTypes = new();
 
         private uint _nextTypeIndex = 0x1000;
         private ArrayBufferWriter<byte> _bufferWriter = new();
+
+        public IList<(string, uint)> UserDefinedTypes => _userDefinedTypes;
 
         public CodeViewTypesBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, Stream outputStream)
         {
@@ -207,7 +210,10 @@ namespace ILCompiler.ObjectWriter
                 record.Write(classDescriptor.Name);
             }
 
-            return _nextTypeIndex++;
+            uint typeIndex = _nextTypeIndex++;
+            _userDefinedTypes.Add((classDescriptor.Name, typeIndex));
+
+            return typeIndex;
         }
 
         public uint GetEnumTypeIndex(
@@ -237,7 +243,10 @@ namespace ILCompiler.ObjectWriter
                 record.Write(typeDescriptor.Name);
             }
 
-            return _nextTypeIndex++;
+            uint typeIndex = _nextTypeIndex++;
+            _userDefinedTypes.Add((typeDescriptor.Name, typeIndex));
+
+            return typeIndex;
         }
 
         public uint GetClassTypeIndex(ClassTypeDescriptor classDescriptor)
@@ -290,6 +299,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         fieldListRecord.Write(LF_STMEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
+                        fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.Write(desc.Name);
                     }
                     else
@@ -318,7 +328,10 @@ namespace ILCompiler.ObjectWriter
                 record.Write(classTypeDescriptor.Name);
             }
 
-            return _nextTypeIndex++;
+            uint typeIndex = _nextTypeIndex++;
+            _userDefinedTypes.Add((classTypeDescriptor.Name, typeIndex));
+
+            return typeIndex;
         }
 
         public uint GetMemberFunctionTypeIndex(MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes)

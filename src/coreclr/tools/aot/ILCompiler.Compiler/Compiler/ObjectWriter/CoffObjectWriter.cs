@@ -40,12 +40,14 @@ namespace ILCompiler.ObjectWriter
 
         // Debugging
         private SectionWriter _debugTypesSectionWriter;
-        //private SectionWriter _debugSymbolSectionWriter;
+        private SectionWriter _debugSymbolSectionWriter;
+        private CodeViewSymbolsBuilder _debugSymbolsBuilder;
+        private CodeViewTypesBuilder _debugTypesBuilder;
 
         private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
         private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
-        //private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
+        private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
         protected CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -122,51 +124,54 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             int addend)
         {
-            if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
-                relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 ||
-                relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+            switch (relocType)
             {
-                Debug.Assert(addend == 0);
-            }
-            else if (relocType == RelocType.IMAGE_REL_BASED_DIR64)
-            {
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt64LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt64LittleEndian(data) +
-                        addend);
-                    addend = 0;
-                }
-            }
-            else if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
-            {
-                addend += 4;
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        addend);
-                    addend = 0;
-                }
-            }
-            else if (relocType == RelocType.IMAGE_REL_BASED_REL32 ||
-                     relocType == RelocType.IMAGE_REL_BASED_ADDR32NB ||
-                     relocType == RelocType.IMAGE_REL_BASED_ABSOLUTE)
-            {
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        addend);
-                    addend = 0;
-                }
-            }
-            else
-            {
-                throw new NotSupportedException($"Unsupported relocation: {relocType}");
+                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_SECTION:
+                    Debug.Assert(addend == 0);
+                    break;
+
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                    if (addend != 0)
+                    {
+                        BinaryPrimitives.WriteInt64LittleEndian(
+                            data,
+                            BinaryPrimitives.ReadInt64LittleEndian(data) +
+                            addend);
+                        addend = 0;
+                    }
+                    break;
+
+                case RelocType.IMAGE_REL_BASED_RELPTR32:
+                    addend += 4;
+                    if (addend != 0)
+                    {
+                        BinaryPrimitives.WriteInt32LittleEndian(
+                            data,
+                            BinaryPrimitives.ReadInt32LittleEndian(data) +
+                            addend);
+                        addend = 0;
+                    }
+                    break;
+
+                case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                    if (addend != 0)
+                    {
+                        BinaryPrimitives.WriteInt32LittleEndian(
+                            data,
+                            BinaryPrimitives.ReadInt32LittleEndian(data) +
+                            addend);
+                        addend = 0;
+                    }
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported relocation: {relocType}");
             }
 
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
@@ -311,6 +316,8 @@ namespace ILCompiler.ObjectWriter
                                 RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_AMD64_ADDR64,
                                 RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
+                                RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_AMD64_SECREL,
+                                RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_AMD64_SECTION,
                                 _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
                             },
                         });
@@ -335,6 +342,8 @@ namespace ILCompiler.ObjectWriter
                                 RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => CoffRelocationType.IMAGE_REL_ARM64_BRANCH26,
                                 RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => CoffRelocationType.IMAGE_REL_ARM64_PAGEBASE_REL21,
                                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => CoffRelocationType.IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_ARM64_SECREL,
+                                RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_ARM64_SECTION,
                                 _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
                             },
                         });
@@ -542,11 +551,15 @@ namespace ILCompiler.ObjectWriter
 
         protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
+            _debugSymbolSectionWriter = GetOrCreateSection(DebugSymbolSection);
+            _debugSymbolSectionWriter.EmitAlignment(4);
+            _debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture);
             _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
             _debugTypesSectionWriter.EmitAlignment(4);
-            return new CodeViewTypesBuilder(
+            _debugTypesBuilder = new CodeViewTypesBuilder(
                 _nodeFactory.NameMangler, _nodeFactory.Target.Architecture,
                 _debugTypesSectionWriter.Stream);
+            return _debugTypesBuilder;
         }
 
         protected override void EmitDebugFunctionInfo(
@@ -555,10 +568,27 @@ namespace ILCompiler.ObjectWriter
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode)
         {
+            DebugEHClauseInfo[] clauses = null;
+
+            if (debugNode is INodeWithCodeInfo nodeWithCodeInfo)
+            {
+                clauses = nodeWithCodeInfo.DebugEHClauseInfos;
+            }
+
+            _debugSymbolsBuilder.EmitSubprogramInfo(
+                methodName,
+                methodSymbol.Size,
+                methodTypeIndex,
+                debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
+                clauses ?? Array.Empty<DebugEHClauseInfo>());
+
+            //_debugSymbolsBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
         }
 
         protected override void EmitDebugSections()
         {
+            _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
+            _debugSymbolsBuilder.Write(_debugSymbolSectionWriter);
         }
 
         protected override void EmitDebugStaticVars()
