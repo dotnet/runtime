@@ -134,6 +134,7 @@ NOHANDLES(ICALL(ARRAY_5, "GetGenericValue_icall", ves_icall_System_Array_GetGene
 HANDLES(ARRAY_6, "GetLength",        ves_icall_System_Array_GetLength, gint32, 2, (MonoArray, gint32))
 HANDLES(ARRAY_7, "GetLowerBound",    ves_icall_System_Array_GetLowerBound, gint32, 2, (MonoArray, gint32))
 HANDLES(ARRAY_10, "GetValueImpl",    ves_icall_System_Array_GetValueImpl, MonoObject, 2, (MonoArray, guint32))
+HANDLES(ARRAY_10_a, "InitializeInternal",  ves_icall_System_Array_InitializeInternal, void, 1, (MonoObjectHandleOnStack))
 NOHANDLES(ICALL(ARRAY_10a, "InternalCreate", ves_icall_System_Array_InternalCreate))
 HANDLES(ARRAY_10b, "IsValueOfElementType", ves_icall_System_Array_IsValueOfElementType, gint32, 2, (MonoArray, MonoObject))
 NOHANDLES(ICALL(ARRAY_11, "SetGenericValue_icall", ves_icall_System_Array_SetGenericValue_icall))

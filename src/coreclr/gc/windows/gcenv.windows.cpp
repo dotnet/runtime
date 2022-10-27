@@ -7,12 +7,12 @@
 #include <memory>
 #include "windows.h"
 #include "psapi.h"
-#include "env/gcenv.structs.h"
-#include "env/gcenv.base.h"
-#include "env/gcenv.os.h"
-#include "env/gcenv.ee.h"
-#include "env/gcenv.windows.inl"
-#include "env/volatile.h"
+#include "gcenv.structs.h"
+#include "gcenv.base.h"
+#include "gcenv.os.h"
+#include "gcenv.ee.h"
+#include "gcenv.windows.inl"
+#include "volatile.h"
 #include "gcconfig.h"
 
 GCSystemInfo g_SystemInfo;

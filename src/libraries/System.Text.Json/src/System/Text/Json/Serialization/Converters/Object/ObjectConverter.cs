@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object?>
     {
-        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Object;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Object;
 
         public ObjectConverter()
         {

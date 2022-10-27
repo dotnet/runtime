@@ -11,6 +11,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="ConsoleKeyInfoTests.cs" />
+    <Compile Include="ConsoleStream.cs" />
     <Compile Include="SetError.cs" />
     <Compile Include="SetIn.cs" />
     <Compile Include="Color.cs" />

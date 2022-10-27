@@ -489,6 +489,9 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
+        // WFLAGS_LOW_ENUM
+        private const uint enum_flag_HasDefaultCtor = 0x00000200;
+
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
@@ -557,6 +560,14 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasTypeEquivalence) != 0;
+            }
+        }
+
+        public bool HasDefaultConstructor
+        {
+            get
+            {
+                return ((HasComponentSize ? 0 : Flags) & enum_flag_HasDefaultCtor) != 0;
             }
         }
 
