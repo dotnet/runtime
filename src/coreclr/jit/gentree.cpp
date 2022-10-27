@@ -7584,10 +7584,27 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 
     GenTreeField* fieldNode = new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, obj, fldHnd, offset);
 
-    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
-    // TODO-ADDR: delete this zero-diff quirk.
-    fieldNode->gtFlags |= GTF_GLOB_REF;
+    // If "obj" is the address of a local, note that a field of that struct local has been accessed.
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
+        varDsc->lvFieldAccessed = 1;
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
+        {
+            // TODO-ADDR: delete this zero-diff quirk.
+            fieldNode->gtFlags |= GTF_GLOB_REF;
+        }
+    }
+    else
+    {
+        // TODO-ADDR: delete this zero-diff quirk.
+        fieldNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
     return fieldNode;
 }
 

@@ -4053,6 +4053,7 @@ struct GenTreeField : public GenTreeUnOp
     // True if this field is a volatile memory operation.
     bool IsVolatile() const
     {
+        assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
 
