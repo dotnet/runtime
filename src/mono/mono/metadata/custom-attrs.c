@@ -2252,10 +2252,18 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 
 	/* FIXME: metadata-update - lookup added params */
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
-	if (method_index == table_info_get_rows (ca)) {
-		param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
+	if (G_UNLIKELY (param_list == 0 && image->has_updates)) {
+		uint32_t count;
+		param_list = mono_metadata_update_get_method_params (image, mono_metadata_make_token (MONO_TABLE_METHOD, method_index), &count);
+		if (!param_list)
+			return NULL;
+		param_last = param_list + count;
 	} else {
-		param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
+		if (method_index == table_info_get_rows (ca)) {
+			param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
+		} else {
+			param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
+		}
 	}
 	ca = &image->tables [MONO_TABLE_PARAM];
 
