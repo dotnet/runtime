@@ -566,14 +566,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Write((ElementType)type, (int)value);
                     return true;
                 case ElementType.Char:
+                    int intCharVal = (int)value;
                     if (value.GetType() == typeof(char))
-                        value = (int)(char)value;
-                    Write((ElementType)type, (int)value);
+                        intCharVal = (int)(char)value;
+                    Write((ElementType)type, intCharVal);
                     return true;
                 case ElementType.Boolean:
+                    int intBoolVal = (int)value;
                     if (value.GetType() == typeof(bool))
-                        value = (bool)value ? 1 : 0;
-                    Write((ElementType)type, (int)value);
+                        intBoolVal = (bool)value ? 1 : 0;
+                    Write((ElementType)type, intBoolVal);
                     return true;
                 case ElementType.I1:
                 case ElementType.U2:

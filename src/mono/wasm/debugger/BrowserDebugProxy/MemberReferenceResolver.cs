@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -434,7 +435,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 try
                                 {
-                                    ArraySegment<byte> buffer = await WriteIndex(objectId, indexObject, elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr);
+                                    if (indexObject is null && elementIdxInfo.IndexingExpression is null)
+                                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                                    ArraySegment<byte> buffer = indexObject is null ?
+                                        await WriteLiteralExpressionAsIndex(objectId,  elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
+                                        await WriteJObjectAsIndex(objectId, indexObject, elementIdxInfo.ElementIdxStr);
                                     JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
                                     return (JObject)getItemRetObj["value"];
                                 }
@@ -464,7 +469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (elementAccess.ArgumentList is null)
                     return null;
 
-                string elementIdxStr = string.Empty;
+                StringBuilder elementIdxStr = new StringBuilder();
                 var multiDimensionalArray = false;
                 LiteralExpressionSyntax indexingExpression = null;
                 for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
@@ -472,14 +477,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var arg = elementAccess.ArgumentList.Arguments[i];
                     if (i != 0)
                     {
-                        elementIdxStr += ", ";
+                        elementIdxStr.Append(", ");
                         multiDimensionalArray = true;
                     }
                     // e.g. x[1]
                     if (arg.Expression is LiteralExpressionSyntax)
                     {
                         indexingExpression = arg.Expression as LiteralExpressionSyntax;
-                        elementIdxStr += indexingExpression.ToString();
+                        elementIdxStr.Append(indexingExpression.ToString());
                     }
 
                     // e.g. x[a] or x[a.b]
@@ -492,7 +497,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         // x[a]
                         indexObject ??= await Resolve(argParm.Identifier.Text, token);
-                        elementIdxStr += indexObject["value"].ToString();
+                        elementIdxStr.Append(indexObject["value"].ToString());
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
@@ -502,33 +507,33 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string idxType = indexObject["type"].Value<string>();
                         if (idxType != "number")
                             throw new InvalidOperationException($"Cannot index with an object of type '{idxType}'");
-                        elementIdxStr += indexObject["value"].ToString();
+                        elementIdxStr.Append(indexObject["value"].ToString());
                     }
                 }
                 return new ElementIndexInfo(
-                    ElementIdxStr: elementIdxStr,
+                    ElementIdxStr: elementIdxStr.ToString(),
                     IsMultidimensional: multiDimensionalArray,
                     IndexingExpression: indexingExpression);
             }
 
-            async Task<ArraySegment<byte>> WriteIndex(DotnetObjectId rootObjId, JObject indexObject, LiteralExpressionSyntax indexingExpression, string elementIdxStr)
+            async Task<ArraySegment<byte>> WriteJObjectAsIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr)
             {
-                var writer = new MonoBinaryWriter();
+                using var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
                 writer.Write(1); // number of method args
-                if (indexObject != null)
-                {
-                    if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
-                        throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
-                    return writer.GetParameterBuffer();
-                }
-                if (indexingExpression != null)
-                {
-                    if (!await writer.WriteConst(indexingExpression, context.SdbAgent, token))
-                        throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
-                    return writer.GetParameterBuffer();
-                }
-                throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
+                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
+                return writer.GetParameterBuffer();
+            }
+
+            async Task<ArraySegment<byte>> WriteLiteralExpressionAsIndex(DotnetObjectId rootObjId, LiteralExpressionSyntax indexingExpression, string elementIdxStr)
+            {
+                using var writer = new MonoBinaryWriter();
+                writer.WriteObj(rootObjId, context.SdbAgent);
+                writer.Write(1); // number of method args
+                if (!await writer.WriteConst(indexingExpression, context.SdbAgent, token))
+                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
+                return writer.GetParameterBuffer();
             }
         }
 
