@@ -117,7 +117,15 @@
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
+
+      <TargetingPackName Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Ref.multithread</TargetingPackName>
+      <TargetingPackName Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Ref.perftrace</TargetingPackName>
     </KnownRuntimePack>
+
+    <KnownFrameworkReference Update="@(KnownFrameworkReference -> WithMetadataValue('Identity', 'Microsoft.NETCore.App'))">
+      <TargetingPackName Condition="'%(TargetFramework)' == ${NetCoreAppCurrent} and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Ref.multithread</TargetingPackName>
+      <TargetingPackName Condition="'%(TargetFramework)' == ${NetCoreAppCurrent} and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Ref.perftrace</TargetingPackName>
+    </KnownFrameworkReference>
   </ItemGroup>
 
   <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build

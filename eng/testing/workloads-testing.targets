@@ -165,7 +165,7 @@
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
       <_DefaultBuildVariant Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
-      <!--<_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>-->
+      <_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
       <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm.$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>
@@ -173,7 +173,7 @@
 
     <ItemGroup>
       <_BuildVariants Include="multithread" Condition="'$(_DefaultBuildVariant)' != '.multithread.'" />
-      <!--<_BuildVariants Include="perftrace"   Condition="'$(_DefaultBuildVariant)' != '.perftrace.'" />-->
+      <_BuildVariants Include="perftrace"   Condition="'$(_DefaultBuildVariant)' != '.perftrace.'" />
 
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
