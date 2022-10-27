@@ -4018,7 +4018,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 //
 PhaseStatus Compiler::optUnrollLoops()
 {
-    if (compCodeOpt() == SMALL_CODE)
+    if (opts.OptLevel() < OPT_Blended)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -4049,17 +4049,15 @@ PhaseStatus Compiler::optUnrollLoops()
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
 
-    static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
-        10, // BLENDED_CODE
-        0,  // SMALL_CODE
-        20, // FAST_CODE
-        0   // COUNT_OPT_CODE
+    static const unsigned ITER_LIMIT[4] = {
+        0,  // OPT_MinOpts
+        0,  // OPT_SizeAndThroughput
+        10, // OPT_Blended
+        20, // OPT_Speed
     };
+    assert((int)opts.OptLevel() <= 3);
 
-    assert(ITER_LIMIT[SMALL_CODE] == 0);
-    assert(ITER_LIMIT[COUNT_OPT_CODE] == 0);
-
-    unsigned iterLimit = ITER_LIMIT[compCodeOpt()];
+    unsigned iterLimit = ITER_LIMIT[opts.OptLevel()];
 
 #ifdef DEBUG
     if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
@@ -4068,15 +4066,12 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-    static const int UNROLL_LIMIT_SZ[COUNT_OPT_CODE + 1] = {
-        300, // BLENDED_CODE
-        0,   // SMALL_CODE
-        600, // FAST_CODE
-        0    // COUNT_OPT_CODE
+    static const unsigned UNROLL_LIMIT_SZ[4] = {
+        0,   // OPT_MinOpts
+        0,   // OPT_SizeAndThroughput
+        300, // OPT_Blended
+        600, // OPT_Speed
     };
-
-    assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
-    assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
     // Visit loops from highest to lowest number to visit them in innermost to outermost order.
     for (unsigned lnum = optLoopCount - 1; lnum != ~0U; --lnum)
@@ -4211,7 +4206,7 @@ PhaseStatus Compiler::optUnrollLoops()
             continue;
         }
 
-        int unrollLimitSz = UNROLL_LIMIT_SZ[compCodeOpt()];
+        int unrollLimitSz = UNROLL_LIMIT_SZ[opts.OptLevel()];
 
         if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
         {
@@ -4772,7 +4767,6 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 bool Compiler::optInvertWhileLoop(BasicBlock* block)
 {
     assert(opts.OptimizationEnabled());
-    assert(compCodeOpt() != SMALL_CODE);
 
     // Does the BB end with an unconditional jump?
 
@@ -4911,7 +4905,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     unsigned maxDupCostSz = 34;
 
-    if ((compCodeOpt() == FAST_CODE) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
+    if ((opts.OptLevel() == OPT_Speed) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
     {
         maxDupCostSz *= 4;
     }
@@ -5189,11 +5183,6 @@ PhaseStatus Compiler::optInvertLoops()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // OPT_CONFIG
-
-    if (compCodeOpt() == SMALL_CODE)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
 
     bool madeChanges = false; // Assume no changes made
     for (BasicBlock* const block : Blocks())

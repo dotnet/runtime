@@ -1914,10 +1914,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compRationalIRForm = false;
 
 #ifdef DEBUG
-    compCodeGenDone        = false;
-    opts.compMinOptsIsUsed = false;
+    compCodeGenDone = false;
 #endif
-    opts.compMinOptsIsSet = false;
 
     // Used by fgFindJumpTargets for inlining heuristics.
     opts.instrCount = 0;
@@ -2402,32 +2400,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compFlags = CLFLG_MINOPT;
     }
 
-    // Default value is to generate a blend of size and speed optimizations
-    //
-    opts.compCodeOpt = BLENDED_CODE;
-
-    // If the EE sets SIZE_OPT or if we are compiling a Class constructor
-    // we will optimize for code size at the expense of speed
-    //
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || ((info.compFlags & FLG_CCTOR) == FLG_CCTOR))
-    {
-        opts.compCodeOpt = SMALL_CODE;
-    }
-    //
-    // If the EE sets SPEED_OPT we will optimize for speed at the expense of code size
-    //
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT) ||
-             (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT)))
-    {
-        opts.compCodeOpt = FAST_CODE;
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT));
-    }
-
     //-------------------------------------------------------------------------
 
     opts.compDbgCode = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE);
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
+
+    if (opts.compDbgCode || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    {
+        // MinOpts level in case of explicit miopts mode or debug-friendly codegen request
+        opts.compOptLevel = OPT_MinOpts;
+    }
+    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+             !compIsForInlining())
+    {
+        // Don't waste time on static cctors (unless prejitted)
+        opts.compOptLevel = OPT_MinOpts;
+    }
+    else
+    {
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
+        {
+            opts.compOptLevel = OPT_SizeAndThroughput;
+        }
+        else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
+        {
+            opts.compOptLevel = OPT_Speed;
+        }
+        else
+        {
+            opts.compOptLevel = OPT_Blended;
+        }
+    }
 
 #ifdef DEBUG
     opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
@@ -3266,11 +3270,23 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
         }
 
-        printf("OPTIONS: compCodeOpt = %s\n",
-               (opts.compCodeOpt == BLENDED_CODE)
-                   ? "BLENDED_CODE"
-                   : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
-                                                      : (opts.compCodeOpt == FAST_CODE) ? "FAST_CODE" : "UNKNOWN_CODE");
+        switch (opts.OptLevel())
+        {
+            case OPT_MinOpts:
+                printf("OPTIONS: OptLevel() = MinOpts\n");
+                break;
+            case OPT_SizeAndThroughput:
+                printf("OPTIONS: OptLevel() = SizeAndThroughput\n");
+                break;
+            case OPT_Blended:
+                printf("OPTIONS: OptLevel() = Blended\n");
+                break;
+            case OPT_Speed:
+                printf("OPTIONS: OptLevel() = Speed\n");
+                break;
+            default:
+                unreached();
+        }
 
         printf("OPTIONS: compDbgCode = %s\n", dspBool(opts.compDbgCode));
         printf("OPTIONS: compDbgInfo = %s\n", dspBool(opts.compDbgInfo));
@@ -4092,14 +4108,6 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
-
-    if (!opts.compMinOptsIsSet)
-    {
-        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
-        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
-        // and eventually stackoverflow.
-        return "Optimization-Level-Not-Yet-Set";
-    }
 
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 

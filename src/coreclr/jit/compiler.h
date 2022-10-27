@@ -9050,13 +9050,13 @@ public:
 
     //---------------------------- JITing options -----------------------------
 
-    enum codeOptimize
+    enum OptLevel
     {
-        BLENDED_CODE,
-        SMALL_CODE,
-        FAST_CODE,
-
-        COUNT_OPT_CODE
+        // Order is important
+        OPT_MinOpts,
+        OPT_SizeAndThroughput,
+        OPT_Blended,
+        OPT_Speed
     };
 
     struct Options
@@ -9083,7 +9083,7 @@ public:
         unsigned instrCount;
         unsigned lvRefCount;
 
-        codeOptimize compCodeOpt; // what type of code optimizations
+        OptLevel compOptLevel;
 
         bool compUseCMOV;
 
@@ -9098,47 +9098,25 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
-        bool compMinOpts;
-        bool compMinOptsIsSet;
-#ifdef DEBUG
-        mutable bool compMinOptsIsUsed;
-
         bool MinOpts() const
         {
-            assert(compMinOptsIsSet);
-            compMinOptsIsUsed = true;
-            return compMinOpts;
+            return compOptLevel == OPT_MinOpts;
         }
-        bool IsMinOptsSet() const
-        {
-            return compMinOptsIsSet;
-        }
-#else  // !DEBUG
-        bool MinOpts() const
-        {
-            return compMinOpts;
-        }
-        bool IsMinOptsSet() const
-        {
-            return compMinOptsIsSet;
-        }
-#endif // !DEBUG
-
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            return compOptLevel < OPT_Blended;
         }
         bool OptimizationEnabled() const
         {
             return !OptimizationDisabled();
         }
-
+        OptLevel OptLevel() const
+        {
+            return compOptLevel;
+        }
         void SetMinOpts(bool val)
         {
-            assert(!compMinOptsIsUsed);
-            assert(!compMinOptsIsSet || (compMinOpts == val));
-            compMinOpts      = val;
-            compMinOptsIsSet = true;
+            compOptLevel = OPT_MinOpts;
         }
 
         // true if the CLFLG_* for an optimization is set.
@@ -9588,22 +9566,6 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetPgoSourceName() const;
     const char* compGetStressMessage() const;
-
-    codeOptimize compCodeOpt() const
-    {
-#if 0
-        // Switching between size & speed has measurable throughput impact
-        // (3.5% on NGen CoreLib when measured). It used to be enabled for
-        // DEBUG, but should generate identical code between CHK & RET builds,
-        // so that's not acceptable.
-        // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
-        //                  Investigate the cause of the throughput regression.
-
-        return opts.compCodeOpt;
-#else
-        return BLENDED_CODE;
-#endif
-    }
 
     //--------------------- Info about the procedure --------------------------
 

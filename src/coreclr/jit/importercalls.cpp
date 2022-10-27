@@ -4303,7 +4303,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
 bool Compiler::impCanPInvokeInline()
 {
-    return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (compCodeOpt() != SMALL_CODE) &&
+    return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (opts.OptLevel() >= OPT_Blended) &&
            (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }
@@ -7629,7 +7629,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     assert((intrinsicName == NI_Array_Address) || (intrinsicName == NI_Array_Get) || (intrinsicName == NI_Array_Set));
 
     // If we are generating SMALL_CODE, we don't want to use intrinsics, as it generates fatter code.
-    if (compCodeOpt() == SMALL_CODE)
+    if (opts.OptLevel() < OPT_Blended)
     {
         JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
         return nullptr;

@@ -3807,7 +3807,7 @@ void Compiler::lvaSortByRefCount()
     }
 
     // Now sort the tracked variable table by ref-count
-    if (compCodeOpt() == SMALL_CODE)
+    if (opts.OptLevel() == OPT_SizeAndThroughput)
     {
         jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_SmallCode_Less(lvaTable DEBUGARG(lvaCount)));
     }

@@ -70,12 +70,6 @@ bool Compiler::shouldDoubleAlign(
     unsigned bytesUsed         = refCntStk + refCntEBP - refCntStkParam + DBL_ALIGN_SETUP_SIZE;
     unsigned misaligned_weight = 4;
 
-    if (compCodeOpt() == Compiler::SMALL_CODE)
-        misaligned_weight = 0;
-
-    if (compCodeOpt() == Compiler::FAST_CODE)
-        misaligned_weight *= 4;
-
     JITDUMP("\nDouble alignment:\n");
     JITDUMP("  Bytes that could be saved by not using EBP frame: %i\n", bytesUsed);
     JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %f\n", refCntWtdEBP);

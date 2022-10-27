@@ -7594,16 +7594,6 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     unsigned cnsSize  = (attr == EA_4BYTE) ? sizeof(float) : sizeof(double);
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        // Some platforms don't require doubles to be aligned and so
-        // we can use a smaller alignment to help with smaller code
-
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-#endif // TARGET_XARCH
-
     UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
@@ -7628,13 +7618,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
     unsigned cnsSize  = 8;
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-#endif // TARGET_XARCH
-
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
     return emitComp->eeFindJitDataOffs(cnum);
 #else
@@ -7653,13 +7636,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     unsigned cnsSize  = 16;
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-#endif // TARGET_XARCH
-
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
     return emitComp->eeFindJitDataOffs(cnum);
 #else
@@ -7677,13 +7653,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 #if defined(FEATURE_SIMD)
     unsigned cnsSize  = 32;
     unsigned cnsAlign = cnsSize;
-
-#ifdef TARGET_XARCH
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
-    {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
-    }
-#endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
     return emitComp->eeFindJitDataOffs(cnum);

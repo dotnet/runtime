@@ -1711,17 +1711,22 @@ void CodeGen::genGenerateMachineCode()
 
         printf("; Emitting ");
 
-        if (compiler->compCodeOpt() == Compiler::SMALL_CODE)
+        switch (compiler->opts.OptLevel())
         {
-            printf("SMALL_CODE");
-        }
-        else if (compiler->compCodeOpt() == Compiler::FAST_CODE)
-        {
-            printf("FAST_CODE");
-        }
-        else
-        {
-            printf("BLENDED_CODE");
+            case Compiler::OPT_MinOpts:
+                printf("MinOpts code");
+                break;
+            case Compiler::OPT_SizeAndThroughput:
+                printf("size/throughput-aware code");
+                break;
+            case Compiler::OPT_Blended:
+                printf("blended code");
+                break;
+            case Compiler::OPT_Speed:
+                printf("fast code");
+                break;
+            default:
+                unreached();
         }
 
         printf(" for ");
@@ -1883,7 +1888,7 @@ void CodeGen::genGenerateMachineCode()
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
-                            (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
+                            (compiler->opts.OptLevel() >= Compiler::OPT_Blended) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
                                 ,

@@ -302,7 +302,7 @@ bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
 /*****************************************************************************
  *
  *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
- *  when (CodeOptKind() == Compiler::SMALL_CODE)
+ *  when (SmallCode())
  */
 
 /* static */
@@ -1724,15 +1724,15 @@ class CSE_Heuristic
     Compiler* m_pCompiler;
     unsigned  m_addCSEcount;
 
-    weight_t               aggressiveRefCnt;
-    weight_t               moderateRefCnt;
-    unsigned               enregCount; // count of the number of predicted enregistered variables
-    bool                   largeFrame;
-    bool                   hugeFrame;
-    bool                   madeChanges;
-    Compiler::codeOptimize codeOptKind;
-    Compiler::CSEdsc**     sortTab;
-    size_t                 sortSiz;
+    weight_t           aggressiveRefCnt;
+    weight_t           moderateRefCnt;
+    unsigned           enregCount; // count of the number of predicted enregistered variables
+    bool               largeFrame;
+    bool               hugeFrame;
+    bool               madeChanges;
+    Compiler::OptLevel codeOptLevel;
+    Compiler::CSEdsc** sortTab;
+    size_t             sortSiz;
 #ifdef DEBUG
     CLRRandom m_cseRNG;
     unsigned  m_bias;
@@ -1741,12 +1741,12 @@ class CSE_Heuristic
 public:
     CSE_Heuristic(Compiler* pCompiler) : m_pCompiler(pCompiler)
     {
-        codeOptKind = m_pCompiler->compCodeOpt();
+        codeOptLevel = m_pCompiler->opts.OptLevel();
     }
 
-    Compiler::codeOptimize CodeOptKind()
+    bool SmallCode()
     {
-        return codeOptKind;
+        return codeOptLevel <= Compiler::OPT_SizeAndThroughput;
     }
 
     bool MadeChanges() const
@@ -1961,7 +1961,7 @@ public:
             //
             if ((aggressiveRefCnt == 0) && (enregCount > aggressiveEnregNum))
             {
-                if (CodeOptKind() == Compiler::SMALL_CODE)
+                if (SmallCode())
                 {
                     aggressiveRefCnt = varDsc->lvRefCnt();
                 }
@@ -1973,7 +1973,7 @@ public:
             }
             if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
             {
-                if (CodeOptKind() == Compiler::SMALL_CODE)
+                if (SmallCode())
                 {
                     moderateRefCnt = varDsc->lvRefCnt();
                 }
@@ -2016,7 +2016,7 @@ public:
         sortSiz = m_pCompiler->optCSECandidateCount * sizeof(*sortTab);
         memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
 
-        if (CodeOptKind() == Compiler::SMALL_CODE)
+        if (SmallCode())
         {
             jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpSz());
         }
@@ -2039,7 +2039,7 @@ public:
                 weight_t use;
                 unsigned cost;
 
-                if (CodeOptKind() == Compiler::SMALL_CODE)
+                if (SmallCode())
                 {
                     def  = dsc->csdDefCount; // def count
                     use  = dsc->csdUseCount; // use count (excluding the implicit uses at defs)
@@ -2213,7 +2213,7 @@ public:
         void InitializeCounts()
         {
             m_Size = Expr()->GetCostSz(); // always the GetCostSz()
-            if (m_context->CodeOptKind() == Compiler::SMALL_CODE)
+            if (m_context->SmallCode())
             {
                 m_Cost     = m_Size;                // the estimated code size
                 m_defCount = m_CseDsc->csdDefCount; // def count
@@ -2403,7 +2403,7 @@ public:
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         }
 
-        if (CodeOptKind() == Compiler::SMALL_CODE)
+        if (SmallCode())
         {
             // Note that when optimizing for SMALL_CODE we set the cse_def_cost/cse_use_cost based
             // upon the code size and we use unweighted ref counts instead of weighted ref counts.
@@ -3524,7 +3524,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     }
 
     unsigned cost;
-    if (compCodeOpt() == SMALL_CODE)
+    if (opts.OptLevel() < OPT_Blended)
     {
         cost = tree->GetCostSz();
     }

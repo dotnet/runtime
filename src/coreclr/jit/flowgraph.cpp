@@ -491,7 +491,6 @@ bool Compiler::fgCanSwitchToOptimized()
     {
         // Ensure that it would be safe to change the opt level
         assert(opts.compFlags == CLFLG_MINOPT);
-        assert(!opts.IsMinOptsSet());
     }
 
     return result;
@@ -2718,7 +2717,7 @@ PhaseStatus Compiler::fgAddInternal()
         // We are allowed to have multiple individual exits
         // However we can still decide to have a single return
         //
-        if ((compCodeOpt() == SMALL_CODE) || stressMerging)
+        if ((opts.OptLevel() == OPT_SizeAndThroughput) || stressMerging)
         {
             // Under stress or for Small_Code case we always
             // generate a single return block when we have multiple
