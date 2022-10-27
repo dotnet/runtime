@@ -42,38 +42,45 @@ namespace ILLink.RoslynAnalyzer
                 if (!IsAnalyzerEnabled(context.Options, compilation))
                     return;
 
-				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
-					if (methodSymbol.IsStaticConstructor () && methodSymbol.HasAttribute (RequiresAttributeName))
-						ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
-					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
-				}, SymbolKind.Method);
+                var incompatibleMembers = GetSpecialIncompatibleMembers(compilation);
+                context.RegisterSymbolAction(symbolAnalysisContext =>
+                {
+                    var methodSymbol = (IMethodSymbol)symbolAnalysisContext.Symbol;
+                    if (methodSymbol.IsStaticConstructor() && methodSymbol.HasAttribute(RequiresAttributeName))
+                        ReportRequiresOnStaticCtorDiagnostic(symbolAnalysisContext, methodSymbol);
+                    CheckMatchingAttributesInOverrides(symbolAnalysisContext, methodSymbol);
+                }, SymbolKind.Method);
 
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var typeSymbol = (INamedTypeSymbol) symbolAnalysisContext.Symbol;
-					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
-				}, SymbolKind.NamedType);
+                context.RegisterSymbolAction(symbolAnalysisContext =>
+                {
+                    var typeSymbol = (INamedTypeSymbol)symbolAnalysisContext.Symbol;
+                    CheckMatchingAttributesInInterfaces(symbolAnalysisContext, typeSymbol);
+                }, SymbolKind.NamedType);
 
 
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
-					}
-				}, SymbolKind.Property);
+                context.RegisterSymbolAction(symbolAnalysisContext =>
+                {
+                    var propertySymbol = (IPropertySymbol)symbolAnalysisContext.Symbol;
+                    if (AnalyzerDiagnosticTargets.HasFlag(DiagnosticTargets.Property))
+                    {
+                        CheckMatchingAttributesInOverrides(symbolAnalysisContext, propertySymbol);
+                    }
+                }, SymbolKind.Property);
 
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
-					}
-				}, SymbolKind.Event);
+                context.RegisterSymbolAction(symbolAnalysisContext =>
+                {
+                    var eventSymbol = (IEventSymbol)symbolAnalysisContext.Symbol;
+                    if (AnalyzerDiagnosticTargets.HasFlag(DiagnosticTargets.Event))
+                    {
+                        CheckMatchingAttributesInOverrides(symbolAnalysisContext, eventSymbol);
+                    }
+                }, SymbolKind.Event);
 
-				context.RegisterOperationAction (operationContext => {
-					var methodInvocation = (IInvocationOperation) operationContext.Operation;
-					CheckCalledMember (operationContext, methodInvocation.TargetMethod, incompatibleMembers);
-				}, OperationKind.Invocation);
+                context.RegisterOperationAction(operationContext =>
+                {
+                    var methodInvocation = (IInvocationOperation)operationContext.Operation;
+                    CheckCalledMember(operationContext, methodInvocation.TargetMethod, incompatibleMembers);
+                }, OperationKind.Invocation);
 
                 context.RegisterOperationAction(operationContext =>
                 {
@@ -200,14 +207,14 @@ namespace ILLink.RoslynAnalyzer
                 foreach (var extraSymbolAction in ExtraSymbolActions)
                     context.RegisterSymbolAction(extraSymbolAction.Action, extraSymbolAction.SymbolKind);
 
-				void CheckCalledMember (
-					OperationAnalysisContext operationContext,
-					ISymbol member,
-					ImmutableArray<ISymbol> incompatibleMembers)
-				{
-					// Do not emit diagnostics if the operation is nameof()
-					if (operationContext.Operation.Parent is IOperation operation && operation.Kind == OperationKind.NameOf)
-						return;
+                void CheckCalledMember(
+                    OperationAnalysisContext operationContext,
+                    ISymbol member,
+                    ImmutableArray<ISymbol> incompatibleMembers)
+                {
+                    // Do not emit diagnostics if the operation is nameof()
+                    if (operationContext.Operation.Parent is IOperation operation && operation.Kind == OperationKind.NameOf)
+                        return;
 
                     ISymbol containingSymbol = FindContainingSymbol(operationContext, AnalyzerDiagnosticTargets);
 

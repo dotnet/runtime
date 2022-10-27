@@ -187,39 +187,42 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         return value;
                     }
 
-			// The remaining cases don't have a dataflow value that represents LValues, so we need
-			// to handle the LHS specially.
-			case IPropertyReferenceOperation propertyRef: {
-					// Avoid visiting the property reference because for captured properties, we can't
-					// correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
-					// https://github.com/dotnet/roslyn/issues/25057
-					TValue instanceValue = Visit (propertyRef.Instance, state);
-					TValue value = Visit (operation.Value, state);
-					IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod ();
-					if (setMethod == null) {
-						// This can happen in a constructor - there it is possible to assign to a property
-						// without a setter. This turns into an assignment to the compiler-generated backing field.
-						// To match the linker, this should warn about the compiler-generated backing field.
-						// For now, just don't warn. https://github.com/dotnet/linker/issues/2731
-						break;
-					}
+                // The remaining cases don't have a dataflow value that represents LValues, so we need
+                // to handle the LHS specially.
+                case IPropertyReferenceOperation propertyRef:
+                    {
+                        // Avoid visiting the property reference because for captured properties, we can't
+                        // correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
+                        // https://github.com/dotnet/roslyn/issues/25057
+                        TValue instanceValue = Visit(propertyRef.Instance, state);
+                        TValue value = Visit(operation.Value, state);
+                        IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
+                        if (setMethod == null)
+                        {
+                            // This can happen in a constructor - there it is possible to assign to a property
+                            // without a setter. This turns into an assignment to the compiler-generated backing field.
+                            // To match the linker, this should warn about the compiler-generated backing field.
+                            // For now, just don't warn. https://github.com/dotnet/linker/issues/2731
+                            break;
+                        }
 
-					// Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
-					ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
-					foreach (var val in propertyRef.Arguments)
-						arguments.Add (Visit (val, state));
-					arguments.Add (value);
+                        // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
+                        ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+                        foreach (var val in propertyRef.Arguments)
+                            arguments.Add(Visit(val, state));
+                        arguments.Add(value);
 
-					HandleMethodCall (setMethod, instanceValue, arguments.ToImmutableArray (), operation);
-					// The return value of a property set expression is the value,
-					// even though a property setter has no return value.
-					return value;
-				}
-			case IImplicitIndexerReferenceOperation indexerRef: {
-					// An implicit reference to an indexer where the argument is a System.Index
-					TValue instanceValue = Visit (indexerRef.Instance, state);
-					TValue indexArgumentValue = Visit (indexerRef.Argument, state);
-					TValue value = Visit (operation.Value, state);
+                        HandleMethodCall(setMethod, instanceValue, arguments.ToImmutableArray(), operation);
+                        // The return value of a property set expression is the value,
+                        // even though a property setter has no return value.
+                        return value;
+                    }
+                case IImplicitIndexerReferenceOperation indexerRef:
+                    {
+                        // An implicit reference to an indexer where the argument is a System.Index
+                        TValue instanceValue = Visit(indexerRef.Instance, state);
+                        TValue indexArgumentValue = Visit(indexerRef.Argument, state);
+                        TValue value = Visit(operation.Value, state);
 
                         var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
@@ -353,18 +356,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (!operation.GetValueUsageInfo(Method).HasFlag(ValueUsageInfo.Read))
                 return TopValue;
 
-			// Accessing property for reading is really a call to the getter
-			// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
-			TValue instanceValue = Visit (operation.Instance, state);
-			IMethodSymbol? getMethod = operation.Property.GetGetMethod ();
+            // Accessing property for reading is really a call to the getter
+            // The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
+            TValue instanceValue = Visit(operation.Instance, state);
+            IMethodSymbol? getMethod = operation.Property.GetGetMethod();
 
-			// Property may be an indexer, in which case there will be one or more index arguments
-			ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
-			foreach (var val in operation.Arguments)
-				arguments.Add (Visit (val, state));
+            // Property may be an indexer, in which case there will be one or more index arguments
+            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+            foreach (var val in operation.Arguments)
+                arguments.Add(Visit(val, state));
 
-			return HandleMethodCall (getMethod!, instanceValue, arguments.ToImmutableArray (), operation);
-		}
+            return HandleMethodCall(getMethod!, instanceValue, arguments.ToImmutableArray(), operation);
+        }
 
         public override TValue VisitImplicitIndexerReference(IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
         {

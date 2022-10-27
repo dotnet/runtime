@@ -471,34 +471,35 @@ namespace Mono.Linker.Steps
                     if (sweepNames)
                         parameter.Name = null;
 
-					SweepCustomAttributes (parameter);
-				}
-			}
-		}
-		void SweepOverrides (MethodDefinition method)
-		{
-			for (int i = 0; i < method.Overrides.Count;) {
-				// We can't rely on the context resolution cache anymore, since it may remember methods which are already removed
-				// So call the direct Resolve here and avoid the cache.
-				// We want to remove a method from the list of Overrides if:
-				//	Resolve() is null
-				//		This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
-				//		Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
-				//	OR
-				//	ov.DeclaringType is null
-				//		ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
-				//	OR
-				//	ov is in a `link` scope and is unmarked
-				//		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
-				//		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+                    SweepCustomAttributes(parameter);
+                }
+            }
+        }
+        void SweepOverrides(MethodDefinition method)
+        {
+            for (int i = 0; i < method.Overrides.Count;)
+            {
+                // We can't rely on the context resolution cache anymore, since it may remember methods which are already removed
+                // So call the direct Resolve here and avoid the cache.
+                // We want to remove a method from the list of Overrides if:
+                //	Resolve() is null
+                //		This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
+                //		Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
+                //	OR
+                //	ov.DeclaringType is null
+                //		ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
+                //	OR
+                //	ov is in a `link` scope and is unmarked
+                //		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
+                //		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
 #pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
-				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
-					method.Overrides.RemoveAt (i);
-				else
-					i++;
+                if (method.Overrides[i].Resolve() is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope(ov.DeclaringType.Scope) && ShouldRemove(ov)))
+                    method.Overrides.RemoveAt(i);
+                else
+                    i++;
 #pragma warning restore RS0030
-			}
-		}
+            }
+        }
 
         /// <summary>
         /// Returns true if the assembly of the <paramref name="scope"></paramref> is set to link
@@ -639,30 +640,31 @@ namespace Mono.Linker.Steps
                 return arc.changedAnyScopes;
             }
 
-			protected override void ProcessTypeReference (TypeReference type)
-			{
-				//
-				// Resolve to type definition to remove any type forwarding imports
-				//
-				// Workaround for https://github.com/dotnet/linker/issues/2260
-				// Context has a cache which stores ref->def mapping. This code runs during sweeping
-				// which can remove the type-def from its assembly, effectively making the ref unresolvable.
-				// But the cache doesn't know that, it would still "resolve" the type-ref to now defunct type-def.
-				// For this reason we can't use the context resolution here, and must force Cecil to perform
-				// real type resolution again (since it can fail, and that's OK).
+            protected override void ProcessTypeReference(TypeReference type)
+            {
+                //
+                // Resolve to type definition to remove any type forwarding imports
+                //
+                // Workaround for https://github.com/dotnet/linker/issues/2260
+                // Context has a cache which stores ref->def mapping. This code runs during sweeping
+                // which can remove the type-def from its assembly, effectively making the ref unresolvable.
+                // But the cache doesn't know that, it would still "resolve" the type-ref to now defunct type-def.
+                // For this reason we can't use the context resolution here, and must force Cecil to perform
+                // real type resolution again (since it can fail, and that's OK).
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph isn't stable
-				TypeDefinition td = type.Resolve ();
+                TypeDefinition td = type.Resolve();
 #pragma warning restore RS0030
-				if (td == null) {
-					//
-					// This can happen when not all assembly refences were provided and we
-					// run in `--skip-unresolved` mode. We cannot fully sweep and keep the
-					// original assembly reference
-					//
-					var anr = (AssemblyNameReference) type.Scope;
-					type.Scope = importer.ImportReference (anr);
-					return;
-				}
+                if (td == null)
+                {
+                    //
+                    // This can happen when not all assembly refences were provided and we
+                    // run in `--skip-unresolved` mode. We cannot fully sweep and keep the
+                    // original assembly reference
+                    //
+                    var anr = (AssemblyNameReference)type.Scope;
+                    type.Scope = importer.ImportReference(anr);
+                    return;
+                }
 
                 var tr = assembly.MainModule.ImportReference(td);
                 if (type.Scope == tr.Scope)
@@ -672,18 +674,19 @@ namespace Mono.Linker.Steps
                 changedAnyScopes = true;
             }
 
-			protected override void ProcessExportedType (ExportedType exportedType)
-			{
+            protected override void ProcessExportedType(ExportedType exportedType)
+            {
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph is unstable
-				TypeDefinition? td = exportedType.Resolve ();
+                TypeDefinition? td = exportedType.Resolve();
 #pragma warning restore RS0030
-				if (td == null) {
-					// Forwarded type cannot be resolved but it was marked
-					// linker is running in --skip-unresolved true mode
-					var anr = (AssemblyNameReference) exportedType.Scope;
-					exportedType.Scope = importer.ImportReference (anr);
-					return;
-				}
+                if (td == null)
+                {
+                    // Forwarded type cannot be resolved but it was marked
+                    // linker is running in --skip-unresolved true mode
+                    var anr = (AssemblyNameReference)exportedType.Scope;
+                    exportedType.Scope = importer.ImportReference(anr);
+                    return;
+                }
 
                 var tr = assembly.MainModule.ImportReference(td);
                 if (exportedType.Scope == tr.Scope)

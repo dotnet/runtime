@@ -318,21 +318,22 @@ namespace ILLink.RoslynAnalyzer
                 || (methodSymbol.AssociatedSymbol?.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None))
                 return;
 
-			// None on the return type of 'get' matches unannotated
-			if (methodSymbol.MethodKind == MethodKind.PropertyGet
-				&& methodSymbol.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None
-				// None on parameter of 'set' matches unannotated
-				|| methodSymbol.MethodKind == MethodKind.PropertySet
-				&& methodSymbol.Parameters[methodSymbol.Parameters.Length - 1].GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
-				context.ReportDiagnostic (Diagnostic.Create (
-					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
-					methodSymbol.AssociatedSymbol!.Locations[0],
-					methodSymbol.AssociatedSymbol!.GetDisplayName (),
-					methodSymbol.GetDisplayName ()
-				));
-				return;
-			}
-		}
+            // None on the return type of 'get' matches unannotated
+            if (methodSymbol.MethodKind == MethodKind.PropertyGet
+                && methodSymbol.GetDynamicallyAccessedMemberTypesOnReturnType() != DynamicallyAccessedMemberTypes.None
+                // None on parameter of 'set' matches unannotated
+                || methodSymbol.MethodKind == MethodKind.PropertySet
+                && methodSymbol.Parameters[methodSymbol.Parameters.Length - 1].GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
+                    methodSymbol.AssociatedSymbol!.Locations[0],
+                    methodSymbol.AssociatedSymbol!.GetDisplayName(),
+                    methodSymbol.GetDisplayName()
+                ));
+                return;
+            }
+        }
 
         private static (IMethodSymbol Method, DynamicallyAccessedMemberTypes Requirements) GetTargetAndRequirements(IMethodSymbol method, IMethodSymbol overriddenMethod, DynamicallyAccessedMemberTypes methodAnnotation, DynamicallyAccessedMemberTypes overriddenMethodAnnotation)
         {

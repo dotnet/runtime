@@ -334,29 +334,31 @@ namespace Mono.Linker
             return fullTypeName.Replace('+', '/');
         }
 
-		public static bool HasDefaultConstructor (this TypeDefinition type, LinkContext context)
-		{
-			foreach (var m in type.Methods) {
-				if (m.HasParameters)
-					continue;
+        public static bool HasDefaultConstructor(this TypeDefinition type, LinkContext context)
+        {
+            foreach (var m in type.Methods)
+            {
+                if (m.HasParameters)
+                    continue;
 
-				var definition = context.Resolve (m);
-				if (definition?.IsDefaultConstructor () == true)
-					return true;
-			}
+                var definition = context.Resolve(m);
+                if (definition?.IsDefaultConstructor() == true)
+                    return true;
+            }
 
             return false;
         }
 
-		public static MethodReference GetDefaultInstanceConstructor (this TypeDefinition type, LinkContext context)
-		{
-			foreach (var m in type.Methods) {
-				if (m.HasParameters)
-					continue;
+        public static MethodReference GetDefaultInstanceConstructor(this TypeDefinition type, LinkContext context)
+        {
+            foreach (var m in type.Methods)
+            {
+                if (m.HasParameters)
+                    continue;
 
-				var definition = context.Resolve (m);
-				if (definition?.IsDefaultConstructor () != true)
-					continue;
+                var definition = context.Resolve(m);
+                if (definition?.IsDefaultConstructor() != true)
+                    continue;
 
                 return m;
             }

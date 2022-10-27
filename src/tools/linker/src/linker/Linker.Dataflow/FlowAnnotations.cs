@@ -239,7 +239,7 @@ namespace ILLink.Shared.TrimAnalysis
                 }
             }
 
-			var annotatedMethods = new List<MethodAnnotations> ();
+            var annotatedMethods = new List<MethodAnnotations>();
 
             // Next go over all methods with an explicit annotation
             if (type.HasMethods)
@@ -373,30 +373,34 @@ namespace ILLink.Shared.TrimAnalysis
                             ScanMethodBodyForFieldAccess(setMethod.Body, write: true, out backingFieldFromSetter);
                         }
 
-						MethodAnnotations? setterAnnotation = null;
-						foreach (var annotatedMethod in annotatedMethods) {
-							if (annotatedMethod.Method == setMethod)
-								setterAnnotation = annotatedMethod;
-						}
+                        MethodAnnotations? setterAnnotation = null;
+                        foreach (var annotatedMethod in annotatedMethods)
+                        {
+                            if (annotatedMethod.Method == setMethod)
+                                setterAnnotation = annotatedMethod;
+                        }
 
-						// If 'value' parameter is annotated, then warn. Other parameters can be annotated for indexable properties
-						if (setterAnnotation?.ParameterAnnotations?[^1] is not (null or DynamicallyAccessedMemberTypes.None)) {
-							_context.LogWarning (setMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), setMethod.GetDisplayName ());
-						} else {
-							int offset = setMethod.HasImplicitThis () ? 1 : 0;
-							if (setterAnnotation is not null)
-								annotatedMethods.Remove (setterAnnotation.Value);
+                        // If 'value' parameter is annotated, then warn. Other parameters can be annotated for indexable properties
+                        if (setterAnnotation?.ParameterAnnotations?[^1] is not (null or DynamicallyAccessedMemberTypes.None))
+                        {
+                            _context.LogWarning(setMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName(), setMethod.GetDisplayName());
+                        }
+                        else
+                        {
+                            int offset = setMethod.HasImplicitThis() ? 1 : 0;
+                            if (setterAnnotation is not null)
+                                annotatedMethods.Remove(setterAnnotation.Value);
 
-							DynamicallyAccessedMemberTypes[] paramAnnotations;
-							if (setterAnnotation?.ParameterAnnotations is null)
-								paramAnnotations = new DynamicallyAccessedMemberTypes[setMethod.Parameters.Count + offset];
-							else
-								paramAnnotations = setterAnnotation.Value.ParameterAnnotations;
+                            DynamicallyAccessedMemberTypes[] paramAnnotations;
+                            if (setterAnnotation?.ParameterAnnotations is null)
+                                paramAnnotations = new DynamicallyAccessedMemberTypes[setMethod.Parameters.Count + offset];
+                            else
+                                paramAnnotations = setterAnnotation.Value.ParameterAnnotations;
 
-							paramAnnotations[paramAnnotations.Length - 1] = annotation;
-							annotatedMethods.Add (new MethodAnnotations (setMethod, paramAnnotations, DynamicallyAccessedMemberTypes.None, null));
-						}
-					}
+                            paramAnnotations[paramAnnotations.Length - 1] = annotation;
+                            annotatedMethods.Add(new MethodAnnotations(setMethod, paramAnnotations, DynamicallyAccessedMemberTypes.None, null));
+                        }
+                    }
 
                     FieldDefinition? backingFieldFromGetter = null;
 
@@ -405,31 +409,36 @@ namespace ILLink.Shared.TrimAnalysis
                     if (getMethod != null)
                     {
 
-						// Abstract property backing field propagation doesn't make sense, and any derived property will be validated
-						// to have the exact same annotations on getter/setter, and thus if it has a detectable backing field that will be validated as well.
-						if (getMethod.HasBody) {
-							// Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
-							// propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
-							// that the field (which ever it is) must be annotated as well.
-							ScanMethodBodyForFieldAccess (getMethod.Body, write: false, out backingFieldFromGetter);
-						}
-						MethodAnnotations? getterAnnotation = null;
-						foreach (var annotatedMethod in annotatedMethods) {
-							if (annotatedMethod.Method == getMethod)
-								getterAnnotation = annotatedMethod;
-						}
+                        // Abstract property backing field propagation doesn't make sense, and any derived property will be validated
+                        // to have the exact same annotations on getter/setter, and thus if it has a detectable backing field that will be validated as well.
+                        if (getMethod.HasBody)
+                        {
+                            // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
+                            // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
+                            // that the field (which ever it is) must be annotated as well.
+                            ScanMethodBodyForFieldAccess(getMethod.Body, write: false, out backingFieldFromGetter);
+                        }
+                        MethodAnnotations? getterAnnotation = null;
+                        foreach (var annotatedMethod in annotatedMethods)
+                        {
+                            if (annotatedMethod.Method == getMethod)
+                                getterAnnotation = annotatedMethod;
+                        }
 
-						// If return value is annotated, then warn. Otherwise, parameters can be annotated for indexable properties
-						if (getterAnnotation?.ReturnParameterAnnotation is not (null or DynamicallyAccessedMemberTypes.None)) {
-							_context.LogWarning (getMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), getMethod.GetDisplayName ());
-						} else {
-							int offset = getMethod.HasImplicitThis () ? 1 : 0;
-							if (getterAnnotation is not null)
-								annotatedMethods.Remove (getterAnnotation.Value);
+                        // If return value is annotated, then warn. Otherwise, parameters can be annotated for indexable properties
+                        if (getterAnnotation?.ReturnParameterAnnotation is not (null or DynamicallyAccessedMemberTypes.None))
+                        {
+                            _context.LogWarning(getMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName(), getMethod.GetDisplayName());
+                        }
+                        else
+                        {
+                            int offset = getMethod.HasImplicitThis() ? 1 : 0;
+                            if (getterAnnotation is not null)
+                                annotatedMethods.Remove(getterAnnotation.Value);
 
-							annotatedMethods.Add (new MethodAnnotations (getMethod, getterAnnotation?.ParameterAnnotations, annotation, null));
-						}
-					}
+                            annotatedMethods.Add(new MethodAnnotations(getMethod, getterAnnotation?.ParameterAnnotations, annotation, null));
+                        }
+                    }
 
                     FieldDefinition? backingField;
                     if (backingFieldFromGetter != null && backingFieldFromSetter != null &&

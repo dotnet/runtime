@@ -25,10 +25,11 @@ namespace Mono.Linker.Steps
             if (!context.Annotations.TryGetPreservedMembers(exportedType, out TypePreserveMembers members))
                 return;
 
-			TypeDefinition? type = context.TryResolve (exportedType);
-			if (type == null) {
-				if (!context.IgnoreUnresolved)
-					context.LogError (null, DiagnosticId.ExportedTypeCannotBeResolved, exportedType.Name);
+            TypeDefinition? type = context.TryResolve(exportedType);
+            if (type == null)
+            {
+                if (!context.IgnoreUnresolved)
+                    context.LogError(null, DiagnosticId.ExportedTypeCannotBeResolved, exportedType.Name);
 
                 return;
             }

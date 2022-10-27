@@ -15,18 +15,20 @@ namespace Mono.Linker
                 (module.Attributes & ModuleAttributes.ILLibrary) != 0;
         }
 
-		public static bool GetMatchingExportedType (this ModuleDefinition module, TypeDefinition typeDefinition, LinkContext context, [NotNullWhen (true)] out ExportedType? exportedType)
-		{
-			exportedType = null;
-			if (!module.HasExportedTypes)
-				return false;
+        public static bool GetMatchingExportedType(this ModuleDefinition module, TypeDefinition typeDefinition, LinkContext context, [NotNullWhen(true)] out ExportedType? exportedType)
+        {
+            exportedType = null;
+            if (!module.HasExportedTypes)
+                return false;
 
-			foreach (var et in module.ExportedTypes) {
-				if (context.TryResolve (et) == typeDefinition) {
-					exportedType = et;
-					return true;
-				}
-			}
+            foreach (var et in module.ExportedTypes)
+            {
+                if (context.TryResolve(et) == typeDefinition)
+                {
+                    exportedType = et;
+                    return true;
+                }
+            }
 
             return false;
         }
