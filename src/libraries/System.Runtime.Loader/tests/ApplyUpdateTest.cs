@@ -635,46 +635,56 @@ namespace System.Reflection.Metadata
         {
             ApplyUpdateUtil.TestCase(static () =>
             {
-		var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+                var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
                 var assm = ty.Assembly;
 
                 var allMethods = ty.GetMethods();
 
-		foreach (var m in allMethods) {
-		    Console.WriteLine ($"method: {m.Name}");
-		}
-		const int objectMethods = 4;
-		Assert.Equal (objectMethods + 1, allMethods.Length);
+                const int objectMethods = 4;
+                Assert.Equal (objectMethods + 1, allMethods.Length);
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
-		allMethods = ty.GetMethods();
-		Assert.Equal (objectMethods + 2, allMethods.Length);
+                allMethods = ty.GetMethods();
+                Assert.Equal (objectMethods + 2, allMethods.Length);
 
-		var mi = ty.GetMethod ("AddedNewMethod");
+                var mi = ty.GetMethod ("AddedNewMethod");
 
-		Assert.NotNull (mi);
+                Assert.NotNull (mi);
 
-		var retParm = mi.ReturnParameter;
-		Assert.NotNull (retParm);
-		Console.WriteLine ($"return parm: {retParm}");
-		var retCas = retParm.GetCustomAttributes();
-		foreach (var rca in retCas) {
-		    Console.WriteLine ($" - ca: {rca}");
-		}
+                var retParm = mi.ReturnParameter;
+                Assert.NotNull (retParm);
+                Assert.NotNull (retParm.ParameterType);
+                Assert.Equal (-1, retParm.Position);
 
-		var parms = mi.GetParameters();
+                var retCas = retParm.GetCustomAttributes(false);
+                Assert.NotNull(retCas);
+                Assert.Equal(0, retCas.Length);
 
-		foreach (var parm in parms) {
-		    Console.WriteLine ($"parm: {parm}");
-		    var cas = parm.GetCustomAttributes();
-		    foreach (var ca in cas) {
-			Console.WriteLine ($" - ca: {ca}");
-		    }
-		}
+                var parms = mi.GetParameters();
+                Assert.Equal (5, parms.Length);
 
-		Assert.Equal (5, parms.Length);
-	    });
+                int parmPos = 0;
+                foreach (var parm in parms)
+                {
+                    Assert.NotNull(parm);
+                    Assert.NotNull(parm.ParameterType);
+                    Assert.Equal(parmPos, parm.Position);
+                    Assert.NotNull(parm.Name);
+                    
+                    var cas = parm.GetCustomAttributes(false);
+                    foreach (var ca in cas) {
+                        Assert.NotNull (ca);
+                    }
+
+                    parmPos++;
+                }
+
+                Assert.Equal (1, parms[4].GetCustomAttributes(false).Length);
+                Assert.Equal (typeof (CallerMemberNameAttribute), parms[4].GetCustomAttributes(false)[0].GetType());
+
+                // TODO: check the default values of the last two params
+            });
 	} 
     }
 }
