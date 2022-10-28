@@ -2753,7 +2753,9 @@ uint64_t gc_heap::total_loh_a_last_bgc = 0;
 size_t gc_heap::eph_gen_starts_size = 0;
 #if defined(USE_REGIONS)
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
+#ifdef MULTIPLE_HEAPS
 region_free_list gc_heap::global_free_regions[count_free_region_kinds];
+#endif //MULTIPLE_HEAPS
 #else
 heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
@@ -11425,6 +11427,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         region = free_regions[kind].unlink_smallest_region (size);
     }
 
+#ifdef MULTIPLE_HEAPS
     if (region == nullptr)
     {
         // check global free region list for this kind of region
@@ -11462,6 +11465,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         }
 #endif // TRACE_GC
     }
+#endif //MULTIPLE_HEAPS
 
     if (region)
     {
@@ -12956,8 +12960,10 @@ void gc_heap::distribute_free_regions()
         // use these to fill the budget as well
         surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
 
+#ifdef MULTIPLE_HEAPS
         // and transfer the regions from the global free list back
         surplus_regions[kind].transfer_regions (&global_free_regions[kind]);
+#endif //MULTIPLE_HEAPS
     }
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
@@ -12996,7 +13002,9 @@ void gc_heap::distribute_free_regions()
             total_num_free_regions[kind] += region_list.get_num_free_regions();
         }
 
+#ifdef MULTIPLE_HEAPS
         global_free_regions[huge_free_region].transfer_regions (&hp->free_regions[huge_free_region]);
+#endif //MULTIPLE_HEAPS
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
         min_heap_budget_in_region_units[i] = 0;
@@ -13043,9 +13051,15 @@ void gc_heap::distribute_free_regions()
 
     dprintf (1, ("moved %2d regions (%8Id) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
+#ifdef MULTIPLE_HEAPS
     global_free_regions[huge_free_region].transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_regions[huge_free_region].get_size_free_regions();
+#else //MULTIPLE_HEAPS
+    free_regions[huge_free_region].transfer_regions (&global_regions_to_decommit[huge_free_region]);
+
+    size_t free_space_in_huge_regions = free_regions[huge_free_region].get_size_free_regions();
+#endif //MULTIPLE_HEAPS
 
     ptrdiff_t num_regions_to_decommit[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
