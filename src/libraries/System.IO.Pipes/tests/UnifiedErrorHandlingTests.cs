@@ -60,6 +60,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadReturnsZero(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
@@ -77,6 +79,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteThrows(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
@@ -94,6 +98,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
@@ -111,6 +117,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteAsyncThrows(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
@@ -128,6 +136,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadReturnsZero(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
@@ -145,6 +155,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteThrows(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
@@ -162,6 +174,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
@@ -179,6 +193,8 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteAsyncThrows(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
