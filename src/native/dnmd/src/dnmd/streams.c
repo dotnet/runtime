@@ -35,7 +35,7 @@ bool try_get_user_string(mdcxt_t* cxt, size_t offset, WCHAR const** str, uint32_
     if (h->size <= offset)
         return false;
 
-    uint8_t* ptr = (uint8_t*)(h->ptr + offset);
+    uint8_t const* ptr = (uint8_t const*)(h->ptr + offset);
 
     size_t data_len = h->size - offset;
     uint32_t byte_count;
@@ -76,7 +76,7 @@ bool try_get_blob(mdcxt_t* cxt, size_t offset, uint8_t const** blob, uint32_t* b
     if (h->size <= offset)
         return false;
 
-    uint8_t* ptr = (uint8_t*)(h->ptr + offset);
+    uint8_t const* ptr = (uint8_t const*)(h->ptr + offset);
 
     size_t data_len = h->size - offset;
     uint32_t byte_count;
@@ -236,7 +236,7 @@ bool initialize_tables(mdcxt_t* cxt)
 bool validate_tables(mdcxt_t* cxt)
 {
     assert(cxt != NULL);
-    (void*)cxt;
+    (void)cxt;
     // [TODO] Reference ECMA-335 and encode table verification.
     return true;
 }

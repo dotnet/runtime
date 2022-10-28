@@ -52,31 +52,31 @@ template<typename T, typename Deleter>
 class owning_span : public span<T>
 {
 public:
-    owning_span() : span{}
+    owning_span() : span<T>{}
     { }
 
     owning_span(T* ptr, size_t len)
-        : span{ ptr, len }
+        : span<T>{ ptr, len }
     { }
 
     owning_span(owning_span&& other)
-        : span{}
+        : span<T>{}
     {
         *this = other;
     }
 
     ~owning_span()
     {
-        Deleter{}(_ptr);
+        Deleter{}(this->_ptr);
     }
 
     owning_span& operator=(owning_span&& other) noexcept
     {
-        if (_ptr != nullptr)
-            Deleter{}(_ptr);
+        if (this->_ptr != nullptr)
+            Deleter{}(this->_ptr);
 
-        _ptr = other._ptr;
-        _size = other._size;
+        this->_ptr = other._ptr;
+        this->_size = other._size;
         other._ptr = {};
         other._size = {};
         return *this;
@@ -84,8 +84,8 @@ public:
 
     T* release() noexcept
     {
-        T* tmp = _ptr;
-        _ptr = {};
+        T* tmp = this->_ptr;
+        this->_ptr = {};
         return tmp;
     }
 };
@@ -112,7 +112,7 @@ struct mdhandle_deleter
 
 using mdhandle_lifetime = std::unique_ptr<mdhandle_t, mdhandle_deleter>;
 
-bool create_mdhandle(malloc_span<byte>& buffer, mdhandle_lifetime& handle)
+bool create_mdhandle(malloc_span<uint8_t>& buffer, mdhandle_lifetime& handle)
 {
     mdhandle_t h;
     if (!md_create_handle(buffer, buffer.size(), &h))
@@ -122,13 +122,13 @@ bool create_mdhandle(malloc_span<byte>& buffer, mdhandle_lifetime& handle)
     return true;
 }
 
-bool read_in_file(char const* file, malloc_span<byte>& b);
-bool get_metadata_from_pe(malloc_span<byte>& b);
-bool get_metadata_from_file(malloc_span<byte>& b);
+bool read_in_file(char const* file, malloc_span<uint8_t>& b);
+bool get_metadata_from_pe(malloc_span<uint8_t>& b);
+bool get_metadata_from_file(malloc_span<uint8_t>& b);
 
 void dump(char const* p)
 {
-    malloc_span<byte> b;
+    malloc_span<uint8_t> b;
     if (!read_in_file(p, b))
     {
         std::fprintf(stderr, "Failed to read in '%s'\n", p);
@@ -168,19 +168,22 @@ int main(int ac, char** av)
 
 uint32_t get_file_size(char const* path)
 {
-    uint32_t size_in_bytes = 0;
+    uint32_t size_in_uint8_ts = 0;
 #ifdef BUILD_WINDOWS
     HANDLE handle = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
     if (handle != INVALID_HANDLE_VALUE)
     {
-        size_in_bytes = ::GetFileSize(handle, nullptr);
+        size_in_uint8_ts = ::GetFileSize(handle, nullptr);
         (void)::CloseHandle(handle);
     }
 #else
-#error Not yet implemented
+    struct stat st;
+    int rc = stat(path, &st);
+    if (rc == 0)
+        size_in_uint8_ts = st.st_size;
 #endif // !BUILD_WINDOWS
 
-    return size_in_bytes;
+    return size_in_uint8_ts;
 }
 
 PIMAGE_SECTION_HEADER find_section_header(
@@ -199,7 +202,7 @@ PIMAGE_SECTION_HEADER find_section_header(
     return NULL;
 }
 
-bool read_in_file(char const* file, malloc_span<byte>& b)
+bool read_in_file(char const* file, malloc_span<uint8_t>& b)
 {
     // Read in the entire file
     std::ifstream fd{ file, std::ios::binary | std::ios::in };
@@ -210,12 +213,12 @@ bool read_in_file(char const* file, malloc_span<byte>& b)
     if (size == 0)
         return false;
 
-    b = { (byte*)std::malloc(size), size };
-    fd.read((char*)(byte*)b, b.size());
+    b = { (uint8_t*)std::malloc(size), size };
+    fd.read((char*)(uint8_t*)b, b.size());
     return true;
 }
 
-bool get_metadata_from_pe(malloc_span<byte>& b)
+bool get_metadata_from_pe(malloc_span<uint8_t>& b)
 {
     if (b.size() < sizeof(IMAGE_DOS_HEADER))
         return false;
@@ -264,16 +267,16 @@ bool get_metadata_from_pe(malloc_span<byte>& b)
     size_t metadata_length = cor_header->MetaData.Size;
 
     // Capture the metadata portion of the image.
-    malloc_span<byte> metadata = { (byte*)std::malloc(metadata_length), metadata_length };
+    malloc_span<uint8_t> metadata = { (uint8_t*)std::malloc(metadata_length), metadata_length };
     std::memcpy(metadata, ptr, metadata.size());
     b = std::move(metadata);
     return true;
 }
 
-bool get_metadata_from_file(malloc_span<byte>& b)
+bool get_metadata_from_file(malloc_span<uint8_t>& b)
 {
-    // Defined in II.24.2.1 - defined in physical byte order
-    std::array<byte, 4> const metadata_sig = { 0x42, 0x53, 0x4A, 0x42 };
+    // Defined in II.24.2.1 - defined in physical uint8_t order
+    std::array<uint8_t, 4> const metadata_sig = { 0x42, 0x53, 0x4A, 0x42 };
 
     if (b.size() < metadata_sig.size())
         return false;

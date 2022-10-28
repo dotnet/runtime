@@ -110,7 +110,7 @@ static uint32_t compute_row_offsets_size(mdtcol_t* col, size_t col_len)
 // II.24.2.6
 static mdtcol_t compute_coded_index(uint32_t const* row_counts, md_coded_idx_t coded_map_idx)
 {
-    assert(coded_map_idx < ARRAYSIZE(coded_index_map));
+    assert(coded_map_idx < ARRAY_SIZE(coded_index_map));
     assert(coded_map_idx <= ExtractCodedIndex(mdtc_cimask) && "Coded index map index bit encoding exceeded");
 
     coded_index_entry const* entry = &coded_index_map[coded_map_idx];

@@ -17,7 +17,10 @@
 
 #else
 
+#include <sys/stat.h>
+
 typedef unsigned short WCHAR;
+typedef uint32_t ULONG32;
 
 typedef struct _GUID
 {

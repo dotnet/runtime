@@ -14,7 +14,7 @@ bool md_create_handle(void* data, size_t data_len, mdhandle_t* handle)
         return false;
 
     uint8_t* const base = data;
-    uint8_t* curr = data;
+    uint8_t const* curr = data;
     size_t curr_len = data_len;
 
     // Validate the metadata root is the minimally valid before creating a handle.
