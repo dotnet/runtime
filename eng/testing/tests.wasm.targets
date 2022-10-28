@@ -135,7 +135,7 @@
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
-  <PropertyGroup>
+  <PropertyGroup Label="For AOT tests" Condition="'$(Scenario)' != 'WasmDebuggerTests'">
     <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
     <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
 

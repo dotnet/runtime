@@ -73,6 +73,8 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="BundleDebuggerTestsForHelix" />
+
   <Target Name="_ExtractTestClassNames" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'" AfterTargets="BundleDebuggerTestsForHelix">
     <Exec Command="dotnet test --no-build -t --nologo -v:q -p:Configuration=$(Configuration)" ConsoleToMSBuild="true" >
       <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
@@ -89,5 +91,4 @@
     <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
                       Lines="@(TestClassName->Distinct())" />
   </Target>
-  <Target Name="BundleDebuggerTestsForHelix" />
 </Project>
