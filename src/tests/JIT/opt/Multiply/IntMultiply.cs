@@ -217,7 +217,7 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_MultiplyWith23(ulong value)
         {
-            // We expect 'imul' since the alternative replacement sequence would require 1 three-component LEA instructions, 1 SHL instruction, and 1 ADD instruction which is slower.
+            // We expect 'imul' since the alternative replacement sequence would require 1 three-component LEA instruction, 1 SHL instruction, and 1 ADD instruction which is slower.
 
             // X64: imul
             return value * 23;
