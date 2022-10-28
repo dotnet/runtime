@@ -1595,6 +1595,33 @@ static void leave_spin_lock (GCSpinLock * spin_lock)
 
 #endif //_DEBUG
 
+// simple spin locks for use by the GC itself where we don't want to wait for GC to finish
+static void enter_simple_spin_lock (GCSpinLock* spin_lock)
+{
+    while (true)
+    {
+        if (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) < 0)
+            break;
+
+        while (spin_lock->lock >= 0)
+        {
+            YieldProcessor();           // indicate to the processor that we are spinning
+        }
+    }
+#ifdef _DEBUG
+    spin_lock->holding_thread = GCToEEInterface::GetThread();
+#endif //_DEBUG
+}
+
+static void leave_simple_spin_lock (GCSpinLock* spin_lock)
+{
+#ifdef _DEBUG
+    spin_lock->holding_thread = (Thread*)-1;
+#endif //_DEBUG
+    spin_lock->lock = -1;
+}
+
+
 bool gc_heap::enable_preemptive ()
 {
     return GCToEEInterface::EnablePreemptiveGC();
@@ -3804,27 +3831,12 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units, allocate_direction 
 
 void region_allocator::enter_spin_lock()
 {
-    while (true)
-    {
-        if (Interlocked::CompareExchange(&region_allocator_lock.lock, 0, -1) < 0)
-            break;
-
-        while (region_allocator_lock.lock >= 0)
-        {
-            YieldProcessor();           // indicate to the processor that we are spinning
-        }
-    }
-#ifdef _DEBUG
-    region_allocator_lock.holding_thread = GCToEEInterface::GetThread();
-#endif //_DEBUG
+    enter_simple_spin_lock (&region_allocator_lock);
 }
 
 void region_allocator::leave_spin_lock()
 {
-#ifdef _DEBUG
-    region_allocator_lock.holding_thread = (Thread*)-1;
-#endif //_DEBUG
-    region_allocator_lock.lock = -1;
+    leave_simple_spin_lock (&region_allocator_lock);
 }
 
 uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn)
@@ -11389,73 +11401,51 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
     const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
 
+    free_region_kind kind;
     if (gen_number <= max_generation)
     {
         assert (size == 0);
-        region = free_regions[basic_free_region].unlink_region_front();
+        kind = basic_free_region;
+    }
+    else if (size == LARGE_REGION_SIZE)
+    {
+        kind = large_free_region;
     }
     else
     {
-        assert (size >= LARGE_REGION_SIZE);
-        if (size == LARGE_REGION_SIZE)
-        {
-            // get it from the local list of large free regions if possible
-            region = free_regions[large_free_region].unlink_region_front();
-        }
-        else
-        {
-            // get it from the local list of huge free regions if possible
-            region = free_regions[huge_free_region].unlink_smallest_region (size);
-            if (region == nullptr)
-            {
-                ASSERT_HOLDING_SPIN_LOCK(&gc_lock);
+        kind = huge_free_region;
+    }
 
-                // get it from the global list of huge free regions
-                region = global_free_regions[huge_free_region].unlink_smallest_region (size);
-            }
-        }
+    if (kind != huge_free_region)
+    {
+        region = free_regions[kind].unlink_region_front();
+    }
+    else
+    {
+        region = free_regions[kind].unlink_smallest_region (size);
     }
 
     if (region == nullptr)
     {
-        free_region_kind kind;
-        if (size == 0)
-        {
-            kind = basic_free_region;
-        }
-        else if (size == LARGE_REGION_SIZE)
-        {
-            kind = large_free_region;
-        }
-        else
-        {
-            kind = huge_free_region;
-        }
-
+        // check global free region list for this kind of region
         if (global_free_regions[kind].get_num_free_regions() > 0)
         {
-            while (true)
-            {
-                if (Interlocked::CompareExchange(&global_free_regions_spin_lock.lock, 0, -1) < 0)
-                    break;
+            enter_simple_spin_lock (&global_free_regions_spin_lock);
 
-                while (global_free_regions_spin_lock.lock >= 0)
-                {
-                    YieldProcessor();           // indicate to the processor that we are spinning
-                }
+            if (kind != huge_free_region)
+            {
+                region = global_free_regions[kind].unlink_region_front();
+            }
+            else
+            {
+                ASSERT_HOLDING_SPIN_LOCK(&gc_lock);
+
+                region = global_free_regions[kind].unlink_smallest_region (size);
             }
 
-#ifdef _DEBUG
-            global_free_regions_spin_lock.holding_thread = GCToEEInterface::GetThread();
-#endif //_DEBUG
-
-            region = global_free_regions[kind].unlink_region_front();
-
-#ifdef _DEBUG
-            global_free_regions_spin_lock.holding_thread = (Thread*)-1;
-#endif //_DEBUG
-            global_free_regions_spin_lock.lock = -1;
+            leave_simple_spin_lock (&global_free_regions_spin_lock);
         }
+
 #ifdef TRACE_GC
         const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
         if (region != nullptr)
@@ -11468,7 +11458,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         }
         else
         {
-            dprintf (REGIONS_LOG, ("no %s regions available global free list", kind_name[kind]));
+            dprintf (REGIONS_LOG, ("no %s regions available from global free list", kind_name[kind]));
         }
 #endif // TRACE_GC
     }
