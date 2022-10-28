@@ -32,7 +32,9 @@
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
                       AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir);
-                                            TestArchiveTestsDir=$(TestArchiveTestsDir);ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix)" />
+                                            TestArchiveTestsDir=$(TestArchiveTestsDir);ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
+                                            DotNetForTests=dotnet" />
+                      AdditionalProperties="RuntimeConfiguration=$(Configuration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir);DotNetForTests=dotnet" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">

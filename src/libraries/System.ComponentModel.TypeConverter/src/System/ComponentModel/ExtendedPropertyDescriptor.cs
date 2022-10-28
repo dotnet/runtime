@@ -99,7 +99,7 @@ namespace System.ComponentModel
                     string? providerName = site?.Name;
                     if (providerName != null && providerName.Length > 0)
                     {
-                        name = string.Format(SR.GetResourceString(nameof(SR.MetaExtenderName), "{0} on {1}"), name, providerName);
+                        name = SR.Format(SR.GetResourceString(nameof(SR.MetaExtenderName), "{0} on {1}"), name, providerName);
                     }
                 }
                 return name;

@@ -173,7 +173,8 @@ int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize) override;
+          int bufferSize,
+          int startIndex) override;
 
 size_t printObjectDescription(
           void* handle,

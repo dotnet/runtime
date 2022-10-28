@@ -2256,13 +2256,14 @@ public:
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
-    // Returns string length and content (can be null for dynamic context)
+    // Returns (sub)string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
             char16_t*                   buffer,     /* OUT */
-            int                         bufferSize  /* IN  */
+            int                         bufferSize, /* IN  */
+            int                         startIndex = 0 /* IN  */
             ) = 0;
 
 

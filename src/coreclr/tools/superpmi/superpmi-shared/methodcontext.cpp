@@ -1705,6 +1705,47 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
     LogException(EXCEPTIONCODE_MC, "Didn't find key %016llX.", methodHandle);
 }
 
+void MethodContext::recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    if (ExpandRawHandleIntrinsic == nullptr)
+        ExpandRawHandleIntrinsic = new LightWeightMap<Agnostic_CORINFO_RESOLVED_TOKENin, Agnostic_CORINFO_GENERICHANDLE_RESULT>;
+
+    Agnostic_CORINFO_RESOLVED_TOKENin key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value;
+    value.lookup            = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&pResult->lookup);
+    value.compileTimeHandle = CastHandle(pResult->compileTimeHandle);
+    value.handleType        = (DWORD)pResult->handleType;
+
+    ExpandRawHandleIntrinsic->Add(key, value);
+    DEBUG_REC(dmpExpandRawHandleIntrinsic(key, value));
+}
+void MethodContext::dmpExpandRawHandleIntrinsic(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result)
+{
+    printf("ExpandRawHandleIntrinsic key: %s, value %s cth-%016llx ht-%u",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(result.lookup).c_str(),
+        result.compileTimeHandle,
+        result.handleType);
+}
+void MethodContext::repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    Agnostic_CORINFO_RESOLVED_TOKENin key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
+
+    AssertMapAndKeyExist(ExpandRawHandleIntrinsic, key, ": key %x", pResolvedToken->token);
+
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value = ExpandRawHandleIntrinsic->Get(key);
+    DEBUG_REP(dmpExpandRawHandleIntrinsic(key, value));
+
+    pResult->lookup            = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
+    pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)value.compileTimeHandle;
+    pResult->handleType        = (CorInfoGenericHandleType)value.handleType;
+}
+
 void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsIntrinsicType == nullptr)
@@ -4847,16 +4888,17 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value != 0;
 }
 
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex, int length)
 {
     if (GetStringLiteral == nullptr)
-        GetStringLiteral = new LightWeightMap<DLDD, DD>();
+        GetStringLiteral = new LightWeightMap<DLDDD, DD>();
 
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
+    key.D = (DWORD)startIndex;
 
     DWORD strBuf = (DWORD)-1;
     if (buffer != nullptr && length != -1)
@@ -4873,21 +4915,22 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     DEBUG_REC(dmpGetStringLiteral(key, value));
 }
 
-void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
+void MethodContext::dmpGetStringLiteral(DLDDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, startIndex-%u, len-%u", key.A, key.B, key.C, key.D, value.A);
     GetStringLiteral->Unlock();
 }
 
-int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
+int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex)
 {
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
     key.C = (DWORD)bufferSize;
+    key.D = (DWORD)startIndex;
 
-    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d", key.A, key.B, key.C);
+    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d startIndex-%d", key.A, key.B, key.C, key.D);
 
     DD value = GetStringLiteral->Get(key);
     DEBUG_REP(dmpGetStringLiteral(key, value));

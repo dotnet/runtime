@@ -1,9 +1,7 @@
 # This pipeline only runs on GitHub PRs, not on merges.
 trigger: none
 
-# Only run on changes to the JIT directory. Don't run if the JIT-EE GUID has changed,
-# since there won't be any SuperPMI collections with the new GUID until the collection
-# pipeline completes after this PR is merged.
+# Only run on changes to the JIT directory. 
 pr:
   branches:
     include:
@@ -13,13 +11,25 @@ pr:
     # so that this build can block dependency auto-updates (this build is currently ignored)
     include:
     - src/coreclr/jit/*
-    exclude:
-    - src/coreclr/inc/jiteeversionguid.h
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 extends:
   template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
     jobs:
+
+    # Don't run if the JIT-EE GUID has changed,
+    # since there won't be any SuperPMI collections with the new GUID until the collection
+    # pipeline completes after this PR is merged.
+    - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      - template: /eng/pipelines/common/evaluate-paths-job.yml
+        parameters:
+          paths:
+          - subset: jiteeversionguid
+            include:
+            - src/coreclr/inc/jiteeversionguid.h
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -30,6 +40,7 @@ extends:
         - windows_x86
         jobParameters:
           uploadAs: 'pipelineArtifacts'
+          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -40,6 +51,7 @@ extends:
         - windows_x86
         jobParameters:
           uploadAs: 'pipelineArtifacts'
+          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -50,3 +62,5 @@ extends:
         - windows_x86
         helixQueueGroup: ci
         helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+        jobParameters:
+          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))

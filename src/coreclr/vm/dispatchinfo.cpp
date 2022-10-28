@@ -66,7 +66,7 @@ typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *)
 //--------------------------------------------------------------------------------
 // The DispatchMemberInfo class implementation.
 
-DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName, OBJECTREF MemberInfoObj)
+DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName)
 : m_DispID(DispID)
 , m_hndMemberInfo(NULL)
 , m_apParamMarshaler(NULL)
@@ -82,7 +82,7 @@ DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, S
 , m_pDispInfo(pDispInfo)
 , m_bLastParamOleVarArg(FALSE)
 {
-    WRAPPER_NO_CONTRACT; // Calls to CreateHandle, above, means not a leaf contract
+    WRAPPER_NO_CONTRACT;
 }
 
 void DispatchMemberInfo::Neuter()
@@ -136,6 +136,9 @@ DispatchMemberInfo::~DispatchMemberInfo()
 
     if (m_pParamInOnly)
         delete [] m_pParamInOnly;
+
+    if (m_hndMemberInfo)
+        m_pDispInfo->GetLoaderAllocator()->FreeHandle(m_hndMemberInfo);
 
     // Clear the name of the member.
     m_strName.Clear();
@@ -333,6 +336,11 @@ PTRARRAYREF DispatchMemberInfo::GetParameters()
     }
 
     return ParamArray;
+}
+
+OBJECTREF DispatchMemberInfo::GetMemberInfoObject()
+{
+    return m_pDispInfo->GetLoaderAllocator()->GetHandleValue(m_hndMemberInfo);
 }
 
 void DispatchMemberInfo::MarshalParamNativeToManaged(int iParam, VARIANT *pSrcVar, OBJECTREF *pDestObj)
@@ -1013,19 +1021,6 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
     m_pParamInOnly[iParam] = ( Info->IsIn() && !Info->IsOut() );
 }
 
-#ifndef DACCESS_COMPILE
-OBJECTREF DispatchMemberInfo::GetMemberInfoObject()
-{
-    return m_pDispInfo->GetLoaderAllocator()->GetHandleValue(m_hndMemberInfo);
-}
-
-void DispatchMemberInfo::ClearMemberInfoObject()
-{
-    m_pDispInfo->GetLoaderAllocator()->SetHandleValue(m_hndMemberInfo, NULL);
-}
-#endif // DACCESS_COMPILE
-
-
 //--------------------------------------------------------------------------------
 // The DispatchInfo class implementation.
 
@@ -1162,7 +1157,7 @@ DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID DispID
     }
     CONTRACT_END;
 
-    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName, MemberInfoObj);
+    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName);
     pInfo->SetHandle(GetLoaderAllocator()->AllocateHandle(MemberInfoObj));
 
     RETURN pInfo;
@@ -3291,8 +3286,7 @@ DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID Disp
     }
     CONTRACT_END;
 
-    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName, MemberInfoObj);
-
+    DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName);
     pInfo->SetHandle(GetLoaderAllocator()->AllocateHandle(MemberInfoObj));
 
     RETURN pInfo;

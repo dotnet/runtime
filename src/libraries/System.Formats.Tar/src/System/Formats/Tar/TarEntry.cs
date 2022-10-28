@@ -199,7 +199,7 @@ namespace System.Formats.Tar
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
-                throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+                throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
             ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
         }
@@ -233,7 +233,7 @@ namespace System.Formats.Tar
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
-                return Task.FromException(new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
+                return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
             return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, cancellationToken);
         }
@@ -254,7 +254,7 @@ namespace System.Formats.Tar
             {
                 if (!IsDataStreamSetterSupported())
                 {
-                    throw new InvalidOperationException(string.Format(SR.TarEntryDoesNotSupportDataStream, Name, EntryType));
+                    throw new InvalidOperationException(SR.Format(SR.TarEntryDoesNotSupportDataStream, Name, EntryType));
                 }
 
                 if (value != null && !value.CanRead)
@@ -338,7 +338,7 @@ namespace System.Formats.Tar
             string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
             if (fileDestinationPath == null)
             {
-                throw new IOException(string.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
+                throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
             }
 
             string? linkTargetPath = null;
@@ -352,7 +352,7 @@ namespace System.Formats.Tar
                 linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
                 if (linkTargetPath == null)
                 {
-                    throw new IOException(string.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
                 }
             }
 
@@ -461,7 +461,7 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile:
                 case TarEntryType.TapeVolume:
                 default:
-                    throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+                    throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
         }
 
@@ -472,7 +472,7 @@ namespace System.Formats.Tar
             // If the destination contains a directory segment, need to check that it exists
             if (!string.IsNullOrEmpty(directoryPath) && !Path.Exists(directoryPath))
             {
-                throw new IOException(string.Format(SR.IO_PathNotFound_Path, filePath));
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, filePath));
             }
 
             if (!Path.Exists(filePath))
@@ -483,13 +483,13 @@ namespace System.Formats.Tar
             // We never want to overwrite a directory, so we always throw
             if (Directory.Exists(filePath))
             {
-                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, filePath));
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, filePath));
             }
 
             // A file exists at this point
             if (!overwrite)
             {
-                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, filePath));
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, filePath));
             }
             File.Delete(filePath);
 
@@ -501,18 +501,18 @@ namespace System.Formats.Tar
                     // If the destination target contains a directory segment, need to check that it exists
                     if (!string.IsNullOrEmpty(targetDirectoryPath) && !Path.Exists(targetDirectoryPath))
                     {
-                        throw new IOException(string.Format(SR.TarSymbolicLinkTargetNotExists, filePath, linkTargetPath));
+                        throw new IOException(SR.Format(SR.TarSymbolicLinkTargetNotExists, filePath, linkTargetPath));
                     }
 
                     if (EntryType is TarEntryType.HardLink)
                     {
                         if (!Path.Exists(linkTargetPath))
                         {
-                            throw new IOException(string.Format(SR.TarHardLinkTargetNotExists, filePath, linkTargetPath));
+                            throw new IOException(SR.Format(SR.TarHardLinkTargetNotExists, filePath, linkTargetPath));
                         }
                         else if (Directory.Exists(linkTargetPath))
                         {
-                            throw new IOException(string.Format(SR.TarHardLinkToDirectoryNotAllowed, filePath, linkTargetPath));
+                            throw new IOException(SR.Format(SR.TarHardLinkToDirectoryNotAllowed, filePath, linkTargetPath));
                         }
                     }
                 }

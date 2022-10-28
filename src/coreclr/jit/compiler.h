@@ -5224,6 +5224,8 @@ public:
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
+    PhaseStatus fgTailMerge();
+
     enum FG_RELOCATE_TYPE
     {
         FG_RELOCATE_TRY,    // relocate the 'try' region
@@ -8935,6 +8937,39 @@ private:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // canUseEvexEncoding - Answer the question: Is Evex encoding supported on this target.
+    //
+    // Returns:
+    //    TRUE if Evex encoding is supported, FALSE if not.
+    bool canUseEvexEncoding() const
+    {
+#ifdef TARGET_XARCH
+        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+#else
+        return false;
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
+    //
+    // Returns:
+    //    TRUE if user requests EVEX encoding and it's safe, FALSE if not.
+    bool DoJitStressEvexEncoding() const
+    {
+#ifdef TARGET_XARCH
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support.
+        if (JitConfig.JitStressEVEXEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            return true;
+        }
+#endif
+        return false;
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -9167,6 +9202,16 @@ public:
             return false;
         }
 #endif
+
+        bool IsInstrumented() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+        }
+
+        bool IsInstrumentedOptimized() const
+        {
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+        }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
         // PInvoke transitions inline. Normally used by R2R, but also used when generating a reverse pinvoke frame, as

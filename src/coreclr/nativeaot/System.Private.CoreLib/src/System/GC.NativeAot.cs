@@ -186,14 +186,14 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(maxGenerationThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             if (largeObjectHeapThreshold < 1 || largeObjectHeapThreshold > 99)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(largeObjectHeapThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             // This is not documented on MSDN, but CoreCLR throws when the GC's

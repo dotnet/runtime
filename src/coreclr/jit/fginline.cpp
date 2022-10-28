@@ -561,7 +561,8 @@ private:
             {
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
                         block->bbNum);
-                noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+
+                noway_assert(!m_compiler->fgComputePredsDone);
 
                 // We have a constant operand, and should have the all clear to optimize.
                 // Update side effects on the tree, assert there aren't any, and bash to nop.
@@ -570,36 +571,20 @@ private:
                 tree->gtBashToNOP();
                 m_madeChanges = true;
 
-                BasicBlock* bNotTaken = nullptr;
-
-                if (condTree->AsIntCon()->gtIconVal != 0)
+                if (!condTree->IsIntegralConst(0))
                 {
                     block->bbJumpKind = BBJ_ALWAYS;
-                    bNotTaken         = block->bbNext;
                 }
                 else
                 {
                     block->bbJumpKind = BBJ_NONE;
-                    bNotTaken         = block->bbJumpDest;
-                }
-
-                m_compiler->fgRemoveRefPred(bNotTaken, block);
-
-                // If that was the last ref, a subsequent flow-opt pass
-                // will clean up the now-unreachable bNotTaken, and any
-                // other transitively unreachable blocks.
-                if (bNotTaken->bbRefs == 0)
-                {
-                    JITDUMP("... it looks like " FMT_BB " is now unreachable!\n", bNotTaken->bbNum);
                 }
             }
         }
         else
         {
-            const var_types retType    = tree->TypeGet();
-            GenTree*        foldedTree = m_compiler->gtFoldExpr(tree);
-            *pTree                     = foldedTree;
-            m_madeChanges              = true;
+            *pTree        = m_compiler->gtFoldExpr(tree);
+            m_madeChanges = true;
         }
     }
 };
@@ -1354,6 +1339,15 @@ _Done:
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
+
+    // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+    // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+    if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
+    {
+        opts.compProcedureSplitting = false;
+        JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
+                "implementation limitation.\n");
+    }
 
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())

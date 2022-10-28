@@ -366,10 +366,11 @@ int WrapICorJitInfo::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          int startIndex)
 {
     API_ENTER(getStringLiteral);
-    int temp = wrapHnd->getStringLiteral(module, metaTOK, buffer, bufferSize);
+    int temp = wrapHnd->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
     API_LEAVE(getStringLiteral);
     return temp;
 }
