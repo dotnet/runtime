@@ -747,7 +747,7 @@ namespace System.IO
             }
         }
 
-        private static bool IsEndOfFile(int errorCode, SafeFileHandle handle, long fileOffset)
+        internal static bool IsEndOfFile(int errorCode, SafeFileHandle handle, long fileOffset)
         {
             switch (errorCode)
             {

@@ -193,7 +193,46 @@ namespace System.IO.Pipes.Tests
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
                     AssertWriteAsyncThrows);
 
-        // TODO: CopyToAsync
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static Task WhenNamedPipeServerIsClosedCopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
+            => TestCopyToAsync(asyncHandles, dispose: true);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static Task WhenNamedPipeServerDisconnectsCopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
+            => TestCopyToAsync(asyncHandles, dispose: false);
+
+        private static async Task TestCopyToAsync(bool asyncHandles, bool dispose)
+        {
+            (NamedPipeServerStream server, FileStream client) = await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read);
+
+            using (server)
+            using (client)
+            using (MemoryStream destination = new())
+            {
+                if (dispose)
+                {
+                    await server.DisposeAsync();
+                }
+                else
+                {
+                    server.Disconnect();
+                }
+
+                // At this moment, the client handle is opened, it does not know yet that server has disconnected/closed the handle
+                Assert.True(client.CanRead);
+
+                await client.CopyToAsync(destination);
+
+                Assert.Equal(0, destination.Length);
+                Assert.Equal(0, destination.Position);
+            }
+        }
 
         private static (AnonymousPipeServerStream server, AnonymousPipeClientStream client) GetAnonymousPipeStreams(
             PipeDirection serverDirection, PipeDirection clientDirection)
