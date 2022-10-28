@@ -32,8 +32,7 @@
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
                       AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir);
-                                            TestArchiveTestsDir=$(TestArchiveTestsDir);ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
-                                            DotNetForTests=dotnet" />
+                                            TestArchiveTestsDir=$(TestArchiveTestsDir);DotNetForTests=dotnet" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
@@ -74,5 +73,21 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="_ExtractTestClassNames" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'" AfterTargets="BundleDebuggerTestsForHelix">
+    <Exec Command="dotnet test --no-build -t --nologo -v:q -p:Configuration=$(Configuration)" ConsoleToMSBuild="true" >
+      <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
+    </Exec>
+
+    <PropertyGroup>
+      <_Regex>^ *(DebuggerTests[^\($]+)</_Regex>
+    </PropertyGroup>
+    <ItemGroup>
+      <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', $(_Regex)))" />
+      <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(_TestLines0.Identity)))" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
+                      Lines="@(TestClassName->Distinct())" />
+  </Target>
   <Target Name="BundleDebuggerTestsForHelix" />
 </Project>

@@ -48,23 +48,6 @@
     <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(ArchiveDirForHelix)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
   </Target>
 
-  <Target Name="_ExtractTestClassNames" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'" BeforeTargets="CopyTestZipForHelix">
-    <Exec Command="$(DotNetTool) test --no-build -t --nologo -v:q -p:Configuration=$(Configuration)" ConsoleToMSBuild="true" >
-      <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
-    </Exec>
-
-    <PropertyGroup>
-      <_Regex>^ *(DebuggerTests[^\($]+)</_Regex>
-    </PropertyGroup>
-    <ItemGroup>
-      <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', $(_Regex)))" />
-      <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(_TestLines0.Identity)))" />
-    </ItemGroup>
-
-    <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
-                      Lines="@(TestClassName->Distinct())" />
-  </Target>
-
   <!-- Copy of `GenerateRunSettingsFile` from eng/testing/runsettings.targets -->
   <Target Name="_GenerateRunSettingsFile" AfterTargets="Build" BeforeTargets="Test">
     <Message Text="*** Generating .runsettings file in $(RunSettingsFilePath)" Importance="High" />
