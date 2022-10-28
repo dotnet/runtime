@@ -603,7 +603,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator +(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return value;
         }
 

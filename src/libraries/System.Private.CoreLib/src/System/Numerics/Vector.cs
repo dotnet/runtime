@@ -697,7 +697,7 @@ namespace System.Numerics
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (!Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -718,7 +718,7 @@ namespace System.Numerics
         public static bool GreaterThanAny<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -792,7 +792,7 @@ namespace System.Numerics
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (!Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -813,7 +813,7 @@ namespace System.Numerics
         public static bool GreaterThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -887,7 +887,7 @@ namespace System.Numerics
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (!Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -908,7 +908,7 @@ namespace System.Numerics
         public static bool LessThanAny<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -982,7 +982,7 @@ namespace System.Numerics
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (!Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
@@ -1003,7 +1003,7 @@ namespace System.Numerics
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
             where T : struct
         {
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            for (int index = 0; index < Vector<T>.Count; index++)
             {
                 if (Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
