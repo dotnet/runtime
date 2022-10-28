@@ -1546,15 +1546,20 @@ namespace Internal.JitInterface
                     {
                         if (field.HasGCStaticBase)
                         {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCTHREADSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
                         else
                         {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
                         }
                     }
                     else
                     {
+                        pResult->helper = field.HasGCStaticBase ?
+                            CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE :
+                            CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
                         helperId = field.HasGCStaticBase ?
                             ReadyToRunHelperId.GetGCStaticBase :
                             ReadyToRunHelperId.GetNonGCStaticBase;
