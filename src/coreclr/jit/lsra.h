@@ -1004,12 +1004,12 @@ private:
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
 
+    bool       isFirstRegNum(RegRecord* regRec);
     regNumber getFirstRegNum(regNumber regNum, int regIdx);
     RegRecord* getFirstRegRec(RegRecord* regRec);
     regNumber getFirstRegNum(regNumber regNum);
 
 #ifdef TARGET_ARM
-    bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
     regNumber findAnotherHalfRegNum(regNumber regNum);

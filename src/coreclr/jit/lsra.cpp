@@ -3154,17 +3154,25 @@ bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
     {
         return true;
     }
-#ifdef TARGET_ARM
-    if (newRegType == TYP_DOUBLE)
+    else if (isFirstRegNum(regRec))
     {
-        RegRecord* otherRegRecord = getSecondHalfRegRec(regRec);
+        return false;
+    }
 
-        if (otherRegRecord->assignedInterval != nullptr)
+    RegRecord* firstRegRec        = getFirstRegRec(regRec);
+    regNumber  currReg            = firstRegRec->regNum;
+    bool       intervalIsAssigned = false;
+    int        regCount           = regRec->regCount;
+
+    do
+    {
+        if (getRegisterRecord(currReg)->assignedInterval != nullptr)
         {
             return true;
         }
-    }
-#endif
+        currReg = REG_NEXT(currReg);
+    } while (--regCount > 0);
+
     return false;
 }
 
@@ -3180,7 +3188,8 @@ bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 {
     Interval* assignedInterval = regRec->assignedInterval;
-    if (assignedInterval != nullptr && assignedInterval != interval)
+
+    if ((assignedInterval != nullptr && (assignedInterval != interval)))
     {
         // This is allocated to another interval.  Either it is inactive, or it was allocated as a
         // copyReg and is therefore not the "assignedReg" of the other interval.  In the latter case,
@@ -3190,33 +3199,25 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         // in method SerialStream.GetDcbFlag.
         // Note that we can't check for the copyReg case, because we may have seen a more recent
         // RefPosition for the Interval that was NOT a copyReg.
-        if (assignedInterval->assignedReg == regRec)
+        RegRecord* firstRegRec        = getFirstRegRec(regRec);
+        
+        bool       intervalIsAssigned = false;
+        int        regCount           = regRec->regCount;
+
+        RegRecord* currRegRec = firstRegRec;
+        regNumber  currReg    = currRegRec->regNum;
+        do
         {
-            assert(assignedInterval->isActive == false);
-            assignedInterval->physReg = REG_NA;
-        }
-        unassignPhysReg(regRec->regNum);
-    }
-#ifdef TARGET_ARM
-    // If 'interval' and 'assignedInterval' were both TYP_DOUBLE, then we have unassigned 'assignedInterval'
-    // from both halves. Otherwise, if 'interval' is TYP_DOUBLE, we now need to unassign the other half.
-    if ((interval->registerType == TYP_DOUBLE) &&
-        ((assignedInterval == nullptr) || (assignedInterval->registerType == TYP_FLOAT)))
-    {
-        RegRecord* otherRegRecord = getSecondHalfRegRec(regRec);
-        assignedInterval          = otherRegRecord->assignedInterval;
-        if (assignedInterval != nullptr && assignedInterval != interval)
-        {
-            if (assignedInterval->assignedReg == otherRegRecord)
+            if (assignedInterval->assignedReg == currRegRec)
             {
                 assert(assignedInterval->isActive == false);
                 assignedInterval->physReg = REG_NA;
             }
-            unassignPhysReg(otherRegRecord->regNum);
-        }
-    }
-#endif
+            currReg = REG_NEXT(currReg);
+        } while (--regCount > 0);
 
+        unassignPhysReg(firstRegRec->regNum);
+    }
     updateAssignedInterval(regRec, interval);
 }
 
@@ -3848,6 +3849,13 @@ regNumber LinearScan::getFirstRegNum(regNumber regNum, int regIdx)
     return regNum;
 }
 
+//TODO: This might be a way to avoid some of the regression.
+// A common path code
+bool LinearScan::isFirstRegNum(RegRecord* regRec)
+{
+    return (regRec->regCount == 1) || (regRec->regIdx == 0);
+}
+
 RegRecord* LinearScan::getFirstRegRec(RegRecord* regRec)
 {
     // If regIdx > 0, this should be definitely consecutive
@@ -3869,43 +3877,6 @@ regNumber LinearScan::getFirstRegNum(regNumber regNum)
 }
 
 #ifdef TARGET_ARM
-//--------------------------------------------------------------------------------------
-// isSecondHalfReg: Test if recRec is second half of double register
-//                  which is assigned to an interval.
-//
-// Arguments:
-//    regRec - a register to be tested
-//    interval - an interval which is assigned to some register
-//
-// Assumptions:
-//    None
-//
-// Return Value:
-//    True only if regRec is second half of assignedReg in interval
-//
-bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
-{
-    RegRecord* assignedReg = interval->assignedReg;
-
-    if (assignedReg != nullptr && interval->registerType == TYP_DOUBLE)
-    {
-        // interval should have been allocated to a valid double register
-        assert(genIsValidDoubleReg(assignedReg->regNum));
-
-        // Find a second half RegRecord of double register
-        regNumber firstRegNum  = assignedReg->regNum;
-        regNumber secondRegNum = REG_NEXT(firstRegNum);
-
-        assert(genIsValidFloatReg(secondRegNum) && !genIsValidDoubleReg(secondRegNum));
-
-        RegRecord* secondRegRec = getRegisterRecord(secondRegNum);
-
-        return secondRegRec == regRec;
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------------------------
 // getSecondHalfRegRec: Get the second (odd) half of an ARM32 double register
 //
@@ -4018,11 +3989,23 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
 
 bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
 {
-    bool isAssigned = (interval->assignedReg == regRec);
-#ifdef TARGET_ARM
-    isAssigned |= isSecondHalfReg(regRec, interval);
-#endif
-    return isAssigned;
+    if (isFirstRegNum(regRec))
+    {
+        return interval->assignedReg == regRec;
+    }
+
+    RegRecord* firstRegRec        = getFirstRegRec(regRec);
+    regNumber  currReg            = firstRegRec->regNum;
+    bool      intervalIsAssigned = false;
+    int regCount = regRec->regCount;
+
+    do
+    {
+        intervalIsAssigned |= (interval->assignedReg == getRegisterRecord(currReg));
+        currReg = REG_NEXT(currReg);
+    } while (--regCount > 0);
+
+    return intervalIsAssigned;
 }
 
 void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap)
