@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <assert.h>
 #include <Windows.h>
 
 #define TARGET_64BIT
@@ -12,16 +13,17 @@ class Range
 public:
     void* begin;
     void* end;
-    bool InRange(void* address)
-    {
-        return address >= begin && address <= end;
-    }
 };
 
 class RangeList
 {
 public:
-    Range range;
+    RangeList(Range range) :
+        _range(range)
+    {}
+
+    Range _range;
+
     RangeList* pRangeListNextForDelete = nullptr; // Used for adding to the cleanup list
 };
 
@@ -31,9 +33,9 @@ class RangeListMini
 {
 public:
     RangeListMini* pRangeListMiniNext;
-    RangeListMini* pRangeListMiniNextForFree; // Used for adding to the cleanup list
-    Range range;
+    Range _range;
     RangeList* pRangeList;
+    bool InRange(void* address) { return address >= _range.begin && address <= _range.end && pRangeList->pRangeListNextForDelete == NULL; }
     bool isPrimaryRangeListMini; // RangeListMini are allocated in arrays, but we only need to free the first allocated one. It will be marked with this flag.
 };
 
@@ -61,13 +63,19 @@ class SingleElementSegmentMap
 
 
 template<typename T>
-void VolatileWrite(T* ptr, T val)
+void VolatileStore(T* ptr, T val)
 {
     *ptr = val;
 }
 
 template<typename T>
 T VolatileRead(T* ptr)
+{
+    return *ptr;
+}
+
+template<typename T>
+T VolatileLoadWithoutBarrier(T* ptr)
 {
     return *ptr;
 }
@@ -90,10 +98,11 @@ class RangeListMap
     RangeListMini** _rangeListL2;
     void** GetTopLevelAddress() { return reinterpret_cast<void**>(&_rangeListL2); }
 #endif
-    RangeListMini* pRangeListMinisReadyToDelete = nullptr;
+    int _lock = 0; // 0 indicates unlocked. -1 indicates in the process of cleanup, Positive numbers indicate read locks
+    RangeList* pCleanupList = nullptr;
 
     const uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
-    const uintptr_t bytesAtLastLevel = (1 << (bitsAtLastLevel - 1));
+    const uintptr_t bytesAtLastLevel = (((uintptr_t)1) << (bitsAtLastLevel - 1));
 
     void* AllocateLevel() { return calloc(entriesPerMapLevel, sizeof(void*)); }
 
@@ -107,14 +116,14 @@ class RangeListMap
     }
 
     template<typename T>
-    T EnsureLevel(T* outerLevel, uintptr_t level)
+    T EnsureLevel(void *address, T* outerLevel, uintptr_t level)
     {
         uintptr_t index = EffectiveBitsForLevel(address, level);
         T rangeListResult = outerLevel[index];
         if (rangeListResult == NULL)
         {
             T rangeListNew = static_cast<T>(AllocateLevel());
-            T rangeListOld = InterlockedCompareExchangePointer((volatile PVOID*)&outerLevel[index], (PVOID)rangeListNew, NULL);
+            T rangeListOld = (T)InterlockedCompareExchangePointer((volatile PVOID*)&outerLevel[index], (PVOID)rangeListNew, NULL);
 
             if (rangeListOld != NULL)
             {
@@ -133,17 +142,15 @@ class RangeListMap
     // Returns pointer to address in last level map that actually points at RangeList space.
     RangeListMini** EnsureMapsForAddress(void* address)
     {
-        uintptr_t index;
-        void* newRangeList;
 #ifdef TARGET_64BIT
-        RangeListMini**** _rangeListL3 = EnsureLevel(_rangeListL4, 4);
+        RangeListMini**** _rangeListL3 = EnsureLevel(address, _rangeListL4, 4);
         if (_rangeListL3 == NULL)
             return NULL; // Failure case
-        RangeListMini*** _rangeListL2 = EnsureLevel(_rangeListL3, 3);
+        RangeListMini*** _rangeListL2 = EnsureLevel(address, _rangeListL3, 3);
         if (_rangeListL2 == NULL)
             return NULL; // Failure case
 #endif
-        RangeListMini** _rangeListL1 = EnsureLevel(_rangeListL2, 2);
+        RangeListMini** _rangeListL1 = EnsureLevel(address, _rangeListL2, 2);
         if (_rangeListL1 == NULL)
             return NULL; // Failure case
         return &_rangeListL1[EffectiveBitsForLevel(address, 1)];
@@ -170,11 +177,9 @@ class RangeListMap
 
     uintptr_t RangeListMiniCount(RangeList *pRangeList)
     {
-        uintptr_t rangeSize = reinterpret_cast<uintptr_t>(pRangeList->range.end) - reinterpret_cast<uintptr_t>(pRangeList->range.begin);
+        uintptr_t rangeSize = reinterpret_cast<uintptr_t>(pRangeList->_range.end) - reinterpret_cast<uintptr_t>(pRangeList->_range.begin);
         rangeSize /= bytesAtLastLevel;
-        rangeSize + 1;
-
-        return rangeSize;
+        return rangeSize + 1;
     }
 
     void* IncrementAddressByMaxSizeOfMini(void* input)
@@ -207,7 +212,7 @@ public:
             return false;
         }
 
-        RangeListMini*** entriesInMapToUpdate = (RangeList***)calloc(rangeListMiniCount, sizeof(RangeList**));
+        RangeListMini*** entriesInMapToUpdate = (RangeListMini***)calloc(rangeListMiniCount, sizeof(RangeListMini**));
         if (entriesInMapToUpdate == NULL)
         {
             free(minis);
@@ -216,11 +221,11 @@ public:
 
         minis[0].isPrimaryRangeListMini = true;
 
-        void* addressToPrepForUpdate = pRangeList->range.begin;
+        void* addressToPrepForUpdate = pRangeList->_range.begin;
         for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
         {
             minis[iMini].pRangeList = pRangeList;
-            minis[iMini].range = pRangeList->range;
+            minis[iMini]._range = pRangeList->_range;
             RangeListMini** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
             if (entryInMapToUpdate == NULL)
             {
@@ -239,7 +244,7 @@ public:
             RangeListMini* initialMiniInMap = VolatileRead(entriesInMapToUpdate[iMini]);
             do
             {
-                VolatileWrite(&minis[iMini].pRangeListMiniNext, initialMiniInMap);
+                VolatileStore(&minis[iMini].pRangeListMiniNext, initialMiniInMap);
                 RangeListMini* currentMiniInMap = (RangeListMini*)InterlockedCompareExchangePointer((volatile PVOID*)entriesInMapToUpdate[iMini], &(minis[iMini]), initialMiniInMap);
                 if (currentMiniInMap == initialMiniInMap)
                 {
@@ -255,15 +260,16 @@ public:
         return true;
     }
 
-    RangeList* LookupRangeListByAddressForKnownValidAddressesOrUnderLock(void* address)
+private:
+    RangeList* LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(void* address)
     {
         RangeListMini* mini = GetRangeListForAddress(address);
         if (mini == NULL)
             return NULL;
 
-        while (mini != NULL && !mini->range.InRange(address))
+        while (mini != NULL && !mini->InRange(address))
         {
-            mini = VolatileRead(&mini->pRangeListMiniNext);
+            mini = VolatileLoadWithoutBarrier(&mini->pRangeListMiniNext);
         }
 
         if (mini != NULL)
@@ -274,21 +280,100 @@ public:
         return NULL;
     }
 
-    void RemoveRangeList(RangeList* pRangeList)
+public:
+    bool TryLookupRangeListByAddressForKnownValidAddress(void* address, RangeList** pRangeList)
     {
-        uintptr_t rangeListMiniCount = RangeListMiniCount(pRangeList);
-        void* addressToPrepForDelete = pRangeList->range.begin;
-        for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
-        {
-            // Implement as marking the rangelist minis as deleted
-            //  Actual deletion from the RangeListMini list is done in CleanupWhileNoThreadMayLookupRangeLists
+        *pRangeList = NULL;
 
-            addressToPrepForDelete = IncrementAddressByMaxSizeOfMini(addressToPrepForDelete);
-        }
+        bool locked = false;
+        int lockVal;
+
+        do
+        {
+            lockVal = VolatileRead(&_lock);
+
+            // Cleanup in process. Do not succeed in producing result
+            if (lockVal < 0)
+                return false;
+
+            // Take reader lock
+        } while (InterlockedCompareExchange((volatile unsigned*)&_lock, (unsigned)lockVal + 1, (unsigned)lockVal) != lockVal);
+
+        *pRangeList = LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(address);
+
+        // Release lock
+        InterlockedDecrement((volatile unsigned*)&_lock);
     }
+
+    // Due to the thread safety semantics of removal, the address passed in here MUST be the address of a function on the stack, and therefore not eligible to be cleaned up due to some race.
+    RangeList* LookupRangeListCannotCallInParallelWithCleanup(void* address)
+    {
+        // Locked readers may be reading, but no cleanup can be happening
+        assert(_lock != -1);
+        return LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(address);
+    }
+
+    void RemoveRangeListCannotCallInParallelWithCleanup(RangeList* pRangeList)
+    {
+        assert(pRangeList->pRangeListNextForDelete = nullptr);
+        assert(pRangeList == LookupRangeListCannotCallInParallelWithCleanup(pRangeList->_range.begin));
+
+        // Removal is implemented by placing onto the cleanup linked list. This is then processed later during cleanup
+        RangeList* pLatestRemovedRangeList;
+        do
+        {
+            pLatestRemovedRangeList = VolatileRead(&pCleanupList);
+            VolatileStore(&pRangeList->pRangeListNextForDelete, pLatestRemovedRangeList);
+        } while (InterlockedCompareExchangePointer((volatile PVOID *)&pCleanupList, pRangeList, pLatestRemovedRangeList) == pLatestRemovedRangeList);
+    }
+
     void CleanupWhileNoThreadMayLookupRangeLists()
     {
-        // Set a lock
+        // Take cleanup lock
+        if (InterlockedCompareExchange((volatile unsigned*)&_lock, (unsigned)(-1), 0) != 0)
+        {
+            // If a locked read is in progress. That's OK. We'll clean up some in a future call to cleanup.
+            return;
+        }
+
+        RangeListMini *minisToFree = nullptr;
+
+        while (this->pCleanupList != nullptr)
+        {
+            RangeList* pRangeListToCleanup = this->pCleanupList;
+            RangeListMini* pRangeListMiniToFree = nullptr;
+            this->pCleanupList = pRangeListToCleanup->pRangeListNextForDelete;
+
+            uintptr_t rangeListMiniCount = RangeListMiniCount(pRangeListToCleanup);
+
+            void* addressToPrepForCleanup = pRangeListToCleanup->_range.begin;
+
+            for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
+            {
+                RangeListMini** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
+                assert(entryInMapToUpdate != NULL);
+
+                while ((*entryInMapToUpdate)->pRangeList != pRangeListToCleanup)
+                {
+                    entryInMapToUpdate = &(*entryInMapToUpdate)->pRangeListMiniNext;
+                }
+
+                if (iMini == 0)
+                {
+                    pRangeListMiniToFree = *entryInMapToUpdate;
+                    assert(pRangeListMiniToFree->isPrimaryRangeListMini);
+                }
+
+                *entryInMapToUpdate = (*entryInMapToUpdate)->pRangeListMiniNext;
+
+                addressToPrepForCleanup = IncrementAddressByMaxSizeOfMini(addressToPrepForCleanup);
+            }
+
+            free(pRangeListMiniToFree);
+        }
+
+        // Release lock
+        VolatileStore(&_lock, 0);
     }
 };
 
