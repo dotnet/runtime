@@ -4714,7 +4714,7 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     GenTree*  op2     = tree->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
+    emitAttr  attr    = emitActualTypeSize(tree->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
@@ -4751,8 +4751,9 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     regNumber               srcReg2   = genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
 
-    emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+    emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
