@@ -2049,7 +2049,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    Interval(RegisterType _registerType, regMaskTP registerPreferences)
+    Interval(RegisterType _registerType, regMaskTP registerPreferences, int registerCount)
         : registerPreferences(registerPreferences)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
@@ -2077,7 +2077,7 @@ public:
         , intervalIndex(0)
 #endif
     {
-        regCount     = 1;
+        regCount     = registerCount;
         registerType = _registerType;
     }
 
@@ -2323,7 +2323,7 @@ public:
 class Interval2 : public Interval
 {
 public:
-    Interval2(RegisterType registerType, regMaskTP registerPreferences) : Interval(registerType, registerPreferences)
+    Interval2(RegisterType registerType, regMaskTP registerPreferences) : Interval(registerType, registerPreferences, 0)
     {
         regCount = 2;
     }

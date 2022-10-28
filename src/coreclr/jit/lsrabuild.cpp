@@ -156,16 +156,17 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 #ifdef TARGET_ARM
     if (theRegisterType == TYP_DOUBLE)
     {
-        intervals_2.emplace_back(theRegisterType, allRegs(theRegisterType));
-        newInt = &intervals_2.back();
+        //intervals_2.emplace_back(theRegisterType, allRegs(theRegisterType));
+        intervals_1.emplace_back(theRegisterType, allRegs(theRegisterType), 2);
+        newInt = &intervals_1.back();
 #ifdef DEBUG
-        newInt->intervalIndex = static_cast<unsigned>(intervals_2.size() - 1);
+        newInt->intervalIndex = static_cast<unsigned>(intervals_1.size() - 1);
 #endif // DEBUG
     }
     else
 #endif
     {
-        intervals_1.emplace_back(theRegisterType, allRegs(theRegisterType));
+        intervals_1.emplace_back(theRegisterType, allRegs(theRegisterType), 1);
         newInt = &intervals_1.back();
 #ifdef DEBUG
         newInt->intervalIndex = static_cast<unsigned>(intervals_1.size() - 1);
