@@ -155,13 +155,7 @@ namespace System.IO
                 }
 
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                switch (errorCode)
-                {
-                    case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe
-                        return;
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                }
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
@@ -214,10 +208,6 @@ namespace System.IO
 
                     switch (errorCode)
                     {
-                        case Interop.Errors.ERROR_NO_DATA:
-                            // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                            return;
-
                         case Interop.Errors.ERROR_INVALID_PARAMETER:
                             // ERROR_INVALID_PARAMETER may be returned for writes
                             // where the position is too large or for synchronous writes
@@ -369,9 +359,6 @@ namespace System.IO
                             // Register for cancellation now that the operation has been initiated.
                             vts.RegisterForCancellation(cancellationToken);
                             break;
-                        case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe. IO callback will not be called.
-                            vts.Dispose();
-                            return (null, 0);
                         default:
                             // Error. Callback will not be invoked.
                             vts.Dispose();
@@ -686,9 +673,7 @@ namespace System.IO
                     {
                         // Error. Callback will not be invoked.
                         vts.Dispose();
-                        return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
-                            ? ValueTask.CompletedTask
-                            : ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
+                        return ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
                     }
                 }
             }
