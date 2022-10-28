@@ -553,7 +553,9 @@ namespace ILCompiler.ObjectWriter
         {
             _debugSymbolSectionWriter = GetOrCreateSection(DebugSymbolSection);
             _debugSymbolSectionWriter.EmitAlignment(4);
-            _debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture);
+            _debugSymbolsBuilder = new CodeViewSymbolsBuilder(
+                _nodeFactory.Target.Architecture,
+                _debugSymbolSectionWriter);
             _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
             _debugTypesSectionWriter.EmitAlignment(4);
             _debugTypesBuilder = new CodeViewTypesBuilder(
@@ -582,13 +584,14 @@ namespace ILCompiler.ObjectWriter
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-            //_debugSymbolsBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
+            _debugSymbolsBuilder.EmitLineInfo(
+                methodName, methodSymbol.Size, debugNode.GetNativeSequencePoints());
         }
 
         protected override void EmitDebugSections()
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
-            _debugSymbolsBuilder.Write(_debugSymbolSectionWriter);
+            _debugSymbolsBuilder.Write();
         }
 
         protected override void EmitDebugStaticVars()
