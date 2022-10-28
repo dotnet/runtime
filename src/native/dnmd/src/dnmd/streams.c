@@ -177,7 +177,7 @@ bool initialize_tables(mdcxt_t* cxt)
     // row size when a "coded index" is used - see II.24.2.6.
     uint64_t valid = valid_tables;
     uint32_t row_counts[MDTABLE_MAX_COUNT];
-    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    for (size_t i = 0; i < ARRAY_SIZE(row_counts); ++i)
     {
         if (valid & 1)
         {

@@ -8,6 +8,7 @@ set(SOURCES
 
 set(HEADERS
   ../inc/dnmd.h
+  ../inc/platform.h
   ./internal.h
 )
 
@@ -18,7 +19,5 @@ add_library(dnmd
 )
 
 set_target_properties(dnmd PROPERTIES PUBLIC_HEADER ../inc/dnmd.h)
-set_target_properties(dnmd PROPERTIES PUBLIC_HEADER ../inc/platform.h)
-target_include_directories(dnmd PUBLIC ../inc)
 
 install(TARGETS dnmd)

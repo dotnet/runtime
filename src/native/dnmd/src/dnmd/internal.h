@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include <platform.h>
 #include <dnmd.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))

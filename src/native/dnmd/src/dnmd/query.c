@@ -15,16 +15,15 @@ mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
     return c;
 }
 
-static mdtable_t* type_to_table(mdcxt_t* cxt, CorTokenType tk_type)
+static mdtable_t* type_to_table(mdcxt_t* cxt, mdtable_id_t table_id)
 {
     assert(cxt != NULL);
-    uint32_t type = ExtractTokenType(tk_type);
-    if (type >= MDTABLE_MAX_COUNT)
+    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
         return NULL;
-    return &cxt->tables[type];
+    return &cxt->tables[table_id];
 }
 
-bool md_table_row_count(mdhandle_t handle, CorTokenType type, uint32_t* count)
+bool md_table_row_count(mdhandle_t handle, mdtable_id_t table_id, uint32_t* count)
 {
     if (count == NULL)
         return false;
@@ -33,7 +32,7 @@ bool md_table_row_count(mdhandle_t handle, CorTokenType type, uint32_t* count)
     if (cxt == NULL)
         return false;
 
-    mdtable_t* table = type_to_table(cxt, type);
+    mdtable_t* table = type_to_table(cxt, table_id);
     if (table == NULL)
         return false;
 
@@ -41,11 +40,11 @@ bool md_table_row_count(mdhandle_t handle, CorTokenType type, uint32_t* count)
     return true;
 }
 
-bool md_create_cursor(mdhandle_t handle, CorTokenType type, mdcursor_t* cursor)
+bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor)
 {
     // Set the token to the first row.
     // If the table is empty, the call will return false.
-    return md_token_to_cursor(handle, (mdToken)(type | 1), cursor);
+    return md_token_to_cursor(handle, (CreateTokenType(table_id) | 1), cursor);
 }
 
 bool md_cursor_move(mdcursor_t* c, int32_t delta)
@@ -247,7 +246,7 @@ static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
         table_row = raw >> ci_entry->bit_encoding_size;
     }
 
-    if (table_id >= MDTABLE_MAX_COUNT)
+    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
         return false;
 
     mdtable_t* table;

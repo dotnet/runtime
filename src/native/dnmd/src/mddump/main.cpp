@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <memory>
 #include <array>
+
+#include <platform.h>
 #include <dnmd.h>
 
 template<typename T>
