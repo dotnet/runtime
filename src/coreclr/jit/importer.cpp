@@ -4421,7 +4421,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             switch (pFieldInfo->helper)
             {
                 case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-                    type = TYP_I_IMPL;
+                    type = TYP_I_IMPL; // brian: see if I have to consider the same
                     break;
                 case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
                 case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
@@ -4449,7 +4449,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
-                op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+                op1                  = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+                m_preferredInitCctor = pFieldInfo->helper;
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);

@@ -915,9 +915,13 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
-        resolvedToken.hClass = cls;
-
-        return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CCTOR_TRIGGER, TYP_VOID);
+        resolvedToken.hClass   = cls;
+        CorInfoHelpFunc helper = CORINFO_HELP_READYTORUN_CCTOR_TRIGGER;
+        if (0 <= m_preferredInitCctor && m_preferredInitCctor < CORINFO_HELP_COUNT)
+        {
+            helper = m_preferredInitCctor;
+        }
+        return impReadyToRunHelperToTree(&resolvedToken, helper, TYP_BYREF);
     }
 #endif
 
