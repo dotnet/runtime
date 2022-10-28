@@ -223,6 +223,8 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     if (b.size() < sizeof(IMAGE_DOS_HEADER))
         return false;
 
+    // [TODO] Handle endian issues with .NET generated PE images
+    // All integers should be read as little-endian.
     PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)(void*)b;
     bool is_pe = dos_header->e_magic == IMAGE_DOS_SIGNATURE;
     if (!is_pe)
