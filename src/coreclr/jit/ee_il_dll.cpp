@@ -693,8 +693,14 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
-
-    info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
+    if (0 < eeVarsCount)
+    {
+        info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
+    }
+    else if (eeVars != nullptr)
+    {
+        info.compCompHnd->freeArray(eeVars);
+    }
 
     eeVars = nullptr; // We give up ownership after setVars()
 }
