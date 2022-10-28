@@ -684,6 +684,9 @@ namespace System.Reflection.Metadata
                     parmPos++;
                 }
 
+                foreach (var ca in parms[4].GetCustomAttributes(false)) {
+                        Console.WriteLine (" - parm[4] has {0}", ca);
+                }
                 Assert.Equal (1, parms[4].GetCustomAttributes(false).Length);
                 Assert.Equal (typeof (CallerMemberNameAttribute), parms[4].GetCustomAttributes(false)[0].GetType());
 
