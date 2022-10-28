@@ -30,26 +30,21 @@ namespace System.Net
             ref X509Chain? chain,
             X509ChainPolicy? chainPolicy)
         {
-            bool gotReference = false;
-
             if (securityContext == null)
             {
                 return null;
             }
 
             X509Certificate2? result = null;
-            SafeFreeCertContext? remoteContext = null;
+            IntPtr remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
             try
             {
-                QueryContextRemoteCertificate(securityContext, out remoteContext);
-
-                if (remoteContext == null || remoteContext.IsInvalid)
+                if (remoteCertificate == IntPtr.Zero)
                 {
                     return null;
                 }
 
-                remoteContext.DangerousAddRef(ref gotReference);
-                result = new X509Certificate2(remoteContext.DangerousGetHandle());
+                result = new X509Certificate2(remoteCertificate);
 
                 if (retrieveChainCertificates)
                 {
@@ -88,14 +83,11 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null)
+                if (remoteCertificate != IntPtr.Zero)
                 {
-                    if (gotReference)
-                    {
-                        remoteContext.DangerousRelease();
-                    }
-
-                    remoteContext.Dispose();
+                    // Creating X509Certificate will increase the reference count
+                    // so we need to release it explicitly on either success or failure.
+                    Interop.Crypto.X509Destroy(remoteCertificate);
                 }
             }
 
@@ -155,22 +147,6 @@ namespace System.Net
             store.Open(OpenFlags.ReadOnly);
 
             return store;
-        }
-
-        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext? remoteCertContext)
-        {
-            remoteCertContext = null;
-            try
-            {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
-                // Note that cert ownership is transferred to SafeFreeCertContext
-                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
         }
     }
 }

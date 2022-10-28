@@ -16,6 +16,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
 
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

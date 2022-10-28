@@ -12,7 +12,7 @@ namespace Internal.IL.Stubs
     /// is to LDTOKEN the method considered "current method" and call into the class library to
     /// retrieve the associated MethodBase object instance.
     /// </summary>
-    internal partial class MethodBaseGetCurrentMethodThunk : ILStubMethod
+    internal sealed partial class MethodBaseGetCurrentMethodThunk : ILStubMethod
     {
         public MethodBaseGetCurrentMethodThunk(MethodDesc method)
         {
@@ -90,7 +90,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    internal class MethodBaseGetCurrentMethodThunkCache
+    internal sealed class MethodBaseGetCurrentMethodThunkCache
     {
         private Unifier _cache;
 
@@ -104,7 +104,7 @@ namespace Internal.IL.Stubs
             return _cache.GetOrCreateValue(currentMethod.GetTypicalMethodDefinition());
         }
 
-        private class Unifier : LockFreeReaderHashtable<MethodDesc, MethodBaseGetCurrentMethodThunk>
+        private sealed class Unifier : LockFreeReaderHashtable<MethodDesc, MethodBaseGetCurrentMethodThunk>
         {
             protected override int GetKeyHashCode(MethodDesc key)
             {

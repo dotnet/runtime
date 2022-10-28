@@ -1675,6 +1675,8 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     {
         TRACE("GetProcessIdDisambiguationKey: getline() FAILED");
         SetLastError(ERROR_INVALID_HANDLE);
+        free(line);
+        fclose(statFile);
         return FALSE;
     }
 
@@ -1691,14 +1693,14 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
         "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
+    free(line);
+    fclose(statFile);
+
     if (sscanfRet != 1)
     {
         _ASSERTE(!"Failed to parse stat file contents with sscanf_s.");
         return FALSE;
     }
-
-    free(line);
-    fclose(statFile);
 
     *disambiguationKey = starttime;
     return TRUE;

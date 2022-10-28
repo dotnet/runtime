@@ -86,15 +86,13 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? handleRef = RuntimeImports.RhHandleGet(wo.m_handle);
-            if (handleRef == null)
+            object? obj = RuntimeImports.RhHandleGet(wo.Handle);
+            if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));
             }
 
-            int result = RuntimeImports.RhGetGeneration(handleRef);
-            KeepAlive(wo);
-            return result;
+            return RuntimeImports.RhGetGeneration(obj);
         }
 
         // Forces a collection of all generations from 0 through Generation.
@@ -188,14 +186,14 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(maxGenerationThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             if (largeObjectHeapThreshold < 1 || largeObjectHeapThreshold > 99)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(largeObjectHeapThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             // This is not documented on MSDN, but CoreCLR throws when the GC's
@@ -625,7 +623,7 @@ namespace System
 
                 case RuntimeImports.GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }

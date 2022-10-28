@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class CanonBaseType
+    public partial class CanonBaseType
     {
         public override PInvokeStringFormat PInvokeStringFormat => default(PInvokeStringFormat);
     }

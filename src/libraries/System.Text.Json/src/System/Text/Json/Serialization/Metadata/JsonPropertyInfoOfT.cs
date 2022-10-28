@@ -135,13 +135,13 @@ namespace System.Text.Json.Serialization.Metadata
                     MethodInfo? getMethod = propertyInfo.GetMethod;
                     if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                     {
-                        Get = Options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        Get = JsonSerializerOptions.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
                     }
 
                     MethodInfo? setMethod = propertyInfo.SetMethod;
                     if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                     {
-                        Set = Options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        Set = JsonSerializerOptions.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
                     }
 
                     break;
@@ -149,11 +149,11 @@ namespace System.Text.Json.Serialization.Metadata
                 case FieldInfo fieldInfo:
                     Debug.Assert(fieldInfo.IsPublic);
 
-                    Get = Options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+                    Get = JsonSerializerOptions.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
 
                     if (!fieldInfo.IsInitOnly)
                     {
-                        Set = Options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        Set = JsonSerializerOptions.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
                     }
 
                     break;

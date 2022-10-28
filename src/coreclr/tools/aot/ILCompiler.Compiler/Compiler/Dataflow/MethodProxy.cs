@@ -12,7 +12,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-    readonly partial struct MethodProxy : IEquatable<MethodProxy>
+    internal readonly partial struct MethodProxy : IEquatable<MethodProxy>
     {
         public MethodProxy(MethodDesc method) => Method = method;
 

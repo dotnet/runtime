@@ -110,7 +110,7 @@ namespace Internal.TypeSystem
                     else if (typeToConvert.IsRuntimeDeterminedType)
                     {
                         // For non-universal canon cases, RuntimeDeterminedType's passed into this function are either
-                        // reference types (which are turned into normal Canon), or instantiated types (which are handled 
+                        // reference types (which are turned into normal Canon), or instantiated types (which are handled
                         // by the above case.). But for UniversalCanon, we can have non-instantiated universal canon
                         // which will reach this case.
 

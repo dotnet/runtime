@@ -58,11 +58,26 @@ namespace System
             return length;
         }
     }
+
+    internal static class CharExtensions
+    {
+        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
+        public static bool IsAsciiLetter(char c) =>
+            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
+    }
 }
 
 namespace System.Buffers
 {
     internal delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
+}
+
+namespace System.Numerics
+{
+    internal static class BitOperations
+    {
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value > 0;
+    }
 }
 
 namespace System.Threading

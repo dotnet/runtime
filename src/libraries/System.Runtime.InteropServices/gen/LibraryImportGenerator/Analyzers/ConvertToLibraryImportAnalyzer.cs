@@ -88,14 +88,14 @@ namespace Microsoft.Interop.Analyzers
             AnyDiagnosticsSink diagnostics = new();
             StubEnvironment env = context.Compilation.CreateStubEnvironment();
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
-            SignatureContext targetSignatureContext = SignatureContext.Create(method, CreateInteropAttributeDataFromDllImport(dllImportData), env, diagnostics, dllImportAttribute, typeof(ConvertToLibraryImportAnalyzer).Assembly);
+            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
             var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
 
             bool mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext(env, "return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.

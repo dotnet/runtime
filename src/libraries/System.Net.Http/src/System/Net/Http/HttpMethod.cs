@@ -64,6 +64,8 @@ namespace System.Net.Http
             get { return s_patchMethod; }
         }
 
+        /// <summary>Gets the HTTP CONNECT protocol method.</summary>
+        /// <value>The HTTP CONNECT method.</value>
         public static HttpMethod Connect
         {
             get { return s_connectMethod; }

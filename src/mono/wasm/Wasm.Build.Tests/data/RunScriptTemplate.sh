@@ -33,7 +33,7 @@ fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJs" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 		else
 			JS_ENGINE="--engine=V8"
@@ -53,6 +53,10 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+if [[ -n "$PREPEND_PATH" ]]; then
+    export PATH=$PREPEND_PATH:$PATH
+fi
+
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT
@@ -68,10 +72,10 @@ function set_env_vars()
 {
     local _DIR_NAME=
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        _DIR_NAME=dotnet-workload
+        _DIR_NAME=dotnet-net7+latest
         export SDK_HAS_WORKLOAD_INSTALLED=true
     else
-        _DIR_NAME=sdk-no-workload
+        _DIR_NAME=dotnet-none
         export SDK_HAS_WORKLOAD_INSTALLED=false
     fi
 

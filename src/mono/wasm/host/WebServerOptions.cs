@@ -15,6 +15,6 @@ internal sealed record WebServerOptions
     string? ContentRootPath,
     bool WebServerUseCors,
     bool WebServerUseCrossOriginPolicy,
-    int Port,
+    string [] Urls,
     string DefaultFileName = "index.html"
 );

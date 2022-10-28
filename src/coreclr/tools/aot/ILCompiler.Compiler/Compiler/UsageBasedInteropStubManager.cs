@@ -4,14 +4,10 @@
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
-
-using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
-using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using System.Runtime.InteropServices;
 
 namespace ILCompiler
 {
@@ -32,7 +28,7 @@ namespace ILCompiler
         {
             if (method.HasInstantiation)
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 AddMarshalAPIsGenericDependencies(ref dependencies, factory, method);
             }
         }
@@ -44,7 +40,7 @@ namespace ILCompiler
                 var delegateType = (MetadataType)type;
                 if (delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
                 {
-                    dependencies = dependencies ?? new DependencyList();
+                    dependencies ??= new DependencyList();
                     dependencies.Add(factory.DelegateMarshallingData(delegateType), "Delegate marshalling");
                 }
             }
@@ -74,7 +70,7 @@ namespace ILCompiler
                     {
                         foreach (TypeDesc type in method.Instantiation)
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             if (type.IsDelegate)
                             {
                                 dependencies.Add(factory.DelegateMarshallingData((DefType)type), "Delegate marshlling");

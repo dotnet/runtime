@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using ILCompiler;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -20,10 +18,7 @@ namespace Internal.JitInterface
             {
                 if (!field.IsStatic)
                 {
-                    if (firstField == null)
-                    {
-                        firstField = field;
-                    }
+                    firstField ??= field;
                     numIntroducedFields++;
                 }
             }
@@ -95,7 +90,7 @@ namespace Internal.JitInterface
                         }
                         else if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST) != 0)
                         {
-                            floatFieldFlags = floatFieldFlags ^ (uint)StructFloatFieldInfoFlags.STRUCT_MERGE_FIRST_SECOND_8;
+                            floatFieldFlags ^= (uint)StructFloatFieldInfoFlags.STRUCT_MERGE_FIRST_SECOND_8;
                         }
                         else
                         {

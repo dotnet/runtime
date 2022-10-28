@@ -61,10 +61,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!factory.MetadataManager.IsReflectionBlocked(mdType))
                     continue;
-        
+
                 if (!factory.CompilationModuleGroup.ContainsType(mdType))
                     continue;
-                
+
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
                 IEETypeNode typeSymbol = factory.NecessaryTypeSymbol(type);
 

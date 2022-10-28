@@ -1087,6 +1087,33 @@ void ReleaseReservedMemory(BYTE* value)
 
 using ReservedMemoryHolder = SpecializedWrapper<BYTE, ReleaseReservedMemory>;
 
+BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
+{
+    // Commit first set of pages, since it will contain the LoaderHeapBlock
+    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
+    if (pTemp == NULL)
+    {
+        return FALSE;
+    }
+
+    if (IsInterleaved())
+    {
+        _ASSERTE(dwSizeToCommitPart == GetOsPageSize());
+
+        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+        if (pTemp == NULL)
+        {
+            return FALSE;
+        }
+
+        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
+        m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
+        FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
+    }
+
+    return TRUE;
+}
+
 BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 {
     CONTRACTL
@@ -1166,30 +1193,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         dwSizeToCommitPart /= 2;
     }
 
-    // Commit first set of pages, since it will contain the LoaderHeapBlock
-    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
-    if (pTemp == NULL)
+    if (!CommitPages(pData, dwSizeToCommitPart))
     {
-        _ASSERTE(!"Unable to commit a loaderheap code page");
-
         return FALSE;
-    }
-
-    if (IsInterleaved())
-    {
-        _ASSERTE(dwSizeToCommitPart == GetOsPageSize());
-
-        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-        if (pTemp == NULL)
-        {
-            _ASSERTE(!"Unable to commit a loaderheap data page");
-
-            return FALSE;
-        }
-
-        ExecutableWriterHolder<BYTE> codePageWriterHolder(pData, GetOsPageSize());
-        m_codePageGenerator(codePageWriterHolder.GetRW(), pData);
-        FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
     }
 
     // Record reserved range in range list, if one is specified
@@ -1301,26 +1307,13 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             dwSizeToCommitPart /= 2;
         }
 
-        // Yes, so commit the desired number of reserved pages
-        void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart, IsExecutable());
-        if (pData == NULL)
+        if (!CommitPages(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart))
         {
             return FALSE;
         }
 
         if (IsInterleaved())
         {
-            // Commit a data page after the code page
-            void* pDataRW = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-            if (pDataRW == NULL)
-            {
-                return FALSE;
-            }
-
-            ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize());
-            m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
-            FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
-
             // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
@@ -1335,7 +1328,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
             // For interleaved heaps, further allocations will start from the newly committed page as they cannot
             // cross page boundary.
-            m_pAllocPtr = (BYTE*)pData;
+            m_pAllocPtr = (BYTE*)m_pPtrToEndOfCommittedRegion;
         }
 
         m_pPtrToEndOfCommittedRegion += dwSizeToCommitPart;

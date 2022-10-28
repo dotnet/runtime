@@ -29,6 +29,9 @@
     <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
+          Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
+
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
     <MSBuild Targets="Build"
@@ -94,7 +97,7 @@
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
-                                         RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
+                                         RuntimeGraphFiles="$(BundledRuntimeIdentifierGraphFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 

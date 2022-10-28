@@ -41,12 +41,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_ConstructorMaxOf64Parameters(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, type));
-        }
-
-        [DoesNotReturn]
         public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType, JsonConverter converter)
         {
             throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType, converter.GetType()));
@@ -809,6 +803,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType, string enumName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name, enumName));
         }
 
         [DoesNotReturn]

@@ -161,7 +161,7 @@ namespace Internal.TypeSystem.Interop
         }
 
         [ThreadStatic]
-        static Stack<MetadataType> s_typesBeingLookedAt;
+        private static Stack<MetadataType> s_typesBeingLookedAt;
 
         public NativeStructType(ModuleDesc owningModule, MetadataType managedStructType, InteropStateManager interopStateManager)
         {
@@ -190,7 +190,6 @@ namespace Internal.TypeSystem.Interop
 
         private void CalculateFields()
         {
-            bool isSequential = ManagedStructType.IsSequentialLayout;
             bool isAnsi = ManagedStructType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
 
             int numFields = 0;

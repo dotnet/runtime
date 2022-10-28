@@ -22,7 +22,6 @@
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
     <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
-    <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -54,6 +53,7 @@
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
+    <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
     <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
@@ -98,7 +98,7 @@
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
-    <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WorkloadBuildTasksDir>
+    <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</WorkloadBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
@@ -129,6 +129,7 @@
     <!-- There's no checked configuration on Mono. -->
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">
@@ -199,6 +200,7 @@
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
+    <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
@@ -231,7 +233,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
@@ -273,7 +275,6 @@
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Owners>microsoft,dotnetframework</Owners>
     <IncludeSymbols>true</IncludeSymbols>
-    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -313,6 +314,7 @@
 
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
+    <CustomAfterNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.AfterTargets.targets</CustomAfterNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
 </Project>

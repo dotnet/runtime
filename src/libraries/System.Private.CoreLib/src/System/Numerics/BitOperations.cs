@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -51,7 +53,7 @@ namespace System.Numerics
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -728,6 +730,164 @@ namespace System.Numerics
 #else
             return (nuint)RotateRight((uint)value, offset);
 #endif
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, byte data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, ushort data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, uint data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, ulong data)
+        {
+            if (Sse42.X64.IsSupported)
+            {
+                // This intrinsic returns a 64-bit register with the upper 32-bits set to 0.
+                return (uint)Sse42.X64.Crc32(crc, data);
+            }
+
+            if (Sse42.IsSupported)
+            {
+                uint result = Sse42.Crc32(crc, (uint)(data));
+                return Sse42.Crc32(result, (uint)(data >> 32));
+            }
+
+            if (Crc32.Arm64.IsSupported)
+            {
+                return Crc32.Arm64.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        private static class Crc32Fallback
+        {
+            // Pre-computed CRC-32 transition table.
+            // While this implementation is based on the Castagnoli CRC-32 polynomial (CRC-32C),
+            // x32 + x28 + x27 + x26 + x25 + x23 + x22 + x20 + x19 + x18 + x14 + x13 + x11 + x10 + x9 + x8 + x6 + x0,
+            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u
+            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+
+            internal static uint Crc32C(uint crc, byte data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, ushort data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, uint data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                return Crc32CCore(ref lookupTable, crc, data);
+            }
+
+            internal static uint Crc32C(uint crc, ulong data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+                data >>= 32;
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+
+                return crc;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint Crc32CCore(ref uint lookupTable, uint crc, uint data)
+            {
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
         }
 
         /// <summary>

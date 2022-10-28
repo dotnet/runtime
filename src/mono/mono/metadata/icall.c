@@ -233,6 +233,31 @@ ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandl
 	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
 }
 
+void
+ves_icall_System_Array_InitializeInternal (MonoObjectHandleOnStack arr_handle, MonoError *error)
+{
+	MonoArray *arr = *(MonoArray**)arr_handle;
+	MonoClass * const array_class = mono_object_class (arr);
+	MonoClass * const element_class = m_class_get_element_class (array_class);
+	if (!m_class_is_valuetype (element_class)) {
+		return;
+	}
+
+
+	MonoMethod * const method = mono_class_get_method_from_name_checked (element_class, ".ctor", 0, 0, error);
+	if (!method) {
+		return;
+	}
+
+	gsize element_size = mono_array_element_size (array_class);
+
+	for (guint32 i = 0; i < arr->max_length; i++) {
+		gpointer element_address = mono_array_addr_with_size_fast (arr, element_size, (gsize)i);
+		mono_runtime_invoke_checked (method, element_address, NULL, error);
+		return_if_nok (error);
+	}
+}
+
 // Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.cpp#L31
 #define PT_Primitive          0x01000000
 
@@ -6390,12 +6415,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);
-	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
-		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
-		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
-		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
-		type = mono_reflection_type_handle_mono_type (t, error);
-		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -6907,11 +6926,11 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 		res = (gconstpointer)no_icall_table;
 		goto exit;
 	} else {
-		gboolean uses_handles = FALSE;
+		MonoInternalCallFlags icall_flags;
 		g_assert (icall_table->lookup);
-		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
-		if (res && flags && uses_handles)
-			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
+		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &icall_flags);
+		if (res && flags)
+			*flags = *flags | icall_flags;
 		mono_icall_unlock ();
 		locked = FALSE;
 
@@ -7197,6 +7216,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #define ICALL_TYPE(id,name,first) /* nothing */
 #define ICALL(id,name,func) /* nothing */
 #define NOHANDLES(inner)  /* nothing */
+#define NOHANDLES_FLAGS(inner,flags)  /* nothing */
 
 #define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) MONO_HANDLE_REGISTER_ICALL_IMPLEMENT (func, ret, nargs, argtypes)
 
@@ -7218,4 +7238,5 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #undef ICALL_TYPE
 #undef ICALL
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL
