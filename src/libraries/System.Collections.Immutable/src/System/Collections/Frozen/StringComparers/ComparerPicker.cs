@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace System.Collections.Immutable
+namespace System.Collections.Frozen
 {
     internal static class ComparerPicker
     {
@@ -15,7 +16,7 @@ namespace System.Collections.Immutable
         /// <remarks>
         /// The idea here is to find the shortest substring slice across all the input strings which yields a set of
         /// strings which are maximally unique. The optimal slice is then applied to incoming strings being hashed to
-        /// perform the dictionary lookup. Keeping the slices as small as possible minimize the number of characters
+        /// perform the dictionary lookup. Keeping the slices as small as possible minimizes the number of characters
         /// involved in hashing, speeding up the whole process.
         ///
         /// What we do here is pretty simple. We loop over the input strings, looking for the shortest slice with a good
@@ -27,39 +28,37 @@ namespace System.Collections.Immutable
         ///
         /// Warning: This code may reorganize (e.g. sort) the entries in the input array. It will not delete or add anything though.
         /// </remarks>
-        public static StringComparerBase Pick(string[] uniqueStrings, bool ignoreCase)
+        public static StringComparerBase Pick(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, out int minimumLength, out int maximumLengthDiff)
         {
-            if (uniqueStrings.Length == 0)
-            {
-                return ignoreCase ? new FullCaseInsensitiveAsciiStringComparer() : new FullStringComparer();
-            }
+            Debug.Assert(uniqueStrings.Length != 0);
 
-            // first, try to pick a substring comparer
-            StringComparerBase? c = PickSubstringComparer(uniqueStrings, ignoreCase);
+            // First, try to pick a substring comparer.
+            // if we couldn't find a good substring comparer, fallback to a full string comparer.
+            StringComparerBase? c =
+                PickSubstringComparer(uniqueStrings, ignoreCase) ??
+                PickFullStringComparer(uniqueStrings, ignoreCase);
 
-            // if we couldn't find a good substring comparer, fallback to a full string comparer
-            c ??= PickFullStringComparer(uniqueStrings, ignoreCase);
-
-            // calculate the trivial rejection boundaries
-            c.MinLength = int.MaxValue;
-            c.MaxLength = 0;
+            // Calculate the trivial rejection boundaries.
+            int min = int.MaxValue, max = 0;
             foreach (string s in uniqueStrings)
             {
-                if (s.Length < c.MinLength)
+                if (s.Length < min)
                 {
-                    c.MinLength = s.Length;
+                    min = s.Length;
                 }
 
-                if (s.Length > c.MaxLength)
+                if (s.Length > max)
                 {
-                    c.MaxLength = s.Length;
+                    max = s.Length;
                 }
             }
 
+            minimumLength = min;
+            maximumLengthDiff = max - min;
             return c;
         }
 
-        private static StringComparerBase? PickSubstringComparer(string[] uniqueStrings, bool ignoreCase)
+        private static StringComparerBase? PickSubstringComparer(ReadOnlySpan<string> uniqueStrings, bool ignoreCase)
         {
             const double SufficientUniquenessFactor = 0.95; // 95% is good enough
 
@@ -164,7 +163,7 @@ namespace System.Collections.Immutable
             return null;
         }
 
-        private static StringComparerBase PickFullStringComparer(string[] uniqueStrings, bool ignoreCase)
+        private static StringComparerBase PickFullStringComparer(ReadOnlySpan<string> uniqueStrings, bool ignoreCase)
         {
             if (!ignoreCase)
             {
@@ -186,36 +185,36 @@ namespace System.Collections.Immutable
         {
             private readonly SubstringComparerBase _comp;
 
-            public ComparerWrapper(SubstringComparerBase comp)
-            {
-                _comp = comp;
-            }
+            public ComparerWrapper(SubstringComparerBase comp) => _comp = comp;
 
             public bool Equals(string? x, string? y) => _comp.EqualsPartial(x, y);
             public int GetHashCode([DisallowNull] string obj) => _comp.GetHashCode(obj);
         }
 
+        // TODO https://github.com/dotnet/runtime/issues/28230:
+        // Replace this once Ascii.IsValid exists.
         internal static unsafe bool IsAllAscii(ReadOnlySpan<char> s)
         {
             fixed (char* src = s)
             {
-                uint* ptr = (uint*)src;
+                uint* ptrUInt32 = (uint*)src;
                 int length = s.Length;
 
                 while (length > 3)
                 {
-                    if (!AllCharsInUInt32AreAscii(*ptr++ | *ptr++))
+                    if (!AllCharsInUInt32AreAscii(ptrUInt32[0] | ptrUInt32[1]))
                     {
                         return false;
                     }
 
+                    ptrUInt32 += 2;
                     length -= 4;
                 }
 
-                char* tail = (char*)ptr;
+                char* ptrChar = (char*)ptrUInt32;
                 while (length-- > 0)
                 {
-                    char ch = *tail++;
+                    char ch = *ptrChar++;
                     if (ch >= 0x7f)
                     {
                         return false;
@@ -229,15 +228,15 @@ namespace System.Collections.Immutable
             static bool AllCharsInUInt32AreAscii(uint value) => (value & ~0x007F_007Fu) == 0;
         }
 
-        private static double GetUniquenessFactor(HashSet<string> set, IReadOnlyCollection<string> uniqueStrings)
+        private static double GetUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
         {
             set.Clear();
             foreach (string s in uniqueStrings)
             {
-                _ = set.Add(s);
+                set.Add(s);
             }
 
-            return set.Count / (double)uniqueStrings.Count;
+            return set.Count / (double)uniqueStrings.Length;
         }
     }
 }

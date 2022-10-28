@@ -1,24 +1,36 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections
 {
     internal static class ThrowHelper
     {
-        public static void IfBufferTooSmall(int actual, int required)
+        public static void ThrowIfNull(object arg, [CallerArgumentExpression("arg")] string? paramName = null)
         {
-            if (actual < required)
+            if (arg is null)
             {
-                ThrowDestinationArrayTooSmall();
+                ThrowArgumentNullException(paramName);
             }
         }
 
         [DoesNotReturn]
-        public static void ThrowDestinationArrayTooSmall() =>
-            throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount);
+        public static void ThrowIfDestinationTooSmall() =>
+            throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount, "destination");
+
+        [DoesNotReturn]
+        public static void ThrowArgumentNullException(string? paramName) =>
+            throw new ArgumentNullException(paramName);
+
+        [DoesNotReturn]
+        public static void ThrowKeyNotFoundException() =>
+            throw new KeyNotFoundException();
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException() =>
+            throw new InvalidOperationException();
     }
 }

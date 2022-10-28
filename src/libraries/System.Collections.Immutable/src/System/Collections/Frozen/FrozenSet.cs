@@ -2,254 +2,352 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
-namespace System.Collections.Immutable
+namespace System.Collections.Frozen
 {
     /// <summary>
-    /// A frozen set.
+    /// Provides a set of initialization methods for instances of the <see cref="FrozenSet{T}"/> class.
     /// </summary>
-    /// <typeparam name="T">The type of the items in the set.</typeparam>
     /// <remarks>
-    /// Frozen sets are immutable and are optimized for situations where a set
-    /// is created infrequently, but used repeatedly at runtime. They have a relatively high
-    /// cost to create, but provide excellent lookup performance. These are thus ideal for cases
-    /// where a set is created at startup of an application and used throughout the life
-    /// of the application.
-    ///
-    /// This is the general-purpose frozen set which can be used with any item type. If you need
-    /// a set that has a string or integer as key, you will get better performance by using
-    /// <see cref="FrozenOrdinalStringSet"/> or <see cref="FrozenIntSet"/>
-    /// respectively.
+    /// Frozen collections are immutable and are optimized for situations where a collection
+    /// is created very infrequently but is used very frequently at runtime. They have a relatively high
+    /// cost to create but provide excellent lookup performance. Thus, these are ideal for cases
+    /// where a collection is created once, potentially at the startup of an application, and used throughout
+    /// the remainder of the life of the application. Frozen collections should only be initialized with
+    /// trusted input.
     /// </remarks>
-    [DebuggerTypeProxy(typeof(IReadOnlyCollectionDebugView<>))]
-    [DebuggerDisplay("Count = {Count}")]
-    public readonly struct FrozenSet<T> : IFrozenSet<T>, IFindItem<T>, ISet<T>
-        where T : notnull
+    public static class FrozenSet
     {
-        private readonly FrozenHashTable _hashTable;
-        private readonly T[] _items;
-
-        /// <summary>
-        /// Gets an empty frozen set.
-        /// </summary>
-        public static FrozenSet<T> Empty => new(Array.Empty<T>(), EqualityComparer<T>.Default);
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FrozenSet{T}"/> struct.
-        /// </summary>
-        /// <param name="items">The items to initialize the set with.</param>
-        /// <param name="comparer">The comparer used to compare and hash items.</param>
-        /// <exception cref="ArgumentException">If more than 64K items are added.</exception>
-        internal FrozenSet(IEnumerable<T> items, IEqualityComparer<T> comparer)
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
+        /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <remarks>If the same key appears multiple times in the input, the latter one in the sequence takes precedence.</remarks>
+        /// <returns>A frozen set.</returns>
+        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer = null)
         {
-            T[] incoming = MakeUniqueArray(items, comparer);
+            ThrowHelper.ThrowIfNull(source);
+            comparer ??= EqualityComparer<T>.Default;
 
-            if (ReferenceEquals(comparer, StringComparer.Ordinal) ||
-                ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
+            // If the source is already frozen with the same comparer, it can simply be returned.
+            if (source is FrozenSet<T> existing &&
+                existing.Comparer.Equals(comparer))
             {
-                comparer = (IEqualityComparer<T>)ComparerPicker.Pick((string[])(object)incoming, ignoreCase: ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase));
+                return existing;
             }
 
-            _items = incoming.Length == 0 ? Array.Empty<T>() : new T[incoming.Length];
-            Comparer = comparer;
-
-            T[] it = _items;
-            _hashTable = FrozenHashTable.Create(
-                incoming,
-                comparer.GetHashCode,
-                (index, item) => it[index] = item);
-        }
-
-        private static T[] MakeUniqueArray(IEnumerable<T> items, IEqualityComparer<T> comp)
-        {
-            if (!(items is HashSet<T> hs && hs.Comparer.Equals(comp)))
+            // Ensure we have a HashSet<,> using the specified comparer such that all values
+            // are non-null and unique according to that comparer.
+            if (source is not HashSet<T> uniqueValues ||
+                (uniqueValues.Count != 0 && !uniqueValues.Comparer.Equals(comparer)))
             {
-                hs = new HashSet<T>(items, comp);
+                uniqueValues = new HashSet<T>(source, comparer);
             }
 
-            if (hs.Count == 0)
+            // If the input was empty, simply return the empty frozen set singleton. The comparer is ignored.
+            if (uniqueValues.Count == 0)
             {
-                return Array.Empty<T>();
+                return FrozenSet<T>.Empty;
             }
 
-            var result = new T[hs.Count];
-            hs.CopyTo(result);
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public FrozenList<T> Items => new(_items);
-
-        /// <inheritdoc />
-        public FrozenEnumerator<T> GetEnumerator() => new(_items);
-
-        /// <summary>
-        /// Gets an enumeration of the set's items.
-        /// </summary>
-        /// <returns>The enumerator.</returns>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => Count > 0 ? GetEnumerator() : ((IList<T>)Array.Empty<T>()).GetEnumerator();
-
-        /// <summary>
-        /// Gets an enumeration of the set's items.
-        /// </summary>
-        /// <returns>The enumerator.</returns>
-        IEnumerator IEnumerable.GetEnumerator() => Count > 0 ? GetEnumerator() : Array.Empty<T>().GetEnumerator();
-
-        /// <summary>
-        /// Gets the number of items in the set.
-        /// </summary>
-        public int Count => _hashTable.Count;
-
-        /// <summary>
-        /// Gets the comparer used by this set.
-        /// </summary>
-        public IEqualityComparer<T> Comparer { get; }
-
-        /// <summary>
-        /// Checks whether an item is present in the set.
-        /// </summary>
-        /// <param name="item">The item to probe for.</param>
-        /// <returns><see langword="true"/> if the item is in the set, <see langword="false"/> otherwise.</returns>
-        public bool Contains(T item)
-        {
-            int hashCode = Comparer.GetHashCode(item);
-            _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
-
-            while (index <= endIndex)
+            if (typeof(T).IsValueType)
             {
-                if (hashCode == _hashTable.EntryHashCode(index))
+                // Optimize for value types when the default comparer is being used. In such a case, the implementation
+                // may use EqualityComparer<T>.Default.Equals/GetHashCode directly, with generic specialization enabling
+                // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
+                if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    if (Comparer.Equals(item, _items[index]))
+                    // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
+                    // the underlying FrozenHashtable's Int32 index as the values themselves, avoiding the need to store the
+                    // same values yet again.
+                    return typeof(T) == typeof(int) ?
+                        (FrozenSet<T>)(object)new Int32FrozenSet((HashSet<int>)(object)uniqueValues) :
+                        new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+                }
+            }
+            else if (typeof(T) == typeof(string))
+            {
+                // Null is rare as a value in the set and we don't optimize for it.  This enables the ordinal string
+                // implementation to fast-path out on null inputs rather than having to accomodate null inputs.
+                if (!uniqueValues.Contains(default!))
+                {
+                    // If the value is a string and the comparer is known to provide ordinal (case-sensitive or case-insensitive) semantics,
+                    // we can use an implementation that's able to examine and optimize based on lengths and/or subsequences within those strings.
+                    if (ReferenceEquals(comparer, EqualityComparer<T>.Default) ||
+                        ReferenceEquals(comparer, StringComparer.Ordinal) ||
+                        ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
                     {
-                        return true;
+                        HashSet<string> stringValues = (HashSet<string>)(object)uniqueValues;
+                        IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
+
+                        FrozenSet<string> frozenSet =
+                            LengthBucketsFrozenSet.TryCreateLengthBucketsFrozenSet(stringValues, stringComparer) ??
+                            (FrozenSet<string>)new OrdinalStringFrozenSet(stringValues, stringComparer);
+
+                        return (FrozenSet<T>)(object)frozenSet;
                     }
                 }
-
-                index++;
             }
 
+            // No special-cases apply. Use the default frozen set.
+            return new DefaultFrozenSet<T>(uniqueValues, comparer);
+        }
+    }
+
+    /// <summary>Provides an immutable, read-only set optimized for fast lookup and enumeration.</summary>
+    /// <typeparam name="T">The type of the values in this set.</typeparam>
+    /// <remarks>
+    /// Frozen collections are immutable and are optimized for situations where a collection
+    /// is created very infrequently but is used very frequently at runtime. They have a relatively high
+    /// cost to create but provide excellent lookup performance. Thus, these are ideal for cases
+    /// where a collection is created once, potentially at the startup of an application, and used throughout
+    /// the remainder of the life of the application. Frozen collections should only be initialized with
+    /// trusted input.
+    /// </remarks>
+    [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
+    [DebuggerDisplay("Count = {Count}")]
+    public abstract class FrozenSet<T> : ISet<T>,
+#if NET5_0_OR_GREATER
+        IReadOnlySet<T>,
+#endif
+        IReadOnlyCollection<T>, ICollection
+    {
+        /// <summary>Initialize the set.</summary>
+        /// <param name="comparer">The comparer to use and to expose from <see cref="Comparer"/>.</param>
+        private protected FrozenSet(IEqualityComparer<T> comparer) => Comparer = comparer;
+
+        /// <summary>Gets an empty <see cref="FrozenSet{T}"/>.</summary>
+        public static FrozenSet<T> Empty { get; } = new EmptyFrozenSet<T>();
+
+        /// <summary>Gets the comparer used by this set.</summary>
+        public IEqualityComparer<T> Comparer { get; }
+
+        /// <summary>Gets a collection containing the values in the set.</summary>
+        /// <remarks>The order of the values in the set is unspecified.</remarks>
+        public ImmutableArray<T> Items => ItemsCore;
+
+        /// <inheritdoc cref="Items" />
+        private protected abstract ImmutableArray<T> ItemsCore { get; }
+
+        /// <summary>Gets the number of values contained in the set.</summary>
+        public int Count => CountCore;
+
+        /// <inheritdoc cref="Count" />
+        private protected abstract int CountCore { get; }
+
+        /// <summary>Copies the values in the set to an array, starting at the specified <paramref name="destinationIndex"/>.</summary>
+        /// <param name="destination">The array that is the destination of the values copied from the set.</param>
+        /// <param name="destinationIndex">The zero-based index in <paramref name="destination"/> at which copying begins.</param>
+        public void CopyTo(T[] destination, int destinationIndex)
+        {
+            ThrowHelper.ThrowIfNull(destination);
+            CopyTo(destination.AsSpan(destinationIndex));
+        }
+
+        /// <summary>Copies the values in the set to a span.</summary>
+        /// <param name="destination">The span that is the destination of the values copied from the set.</param>
+        public void CopyTo(Span<T> destination) =>
+            Items.AsSpan().CopyTo(destination);
+
+        /// <inheritdoc />
+        void ICollection.CopyTo(Array array, int index)
+        {
+            if (array != null && array.Rank != 1)
+            {
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+            }
+
+            Array.Copy(Items.array!, 0, array!, index, Items.Length);
+        }
+
+        /// <inheritdoc />
+        bool ICollection<T>.IsReadOnly => true;
+
+        /// <inheritdoc />
+        bool ICollection.IsSynchronized => false;
+
+        /// <inheritdoc />
+        object ICollection.SyncRoot => this;
+
+        /// <summary>Determines whether the set contains the specified element.</summary>
+        /// <param name="item">The element to locate.</param>
+        /// <returns><see langword="true"/> if the set contains the specified element; otherwise, <see langword="false"/>.</returns>
+        public bool Contains(T item) =>
+            FindItemIndex(item) >= 0;
+
+        /// <summary>Searches the set for a given value and returns the equal value it finds, if any.</summary>
+        /// <param name="equalValue">The value to search for.</param>
+        /// <param name="actualValue">The value from the set that the search found, or the default value of T when the search yielded no match.</param>
+        /// <returns>A value indicating whether the search was successful.</returns>
+        public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
+        {
+            int index = FindItemIndex(equalValue);
+            if (index >= 0)
+            {
+                actualValue = Items[index];
+                return true;
+            }
+
+            actualValue = default;
             return false;
         }
 
-        /// <summary>
-        /// Looks up an item's index.
-        /// </summary>
-        /// <param name="item">The item to find.</param>
-        /// <returns>The index of the item, or -1 if the item was not found.</returns>
-        int IFindItem<T>.FindItemIndex(T item)
-        {
-            int hashCode = Comparer.GetHashCode(item);
-            _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
+        /// <summary>Finds the index of a specific value in a set.</summary>
+        /// <param name="item">The value to lookup.</param>
+        /// <returns>The index of the value, or -1 if not found.</returns>
+        private protected abstract int FindItemIndex(T item);
 
-            while (index <= endIndex)
-            {
-                if (hashCode == _hashTable.EntryHashCode(index))
-                {
-                    if (Comparer.Equals(item, _items[index]))
-                    {
-                        return index;
-                    }
-                }
+        /// <summary>Returns an enumerator that iterates through the set.</summary>
+        /// <returns>An enumerator that iterates through the set.</returns>
+        public Enumerator GetEnumerator() => GetEnumeratorCore();
 
-                index++;
-            }
+        /// <inheritdoc cref="GetEnumerator" />
+        private protected abstract Enumerator GetEnumeratorCore();
 
-            return -1;
-        }
+        /// <inheritdoc />
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? ((IList<T>)Array.Empty<T>()).GetEnumerator() :
+            GetEnumerator();
 
-        /// <summary>
-        /// Determines whether this set is a proper subset of the specified collection.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set is a proper subset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool IsProperSubsetOf(IEnumerable<T> other) => SetSupport.IsProperSubsetOf(this, other);
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator() =>
+            Count == 0 ? Array.Empty<T>().GetEnumerator() :
+            GetEnumerator();
 
-        /// <summary>
-        /// Determines whether this set is a proper superset of the specified collection.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set is a proper superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool IsProperSupersetOf(IEnumerable<T> other) => SetSupport.IsProperSupersetOf(this, other);
-
-        /// <summary>
-        /// Determines whether this set is a subset of the specified collection.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set is a subset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool IsSubsetOf(IEnumerable<T> other) => SetSupport.IsSubsetOf(this, other);
-
-        /// <summary>
-        /// Determines whether this set is a superset of the specified collection.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set is a superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool IsSupersetOf(IEnumerable<T> other) => SetSupport.IsSupersetOf(this, other);
-
-        /// <summary>
-        /// Determines whether this set shares any elements with the specified collection.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set and the collection share at least one element; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool Overlaps(IEnumerable<T> other) => SetSupport.Overlaps(this, other);
-
-        /// <summary>
-        /// Determines whether this set and collection contain the same elements.
-        /// </summary>
-        /// <param name="other">The collection to compare.</param>
-        /// <returns><see langword="true" /> if the set and the collection contains the exact same elements; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="other"/> is <see langword="null"/>.</exception>
-        public bool SetEquals(IEnumerable<T> other) => SetSupport.SetEquals(this, other);
-
-        /// <summary>
-        /// Copies the content of the set to a span.
-        /// </summary>
-        /// <param name="destination">The destination where to copy to.</param>
-        public void CopyTo(Span<T> destination) => _items.AsSpan().CopyTo(destination);
-
-        /// <summary>
-        /// Copies the content of the set to an array.
-        /// </summary>
-        /// <param name="array">The destination where to copy to.</param>
-        /// <param name="arrayIndex">Index into the array where to start copying the data.</param>
-        public void CopyTo(T[] array, int arrayIndex) => CopyTo(array.AsSpan(arrayIndex));
-
-        /// <summary>
-        /// Gets a value indicating whether this collection is a read-only collection.
-        /// </summary>
-        /// <returns>Always returns true.</returns>
-        bool ICollection<T>.IsReadOnly => true;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        void ICollection<T>.Add(T item) => throw new NotSupportedException();
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        void ICollection<T>.Clear() => throw new NotSupportedException();
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         bool ISet<T>.Add(T item) => throw new NotSupportedException();
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         void ISet<T>.ExceptWith(IEnumerable<T> other) => throw new NotSupportedException();
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         void ISet<T>.IntersectWith(IEnumerable<T> other) => throw new NotSupportedException();
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         void ISet<T>.SymmetricExceptWith(IEnumerable<T> other) => throw new NotSupportedException();
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         void ISet<T>.UnionWith(IEnumerable<T> other) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        void ICollection<T>.Add(T item) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        void ICollection<T>.Clear() => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+
+        /// <inheritdoc cref="ISet{T}.IsProperSubsetOf(IEnumerable{T})" />
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return IsProperSubsetOfCore(other);
+        }
+
+        /// <inheritdoc cref="IsProperSubsetOf" />
+        private protected abstract bool IsProperSubsetOfCore(IEnumerable<T> other);
+
+        /// <inheritdoc cref="ISet{T}.IsProperSupersetOf(IEnumerable{T})" />
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return IsProperSupersetOfCore(other);
+        }
+
+        /// <inheritdoc cref="IsProperSupersetOf" />
+        private protected abstract bool IsProperSupersetOfCore(IEnumerable<T> other);
+
+        /// <inheritdoc cref="ISet{T}.IsSubsetOf(IEnumerable{T})" />
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return IsSubsetOfCore(other);
+        }
+
+        /// <inheritdoc cref="IsSubsetOf" />
+        private protected abstract bool IsSubsetOfCore(IEnumerable<T> other);
+
+        /// <inheritdoc cref="ISet{T}.IsSupersetOf(IEnumerable{T})" />
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return IsSupersetOfCore(other);
+        }
+
+        /// <inheritdoc cref="IsSupersetOf" />
+        private protected abstract bool IsSupersetOfCore(IEnumerable<T> other);
+
+        /// <inheritdoc cref="ISet{T}.Overlaps(IEnumerable{T})" />
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return OverlapsCore(other);
+        }
+
+        /// <inheritdoc cref="Overlaps" />
+        private protected abstract bool OverlapsCore(IEnumerable<T> other);
+
+        /// <inheritdoc cref="ISet{T}.SetEquals(IEnumerable{T})" />
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            ThrowHelper.ThrowIfNull(other);
+            return SetEqualsCore(other);
+        }
+
+        /// <inheritdoc cref="SetEquals" />
+        private protected abstract bool SetEqualsCore(IEnumerable<T> other);
+
+        /// <summary>Enumerates the values of a <see cref="FrozenSet{T}"/>.</summary>
+        public struct Enumerator : IEnumerator<T>
+        {
+            private readonly T[] _entries;
+            private int _index;
+
+            internal Enumerator(T[] entries)
+            {
+                _entries = entries;
+                _index = -1;
+            }
+
+            /// <inheritdoc cref="IEnumerator.MoveNext" />
+            public bool MoveNext()
+            {
+                _index++;
+                if ((uint)_index < (uint)_entries.Length)
+                {
+                    return true;
+                }
+
+                _index = _entries.Length;
+                return false;
+            }
+
+            /// <inheritdoc cref="IEnumerator{T}.Current" />
+            public readonly T Current
+            {
+                get
+                {
+                    if ((uint)_index >= (uint)_entries.Length)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException();
+                    }
+
+                    return _entries[_index];
+                }
+            }
+
+            /// <inheritdoc />
+            object IEnumerator.Current => Current!;
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => _index = -1;
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
+        }
     }
 }

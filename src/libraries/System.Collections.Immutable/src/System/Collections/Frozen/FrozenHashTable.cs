@@ -1,108 +1,86 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace System.Collections.Immutable
+namespace System.Collections.Frozen
 {
-    /// <summary>
-    /// A hash table for frozen collections.
-    /// </summary>
+    /// <summary>Provides the core hash table for use in frozen collections.</summary>
     /// <remarks>
-    /// Frozen collections are immutable and are optimized for situations where a collection
-    /// is created infrequently, but used repeatedly at runtime. They have a relatively high
-    /// cost to create, but provide excellent lookup performance. These are thus ideal for cases
-    /// where the collection is created at startup of an application and used throughout the life
-    /// of the application.
-    ///
-    /// This hash table doesn't track any of the collection state. It merely keeps track of hash codes
-    /// and of mapping these hash codes to spans of entries within the collection.
+    /// This hash table doesn't track any of the collection state. It merely keeps track
+    /// of hash codes and of mapping these hash codes to spans of entries within the collection.
     /// </remarks>
     internal readonly struct FrozenHashTable
     {
-        private static readonly Bucket[] _emptyBuckets = GetEmptyBuckets();
-
         private readonly Bucket[] _buckets;
         private readonly ulong _fastModMultiplier;
 
         private FrozenHashTable(int[] hashCodes, Bucket[] buckets, ulong fastModMultiplier)
         {
+            Debug.Assert(hashCodes.Length != 0);
+            Debug.Assert(buckets.Length != 0);
+
             HashCodes = hashCodes;
             _buckets = buckets;
             _fastModMultiplier = fastModMultiplier;
         }
 
-        /// <summary>
-        /// Initializes a frozen hash table.
-        /// </summary>
+        /// <summary>Initializes a frozen hash table.</summary>
         /// <param name="entries">The set of entries to track from the hash table.</param>
         /// <param name="hasher">A delegate that produces a hash code for a given entry.</param>
         /// <param name="setter">A delegate that assigns the index to a specific entry.</param>
         /// <typeparam name="T">The type of elements in the hash table.</typeparam>
-        /// <exception cref="ArgumentException">If more than 64K pairs are added.</exception>
         /// <remarks>
         /// This method will iterate through the incoming entries and will invoke the hasher on each once.
         /// It will then determine the optimal number of hash buckets to allocate and will populate the
         /// bucket table. In the process of doing so, it calls out to the <paramref name="setter"/> to indicate
-        /// the resulting index for that entry. The <see cref="FindMatchingEntries(int, out int, out int)"/> and <see cref="EntryHashCode(int)"/>
-        /// then use this index to reference individual entries.
+        /// the resulting index for that entry. <see cref="FindMatchingEntries(int, out int, out int)"/>
+        /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
         public static FrozenHashTable Create<T>(T[] entries, Func<T, int> hasher, Action<int, T> setter)
         {
-            int numEntries = entries.Length;
+            Debug.Assert(entries.Length != 0);
 
-            int[] hashCodes;
-            Bucket[] buckets;
-            ulong fastModMultiplier;
-
-            if (numEntries == 0)
+            int[] hashCodes = new int[entries.Length];
+            for (int i = 0; i < entries.Length; i++)
             {
-                hashCodes = Array.Empty<int>();
-                buckets = _emptyBuckets;
-                fastModMultiplier = GetFastModMultiplier(1);
+                hashCodes[i] = hasher(entries[i]);
             }
-            else
+
+            int numBuckets = CalcNumBuckets(hashCodes);
+            ulong fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)numBuckets);
+
+            var chainBuddies = new Dictionary<uint, List<ChainBuddy>>();
+            for (int index = 0; index < hashCodes.Length; index++)
             {
-                hashCodes = new int[numEntries];
-                for (int i = 0; i < numEntries; i++)
+                int hashCode = hashCodes[index];
+                uint bucket = HashHelpers.FastMod((uint)hashCode, (uint)numBuckets, fastModMultiplier);
+
+                if (!chainBuddies.TryGetValue(bucket, out List<ChainBuddy>? list))
                 {
-                    hashCodes[i] = hasher(entries[i]);
+                    chainBuddies[bucket] = list = new List<ChainBuddy>();
                 }
 
-                int numBuckets = CalcNumBuckets(hashCodes);
-                fastModMultiplier = GetFastModMultiplier((uint)numBuckets);
+                list.Add(new ChainBuddy(hashCode, index));
+            }
 
-                var chainBuddies = new Dictionary<uint, List<ChainBuddy>>();
-                for (int index = 0; index < numEntries; index++)
+            var buckets = new Bucket[numBuckets];
+
+            int count = 0;
+            foreach (List<ChainBuddy> list in chainBuddies.Values)
+            {
+                uint bucket = HashHelpers.FastMod((uint)list[0].HashCode, (uint)buckets.Length, fastModMultiplier);
+
+                buckets[bucket] = new Bucket(count, list.Count);
+                for (int i = 0; i < list.Count; i++)
                 {
-                    int hashCode = hashCodes[index];
-                    uint bucket = FastMod((uint)hashCode, (uint)numBuckets, fastModMultiplier);
-
-                    if (!chainBuddies.TryGetValue(bucket, out List<ChainBuddy>? list))
-                    {
-                        list = new List<ChainBuddy>();
-                        chainBuddies[bucket] = list;
-                    }
-
-                    list.Add(new ChainBuddy(hashCode, index));
-                }
-
-                buckets = new Bucket[numBuckets];
-
-                int count = 0;
-                foreach (List<ChainBuddy> list in chainBuddies.Values)
-                {
-                    uint bucket = FastMod((uint)list[0].HashCode, (uint)buckets.Length, fastModMultiplier);
-
-                    buckets[bucket] = new Bucket(count, list.Count);
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        hashCodes[count] = list[i].HashCode;
-                        setter(count, entries[list[i].Index]);
-                        count++;
-                    }
+                    hashCodes[count] = list[i].HashCode;
+                    setter(count, entries[list[i].Index]);
+                    count++;
                 }
             }
 
@@ -118,92 +96,108 @@ namespace System.Collections.Immutable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FindMatchingEntries(int hashCode, out int startIndex, out int endIndex)
         {
-            ref Bucket b = ref _buckets[FastMod((uint)hashCode, (uint)_buckets.Length, _fastModMultiplier)];
+            ref Bucket b = ref _buckets[HashHelpers.FastMod((uint)hashCode, (uint)_buckets.Length, _fastModMultiplier)];
             startIndex = b.StartIndex;
             endIndex = b.EndIndex;
         }
 
         public int Count => HashCodes.Length;
 
-        /// <summary>
-        /// Given an entry, get its hash code.
-        /// </summary>
-        /// <param name="entry">The entry index to probe.</param>
-        /// <returns>The hash code belonging to this entry.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int EntryHashCode(int entry) => HashCodes[entry];
-
         internal int[] HashCodes { get; }
-
-        private static Bucket[] GetEmptyBuckets()
-        {
-            var buckets = new Bucket[1];
-            buckets[0] = new Bucket(1, 0);
-            return buckets;
-        }
 
         /// <summary>
         /// Given an array of hash codes, figure out the best number of hash buckets to use.
         /// </summary>
         /// <remarks>
-        /// At the moment, this is pretty dumb. It sits in a loop trying a large number of hash buckets
-        /// and seeing how many collisions there are. It stops when there are less than 5% collisions.
-        /// For a large table with a lot of collisions, this could take an awful long time. Is there a
-        /// better strategy possible here? For example, perhaps we should first try to scale the bucket count
-        /// to prime values.
+        /// This tries to select a prime number of buckets. Rather than iterating through all possible bucket
+        /// sizes, starting at the exact number of hash codes and incrementing the bucket count by 1 per trial,
+        /// this is a trade-off between speed of determining a good number of buckets and maximumal density.
         /// </remarks>
         private static int CalcNumBuckets(int[] hashCodes)
         {
-            // how big of a bucket table to allow for small inputs
-            const int MaxSmallBucketTableMultiplier = 16;
+            const double AcceptableCollisionRate = 0.05;  // What is a satifactory rate of hash collisions?
+            const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
+            const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
+            const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
 
-            // how big of a bucket table to allow for large inputs
-            const int MaxLargeBucketTableMultiplier = 3;
+            // Filter out duplicate codes, since no increase in buckets will avoid collisions from duplicate input hash codes.
+            var codes = new HashSet<int>(hashCodes);
+            Debug.Assert(codes.Count != 0);
 
-            // what is the limit for a small input?
-            const int LargeInputSize = 1000;
+            // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
+            // hash codes. If there are more codes than in our precomputed primes table, which accomodates millions of values,
+            // give up and just use the next prime.
+            int minPrimeIndexInclusive = 0;
+            while (minPrimeIndexInclusive < HashHelpers.s_primes.Length && codes.Count > HashHelpers.s_primes[minPrimeIndexInclusive])
+            {
+                minPrimeIndexInclusive++;
+            }
+            if (minPrimeIndexInclusive >= HashHelpers.s_primes.Length)
+            {
+                return HashHelpers.GetPrime(codes.Count);
+            }
 
-            // what is the satifactory rate of hash collisions?
-            const double AcceptableCollisionRate = 0.05;
+            // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
+            // For smaller inputs, we allow for a larger multiplier.
+            int maxNumBuckets =
+                codes.Count *
+                (codes.Count >= LargeInputSizeThreshold ? MaxLargeBucketTableMultiplier : MaxSmallBucketTableMultiplier);
 
-            // filter out duplicate codes
-            var codesSet = new HashSet<int>(hashCodes);
-            int[] codes = new int[codesSet.Count];
-            codesSet.CopyTo(codes);
+            // Find the index of the smallest prime that accomodates our max buckets.
+            int maxPrimeIndexExclusive = minPrimeIndexInclusive;
+            while (maxPrimeIndexExclusive < HashHelpers.s_primes.Length && maxNumBuckets > HashHelpers.s_primes[maxPrimeIndexExclusive])
+            {
+                maxPrimeIndexExclusive++;
+            }
+            if (maxPrimeIndexExclusive < HashHelpers.s_primes.Length)
+            {
+                Debug.Assert(maxPrimeIndexExclusive != 0);
+                maxNumBuckets = HashHelpers.s_primes[maxPrimeIndexExclusive - 1];
+            }
 
-            int maxNumBuckets = (codes.Length >= LargeInputSize) ? codes.Length * MaxLargeBucketTableMultiplier : codes.Length * MaxSmallBucketTableMultiplier;
-            var buckets = new BitArray(maxNumBuckets);
+            const int BitsPerInt32 = 32;
+            int[] seenBuckets = ArrayPool<int>.Shared.Rent((maxNumBuckets / BitsPerInt32) + 1);
 
             int bestNumBuckets = maxNumBuckets;
-            int bestNumCollisions = codes.Length;
-            for (int numBuckets = codes.Length; numBuckets < maxNumBuckets; numBuckets++)
-            {
-                buckets.SetAll(false);
+            int bestNumCollisions = codes.Count;
 
+            // Iterate through each available prime between the min and max discovered. For each, compute
+            // the collision ratio.
+            for (int primeIndex = minPrimeIndexInclusive; primeIndex < maxPrimeIndexExclusive; primeIndex++)
+            {
+                // Get the number of buckets to try, and clear our seen bucket bitmap.
+                int numBuckets = HashHelpers.s_primes[primeIndex];
+                Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
+
+                // Determine the bucket for each hash code and mark it as seen. If it was already seen,
+                // track it as a collision.
                 int numCollisions = 0;
                 foreach (int code in codes)
                 {
                     uint bucketNum = (uint)code % (uint)numBuckets;
-                    if (buckets[(int)bucketNum])
+                    if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
                     {
                         numCollisions++;
                         if (numCollisions >= bestNumCollisions)
                         {
-                            // no sense in continuing, we already have more collisions than the best so far
+                            // If we've already hit the previously known best number of collisions,
+                            // there's no point in continuing as worst case we'd just use that.
                             break;
                         }
                     }
                     else
                     {
-                        buckets[(int)bucketNum] = true;
+                        seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
                     }
                 }
 
+                // If this evaluation resulted in fewer collisions, use it as the best instead.
+                // And if it's below our collision threshold, we're done.
                 if (numCollisions < bestNumCollisions)
                 {
                     bestNumBuckets = numBuckets;
 
-                    if (numCollisions / (double)codes.Length <= AcceptableCollisionRate)
+                    if (numCollisions / (double)codes.Count <= AcceptableCollisionRate)
                     {
                         break;
                     }
@@ -212,20 +206,9 @@ namespace System.Collections.Immutable
                 }
             }
 
+            ArrayPool<int>.Shared.Return(seenBuckets);
+
             return bestNumBuckets;
-        }
-
-        /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
-        private static ulong GetFastModMultiplier(uint divisor) => (ulong.MaxValue / divisor) + 1;
-
-        /// <summary>Performs a mod operation using the multiplier pre-computed with <see cref="GetFastModMultiplier"/>.</summary>
-        /// <remarks>This should only be used on 64-bit architectures.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint FastMod(uint value, uint divisor, ulong multiplier)
-        {
-            // Modification of https://github.com/dotnet/runtime/pull/406,
-            // which allows to avoid the long multiplication if the divisor is less than 2**31.
-            return (uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
         }
 
         private readonly struct ChainBuddy
@@ -247,16 +230,10 @@ namespace System.Collections.Immutable
 
             public Bucket(int index, int count)
             {
-                if (count == 0)
-                {
-                    StartIndex = 1;
-                    EndIndex = 0;
-                }
-                else
-                {
-                    StartIndex = index;
-                    EndIndex = index + count - 1;
-                }
+                Debug.Assert(count > 0);
+
+                StartIndex = index;
+                EndIndex = index + count - 1;
             }
         }
     }

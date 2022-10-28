@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.Collections.Immutable
+namespace System.Collections.Frozen
 {
     /// <summary>
     /// A comparer for ordinal string comparisons.
@@ -14,6 +14,6 @@ namespace System.Collections.Immutable
     internal sealed class FullStringComparer : StringComparerBase
     {
         public override bool Equals(string? x, string? y) => string.Equals(x, y);
-        public override int GetHashCode(string s) => Hashing.GetHashCode(s.AsSpan());
+        public override int GetHashCode(string s) => GetHashCodeOrdinal(s.AsSpan());
     }
 }

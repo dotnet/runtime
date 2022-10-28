@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -21,7 +20,7 @@ namespace System.Collections.Immutable
         /// <param name="parameterName">The name of the parameter to include in any thrown exception.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static void NotNull<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
+        public static void NotNull<T>([NotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             if (value == null)
@@ -39,7 +38,7 @@ namespace System.Collections.Immutable
         /// <returns>The value of the parameter.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static T NotNullPassthrough<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
+        public static T NotNullPassthrough<T>([NotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             NotNull(value, parameterName);
@@ -58,7 +57,7 @@ namespace System.Collections.Immutable
         /// may or may not be a class, but certainly cannot be null.
         /// </remarks>
         [DebuggerStepThrough]
-        public static void NotNullAllowStructs<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
+        public static void NotNullAllowStructs<T>([NotNull]T value, string? parameterName)
         {
             if (null == value)
             {
@@ -72,7 +71,7 @@ namespace System.Collections.Immutable
         /// <param name="parameterName">The name of the parameter that was null.</param>
         [DoesNotReturn]
         [DebuggerStepThrough]
-        private static void FailArgumentNullException(string? parameterName)
+        public static void FailArgumentNullException(string? parameterName)
         {
             // Separating out this throwing operation helps with inlining of the caller
             throw new ArgumentNullException(parameterName);
