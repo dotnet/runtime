@@ -262,44 +262,47 @@ namespace System.Text.Json.Nodes
 
         private void InitializeIfRequired()
         {
-            // Even though _dictionary initialization can be subject to races,
-            // ensure that contending threads use a coherent view of jsonElement.
-            //
-            // Because JsonElement cannot be read atomically there can be torn reads,
-            // however the order of read/write operations guarantees that it's only
-            // possible if the value of _dictionary is non-null.
-
-            JsonElement? jsonElement = _jsonElement;
-            Interlocked.MemoryBarrier();
-            JsonPropertyDictionary<JsonNode?>? dictionary = _dictionary;
-
-            if (dictionary is null)
+            if (_dictionary is null)
             {
-                _dictionary = InitializeCore(jsonElement);
-                Interlocked.MemoryBarrier();
-                _jsonElement = null;
+                InitializeCore();
             }
-        }
 
-        private JsonPropertyDictionary<JsonNode?> InitializeCore(JsonElement? jsonElement)
-        {
-            bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-            var dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
-            if (jsonElement.HasValue)
+            void InitializeCore()
             {
-                foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
+                // Even though _dictionary initialization can be subject to races,
+                // ensure that contending threads use a coherent view of jsonElement.
+
+                // Because JsonElement cannot be read atomically there might be torn reads,
+                // however the order of read/write operations guarantees that that's only
+                // possible if the value of _dictionary is non-null.
+                JsonElement? jsonElement = _jsonElement;
+                Interlocked.MemoryBarrier();
+                JsonPropertyDictionary<JsonNode?>? dictionary = _dictionary;
+
+                if (dictionary is null)
                 {
-                    JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
-                    if (node != null)
+                    bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+                    dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
+                    if (jsonElement.HasValue)
                     {
-                        node.Parent = this;
+                        foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
+                        {
+                            JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
+                            if (node != null)
+                            {
+                                node.Parent = this;
+                            }
+
+                            dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                        }
                     }
 
-                    dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                    // Ensure _jsonElement is written to after _dictionary
+                    _dictionary = dictionary;
+                    Interlocked.MemoryBarrier();
+                    _jsonElement = null;
                 }
             }
-
-            return dictionary;
         }
     }
 }
