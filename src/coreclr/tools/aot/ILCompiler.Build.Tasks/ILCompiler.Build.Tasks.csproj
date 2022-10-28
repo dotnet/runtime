@@ -11,6 +11,7 @@
 
     <!-- Workaround for https://github.com/dotnet/corert/issues/6306 -->
     <SkipSigning>true</SkipSigning>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
