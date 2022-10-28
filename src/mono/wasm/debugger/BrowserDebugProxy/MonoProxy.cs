@@ -268,9 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         _defaultPauseOnExceptions = pauseOnException;
                 }
                 // don't pass through DotnetDebugger.* messages to the browser
-                if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
-                    return true;
-                return false;
+                return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
             switch (method)
@@ -570,9 +568,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
             }
             // don't pass through DotnetDebugger.* messages to the browser
-            if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
-                return true;
-            return false;
+            return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
