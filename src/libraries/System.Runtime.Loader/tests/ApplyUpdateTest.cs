@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -684,11 +685,22 @@ namespace System.Reflection.Metadata
                     parmPos++;
                 }
 
-                foreach (var ca in parms[4].GetCustomAttributes(false)) {
-                        Console.WriteLine (" - parm[4] has {0}", ca);
-                }
-                Assert.Equal (1, parms[4].GetCustomAttributes(false).Length);
-                Assert.Equal (typeof (CallerMemberNameAttribute), parms[4].GetCustomAttributes(false)[0].GetType());
+		var parmAttrs = parms[4].GetCustomAttributes(false);
+                Assert.Equal (2, parmAttrs.Length);
+		bool foundCallerMemberName = false;
+		bool foundOptional = false;
+		foreach (var pa in parmAttrs) {
+		    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
+		    {
+			foundCallerMemberName = true;
+		    }
+		    if (typeof (OptionalAttribute).Equals(pa.GetType()))
+		    {
+			foundOptional = true;
+		    }
+		}
+		Assert.True(foundCallerMemberName);
+		Assert.True(foundOptional);
 
                 // TODO: check the default values of the last two params
             });
