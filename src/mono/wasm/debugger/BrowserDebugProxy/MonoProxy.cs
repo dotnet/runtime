@@ -267,7 +267,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                // don't pass through DotnetDebugger.* messages to the browser
+                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -567,7 +567,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
             }
-            // don't pass through DotnetDebugger.* messages to the browser
+            // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
             return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
