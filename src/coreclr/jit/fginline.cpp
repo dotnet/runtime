@@ -1340,6 +1340,15 @@ _Done:
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+    // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+    // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+    if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
+    {
+        opts.compProcedureSplitting = false;
+        JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
+                "implementation limitation.\n");
+    }
+
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())
     {

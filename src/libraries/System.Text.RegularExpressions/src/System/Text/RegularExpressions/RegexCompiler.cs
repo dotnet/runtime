@@ -5443,8 +5443,8 @@ namespace System.Text.RegularExpressions
             // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [B-Db-d].
             // This can be implemented as if it were a single range, with an additional bitwise operation.
             if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
-                RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
-                RegexCharClass.IsAsciiLetter(rangeUpper.HighInclusive) &&
+                char.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                char.IsAsciiLetter(rangeUpper.HighInclusive) &&
                 (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
                 (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
             {
