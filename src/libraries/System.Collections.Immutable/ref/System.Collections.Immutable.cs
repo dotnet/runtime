@@ -6,6 +6,308 @@
 
 namespace System.Collections.Immutable
 {
+    public static partial class Freezer
+    {
+        public static System.Collections.Immutable.FrozenIntDictionary<TValue> ToFrozenDictionary<TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<int, TValue>>? pairs) { throw null; }
+        public static System.Collections.Immutable.FrozenOrdinalStringDictionary<TValue> ToFrozenDictionary<TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>>? pairs) { throw null; }
+        public static System.Collections.Immutable.FrozenOrdinalStringDictionary<TValue> ToFrozenDictionary<TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>>? pairs, bool ignoreCase) { throw null; }
+        public static System.Collections.Immutable.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>? pairs) where TKey : notnull { throw null; }
+        public static System.Collections.Immutable.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>? pairs, System.Collections.Generic.IEqualityComparer<TKey> comparer) where TKey : notnull { throw null; }
+        public static System.Collections.Immutable.FrozenList<T> ToFrozenList<T>(this System.Collections.Generic.IEnumerable<T>? items) { throw null; }
+        public static System.Collections.Immutable.FrozenIntSet ToFrozenSet(this System.Collections.Generic.IEnumerable<int>? items) { throw null; }
+        public static System.Collections.Immutable.FrozenOrdinalStringSet ToFrozenSet(this System.Collections.Generic.IEnumerable<string>? items) { throw null; }
+        public static System.Collections.Immutable.FrozenOrdinalStringSet ToFrozenSet(this System.Collections.Generic.IEnumerable<string>? items, bool ignoreCase) { throw null; }
+        public static System.Collections.Immutable.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T>? items) where T : notnull { throw null; }
+        public static System.Collections.Immutable.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T>? items, System.Collections.Generic.IEqualityComparer<T> comparer) where T : notnull { throw null; }
+    }
+    public readonly partial struct FrozenDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Immutable.IFrozenDictionary<TKey, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable where TKey : notnull
+    {
+        private readonly TKey[] _keys;
+        private readonly TValue[] _values;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenDictionary<TKey, TValue> Empty { get { throw null; } }
+        public TValue this[TKey key] { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<TKey> Keys { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        TValue System.Collections.Generic.IDictionary<TKey, TValue>.this[TKey key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey, TValue>.Values { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<TValue> Values { get { throw null; } }
+        public bool ContainsKey(TKey key) { throw null; }
+        public void CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+        public void CopyTo(System.Span<System.Collections.Generic.KeyValuePair<TKey, TValue>> destination) { }
+        public ref readonly TValue GetByRef(TKey key) { throw null; }
+        public System.Collections.Immutable.FrozenPairEnumerator<TKey, TValue> GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public ref readonly TValue TryGetByRef(TKey key) { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+    }
+    public partial struct FrozenEnumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+    {
+        private readonly T[] _entries;
+        private object _dummy;
+        private int _dummyPrimitive;
+        public readonly T Current { get { throw null; } }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        public bool MoveNext() { throw null; }
+        void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
+    }
+    public readonly partial struct FrozenIntDictionary<TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>, System.Collections.Generic.IDictionary<int, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<int, TValue>>, System.Collections.Immutable.IFrozenDictionary<int, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<int, TValue>>, System.Collections.Generic.IReadOnlyDictionary<int, TValue>, System.Collections.IEnumerable
+    {
+        private readonly TValue[] _values;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenIntDictionary<TValue> Empty { get { throw null; } }
+        public TValue this[int key] { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<int> Keys { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>.IsReadOnly { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        TValue System.Collections.Generic.IDictionary<int, TValue>.this[int key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<int> System.Collections.Generic.IDictionary<int, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<int, TValue>.Values { get { throw null; } }
+        System.Collections.Generic.IEnumerable<int> System.Collections.Generic.IReadOnlyDictionary<int, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<int, TValue>.Values { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<TValue> Values { get { throw null; } }
+        public bool ContainsKey(int key) { throw null; }
+        public void CopyTo(System.Collections.Generic.KeyValuePair<int, TValue>[] array, int arrayIndex) { }
+        public void CopyTo(System.Span<System.Collections.Generic.KeyValuePair<int, TValue>> destination) { }
+        public ref readonly TValue GetByRef(int key) { throw null; }
+        public System.Collections.Immutable.FrozenPairEnumerator<int, TValue> GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>.Add(System.Collections.Generic.KeyValuePair<int, TValue> item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>.Contains(System.Collections.Generic.KeyValuePair<int, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<int, TValue>>.Remove(System.Collections.Generic.KeyValuePair<int, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.IDictionary<int, TValue>.Add(int key, TValue value) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.IDictionary<int, TValue>.Remove(int key) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<int, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<int, TValue>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public ref readonly TValue TryGetByRef(int key) { throw null; }
+        public bool TryGetValue(int key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+    }
+    public readonly partial struct FrozenIntSet : System.Collections.Generic.ICollection<int>, System.Collections.Generic.IEnumerable<int>, System.Collections.Immutable.IFrozenSet<int>, System.Collections.Generic.IReadOnlyCollection<int>, System.Collections.Generic.IReadOnlySet<int>, System.Collections.Generic.ISet<int>, System.Collections.IEnumerable
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenIntSet Empty { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<int> Items { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Int32>.IsReadOnly { get { throw null; } }
+        public bool Contains(int item) { throw null; }
+        public void CopyTo(int[] array, int arrayIndex) { }
+        public void CopyTo(System.Span<int> destination) { }
+        public System.Collections.Immutable.FrozenEnumerator<int> GetEnumerator() { throw null; }
+        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        public bool Overlaps(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        public bool SetEquals(System.Collections.Generic.IEnumerable<int> other) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<int>.Add(int item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<int>.Clear() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<int>.Remove(int item) { throw null; }
+        System.Collections.Generic.IEnumerator<int> System.Collections.Generic.IEnumerable<int>.GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ISet<int>.Add(int item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<int>.ExceptWith(System.Collections.Generic.IEnumerable<int> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<int>.IntersectWith(System.Collections.Generic.IEnumerable<int> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<int>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<int> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<int>.UnionWith(System.Collections.Generic.IEnumerable<int> other) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public readonly partial struct FrozenList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    {
+        private readonly T[] _items;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenList<T> Empty { get { throw null; } }
+        public T this[int index] { get { throw null; } }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
+        public System.ReadOnlySpan<T> AsSpan() { throw null; }
+        public bool Contains(T item) { throw null; }
+        public void CopyTo(System.Span<T> destination) { }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public System.Collections.Immutable.FrozenEnumerator<T> GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<T>.Clear() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) { throw null; }
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public readonly partial struct FrozenOrdinalStringDictionary<TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.Generic.IDictionary<string, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.Immutable.IFrozenDictionary<string, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.Generic.IReadOnlyDictionary<string, TValue>, System.Collections.IEnumerable
+    {
+        private readonly TValue[] _values;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenOrdinalStringDictionary<TValue> Empty { get { throw null; } }
+        public TValue this[string key] { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<string> Keys { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>.IsReadOnly { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        TValue System.Collections.Generic.IDictionary<string, TValue>.this[string key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<string, TValue>.Values { get { throw null; } }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<string, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<string, TValue>.Values { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<TValue> Values { get { throw null; } }
+        public bool ContainsKey(string key) { throw null; }
+        public void CopyTo(System.Collections.Generic.KeyValuePair<string, TValue>[] array, int arrayIndex) { }
+        public void CopyTo(System.Span<System.Collections.Generic.KeyValuePair<string, TValue>> destination) { }
+        public ref readonly TValue GetByRef(string key) { throw null; }
+        public System.Collections.Immutable.FrozenPairEnumerator<string, TValue> GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>.Add(System.Collections.Generic.KeyValuePair<string, TValue> item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>.Contains(System.Collections.Generic.KeyValuePair<string, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, TValue>>.Remove(System.Collections.Generic.KeyValuePair<string, TValue> item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.IDictionary<string, TValue>.Add(string key, TValue value) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.IDictionary<string, TValue>.Remove(string key) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public ref readonly TValue TryGetByRef(string key) { throw null; }
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+    }
+    public readonly partial struct FrozenOrdinalStringSet : System.Collections.Generic.ICollection<string>, System.Collections.Generic.IEnumerable<string>, System.Collections.Immutable.IFrozenSet<string>, System.Collections.Generic.IReadOnlyCollection<string>, System.Collections.Generic.IReadOnlySet<string>, System.Collections.Generic.ISet<string>, System.Collections.IEnumerable
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenOrdinalStringSet Empty { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<string> Items { get { throw null; } }
+        bool System.Collections.Generic.ICollection<string>.IsReadOnly { get { throw null; } }
+        public bool Contains(string item) { throw null; }
+        public void CopyTo(System.Span<string> destination) { }
+        public void CopyTo(string[] array, int arrayIndex) { }
+        public System.Collections.Immutable.FrozenEnumerator<string> GetEnumerator() { throw null; }
+        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        public bool Overlaps(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        public bool SetEquals(System.Collections.Generic.IEnumerable<string> other) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<string>.Add(string item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<string>.Clear() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<string>.Remove(string item) { throw null; }
+        System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ISet<string>.Add(string item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<string>.ExceptWith(System.Collections.Generic.IEnumerable<string> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<string>.IntersectWith(System.Collections.Generic.IEnumerable<string> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<string>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<string> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<string>.UnionWith(System.Collections.Generic.IEnumerable<string> other) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial struct FrozenPairEnumerator<TKey, TValue> : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerator, System.IDisposable
+    {
+        private readonly TKey[] _keys;
+        private readonly TValue[] _values;
+        private object _dummy;
+        private int _dummyPrimitive;
+        public readonly System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        public bool MoveNext() { throw null; }
+        void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
+    }
+    public readonly partial struct FrozenSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Immutable.IFrozenSet<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable where T : notnull
+    {
+        private readonly T[] _items;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Collections.Generic.IEqualityComparer<T> Comparer { get { throw null; } }
+        public int Count { get { throw null; } }
+        public static System.Collections.Immutable.FrozenSet<T> Empty { get { throw null; } }
+        public System.Collections.Immutable.FrozenList<T> Items { get { throw null; } }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
+        public bool Contains(T item) { throw null; }
+        public void CopyTo(System.Span<T> destination) { }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public System.Collections.Immutable.FrozenEnumerator<T> GetEnumerator() { throw null; }
+        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ICollection<T>.Clear() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) { throw null; }
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        bool System.Collections.Generic.ISet<T>.Add(T item) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<T>.ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial interface IFrozenDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable where TKey : notnull
+    {
+        new System.Collections.Immutable.FrozenList<TKey> Keys { get; }
+        new System.Collections.Immutable.FrozenList<TValue> Values { get; }
+        ref readonly TValue GetByRef(TKey key);
+        new System.Collections.Immutable.FrozenPairEnumerator<TKey, TValue> GetEnumerator();
+        ref readonly TValue TryGetByRef(TKey key);
+    }
+    public partial interface IFrozenSet<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.IEnumerable where T : notnull
+    {
+        System.Collections.Immutable.FrozenList<T> Items { get; }
+        new System.Collections.Immutable.FrozenEnumerator<T> GetEnumerator();
+    }
     public partial interface IImmutableDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
     {
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> Add(TKey key, TValue value);

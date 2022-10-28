@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
         /// <param name="parameterName">The name of the parameter to include in any thrown exception.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static void NotNull<T>([ValidatedNotNull]T value, string? parameterName)
+        public static void NotNull<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             if (value == null)
@@ -39,7 +39,7 @@ namespace System.Collections.Immutable
         /// <returns>The value of the parameter.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static T NotNullPassthrough<T>([ValidatedNotNull]T value, string? parameterName)
+        public static T NotNullPassthrough<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             NotNull(value, parameterName);
@@ -58,7 +58,7 @@ namespace System.Collections.Immutable
         /// may or may not be a class, but certainly cannot be null.
         /// </remarks>
         [DebuggerStepThrough]
-        public static void NotNullAllowStructs<T>([ValidatedNotNull]T value, string? parameterName)
+        public static void NotNullAllowStructs<T>([ValidatedNotNull][NotNull]T value, string? parameterName)
         {
             if (null == value)
             {
@@ -70,6 +70,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentNullException"/>.
         /// </summary>
         /// <param name="parameterName">The name of the parameter that was null.</param>
+        [DoesNotReturn]
         [DebuggerStepThrough]
         private static void FailArgumentNullException(string? parameterName)
         {
@@ -81,7 +82,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentOutOfRangeException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Range(bool condition, string? parameterName, string? message = null)
+        public static void Range([DoesNotReturnIf(false)] bool condition, string? parameterName, string? message = null)
         {
             if (!condition)
             {
@@ -92,6 +93,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws an <see cref="ArgumentOutOfRangeException"/>.
         /// </summary>
+        [DoesNotReturn]
         [DebuggerStepThrough]
         public static void FailRange(string? parameterName, string? message = null)
         {
@@ -109,7 +111,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Argument(bool condition, string? parameterName, string? message)
+        public static void Argument([DoesNotReturnIf(false)] bool condition, string? parameterName, string? message)
         {
             if (!condition)
             {
@@ -121,7 +123,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Argument(bool condition)
+        public static void Argument([DoesNotReturnIf(false)] bool condition)
         {
             if (!condition)
             {
@@ -134,6 +136,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="TDisposed">Specifies the type of the disposed object.</typeparam>
         /// <param name="disposed">The disposed object.</param>
+        [DoesNotReturn]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)] // inlining this on .NET < 4.5.2 on x64 causes InvalidProgramException.
         public static void FailObjectDisposed<TDisposed>(TDisposed disposed)
