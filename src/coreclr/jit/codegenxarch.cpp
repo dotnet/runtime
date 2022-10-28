@@ -2599,7 +2599,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         instGen_Set_Reg_To_Imm(((size_t)(int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
-    // We should not have a temp register available at this point.
+    // We should not have any temp registers at this point.
     assert(tree->AvailableTempRegCount() == 0);
 
     if (compiler->info.compInitMem)
