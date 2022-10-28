@@ -283,6 +283,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
+                //ignore messages from protocol extensions even for unknown context
+                if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
+                    return true;
                 return false;
             }
 
