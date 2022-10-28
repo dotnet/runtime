@@ -46,8 +46,6 @@ namespace ILCompiler
             }
             else if (name == "Vector256`1")
             {
-                Debug.Assert(name == "Vector256`1");
-
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
                     // No such type exists for the Procedure Call Standard for ARM. We will default
@@ -127,6 +125,7 @@ namespace ILCompiler
                     8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
                     16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
                     32 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    64 => ValueTypeShapeCharacteristics.Vector128Aggregate,
                     _ => ValueTypeShapeCharacteristics.None
                 };
             }
