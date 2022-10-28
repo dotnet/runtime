@@ -7,176 +7,210 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class UnifiedErrorHandlingTests
+    public static class UnifiedErrorHandlingTests
     {
         [Fact]
-        public async Task WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadAsyncReturnsZero()
-        {
-            (AnonymousPipeServerStream server, AnonymousPipeClientStream client) = GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In);
-
-            await server.DisposeAsync();
-
-            await AssertZeroByteReadAsync(client);
-        }
+        public static void WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadReturnsZero()
+            => DiposeServerAndVerifyClientBehaviour(
+                    GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteRead);
 
         [Fact]
-        public async Task WhenAnonymousPipeServerIsClosedFileStreamClientReadAsyncReturnsZero()
-        {
-            (AnonymousPipeServerStream server, FileStream client) = GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read);
-
-            await server.DisposeAsync();
-
-            await AssertZeroByteReadAsync(client);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WhenNamedPipeServerIsClosedNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, NamedPipeClientStream client) = await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In);
-
-            await server.DisposeAsync();
-
-            await AssertZeroByteReadAsync(client);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)] // OS-specific accessing named pipe via path
-        public async Task WhenNamedPipeServerIsClosedFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, FileStream client) = await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read);
-
-            await server.DisposeAsync();
-
-            await AssertZeroByteReadAsync(client);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, NamedPipeClientStream client) = await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In);
-
-            using (server)
-            {
-                server.Disconnect();
-
-                await AssertZeroByteReadAsync(client);
-            }
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)] // OS-specific accessing named pipe via path
-        public async Task WhenNamedPipeServerDisconnectsFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, FileStream client) = await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read);
-
-            using (server)
-            {
-                server.Disconnect();
-
-                await AssertZeroByteReadAsync(client);
-            }
-        }
+        public static void WhenAnonymousPipeServerIsClosedFileStreamClientReadReturnsZero()
+            => DiposeServerAndVerifyClientBehaviour(
+                    GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteRead);
 
         [Fact]
-        public void WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadReturnsZero()
-        {
-            (AnonymousPipeServerStream server, AnonymousPipeClientStream client) = GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In);
-
-            server.Dispose();
-
-            AssertZeroByteRead(client);
-        }
+        public static void WhenAnonymousPipeServerIsClosedAnonymousPipeClientWriteThrows()
+            => DiposeServerAndVerifyClientBehaviour(
+                    GetAnonymousPipeStreams(PipeDirection.In, PipeDirection.Out),
+                    AssertWriteThrows);
 
         [Fact]
-        public void WhenAnonymousPipeServerIsClosedFileStreamClientReadReturnsZero()
-        {
-            (AnonymousPipeServerStream server, FileStream client) = GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read);
+        public static void WhenAnonymousPipeServerIsClosedFileStreamClientWriteThrows()
+            => DiposeServerAndVerifyClientBehaviour(
+                    GetAnonymousPipeServerAndFileStreamClient(PipeDirection.In, FileAccess.Write),
+                    AssertWriteThrows);
 
-            server.Dispose();
+        [Fact]
+        public static Task WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadAsyncReturnsZero()
+            => DiposeServerAndVerifyClientBehaviourAsync(
+                    GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteReadAsync);
 
-            AssertZeroByteRead(client);
-        }
+        [Fact]
+        public static Task WhenAnonymousPipeServerIsClosedFileStreamClientReadAsyncReturnsZero()
+            => DiposeServerAndVerifyClientBehaviourAsync(
+                    GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteReadAsync);
+
+        [Fact]
+        public static Task WhenAnonymousPipeServerIsClosedAnonymousPipeClientWriteAsyncThrows()
+            => DiposeServerAndVerifyClientBehaviourAsync(
+                    GetAnonymousPipeStreams(PipeDirection.In, PipeDirection.Out),
+                    AssertWriteAsyncThrows);
+
+        [Fact]
+        public static Task WhenAnonymousPipeServerIsClosedFileStreamClientWriteAsyncThrows()
+            => DiposeServerAndVerifyClientBehaviourAsync(
+                    GetAnonymousPipeServerAndFileStreamClient(PipeDirection.In, FileAccess.Write),
+                    AssertWriteAsyncThrows);
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task WhenNamedPipeServerIsClosedNamedPipeClientReadReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, NamedPipeClientStream client) = await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In);
-
-            server.Dispose();
-
-            AssertZeroByteRead(client);
-        }
+        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadReturnsZero(bool asyncHandles)
+            => DiposeServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteRead);
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task WhenNamedPipeServerIsClosedFileStreamClientReadReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, FileStream client) = await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read);
-
-            server.Dispose();
-
-            AssertZeroByteRead(client);
-        }
+        public static async Task WhenNamedPipeServerIsClosedFileStreamClientReadReturnsZero(bool asyncHandles)
+            => DiposeServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteRead);
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadReturnsZero(bool asyncHandles)
-        {
-            (NamedPipeServerStream server, NamedPipeClientStream client) = await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In);
-
-            using (server)
-            {
-                server.Disconnect();
-
-                AssertZeroByteRead(client);
-            }
-        }
+        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteThrows(bool asyncHandles)
+            => DiposeServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
+                    AssertWriteThrows);
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task WhenNamedPipeServerDisconnectsFileStreamClientReadReturnsZero(bool asyncHandles)
+        public static async Task WhenNamedPipeServerIsClosedFileStreamClientWriteThrows(bool asyncHandles)
+            => DiposeServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
+                    AssertWriteThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
+            => await DiposeServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteReadAsync);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerIsClosedFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
+            => await DiposeServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteReadAsync);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteAsyncThrows(bool asyncHandles)
+            => await DiposeServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
+                    AssertWriteAsyncThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerIsClosedFileStreamClientWriteAsyncThrows(bool asyncHandles)
+            => await DiposeServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
+                    AssertWriteAsyncThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadReturnsZero(bool asyncHandles)
+            => DisconnectServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteRead);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientReadReturnsZero(bool asyncHandles)
+            => DisconnectServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteRead);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteThrows(bool asyncHandles)
+            => DisconnectServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
+                    AssertWriteThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientWriteThrows(bool asyncHandles)
+            => DisconnectServerAndVerifyClientBehaviour(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
+                    AssertWriteThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
+            => await DisconnectServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
+                    AssertZeroByteReadAsync);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
+            => await DisconnectServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
+                    AssertZeroByteReadAsync);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteAsyncThrows(bool asyncHandles)
+            => await DisconnectServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
+                    AssertWriteAsyncThrows);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientWriteAsyncThrows(bool asyncHandles)
+            => await DisconnectServerAndVerifyClientBehaviourAsync(
+                    await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
+                    AssertWriteAsyncThrows);
+
+        // TODO: CopyToAsync
+
+        private static (AnonymousPipeServerStream server, AnonymousPipeClientStream client) GetAnonymousPipeStreams(
+            PipeDirection serverDirection, PipeDirection clientDirection)
         {
-            (NamedPipeServerStream server, FileStream client) = await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read);
+            AnonymousPipeServerStream server = new(serverDirection);
+            AnonymousPipeClientStream client = new(clientDirection, server.ClientSafePipeHandle);
 
-            using (server)
-            {
-                server.Disconnect();
-
-                AssertZeroByteRead(client);
-            }
+            return (server, client);
         }
 
-        private static async Task AssertZeroByteReadAsync(Stream client)
+        private static (AnonymousPipeServerStream server, FileStream client) GetAnonymousPipeServerAndFileStreamClient(
+            PipeDirection serverDirection, FileAccess clientAccess)
         {
-            using (client)
-            {
-                Assert.Equal(0, await client.ReadAsync(new byte[100]));
-                Assert.Equal(0, await client.ReadAsync(new byte[100], 0, 100));
-            }
-        }
+            AnonymousPipeServerStream server = new(serverDirection);
+            FileStream client = new(new SafeFileHandle(nint.Parse(server.GetClientHandleAsString()), ownsHandle: true), clientAccess, 0);
 
-        private static void AssertZeroByteRead(Stream client)
-        {
-            using (client)
-            {
-                Assert.Equal(0, client.Read(new byte[100]));
-                Assert.Equal(0, client.Read(new byte[100], 0, 100));
-            }
+            return (server, client);
         }
 
         private static async Task<(NamedPipeServerStream server, NamedPipeClientStream client)> GetConnectedNamedPipeStreams(
@@ -206,22 +240,68 @@ namespace System.IO.Pipes.Tests
             return (server, client);
         }
 
-        private static (AnonymousPipeServerStream server, AnonymousPipeClientStream client) GetAnonymousPipeStreams(
-            PipeDirection serverDirection, PipeDirection clientDirection)
+        private static void DiposeServerAndVerifyClientBehaviour((Stream server, Stream client) connectedStreams, Action<Stream> assertMethod)
         {
-            AnonymousPipeServerStream server = new(serverDirection);
-            AnonymousPipeClientStream client = new(clientDirection, server.ClientSafePipeHandle);
+            connectedStreams.server.Dispose();
 
-            return (server, client);
+            assertMethod(connectedStreams.client);
         }
 
-        private static (AnonymousPipeServerStream server, FileStream client) GetAnonymousPipeServerAndFileStreamClient(
-            PipeDirection serverDirection, FileAccess clientAccess)
+        private static void DisconnectServerAndVerifyClientBehaviour((NamedPipeServerStream server, Stream client) connectedStreams, Action<Stream> assertMethod)
         {
-            AnonymousPipeServerStream server = new(serverDirection);
-            FileStream client = new(new SafeFileHandle(nint.Parse(server.GetClientHandleAsString()), ownsHandle: true), clientAccess);
+            connectedStreams.server.Disconnect();
 
-            return (server, client);
+            assertMethod(connectedStreams.client);
+        }
+
+        private static async Task DiposeServerAndVerifyClientBehaviourAsync((Stream server, Stream client) connectedStreams, Func<Stream, Task> assertMethod)
+        {
+            await connectedStreams.server.DisposeAsync();
+
+            await assertMethod(connectedStreams.client);
+        }
+
+        private static async Task DisconnectServerAndVerifyClientBehaviourAsync((NamedPipeServerStream server, Stream client) connectedStreams, Func<Stream, Task> assertMethod)
+        {
+            connectedStreams.server.Disconnect();
+
+            await assertMethod(connectedStreams.client);
+        }
+
+        private static void AssertZeroByteRead(Stream client)
+        {
+            using (client)
+            {
+                Assert.Equal(0, client.Read(new byte[100]));
+                Assert.Equal(0, client.Read(new byte[100], 0, 100));
+            }
+        }
+
+        private static void AssertWriteThrows(Stream client)
+        {
+            using (client)
+            {
+                Assert.Throws<IOException>(() => client.Write(new byte[100], 0, 100));
+                Assert.Throws<IOException>(() => client.Write(new byte[100]));
+            }
+        }
+
+        private static async Task AssertZeroByteReadAsync(Stream client)
+        {
+            using (client)
+            {
+                Assert.Equal(0, await client.ReadAsync(new byte[100]));
+                Assert.Equal(0, await client.ReadAsync(new byte[100], 0, 100));
+            }
+        }
+
+        private static async Task AssertWriteAsyncThrows(Stream client)
+        {
+            using (client)
+            {
+                await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(new byte[100], 0, 100));
+                await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(new byte[100]).AsTask());
+            }
         }
     }
 }
