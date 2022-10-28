@@ -283,7 +283,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                //ignore messages from protocol extensions even for unknown context
+                // don't pass through DotnetDebugger.* messages to the browser
                 if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
                     return true;
                 return false;
@@ -585,7 +585,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
             }
-
+            // don't pass through DotnetDebugger.* messages to the browser
+            if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
+                return true;
             return false;
         }
 
