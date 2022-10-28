@@ -21,11 +21,20 @@ namespace ILCompiler.ObjectWriter
     internal sealed class CodeViewSymbolsBuilder
     {
         private TargetArchitecture _targetArchitecture;
-        private Dictionary<uint, SubsectionWriter> _subsectionWriters = new();
+        private SectionWriter _sectionWriter;
+        private SubsectionWriter _stringTableWriter;
+        private SubsectionWriter _fileTableWriter;
+        private Dictionary<string, uint> _fileNameToIndex = new();
 
-        public CodeViewSymbolsBuilder(TargetArchitecture targetArchitecture)
+        public CodeViewSymbolsBuilder(TargetArchitecture targetArchitecture, SectionWriter sectionWriter)
         {
             _targetArchitecture = targetArchitecture;
+            _sectionWriter = sectionWriter;
+
+            // Write CodeView version header
+            Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32LittleEndian(versionBuffer, 4);
+            sectionWriter.Stream.Write(versionBuffer);
         }
 
         // Maps an ICorDebugInfo register number to the corresponding CodeView
@@ -53,6 +62,7 @@ namespace ILCompiler.ObjectWriter
                         13u => CV_AMD64_R13,
                         14u => CV_AMD64_R14,
                         15u => CV_AMD64_R15,
+                        // TODO: Floating point
                         _ => CV_REG_NONE,
                     };
 
@@ -70,7 +80,7 @@ namespace ILCompiler.ObjectWriter
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
             IEnumerable<DebugEHClauseInfo> debugEHClauseInfos)
         {
-            var symbolSubsection = GetSubsection(0xf1);
+            using var symbolSubsection = GetSubsection(0xf1);
 
             using (var recordWriter = symbolSubsection.StartRecord(0x1147 /* S_GPROC32_ID */))
             {
@@ -154,17 +164,107 @@ namespace ILCompiler.ObjectWriter
             using (var recordWriter = symbolSubsection.StartRecord(0x114f /* S_PROC_ID_END */))
             {
             }
+        }
 
-/*
-  // We have an assembler directive that takes care of the whole line table.
-  // We also increase function id for the next function.
-  Streamer->emitCVLinetableDirective(FuncId++, Fn, FnEnd);
-*/
+        private uint GetFileIndex(string fileName)
+        {
+            if (fileName == "")
+            {
+                fileName = "<stdin>";
+            }
+
+            if (_fileNameToIndex.TryGetValue(fileName, out uint fileIndex))
+            {
+                return fileIndex;
+            }
+            else
+            {
+                _stringTableWriter ??= GetSubsection(0xf3);
+
+                uint stringTableIndex = _stringTableWriter._size;
+                using (var stringRecord = _stringTableWriter.StartRecord())
+                {
+                    if (stringTableIndex == 0)
+                    {
+                        // Start the table with non-zero indexs
+                        stringRecord.Write((ushort)0);
+                        stringTableIndex += sizeof(ushort);
+                    }
+                    stringRecord.Write(fileName);
+                }
+
+                _fileTableWriter ??= GetSubsection(0xf4);
+                uint fileTableIndex = _fileTableWriter._size;
+                using (var fileRecord = _fileTableWriter.StartRecord())
+                {
+                    fileRecord.Write(stringTableIndex);
+                    fileRecord.Write((uint)0);
+                }
+
+                _fileNameToIndex.Add(fileName, fileTableIndex);
+
+                return fileTableIndex;
+            }
+        }
+
+        public void EmitLineInfo(
+            string methodName,
+            int methodPCLength,
+            IEnumerable<NativeSequencePoint> sequencePoints)
+        {
+            using var lineSubsection = GetSubsection(0xf2);
+
+            using (var recordWriter = lineSubsection.StartRecord())
+            {
+                recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECREL, methodName);
+                recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECTION, methodName);
+                recordWriter.Write((ushort)0); // TODO: Flags (eg. have columns)
+                recordWriter.Write((uint)methodPCLength);
+
+                string lastFileName = null;
+                uint fileIndex = 0;
+                List<uint> codes = new();
+
+                foreach (var sequencePoint in sequencePoints)
+                {
+                    if (lastFileName == null || lastFileName != sequencePoint.FileName)
+                    {
+                        if (codes.Count > 0)
+                        {
+                            recordWriter.Write(fileIndex);
+                            recordWriter.Write((uint)(codes.Count / 2));
+                            recordWriter.Write((uint)(12 + 4 * codes.Count));
+                            foreach (uint code in codes)
+                            {
+                                recordWriter.Write((uint)code);
+                            }
+                            codes.Clear();
+                        }
+
+                        fileIndex = GetFileIndex(sequencePoint.FileName);
+                        lastFileName = sequencePoint.FileName;
+                    }
+
+                    codes.Add((uint)sequencePoint.NativeOffset);
+                    codes.Add(0x80000000 | (uint)sequencePoint.LineNumber);
+                }
+
+                if (codes.Count > 0)
+                {
+                    recordWriter.Write(fileIndex);
+                    recordWriter.Write((uint)(codes.Count / 2));
+                    recordWriter.Write((uint)(12 + 4 * codes.Count));
+                    foreach (uint code in codes)
+                    {
+                        recordWriter.Write((uint)code);
+                    }
+                }
+            }
         }
 
         public void WriteUserDefinedTypes(IList<(string, uint)> userDefinedTypes)
         {
-            var symbolSubsection = GetSubsection(0xf1);
+            using var symbolSubsection = GetSubsection(0xf1);
             foreach (var (name, typeIndex) in userDefinedTypes)
             {
                 using (var recordWriter = symbolSubsection.StartRecord(0x1108 /* S_UDT */))
@@ -177,33 +277,77 @@ namespace ILCompiler.ObjectWriter
 
         private SubsectionWriter GetSubsection(uint subsectionKind)
         {
-            if (_subsectionWriters.TryGetValue(subsectionKind, out var subsectionWriter))
-            {
-                return subsectionWriter;
-            }
-            else
-            {
-                subsectionWriter = new SubsectionWriter();
-                _subsectionWriters.Add(subsectionKind, subsectionWriter);
-                return subsectionWriter;
-            }
+            return new SubsectionWriter(subsectionKind, _sectionWriter);
         }
 
-        public void Write(SectionWriter sectionWriter)
+        public void Write()
         {
-            // Write CodeView version header
-            Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
-            BinaryPrimitives.WriteUInt32LittleEndian(versionBuffer, 4);
-            sectionWriter.Stream.Write(versionBuffer);
+            _fileTableWriter?.Dispose();
+            _stringTableWriter?.Dispose();
+            _fileTableWriter = null;
+            _stringTableWriter = null;
+        }
 
-            Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
-            foreach (var (subsectionKind, subsectionWriter) in _subsectionWriters)
+        private sealed class SubsectionWriter : IDisposable
+        {
+            private uint _kind;
+            private SectionWriter _sectionWriter;
+            internal uint _size;
+            internal List<byte[]> _data = new();
+            internal List<(uint, RelocType, string)> _relocations = new();
+            private ArrayBufferWriter<byte> _bufferWriter = new();
+            internal bool _needLengthPrefix;
+
+            public SubsectionWriter(uint kind, SectionWriter sectionWriter)
             {
-                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, subsectionWriter._size);
-                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, subsectionKind);
+                _kind = kind;
+                _sectionWriter = sectionWriter;
+            }
+
+            public void Dispose()
+            {
+                Write(_sectionWriter);
+            }
+
+            public RecordWriter StartRecord()
+            {
+                _needLengthPrefix = false;
+                return new RecordWriter(this, _bufferWriter);
+            }
+
+            public RecordWriter StartRecord(ushort recordType)
+            {
+                RecordWriter writer = new RecordWriter(this, _bufferWriter);
+                writer.Write(recordType);
+                _needLengthPrefix = true;
+                return writer;
+            }
+
+            internal void CommitRecord()
+            {
+                if (_needLengthPrefix)
+                {
+                    byte[] lengthBuffer = new byte[sizeof(ushort)];
+                    BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(_bufferWriter.WrittenCount));
+                    _data.Add(lengthBuffer);
+                    _size += sizeof(ushort);
+                }
+
+                // Add data
+                _data.Add(_bufferWriter.WrittenSpan.ToArray());
+                _size += (uint)_bufferWriter.WrittenCount;
+
+                _bufferWriter.Clear();
+            }
+
+            internal void Write(SectionWriter sectionWriter)
+            {
+                Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
+                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), _size);
+                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, _kind);
                 sectionWriter.Stream.Write(subsectionHeader);
 
-                foreach (var (offset, relocType, symbolName) in subsectionWriter._relocations)
+                foreach (var (offset, relocType, symbolName) in _relocations)
                 {
                     sectionWriter.EmitRelocation(
                         (int)offset,
@@ -213,41 +357,12 @@ namespace ILCompiler.ObjectWriter
                         0);
                 }
 
-                foreach (byte[] data in subsectionWriter._data)
+                foreach (byte[] data in _data)
                 {
                     sectionWriter.Stream.Write(data);
                 }
 
                 sectionWriter.EmitAlignment(4);
-            }
-        }
-
-        private sealed class SubsectionWriter
-        {
-            internal uint _size;
-            internal List<byte[]> _data = new();
-            internal List<(uint, RelocType, string)> _relocations = new();
-            private ArrayBufferWriter<byte> _bufferWriter = new();
-
-            public RecordWriter StartRecord(ushort recordType)
-            {
-                RecordWriter writer = new RecordWriter(this, _bufferWriter);
-                writer.Write(recordType);
-                return writer;
-            }
-
-            internal void CommitRecord()
-            {
-                byte[] lengthBuffer = new byte[sizeof(ushort)];
-                BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(_bufferWriter.WrittenCount));
-                _data.Add(lengthBuffer);
-                _size += sizeof(ushort);
-
-                // Add data
-                _data.Add(_bufferWriter.WrittenSpan.ToArray());
-                _size += (uint)_bufferWriter.WrittenCount;
-
-                _bufferWriter.Clear();
             }
         }
 
@@ -304,7 +419,9 @@ namespace ILCompiler.ObjectWriter
                 int addend = 0)
             {
                 _subsectionWriter._relocations.Add((
-                    _subsectionWriter._size + sizeof(ushort) + (uint)_bufferWriter.WrittenCount,
+                    _subsectionWriter._size +
+                    (uint)(_subsectionWriter._needLengthPrefix ? sizeof(ushort) : 0) +
+                    (uint)_bufferWriter.WrittenCount,
                     relocType, symbolName));
 
                 switch (relocType)
