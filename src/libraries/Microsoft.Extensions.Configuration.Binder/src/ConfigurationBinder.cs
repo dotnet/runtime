@@ -584,11 +584,11 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
 
             Debug.Assert(dictionary is not null);
             // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance)!;
+            PropertyInfo? setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
             if (setter is null || !setter.CanWrite)
             {
                 // Cannot set any item on the dictionary object.
