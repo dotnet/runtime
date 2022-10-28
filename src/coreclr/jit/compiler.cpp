@@ -3459,7 +3459,11 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
     // !=2: Vary stress. Performance will be slightly/moderately degraded
     // 2:   Check-all stress. Performance will be REALLY horrible
-    const int stressLevel = getJitStressLevel();
+    int stressLevel = getJitStressLevel();
+    if (opts.IsReadyToRun())
+    {
+        stressLevel = 0;
+    }
 
     assert(weight <= MAX_STRESS_WEIGHT);
 
