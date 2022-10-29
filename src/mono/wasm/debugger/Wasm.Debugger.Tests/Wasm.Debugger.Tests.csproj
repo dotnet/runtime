@@ -13,8 +13,8 @@
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <CoreBuildDependsOn />
-    <BundleTestWasmAppDependsOn>_ExtractTestClassNamesForDebuggerTests</BundleTestWasmAppDependsOn>
-    <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</ExtractTestClassNamesForHelix>
+    <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
+    <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(ArchiveTests)' == 'true'">true</ExtractTestClassNamesForHelix>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
     <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
   </PropertyGroup>
@@ -31,8 +31,13 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
-                      AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir);
-                                            TestArchiveTestsDir=$(TestArchiveTestsDir);DotNetForTests=dotnet" />
+                      AdditionalProperties="
+                          RuntimeConfiguration=$(RuntimeConfiguration);
+                          ArchiveTests=$(ArchiveTests);
+                          ArchiveDirForHelix=$(TargetDir);
+                          TestArchiveTestsDir=$(TestArchiveTestsDir);
+                          ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
+                          DotNetForTests=$([MSBuild]::NormalizePath($(DotNetRoot), $(DotNetTool)))" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
@@ -73,20 +78,5 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="_ExtractTestClassNamesForDebuggerTests" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'">
-    <Exec Command="dotnet test --no-build -t --nologo -v:q -p:Configuration=$(Configuration)" ConsoleToMSBuild="true" >
-      <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
-    </Exec>
-
-    <PropertyGroup>
-      <_Regex>^ *(DebuggerTests[^\($]+)</_Regex>
-    </PropertyGroup>
-    <ItemGroup>
-      <_TestLines0 Include="$([System.Text.RegularExpressions.Regex]::Match('%(_ListOfTestsLines.Identity)', $(_Regex)))" />
-      <TestClassName Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(_TestLines0.Identity)))" />
-    </ItemGroup>
-
-    <WriteLinesToFile File="$(TestArchiveTestsDir)$(MSBuildProjectName).tests.list"
-                      Lines="@(TestClassName->Distinct())" />
-  </Target>
+  <Target Name="BundleDebuggerTestsForHelix" />
 </Project>
