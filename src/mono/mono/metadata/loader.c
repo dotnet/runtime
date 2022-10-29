@@ -1512,6 +1512,9 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	if (idx > 0) {
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
+		if (G_UNLIKELY (param_index == 0 && klass_image->has_updates)) {
+			param_index = mono_metadata_update_get_method_params (klass_image, mono_metadata_make_token (MONO_TABLE_METHOD, idx), NULL);
+		}
 		if (index == -1)
 			/* Return value */
 			return mono_metadata_make_token (MONO_TABLE_PARAM, 0);
