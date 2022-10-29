@@ -13,12 +13,12 @@ namespace System
     internal static class WeakReferenceHandleTags
     {
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        // handles are at least 16bit aligned, so we can use one bit for tagging
+        // handles are at least 2-byte aligned, so we can use one bit for tagging
         internal const nint TracksResurrectionBit = 1;
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         // one more bit is used to track whether the handle refers to an instance of ComAwareWeakReference
-        // we can use this bit because on COM-supporting platforms a handle is at least 32bit aligned
+        // we can use this bit because on COM-supporting platforms a handle is at least 4-byte aligned
         internal const nint ComAwareBit = 2;
         internal const nint HandleTagBits = TracksResurrectionBit | ComAwareBit;
 #else
