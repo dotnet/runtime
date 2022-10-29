@@ -965,6 +965,15 @@ bool WrapICorJitInfo::isFieldStatic(
     return temp;
 }
 
+int WrapICorJitInfo::getArrayLength(
+          CORINFO_OBJECT_HANDLE objHnd)
+{
+    API_ENTER(getArrayLength);
+    int temp = wrapHnd->getArrayLength(objHnd);
+    API_LEAVE(getArrayLength);
+    return temp;
+}
+
 void WrapICorJitInfo::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,

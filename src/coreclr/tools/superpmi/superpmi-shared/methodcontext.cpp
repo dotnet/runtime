@@ -7017,6 +7017,29 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     return value != 0;
 }
 
+void MethodContext::recGetArrayLength(CORINFO_OBJECT_HANDLE fhld, int result)
+{
+    if (GetArrayLength == nullptr)
+        GetArrayLength = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(fhld);
+    DWORD value = result ? 1 : 0;
+    GetArrayLength->Add(key, value);
+    DEBUG_REC(dmpGetArrayLength(key, value));
+}
+void MethodContext::dmpGetArrayLength(DWORDLONG key, DWORD value)
+{
+    printf("GetArrayLength key %016llX, value %u", key, value);
+}
+int MethodContext::repGetArrayLength(CORINFO_OBJECT_HANDLE fhld)
+{
+    DWORDLONG key = CastHandle(fhld);
+    AssertMapAndKeyExist(GetArrayLength, key, ": key %016llX", key);
+    DWORD value = GetArrayLength->Get(key);
+    DEBUG_REP(dmpGetArrayLength(key, value));
+    return value != 0;
+}
+
 void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, int result)
 {
     if (GetIntConfigValue == nullptr)

@@ -2881,6 +2881,16 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private int getArrayLength(CORINFO_FIELD_STRUCT_* objHnd)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // This is not used on crossgen and NativeAOT.
+            // For NativeAOT we'll need a different API, e.g. "getArrayLength(void* frozenObjPtr)"
+            // We'll add it as part of "allocate static arrays on FOH" effort for CoreCLR
+            return -1;
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging

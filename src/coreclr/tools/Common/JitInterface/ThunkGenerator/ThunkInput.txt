@@ -134,6 +134,7 @@ ICorJitInfo::PgoSource*, ref PgoSource
 CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*
 CORINFO_METHOD_HANDLE,CORINFO_METHOD_STRUCT_*
 CORINFO_FIELD_HANDLE,CORINFO_FIELD_STRUCT_*
+CORINFO_OBJECT_HANDLE,CORINFO_OBJECT_STRUCT_*
 CORINFO_CLASS_HANDLE,CORINFO_CLASS_STRUCT_*
 CORINFO_ASSEMBLY_HANDLE,CORINFO_ASSEMBLY_STRUCT_*
 CORINFO_JUST_MY_CODE_HANDLE,CORINFO_JUST_MY_CODE_HANDLE_*
@@ -253,6 +254,7 @@ FUNCTIONS
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field)
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
+    int getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)
     void setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap)
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)

@@ -4344,19 +4344,23 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
         }
         case TYP_REF:
         {
-            void* ptr;
+            size_t ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
 
             if (ptr == 0)
             {
                 tree = gtNewNull();
             }
-            else
+            else if ((ptr & 1) == 0) // Check the lowest bit for "Is frozen" mark
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
+            }
+            else
+            {
+                return nullptr;
             }
             break;
         }

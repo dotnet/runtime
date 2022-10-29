@@ -948,6 +948,12 @@ bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return jitInstance->mc->repIsFieldStatic(fldHnd);
 }
 
+int MyICJI::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    jitInstance->mc->cr->AddCall("getArrayLength");
+    return jitInstance->mc->repGetArrayLength(objHnd);
+}
+
 /*********************************************************************************/
 //
 // ICorDebugInfo

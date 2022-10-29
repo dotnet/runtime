@@ -1721,6 +1721,47 @@ bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return res;
 }
 
+int CEEInfo::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    int arrLen = -1;
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERT(objHnd != NULL);
+
+    GCX_COOP();
+
+    Object* obj = nullptr;
+    size_t handle = (size_t)objHnd;
+    if (handle & 1)
+    {
+        obj = *(Object**)(handle - 1);
+    }
+    else
+    {
+        obj = (Object*)handle;
+        _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
+    }
+    _ASSERT(obj != nullptr);
+
+    if (obj->GetMethodTable()->IsArray() && obj->GetMethodTable()->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    {
+        arrLen = ((ArrayBase*)obj)->GetNumComponents();
+    }
+    else if (obj->GetMethodTable()->IsString())
+    {
+        arrLen = ((StringObject*)obj)->GetStringLength();
+    }
+
+    EE_TO_JIT_TRANSITION();
+    return arrLen;
+}
+
 //---------------------------------------------------------------------------------------
 //
 void
@@ -11915,12 +11956,25 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             if (fieldObj != NULL)
             {
                 Object* obj = OBJECTREFToObject(fieldObj);
+                size_t handle;
                 if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
-                    intptr_t ptr = (intptr_t)obj;
-                    memcpy(buffer, &ptr, sizeof(intptr_t));
-                    result = true;
+                    handle = (size_t)obj;
                 }
+                else
+                {
+                    PTR_MethodTable objMT = obj->GetMethodTable();
+                    // We don't need to limit it to these types but JIT doesn't need other types of
+                    // objects at the moment so it's for better throughput.
+                    if (objMT->IsString() || objMT->IsArray())
+                    {
+                        // TODO: save handle to a list to then release once JIT finishes
+                        handle = (size_t)AppDomain::GetCurrentDomain()->CreateHandle(fieldObj);
+                        handle |= 1;
+                    }
+                }
+                memcpy(buffer, &handle, sizeof(size_t));
+                result = true;
             }
             else
             {

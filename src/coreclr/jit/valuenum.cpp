@@ -8685,7 +8685,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         VNFunc loadFunc =
                             ((tree->gtFlags & GTF_IND_NONNULL) != 0) ? VNF_InvariantNonNullLoad : VNF_InvariantLoad;
 
-                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
+                        // Special case: for initialized non-null 'static readonly' fields we want to keep field
+                        // sequence
+                        // to be able to fold their value
+                        ValueNum fieldSeqVN;
+                        if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR))
+                        {
+                            fieldSeqVN = vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq);
+                        }
+                        else
+                        {
+                            fieldSeqVN = vnStore->VNForNull();
+                        }
+
+                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp,
+                                                                ValueNumPair(fieldSeqVN, fieldSeqVN));
                         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                 }
@@ -8774,6 +8788,40 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         }
         else // Look up the VNFunc for the node
         {
+            if (tree->OperIs(GT_ARR_LENGTH))
+            {
+                ValueNum  addressVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+                VNFuncApp funcApp;
+                if (vnStore->GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
+                {
+                    ValueNum fieldSeqVN = funcApp.m_args[1];
+                    if ((fieldSeqVN != vnStore->VNForNull()) && (fieldSeqVN != ValueNumStore::NoVN))
+                    {
+                        FieldSeq* fieldSeq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
+                        if (fieldSeq != nullptr)
+                        {
+                            CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+                            if (field != NULL)
+                            {
+                                uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                                if (this->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
+                                                                                        TARGET_POINTER_SIZE))
+                                {
+                                    CORINFO_OBJECT_HANDLE objHandle;
+                                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                                    int len = this->info.compCompHnd->getArrayLength(objHandle);
+                                    if (len >= 0)
+                                    {
+                                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             VNFunc vnf = GetVNFuncForNode(tree);
 
             if (ValueNumStore::VNFuncIsLegal(vnf))

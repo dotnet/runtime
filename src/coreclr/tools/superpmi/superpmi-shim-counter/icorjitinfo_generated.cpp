@@ -787,6 +787,13 @@ bool interceptor_ICJI::isFieldStatic(
     return original_ICorJitInfo->isFieldStatic(fldHnd);
 }
 
+int interceptor_ICJI::getArrayLength(
+          CORINFO_OBJECT_HANDLE objHnd)
+{
+    mcs->AddCall("getArrayLength");
+    return original_ICorJitInfo->getArrayLength(objHnd);
+}
+
 void interceptor_ICJI::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,

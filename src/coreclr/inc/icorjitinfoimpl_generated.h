@@ -404,6 +404,9 @@ void getFieldInfo(
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
+int getArrayLength(
+          CORINFO_OBJECT_HANDLE objHnd) override;
+
 void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
