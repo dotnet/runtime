@@ -2285,7 +2285,7 @@ public:
     //    Bytes written to the given buffer, the range is [0..bufferSize)
     //
     virtual size_t printObjectDescription (
-            void*                       handle,                       /* IN  */
+            CORINFO_OBJECT_HANDLE       handle,                       /* IN  */
             char*                       buffer,                       /* OUT */
             size_t                      bufferSize,                   /* IN  */
             size_t*                     pRequiredBufferSize = nullptr /* OUT */

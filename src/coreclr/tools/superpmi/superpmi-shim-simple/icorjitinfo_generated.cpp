@@ -279,7 +279,7 @@ int interceptor_ICJI::getStringLiteral(
 }
 
 size_t interceptor_ICJI::printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize)

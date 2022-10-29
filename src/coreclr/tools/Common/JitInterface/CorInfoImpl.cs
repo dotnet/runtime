@@ -1833,7 +1833,7 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
@@ -2882,7 +2882,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private int getArrayLength(CORINFO_FIELD_STRUCT_* objHnd)
+        private int getArrayLength(CORINFO_OBJECT_STRUCT_* objHnd)
 #pragma warning restore CA1822 // Mark members as static
         {
             // This is not used on crossgen and NativeAOT.

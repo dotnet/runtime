@@ -177,7 +177,7 @@ int getStringLiteral(
           int startIndex) override;
 
 size_t printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize) override;

@@ -720,10 +720,10 @@ int CEEInfo::getStringLiteral (
 }
 
 size_t CEEInfo::printObjectDescription (
-        void*  handle,
-        char*  buffer,
-        size_t bufferSize,
-        size_t* pRequiredBufferSize)
+        CORINFO_OBJECT_HANDLE  handle,
+        char*                  buffer,
+        size_t                 bufferSize,
+        size_t*                pRequiredBufferSize)
 {
     CONTRACTL{
         THROWS;

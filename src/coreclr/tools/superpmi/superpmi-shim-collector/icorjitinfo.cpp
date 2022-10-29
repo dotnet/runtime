@@ -455,10 +455,10 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
-size_t interceptor_ICJI::printObjectDescription(void*   handle,             /* IN  */
-                                                char*   buffer,             /* OUT */
-                                                size_t  bufferSize,         /* IN  */
-                                                size_t* pRequiredBufferSize /* OUT */
+size_t interceptor_ICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                                char*                 buffer,             /* OUT */
+                                                size_t                bufferSize,         /* IN  */
+                                                size_t*               pRequiredBufferSize /* OUT */
                                                 )
 {
     mc->cr->AddCall("printObjectDescription");
