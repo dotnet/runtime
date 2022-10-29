@@ -107,7 +107,7 @@ bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
     if (cxt == NULL)
         return false;
 
-    mdtable_t* table = type_to_table(cxt, TypeFromToken(tk));
+    mdtable_t* table = type_to_table(cxt, ExtractTokenType(tk));
     if (table == NULL)
         return false;
 
