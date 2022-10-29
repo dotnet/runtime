@@ -1546,7 +1546,7 @@ class AssemblyNameBaseObject : public Object
 class WeakReferenceObject : public Object
 {
 public:
-    OBJECTHANDLE m_Handle;
+    uintptr_t m_taggedHandle;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS

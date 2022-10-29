@@ -13,7 +13,7 @@
 #include "weakreferencenative.h"
 #include "interoplibinterface.h"
 
-// This entrypoint is also used for eager finalization by the GC.
+// This entrypoint is used for eager finalization by the GC.
 void FinalizeWeakReference(Object* obj)
 {
     CONTRACTL
@@ -33,15 +33,15 @@ void FinalizeWeakReference(Object* obj)
     const uintptr_t HandleTagBits = 3;
 
     WeakReferenceObject* weakRefObj = (WeakReferenceObject*)obj;
-    OBJECTHANDLE handle = (OBJECTHANDLE)((uintptr_t)weakRefObj->m_Handle & ~HandleTagBits);
-    HandleType handleType = ((uintptr_t)weakRefObj->m_Handle & 2) ?
+    OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
+    HandleType handleType = (weakRefObj->m_taggedHandle & 2) ?
         HandleType::HNDTYPE_STRONG :
-        ((uintptr_t)weakRefObj->m_Handle & 1) ?
+        (weakRefObj->m_taggedHandle & 1) ?
         HandleType::HNDTYPE_WEAK_LONG :
         HandleType::HNDTYPE_WEAK_SHORT;
 
     // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
-    (uintptr_t&)weakRefObj->m_Handle &= (uintptr_t)1;
+    weakRefObj->m_taggedHandle &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
 }
 
