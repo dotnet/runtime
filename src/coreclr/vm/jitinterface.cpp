@@ -1736,18 +1736,7 @@ int CEEInfo::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
 
     GCX_COOP();
 
-    Object* obj = nullptr;
-    size_t handle = (size_t)objHnd;
-    if (handle & 1)
-    {
-        obj = *(Object**)(handle - 1);
-    }
-    else
-    {
-        obj = (Object*)handle;
-        _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
-    }
-    _ASSERT(obj != nullptr);
+    Object* obj = getObjectFromJitHandle(objHnd);
 
     if (obj->GetMethodTable()->IsArray())
     {
