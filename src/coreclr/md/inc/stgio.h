@@ -245,7 +245,6 @@ private:
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
     HRESULT ReadFromDisk(void *pbBuff, ULONG cbBuff, ULONG *pcbRead);
-    HRESULT CopyFileInternal(LPCWSTR szTo, int bFailIfThere, int bWriteThrough);
     void FreePageMap();
 
 private:
