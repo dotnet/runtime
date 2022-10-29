@@ -24,9 +24,6 @@
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
 
     <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
-
-    <_AdditionalPropertiesForTestSuiteReference>
-    </_AdditionalPropertiesForTestSuiteReference>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,7 +37,7 @@
                           ArchiveDirForHelix=$(TargetDir);
                           TestArchiveTestsDir=$(TestArchiveTestsDir);
                           ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
-                          DotNetForTests=$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))" />
+                          DotNetForTests=$([MSBuild]::NormalizePath($(DotNetRoot), $(DotNetTool)))" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
