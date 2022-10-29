@@ -25,6 +25,9 @@ namespace System.Diagnostics
         [SupportedOSPlatform("windows")]
         public bool LoadUserProfile { get; set; }
 
+        [SupportedOSPlatform("windows")]
+        public bool UseCredentialsForNetworkingOnly { get; set; }
+
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
