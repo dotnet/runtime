@@ -2280,14 +2280,18 @@ mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 
-	if (param_index == 0)
-		return FALSE;
-
-	/* FIXME: metadata-update */
-	if (GINT_TO_UINT32(def) < table_info_get_rows (methodt))
-		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (&m->tables [MONO_TABLE_PARAM]) + 1;
+	if (G_UNLIKELY (param_index == 0 && klass_image->has_updates)) {
+		uint32_t count;
+		param_index = mono_metadata_update_get_method_params (klass_image, mono_metadata_make_token (MONO_TABLE_METHOD, def), &count);
+		if (!param_index)
+			return FALSE;
+		lastp = param_index + count;
+	} else {
+		if (GINT_TO_UINT32(def) < table_info_get_rows (methodt))
+			lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
+		else
+			lastp = table_info_get_rows (&m->tables [MONO_TABLE_PARAM]) + 1;
+	}
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 flags = mono_metadata_decode_row_col (paramt, i - 1, MONO_PARAM_FLAGS);
