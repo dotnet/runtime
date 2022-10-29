@@ -12038,10 +12038,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 else if (!ignoreMovableObjects)
                 {
                     PTR_MethodTable objMT = obj->GetMethodTable();
-                    // We don't need to limit it to these types but JIT doesn't need other types of
-                    // objects at the moment so it's for better throughput.
-                    if (objMT->IsString() || objMT->IsArray())
-                    {
                         handle = getJitHandleForObject(fieldObj);
                         memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
                         result = true;
