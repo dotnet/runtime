@@ -22,9 +22,6 @@ namespace ILCompiler.ObjectWriter
     {
         private TargetArchitecture _targetArchitecture;
         private SectionWriter _sectionWriter;
-        private SubsectionWriter _stringTableWriter;
-        private SubsectionWriter _fileTableWriter;
-        private Dictionary<string, uint> _fileNameToIndex = new();
 
         public CodeViewSymbolsBuilder(TargetArchitecture targetArchitecture, SectionWriter sectionWriter)
         {
@@ -80,7 +77,7 @@ namespace ILCompiler.ObjectWriter
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
             IEnumerable<DebugEHClauseInfo> debugEHClauseInfos)
         {
-            using var symbolSubsection = GetSubsection(0xf1);
+            using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
 
             using (var recordWriter = symbolSubsection.StartRecord(0x1147 /* S_GPROC32_ID */))
             {
@@ -166,53 +163,13 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private uint GetFileIndex(string fileName)
-        {
-            if (fileName == "")
-            {
-                fileName = "<stdin>";
-            }
-
-            if (_fileNameToIndex.TryGetValue(fileName, out uint fileIndex))
-            {
-                return fileIndex;
-            }
-            else
-            {
-                _stringTableWriter ??= GetSubsection(0xf3);
-
-                uint stringTableIndex = _stringTableWriter._size;
-                using (var stringRecord = _stringTableWriter.StartRecord())
-                {
-                    if (stringTableIndex == 0)
-                    {
-                        // Start the table with non-zero indexs
-                        stringRecord.Write((ushort)0);
-                        stringTableIndex += sizeof(ushort);
-                    }
-                    stringRecord.Write(fileName);
-                }
-
-                _fileTableWriter ??= GetSubsection(0xf4);
-                uint fileTableIndex = _fileTableWriter._size;
-                using (var fileRecord = _fileTableWriter.StartRecord())
-                {
-                    fileRecord.Write(stringTableIndex);
-                    fileRecord.Write((uint)0);
-                }
-
-                _fileNameToIndex.Add(fileName, fileTableIndex);
-
-                return fileTableIndex;
-            }
-        }
-
         public void EmitLineInfo(
+            CodeViewFileTableBuilder fileTableBuilder,
             string methodName,
             int methodPCLength,
             IEnumerable<NativeSequencePoint> sequencePoints)
         {
-            using var lineSubsection = GetSubsection(0xf2);
+            using var lineSubsection = GetSubsection(DebugSymbolsSubsectionType.Lines);
 
             using (var recordWriter = lineSubsection.StartRecord())
             {
@@ -241,7 +198,7 @@ namespace ILCompiler.ObjectWriter
                             codes.Clear();
                         }
 
-                        fileIndex = GetFileIndex(sequencePoint.FileName);
+                        fileIndex = fileTableBuilder.GetFileIndex(sequencePoint.FileName);
                         lastFileName = sequencePoint.FileName;
                     }
 
@@ -264,7 +221,7 @@ namespace ILCompiler.ObjectWriter
 
         public void WriteUserDefinedTypes(IList<(string, uint)> userDefinedTypes)
         {
-            using var symbolSubsection = GetSubsection(0xf1);
+            using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
             foreach (var (name, typeIndex) in userDefinedTypes)
             {
                 using (var recordWriter = symbolSubsection.StartRecord(0x1108 /* S_UDT */))
@@ -275,22 +232,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private SubsectionWriter GetSubsection(uint subsectionKind)
+        private SubsectionWriter GetSubsection(DebugSymbolsSubsectionType subsectionKind)
         {
             return new SubsectionWriter(subsectionKind, _sectionWriter);
         }
 
-        public void Write()
-        {
-            _fileTableWriter?.Dispose();
-            _stringTableWriter?.Dispose();
-            _fileTableWriter = null;
-            _stringTableWriter = null;
-        }
-
         private sealed class SubsectionWriter : IDisposable
         {
-            private uint _kind;
+            private DebugSymbolsSubsectionType _kind;
             private SectionWriter _sectionWriter;
             internal uint _size;
             internal List<byte[]> _data = new();
@@ -298,7 +247,7 @@ namespace ILCompiler.ObjectWriter
             private ArrayBufferWriter<byte> _bufferWriter = new();
             internal bool _needLengthPrefix;
 
-            public SubsectionWriter(uint kind, SectionWriter sectionWriter)
+            public SubsectionWriter(DebugSymbolsSubsectionType kind, SectionWriter sectionWriter)
             {
                 _kind = kind;
                 _sectionWriter = sectionWriter;
@@ -306,7 +255,27 @@ namespace ILCompiler.ObjectWriter
 
             public void Dispose()
             {
-                Write(_sectionWriter);
+                Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
+                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, (uint)_kind);
+                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), _size);
+                _sectionWriter.Stream.Write(subsectionHeader);
+
+                foreach (var (offset, relocType, symbolName) in _relocations)
+                {
+                    _sectionWriter.EmitRelocation(
+                        (int)offset,
+                        default, // NOTE: We know the data are unused for the relocation types used in debug section
+                        relocType,
+                        symbolName,
+                        0);
+                }
+
+                foreach (byte[] data in _data)
+                {
+                    _sectionWriter.Stream.Write(data);
+                }
+
+                _sectionWriter.EmitAlignment(4);
             }
 
             public RecordWriter StartRecord()
@@ -338,31 +307,6 @@ namespace ILCompiler.ObjectWriter
                 _size += (uint)_bufferWriter.WrittenCount;
 
                 _bufferWriter.Clear();
-            }
-
-            internal void Write(SectionWriter sectionWriter)
-            {
-                Span<byte> subsectionHeader = stackalloc byte[sizeof(uint) + sizeof(uint)];
-                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader.Slice(4), _size);
-                BinaryPrimitives.WriteUInt32LittleEndian(subsectionHeader, _kind);
-                sectionWriter.Stream.Write(subsectionHeader);
-
-                foreach (var (offset, relocType, symbolName) in _relocations)
-                {
-                    sectionWriter.EmitRelocation(
-                        (int)offset,
-                        default, // NOTE: We know the data are unused for the relocation types used in debug section
-                        relocType,
-                        symbolName,
-                        0);
-                }
-
-                foreach (byte[] data in _data)
-                {
-                    sectionWriter.Stream.Write(data);
-                }
-
-                sectionWriter.EmitAlignment(4);
             }
         }
 

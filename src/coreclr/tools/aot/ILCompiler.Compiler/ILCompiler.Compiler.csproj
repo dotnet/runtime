@@ -588,6 +588,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeViewFileTableBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeViewNative.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeViewSymbolsBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeViewTypesBuilder.cs" />

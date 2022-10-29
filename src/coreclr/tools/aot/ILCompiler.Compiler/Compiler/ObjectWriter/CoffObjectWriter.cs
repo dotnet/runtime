@@ -41,6 +41,7 @@ namespace ILCompiler.ObjectWriter
         // Debugging
         private SectionWriter _debugTypesSectionWriter;
         private SectionWriter _debugSymbolSectionWriter;
+        private CodeViewFileTableBuilder _debugFileTableBuilder;
         private CodeViewSymbolsBuilder _debugSymbolsBuilder;
         private CodeViewTypesBuilder _debugTypesBuilder;
 
@@ -551,11 +552,14 @@ namespace ILCompiler.ObjectWriter
 
         protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
+            _debugFileTableBuilder = new CodeViewFileTableBuilder();
+
             _debugSymbolSectionWriter = GetOrCreateSection(DebugSymbolSection);
             _debugSymbolSectionWriter.EmitAlignment(4);
             _debugSymbolsBuilder = new CodeViewSymbolsBuilder(
                 _nodeFactory.Target.Architecture,
                 _debugSymbolSectionWriter);
+
             _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
             _debugTypesSectionWriter.EmitAlignment(4);
             _debugTypesBuilder = new CodeViewTypesBuilder(
@@ -585,13 +589,16 @@ namespace ILCompiler.ObjectWriter
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
             _debugSymbolsBuilder.EmitLineInfo(
-                methodName, methodSymbol.Size, debugNode.GetNativeSequencePoints());
+                _debugFileTableBuilder,
+                methodName,
+                methodSymbol.Size,
+                debugNode.GetNativeSequencePoints());
         }
 
         protected override void EmitDebugSections()
         {
             _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
-            _debugSymbolsBuilder.Write();
+            _debugFileTableBuilder.Write(_debugSymbolSectionWriter.Stream);
         }
 
         protected override void EmitDebugStaticVars()

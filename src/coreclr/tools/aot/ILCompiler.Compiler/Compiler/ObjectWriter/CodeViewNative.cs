@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace ILCompiler.ObjectWriter
 {
     internal static class CodeViewNative
@@ -404,215 +406,6 @@ namespace ILCompiler.ObjectWriter
         public const ushort MOD_volatile = 2;
         public const ushort MOD_unaligned = 4;
 
-    // leaf indices starting records but referenced from symbol records
-
-        public const ushort LF_MODIFIER_16t     = 0x0001;
-        public const ushort LF_POINTER_16t      = 0x0002;
-        public const ushort LF_ARRAY_16t        = 0x0003;
-        public const ushort LF_CLASS_16t        = 0x0004;
-        public const ushort LF_STRUCTURE_16t    = 0x0005;
-        public const ushort LF_UNION_16t        = 0x0006;
-        public const ushort LF_ENUM_16t         = 0x0007;
-        public const ushort LF_PROCEDURE_16t    = 0x0008;
-        public const ushort LF_MFUNCTION_16t    = 0x0009;
-        public const ushort LF_VTSHAPE          = 0x000a;
-        public const ushort LF_COBOL0_16t       = 0x000b;
-        public const ushort LF_COBOL1           = 0x000c;
-        public const ushort LF_BARRAY_16t       = 0x000d;
-        public const ushort LF_LABEL            = 0x000e;
-        public const ushort LF_NULL             = 0x000f;
-        public const ushort LF_NOTTRAN          = 0x0010;
-        public const ushort LF_DIMARRAY_16t     = 0x0011;
-        public const ushort LF_VFTPATH_16t      = 0x0012;
-        public const ushort LF_PRECOMP_16t      = 0x0013;       // not referenced from symbol
-        public const ushort LF_ENDPRECOMP       = 0x0014;       // not referenced from symbol
-        public const ushort LF_OEM_16t          = 0x0015;       // oem definable type string
-        public const ushort LF_TYPESERVER_ST    = 0x0016;       // not referenced from symbol
-
-    // leaf indices starting records but referenced only from type records
-
-        public const ushort LF_SKIP_16t         = 0x0200;
-        public const ushort LF_ARGLIST_16t      = 0x0201;
-        public const ushort LF_DEFARG_16t       = 0x0202;
-        public const ushort LF_LIST             = 0x0203;
-        public const ushort LF_FIELDLIST_16t    = 0x0204;
-        public const ushort LF_DERIVED_16t      = 0x0205;
-        public const ushort LF_BITFIELD_16t     = 0x0206;
-        public const ushort LF_METHODLIST_16t   = 0x0207;
-        public const ushort LF_DIMCONU_16t      = 0x0208;
-        public const ushort LF_DIMCONLU_16t     = 0x0209;
-        public const ushort LF_DIMVARU_16t      = 0x020a;
-        public const ushort LF_DIMVARLU_16t     = 0x020b;
-        public const ushort LF_REFSYM           = 0x020c;
-
-        public const ushort LF_BCLASS_16t       = 0x0400;
-        public const ushort LF_VBCLASS_16t      = 0x0401;
-        public const ushort LF_IVBCLASS_16t     = 0x0402;
-        public const ushort LF_ENUMERATE_ST     = 0x0403;
-        public const ushort LF_FRIENDFCN_16t    = 0x0404;
-        public const ushort LF_INDEX_16t        = 0x0405;
-        public const ushort LF_MEMBER_16t       = 0x0406;
-        public const ushort LF_STMEMBER_16t     = 0x0407;
-        public const ushort LF_METHOD_16t       = 0x0408;
-        public const ushort LF_NESTTYPE_16t     = 0x0409;
-        public const ushort LF_VFUNCTAB_16t     = 0x040a;
-        public const ushort LF_FRIENDCLS_16t    = 0x040b;
-        public const ushort LF_ONEMETHOD_16t    = 0x040c;
-        public const ushort LF_VFUNCOFF_16t     = 0x040d;
-
-// 32-bit type index versions of leaves, all have the 0x1000 bit set
-//
-        public const ushort LF_TI16_MAX         = 0x1000;
-
-        public const ushort LF_MODIFIER         = 0x1001;
-        public const ushort LF_POINTER          = 0x1002;
-        public const ushort LF_ARRAY_ST         = 0x1003;
-        public const ushort LF_CLASS_ST         = 0x1004;
-        public const ushort LF_STRUCTURE_ST     = 0x1005;
-        public const ushort LF_UNION_ST         = 0x1006;
-        public const ushort LF_ENUM_ST          = 0x1007;
-        public const ushort LF_PROCEDURE        = 0x1008;
-        public const ushort LF_MFUNCTION        = 0x1009;
-        public const ushort LF_COBOL0           = 0x100a;
-        public const ushort LF_BARRAY           = 0x100b;
-        public const ushort LF_DIMARRAY_ST      = 0x100c;
-        public const ushort LF_VFTPATH          = 0x100d;
-        public const ushort LF_PRECOMP_ST       = 0x100e;       // not referenced from symbol
-        public const ushort LF_OEM              = 0x100f;       // oem definable type string
-        public const ushort LF_ALIAS_ST         = 0x1010;       // alias (typedef) type
-        public const ushort LF_OEM2             = 0x1011;       // oem definable type string
-
-    // leaf indices starting records but referenced only from type records
-
-        public const ushort LF_SKIP             = 0x1200;
-        public const ushort LF_ARGLIST          = 0x1201;
-        public const ushort LF_DEFARG_ST        = 0x1202;
-        public const ushort LF_FIELDLIST        = 0x1203;
-        public const ushort LF_DERIVED          = 0x1204;
-        public const ushort LF_BITFIELD         = 0x1205;
-        public const ushort LF_METHODLIST       = 0x1206;
-        public const ushort LF_DIMCONU          = 0x1207;
-        public const ushort LF_DIMCONLU         = 0x1208;
-        public const ushort LF_DIMVARU          = 0x1209;
-        public const ushort LF_DIMVARLU         = 0x120a;
-
-        public const ushort LF_BCLASS           = 0x1400;
-        public const ushort LF_VBCLASS          = 0x1401;
-        public const ushort LF_IVBCLASS         = 0x1402;
-        public const ushort LF_FRIENDFCN_ST     = 0x1403;
-        public const ushort LF_INDEX            = 0x1404;
-        public const ushort LF_MEMBER_ST        = 0x1405;
-        public const ushort LF_STMEMBER_ST      = 0x1406;
-        public const ushort LF_METHOD_ST        = 0x1407;
-        public const ushort LF_NESTTYPE_ST      = 0x1408;
-        public const ushort LF_VFUNCTAB         = 0x1409;
-        public const ushort LF_FRIENDCLS        = 0x140a;
-        public const ushort LF_ONEMETHOD_ST     = 0x140b;
-        public const ushort LF_VFUNCOFF         = 0x140c;
-        public const ushort LF_NESTTYPEEX_ST    = 0x140d;
-        public const ushort LF_MEMBERMODIFY_ST  = 0x140e;
-        public const ushort LF_MANAGED_ST       = 0x140f;
-
-    // Types w/ SZ names
-
-        public const ushort LF_ST_MAX           = 0x1500;
-
-        public const ushort LF_TYPESERVER       = 0x1501;       // not referenced from symbol
-        public const ushort LF_ENUMERATE        = 0x1502;
-        public const ushort LF_ARRAY            = 0x1503;
-        public const ushort LF_CLASS            = 0x1504;
-        public const ushort LF_STRUCTURE        = 0x1505;
-        public const ushort LF_UNION            = 0x1506;
-        public const ushort LF_ENUM             = 0x1507;
-        public const ushort LF_DIMARRAY         = 0x1508;
-        public const ushort LF_PRECOMP          = 0x1509;       // not referenced from symbol
-        public const ushort LF_ALIAS            = 0x150a;       // alias (typedef) type
-        public const ushort LF_DEFARG           = 0x150b;
-        public const ushort LF_FRIENDFCN        = 0x150c;
-        public const ushort LF_MEMBER           = 0x150d;
-        public const ushort LF_STMEMBER         = 0x150e;
-        public const ushort LF_METHOD           = 0x150f;
-        public const ushort LF_NESTTYPE         = 0x1510;
-        public const ushort LF_ONEMETHOD        = 0x1511;
-        public const ushort LF_NESTTYPEEX       = 0x1512;
-        public const ushort LF_MEMBERMODIFY     = 0x1513;
-        public const ushort LF_MANAGED          = 0x1514;
-        public const ushort LF_TYPESERVER2      = 0x1515;
-
-        public const ushort LF_STRIDED_ARRAY    = 0x1516;    // same as LF_ARRAY, but with stride between adjacent elements
-        public const ushort LF_HLSL             = 0x1517;
-        public const ushort LF_MODIFIER_EX      = 0x1518;
-        public const ushort LF_INTERFACE        = 0x1519;
-        public const ushort LF_BINTERFACE       = 0x151a;
-        public const ushort LF_VECTOR           = 0x151b;
-        public const ushort LF_MATRIX           = 0x151c;
-
-        public const ushort LF_VFTABLE          = 0x151d;      // a virtual function table
-        public const ushort LF_ENDOFLEAFRECORD  = LF_VFTABLE;
-
-        //public const ushort LF_TYPE_LAST;                    // one greater than the last type record
-        //public const ushort LF_TYPE_MAX         = LF_TYPE_LAST - 1;
-
-        public const ushort LF_FUNC_ID          = 0x1601;    // global func ID
-        public const ushort LF_MFUNC_ID         = 0x1602;    // member func ID
-        public const ushort LF_BUILDINFO        = 0x1603;    // build info: tool, version, command line, src/pdb file
-        public const ushort LF_SUBSTR_LIST      = 0x1604;    // similar to LF_ARGLIST, for list of sub strings
-        public const ushort LF_STRING_ID        = 0x1605;    // string ID
-
-        public const ushort LF_UDT_SRC_LINE     = 0x1606;    // source and line on where an UDT is defined
-                                     // only generated by compiler
-
-        public const ushort LF_UDT_MOD_SRC_LINE = 0x1607;    // module, source and line on where an UDT is defined
-                                     // only generated by linker
-
-        //public const ushort LF_ID_LAST;                      // one greater than the last ID record
-        //public const ushort LF_ID_MAX           = LF_ID_LAST - 1;
-
-        public const ushort LF_NUMERIC          = 0x8000;
-        public const ushort LF_CHAR             = 0x8000;
-        public const ushort LF_SHORT            = 0x8001;
-        public const ushort LF_USHORT           = 0x8002;
-        public const ushort LF_LONG             = 0x8003;
-        public const ushort LF_ULONG            = 0x8004;
-        public const ushort LF_REAL32           = 0x8005;
-        public const ushort LF_REAL64           = 0x8006;
-        public const ushort LF_REAL80           = 0x8007;
-        public const ushort LF_REAL128          = 0x8008;
-        public const ushort LF_QUADWORD         = 0x8009;
-        public const ushort LF_UQUADWORD        = 0x800a;
-        public const ushort LF_REAL48           = 0x800b;
-        public const ushort LF_COMPLEX32        = 0x800c;
-        public const ushort LF_COMPLEX64        = 0x800d;
-        public const ushort LF_COMPLEX80        = 0x800e;
-        public const ushort LF_COMPLEX128       = 0x800f;
-        public const ushort LF_VARSTRING        = 0x8010;
-
-        public const ushort LF_OCTWORD          = 0x8017;
-        public const ushort LF_UOCTWORD         = 0x8018;
-
-        public const ushort LF_DECIMAL          = 0x8019;
-        public const ushort LF_DATE             = 0x801a;
-        public const ushort LF_UTF8STRING       = 0x801b;
-
-        public const ushort LF_REAL16           = 0x801c;
-
-        public const ushort LF_PAD0             = 0xf0;
-        public const ushort LF_PAD1             = 0xf1;
-        public const ushort LF_PAD2             = 0xf2;
-        public const ushort LF_PAD3             = 0xf3;
-        public const ushort LF_PAD4             = 0xf4;
-        public const ushort LF_PAD5             = 0xf5;
-        public const ushort LF_PAD6             = 0xf6;
-        public const ushort LF_PAD7             = 0xf7;
-        public const ushort LF_PAD8             = 0xf8;
-        public const ushort LF_PAD9             = 0xf9;
-        public const ushort LF_PAD10            = 0xfa;
-        public const ushort LF_PAD11            = 0xfb;
-        public const ushort LF_PAD12            = 0xfc;
-        public const ushort LF_PAD13            = 0xfd;
-        public const ushort LF_PAD14            = 0xfe;
-        public const ushort LF_PAD15            = 0xff;
-
         public const ushort CV_PROP_NONE = 0;
         public const ushort CV_PROP_PACKED = 0x0001;
         public const ushort CV_PROP_HAS_CONSTURUCTOR_OR_DESTRUCTOR = 0x0002;
@@ -647,5 +440,176 @@ namespace ILCompiler.ObjectWriter
         public const ushort CV_AMD64_R13      =  341;
         public const ushort CV_AMD64_R14      =  342;
         public const ushort CV_AMD64_R15      =  343;
+
+        // Matches DEBUG_S_SUBSECTION_TYPE in cvinfo.h
+        public enum DebugSymbolsSubsectionType : uint
+        {
+            Symbols = 0xf1,
+            Lines,
+            StringTable,
+            FileChecksums,
+            FrameData,
+            InlineeLines,
+            CrossScopeImports,
+            CrossScopeExports,
+
+            ILLines,
+            FunctionMDTokenMap,
+            TypeMDTokenMap,
+            MergedAssemblyInput,
+
+            CoffSymbolRva,
+        }
+
+        // Matches LEAF_ENUM_e in cvinfo.h
+        // 32-bit type index versions of leaves have the 0x1000 bit set; most 16-bit
+        // leaves are omitted since they are unused
+        public enum LeafRecordType
+        {
+            // Leaf indices starting records referenced from symbol records
+            VTShape = 0x000a,
+            Label = 0x000e,
+            Null = 0x000f,
+            NotTran = 0x0010,
+            EndPrecomp = 0x0014, // not referenced from symbol
+            TypeServerST = 0x0016, // not referenced from symbol
+            Modifier = 0x1001,
+            Pointer = 0x1002,
+            ArrayST = 0x1003,
+            ClassST = 0x1004,
+            StructureST = 0x1005,
+            UnionST = 0x1006,
+            EnumST = 0x1007,
+            Procedure = 0x1008,
+            MemberFunction = 0x1009,
+            Cobol0 = 0x100a,
+            BArray = 0x100b,
+            DimArrayST = 0x100c,
+            VFTPath = 0x100d,
+            PrecompST = 0x100e, // not referenced from symbol
+            Oem = 0x100f, // oem definable type string
+            AliasST = 0x1010, // alias (typedef) type
+            Oem2 = 0x1011, // oem definable type string
+
+            // Leaf indices starting records but referenced only from type records
+            RefSym = 0x020c,
+            EnumerateST = 0x0403,
+
+            Skip = 0x1200,
+            ArgList = 0x1201,
+            DefArgST = 0x1202,
+            FieldList = 0x1203,
+            Derived = 0x1204,
+            BitField = 0x1205,
+            MethodList = 0x1206,
+            DimConU = 0x1207,
+            DimConLU = 0x1208,
+            DimVatU = 0x1209,
+            DimVarLU = 0x120a,
+
+            BaseClass = 0x1400,
+            VBaseClass = 0x1401,
+            IVBaseClass = 0x1402,
+            FriendFunctionST = 0x1403,
+            Index = 0x1404,
+            MemberST = 0x1405,
+            StaticMemberST = 0x1406,
+            MethodST = 0x1407,
+            NestTypeST = 0x1408,
+            VFunctionTable = 0x1409,
+            FriendClass = 0x140a,
+            OneMethodST = 0x140b,
+            VFunctionOffset = 0x140c,
+            NestTypeExST = 0x140d,
+            MemberModifyST = 0x140e,
+            ManagedST = 0x140f,
+
+            // Types w/ SZ names
+            TypeServer = 0x1501, // not referenced from symbol
+            Enumerate = 0x1502,
+            Array = 0x1503,
+            Class = 0x1504,
+            Structure = 0x1505,
+            Union = 0x1506,
+            Enum = 0x1507,
+            DimArray = 0x1508,
+            Precomp = 0x1509, // not referenced from symbol
+            Alias = 0x150a, // alias (typedef) type
+            DefArg = 0x150b,
+            FriendFunction = 0x150c,
+            Member = 0x150d,
+            StaticMember = 0x150e,
+            Method = 0x150f,
+            NestType = 0x1510,
+            OneMethod = 0x1511,
+            NestTypeEx = 0x1512,
+            MemberModify = 0x1513,
+            Managed = 0x1514,
+            TypeServer2 = 0x1515,
+
+            StridedArray = 0x1516, // same as Array, but with stride between adjacent elements
+            HLSL = 0x1517,
+            ModifierEx = 0x1518,
+            Interface = 0x1519,
+            BInterface = 0x151a,
+            Vector = 0x151b,
+            Matrix = 0x151c,
+
+            VFTable = 0x151d,
+
+            FunctionId = 0x1601,
+            MemberFunctionId = 0x1602,
+            BuildInfo = 0x1603,
+            SubstringList = 0x1604,
+            StringId = 0x1605,
+
+            UdtSrcLine = 0x1606, // source and line on where an UDT is defined (only generated by compiler)
+            UdtModSrcLine = 0x1607, // module, source and line on where an UDT is defined (only generated by linker)
+
+            // Size prefixes
+            Numeric = 0x8000,
+            Char = 0x8000,
+            Short = 0x8001,
+            UShort = 0x8002,
+            Long = 0x8003,
+            ULong = 0x8004,
+            Real32 = 0x8005,
+            Real64 = 0x8006,
+            Real80 = 0x8007,
+            Real128 = 0x8008,
+            QuadWord = 0x8009,
+            UQuadWord = 0x800a,
+            Real48 = 0x800b,
+            Complex32 = 0x800c,
+            Complex64 = 0x800d,
+            Complex80 = 0x800e,
+            Complex128 = 0x800f,
+            VarString = 0x8010,
+
+            OctWord = 0x8017,
+            UOctWord = 0x8018,
+            Decimal = 0x8019,
+            Date = 0x801a,
+            Utf8String = 0x801b,
+            Real = 0x801c,
+
+            // List padding
+            Pad0 = 0xf0,
+            Pad1 = 0xf1,
+            Pad2 = 0xf2,
+            Pad3 = 0xf3,
+            Pad4 = 0xf4,
+            Pad5 = 0xf5,
+            Pad6 = 0xf6,
+            Pad7 = 0xf7,
+            Pad8 = 0xf8,
+            Pad9 = 0xf9,
+            Pad10 = 0xfa,
+            Pad11 = 0xfb,
+            Pad12 = 0xfc,
+            Pad13 = 0xfd,
+            Pad14 = 0xfe,
+            Pad15 = 0xff,
+        }
     }
 }
