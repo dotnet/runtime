@@ -3088,7 +3088,7 @@ protected:
 
         void print()
         {
-            dprintf (3, ("last plug: %Ix, last plug reloc: %Ix, before last: %Ix, b: %Ix",
+            dprintf (3, ("last plug: %p, last plug reloc: %zu, before last: %p, b: %zu",
                 last_plug, last_plug_relocation, before_last_plug, current_compacted_brick));
         }
     };
