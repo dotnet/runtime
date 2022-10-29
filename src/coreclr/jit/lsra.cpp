@@ -635,7 +635,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     currBuildNode     = nullptr;
 
     lsraStressMask = JitConfig.JitStressRegs();
-    if (compiler->opts.IsReadyToRun())
+    if ((compiler->opts.jitFlags != nullptr) && compiler->opts.IsReadyToRun())
     {
         lsraStressMask = 0;
     }
