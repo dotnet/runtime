@@ -1567,8 +1567,6 @@ typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
 
-typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
-
 inline ARG_SLOT ObjToArgSlot(OBJECTREF objRef)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1611,10 +1609,6 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
-
-#ifndef DACCESS_COMPILE
-typedef WeakReferenceObject* WEAKREFERENCEREF;
-#endif // #ifndef DACCESS_COMPILE
 
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
