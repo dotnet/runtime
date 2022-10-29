@@ -7,6 +7,7 @@
     <NoWarn>8002,NU1701</NoWarn>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>$(RuntimeBinDir)\R2RTest</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
