@@ -1374,5 +1374,29 @@ namespace System.Diagnostics.Tests
 
             Assert.StartsWith(expected, title);
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [OuterLoop("Launches notepad")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void StartInfo_LoadUserProfile_And_UseCredentialsForNetworkingOnly_AreIncompatible()
+        {
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                LoadUserProfile = true,
+                UseCredentialsForNetworkingOnly = true,
+                FileName = "notepad.exe",
+                Arguments = null,
+                WindowStyle = ProcessWindowStyle.Minimized
+            };
+
+            Assert.Throws<ArgumentException>("startInfo", () =>
+            {
+                using (var process = Process.Start(info))
+                {
+                    Assert.False(process != null, $"Process started despite incompatible options {nameof(info.LoadUserProfile)} and {nameof(info.UseCredentialsForNetworkingOnly)} were enabled");
+                }
+            });
+        }
     }
 }
