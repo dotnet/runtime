@@ -688,7 +688,6 @@ FCFuncStart(gWeakReferenceOfTFuncs)
 FCFuncEnd()
 
 FCFuncStart(gComAwareWeakReferenceFuncs)
-    FCFuncElement("ComWeakRefToObject", ComAwareWeakReferenceNative::ComWeakRefToObject)
     FCFuncElement("ObjectToComWeakRef", ComAwareWeakReferenceNative::ObjectToComWeakRef)
 FCFuncEnd()
 

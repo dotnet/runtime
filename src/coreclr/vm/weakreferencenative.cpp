@@ -352,38 +352,39 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
 
 //************************************************************************
 
-FCIMPL2(Object*, ComAwareWeakReferenceNative::ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId)
+// static
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, INT64 wrapperId, QCall::ObjectHandleOnStack retRcw)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
 
     _ASSERTE(pComWeakReference != nullptr);
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+//#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // If the weak reference was in a state that it had an IWeakReference* for us to use, then we need to find the IUnknown
     // identity of the underlying COM object (assuming that object is still alive).
-    OBJECTREF rcwRef = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(rcwRef);
-
     SafeComHolder<IUnknown> pTargetIdentity = nullptr;
 
+    // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
+    // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
+    SafeComHolderPreemp<IInspectable> pTarget = nullptr;
+    if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
     {
-        GCX_PREEMP();
-        // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
-        // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
-        SafeComHolderPreemp<IInspectable> pTarget = nullptr;
-        if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
+        if (!pTarget.IsNull())
         {
-            if (!pTarget.IsNull())
-            {
-                // Get the IUnknown identity for the underlying object
-                SafeQueryInterfacePreemp(pTarget, IID_IUnknown, &pTargetIdentity);
-            }
+            // Get the IUnknown identity for the underlying object
+            SafeQueryInterfacePreemp(pTarget, IID_IUnknown, &pTargetIdentity);
         }
     }
 
     // If we were able to get an IUnknown identity for the object, then we can find or create an associated RCW for it.
     if (!pTargetIdentity.IsNull())
     {
+        GCX_COOP();
+        OBJECTREF rcwRef = NULL;
+        GCPROTECT_BEGIN(rcwRef);
+
         if (wrapperId != ComWrappersNative::InvalidWrapperId)
         {
             // Try the global COM wrappers
@@ -396,24 +397,22 @@ FCIMPL2(Object*, ComAwareWeakReferenceNative::ComWeakRefToObject, IWeakReference
                 (void)GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pTargetIdentity, ObjFromComIP::NONE, &rcwRef);
             }
         }
-#ifdef FEATURE_COMINTEROP
+//#ifdef FEATURE_COMINTEROP
         else
         {
             // If the original RCW was not created through ComWrappers, fall back to the built-in system.
             GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
         }
-#endif // FEATURE_COMINTEROP
+//#endif // FEATURE_COMINTEROP
+        GCPROTECT_END();
+        retRcw.Set(rcwRef);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
+//#endif  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    return OBJECTREFToObject(rcwRef);
-
-#else  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-    return nullptr;
-#endif
+    return;
 }
-FCIMPLEND
 
 NOINLINE IWeakReference* ObjectToComWeakRefFramed(Object* pObject, INT64* pWrapperId, LPVOID __me)
 {

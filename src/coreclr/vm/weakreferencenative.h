@@ -41,8 +41,9 @@ public:
 class ComAwareWeakReferenceNative
 {
 public:
-    static FCDECL2(Object*, ComWeakRefToObject, IWeakReference* pComWeakReference, INT64 wrapperId);
     static FCDECL2(IWeakReference*, ObjectToComWeakRef, Object* pObject, INT64* pWrapperId);
 };
+
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, INT64 wrapperId, QCall::ObjectHandleOnStack retRcw);
 
 #endif // _WEAKREFERENCENATIVE_H
