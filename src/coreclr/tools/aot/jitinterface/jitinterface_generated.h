@@ -78,9 +78,9 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTypeForBox)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getUnBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    void* (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
-    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
+    CORINFO_OBJECT_HANDLE (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
+    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
     const char* (* getHelperName)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc helpFunc);
@@ -860,17 +860,17 @@ public:
     return temp;
 }
 
-    virtual void* getRuntimeTypePointer(
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->getRuntimeTypePointer(_thisHandle, &pException, cls);
+    CORINFO_OBJECT_HANDLE temp = _callbacks->getRuntimeTypePointer(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
     virtual bool isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isObjectImmutable(_thisHandle, &pException, objPtr);
@@ -879,7 +879,7 @@ public:
 }
 
     virtual CORINFO_CLASS_HANDLE getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getObjectType(_thisHandle, &pException, objPtr);

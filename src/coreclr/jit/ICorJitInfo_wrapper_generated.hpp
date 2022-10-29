@@ -665,17 +665,17 @@ CorInfoHelpFunc WrapICorJitInfo::getUnBoxHelper(
     return temp;
 }
 
-void* WrapICorJitInfo::getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE WrapICorJitInfo::getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(getRuntimeTypePointer);
-    void* temp = wrapHnd->getRuntimeTypePointer(cls);
+    CORINFO_OBJECT_HANDLE temp = wrapHnd->getRuntimeTypePointer(cls);
     API_LEAVE(getRuntimeTypePointer);
     return temp;
 }
 
 bool WrapICorJitInfo::isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     API_ENTER(isObjectImmutable);
     bool temp = wrapHnd->isObjectImmutable(objPtr);
@@ -684,7 +684,7 @@ bool WrapICorJitInfo::isObjectImmutable(
 }
 
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     API_ENTER(getObjectType);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getObjectType(objPtr);

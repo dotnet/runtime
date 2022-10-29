@@ -314,17 +314,17 @@ public:
     void dmpGetUnBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls);
 
-    void recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result);
+    void recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, CORINFO_OBJECT_HANDLE result);
     void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
-    void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
+    CORINFO_OBJECT_HANDLE repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
 
-    void recIsObjectImmutable(void* objPtr, bool result);
+    void recIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr, bool result);
     void dmpIsObjectImmutable(DWORDLONG key, DWORD value);
-    bool repIsObjectImmutable(void* objPtr);
+    bool repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr);
 
-    void recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result);
+    void recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result);
     void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
-    CORINFO_CLASS_HANDLE repGetObjectType(void* objPtr);
+    CORINFO_CLASS_HANDLE repGetObjectType(CORINFO_OBJECT_HANDLE objPtr);
 
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,

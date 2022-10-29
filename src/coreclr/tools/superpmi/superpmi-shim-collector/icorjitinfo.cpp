@@ -793,15 +793,15 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-void* interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+CORINFO_OBJECT_HANDLE interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getRuntimeTypePointer");
-    void* temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
+    CORINFO_OBJECT_HANDLE temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
     mc->recGetRuntimeTypePointer(cls, temp);
     return temp;
 }
 
-bool interceptor_ICJI::isObjectImmutable(void* typeObj)
+bool interceptor_ICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE typeObj)
 {
     mc->cr->AddCall("isObjectImmutable");
     bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
@@ -809,7 +809,7 @@ bool interceptor_ICJI::isObjectImmutable(void* typeObj)
     return temp;
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(void* typeObj)
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeObj)
 {
     mc->cr->AddCall("getObjectType");
     CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getObjectType(typeObj);

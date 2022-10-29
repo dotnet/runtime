@@ -1003,7 +1003,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void* _getRuntimeTypePointer(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        private static CORINFO_OBJECT_STRUCT_* _getRuntimeTypePointer(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1018,7 +1018,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _isObjectImmutable(IntPtr thisHandle, IntPtr* ppException, void* objPtr)
+        private static byte _isObjectImmutable(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* objPtr)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1033,7 +1033,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_CLASS_STRUCT_* _getObjectType(IntPtr thisHandle, IntPtr* ppException, void* objPtr)
+        private static CORINFO_CLASS_STRUCT_* _getObjectType(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* objPtr)
         {
             var _this = GetThis(thisHandle);
             try
@@ -2754,9 +2754,9 @@ namespace Internal.JitInterface
             callbacks[64] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getTypeForBox;
             callbacks[65] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getBoxHelper;
             callbacks[66] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getUnBoxHelper;
-            callbacks[67] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void*>)&_getRuntimeTypePointer;
-            callbacks[68] = (delegate* unmanaged<IntPtr, IntPtr*, void*, byte>)&_isObjectImmutable;
-            callbacks[69] = (delegate* unmanaged<IntPtr, IntPtr*, void*, CORINFO_CLASS_STRUCT_*>)&_getObjectType;
+            callbacks[67] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_OBJECT_STRUCT_*>)&_getRuntimeTypePointer;
+            callbacks[68] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte>)&_isObjectImmutable;
+            callbacks[69] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getObjectType;
             callbacks[70] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, byte>)&_getReadyToRunHelper;
             callbacks[71] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_LOOKUP*, void>)&_getReadyToRunDelegateCtorHelper;
             callbacks[72] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, byte*>)&_getHelperName;

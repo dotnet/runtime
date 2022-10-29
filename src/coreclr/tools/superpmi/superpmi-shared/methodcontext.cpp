@@ -2223,7 +2223,7 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
+void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, CORINFO_OBJECT_HANDLE result)
 {
     if (GetRuntimeTypePointer == nullptr)
         GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
@@ -2237,16 +2237,16 @@ void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
 {
     printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
 }
-void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+CORINFO_OBJECT_HANDLE MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
     AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
     DWORDLONG value = GetRuntimeTypePointer->Get(key);
     DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
-    return (void*)value;
+    return (CORINFO_OBJECT_HANDLE)value;
 }
 
-void MethodContext::recIsObjectImmutable(void* objPtr, bool result)
+void MethodContext::recIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr, bool result)
 {
     if (IsObjectImmutable == nullptr)
         IsObjectImmutable = new LightWeightMap<DWORDLONG, DWORD>();
@@ -2260,7 +2260,7 @@ void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
 {
     printf("IsObjectImmutable key obj-%016llX, value res-%u", key, value);
 }
-bool MethodContext::repIsObjectImmutable(void* objPtr)
+bool MethodContext::repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 {
     DWORDLONG key = (DWORDLONG)objPtr;
     AssertMapAndKeyExist(IsObjectImmutable, key, ": key %016llX", key);
@@ -2269,7 +2269,7 @@ bool MethodContext::repIsObjectImmutable(void* objPtr)
     return (bool)value;
 }
 
-void MethodContext::recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result)
+void MethodContext::recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result)
 {
     if (GetObjectType == nullptr)
         GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
@@ -2283,7 +2283,7 @@ void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
 {
     printf("GetObjectType key obj-%016llX, value res-%016llX", key, value);
 }
-CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* objPtr)
+CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     DWORDLONG key = (DWORDLONG)objPtr;
     AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);

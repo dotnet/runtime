@@ -6053,7 +6053,7 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /***********************************************************************/
-void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+CORINFO_OBJECT_HANDLE CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL{
         THROWS;
@@ -6061,7 +6061,7 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void* pointer = nullptr;
+    CORINFO_OBJECT_HANDLE pointer = NULL;
 
     JIT_TO_EE_TRANSITION();
 
@@ -6069,7 +6069,7 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
     if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
     {
         GCX_COOP();
-        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
+        pointer = (CORINFO_OBJECT_HANDLE)OBJECTREFToObject(typeHnd.GetManagedClassObject());
     }
 
     EE_TO_JIT_TRANSITION();
@@ -6079,7 +6079,7 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 
 
 /***********************************************************************/
-bool CEEInfo::isObjectImmutable(void* objPtr)
+bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 {
     CONTRACTL{
         THROWS;
@@ -6104,7 +6104,7 @@ bool CEEInfo::isObjectImmutable(void* objPtr)
 }
 
 /***********************************************************************/
-CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     CONTRACTL{
         THROWS;
@@ -6112,7 +6112,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    _ASSERT(objPtr != nullptr);
+    _ASSERT(objPtr != NULL);
 
     CORINFO_CLASS_HANDLE handle = NULL;
 

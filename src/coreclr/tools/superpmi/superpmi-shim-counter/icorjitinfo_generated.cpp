@@ -546,7 +546,7 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(
     return original_ICorJitInfo->getUnBoxHelper(cls);
 }
 
-void* interceptor_ICJI::getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE interceptor_ICJI::getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     mcs->AddCall("getRuntimeTypePointer");
@@ -554,14 +554,14 @@ void* interceptor_ICJI::getRuntimeTypePointer(
 }
 
 bool interceptor_ICJI::isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     mcs->AddCall("isObjectImmutable");
     return original_ICorJitInfo->isObjectImmutable(objPtr);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     mcs->AddCall("getObjectType");
     return original_ICorJitInfo->getObjectType(objPtr);

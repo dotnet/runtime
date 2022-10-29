@@ -2996,17 +2996,17 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();
         }
 
-        private bool isObjectImmutable(void* objPtr)
+        private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();
         }
         
-        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             return null;
         }

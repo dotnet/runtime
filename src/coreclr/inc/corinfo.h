@@ -2501,7 +2501,7 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    virtual void* getRuntimeTypePointer(
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2515,7 +2515,7 @@ public:
     //    Returns true if object is known to be immutable
     //
     virtual bool isObjectImmutable(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     //------------------------------------------------------------------------------
@@ -2528,7 +2528,7 @@ public:
     //    Returns CORINFO_CLASS_HANDLE handle that represents given object's type
     //
     virtual CORINFO_CLASS_HANDLE getObjectType(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     virtual bool getReadyToRunHelper(

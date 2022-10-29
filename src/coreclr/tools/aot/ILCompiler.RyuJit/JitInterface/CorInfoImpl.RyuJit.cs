@@ -2265,7 +2265,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);
             return obj switch
@@ -2277,14 +2277,14 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static
         {
             // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
             return null;
         }
 
-        private bool isObjectImmutable(void* objPtr)
+        private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);
             return obj switch
@@ -2297,7 +2297,7 @@ namespace Internal.JitInterface
 
         private int getArrayLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
-            object obj = HandleToObject(objPtr);
+            object obj = HandleToObject(objHnd);
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
