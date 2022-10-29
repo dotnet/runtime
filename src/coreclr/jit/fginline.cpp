@@ -194,14 +194,12 @@ private:
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
             //
-            BasicBlock* prevInlineeBB   = nullptr;
             BasicBlock* inlineeBB       = nullptr;
             GenTree*    inlineCandidate = tree;
             do
             {
                 GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
                 inlineCandidate         = retExpr->gtSubstExpr;
-                prevInlineeBB           = inlineeBB;
                 inlineeBB               = retExpr->gtSubstBB;
             } while (inlineCandidate->OperIs(GT_RET_EXPR));
 
@@ -242,34 +240,19 @@ private:
             *use          = inlineCandidate;
             m_madeChanges = true;
 
-            // TODO-Inlining: The inliner had strange previous behavior where
-            // it for successful inlines that were chains would propagate the
-            // flags from the second-to-last inlinee's BB. Remove this once we
-            // can take these changes. We still need to propagate the mandatory
-            // "IR-presence" flags.
-            // Furthermore, we should really only propagate BBF_COPY_PROPAGATE
+            // TODO-Inlining: We should really only propagate BBF_COPY_PROPAGATE
             // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
             // propagating that has the effect that inlining a tree from a hot
             // block into a block without profile weights means we suddenly
             // start to see the inliner block as hot and treat future inline
             // candidates more aggressively.
             //
-            BasicBlockFlags newBBFlags = BBF_EMPTY;
-            if (prevInlineeBB != nullptr)
+            if (inlineeBB != nullptr)
             {
-                newBBFlags |= prevInlineeBB->bbFlags;
-
-                if (inlineeBB != nullptr)
-                {
-                    newBBFlags |= inlineeBB->bbFlags & BBF_COPY_PROPAGATE;
-                }
+                // IR may potentially contain nodes that requires mandatory BB flags to be set.
+                // Propagate those flags from the containing BB.
+                m_compiler->compCurBB->bbFlags |= inlineeBB->bbFlags & BBF_SPLIT_GAINED;
             }
-            else if (inlineeBB != nullptr)
-            {
-                newBBFlags |= inlineeBB->bbFlags;
-            }
-
-            m_compiler->compCurBB->bbFlags |= (newBBFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
             if (m_compiler->verbose)
