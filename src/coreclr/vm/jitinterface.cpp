@@ -2523,6 +2523,23 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
         pMD->AsDynamicMethodDesc()->GetResolver()->FreeCompileTimeState();
     }
 
+    // Free all handles used by JIT
+    if (m_pJitHandles != nullptr)
+    {
+        OBJECTHANDLE *elements = m_pJitHandles->GetElements();
+        unsigned count = m_pJitHandles->GetCount();
+        for (unsigned i = 0; i < count; i++)
+        {
+            size_t elementHandle = (size_t)elements[i];
+            // All jit handles have the lowest bit set ("it's not a frozen object" marker)
+            // Clear it here.
+            _ASSERT(elementHandle & 1);
+            AppDomain::GetCurrentDomain()->DestroyHandle((OBJECTHANDLE)(elementHandle - 1));
+        }
+        delete m_pJitHandles;
+        m_pJitHandles = nullptr;
+    }
+
     EE_TO_JIT_TRANSITION();
 }
 
@@ -2898,6 +2915,53 @@ void CEEInfo::ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, 
     // Stubs-as-IL have to do regular dependency tracking because they can be shared cross-domain.
     Module * pModule = GetDynamicResolver(pResolvedToken->tokenScope)->GetDynamicMethod()->GetModule();
     ScanToken(pModule, pResolvedToken, th, pMD);
+}
+
+OBJECTHANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (m_pJitHandles == nullptr)
+    {
+        m_pJitHandles = new SArray<OBJECTHANDLE>();
+    }
+
+    OBJECTHANDLE handle;
+    GCPROTECT_BEGIN(obj);
+    handle = AppDomain::GetCurrentDomain()->CreateHandle(obj);
+
+    // We know that handle is aligned so we use the lowest bit as a marker
+    // "this is a handle, not a frozen object".
+    handle = (OBJECTHANDLE)((size_t)handle | 1);
+    m_pJitHandles->Append(handle);
+    GCPROTECT_END();
+    return handle;
+}
+
+Object* CEEInfo::getObjectFromJitHandle(OBJECTHANDLE handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    size_t intHandle = (size_t)handle;
+    if (intHandle & 1)
+    {
+        return *(Object**)(intHandle - 1);
+    }
+
+    // Frozen object
+    return (Object*)intHandle;
 }
 
 MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
@@ -6069,7 +6133,9 @@ CORINFO_OBJECT_HANDLE CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd
     if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
     {
         GCX_COOP();
+        // ManagedClassObject is frozen here
         pointer = (CORINFO_OBJECT_HANDLE)OBJECTREFToObject(typeHnd.GetManagedClassObject());
+        _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)pointer));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -6079,7 +6145,7 @@ CORINFO_OBJECT_HANDLE CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd
 
 
 /***********************************************************************/
-bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
+bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 {
     CONTRACTL{
         THROWS;
@@ -6087,11 +6153,13 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
+    _ASSERT(objHandle != NULL);
+
 #ifdef DEBUG
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = (Object*)objPtr;
+    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHandle);
     MethodTable* type = obj->GetMethodTable();
 
     _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
@@ -6104,7 +6172,7 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 }
 
 /***********************************************************************/
-CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 {
     CONTRACTL{
         THROWS;
@@ -6112,14 +6180,14 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    _ASSERT(objPtr != NULL);
+    _ASSERT(objHandle != NULL);
 
     CORINFO_CLASS_HANDLE handle = NULL;
 
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = (Object*)objPtr;
+    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHandle);
     VALIDATEOBJECT(obj);
     handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
 
@@ -11960,11 +12028,11 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             if (fieldObj != NULL)
             {
                 Object* obj = OBJECTREFToObject(fieldObj);
-                size_t handle;
+                OBJECTHANDLE handle;
                 if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
-                    handle = (size_t)obj;
-                    memcpy(buffer, &handle, sizeof(size_t));
+                    handle = (OBJECTHANDLE)obj;
+                    memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
                     result = true;
                 }
                 else if (!ignoreMovableObjects)
@@ -11974,10 +12042,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                     // objects at the moment so it's for better throughput.
                     if (objMT->IsString() || objMT->IsArray())
                     {
-                        // TODO: save handle to a list to then release once JIT finishes
-                        handle = (size_t)AppDomain::GetCurrentDomain()->CreateHandle(fieldObj);
-                        handle |= 1;
-                        memcpy(buffer, &handle, sizeof(size_t));
+                        handle = getJitHandleForObject(fieldObj);
+                        memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
                         result = true;
                     }
                 }

@@ -494,6 +494,7 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
+        m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
@@ -569,15 +570,19 @@ public:
 #endif
 
 protected:
+    SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
-
+    
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
     {
         LIMITED_METHOD_CONTRACT;
         return (CORINFO_METHOD_HANDLE)m_pMethodBeingCompiled;
     }
+
+    OBJECTHANDLE getJitHandleForObject(OBJECTREF obj);
+    Object* getObjectFromJitHandle(OBJECTHANDLE handle);
 
     // Cache of last GetMethodForSecurity() lookup
     CORINFO_METHOD_HANDLE   m_hMethodForSecurity_Key;

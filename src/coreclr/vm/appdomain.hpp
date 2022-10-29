@@ -1010,6 +1010,13 @@ public:
         return ::CreateHandle(m_handleStore, object);
     }
 
+    void DestroyHandle(OBJECTHANDLE handle)
+    {
+        WRAPPER_NO_CONTRACT;
+        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, handle == NULL)
+        ::DestroyHandle(handle);
+    }
+
     OBJECTHANDLE CreateWeakHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
