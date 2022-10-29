@@ -2523,7 +2523,7 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
             // All jit handles have the lowest bit set ("it's not a frozen object" marker)
             // Clear it here.
             _ASSERT(elementHandle & 1);
-            AppDomain::GetCurrentDomain()->DestroyHandle((OBJECTHANDLE)(elementHandle - 1));
+            ::DestroyHandle((OBJECTHANDLE)(elementHandle - 1));
         }
         delete m_pJitHandles;
         m_pJitHandles = nullptr;
