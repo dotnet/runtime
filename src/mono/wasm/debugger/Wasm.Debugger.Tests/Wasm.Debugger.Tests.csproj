@@ -26,12 +26,6 @@
     <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
 
     <_AdditionalPropertiesForTestSuiteReference>
-      RuntimeConfiguration=$(RuntimeConfiguration);
-      ArchiveTests=$(ArchiveTests);
-      ArchiveDirForHelix=$(TargetDir);
-      TestArchiveTestsDir=$(TestArchiveTestsDir);
-      ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
-      DotNetForTests=$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))
     </_AdditionalPropertiesForTestSuiteReference>
   </PropertyGroup>
 
@@ -40,7 +34,13 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
-                      AdditionalProperties="$(_AdditionalPropertiesForTestSuiteReference)" />
+                      AdditionalProperties="
+                          RuntimeConfiguration=$(RuntimeConfiguration);
+                          ArchiveTests=$(ArchiveTests);
+                          ArchiveDirForHelix=$(TargetDir);
+                          TestArchiveTestsDir=$(TestArchiveTestsDir);
+                          ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
+                          DotNetForTests=$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
