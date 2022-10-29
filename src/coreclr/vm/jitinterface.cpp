@@ -12037,11 +12037,9 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 }
                 else if (!ignoreMovableObjects)
                 {
-                    PTR_MethodTable objMT = obj->GetMethodTable();
-                        handle = getJitHandleForObject(fieldObj);
-                        memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
-                        result = true;
-                    }
+                    handle = getJitHandleForObject(fieldObj);
+                    memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
+                    result = true;
                 }
             }
             else
