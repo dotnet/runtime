@@ -102,7 +102,6 @@ void StgIO::CtorInit()
     m_rgBuff = 0;
     m_cbBuff = 0;
     m_rgPageMap = 0;
-    m_FileType = FILETYPE_UNKNOWN;
     m_cRef = 1;
     m_mtMappedType = MTYPE_NOMAPPING;
 }
@@ -310,20 +309,6 @@ ErrExit:
 
     // Save flags for later.
     m_fFlags = fFlags;
-    if ((szName != NULL) && (*szName != 0))
-    {
-        LPCWSTR ext;
-        size_t extSize;
-        SplitPathInterior(szName, NULL, 0, NULL, 0, NULL, 0, &ext, &extSize);
-        if (SString::_wcsicmp(ext, W(".obj")) == 0)
-        {
-            m_FileType = FILETYPE_NTOBJ;
-        }
-        else if (SString::_wcsicmp(ext, W(".tlb")) == 0)
-        {
-            m_FileType = FILETYPE_TLB;
-        }
-    }
 
     // For auto map case, map the view of the file as part of open.
     if (m_bAutoMap &&
