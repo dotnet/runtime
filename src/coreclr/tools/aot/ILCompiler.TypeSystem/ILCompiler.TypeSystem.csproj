@@ -18,7 +18,6 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
     <IsTrimmable>true</IsTrimmable>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
