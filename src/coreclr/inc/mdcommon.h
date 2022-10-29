@@ -15,7 +15,6 @@ enum FILETYPE
 {
     FILETYPE_UNKNOWN,       // Unknown or undefined type.
     FILETYPE_CLB,           // Native .clb file format.
-    FILETYPE_CLX,           // An obsolete file format.
     FILETYPE_NTPE,          // Windows PE executable.
 };
 
