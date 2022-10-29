@@ -574,7 +574,7 @@ protected:
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
-    
+
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
     {
         LIMITED_METHOD_CONTRACT;
