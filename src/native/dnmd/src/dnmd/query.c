@@ -6,12 +6,15 @@
 #define CreateTokenIndex(i) (mdToken)(i & 0x00ffffff)
 #define ExtractTokenIndex(i) (uint32_t)(i & 0x00ffffff)
 
+#define CursorTable(t) (t)._reserved1
+#define CursorRow(t) (t)._reserved2
+
 mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
 {
     assert(table != NULL && row != 0);
     mdcursor_t c;
-    c._reserved1 = (intptr_t)table;
-    c._reserved2 = row;
+    CursorTable(c) = (intptr_t)table;
+    CursorRow(c) = row;
     return c;
 }
 
@@ -72,8 +75,8 @@ bool md_cursor_next(mdcursor_t* c)
 
 bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance)
 {
-    mdtable_t* b_table = (mdtable_t*)begin._reserved1;
-    mdtable_t* e_table = (mdtable_t*)end._reserved1;
+    mdtable_t* b_table = (mdtable_t*)CursorTable(begin);
+    mdtable_t* e_table = (mdtable_t*)CursorTable(end);
 
     // Cursors must point to same table and be non-null.
     if (b_table != e_table || b_table == NULL)
@@ -83,8 +86,8 @@ bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance)
         return false;
 
     // Compute the relative distance between the two indices
-    uint32_t e_row = ExtractTokenIndex(end._reserved2);
-    uint32_t b_row = ExtractTokenIndex(begin._reserved2);
+    uint32_t e_row = ExtractTokenIndex(CursorRow(end));
+    uint32_t b_row = ExtractTokenIndex(CursorRow(begin));
     if (b_row < e_row)
     {
         *distance = (int32_t)(ExtractTokenIndex(e_row) - ExtractTokenIndex(b_row));
@@ -125,14 +128,14 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     if (tk == NULL)
         return false;
 
-    mdtable_t* table = (mdtable_t*)c._reserved1;
+    mdtable_t* table = (mdtable_t*)CursorTable(c);
     if (table == NULL)
     {
         *tk = mdTokenNil;
         return true;
     }
 
-    mdToken row = CreateTokenIndex(c._reserved2);
+    mdToken row = CreateTokenIndex(CursorRow(c));
     if (row > table->row_count)
         return false;
 
@@ -151,7 +154,7 @@ typedef struct _query_cxt_t
 static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
-    mdtable_t* table = (mdtable_t*)c._reserved1;
+    mdtable_t* table = (mdtable_t*)CursorTable(c);
     if (table == NULL)
         return false;
 
@@ -174,7 +177,7 @@ static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t*
 
     uint32_t offset = ExtractOffset(cd);
     // Metadata row indexing is 1-based, minus 1.
-    uint32_t row = ExtractTokenIndex(c._reserved2) - 1;
+    uint32_t row = ExtractTokenIndex(CursorRow(c)) - 1;
     assert(row < table->row_count);
 
     qcxt->table = table;
@@ -265,8 +268,7 @@ static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
             return false;
 
         assert(cursor != NULL);
-        cursor->_reserved1 = (intptr_t)table;
-        cursor->_reserved2 = table_row;
+        *cursor = create_cursor(table, table_row);
     }
 
     return true;
