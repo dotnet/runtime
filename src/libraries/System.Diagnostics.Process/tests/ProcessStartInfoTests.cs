@@ -1375,7 +1375,7 @@ namespace System.Diagnostics.Tests
             Assert.StartsWith(expected, title);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_LoadUserProfile_And_UseCredentialsForNetworkingOnly_AreIncompatible()
