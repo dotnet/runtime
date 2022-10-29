@@ -702,6 +702,9 @@ namespace System.Reflection.Metadata
 		Assert.True(foundCallerMemberName);
 		Assert.True(foundOptional);
 
+		// n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
+		Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
+
                 Assert.True(parms[3].HasDefaultValue);
 		Assert.True(parms[4].HasDefaultValue);
 
