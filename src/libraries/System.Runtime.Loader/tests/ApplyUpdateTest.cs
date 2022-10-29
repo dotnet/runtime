@@ -702,7 +702,11 @@ namespace System.Reflection.Metadata
 		Assert.True(foundCallerMemberName);
 		Assert.True(foundOptional);
 
-                // TODO: check the default values of the last two params
+                Assert.True(parms[3].HasDefaultValue);
+		Assert.True(parms[4].HasDefaultValue);
+
+		Assert.Null(parms[3].DefaultValue);
+		Assert.Equal(string.Empty, parms[4].DefaultValue);
             });
 	} 
     }
