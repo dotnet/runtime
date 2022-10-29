@@ -1749,13 +1749,17 @@ int CEEInfo::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
     }
     _ASSERT(obj != nullptr);
 
-    if (obj->GetMethodTable()->IsArray() && obj->GetMethodTable()->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (obj->GetMethodTable()->IsArray())
     {
         arrLen = ((ArrayBase*)obj)->GetNumComponents();
     }
     else if (obj->GetMethodTable()->IsString())
     {
         arrLen = ((StringObject*)obj)->GetStringLength();
+    }
+    else
+    {
+        UNREACHABLE();
     }
 
     EE_TO_JIT_TRANSITION();

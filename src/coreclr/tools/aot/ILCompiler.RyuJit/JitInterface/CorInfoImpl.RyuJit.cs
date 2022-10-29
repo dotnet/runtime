@@ -2294,5 +2294,16 @@ namespace Internal.JitInterface
                 _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
             };
         }
+
+        private int getArrayLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        {
+            object obj = HandleToObject(objPtr);
+            return obj switch
+            {
+                FrozenStringNode frozenStr => frozenStr.Data.Length,
+                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
+                _ => throw new NotImplementedException($"Unexpected object in getArrayLength: {obj}")
+            };
+        }
     }
 }

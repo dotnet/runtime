@@ -8788,9 +8788,23 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         }
         else // Look up the VNFunc for the node
         {
+            // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
             if (tree->OperIs(GT_ARR_LENGTH))
             {
-                ValueNum  addressVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+                // Case 1: ARR_LENGTH(FROZEN_OBJ)
+                ValueNum addressVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+                if (vnStore->IsVNHandle(addressVN) && (vnStore->GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
+                {
+                    size_t handle = vnStore->CoercedConstantValue<size_t>(addressVN);
+                    int    len    = this->info.compCompHnd->getArrayLength((CORINFO_OBJECT_HANDLE)handle);
+                    if (len >= 0)
+                    {
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
+                        return;
+                    }
+                }
+
+                // Case 2: ARR_LENGTH(static-readonly-field)
                 VNFuncApp funcApp;
                 if (vnStore->GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
                 {
