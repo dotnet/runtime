@@ -1611,17 +1611,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 .AddInMemoryCollection(dic)
                 .Build();
 
-            var _dictionary = config.Get<Dictionary<string, string>>();
-            Assert.Single(_dictionary);
-
-            var _dictionaryInterface = config.Get<IDictionary<string, string>>();
-            Assert.Single(_dictionaryInterface);
-
-            var _extendedDictionaryClass = config.Get<ExtendedDictionary<string, string>>();
-            Assert.Single(_extendedDictionaryClass);
-
-            var _implementerOfIDictionaryClass = config.Get<ImplementerOfIDictionaryClass<string, string>>();
-            Assert.Single(_implementerOfIDictionaryClass);
+            Assert.Single(config.Get<Dictionary<string, string>>());
+            Assert.Single(config.Get<IDictionary<string, string>>());
+            Assert.Single(config.Get<ExtendedDictionary<string, string>>());
+            Assert.Single(config.Get<ImplementerOfIDictionaryClass<string, string>>());
         }
 
         public class ImplementerOfIDictionaryClass<TKey, TValue> : IDictionary<TKey, TValue>
