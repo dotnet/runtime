@@ -13,7 +13,7 @@
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <CoreBuildDependsOn />
-    <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn>_ExtractTestClassNamesForDebuggerTests</BundleTestWasmAppDependsOn>
     <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</ExtractTestClassNamesForHelix>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
     <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
@@ -73,9 +73,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="BundleDebuggerTestsForHelix" />
-
-  <Target Name="_ExtractTestClassNames" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'" AfterTargets="BundleDebuggerTestsForHelix">
+  <Target Name="_ExtractTestClassNamesForDebuggerTests" Condition="'$(ExtractTestClassNamesForHelix)' == 'true'">
     <Exec Command="dotnet test --no-build -t --nologo -v:q -p:Configuration=$(Configuration)" ConsoleToMSBuild="true" >
       <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
     </Exec>
