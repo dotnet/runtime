@@ -95,7 +95,29 @@ namespace System
             }
         }
 
-        internal object? Target => GCHandle.InternalGet(_weakHandle) ?? _comInfo?.ResolveTarget();
+        internal object? Target => GCHandle.InternalGet(_weakHandle) ?? RehydrateTarget();
+
+        private object? RehydrateTarget()
+        {
+            object? target = null;
+            lock (this)
+            {
+                if (_comInfo != null)
+                {
+                    // check if the target is still null
+                    target = GCHandle.InternalGet(_weakHandle);
+                    if (target == null)
+                    {
+                        // resolve and reset
+                        target = _comInfo.ResolveTarget();
+                        if (target != null)
+                            GCHandle.InternalSet(_weakHandle, target);
+                    }
+                }
+            }
+
+            return target;
+        }
 
         private static ComAwareWeakReference EnsureComAwareReference(ref nint taggedHandle)
         {
