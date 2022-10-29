@@ -7019,26 +7019,26 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     return value != 0;
 }
 
-void MethodContext::recGetArrayLength(CORINFO_OBJECT_HANDLE objHandle, int result)
+void MethodContext::recGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHandle, int result)
 {
-    if (GetArrayLength == nullptr)
-        GetArrayLength = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetArrayOrStringLength == nullptr)
+        GetArrayOrStringLength = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = CastHandle(objHandle);
     DWORD value = (DWORD)result;
-    GetArrayLength->Add(key, value);
-    DEBUG_REC(dmpGetArrayLength(key, value));
+    GetArrayOrStringLength->Add(key, value);
+    DEBUG_REC(dmpGetArrayOrStringLength(key, value));
 }
-void MethodContext::dmpGetArrayLength(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetArrayOrStringLength(DWORDLONG key, DWORD value)
 {
-    printf("GetArrayLength key %016llX, value %u", key, value);
+    printf("GetArrayOrStringLength key %016llX, value %u", key, value);
 }
-int MethodContext::repGetArrayLength(CORINFO_OBJECT_HANDLE objHandle)
+int MethodContext::repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHandle)
 {
     DWORDLONG key = CastHandle(objHandle);
-    AssertMapAndKeyExist(GetArrayLength, key, ": key %016llX", key);
-    DWORD value = GetArrayLength->Get(key);
-    DEBUG_REP(dmpGetArrayLength(key, value));
+    AssertMapAndKeyExist(GetArrayOrStringLength, key, ": key %016llX", key);
+    DWORD value = GetArrayOrStringLength->Get(key);
+    DEBUG_REP(dmpGetArrayOrStringLength(key, value));
     return value != 0;
 }
 

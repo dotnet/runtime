@@ -1721,7 +1721,7 @@ bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return res;
 }
 
-int CEEInfo::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
+int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     CONTRACTL {
         THROWS;
@@ -1736,7 +1736,7 @@ int CEEInfo::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
 
     GCX_COOP();
 
-    Object* obj = getObjectFromJitHandle(objHnd);
+    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHnd);
 
     if (obj->GetMethodTable()->IsArray())
     {
@@ -2510,23 +2510,6 @@ void CEEInfo::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     if (pMD->IsDynamicMethod())
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->FreeCompileTimeState();
-    }
-
-    // Free all handles used by JIT
-    if (m_pJitHandles != nullptr)
-    {
-        OBJECTHANDLE *elements = m_pJitHandles->GetElements();
-        unsigned count = m_pJitHandles->GetCount();
-        for (unsigned i = 0; i < count; i++)
-        {
-            size_t elementHandle = (size_t)elements[i];
-            // All jit handles have the lowest bit set ("it's not a frozen object" marker)
-            // Clear it here.
-            _ASSERT(elementHandle & 1);
-            ::DestroyHandle((OBJECTHANDLE)(elementHandle - 1));
-        }
-        delete m_pJitHandles;
-        m_pJitHandles = nullptr;
     }
 
     EE_TO_JIT_TRANSITION();

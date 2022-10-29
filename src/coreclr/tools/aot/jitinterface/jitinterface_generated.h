@@ -109,7 +109,7 @@ struct JitInterfaceCallbacks
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
-    int (* getArrayLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
+    int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
     void (* setBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap);
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
@@ -1160,11 +1160,11 @@ public:
     return temp;
 }
 
-    virtual int getArrayLength(
+    virtual int getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getArrayLength(_thisHandle, &pException, objHnd);
+    int temp = _callbacks->getArrayOrStringLength(_thisHandle, &pException, objHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }

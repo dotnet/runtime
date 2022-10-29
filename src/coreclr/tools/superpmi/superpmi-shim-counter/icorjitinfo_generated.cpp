@@ -787,11 +787,11 @@ bool interceptor_ICJI::isFieldStatic(
     return original_ICorJitInfo->isFieldStatic(fldHnd);
 }
 
-int interceptor_ICJI::getArrayLength(
+int interceptor_ICJI::getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd)
 {
-    mcs->AddCall("getArrayLength");
-    return original_ICorJitInfo->getArrayLength(objHnd);
+    mcs->AddCall("getArrayOrStringLength");
+    return original_ICorJitInfo->getArrayOrStringLength(objHnd);
 }
 
 void interceptor_ICJI::getBoundaries(

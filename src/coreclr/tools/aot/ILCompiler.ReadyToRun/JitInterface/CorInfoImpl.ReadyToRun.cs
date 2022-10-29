@@ -3011,7 +3011,7 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private int getArrayLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             return -1;
         }

@@ -8796,7 +8796,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (vnStore->IsVNHandle(addressVN) && (vnStore->GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
                 {
                     size_t handle = vnStore->CoercedConstantValue<size_t>(addressVN);
-                    int    len    = this->info.compCompHnd->getArrayLength((CORINFO_OBJECT_HANDLE)handle);
+                    int    len    = this->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
                     if (len >= 0)
                     {
                         tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
@@ -8823,7 +8823,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 {
                                     CORINFO_OBJECT_HANDLE objHandle;
                                     memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-                                    int len = this->info.compCompHnd->getArrayLength(objHandle);
+                                    int len = this->info.compCompHnd->getArrayOrStringLength(objHandle);
                                     if (len >= 0)
                                     {
                                         tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));

@@ -1127,7 +1127,7 @@ int interceptor_ICJI::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     mc->cr->AddCall("getArrayLength");
     int result = original_ICorJitInfo->getArrayLength(objHnd);
-    mc->recGetArrayLength(objHnd, result);
+    mc->recGetArrayOrStringLength(objHnd, result);
     return result;
 }
 

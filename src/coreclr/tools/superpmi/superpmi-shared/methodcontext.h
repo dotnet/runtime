@@ -876,9 +876,9 @@ public:
     void dmpIsFieldStatic(DWORDLONG key, DWORD value);
     bool repIsFieldStatic(CORINFO_FIELD_HANDLE fhld);
 
-    void recGetArrayLength(CORINFO_OBJECT_HANDLE objHnd, int result);
-    void dmpGetArrayLength(DWORDLONG key, DWORD value);
-    int repGetArrayLength(CORINFO_OBJECT_HANDLE objHnd);
+    void recGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd, int result);
+    void dmpGetArrayOrStringLength(DWORDLONG key, DWORD value);
+    int repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd);
 
     void recGetIntConfigValue(const WCHAR* name, int defaultValue, int result);
     void dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value);
@@ -1153,7 +1153,7 @@ enum mcPackets
     Packet_GetObjectType = 199,
     Packet_IsObjectImmutable = 200,
     Packet_ExpandRawHandleIntrinsic = 201,
-    Packet_GetArrayLength = 202,
+    Packet_GetArrayOrStringLength = 202,
 };
 
 void SetDebugDumpVariables();

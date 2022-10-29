@@ -2295,14 +2295,14 @@ namespace Internal.JitInterface
             };
         }
 
-        private int getArrayLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             object obj = HandleToObject(objHnd);
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
                 FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => throw new NotImplementedException($"Unexpected object in getArrayLength: {obj}")
+                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
             };
         }
     }

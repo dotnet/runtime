@@ -965,12 +965,12 @@ bool WrapICorJitInfo::isFieldStatic(
     return temp;
 }
 
-int WrapICorJitInfo::getArrayLength(
+int WrapICorJitInfo::getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd)
 {
-    API_ENTER(getArrayLength);
-    int temp = wrapHnd->getArrayLength(objHnd);
-    API_LEAVE(getArrayLength);
+    API_ENTER(getArrayOrStringLength);
+    int temp = wrapHnd->getArrayOrStringLength(objHnd);
+    API_LEAVE(getArrayOrStringLength);
     return temp;
 }
 

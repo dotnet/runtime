@@ -1465,12 +1465,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static int _getArrayLength(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* objHnd)
+        private static int _getArrayOrStringLength(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* objHnd)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getArrayLength(objHnd);
+                return _this.getArrayOrStringLength(objHnd);
             }
             catch (Exception ex)
             {
@@ -2785,7 +2785,7 @@ namespace Internal.JitInterface
             callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint>)&_getFieldOffset;
             callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void>)&_getFieldInfo;
             callbacks[97] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte>)&_isFieldStatic;
-            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int>)&_getArrayLength;
+            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int>)&_getArrayOrStringLength;
             callbacks[99] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint**, BoundaryTypes*, void>)&_getBoundaries;
             callbacks[100] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, OffsetMapping*, void>)&_setBoundaries;
             callbacks[101] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, ILVarInfo**, bool*, void>)&_getVars;
