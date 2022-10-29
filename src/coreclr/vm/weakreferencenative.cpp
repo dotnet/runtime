@@ -361,7 +361,7 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
 
     _ASSERTE(pComWeakReference != nullptr);
 
-//#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // If the weak reference was in a state that it had an IWeakReference* for us to use, then we need to find the IUnknown
     // identity of the underlying COM object (assuming that object is still alive).
     SafeComHolder<IUnknown> pTargetIdentity = nullptr;
@@ -397,19 +397,18 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
                 (void)GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pTargetIdentity, ObjFromComIP::NONE, &rcwRef);
             }
         }
-//#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP
         else
         {
             // If the original RCW was not created through ComWrappers, fall back to the built-in system.
             GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
         }
-//#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
         GCPROTECT_END();
         retRcw.Set(rcwRef);
     }
-
+#endif  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
     END_QCALL;
-//#endif  // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     return;
 }
@@ -567,11 +566,6 @@ FORCEINLINE void ReleaseWeakHandleSpinLock(WEAKREFERENCEREF pThis, OBJECTHANDLE 
 
 //************************************************************************
 
-MethodTable *pWeakReferenceMT = NULL;
-MethodTable *pWeakReferenceOfTCanonMT = NULL;
-
-//************************************************************************
-
 FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Object * pTargetUNSAFE, CLR_BOOL trackResurrection)
 {
     FCALL_CONTRACT;
@@ -589,11 +583,6 @@ FCIMPL3(void, WeakReferenceNative::Create, WeakReferenceObject * pThisUNSAFE, Ob
 
     if (gc.pThis == NULL)
         COMPlusThrow(kNullReferenceException);
-
-    if (pWeakReferenceMT == NULL)
-        pWeakReferenceMT = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
-
-    _ASSERTE(gc.pThis->GetMethodTable()->CanCastToClass(pWeakReferenceMT));
 
     // Create the handle.
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
@@ -641,11 +630,6 @@ FCIMPL3(void, WeakReferenceOfTNative::Create, WeakReferenceObject * pThisUNSAFE,
 
     if (gc.pThis == NULL)
         COMPlusThrow(kNullReferenceException);
-
-    if (pWeakReferenceOfTCanonMT == NULL)
-        pWeakReferenceOfTCanonMT = gc.pThis->GetMethodTable()->GetCanonicalMethodTable();
-
-    _ASSERTE(gc.pThis->GetMethodTable()->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT);
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     NativeComWeakHandleInfo *comWeakHandleInfo = nullptr;
