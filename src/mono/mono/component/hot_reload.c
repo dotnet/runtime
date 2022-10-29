@@ -3212,6 +3212,10 @@ hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, u
 	g_assert (base_info);
 
 	/* FIXME: locking in case the hash table grows */
+
+	if (!base_info->method_params)
+		return 0;
+
 	MonoMethodMetadataUpdateParamInfo* info = NULL;
 	info = g_hash_table_lookup (base_info->method_params, GUINT_TO_POINTER (methoddef_token));
 	if (!info) {
