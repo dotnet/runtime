@@ -492,9 +492,9 @@ public:
     void dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value);
     void* repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
-    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result);
-    void dmpGetReadonlyStaticFieldValue(DLD key, DD value);
-    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize);
+    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects, bool result);
+    void dmpGetReadonlyStaticFieldValue(DLDD key, DD value);
+    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool isSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value);

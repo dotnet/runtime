@@ -3199,15 +3199,13 @@ public:
 
     //------------------------------------------------------------------------------
     // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
-    //    field represents a statically initialized readonly field of any type, it might be:
-    //    * integer/floating point primitive
-    //    * null
-    //    * frozen object reference (string, array or object)
+    //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
-    //    field      - field handle
-    //    buffer     - buffer field's value will be stored to
-    //    bufferSize - size of buffer
+    //    field                - field handle
+    //    buffer               - buffer field's value will be stored to
+    //    bufferSize           - size of buffer
+    //    ignoreMovableObjects - ignore movable reference types or not
     //
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
@@ -3215,7 +3213,8 @@ public:
     virtual bool getReadonlyStaticFieldValue(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
-                    int                     bufferSize
+                    int                     bufferSize,
+                    bool                    ignoreMovableObjects = true
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

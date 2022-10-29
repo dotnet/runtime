@@ -3663,15 +3663,16 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return (void*)value.fieldAddress;
 }
 
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result)
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects, bool result)
 {
     if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DLD, DD>();
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLDD, DD>();
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
+    key.C = (DWORD)ignoreMovableObjects;
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
@@ -3684,17 +3685,18 @@ void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     GetReadonlyStaticFieldValue->Add(key, value);
     DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
 }
-void MethodContext::dmpGetReadonlyStaticFieldValue(DLD key, DD value)
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLDD key, DD value)
 {
-    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, result-%u", key.A, key.B, value.A);
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, ignoremovable-%u, result-%u", key.A, key.B, key.C, value.A);
     GetReadonlyStaticFieldValue->Unlock();
 }
-bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
 {
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
+    key.C = (DWORD)ignoreMovableObjects;
 
     AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
 
@@ -7017,13 +7019,13 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     return value != 0;
 }
 
-void MethodContext::recGetArrayLength(CORINFO_OBJECT_HANDLE fhld, int result)
+void MethodContext::recGetArrayLength(CORINFO_OBJECT_HANDLE objHandle, int result)
 {
     if (GetArrayLength == nullptr)
         GetArrayLength = new LightWeightMap<DWORDLONG, DWORD>();
 
-    DWORDLONG key = CastHandle(fhld);
-    DWORD value = result ? 1 : 0;
+    DWORDLONG key = CastHandle(objHandle);
+    DWORD value = (DWORD)result;
     GetArrayLength->Add(key, value);
     DEBUG_REC(dmpGetArrayLength(key, value));
 }
@@ -7031,9 +7033,9 @@ void MethodContext::dmpGetArrayLength(DWORDLONG key, DWORD value)
 {
     printf("GetArrayLength key %016llX, value %u", key, value);
 }
-int MethodContext::repGetArrayLength(CORINFO_OBJECT_HANDLE fhld)
+int MethodContext::repGetArrayLength(CORINFO_OBJECT_HANDLE objHandle)
 {
-    DWORDLONG key = CastHandle(fhld);
+    DWORDLONG key = CastHandle(objHandle);
     AssertMapAndKeyExist(GetArrayLength, key, ": key %016llX", key);
     DWORD value = GetArrayLength->Get(key);
     DEBUG_REP(dmpGetArrayLength(key, value));

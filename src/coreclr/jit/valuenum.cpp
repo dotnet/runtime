@@ -8805,7 +8805,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             {
                                 uint8_t buffer[TARGET_POINTER_SIZE] = {0};
                                 if (this->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
-                                                                                        TARGET_POINTER_SIZE))
+                                                                                        TARGET_POINTER_SIZE, false))
                                 {
                                     CORINFO_OBJECT_HANDLE objHandle;
                                     memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);

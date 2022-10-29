@@ -2212,7 +2212,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);

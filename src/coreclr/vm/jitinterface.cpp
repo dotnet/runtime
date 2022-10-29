@@ -11918,7 +11918,7 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11960,8 +11960,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
                     handle = (size_t)obj;
+                    memcpy(buffer, &handle, sizeof(size_t));
+                    result = true;
                 }
-                else
+                else if (!ignoreMovableObjects)
                 {
                     PTR_MethodTable objMT = obj->GetMethodTable();
                     // We don't need to limit it to these types but JIT doesn't need other types of
@@ -11971,10 +11973,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                         // TODO: save handle to a list to then release once JIT finishes
                         handle = (size_t)AppDomain::GetCurrentDomain()->CreateHandle(fieldObj);
                         handle |= 1;
+                        memcpy(buffer, &handle, sizeof(size_t));
+                        result = true;
                     }
                 }
-                memcpy(buffer, &handle, sizeof(size_t));
-                result = true;
             }
             else
             {
