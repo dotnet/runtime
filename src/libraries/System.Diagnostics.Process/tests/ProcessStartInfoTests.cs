@@ -965,6 +965,25 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UseCredentialsForNetworkingOnly_SetWindows_GetReturnsExpected(bool useCredentialsForNetworkingOnly)
+        {
+            var info = new ProcessStartInfo { UseCredentialsForNetworkingOnly = useCredentialsForNetworkingOnly };
+            Assert.Equal(useCredentialsForNetworkingOnly, info.UseCredentialsForNetworkingOnly);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UseCredentialsForNetworkingOnly_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.UseCredentialsForNetworkingOnly);
+            Assert.Throws<PlatformNotSupportedException>(() => info.UseCredentialsForNetworkingOnly = false);
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("passwordInClearText")]
