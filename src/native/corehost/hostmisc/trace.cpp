@@ -13,7 +13,7 @@
 //  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=2          implies g_trace_verbosity = 2.  // Trace "enabled".  warn() and error() messages will be produced
 //  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=1          implies g_trace_verbosity = 1.  // Trace "enabled".  error() messages will be produced
 static int g_trace_verbosity = 0;
-static FILE * g_trace_file = stderr;
+static FILE * g_trace_file = nullptr;
 thread_local static trace::error_writer_fn g_error_writer = nullptr;
 
 namespace
@@ -83,7 +83,7 @@ bool trace::enable()
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
 
-        g_trace_file = stderr;
+        g_trace_file = stderr;  // Trace to stderr by default
         if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
         {
             FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
@@ -215,11 +215,14 @@ void trace::warning(const pal::char_t* format, ...)
 
 void trace::flush()
 {
-    std::lock_guard<spin_lock> lock(g_trace_lock);
+    if (g_trace_file != nullptr)
+    {
+        std::lock_guard<spin_lock> lock(g_trace_lock);
+        std::fflush(g_trace_file);
+    }
 
-    pal::file_flush(g_trace_file);
-    pal::err_flush();
-    pal::out_flush();
+    std::fflush(stderr);
+    std::fflush(stdout);
 }
 
 trace::error_writer_fn trace::set_error_writer(trace::error_writer_fn error_writer)
