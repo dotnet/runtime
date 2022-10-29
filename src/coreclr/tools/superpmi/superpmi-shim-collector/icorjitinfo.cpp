@@ -1123,10 +1123,10 @@ bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return result;
 }
 
-int interceptor_ICJI::getArrayLength(CORINFO_OBJECT_HANDLE objHnd)
+int interceptor_ICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
-    mc->cr->AddCall("getArrayLength");
-    int result = original_ICorJitInfo->getArrayLength(objHnd);
+    mc->cr->AddCall("getArrayOrStringLength");
+    int result = original_ICorJitInfo->getArrayOrStringLength(objHnd);
     mc->recGetArrayOrStringLength(objHnd, result);
     return result;
 }
