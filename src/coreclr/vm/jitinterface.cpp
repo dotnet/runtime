@@ -2897,15 +2897,15 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool know
     }
     CONTRACTL_END;
 
-    if (m_pJitHandles == nullptr)
-    {
-        m_pJitHandles = new SArray<OBJECTHANDLE>();
-    }
-
     Object* obj = OBJECTREFToObject(objref);
     if (knownFrozen || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
     {
         return (CORINFO_OBJECT_HANDLE)obj;
+    }
+
+    if (m_pJitHandles == nullptr)
+    {
+        m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
     OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(objref);
