@@ -738,17 +738,17 @@ size_t CEEInfo::printObjectDescription (
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(handle));
+    OBJECTREF obj = getObjectFromJitHandle(handle);
     StackSString stackStr;
 
     // Currently only supported for String and RuntimeType
     if (obj->GetMethodTable()->IsString())
     {
-        ((StringObject*)obj)->GetSString(stackStr);
+        ((STRINGREF)obj)->GetSString(stackStr);
     }
     else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
     {
-        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+        ((REFLECTCLASSBASEREF)obj)->GetType().GetName(stackStr);
     }
     else
     {
@@ -1738,7 +1738,7 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 
     if (obj->GetMethodTable()->IsArray())
     {
-        arrLen = ((BASEARRAYREF)obj)->GetNumComponents();
+        arrLen = ((ARRAYBASEREF)obj)->GetNumComponents();
     }
     else if (obj->GetMethodTable()->IsString())
     {
@@ -2897,15 +2897,15 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool know
     }
     CONTRACTL_END;
 
+    if (m_pJitHandles == nullptr)
+    {
+        m_pJitHandles = new SArray<OBJECTHANDLE>();
+    }
+
     Object* obj = OBJECTREFToObject(objref);
     if (knownFrozen || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
     {
         return (CORINFO_OBJECT_HANDLE)obj;
-    }
-
-    if (m_pJitHandles == nullptr)
-    {
-        m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
     OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(objref);
@@ -6132,7 +6132,7 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHandle));
+    OBJECTREF obj = getObjectFromJitHandle(objHandle);
     MethodTable* type = obj->GetMethodTable();
 
     _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
@@ -6160,8 +6160,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHandle));
-    VALIDATEOBJECT(obj);
+    OBJECTREF obj = getObjectFromJitHandle(objHandle);
     handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
 
     EE_TO_JIT_TRANSITION();
