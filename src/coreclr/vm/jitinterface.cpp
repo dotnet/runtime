@@ -2902,15 +2902,13 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
         m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
-    OBJECTHANDLE handle;
-    GCPROTECT_BEGIN(obj);
-    handle = AppDomain::GetCurrentDomain()->CreateHandle(obj);
+    OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(obj);
+    m_pJitHandles->Append(handle);
+    handle.SuppressRelease();
 
     // We know that handle is aligned so we use the lowest bit as a marker
     // "this is a handle, not a frozen object".
-    m_pJitHandles->Append(handle);
-    GCPROTECT_END();
-    return (CORINFO_OBJECT_HANDLE)((size_t)handle | 1);
+    return (CORINFO_OBJECT_HANDLE)((size_t)handle.GetValue() | 1);
 }
 
 OBJECTREF CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
