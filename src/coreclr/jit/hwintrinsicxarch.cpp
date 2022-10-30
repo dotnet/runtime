@@ -1766,6 +1766,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 assert(sig->numArgs == 1);
             }
 
+            if (((intrinsic == NI_SSE_LoadVector128) && !compOpportunisticallyDependsOn(InstructionSet_SSE)) ||
+                ((intrinsic == NI_SSE2_LoadVector128) && !compOpportunisticallyDependsOn(InstructionSet_SSE2)) ||
+                ((intrinsic == NI_AVX_LoadVector256) && !compOpportunisticallyDependsOn(InstructionSet_AVX)))
+            {
+                // Only canonize explicit loads when we have corresponding ISAs available
+                break;
+            }
+
             op1 = impPopStack().val;
 
             if (op1->OperIs(GT_CAST))

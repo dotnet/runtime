@@ -1339,6 +1339,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(sig->numArgs == 1);
             }
 
+            if (((intrinsic == NI_AdvSimd_LoadVector64) || (intrinsic == NI_AdvSimd_LoadVector128)) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+            {
+                // Only canonize explicit loads when we have corresponding ISAs available
+                break;
+            }
+
             op1 = impPopStack().val;
 
             if (op1->OperIs(GT_CAST))
