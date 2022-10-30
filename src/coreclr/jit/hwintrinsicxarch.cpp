@@ -1657,42 +1657,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Load:
-        case NI_Vector256_Load:
-        {
-            assert(sig->numArgs == 1);
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                loadIntrinsic = NI_AVX_LoadVector256;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                loadIntrinsic = NI_SSE2_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_SSE_LoadVector128;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_LoadAligned:
         case NI_Vector256_LoadAligned:
         {
@@ -1784,11 +1748,17 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_LoadVector128:
+        case NI_SSE2_LoadVector128:
+        case NI_AVX_LoadVector256:
+        case NI_Vector128_Load:
+        case NI_Vector256_Load:
         case NI_Vector128_LoadUnsafe:
         case NI_Vector256_LoadUnsafe:
         {
             if (sig->numArgs == 2)
             {
+                assert((intrinsic == NI_Vector128_LoadUnsafe) || (intrinsic == NI_Vector256_LoadUnsafe));
                 op2 = impPopStack().val;
             }
             else

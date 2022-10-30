@@ -1242,38 +1242,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Load:
-        case NI_Vector128_Load:
-        {
-            assert(sig->numArgs == 1);
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_LoadAligned:
         case NI_Vector128_LoadAligned:
         {
@@ -1354,11 +1322,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_LoadVector64:
+        case NI_AdvSimd_LoadVector128:
+        case NI_Vector64_Load:
+        case NI_Vector128_Load:
         case NI_Vector64_LoadUnsafe:
         case NI_Vector128_LoadUnsafe:
         {
             if (sig->numArgs == 2)
             {
+                assert((intrinsic == NI_Vector128_LoadUnsafe) || (intrinsic == NI_Vector64_LoadUnsafe));
                 op2 = impPopStack().val;
             }
             else
@@ -1385,18 +1358,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewIndir(retType, op1);
+            retNode->gtFlags |= GTF_IND_UNALIGNED | GTF_GLOB_REF;
             break;
         }
 
