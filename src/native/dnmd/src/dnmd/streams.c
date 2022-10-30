@@ -210,7 +210,7 @@ bool initialize_tables(mdcxt_t* cxt)
     valid = valid_tables;
     for (size_t i = 0; valid; ++i)
     {
-        // If the table is valid, initalize the table
+        // If the table is valid, initialize the table
         if (valid & 1)
         {
             table = &cxt->tables[i];

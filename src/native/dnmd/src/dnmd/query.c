@@ -6,15 +6,22 @@
 #define CreateTokenIndex(i) (mdToken)(i & 0x00ffffff)
 #define ExtractTokenIndex(i) (uint32_t)(i & 0x00ffffff)
 
-#define CursorTable(t) (t)._reserved1
-#define CursorRow(t) (t)._reserved2
+static mdtable_t* CursorTable(mdcursor_t* c)
+{
+    return (mdtable_t*)c->_reserved1;
+}
+
+static uint32_t CursorRow(mdcursor_t* c)
+{
+    return ExtractTokenIndex(c->_reserved2);
+}
 
 mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
 {
     assert(table != NULL && row != 0);
     mdcursor_t c;
-    CursorTable(c) = (intptr_t)table;
-    CursorRow(c) = row;
+    c._reserved1 = (intptr_t)table;
+    c._reserved2 = row;
     return c;
 }
 
@@ -26,28 +33,18 @@ static mdtable_t* type_to_table(mdcxt_t* cxt, mdtable_id_t table_id)
     return &cxt->tables[table_id];
 }
 
-bool md_table_row_count(mdhandle_t handle, mdtable_id_t table_id, uint32_t* count)
+bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, int32_t* count)
 {
     if (count == NULL)
         return false;
 
-    mdcxt_t* cxt = extract_mdcxt(handle);
-    if (cxt == NULL)
-        return false;
-
-    mdtable_t* table = type_to_table(cxt, table_id);
-    if (table == NULL)
-        return false;
-
-    *count = table->row_count;
-    return true;
-}
-
-bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor)
-{
     // Set the token to the first row.
     // If the table is empty, the call will return false.
-    return md_token_to_cursor(handle, (CreateTokenType(table_id) | 1), cursor);
+    if (!md_token_to_cursor(handle, (CreateTokenType(table_id) | 1), cursor))
+        return false;
+
+    *count = CursorRow(cursor);
+    return true;
 }
 
 bool md_cursor_move(mdcursor_t* c, int32_t delta)
@@ -55,16 +52,17 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta)
     if (c == NULL)
         return false;
 
-    mdtable_t* table = (mdtable_t*)c->_reserved1;
+    mdtable_t* table = CursorTable(c);
     if (table == NULL)
         return false;
 
-    uint32_t row = ExtractTokenIndex(c->_reserved2);
+    uint32_t row = CursorRow(c);
     row += delta;
+    // Indices into tables begin at 1 - see II.22.
     if (row == 0 || row > table->row_count)
         return false;
 
-    c->_reserved2 = row;
+    *c = create_cursor(table, row);
     return true;
 }
 
@@ -75,8 +73,8 @@ bool md_cursor_next(mdcursor_t* c)
 
 bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance)
 {
-    mdtable_t* b_table = (mdtable_t*)CursorTable(begin);
-    mdtable_t* e_table = (mdtable_t*)CursorTable(end);
+    mdtable_t* b_table = CursorTable(&begin);
+    mdtable_t* e_table = CursorTable(&end);
 
     // Cursors must point to same table and be non-null.
     if (b_table != e_table || b_table == NULL)
@@ -86,16 +84,16 @@ bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance)
         return false;
 
     // Compute the relative distance between the two indices
-    uint32_t e_row = ExtractTokenIndex(CursorRow(end));
-    uint32_t b_row = ExtractTokenIndex(CursorRow(begin));
+    uint32_t e_row = CursorRow(&end);
+    uint32_t b_row = CursorRow(&begin);
     if (b_row < e_row)
     {
-        *distance = (int32_t)(ExtractTokenIndex(e_row) - ExtractTokenIndex(b_row));
+        *distance = (int32_t)(e_row - b_row);
     }
     else
     {
         // Compute distance, then negate
-        *distance = -(int32_t)(ExtractTokenIndex(b_row) - ExtractTokenIndex(e_row));
+        *distance = -(int32_t)(b_row - e_row);
     }
 
     return true;
@@ -128,14 +126,14 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     if (tk == NULL)
         return false;
 
-    mdtable_t* table = (mdtable_t*)CursorTable(c);
+    mdtable_t* table = CursorTable(&c);
     if (table == NULL)
     {
         *tk = mdTokenNil;
         return true;
     }
 
-    mdToken row = CreateTokenIndex(CursorRow(c));
+    mdToken row = CreateTokenIndex(CursorRow(&c));
     if (row > table->row_count)
         return false;
 
@@ -148,13 +146,15 @@ typedef struct _query_cxt_t
     mdtable_t* table;
     mdtcol_t col_details;
     uint8_t const* data;
+    uint8_t const* end;
     size_t data_len;
+    uint32_t next_row_stride;
 } query_cxt_t;
 
-static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t* qcxt)
+static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
-    mdtable_t* table = (mdtable_t*)CursorTable(c);
+    mdtable_t* table = CursorTable(cursor);
     if (table == NULL)
         return false;
 
@@ -169,7 +169,7 @@ static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t*
     idx = (col_idx & 0xff);
 #endif
 
-    assert(idx <= MDTABLE_MAX_COLUMN_COUNT);
+    assert(idx < MDTABLE_MAX_COLUMN_COUNT);
     if (idx >= table->column_count)
         return false;
 
@@ -177,15 +177,25 @@ static bool create_query_context(mdcursor_t c, col_index_t col_idx, query_cxt_t*
 
     uint32_t offset = ExtractOffset(cd);
     // Metadata row indexing is 1-based, minus 1.
-    uint32_t row = ExtractTokenIndex(CursorRow(c)) - 1;
+    uint32_t row = CursorRow(cursor) - 1;
     assert(row < table->row_count);
 
     qcxt->table = table;
     qcxt->col_details = cd;
+
+    // Compute the offset into the first row.
     qcxt->data = table->data.ptr + (row * table->row_size_bytes) + offset;
 
+    // Compute the beginning of the row after the last row.
+    qcxt->end = table->data.ptr + ((row + row_count) * table->row_size_bytes);
+
     // Limit the data read to the width of the column
-    qcxt->data_len = (cd & mdtc_b2) ? 2 : 4;
+    uint32_t const data_len = (cd & mdtc_b2) ? 2 : 4;
+    qcxt->data_len = data_len;
+
+    // Compute the next row stride. Take the total length and substract
+    // the data length for the column to get at the next row's column.
+    qcxt->next_row_stride = table->row_size_bytes - data_len;
     return true;
 }
 
@@ -198,21 +208,24 @@ static bool read_column_data(query_cxt_t* qcxt, uint32_t* data)
         : read_u32(&qcxt->data, &qcxt->data_len, data);
 }
 
-static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, mdToken* tk, mdcursor_t* cursor)
+static bool next_row(query_cxt_t* qcxt)
 {
-    assert(tk != NULL || cursor != NULL);
+    assert(qcxt != NULL);
+    qcxt->data += qcxt->next_row_stride;
+    return qcxt->data < qcxt->end;
+}
+
+static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_idx, uint32_t out_length, mdToken* tk, mdcursor_t* cursor)
+{
+    assert(c != NULL && out_length != 0 && (tk != NULL || cursor != NULL));
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't an index column, then fail.
     if (!(qcxt.col_details & (mdtc_idx_table | mdtc_idx_coded)))
-        return false;
-
-    uint32_t raw;
-    if (!read_column_data(&qcxt, &raw))
-        return false;
+        return -1;
 
     size_t ci_idx;
     coded_index_entry const* ci_entry;
@@ -220,166 +233,219 @@ static bool get_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
 
     uint32_t table_row;
     mdtable_id_t table_id;
-    if (qcxt.col_details & mdtc_idx_table)
+
+    uint32_t raw;
+    int32_t read_in = 0;
+    do
     {
-        assert(ExtractTable(qcxt.col_details) != 0);
+        if (!read_column_data(&qcxt, &raw))
+            return -1;
 
-        // The raw value is the row index into the table that
-        // is embedded in the column details.
-        table_row = CreateTokenIndex(raw);
-        table_id = ExtractTable(qcxt.col_details);
-    }
-    else
-    {
-        assert(qcxt.col_details & mdtc_idx_coded);
+        if (qcxt.col_details & mdtc_idx_table)
+        {
+            assert(ExtractTable(qcxt.col_details) != 0);
 
-        // Use the embedded index into the coded index map.
-        ci_idx = ExtractCodedIndex(qcxt.col_details);
-        if (ci_idx >= ARRAY_SIZE(coded_index_map))
-            return false;
-        ci_entry = &coded_index_map[ci_idx];
+            // The raw value is the row index into the table that
+            // is embedded in the column details.
+            table_row = CreateTokenIndex(raw);
+            table_id = ExtractTable(qcxt.col_details);
+        }
+        else
+        {
+            assert(qcxt.col_details & mdtc_idx_coded);
 
-        // Create a mask to extract the index into the entry.
-        code_mask = (1 << ci_entry->bit_encoding_size) - 1;
-        if ((raw & code_mask) >= ci_entry->lookup_len)
-            return false;
-        table_id = ci_entry->lookup[raw & code_mask];
+            // Use the embedded index into the coded index map.
+            ci_idx = ExtractCodedIndex(qcxt.col_details);
+            if (ci_idx >= ARRAY_SIZE(coded_index_map))
+                return -1;
+            ci_entry = &coded_index_map[ci_idx];
 
-        // Remove the encoded lookup index.
-        table_row = raw >> ci_entry->bit_encoding_size;
-    }
+            // Create a mask to extract the index into the entry.
+            code_mask = (1 << ci_entry->bit_encoding_size) - 1;
+            if ((raw & code_mask) >= ci_entry->lookup_len)
+                return -1;
+            table_id = ci_entry->lookup[raw & code_mask];
 
-    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
-        return false;
+            // Remove the encoded lookup index.
+            table_row = raw >> ci_entry->bit_encoding_size;
+        }
 
-    mdtable_t* table;
-    if (tk != NULL)
-    {
-        *tk = CreateTokenType(table_id) | CreateTokenIndex(table_row);
-    }
-    else
-    {
-        // Returning a cursor means pointing directly into a table
-        // so we must validate the cursor is valid prior to creation.
-        table = &qcxt.table->cxt->tables[table_id];
+        if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
+            return -1;
 
-        // Indices into tables begin at 1 - see II.22.
-        if (table_row > table->row_count)
-            return false;
+        mdtable_t* table;
+        if (tk != NULL)
+        {
+            tk[read_in] = CreateTokenType(table_id) | CreateTokenIndex(table_row);
+        }
+        else
+        {
+            // Returning a cursor means pointing directly into a table
+            // so we must validate the cursor is valid prior to creation.
+            table = &qcxt.table->cxt->tables[table_id];
 
-        assert(cursor != NULL);
-        *cursor = create_cursor(table, table_row);
-    }
+            // Indices into tables begin at 1 - see II.22.
+            if (table_row == 0 || table_row > table->row_count)
+                return -1;
 
-    return true;
+            assert(cursor != NULL);
+            cursor[read_in] = create_cursor(table, table_row);
+        }
+        read_in++;
+    } while (next_row(&qcxt));
+
+    return read_in;
 }
 
-bool md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, mdToken* tk)
+int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk)
 {
-    if (tk == NULL)
-        return false;
-    return get_column_value_as_token_or_cursor(c, col_idx, tk, NULL);
+    if (out_length == 0)
+        return 0;
+    assert(tk != NULL);
+    return get_column_value_as_token_or_cursor(&c, col_idx, out_length, tk, NULL);
 }
 
-bool md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor)
+int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor)
 {
-    if (cursor == NULL)
-        return false;
-    return get_column_value_as_token_or_cursor(c, col_idx, NULL, cursor);
+    if (out_length == 0)
+        return 0;
+    assert(cursor != NULL);
+    return get_column_value_as_token_or_cursor(&c, col_idx, out_length, NULL, cursor);
 }
 
-bool md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t* constant)
+int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant)
 {
-    if (constant == NULL)
-        return false;
+    if (out_length == 0)
+        return 0;
+    assert(constant != NULL);
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(&c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't an constant column, then fail.
     if (!(qcxt.col_details & mdtc_constant))
-        return false;
+        return -1;
 
-    return read_column_data(&qcxt, constant);
+    int32_t read_in = 0;
+    do
+    {
+        if (!read_column_data(&qcxt, &constant[read_in]))
+            return -1;
+        read_in++;
+    } while (next_row(&qcxt));
+
+    return read_in;
 }
 
-bool md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const** str)
+int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str)
 {
-    if (str == NULL)
-        return false;
+    if (out_length == 0)
+        return 0;
+    assert(str != NULL);
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(&c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't a #String column, then fail.
     if (!(qcxt.col_details & mdtc_hstring))
-        return false;
+        return -1;
 
     uint32_t offset;
-    if (!read_column_data(&qcxt, &offset))
-        return false;
+    int32_t read_in = 0;
+    do
+    {
+        if (!read_column_data(&qcxt, &offset))
+            return -1;
+        if (!try_get_string(qcxt.table->cxt, offset, &str[read_in]))
+            return -1;
+        read_in++;
+    } while (next_row(&qcxt));
 
-    return try_get_string(qcxt.table->cxt, offset, str);
+    return read_in;
 }
 
-bool md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte)
+int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte)
 {
-    if (str == NULL || str_chars == NULL || final_byte == NULL)
-        return false;
+    if (out_length == 0)
+        return 0;
+    assert(str != NULL && str_chars != NULL && final_byte != NULL);
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(&c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't a #US column, then fail.
     if (!(qcxt.col_details & mdtc_hus))
-        return false;
+        return -1;
 
     uint32_t offset;
-    if (!read_column_data(&qcxt, &offset))
-        return false;
+    int32_t read_in = 0;
+    do
+    {
+        if (!read_column_data(&qcxt, &offset))
+            return -1;
+        if (!try_get_user_string(qcxt.table->cxt, offset, &str[read_in], &str_chars[read_in], &final_byte[read_in]))
+            return -1;
+        read_in++;
+    } while (next_row(&qcxt));
 
-    return try_get_user_string(qcxt.table->cxt, offset, str, str_chars, final_byte);
+    return read_in;
 }
 
-bool md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const** blob, uint32_t* blob_len)
+int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len)
 {
-    if (blob == NULL || blob_len == NULL)
-        return false;
+    if (out_length == 0)
+        return 0;
+    assert(blob != NULL && blob_len != NULL);
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(&c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't a #Blob column, then fail.
     if (!(qcxt.col_details & mdtc_hblob))
-        return false;
+        return -1;
 
     uint32_t offset;
-    if (!read_column_data(&qcxt, &offset))
-        return false;
+    int32_t read_in = 0;
+    do
+    {
+        if (!read_column_data(&qcxt, &offset))
+            return -1;
+        if (!try_get_blob(qcxt.table->cxt, offset, &blob[read_in], &blob_len[read_in]))
+            return -1;
+        read_in++;
+    } while (next_row(&qcxt));
 
-    return try_get_blob(qcxt.table->cxt, offset, blob, blob_len);
+    return read_in;
 }
 
-bool md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, GUID* guid)
+int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, GUID* guid)
 {
-    if (guid == NULL)
-        return false;
+    if (out_length == 0)
+        return 0;
+    assert(guid != NULL);
 
     query_cxt_t qcxt;
-    if (!create_query_context(c, col_idx, &qcxt))
-        return false;
+    if (!create_query_context(&c, col_idx, out_length, &qcxt))
+        return -1;
 
     // If this isn't a #GUID column, then fail.
     if (!(qcxt.col_details & mdtc_hguid))
-        return false;
+        return -1;
 
     uint32_t idx;
-    if (!read_column_data(&qcxt, &idx))
-        return false;
+    int32_t read_in = 0;
+    do
+    {
+        if (!read_column_data(&qcxt, &idx))
+            return -1;
+        if (!try_get_guid(qcxt.table->cxt, idx, &guid[read_in]))
+            return -1;
+        read_in++;
+    } while (next_row(&qcxt));
 
-    return try_get_guid(qcxt.table->cxt, idx, guid);
+    return read_in;
 }

@@ -96,11 +96,8 @@ typedef struct _mdcursor_t
     intptr_t _reserved2;
 } mdcursor_t;
 
-// Query how many rows a table contains.
-bool md_table_row_count(mdhandle_t handle, mdtable_id_t table_id, uint32_t* count);
-
 // Create a cursor to the first row in a table.
-bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor);
+bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, int32_t* count);
 
 // Move the cursor +/- number of rows.
 bool md_cursor_move(mdcursor_t* c, int32_t delta);
@@ -118,7 +115,7 @@ bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c);
 bool md_cursor_to_token(mdcursor_t c, mdToken* tk);
 
 // Define to help debug table indexing
-// #define DEBUG_TABLE_COLUMN_LOOKUP
+//#define DEBUG_TABLE_COLUMN_LOOKUP
 
 // The MDTABLE_COLUMN macro constructs a table/column ID enumeration.
 //
@@ -319,14 +316,14 @@ typedef enum
 } col_index_t;
 
 // Query row's column values
-bool md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, mdToken* tk);
-// The returned cursor will always be valid for indexing if "true" is returned.
-bool md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor);
-bool md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t* constant);
-bool md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const** str);
-bool md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte);
-bool md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const** blob, uint32_t* blob_len);
-bool md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, GUID* guid);
+int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
+// The returned number represents the number of valid cursor(s) for indexing.
+int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor);
+int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
+int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
+int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte);
+int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
+int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
 #ifdef __cplusplus
 }

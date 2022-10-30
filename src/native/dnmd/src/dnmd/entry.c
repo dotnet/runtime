@@ -170,9 +170,16 @@ static bool dump_table_rows(mdtable_t* table)
 {
 //#define PRINTF(...) printf(__VA_ARGS__);
 #define PRINTF(...) ;
-#define IF_FALSE_REPORT_RETURN(exp) if (!exp) { printf("Failure in row %u (0x%x), column %u (0x%x)\n", i, i, j, j); return false; }
+#define IF_NOT_ONE_REPORT_RETURN(exp) if (1 != (exp)) { printf("Failure in row %u (0x%x), column %u (0x%x)\n", i, i, j, j); return false; }
 
-    printf("Table 0x%x rows: %u\n", table->table_id, table->row_count);
+    if (table->row_count == 0)
+    {
+        printf("Empty table\n");
+    }
+    else
+    {
+        printf("Table 0x%x rows: %u\n", table->table_id, table->row_count);
+    }
 
     char const* str;
     GUID guid;
@@ -182,7 +189,7 @@ static bool dump_table_rows(mdtable_t* table)
     mdToken tk;
 
 #ifdef DEBUG_TABLE_COLUMN_LOOKUP
-    uint32_t const embedded_tid = table->table_id << 8;
+    uint16_t const embedded_tid = ((uint16_t)table->table_id) << 8;
 #define IDX(x) (embedded_tid | x)
 #else
 #define IDX(x) x
@@ -193,16 +200,16 @@ static bool dump_table_rows(mdtable_t* table)
 
     for (uint32_t i = 0; i < table->row_count; ++i)
     {
-        for (uint32_t j = 0; j < table->column_count; ++j)
+        for (uint16_t j = 0; j < table->column_count; ++j)
         {
             if (table->column_details[j] & mdtc_hstring)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, IDX(j), &str));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, IDX(j), 1, &str));
                 PRINTF("'%s' ", str);
             }
             else if (table->column_details[j] & mdtc_hguid)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), &guid));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
                 PRINTF("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} ",
                     guid.Data1, guid.Data2, guid.Data3,
                     guid.Data4[0], guid.Data4[1],
@@ -212,17 +219,17 @@ static bool dump_table_rows(mdtable_t* table)
             }
             else if (table->column_details[j] & mdtc_hblob)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_blob(cursor, IDX(j), &blob, &blob_len));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_blob(cursor, IDX(j), 1, &blob, &blob_len));
                 PRINTF("0x%p [len: %u] ", blob, blob_len);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_token(cursor, IDX(j), &tk));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_token(cursor, IDX(j), 1, &tk));
                 PRINTF("0x%08x (mdToken) ", tk);
             }
             else if (table->column_details[j] & mdtc_constant)
             {
-                IF_FALSE_REPORT_RETURN(md_get_column_value_as_constant(cursor, IDX(j), &constant));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_constant(cursor, IDX(j), 1, &constant));
                 PRINTF("0x%08x ", constant);
             }
         }
@@ -231,7 +238,7 @@ static bool dump_table_rows(mdtable_t* table)
             return false;
     }
     PRINTF("\n");
-#undef IF_FALSE_REPORT_RETURN
+#undef IF_NOT_ONE_REPORT_RETURN
 #undef PRINTF
 
     return true;
