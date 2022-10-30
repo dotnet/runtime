@@ -4469,13 +4469,15 @@ TypeCompareState CEEInfo::isEnum(
         *underlyingType = 0;
     }
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle th(cls);
 
-    if (!th.IsNull() && !th.IsTypeDesc())
+    _ASSERTE(!th.IsNull());
+
+    if (!th.IsGenericVariable())
     {
-        if (th.AsMethodTable()->IsEnum())
+        if (!th.IsTypeDesc() && th.AsMethodTable()->IsEnum())
         {
             result = TypeCompareState::Must;
             if (underlyingType != NULL)
@@ -4491,7 +4493,7 @@ TypeCompareState CEEInfo::isEnum(
         }
     }
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }
 

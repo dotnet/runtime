@@ -2854,7 +2854,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            case NI_System_RuntimeType_get_IsActualEnum:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsByRefLike:
@@ -2873,12 +2872,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     switch (ni)
                     {
                         case NI_System_Type_get_IsEnum:
-                        case NI_System_RuntimeType_get_IsActualEnum:
                         {
-                            CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
-                            TypeCompareState     state            = info.compCompHnd->isEnum(hClass, &hClassUnderlying);
-                            if (state == TypeCompareState::May ||
-                                (state == TypeCompareState::Must && hClassUnderlying == NO_CLASS_HANDLE))
+                            TypeCompareState state = info.compCompHnd->isEnum(hClass, nullptr);
+                            if (state == TypeCompareState::May)
                             {
                                 retNode = NULL;
                                 break;
@@ -7169,7 +7165,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             if (strcmp(methodName, "get_IsActualEnum") == 0)
             {
-                result = NI_System_RuntimeType_get_IsActualEnum;
+                result = NI_System_Type_get_IsEnum;
             }
         }
         else if (strcmp(className, "Type") == 0)

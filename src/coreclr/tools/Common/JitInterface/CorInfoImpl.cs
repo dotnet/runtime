@@ -2753,17 +2753,19 @@ namespace Internal.JitInterface
 
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
         {
+            Debug.Assert(cls != null);
+
             if (underlyingType != null)
             {
                 *underlyingType = null;
             }
 
-            if (cls == null)
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsGenericParameter)
             {
                 return TypeCompareState.May;
             }
-
-            TypeDesc type = HandleToObject(cls);
 
             if (type.IsEnum)
             {
