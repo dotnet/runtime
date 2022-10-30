@@ -8,7 +8,7 @@
 #include <array>
 
 #include <platform.h>
-#include <dnmd.h>
+#include <dnmd.hpp>
 
 template<typename T>
 class span
@@ -103,18 +103,7 @@ struct free_deleter
 template<typename T>
 using malloc_span = owning_span<T, free_deleter>;
 
-struct mdhandle_deleter
-{
-    using pointer = mdhandle_t;
-    void operator()(mdhandle_t handle)
-    {
-        md_destroy_handle(handle);
-    }
-};
-
-using mdhandle_lifetime = std::unique_ptr<mdhandle_t, mdhandle_deleter>;
-
-bool create_mdhandle(malloc_span<uint8_t>& buffer, mdhandle_lifetime& handle)
+bool create_mdhandle(malloc_span<uint8_t>& buffer, mdhandle_ptr& handle)
 {
     mdhandle_t h;
     if (!md_create_handle(buffer, buffer.size(), &h))
@@ -145,7 +134,7 @@ void dump(char const* p)
 
     std::printf("%s = 0x%p, size %zu\n", p, &b, b.size());
 
-    mdhandle_lifetime handle;
+    mdhandle_ptr handle;
     if (!create_mdhandle(b, handle)
         || !md_validate(handle.get())
         || !md_dump_tables(handle.get()))

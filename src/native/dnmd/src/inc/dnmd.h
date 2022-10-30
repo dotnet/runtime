@@ -97,7 +97,7 @@ typedef struct _mdcursor_t
 } mdcursor_t;
 
 // Create a cursor to the first row in a table.
-bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, int32_t* count);
+bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, uint32_t* count);
 
 // Move the cursor +/- number of rows.
 bool md_cursor_move(mdcursor_t* c, int32_t delta);

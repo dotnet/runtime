@@ -33,7 +33,7 @@ static mdtable_t* type_to_table(mdcxt_t* cxt, mdtable_id_t table_id)
     return &cxt->tables[table_id];
 }
 
-bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, int32_t* count)
+bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* cursor, uint32_t* count)
 {
     if (count == NULL)
         return false;
@@ -56,10 +56,15 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta)
     if (table == NULL)
         return false;
 
+    if (delta == 0)
+        return true;
+
     uint32_t row = CursorRow(c);
     row += delta;
     // Indices into tables begin at 1 - see II.22.
-    if (row == 0 || row > table->row_count)
+    // They can also point to index n+1, which
+    // indicates the end.
+    if (row == 0 || row > (table->row_count + 1))
         return false;
 
     *c = create_cursor(table, row);
@@ -178,7 +183,8 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     uint32_t offset = ExtractOffset(cd);
     // Metadata row indexing is 1-based, minus 1.
     uint32_t row = CursorRow(cursor) - 1;
-    assert(row < table->row_count);
+    if (row >= table->row_count)
+        return false;
 
     qcxt->table = table;
     qcxt->col_details = cd;
