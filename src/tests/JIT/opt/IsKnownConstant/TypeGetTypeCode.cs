@@ -88,7 +88,7 @@ public class Program
     {
         if (a != b)
         {
-            throw new InvalidOperationException($"Invalid TypeCode, expected {b}, got {a} at line {l}");
+            throw new InvalidOperationException($"Invalid TypeCode, expected {b}, got {a} at line {line}");
         }
     }
 }
