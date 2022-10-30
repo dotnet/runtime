@@ -1816,6 +1816,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewIndir(retType, op1);
+            retNode->gtFlags |= GTF_IND_UNALIGNED;
             break;
         }
 
