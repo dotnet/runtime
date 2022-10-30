@@ -596,8 +596,8 @@ protected:
         return (CORINFO_METHOD_HANDLE)m_pMethodBeingCompiled;
     }
 
-    OBJECTHANDLE getJitHandleForObject(OBJECTREF obj);
-    Object* getObjectFromJitHandle(OBJECTHANDLE handle);
+    CORINFO_OBJECT_HANDLE getJitHandleForObject(OBJECTREF obj);
+    OBJECTREF getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle);
 
     // Cache of last GetMethodForSecurity() lookup
     CORINFO_METHOD_HANDLE   m_hMethodForSecurity_Key;

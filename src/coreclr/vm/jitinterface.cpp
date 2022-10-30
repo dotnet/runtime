@@ -1736,7 +1736,7 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 
     GCX_COOP();
 
-    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHnd);
+    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHnd));
 
     if (obj->GetMethodTable()->IsArray())
     {
@@ -2915,7 +2915,7 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
     return (CORINFO_OBJECT_HANDLE)((size_t)handle | 1);
 }
 
-Object* CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
+OBJECTREF CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
 {
     CONTRACTL
     {
@@ -2928,11 +2928,11 @@ Object* CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
     size_t intHandle = (size_t)handle;
     if (intHandle & 1)
     {
-        return *(Object**)(intHandle - 1);
+        return ObjectToOBJECTREF(*(Object**)(intHandle - 1));
     }
 
     // Frozen object
-    return (Object*)intHandle;
+    return ObjectToOBJECTREF((Object*)intHandle);
 }
 
 MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
@@ -6130,7 +6130,7 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHandle);
+    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHandle));
     MethodTable* type = obj->GetMethodTable();
 
     _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
@@ -6158,7 +6158,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
-    Object* obj = getObjectFromJitHandle((OBJECTHANDLE)objHandle);
+    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHandle));
     VALIDATEOBJECT(obj);
     handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
 
@@ -11999,17 +11999,17 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             if (fieldObj != NULL)
             {
                 Object* obj = OBJECTREFToObject(fieldObj);
-                OBJECTHANDLE handle;
+                CORINFO_OBJECT_HANDLE handle;
                 if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
-                    handle = (OBJECTHANDLE)obj;
-                    memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
+                    handle = (CORINFO_OBJECT_HANDLE)obj;
+                    memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
                     result = true;
                 }
                 else if (!ignoreMovableObjects)
                 {
                     handle = getJitHandleForObject(fieldObj);
-                    memcpy(buffer, &handle, sizeof(OBJECTHANDLE));
+                    memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
                     result = true;
                 }
             }
