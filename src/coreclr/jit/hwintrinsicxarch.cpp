@@ -1815,22 +1815,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                loadIntrinsic = NI_AVX_LoadVector256;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                loadIntrinsic = NI_SSE2_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_SSE_LoadVector128;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewIndir(retType, op1);
             break;
         }
 
