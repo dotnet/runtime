@@ -443,23 +443,24 @@ namespace System
         {
             if (RuntimeHelpers.IsKnownConstant(type))
             {
-                if (type is RuntimeType rt && rt.IsActualEnum)
-                    type = type.GetEnumUnderlyingType();
-                if (type == typeof(sbyte))
+                Type? underlyingType = type;
+                if (type is RuntimeType && ((RuntimeType)type).IsActualEnum)
+                    underlyingType = type.GetEnumUnderlyingType();
+                if (underlyingType == typeof(sbyte))
                     return TypeCode.SByte;
-                else if (type == typeof(byte))
+                else if (underlyingType == typeof(byte))
                     return TypeCode.Byte;
-                else if (type == typeof(short))
+                else if (underlyingType == typeof(short))
                     return TypeCode.Int16;
-                else if (type == typeof(ushort))
+                else if (underlyingType == typeof(ushort))
                     return TypeCode.UInt16;
-                else if (type == typeof(int))
+                else if (underlyingType == typeof(int))
                     return TypeCode.Int32;
-                else if (type == typeof(uint))
+                else if (underlyingType == typeof(uint))
                     return TypeCode.UInt32;
-                else if (type == typeof(long))
+                else if (underlyingType == typeof(long))
                     return TypeCode.Int64;
-                else if (type == typeof(ulong))
+                else if (underlyingType == typeof(ulong))
                     return TypeCode.UInt64;
             }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
