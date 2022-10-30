@@ -2876,9 +2876,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         case NI_System_RuntimeType_get_IsActualEnum:
                         {
                             CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
-                            TypeCompareState state = info.compCompHnd->isEnum(hClass, &hClassUnderlying);
+                            TypeCompareState     state            = info.compCompHnd->isEnum(hClass, &hClassUnderlying);
                             if (state == TypeCompareState::May ||
-                               (state == TypeCompareState::Must && hClassUnderlying == NO_CLASS_HANDLE))
+                                (state == TypeCompareState::Must && hClassUnderlying == NO_CLASS_HANDLE))
                             {
                                 retNode = NULL;
                                 break;
@@ -2906,7 +2906,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_GetEnumUnderlyingType:
             {
-                GenTree* type = impStackTop().val;
+                GenTree*             type             = impStackTop().val;
                 CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
                 CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
                 if (gtIsTypeof(type, &hClassEnum) &&
@@ -2914,7 +2914,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     hClassUnderlying != NO_CLASS_HANDLE)
                 {
                     GenTree* handle = gtNewIconEmbClsHndNode(hClassUnderlying);
-                    retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                    retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                     impPopStack();
                 }
                 break;
