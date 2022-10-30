@@ -1340,9 +1340,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             if (((intrinsic == NI_AdvSimd_LoadVector64) || (intrinsic == NI_AdvSimd_LoadVector128)) &&
-                !compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+                !compExactlyDependsOn(InstructionSet_AdvSimd))
             {
-                // Only canonize explicit loads when we have corresponding ISAs available
+                // Use IND for explicit loads only when we have corresponding ISAs available
                 break;
             }
 
