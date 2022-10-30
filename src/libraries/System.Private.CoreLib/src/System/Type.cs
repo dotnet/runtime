@@ -438,8 +438,30 @@ namespace System
             return cls;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeCode GetTypeCode(Type? type)
         {
+            if (RuntimeHelpers.IsKnownConstant(type))
+            {
+                if (type is RuntimeType rt && rt.IsActualEnum)
+                    type = type.GetEnumUnderlyingType();
+                if (type == typeof(sbyte))
+                    return TypeCode.SByte;
+                else if (type == typeof(byte))
+                    return TypeCode.Byte;
+                else if (type == typeof(short))
+                    return TypeCode.Int16;
+                else if (type == typeof(ushort))
+                    return TypeCode.UInt16;
+                else if (type == typeof(int))
+                    return TypeCode.Int32;
+                else if (type == typeof(uint))
+                    return TypeCode.UInt32;
+                else if (type == typeof(long))
+                    return TypeCode.Int64;
+                else if (type == typeof(ulong))
+                    return TypeCode.UInt64;
+            }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
 
