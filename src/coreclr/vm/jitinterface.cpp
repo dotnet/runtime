@@ -2889,7 +2889,7 @@ void CEEInfo::ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, 
     ScanToken(pModule, pResolvedToken, th, pMD);
 }
 
-OBJECTHANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
+CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
 {
     CONTRACTL
     {
@@ -2910,13 +2910,12 @@ OBJECTHANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
 
     // We know that handle is aligned so we use the lowest bit as a marker
     // "this is a handle, not a frozen object".
-    handle = (OBJECTHANDLE)((size_t)handle | 1);
     m_pJitHandles->Append(handle);
     GCPROTECT_END();
-    return handle;
+    return (CORINFO_OBJECT_HANDLE)((size_t)handle | 1);
 }
 
-Object* CEEInfo::getObjectFromJitHandle(OBJECTHANDLE handle)
+Object* CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
 {
     CONTRACTL
     {

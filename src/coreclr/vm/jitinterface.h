@@ -519,11 +519,7 @@ public:
             unsigned count = m_pJitHandles->GetCount();
             for (unsigned i = 0; i < count; i++)
             {
-                size_t elementHandle = (size_t)elements[i];
-                // All jit handles have the lowest bit set ("it's not a frozen object" marker)
-                // Clear it here.
-                _ASSERT(elementHandle & 1);
-                DestroyHandle((OBJECTHANDLE)(elementHandle - 1));
+                DestroyHandle(elements[i]);
             }
             delete m_pJitHandles;
             m_pJitHandles = nullptr;
