@@ -1162,8 +1162,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree*     dest      = nullptr;
-    GenTreeFlags destFlags = GTF_EMPTY;
+    GenTree* dest = nullptr;
 
     DebugInfo usedDI = di;
     if (!usedDI.IsValid())
@@ -1497,9 +1496,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
-
-    dest->gtFlags |= destFlags;
-    destFlags = dest->gtFlags;
 
     // return an assignment node, to be appended
     GenTree* asgNode = gtNewAssignNode(dest, src);
