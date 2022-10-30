@@ -446,7 +446,9 @@ namespace System
                 Type? underlyingType = type;
                 if (type is RuntimeType && ((RuntimeType)type).IsActualEnum)
                     underlyingType = type.GetEnumUnderlyingType();
-                if (underlyingType == typeof(sbyte))
+                if (underlyingType == null)
+                    return TypeCode.Empty;
+                else if (underlyingType == typeof(sbyte))
                     return TypeCode.SByte;
                 else if (underlyingType == typeof(byte))
                     return TypeCode.Byte;
@@ -462,6 +464,24 @@ namespace System
                     return TypeCode.Int64;
                 else if (underlyingType == typeof(ulong))
                     return TypeCode.UInt64;
+                else if (underlyingType == typeof(bool))
+                    return TypeCode.Boolean;
+                else if (underlyingType == typeof(char))
+                    return TypeCode.Char;
+                else if (underlyingType == typeof(float))
+                    return TypeCode.Single;
+                else if (underlyingType == typeof(double))
+                    return TypeCode.Double;
+                else if (underlyingType == typeof(decimal))
+                    return TypeCode.Decimal;
+                else if (underlyingType == typeof(DateTime))
+                    return TypeCode.DateTime;
+                else if (underlyingType == typeof(string))
+                    return TypeCode.String;
+                else if (underlyingType == typeof(DBNull))
+                    return TypeCode.DBNull;
+                else
+                    return TypeCode.Object;
             }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
