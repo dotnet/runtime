@@ -10,7 +10,7 @@ Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions
 The APIs and functionality are mature, but do get extended occasionally.
 
 ## Deployment
-[Microsoft.Extensions.Configuration.Binder](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Binder/) is not included in the shared framework. The package is deployed as out-of-band (OOB) and needs to be installed into projects directly.
+[Microsoft.Extensions.Configuration.Binder](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Binder/) is included in the ASP.NET Core shared framework. The package is deployed as out-of-band (OOB) too and can be referenced into projects directly.
 
 ## Example
 The following example shows how to bind a JSON configuration section to .NET objects.
