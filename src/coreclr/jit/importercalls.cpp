@@ -2872,18 +2872,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     switch (ni)
                     {
-                        case NI_System_RuntimeType_get_IsActualEnum:
                         case NI_System_Type_get_IsEnum:
+                        case NI_System_RuntimeType_get_IsActualEnum:
                         {
-                            CorInfoType infoType = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
-                            retNode              = gtNewIconNode(
-                                (eeIsValueClass(hClass) &&
-                                 // getTypeForPrimitiveNumericClass seems to not normalize enums
-                                 info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF &&
-                                 // we need to check for void here
-                                 infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
-                                    ? 1
-                                    : 0);
+                            CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
+                            TypeCompareState state = info.compCompHnd->isEnum(hClass, &hClassUnderlying);
+                            if (state == TypeCompareState::May ||
+                               (state == TypeCompareState::Must && hClassUnderlying == NO_CLASS_HANDLE))
+                            {
+                                retNode = NULL;
+                                break;
+                            }
+                            retNode = gtNewIconNode(state == TypeCompareState::Must ? 1 : 0);
                             break;
                         }
                         case NI_System_Type_get_IsValueType:
@@ -2896,7 +2896,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
-                    impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                    if (retNode != NULL)
+                    {
+                        impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                    }
+                }
+                break;
+            }
+
+            case NI_System_Type_GetEnumUnderlyingType:
+            {
+                GenTree* type = impStackTop().val;
+                CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
+                CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
+                if (gtIsTypeof(type, &hClassEnum) &&
+                    info.compCompHnd->isEnum(hClassEnum, &hClassUnderlying) == TypeCompareState::Must &&
+                    hClassUnderlying != NO_CLASS_HANDLE)
+                {
+                    GenTree* handle = gtNewIconEmbClsHndNode(hClassUnderlying);
+                    retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                    impPopStack();
                 }
                 break;
             }
@@ -7186,6 +7205,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "get_IsEnum") == 0)
             {
                 result = NI_System_Type_get_IsEnum;
+            }
+            else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
+            {
+                result = NI_System_Type_GetEnumUnderlyingType;
             }
         }
         else if (strcmp(className, "String") == 0)

@@ -503,6 +503,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]
+        [Intrinsic]
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)

@@ -2751,6 +2751,34 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
+        {
+            if (underlyingType != null)
+            {
+                *underlyingType = null;
+            }
+
+            if (cls == null)
+            {
+                return TypeCompareState.May;
+            }
+
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsEnum)
+            {
+                if (underlyingType != null)
+                {
+                    *underlyingType = ObjectToHandle(type.UnderlyingType);
+                }
+                return TypeCompareState.Must;
+            }
+            else
+            {
+                return TypeCompareState.MustNot;
+            }
+        }
+
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getParentType"); }
 

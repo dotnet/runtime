@@ -316,6 +316,7 @@ namespace System
             // Get all of the names
             GetEnumInfo(enumType).Names;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type GetUnderlyingType(Type enumType)
         {
             ArgumentNullException.ThrowIfNull(enumType);

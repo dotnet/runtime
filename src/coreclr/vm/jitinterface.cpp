@@ -4447,6 +4447,55 @@ bool CEEInfo::isMoreSpecificType(
 }
 
 /*********************************************************************/
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState CEEInfo::isEnum(
+        CORINFO_CLASS_HANDLE        cls,
+        CORINFO_CLASS_HANDLE*       underlyingType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    if (underlyingType != NULL)
+    {
+        *underlyingType = 0;
+    }
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(cls);
+
+    if (!th.IsNull() && !th.IsTypeDesc())
+    {
+        if (th.AsMethodTable()->IsEnum())
+        {
+            result = TypeCompareState::Must;
+            if (underlyingType != NULL)
+            {
+                CorElementType elemType = th.AsMethodTable()->GetInternalCorElementType();
+                TypeHandle underlyingHandle(CoreLibBinder::GetElementType(elemType));
+                *underlyingType = CORINFO_CLASS_HANDLE(underlyingHandle.AsPtr());
+            }
+        }
+        else
+        {
+            result = TypeCompareState::MustNot;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+    return result;
+}
+
+/*********************************************************************/
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.
 // Returns 0 if System.Object is passed in.

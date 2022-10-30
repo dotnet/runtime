@@ -105,6 +105,7 @@ public partial class Program
         ThrowsNRE(() => { _ = __reftype(default).IsValueType; });
 
         TestIsAssignableFrom();
+        TestIsAssignableTo();
 
         IsFalse(typeof(byte).IsEnum);
         IsFalse(typeof(int).IsEnum);
@@ -118,8 +119,16 @@ public partial class Program
         IsFalse(typeof(GenericStruct<int>).IsEnum);
         IsFalse(typeof(SimpleStruct).IsEnum);
         IsTrue (typeof(SimpleEnum).IsEnum);
+        IsTrue (typeof(CharEnum).IsEnum);
+        IsTrue (typeof(BoolEnum).IsEnum);
+        IsTrue (typeof(FloatEnum).IsEnum);
+        IsTrue (typeof(DoubleEnum).IsEnum);
+        IsTrue (typeof(IntPtrEnum).IsEnum);
+        IsTrue (typeof(UIntPtrEnum).IsEnum);
 
         IsTrue(typeof(GenericEnumClass<>).GetGenericArguments()[0].IsEnum);
+
+        GetEnumUnderlyingType.TestGetEnumUnderlyingType();
 
         return 100 + _errors;
     }

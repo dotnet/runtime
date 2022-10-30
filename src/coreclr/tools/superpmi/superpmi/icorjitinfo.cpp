@@ -819,6 +819,17 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
 }
 
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState MyICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    jitInstance->mc->cr->AddCall("isEnum");
+    return jitInstance->mc->repIsEnum(cls, underlyingType);
+}
+
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.
 // Returns 0 if System.Object is passed in.

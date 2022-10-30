@@ -595,6 +595,13 @@ bool interceptor_ICJI::isMoreSpecificType(
     return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
 }
 
+TypeCompareState interceptor_ICJI::isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType)
+{
+    return original_ICorJitInfo->isEnum(cls, underlyingType);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getParentType(
           CORINFO_CLASS_HANDLE cls)
 {
