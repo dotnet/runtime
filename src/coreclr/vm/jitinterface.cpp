@@ -2887,7 +2887,7 @@ void CEEInfo::ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, 
     ScanToken(pModule, pResolvedToken, th, pMD);
 }
 
-CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
+CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool knownFrozen)
 {
     CONTRACTL
     {
@@ -2902,7 +2902,13 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF obj)
         m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
-    OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(obj);
+    Object* obj = OBJECTREFToObject(objref);
+    if (knownFrozen || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+    {
+        return (CORINFO_OBJECT_HANDLE)obj;
+    }
+
+    OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(objref);
     m_pJitHandles->Append(handle);
     handle.SuppressRelease();
 
@@ -11998,7 +12004,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 CORINFO_OBJECT_HANDLE handle;
                 if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                 {
-                    handle = (CORINFO_OBJECT_HANDLE)obj;
+                    handle = getJitHandleForObject(fieldObj, true);
                     memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
                     result = true;
                 }
