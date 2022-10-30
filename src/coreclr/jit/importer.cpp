@@ -11378,33 +11378,6 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
     }
 }
 
-/*****************************************************************************/
-
-#ifdef DEBUG
-
-#undef RETURN // undef contracts RETURN macro
-
-enum controlFlow_t
-{
-    NEXT,
-    CALL,
-    RETURN,
-    THROW,
-    BRANCH,
-    COND_BRANCH,
-    BREAK,
-    PHI,
-    META,
-};
-
-const static controlFlow_t controlFlow[] = {
-#define OPDEF(c, s, pop, push, args, type, l, s1, s2, flow) flow,
-#include "opcode.def"
-#undef OPDEF
-};
-
-#endif // DEBUG
-
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
