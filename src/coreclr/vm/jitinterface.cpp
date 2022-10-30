@@ -737,10 +737,8 @@ size_t CEEInfo::printObjectDescription (
 
     JIT_TO_EE_TRANSITION();
 
-    Object* obj = (Object*)handle;
-
     GCX_COOP();
-
+    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(handle));
     StackSString stackStr;
 
     // Currently only supported for String and RuntimeType
