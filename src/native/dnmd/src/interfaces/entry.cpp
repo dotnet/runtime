@@ -1,8 +1,17 @@
+#ifdef DNMD_BUILD_SHARED
+#ifdef _MSC_VER
+#define DNMD_EXPORT __declspec(dllexport)
+#else
+#define DNMD_EXPORT __attribute__((__visibility__("default")))
+#endif // !_MSC_VER
+#endif // DNMD_BUILD_SHARED
+
 #include <platform.h>
 #include <dnmd_interfaces.hpp>
 
 #include "impl.hpp"
 
+extern "C" DNMD_EXPORT
 HRESULT ReadMetadata(
     void* data,
     size_t dataLen,
