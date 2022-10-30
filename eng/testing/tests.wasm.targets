@@ -136,8 +136,9 @@
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup>
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+    <!-- non-library tests have IsWasmProject==false -->
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
 
     <RunCommand>$(WasmAppHostDir)/WasmAppHost</RunCommand>
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
@@ -149,7 +150,7 @@
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
+  <PropertyGroup Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
 
     <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->
