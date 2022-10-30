@@ -3753,11 +3753,11 @@ public:
     {
     }
 
-    void ProcessDef(GenTree* tree, unsigned lclNum, unsigned ssaNum, LclVarDsc* varDsc)
+    void ProcessDef(GenTree* tree, unsigned lclNum, unsigned ssaNum)
     {
         // If the var is not in ssa, the local should not have an ssa num.
         //
-        if (!varDsc->lvInSsa)
+        if (!m_compiler->lvaInSsa(lclNum))
         {
             if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
             {
@@ -3775,8 +3775,6 @@ public:
             JITDUMP("[error] Missing SSA number on def [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
             return;
         }
-
-        JITDUMP("Def of V%02u.%u @ [%06u] " FMT_BB "\n", lclNum, ssaNum, m_compiler->dspTreeID(tree), m_block->bbNum);
 
         SsaKey   key(lclNum, ssaNum);
         SsaInfo* ssaInfo = nullptr;
@@ -3816,31 +3814,17 @@ public:
                 LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
                 unsigned const   fieldSsaNum = lclNode->GetSsaNum(m_compiler, index);
 
-                if (isFullDef)
+                ssize_t  fieldStoreOffset;
+                unsigned fieldStoreSize;
+                if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
                 {
-                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum, fieldVarDsc);
-                }
-                else
-                {
-                    ssize_t  fieldStoreOffset;
-                    unsigned fieldStoreSize;
-                    bool     isFieldUse = false;
-                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset,
-                                                        &fieldStoreSize))
-                    {
-                        ProcessDef(lclNode, fieldLclNum, fieldSsaNum, fieldVarDsc);
-                        isFieldUse = !ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
-                                                                       fieldStoreSize);
-                    }
-                    else
-                    {
-                        isFieldUse = true;
-                    }
+                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum);
 
-                    if (isFieldUse)
+                    if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
                     {
+                        assert(isUse);
                         unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
-                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum, fieldVarDsc);
+                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum);
                     }
                 }
             }
@@ -3848,7 +3832,7 @@ public:
         else
         {
             unsigned const ssaNum = lclNode->GetSsaNum();
-            ProcessDef(lclNode, lclNum, ssaNum, varDsc);
+            ProcessDef(lclNode, lclNum, ssaNum);
 
             if (isUse)
             {
@@ -3857,16 +3841,16 @@ public:
                 {
                     useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
                 }
-                ProcessUse(lclNode, lclNum, useSsaNum, varDsc);
+                ProcessUse(lclNode, lclNum, useSsaNum);
             }
         }
     }
 
-    void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum, LclVarDsc* varDsc)
+    void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)
     {
         // If the var is not in ssa, the tree should not have an ssa num.
         //
-        if (!varDsc->lvInSsa)
+        if (!m_compiler->lvaInSsa(lclNum))
         {
             if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
             {
@@ -3880,6 +3864,8 @@ public:
         //
         if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
         {
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
             if (varDsc->lvPerSsaData.GetCount() > 0)
             {
                 SetHasErrors();
@@ -3887,8 +3873,6 @@ public:
             }
             return;
         }
-
-        JITDUMP("Use of V%02u.%u @ [%06u] " FMT_BB "\n", lclNum, ssaNum, m_compiler->dspTreeID(tree), m_block->bbNum);
 
         SsaKey   key(lclNum, ssaNum);
         SsaInfo* ssaInfo = nullptr;
@@ -3911,25 +3895,19 @@ public:
 
     void ProcessUses(GenTreeLclVarCommon* tree)
     {
-        unsigned const   lclNum = tree->GetLclNum();
-        unsigned const   ssaNum = tree->GetSsaNum();
-        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+        unsigned const lclNum = tree->GetLclNum();
+        unsigned const ssaNum = tree->GetSsaNum();
 
-        // Handle multiple uses
+        // We currently should not see composite SSA numbers for uses.
         //
         if (tree->HasCompositeSsaName())
         {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-            {
-                unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
-                LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                ProcessUse(tree, fieldLclNum, tree->GetSsaNum(m_compiler, index), fieldVarDsc);
-            }
+            SetHasErrors();
+            JITDUMP("[error] Composite SSA number on use [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            return;
         }
-        else
-        {
-            ProcessUse(tree, lclNum, ssaNum, varDsc);
-        }
+
+        ProcessUse(tree, lclNum, ssaNum);
     }
 
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

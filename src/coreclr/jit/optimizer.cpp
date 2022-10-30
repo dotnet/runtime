@@ -6338,36 +6338,24 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTreeLclVarCommon* const tree = (*use)->AsLclVarCommon();
-
-            const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-            const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
+            GenTreeLclVarCommon* const tree  = (*use)->AsLclVarCommon();
+            const bool                 isUse = (tree->gtFlags & GTF_VAR_DEF) == 0;
 
             if (isUse)
             {
-                unsigned   lclNum = tree->GetLclNum();
-                LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-
-                // SSA will be associated with the first field if it can replace the var.
-                //
-                if (!varDsc->lvInSsa && varDsc->CanBeReplacedWithItsField(m_compiler))
+                if (tree->HasSsaName())
                 {
-                    lclNum = varDsc->lvFieldLclStart;
-                    varDsc = m_compiler->lvaGetDesc(lclNum);
+                    unsigned const      lclNum    = tree->GetLclNum();
+                    unsigned const      ssaNum    = tree->GetSsaNum();
+                    LclVarDsc* const    varDsc    = m_compiler->lvaGetDesc(lclNum);
+                    LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+                    ssaVarDsc->AddUse(m_block);
                 }
-
-                if (!varDsc->lvInSsa)
+                else
                 {
-                    assert(!tree->HasSsaName());
-                    return fgWalkResult::WALK_CONTINUE;
+                    assert(!m_compiler->lvaInSsa(tree->GetLclNum()));
+                    assert(!tree->HasCompositeSsaName());
                 }
-
-                // We should have a valid SSA num.
-                //
-                assert(tree->HasSsaName());
-                unsigned const      ssaNum    = tree->GetSsaNum();
-                LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
-                ssaVarDsc->AddUse(m_block);
             }
 
             return fgWalkResult::WALK_CONTINUE;
