@@ -1734,15 +1734,15 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 
     GCX_COOP();
 
-    Object* obj = OBJECTREFToObject(getObjectFromJitHandle(objHnd));
+    OBJECTREF obj = getObjectFromJitHandle(objHnd);
 
     if (obj->GetMethodTable()->IsArray())
     {
-        arrLen = ((ArrayBase*)obj)->GetNumComponents();
+        arrLen = ((BASEARRAYREF)obj)->GetNumComponents();
     }
     else if (obj->GetMethodTable()->IsString())
     {
-        arrLen = ((StringObject*)obj)->GetStringLength();
+        arrLen = ((STRINGREF)obj)->GetStringLength();
     }
     else
     {
