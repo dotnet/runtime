@@ -1,0 +1,20 @@
+<Project>
+    <PropertyGroup>
+        <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
+        <BaseArtifactsPath>$(RepoDir)artifacts</BaseArtifactsPath>
+        <ArtifactsDir>$(BaseArtifactsPath)/$(Configuration)/</ArtifactsDir>
+
+        <BaseIntermediateOutputPath>$(ArtifactsDir)/obj/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+        <BaseOutputPath>$(ArtifactsDir)/bin/$(MSBuildProjectName)</BaseOutputPath>
+
+        <!-- Define the intermediate and output paths so the configuration isn't appended -->
+        <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+        <OutputPath>$(BaseOutputPath)</OutputPath>
+
+        <TargetFrameworkLatest>net7.0</TargetFrameworkLatest>
+    </PropertyGroup>
+</Project>
