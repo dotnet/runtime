@@ -35,7 +35,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
                 Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
-                _ => throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath)),
+                _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
             };
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
@@ -46,7 +46,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)

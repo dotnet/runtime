@@ -25,7 +25,6 @@
 #include "clrhost.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
-#include "winnls.h"
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
@@ -913,15 +912,9 @@ inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 // Paths functions. Use these instead of the CRT.
 //
 //*****************************************************************************
-// secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(const WCHAR *path,
-                  __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-                  __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-                  __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-                  __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords);
 
 //*******************************************************************************
-// A much more sensible version that just points to each section of the string.
+// Split a path into individual components - points to each section of the string
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,

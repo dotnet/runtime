@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class DateOnlyConverter : JsonConverter<DateOnly>
+    internal sealed class DateOnlyConverter : JsonPrimitiveConverter<DateOnly>
     {
         public const int FormatLength = 10; // YYYY-MM-DD
         public const int MaxEscapedFormatLength = FormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
@@ -24,10 +24,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override DateOnly ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
             return ReadCore(ref reader);
         }
 
-        private DateOnly ReadCore(ref Utf8JsonReader reader)
+        private static DateOnly ReadCore(ref Utf8JsonReader reader)
         {
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, FormatLength, MaxEscapedFormatLength))
             {

@@ -6259,15 +6259,7 @@ mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 static MonoMarshalLightweightCallbacks *
 get_marshal_cb (void)
 {
-
-	if (G_UNLIKELY (!lightweight_cb_inited)) {
-#ifdef ENABLE_ILGEN
-		mono_marshal_lightweight_init ();
-#else
-		mono_marshal_noilgen_init_lightweight ();
-#endif
-	}
-
+	g_assert (lightweight_cb_inited);
 	return &marshal_lightweight_cb;
 }
 
