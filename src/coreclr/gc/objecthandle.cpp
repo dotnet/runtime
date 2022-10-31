@@ -424,6 +424,9 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         break;
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
+#ifdef FEATURE_COMINTEROP
+    case    HNDTYPE_WEAK_NATIVE_COM:
+#endif // FEATURE_COMINTEROP
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
 
@@ -516,6 +519,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_DEPENDENT
     HNDF_NORMAL,    // HNDTYPE_ASYNCPINNED
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
+    HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
 };
 
 int getNumberOfSlots()
@@ -1379,7 +1383,14 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 
     LOG((LF_GC, LL_INFO10000, "Checking liveness of referents of short-weak handles in generation %u\n", condemned));
 
-    uint32_t type = HNDTYPE_WEAK_SHORT;
+    // perform a multi-type scan that checks for unreachable objects
+    uint32_t types[] =
+    {
+        HNDTYPE_WEAK_SHORT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        , HNDTYPE_WEAK_NATIVE_COM
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+    };
     uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     int uCPUindex = getSlotNumber((ScanContext*) lp1);
@@ -1392,7 +1403,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, &type, 1, condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         }
         walk = walk->pNext;
@@ -1435,6 +1446,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        HNDTYPE_WEAK_NATIVE_COM,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         HNDTYPE_SIZEDREF,
     };
 
@@ -1478,6 +1492,9 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        HNDTYPE_WEAK_NATIVE_COM,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         HNDTYPE_PINNED,
 //        HNDTYPE_VARIABLE,
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
@@ -1631,6 +1648,9 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        HNDTYPE_WEAK_NATIVE_COM,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
@@ -1673,6 +1693,9 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        HNDTYPE_WEAK_NATIVE_COM,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
@@ -1714,6 +1737,9 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+        HNDTYPE_WEAK_NATIVE_COM,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif

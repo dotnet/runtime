@@ -407,6 +407,13 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     // sanity check handle we are being asked to free
     _ASSERTE(handle);
 
+#ifdef FEATURE_COMINTEROP
+    // If we're being asked to destroy a native COM weak handle, that will cause a leak
+    // of the IWeakReference* that it holds in its extra data. Instead of using this
+    // API use DestroyNativeComWeakHandle instead.
+    _ASSERTE(HandleFetchType(handle) != HNDTYPE_WEAK_NATIVE_COM);
+#endif // FEATURE_COMINTEROP
+
     // fetch the type and then free normally
     HndDestroyHandle(hTable, HandleFetchType(handle), handle);
 }

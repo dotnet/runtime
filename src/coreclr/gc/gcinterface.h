@@ -453,6 +453,20 @@ typedef enum
      *
      */
     HNDTYPE_SIZEDREF     = 8,
+
+    /*
+     * NATIVE WEAK HANDLES
+     *
+     * Native weak reference handles hold two different types of weak handles to any
+     * RCW with an underlying COM object that implements IWeakReferenceSource.  The
+     * object reference itself is a short weak handle to the RCW.  In addition an
+     * IWeakReference* to the underlying COM object is stored, allowing the handle
+     * to create a new RCW if the existing RCW is collected.  This ensures that any
+     * code holding onto a native weak reference can always access an RCW to the
+     * underlying COM object as long as it has not been released by all of its strong
+     * references.
+     */
+    HNDTYPE_WEAK_NATIVE_COM   = 9
 } HandleType;
 
 typedef enum
