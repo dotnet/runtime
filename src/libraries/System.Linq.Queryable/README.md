@@ -1,8 +1,8 @@
-# System.Linq
+# System.Linq.Queryable
 
-Documentation can be found at https://learn.microsoft.com/dotnet/api/system.linq.
+Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.linq.
 
-Language-Integrated Query (LINQ) is the name for a set of technologies based on the integration of query capabilities directly into the C# language.
+Provides a set of static methods for querying data structures that implement `IQueryable<T>`.
 
 ## Contribution Bar
 
@@ -14,4 +14,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Deployment
 
-System.Linq is included in the shared framework.
+System.Linq.Queryable is included in the shared framework.
