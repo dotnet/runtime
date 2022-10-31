@@ -443,6 +443,7 @@ namespace System
         {
             if (RuntimeHelpers.IsKnownConstant(type))
             {
+                // keep in sync with RuntimeType.cs
                 Type? underlyingType = type;
                 if (type is RuntimeType && ((RuntimeType)type).IsActualEnum)
                     underlyingType = type.GetEnumUnderlyingType();
@@ -480,7 +481,7 @@ namespace System
                     return TypeCode.String;
                 else if (underlyingType == typeof(DBNull))
                     return TypeCode.DBNull;
-                else
+                else if (underlyingType.GetType() == typeof(RuntimeType))
                     return TypeCode.Object;
             }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;

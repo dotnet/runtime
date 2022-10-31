@@ -268,6 +268,7 @@ namespace System
                 return typeCode;
 
             CorElementType corElementType = RuntimeTypeHandle.GetCorElementType(this);
+            // keep in sync with Type.cs
             switch (corElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
