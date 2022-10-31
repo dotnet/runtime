@@ -1616,7 +1616,7 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintObjectDescriptionDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
+void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
 {
     const size_t maxStrSize = 64;
     char         str[maxStrSize];
