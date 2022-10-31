@@ -26,12 +26,10 @@ namespace ILCompiler
                 }
             }
 
-            bool dummy = false;
-
             // Merge all data together
             foreach (ProfileData profileData in _inputData)
             {
-                ProfileData.MergeProfileData(ref dummy, _mergedProfileData, profileData);
+                ProfileData.MergeProfileData(_mergedProfileData, profileData);
             }
         }
 

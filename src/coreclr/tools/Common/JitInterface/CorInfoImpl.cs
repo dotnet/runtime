@@ -3919,11 +3919,6 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
-        private PgoSchemaElem[] getPgoInstrumentationResults(MethodDesc method)
-        {
-            return _compilation.ProfileData[method]?.SchemaData;
-        }
-
         private MemoryStream _cachedMemoryStream = new MemoryStream();
 
         public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
@@ -4001,7 +3996,11 @@ namespace Internal.JitInterface
 
             if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
             {
-                var pgoResultsSchemas = getPgoInstrumentationResults(methodDesc);
+#if READYTORUN
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc)?.SchemaData;
+#else
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;
+#endif
                 if (pgoResultsSchemas == null)
                 {
                     pgoResults.hr = HRESULT.E_NOTIMPL;

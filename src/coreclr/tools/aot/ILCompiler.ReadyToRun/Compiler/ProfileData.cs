@@ -62,11 +62,8 @@ namespace ILCompiler
         public abstract IEnumerable<MethodProfileData> GetAllMethodProfileData();
         public abstract byte[] GetMethodBlockCount(MethodDesc m);
 
-        public static void MergeProfileData(ref bool partialNgen, Dictionary<MethodDesc, MethodProfileData> mergedProfileData, ProfileData profileData)
+        public static void MergeProfileData(Dictionary<MethodDesc, MethodProfileData> mergedProfileData, ProfileData profileData)
         {
-            if (profileData.PartialNGen)
-                partialNgen = true;
-
             PgoSchemaElem[][] schemaElemMergerArray = new PgoSchemaElem[2][];
 
             foreach (MethodProfileData data in profileData.GetAllMethodProfileData())

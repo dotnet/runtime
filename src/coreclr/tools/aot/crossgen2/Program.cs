@@ -503,7 +503,8 @@ namespace ILCompiler
                         compilationGroup,
                         Get(_command.EmbedPgoData),
                         Get(_command.SupportIbc),
-                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
+                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable,
+                        Get(_command.SynthesizeRandomMibc));
 
                     bool partial = Get(_command.Partial);
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);

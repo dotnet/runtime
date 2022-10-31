@@ -428,13 +428,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
 
-                bool partialNgen = false;
                 Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
                 for (int i = 0; i < mibcReaders.Length; i++)
                 {
                     var peReader = mibcReaders[i];
                     PrintDetailedMessage($"Merging {paths[i]}");
-                    ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+                    ProfileData.MergeProfileData(mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
                 MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
