@@ -2905,9 +2905,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*             type             = impStackTop().val;
                 CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
                 CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
-                if (gtIsTypeof(type, &hClassEnum) &&
-                    info.compCompHnd->isEnum(hClassEnum, &hClassUnderlying) == TypeCompareState::Must &&
-                    hClassUnderlying != NO_CLASS_HANDLE)
+                if (gtIsTypeof(type, &hClassEnum) && (hClassEnum != NO_CLASS_HANDLE) &&
+                    (info.compCompHnd->isEnum(hClassEnum, &hClassUnderlying) == TypeCompareState::Must) &&
+                    (hClassUnderlying != NO_CLASS_HANDLE))
                 {
                     GenTree* handle = gtNewIconEmbClsHndNode(hClassUnderlying);
                     retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
