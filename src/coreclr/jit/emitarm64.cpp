@@ -6929,14 +6929,9 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     // will be added to the emitted group. However,
     // this is not correct for instructions that
     // are going to overwrite already-emitted
-    // instructions and we therefore need space to
-    // hold the new instruction descriptor.
+    // instructions.
     instrDesc* id;
-
-    // One cannot simply instantiate an instruction
-    // descriptor, so this array will be used to
-    // hold the instruction being built.
-    unsigned char tempInstrDesc[sizeof(instrDesc)];
+    INDEBUG(size_t reusedInstrSize = (reuseInstr != nullptr) ? emitSizeOfInsDsc(reuseInstr) : 0);
 
     // Now the instruction is either emitted OR
     // used to overwrite the previously-emitted
@@ -6947,9 +6942,8 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     }
     else
     {
-        id = (instrDesc*)tempInstrDesc;
-
-        memset(id, 0, sizeof(tempInstrDesc));
+        id = reuseInstr;
+        memset(id, 0, sizeof(instrDesc));
 
         // Store the size and handle the two special
         // values that indicate GCref and ByRef
@@ -7001,17 +6995,14 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         }
     }
 
+    assert((reuseInstr == nullptr) || (emitSizeOfInsDsc(reuseInstr) == reusedInstrSize));
+
     // Now the instruction is EITHER emitted OR used to overwrite the previously-emitted instruction.
     if (reuseInstr == nullptr)
     {
         // Then this is the standard exit path and the instruction is to be appended to the instruction group.
         dispIns(id);
         appendToCurIG(id);
-    }
-    else
-    {
-        // The instruction is copied over the last emitted insdtruction.
-        memcpy(reuseInstr, id, sizeof(tempInstrDesc));
     }
 }
 
