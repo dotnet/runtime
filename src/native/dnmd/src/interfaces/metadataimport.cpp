@@ -132,6 +132,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
         if (!md_create_cursor(_md_ptr.get(), mdtid_TypeDef, &cursor, &rows))
             return E_INVALIDARG;
 
+        // From ECMA-335, section II.22.37:
+        //  "The first row of the TypeDef table represents the pseudo class that acts as parent for functions 
+        //  and variables defined at module scope."
+        // Based on the above we always skip the first row.
+        (void)md_cursor_next(&cursor);
+
         RETURN_IF_FAILED(CreateHCORENUMImpl(cursor, rows, &enumImpl));
         *phEnum = enumImpl;
     }
