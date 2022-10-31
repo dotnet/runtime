@@ -219,9 +219,8 @@ namespace CoreclrTestLib
             else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 createdump.StartInfo.FileName = "sudo";
-                createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
+                createdump.StartInfo.Arguments = $"{createdumpPath} --crashreport " + arguments;
                 createdump.StartInfo.EnvironmentVariables.Add("DOTNET_DbgEnableElfDumpOnMacOS", "1");
-                createdump.StartInfo.EnvironmentVariables.Add("DOTNET_EnableCrashReport", "1");
             }
 
             createdump.StartInfo.UseShellExecute = false;
