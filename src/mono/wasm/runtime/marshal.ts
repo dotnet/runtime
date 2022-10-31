@@ -321,6 +321,8 @@ export class ManagedError extends Error implements IDisposable {
     constructor(message: string) {
         super(message);
         this.cheapError = new Error(message);
+        // This can't be normal override because of 
+        // https://bugs.chromium.org/p/chromium/issues/detail?id=1379185
         Object.defineProperty(this, "stack", {
             get() {
                 return this.getManagedStack();
