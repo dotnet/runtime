@@ -14,6 +14,12 @@ namespace System
             throw new NotImplementedException();
         }
 
+        internal static bool PossiblyComObject(object target)
+        {
+            // NativeAOT support for COM WeakReference is NYI
+            return false;
+        }
+
         internal static IntPtr ObjectToComWeakRef(object target, out long wrapperId)
         {
             // NativeAOT support for COM WeakReference is NYI

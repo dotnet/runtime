@@ -319,6 +319,7 @@ static const Entry s_QCall[] =
 #endif
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWeakRefToObject)
+    DllImportEntry(ObjectToComWeakRef)
 #endif
 };
 

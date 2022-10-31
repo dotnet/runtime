@@ -31,25 +31,11 @@ namespace System
                 return ComWeakRefToObject(_pComWeakRef, _wrapperId);
             }
 
-            // see: syncblk.h
-            private const int IS_HASHCODE_BIT_NUMBER = 26;
-            private const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
-            private const int BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static unsafe ComInfo? FromObject(object? target)
+            internal static ComInfo? FromObject(object? target)
             {
-                if (target == null)
+                if (target == null || !PossiblyComObject(target))
                     return null;
-
-                fixed (byte* pRawData = &target.GetRawData())
-                {
-                    // The header is 4 bytes before MT field on all architectures
-                    int header = *(int*)(pRawData - sizeof(IntPtr) - sizeof(int));
-                    // common case: target does not have a syncblock, so there is no interop info
-                    if ((header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) != BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-                        return null;
-                }
 
                 return FromObjectSlow(target);
             }
@@ -65,7 +51,7 @@ namespace System
                 {
                     return new ComInfo(pComWeakRef, wrapperId);
                 }
-                catch(OutOfMemoryException)
+                catch (OutOfMemoryException)
                 {
                     // we did not create an object, so ComInfo finalizer will not run
                     Marshal.Release(pComWeakRef);

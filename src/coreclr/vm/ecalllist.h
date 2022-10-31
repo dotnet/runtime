@@ -670,7 +670,7 @@ FCFuncStart(gStreamFuncs)
 FCFuncEnd()
 
 FCFuncStart(gComAwareWeakReferenceFuncs)
-    FCFuncElement("ObjectToComWeakRef", ComAwareWeakReferenceNative::ObjectToComWeakRef)
+    FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP

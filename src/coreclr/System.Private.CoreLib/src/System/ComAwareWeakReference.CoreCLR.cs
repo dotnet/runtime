@@ -19,8 +19,39 @@ namespace System
             return retRcw;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool PossiblyComObject(object target)
+        {
+            // see: syncblk.h
+            const int IS_HASHCODE_BIT_NUMBER = 26;
+            const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
+            const int BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
+
+            fixed (byte* pRawData = &target.GetRawData())
+            {
+                // The header is 4 bytes before MT field on all architectures
+                int header = *(int*)(pRawData - sizeof(IntPtr) - sizeof(int));
+                // common case: target does not have a syncblock, so there is no interop info
+                return (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ObjectToComWeakRef(object target, out long wrapperId);
+        internal static extern bool HasInteropInfo(object target);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
+        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw, out long wrapperId);
+
+        internal static nint ObjectToComWeakRef(object target, out long wrapperId)
+        {
+            if (HasInteropInfo(target))
+            {
+                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target), out wrapperId);
+            }
+
+            wrapperId = 0;
+            return IntPtr.Zero;
+        }
     }
 }
 #endif
