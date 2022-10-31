@@ -1398,5 +1398,96 @@ namespace System.Diagnostics.Tests
                 }
             });
         }
+
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Requires admin privileges")]
+        public void TestUserNetworkCredentialsPropertiesOnWindows()
+        {
+            string testFilePath = GetTestFilePath();
+            Assert.False(string.IsNullOrWhiteSpace(testFilePath), $"Path to test file should not be empty: {testFilePath}");
+
+            string testFilePathRoot = Path.GetPathRoot(testFilePath);
+            string testFileUncPath = $"\\\\{Environment.MachineName}\\{testFilePath.Substring(0, testFilePathRoot.IndexOf(":"))}$\\{testFilePath.Replace(testFilePathRoot, "")}";
+            string testFileContent = Guid.NewGuid().ToString();
+            File.WriteAllText(testFilePath, testFileContent);
+
+            using WindowsTestAccount accountWithoutFilePermission = new WindowsTestAccount("testForDotnetRuntime");
+
+            const string username = "testForDotnetNetwork";
+            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
+
+            uint removalResult = Interop.NetUserDel(null, username);
+            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
+
+            Interop.NetUserAdd(username, password);
+
+            bool hasStarted = false;
+            Process p = null;
+            string workingDirectory = null;
+
+            try
+            {
+                // Schedule a process to see what env vars it gets.  Have it write out those variables
+                // to its output stream so we can read them.
+                p = CreateProcess(arg =>
+                {
+                    Console.Write(File.ReadAllText(arg));
+                    return RemoteExecutor.SuccessExitCode;
+                }, testFileUncPath);
+                p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.LoadUserProfile = false;
+                p.StartInfo.UseCredentialsForNetworkingOnly = true;
+                p.StartInfo.UserName = username;
+                p.StartInfo.PasswordInClearText = password;
+
+                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : p.StartInfo.WorkingDirectory;
+
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe and the temp file (otherwise you get Access is denied exception)
+                    SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: true);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
+                }
+
+                try
+                {
+                    hasStarted = WindowsIdentity.RunImpersonated(
+                        accountWithoutFilePermission.AccountTokenHandle,
+                        p.Start);
+                    string output = p.StandardOutput.ReadToEnd();
+                    Assert.True(p.WaitForExit(WaitInMS));
+
+                    Assert.Equal(testFileContent, output);
+                }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+                {
+                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
+                }
+
+                Assert.Equal(accountWithoutFilePermission.AccountName.Split('\\').LastOrDefault(), Helpers.GetProcessUserName(p));
+            }
+            finally
+            {
+                if (hasStarted)
+                {
+                    p.Kill();
+
+                    Assert.True(p.WaitForExit(WaitInMS));
+                }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    // remove the access
+                    SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: false);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
+                }
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
+            }
+        }
     }
 }
