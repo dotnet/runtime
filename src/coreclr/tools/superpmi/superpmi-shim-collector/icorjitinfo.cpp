@@ -976,12 +976,12 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 TypeCompareState interceptor_ICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
 {
     mc->cr->AddCall("isEnum");
-    CORINFO_CLASS_HANDLE tempUnderlyingType = NO_CLASS_HANDLE;
-    TypeCompareState temp = original_ICorJitInfo->isEnum(cls, &tempUnderlyingType);  
+    CORINFO_CLASS_HANDLE tempUnderlyingType = nullptr;
+    TypeCompareState temp = original_ICorJitInfo->isEnum(cls, &tempUnderlyingType);
     mc->recIsEnum(cls, tempUnderlyingType, temp);
     if (underlyingType != nullptr)
     {
-         *underlyingType = tempUnderlyingType;
+        *underlyingType = tempUnderlyingType;
     }
     return temp;
 }

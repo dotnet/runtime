@@ -13,12 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
         where T : struct, Enum
     {
-        private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
-
         private static readonly char[] s_specialChars = new[] { ',', ' ' };
-
-        // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
         private const string ValueSeparator = ", ";
 
@@ -40,7 +35,10 @@ namespace System.Text.Json.Serialization.Converters
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
-        private const int NameCacheSizeSoftLimit = 64;
+        private const int NameCacheSizeSoftLimit = 64;-
+
+        // Odd type codes are conveniently signed types (for enum backing types).
+        private static bool IsSignedEnum => ((int)Type.GetTypeCode(typeof(T)) % 2) == 1;
 
         public override bool CanConvert(Type type)
         {
@@ -130,7 +128,7 @@ namespace System.Text.Json.Serialization.Converters
                 return default;
             }
 
-            switch (s_enumTypeCode)
+            switch (Type.GetTypeCode(typeof(T)))
             {
                 // Switch cases ordered by expected frequency
 
@@ -233,7 +231,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            switch (s_enumTypeCode)
+            switch (Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.Int32:
                     writer.WriteNumberValue(Unsafe.As<T, int>(ref value));
@@ -320,7 +318,7 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-            switch (s_enumTypeCode)
+            switch (Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.Int32:
                     writer.WritePropertyName(Unsafe.As<T, int>(ref value));
@@ -440,7 +438,7 @@ namespace System.Text.Json.Serialization.Converters
         private static ulong ConvertToUInt64(object value)
         {
             Debug.Assert(value is T);
-            ulong result = s_enumTypeCode switch
+            ulong result = Type.GetTypeCode(typeof(T)) switch
             {
                 TypeCode.Int32 => (ulong)(int)value,
                 TypeCode.UInt32 => (uint)value,
@@ -466,7 +464,7 @@ namespace System.Text.Json.Serialization.Converters
             // so we'll just pick the first valid one and check for a negative sign
             // if needed.
             return (value[0] >= 'A' &&
-                (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
+                (!IsSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
         }
 
         private static string FormatJsonName(string value, JsonNamingPolicy? namingPolicy)

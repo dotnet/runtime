@@ -243,7 +243,7 @@ namespace System.Collections.Generic
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer
-            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32)
+            if (Type.GetTypeCode(typeof(T)) != TypeCode.Int32)
             {
                 info.SetType(typeof(ObjectEqualityComparer<T>));
             }

@@ -5921,7 +5921,7 @@ void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* un
     if (underlyingType != nullptr)
         value.A = CastHandle(*underlyingType);
     else
-        value.A = 0;
+        value.A = nullptr;
     value.B = (DWORD)result;
 
     IsEnum->Add(key, value);

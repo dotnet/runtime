@@ -2876,7 +2876,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             TypeCompareState state = info.compCompHnd->isEnum(hClass, nullptr);
                             if (state == TypeCompareState::May)
                             {
-                                retNode = NULL;
+                                retNode = nullptr;
                                 break;
                             }
                             retNode = gtNewIconNode(state == TypeCompareState::Must ? 1 : 0);
@@ -2892,7 +2892,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
-                    if (retNode != NULL)
+                    if (retNode != nullptr)
                     {
                         impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                     }

@@ -4464,9 +4464,9 @@ TypeCompareState CEEInfo::isEnum(
 
     TypeCompareState result = TypeCompareState::May;
 
-    if (underlyingType != NULL)
+    if (underlyingType != nullptr)
     {
-        *underlyingType = 0;
+        *underlyingType = nullptr;
     }
 
     JIT_TO_EE_TRANSITION_LEAF();
@@ -4480,7 +4480,7 @@ TypeCompareState CEEInfo::isEnum(
         if (!th.IsTypeDesc() && th.AsMethodTable()->IsEnum())
         {
             result = TypeCompareState::Must;
-            if (underlyingType != NULL)
+            if (underlyingType != nullptr)
             {
                 CorElementType elemType = th.AsMethodTable()->GetInternalCorElementType();
                 TypeHandle underlyingHandle(CoreLibBinder::GetElementType(elemType));

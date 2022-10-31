@@ -267,70 +267,53 @@ namespace System
             if (typeCode != TypeCode.Empty)
                 return typeCode;
 
-            CorElementType corElementType = RuntimeTypeHandle.GetCorElementType(this);
-            // keep in sync with Type.cs
-            switch (corElementType)
-            {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    typeCode = TypeCode.Boolean; break;
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    typeCode = TypeCode.Char; break;
-                case CorElementType.ELEMENT_TYPE_I1:
-                    typeCode = TypeCode.SByte; break;
-                case CorElementType.ELEMENT_TYPE_U1:
-                    typeCode = TypeCode.Byte; break;
-                case CorElementType.ELEMENT_TYPE_I2:
-                    typeCode = TypeCode.Int16; break;
-                case CorElementType.ELEMENT_TYPE_U2:
-                    typeCode = TypeCode.UInt16; break;
-                case CorElementType.ELEMENT_TYPE_I4:
-                    typeCode = TypeCode.Int32; break;
-                case CorElementType.ELEMENT_TYPE_U4:
-                    typeCode = TypeCode.UInt32; break;
-                case CorElementType.ELEMENT_TYPE_I8:
-                    typeCode = TypeCode.Int64; break;
-                case CorElementType.ELEMENT_TYPE_U8:
-                    typeCode = TypeCode.UInt64; break;
-                case CorElementType.ELEMENT_TYPE_R4:
-                    typeCode = TypeCode.Single; break;
-                case CorElementType.ELEMENT_TYPE_R8:
-                    typeCode = TypeCode.Double; break;
-#if !CORECLR
-                case CorElementType.ELEMENT_TYPE_STRING:
-                    typeCode = TypeCode.String; break;
-#endif
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (ReferenceEquals(this, typeof(decimal)))
-                        typeCode = TypeCode.Decimal;
-                    else if (ReferenceEquals(this, typeof(DateTime)))
-                        typeCode = TypeCode.DateTime;
-                    else if (IsActualEnum)
-                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
-                    else
-                        typeCode = TypeCode.Object;
-                    break;
-                default:
-#if CORECLR
-                    // GetSignatureCorElementType returns E_T_CLASS for E_T_STRING
-                    if (ReferenceEquals(this, typeof(string)))
-                    {
-                        typeCode = TypeCode.String;
-                        break;
-                    }
-#endif
-                    if (ReferenceEquals(this, typeof(DBNull)))
-                    {
-                        typeCode = TypeCode.DBNull;
-                        break;
-                    }
-
-                    typeCode = TypeCode.Object;
-                    break;
-            }
-
+            typeCode = GetTypeCodeInternal(this);
             Cache.TypeCode = typeCode;
 
             return typeCode;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static TypeCode GetTypeCodeInternal(RuntimeType type)
+        {
+            RuntimeType underlyingType = type;
+            if (type.IsActualEnum)
+                underlyingType = type.GetEnumUnderlyingType();
+
+            if (underlyingType == typeof(sbyte))
+                return TypeCode.SByte;
+            else if (underlyingType == typeof(byte))
+                return TypeCode.Byte;
+            else if (underlyingType == typeof(short))
+                return TypeCode.Int16;
+            else if (underlyingType == typeof(ushort))
+                return TypeCode.UInt16;
+            else if (underlyingType == typeof(int))
+                return TypeCode.Int32;
+            else if (underlyingType == typeof(uint))
+                return TypeCode.UInt32;
+            else if (underlyingType == typeof(long))
+                return TypeCode.Int64;
+            else if (underlyingType == typeof(ulong))
+                return TypeCode.UInt64;
+            else if (underlyingType == typeof(bool))
+                return TypeCode.Boolean;
+            else if (underlyingType == typeof(char))
+                return TypeCode.Char;
+            else if (underlyingType == typeof(float))
+                return TypeCode.Single;
+            else if (underlyingType == typeof(double))
+                return TypeCode.Double;
+            else if (underlyingType == typeof(decimal))
+                return TypeCode.Decimal;
+            else if (underlyingType == typeof(DateTime))
+                return TypeCode.DateTime;
+            else if (underlyingType == typeof(string))
+                return TypeCode.String;
+            else if (underlyingType == typeof(DBNull))
+                return TypeCode.DBNull;
+            else
+                return TypeCode.Object;
         }
 
         protected override bool HasElementTypeImpl() => RuntimeTypeHandle.HasElementType(this);

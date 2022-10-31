@@ -441,48 +441,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeCode GetTypeCode(Type? type)
         {
-            if (RuntimeHelpers.IsKnownConstant(type))
+            if (RuntimeHelpers.IsKnownConstant(type) && type is RuntimeType)
             {
-                // keep in sync with RuntimeType.cs
-                Type? underlyingType = type;
-                if (type is RuntimeType && ((RuntimeType)type).IsActualEnum)
-                    underlyingType = type.GetEnumUnderlyingType();
-                if (underlyingType == null)
-                    return TypeCode.Empty;
-                else if (underlyingType == typeof(sbyte))
-                    return TypeCode.SByte;
-                else if (underlyingType == typeof(byte))
-                    return TypeCode.Byte;
-                else if (underlyingType == typeof(short))
-                    return TypeCode.Int16;
-                else if (underlyingType == typeof(ushort))
-                    return TypeCode.UInt16;
-                else if (underlyingType == typeof(int))
-                    return TypeCode.Int32;
-                else if (underlyingType == typeof(uint))
-                    return TypeCode.UInt32;
-                else if (underlyingType == typeof(long))
-                    return TypeCode.Int64;
-                else if (underlyingType == typeof(ulong))
-                    return TypeCode.UInt64;
-                else if (underlyingType == typeof(bool))
-                    return TypeCode.Boolean;
-                else if (underlyingType == typeof(char))
-                    return TypeCode.Char;
-                else if (underlyingType == typeof(float))
-                    return TypeCode.Single;
-                else if (underlyingType == typeof(double))
-                    return TypeCode.Double;
-                else if (underlyingType == typeof(decimal))
-                    return TypeCode.Decimal;
-                else if (underlyingType == typeof(DateTime))
-                    return TypeCode.DateTime;
-                else if (underlyingType == typeof(string))
-                    return TypeCode.String;
-                else if (underlyingType == typeof(DBNull))
-                    return TypeCode.DBNull;
-                else if (underlyingType.GetType() == typeof(RuntimeType))
-                    return TypeCode.Object;
+                return RuntimeType.GetTypeCodeInternal((RuntimeType)type);
             }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
         }
