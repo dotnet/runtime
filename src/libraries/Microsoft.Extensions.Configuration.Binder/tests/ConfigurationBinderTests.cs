@@ -505,6 +505,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Option2,
         }
 
+        public record RootConfig(NestedConfig Nested);
+
+        public record NestedConfig(string MyProp);
+
+        [Fact]
+        public void BindWithNestedTypesWithReadOnlyProperties()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Nested:MyProp", "Dummy" }
+                })
+                .Build();
+
+            var result = configuration.Get<RootConfig>();
+
+            Assert.Equal("Dummy", result.Nested.MyProp);
+        }
+
         [Fact]
         public void EnumBindCaseInsensitiveNotThrows()
         {
