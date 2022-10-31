@@ -159,13 +159,13 @@ namespace System.Text.RegularExpressions
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
         /// <returns>The array of found sets, or null if there aren't any.</returns>
-        public static List<(char[]? Chars, string Set, int Distance)>? FindFixedDistanceSets(RegexNode root, bool thorough)
+        public static List<RegexFindOptimizations.FixedDistanceSet>? FindFixedDistanceSets(RegexNode root, bool thorough)
         {
             const int MaxLoopExpansion = 20; // arbitrary cut-off to avoid loops adding significant overhead to processing
             const int MaxFixedResults = 50; // arbitrary cut-off to avoid generating lots of sets unnecessarily
 
             // Find all fixed-distance sets.
-            var results = new List<(char[]? Chars, string Set, int Distance)>();
+            var results = new List<RegexFindOptimizations.FixedDistanceSet>();
             int distance = 0;
             TryFindFixedSets(root, results, ref distance, thorough);
 
@@ -193,7 +193,7 @@ namespace System.Text.RegularExpressions
                 string? charClass = FindFirstCharClass(root);
                 if (charClass is not null)
                 {
-                    results.Add((null, charClass, 0));
+                    results.Add(new RegexFindOptimizations.FixedDistanceSet(null, charClass, 0));
                 }
 
                 if (results.Count == 0)
@@ -203,16 +203,28 @@ namespace System.Text.RegularExpressions
             }
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
+            // For any for which we couldn't get the small chars list, see if we can get other useful info.
             Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
             for (int i = 0; i < results.Count; i++)
             {
-                (char[]? Chars, string Set, int Distance) result = results[i];
-                if (!RegexCharClass.IsNegated(result.Set))
+                RegexFindOptimizations.FixedDistanceSet result = results[i];
+                bool negated = RegexCharClass.IsNegated(result.Set);
+
+                if (!negated)
                 {
                     int count = RegexCharClass.GetSetChars(result.Set, scratch);
                     if (count != 0)
                     {
                         result.Chars = scratch.Slice(0, count).ToArray();
+                        results[i] = result;
+                    }
+                }
+
+                if (thorough && result.Chars is null)
+                {
+                    if (RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                    {
+                        result.Range = (lowInclusive, highInclusive, negated);
                         results[i] = result;
                     }
                 }
@@ -226,7 +238,7 @@ namespace System.Text.RegularExpressions
             // of the node.  If it returns false, the node isn't entirely fixed, in which case subsequent nodes
             // shouldn't be examined and distance should no longer be trusted.  However, regardless of whether it
             // returns true or false, it may have populated results, and all populated results are valid.
-            static bool TryFindFixedSets(RegexNode node, List<(char[]? Chars, string Set, int Distance)> results, ref int distance, bool thorough)
+            static bool TryFindFixedSets(RegexNode node, List<RegexFindOptimizations.FixedDistanceSet> results, ref int distance, bool thorough)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
@@ -244,7 +256,7 @@ namespace System.Text.RegularExpressions
                         if (results.Count < MaxFixedResults)
                         {
                             string setString = RegexCharClass.OneToStringClass(node.Ch);
-                            results.Add((null, setString, distance++));
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             return true;
                         }
                         return false;
@@ -256,7 +268,7 @@ namespace System.Text.RegularExpressions
                             int i = 0;
                             for (; i < minIterations && results.Count < MaxFixedResults; i++)
                             {
-                                results.Add((null, setString, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             }
                             return i == node.M && i == node.N;
                         }
@@ -268,7 +280,7 @@ namespace System.Text.RegularExpressions
                             for (; i < s.Length && results.Count < MaxFixedResults; i++)
                             {
                                 string setString = RegexCharClass.OneToStringClass(s[i]);
-                                results.Add((null, setString, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             }
                             return i == s.Length;
                         }
@@ -276,7 +288,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Set:
                         if (results.Count < MaxFixedResults)
                         {
-                            results.Add((null, node.Str!, distance++));
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
                             return true;
                         }
                         return false;
@@ -287,7 +299,7 @@ namespace System.Text.RegularExpressions
                             int i = 0;
                             for (; i < minIterations && results.Count < MaxFixedResults; i++)
                             {
-                                results.Add((null, node.Str!, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
                             }
                             return i == node.M && i == node.N;
                         }
@@ -356,7 +368,7 @@ namespace System.Text.RegularExpressions
                             int? sameDistance = null;
                             var combined = new Dictionary<int, (RegexCharClass Set, int Count)>();
 
-                            var localResults = new List<(char[]? Chars, string Set, int Distance)>();
+                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet> ();
                             for (int i = 0; i < childCount; i++)
                             {
                                 localResults.Clear();
@@ -380,7 +392,7 @@ namespace System.Text.RegularExpressions
                                     }
                                 }
 
-                                foreach ((char[]? Chars, string Set, int Distance) fixedSet in localResults)
+                                foreach (RegexFindOptimizations.FixedDistanceSet fixedSet in localResults)
                                 {
                                     if (combined.TryGetValue(fixedSet.Distance, out (RegexCharClass Set, int Count) value))
                                     {
@@ -407,7 +419,7 @@ namespace System.Text.RegularExpressions
 
                                 if (pair.Value.Count == childCount)
                                 {
-                                    results.Add((null, pair.Value.Set.ToStringClass(), pair.Key + distance));
+                                    results.Add(new RegexFindOptimizations.FixedDistanceSet(null, pair.Value.Set.ToStringClass(), pair.Key + distance));
                                 }
                             }
 
@@ -428,11 +440,12 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Sorts a set of fixed-distance set results from best to worst quality.</summary>
-        public static void SortFixedDistanceSetsByQuality(List<(char[]? Chars, string Set, int Distance)> results) =>
+        public static void SortFixedDistanceSetsByQuality(List<RegexFindOptimizations.FixedDistanceSet> results) =>
             // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
             // for the fastest and that have the best chance of matching as few false positives as possible.
             results.Sort((s1, s2) =>
             {
+                // If both have chars, prioritize the one with the smaller frequency for those chars.
                 if (s1.Chars is not null && s2.Chars is not null)
                 {
                     // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
@@ -458,17 +471,20 @@ namespace System.Text.RegularExpressions
                         return sum;
                     }
                 }
-                else if (s1.Chars is not null)
+
+                // If one has chars and the other doesn't, prioritize the one with chars.
+                if ((s1.Chars is not null) != (s2.Chars is not null))
                 {
-                    // If s1 has chars and s2 doesn't, then s1 has fewer chars.
-                    return -1;
-                }
-                else if (s2.Chars is not null)
-                {
-                    // If s2 has chars and s1 doesn't, then s2 has fewer chars.
-                    return 1;
+                    return s1.Chars is not null ? -1 : 1;
                 }
 
+                // If one has a range and the other doesn't, prioritize the one with a range.
+                if ((s1.Range is not null) != (s2.Range is not null))
+                {
+                    return s1.Range is not null ? -1 : 1;
+                }
+
+                // As a tiebreaker, prioritize the earlier one.
                 return s1.Distance.CompareTo(s2.Distance);
             });
 

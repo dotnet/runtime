@@ -6578,3 +6578,367 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
         }
     }
 }
+
+//------------------------------------------------------------------------
+// fgTailMerge: merge common sequences of statements in block predecessors
+//
+// Returns:
+//   Suitable phase status.
+//
+// Notes:
+//   Looks for cases where all or some predecessors of a block have the same
+//   (or equivalent) last statement.
+//
+//   If all predecessors have the same last statement, move one of them to
+//   the start of the block, and delete the copies in the preds.
+//   Then retry merging.
+//
+//   If some predecessors have the same last statement, pick one as the
+//   canonical, split it if necessary, cross jump from the others to
+//   the canonical, and delete the copies in the cross jump blocks.
+//   Then retry merging on the canonical block.
+//
+//   We set a mergeLimit to try and get most of the benefit while not
+//   incurring too much TP overhead. It's possible to make the merging
+//   more efficient and if so it might be worth revising this value.
+//
+PhaseStatus Compiler::fgTailMerge()
+{
+    bool      madeChanges = false;
+    int const mergeLimit  = 50;
+
+    const bool isEnabled = JitConfig.JitEnableTailMerge() > 0;
+    if (!isEnabled)
+    {
+        JITDUMP("Tail merge disabled by JitEnableTailMerge\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableTailMergeRange;
+    JitEnableTailMergeRange.EnsureInit(JitConfig.JitEnableTailMergeRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitEnableTailMergeRange.Contains(hash);
+#else
+    const bool inRange = true;
+#endif
+
+    if (!inRange)
+    {
+        JITDUMP("Tail merge disabled by JitEnableTailMergeRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    struct PredInfo
+    {
+        PredInfo(BasicBlock* block, Statement* stmt) : m_block(block), m_stmt(stmt)
+        {
+        }
+        BasicBlock* m_block;
+        Statement*  m_stmt;
+    };
+
+    ArrayStack<PredInfo>    predInfo(getAllocator(CMK_ArrayStack));
+    ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
+    ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
+
+    // Try tail merging a block.
+    // If return value is true, retry.
+    // May also add to retryBlocks.
+    //
+    auto tailMerge = [&](BasicBlock* block) -> bool {
+
+        if (block->countOfInEdges() < 2)
+        {
+            // Nothing to merge here
+            return false;
+        }
+
+        predInfo.Reset();
+
+        // Find the subset of preds that reach along non-critical edges
+        // and populate predInfo.
+        //
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if ((predBlock->GetUniqueSucc() == block) && BasicBlock::sameEHRegion(block, predBlock))
+            {
+                Statement* lastStmt = predBlock->lastStmt();
+
+                // Block might be empty.
+                //
+                if (lastStmt == nullptr)
+                {
+                    continue;
+                }
+
+                // Walk back past any GT_NOPs.
+                //
+                Statement* const firstStmt = predBlock->firstStmt();
+                while (lastStmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    if (lastStmt == firstStmt)
+                    {
+                        // predBlock is evidently all GT_NOP.
+                        //
+                        lastStmt = nullptr;
+                        break;
+                    }
+
+                    lastStmt = lastStmt->GetPrevStmt();
+                }
+
+                // Block might be effectively empty.
+                //
+                if (lastStmt == nullptr)
+                {
+                    continue;
+                }
+
+                // We don't expect to see PHIs but watch for them anyways.
+                //
+                assert(!lastStmt->IsPhiDefnStmt());
+                predInfo.Emplace(predBlock, lastStmt);
+            }
+        }
+
+        // Are there enough preds to make it interesting?
+        //
+        if (predInfo.Height() < 2)
+        {
+            // Not enough preds to merge
+            return false;
+        }
+
+        // If there are large numbers of viable preds, forgo trying to merge.
+        // While there can be large benefits, there can also be large costs.
+        //
+        // Note we check this rather than countOfInEdges because we don't care
+        // about dups, just the number of unique pred blocks.
+        //
+        if (predInfo.Height() > mergeLimit)
+        {
+            // Too many preds to consider
+            return false;
+        }
+
+        // Find a matching set of preds. Potentially O(N^2) tree comparisons.
+        //
+        int i = 0;
+        while (i < (predInfo.Height() - 1))
+        {
+            matchedPredInfo.Reset();
+            matchedPredInfo.Emplace(predInfo.TopRef(i));
+            Statement* const baseStmt = predInfo.TopRef(i).m_stmt;
+            for (int j = i + 1; j < predInfo.Height(); j++)
+            {
+                Statement* const otherStmt = predInfo.TopRef(j).m_stmt;
+
+                // Consider: compute and cache hashes to make this faster
+                //
+                if (GenTree::Compare(baseStmt->GetRootNode(), otherStmt->GetRootNode()))
+                {
+                    matchedPredInfo.Emplace(predInfo.TopRef(j));
+                }
+            }
+
+            if (matchedPredInfo.Height() < 2)
+            {
+                // This pred didn't match any other. Check other preds for matches.
+                i++;
+                continue;
+            }
+
+            // We have some number of preds that have identical last statements.
+            // If all preds of block have a matching last stmt, move that statement to the start of block.
+            //
+            if (matchedPredInfo.Height() == (int)block->countOfInEdges())
+            {
+                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", block->bbNum);
+                JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
+
+                for (int j = 0; j < matchedPredInfo.Height(); j++)
+                {
+                    PredInfo&         info      = matchedPredInfo.TopRef(j);
+                    Statement* const  stmt      = info.m_stmt;
+                    BasicBlock* const predBlock = info.m_block;
+
+                    fgUnlinkStmt(predBlock, stmt);
+
+                    // Add one of the matching stmts to block, and
+                    // update its flags.
+                    //
+                    if (j == 0)
+                    {
+                        fgInsertStmtAtBeg(block, stmt);
+                        block->bbFlags |= predBlock->bbFlags & BBF_COPY_PROPAGATE;
+                    }
+
+                    madeChanges = true;
+                }
+
+                // It's worth retrying tail merge on this block.
+                //
+                return true;
+            }
+
+            // A subset of preds have matching last stmt, we will cross-jump.
+            // Pick one block as the victim -- preferably a block with just one
+            // statement or one that falls through to block (or both).
+            //
+            JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
+            JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
+
+            BasicBlock* crossJumpVictim       = matchedPredInfo.TopRef(0).m_block;
+            Statement*  crossJumpStmt         = matchedPredInfo.TopRef(0).m_stmt;
+            bool        haveNoSplitVictim     = false;
+            bool        haveFallThroughVictim = false;
+
+            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            {
+                PredInfo&         info      = matchedPredInfo.TopRef(j);
+                Statement* const  stmt      = info.m_stmt;
+                BasicBlock* const predBlock = info.m_block;
+
+                bool const isNoSplit     = stmt == predBlock->firstStmt();
+                bool const isFallThrough = (predBlock->bbJumpKind == BBJ_NONE);
+
+                // Is this block possibly better than what we have?
+                //
+                bool useBlock = false;
+
+                if (isNoSplit && isFallThrough)
+                {
+                    // This is the ideal choice.
+                    //
+                    useBlock = true;
+                }
+                else if (!haveNoSplitVictim && isNoSplit)
+                {
+                    useBlock = true;
+                }
+                else if (!haveNoSplitVictim && !haveFallThroughVictim && isFallThrough)
+                {
+                    useBlock = true;
+                }
+
+                if (useBlock)
+                {
+                    crossJumpVictim       = predBlock;
+                    crossJumpStmt         = stmt;
+                    haveNoSplitVictim     = isNoSplit;
+                    haveFallThroughVictim = isFallThrough;
+                }
+
+                // If we have the perfect victim, stop looking.
+                //
+                if (haveNoSplitVictim && haveFallThroughVictim)
+                {
+                    break;
+                }
+            }
+
+            BasicBlock* crossJumpTarget = crossJumpVictim;
+
+            // If this block requires splitting, then split it.
+            // Note we know that stmt has a prev stmt.
+            //
+            if (haveNoSplitVictim)
+            {
+                JITDUMP("Will cross-jump to " FMT_BB "\n", crossJumpTarget->bbNum);
+            }
+            else
+            {
+                crossJumpTarget = fgSplitBlockAfterStatement(crossJumpVictim, crossJumpStmt->GetPrevStmt());
+                JITDUMP("Will cross-jump to newly split off " FMT_BB "\n", crossJumpTarget->bbNum);
+            }
+
+            assert(!crossJumpTarget->isEmpty());
+
+            // Do the cross jumping
+            //
+            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            {
+                PredInfo&         info      = matchedPredInfo.TopRef(j);
+                BasicBlock* const predBlock = info.m_block;
+                Statement* const  stmt      = info.m_stmt;
+
+                if (predBlock == crossJumpVictim)
+                {
+                    continue;
+                }
+
+                // remove the statement
+                fgUnlinkStmt(predBlock, stmt);
+
+                // Fix up the flow.
+                //
+                predBlock->bbJumpKind = BBJ_ALWAYS;
+                predBlock->bbJumpDest = crossJumpTarget;
+
+                fgRemoveRefPred(block, predBlock);
+                fgAddRefPred(crossJumpTarget, predBlock);
+            }
+
+            // We changed things
+            //
+            madeChanges = true;
+
+            // We should try tail merging the cross jump target.
+            //
+            retryBlocks.Push(crossJumpTarget);
+
+            // Continue trying to merge in the current block.
+            // This is a bit inefficient, we could remember how
+            // far we got through the pred list perhaps.
+            //
+            return true;
+        }
+
+        // We've looked at everything.
+        //
+        return false;
+    };
+
+    auto iterateTailMerge = [&](BasicBlock* block) -> void {
+
+        int  numOpts = 0;
+        bool retry   = true;
+
+        while (retry)
+        {
+            retry = tailMerge(block);
+            if (retry)
+            {
+                numOpts++;
+            }
+        }
+
+        if (numOpts > 0)
+        {
+            JITDUMP("Did %d tail merges in " FMT_BB "\n", numOpts, block->bbNum);
+        }
+    };
+
+    // Visit each block
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        iterateTailMerge(block);
+    }
+
+    // Work through any retries
+    //
+    while (retryBlocks.Height() > 0)
+    {
+        iterateTailMerge(retryBlocks.Pop());
+    }
+
+    // If we altered flow, reset fgModified. Given where we sit in the
+    // phase list, flow-dependent side data hasn't been built yet, so
+    // nothing needs invalidation.
+    //
+    fgModified = false;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}

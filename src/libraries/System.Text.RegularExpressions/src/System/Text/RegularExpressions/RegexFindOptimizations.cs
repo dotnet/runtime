@@ -115,9 +115,9 @@ namespace System.Text.RegularExpressions
                     else
                     {
                         // The set may match multiple characters.  Search for that.
-                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance)>()
+                        FixedDistanceSets = new List<FixedDistanceSet>()
                         {
-                            (chars, charClass, 0)
+                            new FixedDistanceSet(chars, charClass, 0)
                         };
                         FindMode = FindNextStartingPositionMode.LeadingSet_RightToLeft;
                         _asciiLookups = new uint[1][];
@@ -129,7 +129,7 @@ namespace System.Text.RegularExpressions
             // We're now left-to-right only and looking for sets.
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
-            List<(char[]? Chars, string Set, int Distance)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
+            List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
             Debug.Assert(fixedDistanceSets is null || fixedDistanceSets.Count != 0);
 
             // See if we can make a string of at least two characters long out of those sets.  We should have already caught
@@ -227,13 +227,33 @@ namespace System.Text.RegularExpressions
 
         /// <summary>When in fixed distance set mode, gets the set and how far it is from the start of the pattern.</summary>
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
-        public List<(char[]? Chars, string Set, int Distance)>? FixedDistanceSets { get; }
+        public List<FixedDistanceSet>? FixedDistanceSets { get; }
+
+        /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
+        public struct FixedDistanceSet
+        {
+            public FixedDistanceSet(char[]? chars, string set, int distance)
+            {
+                Chars = chars;
+                Set = set;
+                Distance = distance;
+            }
+
+            /// <summary>The character class description.</summary>
+            public string Set;
+            /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
+            public char[]? Chars;
+            /// <summary>The distance of the set from the beginning of the match.</summary>
+            public int Distance;
+            /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
+            public (char LowInclusive, char HighInclusive, bool Negated)? Range;
+        }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
         public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Analyzes a list of fixed-distance sets to extract a case-sensitive string at a fixed distance.</summary>
-        private static (string String, int Distance)? FindFixedDistanceString(List<(char[]? Chars, string Set, int Distance)> fixedDistanceSets)
+        private static (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
         {
             (string String, int Distance)? best = null;
 
@@ -487,7 +507,9 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
-                        (char[]? chars, string set, _) = FixedDistanceSets![0];
+                        FixedDistanceSet primarySet = FixedDistanceSets![0];
+                        char[]? chars = primarySet.Chars;
+                        string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
                         if (chars is not null)
@@ -571,16 +593,17 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                     {
-                        List<(char[]? Chars, string Set, int Distance)> sets = FixedDistanceSets!;
-                        (char[]? primaryChars, string primarySet, int primaryDistance) = sets[0];
+                        List<FixedDistanceSet> sets = FixedDistanceSets!;
+                        FixedDistanceSet primarySet = sets[0];
+
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primaryChars is not null)
+                        if (primarySet.Chars is not null)
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
-                                int offset = inputPosition + primaryDistance;
-                                int index = textSpan.Slice(offset).IndexOfAny(primaryChars);
+                                int offset = inputPosition + primarySet.Distance;
+                                int index = textSpan.Slice(offset).IndexOfAny(primarySet.Chars);
                                 if (index < 0)
                                 {
                                     break;
@@ -588,7 +611,7 @@ namespace System.Text.RegularExpressions
 
                                 index += offset; // The index here will be offset indexed due to the use of span, so we add offset to get
                                                  // real position on the string.
-                                inputPosition = index - primaryDistance;
+                                inputPosition = index - primarySet.Distance;
                                 if (inputPosition > endMinusRequiredLength)
                                 {
                                     break;
@@ -596,9 +619,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance) = sets[i];
-                                    char c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
+                                    FixedDistanceSet nextSet = sets[i];
+                                    char c = textSpan[inputPosition + nextSet.Distance];
+                                    if (!RegexCharClass.CharInClass(c, nextSet.Set, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -616,17 +639,17 @@ namespace System.Text.RegularExpressions
 
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
-                                char c = textSpan[inputPosition + primaryDistance];
-                                if (!RegexCharClass.CharInClass(c, primarySet, ref startingAsciiLookup))
+                                char c = textSpan[inputPosition + primarySet.Distance];
+                                if (!RegexCharClass.CharInClass(c, primarySet.Set, ref startingAsciiLookup))
                                 {
                                     goto Bumpalong;
                                 }
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance) = sets[i];
-                                    c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
+                                    FixedDistanceSet nextSet = sets[i];
+                                    c = textSpan[inputPosition + nextSet.Distance];
+                                    if (!RegexCharClass.CharInClass(c, nextSet.Set, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }

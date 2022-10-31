@@ -28,8 +28,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 // Handle lifetime of loaded library.
 //*****************************************************************************
 
-#include <shlwapi.h>
-
 #ifdef TARGET_WINDOWS
 extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 #endif // TARGET_WINDOWS

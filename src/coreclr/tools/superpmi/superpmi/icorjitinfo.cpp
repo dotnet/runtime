@@ -215,8 +215,7 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
 void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
-    LogError("Hit unimplemented expandRawHandleIntrinsic");
-    DebugBreakorAV(129);
+    jitInstance->mc->repExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -381,11 +380,12 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                              unsigned              metaTOK,   /* IN  */
                              char16_t*             buffer,    /* OUT */
-                             int                   bufferSize /* IN  */
+                             int                   bufferSize,/* IN  */
+                             int                   startIndex
                              )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
 size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */
@@ -1222,13 +1222,15 @@ const char16_t* MyICJI::getJitTimeLogFilename()
     // we have the ability to replay this, but we treat it in this case as EE context
     //  return jitInstance->eec->jitTimeLogFilename;
 
-    // We want to be able to set COMPLUS_JitTimeLogFile when replaying, to collect JIT
+    // We want to be able to set DOTNET_JitTimeLogFile or COMPlus_JitTimeLogFile when replaying, to collect JIT
     // statistics. So, just do a getenv() call. This isn't quite as thorough as
     // the normal CLR config value functions (which also check the registry), and we've
     // also hard-coded the variable name here instead of using:
     //      CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
     // like in the VM, but it works for our purposes.
-    return (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
+    const char16_t* dotnetVar = (const char16_t*)GetEnvironmentVariableWithDefaultW(W("DOTNET_JitTimeLogFile"));
+    return dotnetVar != nullptr ? dotnetVar :
+        (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
 }
 
 /*********************************************************************************/
