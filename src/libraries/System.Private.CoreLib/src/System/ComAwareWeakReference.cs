@@ -14,12 +14,16 @@ namespace System
 {
     internal sealed partial class ComAwareWeakReference
     {
-        private readonly nint _weakHandle;
+        // _weakHandle is effectively readonly.
+        // the only place where we change it after construction is in finalizer.
+        private nint _weakHandle;
         private ComInfo? _comInfo;
 
         internal sealed class ComInfo
         {
-            private readonly IntPtr _pComWeakRef;
+            // _pComWeakRef is effectively readonly.
+            // the only place where we change it after construction is in finalizer.
+            private IntPtr _pComWeakRef;
             private readonly long _wrapperId;
 
             internal object? ResolveTarget()
@@ -57,7 +61,16 @@ namespace System
                 if (pComWeakRef == 0)
                     return null;
 
-                return new ComInfo(pComWeakRef, wrapperId);
+                try
+                {
+                    return new ComInfo(pComWeakRef, wrapperId);
+                }
+                catch(OutOfMemoryException)
+                {
+                    // we did not create an object, so ComInfo finalizer will not run
+                    Marshal.Release(pComWeakRef);
+                    throw;
+                }
             }
 
             private ComInfo(IntPtr pComWeakRef, long wrapperId)
@@ -70,6 +83,9 @@ namespace System
             ~ComInfo()
             {
                 Marshal.Release(_pComWeakRef);
+                // our use pattern guarantees that the instance is not reachable after this.
+                // clear the pointer just in case that gets somehow broken.
+                _pComWeakRef = 0;
             }
         }
 
@@ -82,6 +98,9 @@ namespace System
         ~ComAwareWeakReference()
         {
             GCHandle.InternalFree(_weakHandle);
+            // our use pattern guarantees that the instance is not reachable after this.
+            // clear the pointer just in case that gets somehow broken.
+            _weakHandle = 0;
         }
 
         private void SetTarget(object? target, ComInfo? comInfo)

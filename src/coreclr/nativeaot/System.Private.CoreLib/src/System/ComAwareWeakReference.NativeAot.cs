@@ -11,7 +11,7 @@ namespace System
         internal static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
         {
             // NativeAOT support for COM WeakReference is NYI
-            return null;
+            throw new NotImplementedException();
         }
 
         internal static IntPtr ObjectToComWeakRef(object target, out long wrapperId)
