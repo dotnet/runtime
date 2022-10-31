@@ -2083,9 +2083,64 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     }
     else
     {
+        // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
+        if (func == VNFunc(GT_ARR_LENGTH))
+        {
+            // Case 1: ARR_LENGTH(FROZEN_OBJ)
+            ValueNum addressVN = VNNormalValue(arg0VN);
+            if (IsVNHandle(addressVN) && (GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
+            {
+                size_t handle = CoercedConstantValue<size_t>(addressVN);
+                int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
+                if (len >= 0)
+                {
+                    ValueNum op1vn;
+                    ValueNum op1Xvn;
+                    VNUnpackExc(arg0VN, &op1vn, &op1Xvn);
+                    resultVN = VNExcSetUnion(VNForIntCon(len), op1Xvn);
+                }
+            }
+
+            // Case 2: ARR_LENGTH(static-readonly-field)
+            VNFuncApp funcApp;
+            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
+            {
+                ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
+                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                {
+                    FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
+                    if (fieldSeq != nullptr)
+                    {
+                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+                        if (field != NULL)
+                        {
+                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                            if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
+                                                                                       TARGET_POINTER_SIZE, false))
+                            {
+                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                                // It's done to match the current crossgen/ILC behavior.
+                                CORINFO_OBJECT_HANDLE objHandle = NULL;
+                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
+                                if (len >= 0)
+                                {
+                                    ValueNum op1vn;
+                                    ValueNum op1Xvn;
+                                    VNUnpackExc(arg0VN, &op1vn, &op1Xvn);
+                                    resultVN = VNExcSetUnion(VNForIntCon(len), op1Xvn);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Try to perform constant-folding.
         //
-        if (VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
+        if ((resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
         {
             resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
         }
@@ -8704,7 +8759,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // sequence to be able to fold their value
                         if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
                             (addr->AsIntCon()->gtFieldSeq != nullptr) &&
-                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue())))
+                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue()))
                         {
                             addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
                         }
@@ -8806,78 +8861,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (tree->AsOp()->gtOp1 != nullptr)
                     {
-                        bool foldedToConst = false;
-
-                        // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
-                        if (tree->OperIs(GT_ARR_LENGTH))
-                        {
-                            // Case 1: ARR_LENGTH(FROZEN_OBJ)
-                            ValueNum addressVN = vnStore->VNNormalValue(tree->gtGetOp1()->gtVNPair.GetLiberal());
-                            if (vnStore->IsVNHandle(addressVN) &&
-                                (vnStore->GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
-                            {
-                                size_t handle = vnStore->CoercedConstantValue<size_t>(addressVN);
-                                int len = this->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
-                                if (len >= 0)
-                                {
-                                    ValueNumPair op1vnp;
-                                    ValueNumPair op1Xvnp;
-                                    vnStore->VNPUnpackExc(tree->gtGetOp1()->gtVNPair, &op1vnp, &op1Xvnp);
-                                    tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
-                                    tree->gtVNPair = vnStore->VNPExcSetUnion(tree->gtVNPair, op1Xvnp);
-                                    foldedToConst  = true;
-                                }
-                            }
-
-                            // Case 2: ARR_LENGTH(static-readonly-field)
-                            VNFuncApp funcApp;
-                            if (!foldedToConst && vnStore->GetVNFunc(addressVN, &funcApp) &&
-                                (funcApp.m_func == VNF_InvariantNonNullLoad))
-                            {
-                                ValueNum fieldSeqVN = vnStore->VNNormalValue(funcApp.m_args[0]);
-                                if (vnStore->IsVNHandle(fieldSeqVN) &&
-                                    (vnStore->GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
-                                {
-                                    FieldSeq* fieldSeq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
-                                    if (fieldSeq != nullptr)
-                                    {
-                                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
-                                        if (field != NULL)
-                                        {
-                                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                                            if (this->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
-                                                                                                    TARGET_POINTER_SIZE,
-                                                                                                    false))
-                                            {
-                                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
-                                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
-                                                // It's done to match the current crossgen/ILC behavior.
-                                                CORINFO_OBJECT_HANDLE objHandle = NULL;
-                                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-                                                int len = this->info.compCompHnd->getArrayOrStringLength(objHandle);
-                                                if (len >= 0)
-                                                {
-                                                    ValueNumPair op1vnp;
-                                                    ValueNumPair op1Xvnp;
-                                                    vnStore->VNPUnpackExc(tree->gtGetOp1()->gtVNPair, &op1vnp,
-                                                                          &op1Xvnp);
-                                                    tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
-                                                    tree->gtVNPair = vnStore->VNPExcSetUnion(tree->gtVNPair, op1Xvnp);
-                                                    foldedToConst = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         if (tree->OperIs(GT_NOP))
                         {
                             // Pass through arg vn.
                             tree->gtVNPair = tree->AsOp()->gtOp1->gtVNPair;
                         }
-                        else if (!foldedToConst)
+                        else
                         {
                             ValueNumPair op1VNP;
                             ValueNumPair op1VNPx;
