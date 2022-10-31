@@ -15,6 +15,10 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
 using static ILCompiler.ObjectWriter.CodeViewNative;
+using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewPointer;
+using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewPropertyFlags;
+using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewType;
+using static ILCompiler.ObjectWriter.CodeViewNative.LeafRecordType;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -30,7 +34,6 @@ namespace ILCompiler.ObjectWriter
         private List<(string, uint)> _userDefinedTypes = new();
 
         private uint _nextTypeIndex = 0x1000;
-        private ArrayBufferWriter<byte> _bufferWriter = new();
 
         public IList<(string, uint)> UserDefinedTypes => _userDefinedTypes;
 
@@ -55,16 +58,16 @@ namespace ILCompiler.ObjectWriter
             // We use the same "Vtable" for all types because the vtable shape debug
             // record is not expressive enough to capture our vtable shape (where the
             // vtable slots don't start at the beginning of the vtable).
-            using (var record = StartLeafRecord(LeafRecordType.VTShape))
+            using (LeafRecordWriter record = StartLeafRecord(LF_VTSHAPE))
             {
                 record.Write((ushort)0); // Number of entries in vfunctable
             }
             _classVTableTypeIndex = _nextTypeIndex++;
 
-            using (var record = StartLeafRecord(LeafRecordType.Pointer))
+            using (LeafRecordWriter record = StartLeafRecord(LF_POINTER))
             {
                 record.Write(_classVTableTypeIndex);
-                record.Write((uint)((_targetPointerSize == 8 ? CV_PTR_64 : CV_PTR_NEAR32) | (CV_PTR_MODE_LVREF << 5)));
+                record.Write((uint)((_targetPointerSize == 8 ? CV_PTR_64 : CV_PTR_NEAR32) | CV_PTR_MODE_LVREF));
             }
             _vfuncTabTypeIndex = _nextTypeIndex++;
         }
@@ -78,7 +81,7 @@ namespace ILCompiler.ObjectWriter
         private uint GetPrimitiveTypeIndex(TypeFlags typeFlags)
         {
             // CodeView uses predefined codes for simple types
-            return typeFlags switch
+            return (uint)(typeFlags switch
             {
                 TypeFlags.Boolean => T_BOOL08,
                 TypeFlags.Char => T_WCHAR,
@@ -95,20 +98,18 @@ namespace ILCompiler.ObjectWriter
                 TypeFlags.Single => T_REAL32,
                 TypeFlags.Double => T_REAL64,
                 _ => T_NOTYPE,
-            };
+            });
         }
 
         public uint GetPointerTypeIndex(PointerTypeDescriptor pointerDescriptor)
         {
-            uint elementType = pointerDescriptor.ElementType;
-            uint pointerKind = pointerDescriptor.Is64Bit == 1 ? CV_PTR_64 : CV_PTR_NEAR32;
-            uint pointerMode = pointerDescriptor.IsReference == 1 ? CV_PTR_MODE_LVREF : CV_PTR_MODE_PTR;
-            //ushort pointerOptions = pointerDescriptor.IsConst ? MOD_const : MOD_none;
-
-            using (var record = StartLeafRecord(LeafRecordType.Pointer))
+            using (LeafRecordWriter record = StartLeafRecord(LF_POINTER))
             {
-                record.Write(elementType);
-                record.Write((uint)(pointerKind | (pointerMode << 5))); // TODO: pointerOptions
+                record.Write(pointerDescriptor.ElementType);
+                record.Write((uint)(
+                    (pointerDescriptor.Is64Bit == 1 ? CV_PTR_64 : CV_PTR_NEAR32) |
+                    (pointerDescriptor.IsReference == 1 ? CV_PTR_MODE_LVREF : CV_PTR_MODE_PTR) |
+                    (pointerDescriptor.IsConst == 1 ? CV_PTR_IS_CONST : 0)));
             }
 
             return _nextTypeIndex++;
@@ -121,7 +122,7 @@ namespace ILCompiler.ObjectWriter
             uint memberCount = 0;
             uint offset = 0;
 
-            using (var arrayRecord = StartLeafRecord(LeafRecordType.Array))
+            using (LeafRecordWriter arrayRecord = StartLeafRecord(LF_ARRAY))
             {
                 arrayRecord.Write(arrayDescriptor.ElementType);
                 arrayRecord.Write(T_INT4);
@@ -131,11 +132,11 @@ namespace ILCompiler.ObjectWriter
 
             uint arrayRecordTypeIndex = _nextTypeIndex++;
 
-            using (var fieldListRecord = StartLeafRecord(LeafRecordType.FieldList))
+            using (LeafRecordWriter fieldListRecord = StartLeafRecord(LF_FIELDLIST))
             {
                 if (classDescriptor.BaseClassId != 0)
                 {
-                    fieldListRecord.Write((ushort)LeafRecordType.BaseClass);
+                    fieldListRecord.Write((ushort)LF_BCLASS);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.Write(classDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
@@ -144,7 +145,7 @@ namespace ILCompiler.ObjectWriter
                     offset += (uint)_targetPointerSize;
                 }
 
-                fieldListRecord.Write((ushort)LeafRecordType.Member);
+                fieldListRecord.Write((ushort)LF_MEMBER);
                 fieldListRecord.Write((ushort)0); // TODO: Attributes
                 fieldListRecord.Write(T_INT4);
                 fieldListRecord.WriteEncodedInteger(offset);
@@ -157,7 +158,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
-                        fieldListRecord.Write((ushort)LeafRecordType.Member);
+                        fieldListRecord.Write((ushort)LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
@@ -169,7 +170,7 @@ namespace ILCompiler.ObjectWriter
 
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
-                        fieldListRecord.Write((ushort)LeafRecordType.Member);
+                        fieldListRecord.Write((ushort)LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
@@ -180,7 +181,7 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                fieldListRecord.Write((ushort)LeafRecordType.Member);
+                fieldListRecord.Write((ushort)LF_MEMBER);
                 fieldListRecord.Write((ushort)0); // TODO: Attributes
                 fieldListRecord.Write(arrayRecordTypeIndex);
                 fieldListRecord.WriteEncodedInteger(offset);
@@ -192,7 +193,7 @@ namespace ILCompiler.ObjectWriter
             uint fieldListTypeIndex = _nextTypeIndex++;
 
             Debug.Assert(classDescriptor.IsStruct == 0);
-            using (var record = StartLeafRecord(LeafRecordType.Class))
+            using (LeafRecordWriter record = StartLeafRecord(LF_CLASS))
             {
                 record.Write((ushort)memberCount); // Number of elements in class
                 record.Write((ushort)0); // TODO: Options
@@ -213,11 +214,11 @@ namespace ILCompiler.ObjectWriter
             EnumTypeDescriptor typeDescriptor,
             EnumRecordTypeDescriptor[] typeRecords)
         {
-            using (var fieldListRecord = StartLeafRecord(LeafRecordType.FieldList))
+            using (LeafRecordWriter fieldListRecord = StartLeafRecord(LF_FIELDLIST))
             {
                 foreach (EnumRecordTypeDescriptor record in typeRecords)
                 {
-                    fieldListRecord.Write((ushort)LeafRecordType.Enumerate);
+                    fieldListRecord.Write((ushort)LF_ENUMERATE);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.WriteEncodedInteger(record.Value);
                     fieldListRecord.Write(record.Name);
@@ -227,7 +228,7 @@ namespace ILCompiler.ObjectWriter
 
             uint fieldListTypeIndex = _nextTypeIndex++;
 
-            using (var record = StartLeafRecord(LeafRecordType.Enum))
+            using (LeafRecordWriter record = StartLeafRecord(LF_ENUM))
             {
                 record.Write((ushort)typeRecords.Length); // Number of elements in class
                 record.Write((ushort)0); // TODO: Attributes
@@ -244,7 +245,7 @@ namespace ILCompiler.ObjectWriter
 
         public uint GetClassTypeIndex(ClassTypeDescriptor classDescriptor)
         {
-            using (var record = StartLeafRecord(classDescriptor.IsStruct == 1 ? LeafRecordType.Structure : LeafRecordType.Class))
+            using (LeafRecordWriter record = StartLeafRecord(classDescriptor.IsStruct == 1 ? LF_STRUCTURE : LF_CLASS))
             {
                 record.Write((ushort)0); // Number of elements in class
                 record.Write((ushort)CV_PROP_FORWARD_REFERENCE);
@@ -266,11 +267,11 @@ namespace ILCompiler.ObjectWriter
         {
             uint memberCount = 0;
 
-            using (var fieldListRecord = StartLeafRecord(LeafRecordType.FieldList))
+            using (LeafRecordWriter fieldListRecord = StartLeafRecord(LF_FIELDLIST))
             {
                 if (classTypeDescriptor.BaseClassId != 0)
                 {
-                    fieldListRecord.Write((ushort)LeafRecordType.BaseClass);
+                    fieldListRecord.Write((ushort)LF_BCLASS);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.Write(classTypeDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
@@ -279,7 +280,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (classTypeDescriptor.IsStruct == 0)
                 {
-                    fieldListRecord.Write((ushort)LeafRecordType.VFunctionTable);
+                    fieldListRecord.Write((ushort)LF_VFUNCTAB);
                     fieldListRecord.Write((ushort)0); // Padding
                     fieldListRecord.Write(_vfuncTabTypeIndex);
                     fieldListRecord.WritePadding();
@@ -290,14 +291,14 @@ namespace ILCompiler.ObjectWriter
                 {
                     if (desc.Offset == 0xFFFFFFFF)
                     {
-                        fieldListRecord.Write((ushort)LeafRecordType.StaticMember);
+                        fieldListRecord.Write((ushort)LF_STMEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.Write(desc.Name);
                     }
                     else
                     {
-                        fieldListRecord.Write((ushort)LeafRecordType.Member);
+                        fieldListRecord.Write((ushort)LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.WriteEncodedInteger(desc.Offset);
@@ -310,7 +311,7 @@ namespace ILCompiler.ObjectWriter
 
             uint fieldListTypeIndex = _nextTypeIndex++;
 
-            using (var record = StartLeafRecord(classTypeDescriptor.IsStruct == 1 ? LeafRecordType.Structure : LeafRecordType.Class))
+            using (LeafRecordWriter record = StartLeafRecord(classTypeDescriptor.IsStruct == 1 ? LF_STRUCTURE : LF_CLASS))
             {
                 record.Write((ushort)memberCount); // Number of elements in class
                 record.Write((ushort)0); // TODO: Options
@@ -329,7 +330,7 @@ namespace ILCompiler.ObjectWriter
 
         public uint GetMemberFunctionTypeIndex(MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes)
         {
-            using (var fieldListRecord = StartLeafRecord(LeafRecordType.ArgList))
+            using (LeafRecordWriter fieldListRecord = StartLeafRecord(LF_ARGLIST))
             {
                 fieldListRecord.Write((uint)argumentTypes.Length);
                 foreach (uint argumentType in argumentTypes)
@@ -340,7 +341,7 @@ namespace ILCompiler.ObjectWriter
 
             uint argumentListTypeIndex = _nextTypeIndex++;
 
-            using (var record = StartLeafRecord(LeafRecordType.MemberFunction))
+            using (LeafRecordWriter record = StartLeafRecord(LF_MFUNCTION))
             {
                 record.Write(memberDescriptor.ReturnType);
                 record.Write(memberDescriptor.ContainingClass);
@@ -357,7 +358,7 @@ namespace ILCompiler.ObjectWriter
 
         public uint GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor)
         {
-            using (var record = StartLeafRecord(LeafRecordType.MemberFunctionId))
+            using (LeafRecordWriter record = StartLeafRecord(LF_MFUNC_ID))
             {
                 record.Write(memberIdDescriptor.ParentClass);
                 record.Write(memberIdDescriptor.MemberFunction);
@@ -374,20 +375,20 @@ namespace ILCompiler.ObjectWriter
 
         private LeafRecordWriter StartLeafRecord(LeafRecordType leafRecordType)
         {
-            LeafRecordWriter writer = new LeafRecordWriter(_bufferWriter, _outputStream);
+            LeafRecordWriter writer = new LeafRecordWriter(this);
             writer.Write((ushort)leafRecordType);
             return writer;
         }
 
         private ref struct LeafRecordWriter
         {
+            private CodeViewTypesBuilder _debugTypesBuilder;
             private ArrayBufferWriter<byte> _bufferWriter;
-            private Stream _outputStream;
 
-            public LeafRecordWriter(ArrayBufferWriter<byte> bufferWriter, Stream outputStream)
+            public LeafRecordWriter(CodeViewTypesBuilder debugTypesBuilder)
             {
-                _bufferWriter = bufferWriter;
-                _outputStream = outputStream;
+                _debugTypesBuilder = debugTypesBuilder;
+                _bufferWriter = new();
             }
 
             public void Dispose()
@@ -396,9 +397,9 @@ namespace ILCompiler.ObjectWriter
                 int padding = ((length + 3) & ~3) - length;
                 Span<byte> lengthBuffer = stackalloc byte[sizeof(ushort)];
                 BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
-                _outputStream.Write(lengthBuffer);
-                _outputStream.Write(_bufferWriter.WrittenSpan);
-                _outputStream.Write(stackalloc byte[padding]);
+                _debugTypesBuilder._outputStream.Write(lengthBuffer);
+                _debugTypesBuilder._outputStream.Write(_bufferWriter.WrittenSpan);
+                _debugTypesBuilder._outputStream.Write(stackalloc byte[padding]);
                 _bufferWriter.Clear();
 
                 // TODO: LeafRecordType.Index for long records
@@ -437,23 +438,23 @@ namespace ILCompiler.ObjectWriter
 
             public void WriteEncodedInteger(ulong value)
             {
-                if (value < (ushort)LeafRecordType.Numeric)
+                if (value < (ushort)LF_NUMERIC)
                 {
                     Write((ushort)value);
                 }
                 else if (value <= ushort.MaxValue)
                 {
-                    Write((ushort)LeafRecordType.UShort);
+                    Write((ushort)LF_USHORT);
                     Write((ushort)value);
                 }
                 else if (value <= uint.MaxValue)
                 {
-                    Write((ushort)LeafRecordType.ULong);
+                    Write((ushort)LF_ULONG);
                     Write((uint)value);
                 }
                 else
                 {
-                    Write((ushort)LeafRecordType.UQuadWord);
+                    Write((ushort)LF_UQUADWORD);
                     Write(value);
                 }
             }
@@ -464,10 +465,12 @@ namespace ILCompiler.ObjectWriter
                 Span<byte> padding = _bufferWriter.GetSpan(paddingLength);
                 for (int i = 0; i < paddingLength; i++)
                 {
-                    padding[i] = (byte)(LeafRecordType.Pad0 + paddingLength - i);
+                    padding[i] = (byte)(LF_PAD0 + paddingLength - i);
                 }
                 _bufferWriter.Advance(paddingLength);
             }
+
+            public void Write(CodeViewType value) => Write((uint)value);
         }
     }
 }
