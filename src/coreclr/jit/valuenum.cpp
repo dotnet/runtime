@@ -8703,7 +8703,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // Special case: for initialized non-null 'static readonly' fields we want to keep field
                         // sequence to be able to fold their value
                         if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
-                            addr->AsIntCon()->gtFieldSeq != nullptr)
+                            (addr->AsIntCon()->gtFieldSeq != nullptr) &&
+                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue())))
                         {
                             addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
                         }
