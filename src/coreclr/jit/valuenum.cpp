@@ -8821,6 +8821,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 if (this->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
                                                                                         TARGET_POINTER_SIZE, false))
                                 {
+                                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit value
+                                    // holding 32bit handle with upper half zeroed (hence, "= NULL"). It's done
+                                    // to match the current crossgen/ILC behavior.
                                     CORINFO_OBJECT_HANDLE objHandle = NULL;
                                     memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
                                     int len = this->info.compCompHnd->getArrayOrStringLength(objHandle);
