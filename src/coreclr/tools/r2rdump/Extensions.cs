@@ -211,7 +211,7 @@ namespace R2RDump
                 writer.WriteLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
                 writer.WriteLine($"FrameRegister:      {((amd64UnwindInfo.FrameRegister == 0) ? "None" : amd64UnwindInfo.FrameRegister.ToString())}");
                 writer.WriteLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
-                if (!model.Naked)
+                if (!model.Naked && ((amd64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0))
                 {
                     writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
                 }

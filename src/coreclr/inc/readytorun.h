@@ -87,6 +87,7 @@ enum class ReadyToRunSectionType : uint32_t
     PgoInstrumentationData      = 117, // Added in V5.2
     ManifestAssemblyMvids       = 118, // Added in V5.3
     CrossModuleInlineInfo       = 119, // Added in V6.2
+    HotColdMap                  = 120, // Added in V8.0
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

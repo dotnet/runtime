@@ -78,8 +78,6 @@
 #define JIT_TO_EE_TRANSITION_LEAF()
 #define EE_TO_JIT_TRANSITION_LEAF()
 
-
-
 #ifdef DACCESS_COMPILE
 
 // The real definitions are in jithelpers.cpp. However, those files are not included in the DAC build.
@@ -14885,7 +14883,15 @@ UNWIND_INFO * EECodeInfo::GetUnwindInfoHelper(ULONG unwindInfoOffset)
 #if defined(DACCESS_COMPILE)
     return DacGetUnwindInfo(static_cast<TADDR>(this->GetModuleBase() + unwindInfoOffset));
 #else  // !DACCESS_COMPILE
-    return reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+    UNWIND_INFO * pUnwindInfo = reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+#if defined(TARGET_AMD64)
+    if (pUnwindInfo->Flags & UNW_FLAG_CHAININFO)
+    {
+        unwindInfoOffset = ((PTR_RUNTIME_FUNCTION)(&(pUnwindInfo->UnwindCode)))->UnwindData;
+        pUnwindInfo = reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+    }
+#endif // TARGET_AMD64
+    return pUnwindInfo;
 #endif // !DACCESS_COMPILE
 }
 
@@ -14944,11 +14950,7 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     }
 
     UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    if (pInfo->Flags & UNW_FLAG_CHAININFO)
-    {
-        _ASSERTE(!"GetRbpOffset() - chained unwind info used, violating assumptions of the security stackwalk cache");
-        DebugBreak();
-    }
+    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
 
     // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
     if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )
