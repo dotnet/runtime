@@ -929,19 +929,19 @@ namespace System.Runtime.Intrinsics
             }
             else if (typeof(T) == typeof(short))
             {
-                return (T)(object)(short)((short)(object)value >>> (shiftCount & 15));
+                return (T)(object)(short)((ushort)(short)(object)value >>> (shiftCount & 15));
             }
             else if (typeof(T) == typeof(int))
             {
-                return (T)(object)(int)((int)(object)value >>> shiftCount);
+                return (T)(object)(int)((uint)(int)(object)value >>> shiftCount);
             }
             else if (typeof(T) == typeof(long))
             {
-                return (T)(object)(long)((long)(object)value >>> shiftCount);
+                return (T)(object)(long)((ulong)(long)(object)value >>> shiftCount);
             }
             else if (typeof(T) == typeof(nint))
             {
-                return (T)(object)(nint)((nint)(object)value >>> shiftCount);
+                return (T)(object)(nint)((nuint)(nint)(object)value >>> shiftCount);
             }
             else if (typeof(T) == typeof(nuint))
             {
@@ -949,7 +949,7 @@ namespace System.Runtime.Intrinsics
             }
             else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)(sbyte)((sbyte)(object)value >>> (shiftCount & 7));
+                return (T)(object)(sbyte)((byte)(sbyte)(object)value >>> (shiftCount & 7));
             }
             else if (typeof(T) == typeof(float))
             {
