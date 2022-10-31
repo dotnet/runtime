@@ -4622,9 +4622,14 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTree* tree, GenTree** outIndirCandi
     return true;
 }
 
-// anything is in range for AMD64
+// Assume addr is always in range, in the worst case we'll end up with a jump-stub if it's not
 bool Lowering::IsCallTargetInRange(void* addr)
 {
+    // Try to avoid jump-stubs for dynamic code.
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_DYNAMIC))
+    {
+        return comp->info.compCompHnd->getRelocTypeHint(addr) == IMAGE_REL_BASED_REL32;
+    }
     return true;
 }
 

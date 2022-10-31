@@ -1050,6 +1050,11 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
     {
         MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
+        if (methodDesc->IsDynamicMethod())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DYNAMIC);
+        }
+
         if (!methodDesc->IsEligibleForTieredCompilation())
         {
             _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
