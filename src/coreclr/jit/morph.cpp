@@ -4124,7 +4124,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg);
 
     // Change the expression to "(tmp=val),tmp"
-    argNode = gtNewOperNode(GT_OCMMA, argNode->TypeGet(), copyBlk, argNode);
+    argNode = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
 
@@ -5127,26 +5127,10 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
     */
 
-    var_types objRefType = objRef->TypeGet();
-    GenTree*  addr       = nullptr;
-    GenTree*  comma      = nullptr;
-
-    // This flag is set to enable the "conservative" style of explicit null-check insertion.
-    // This means that we insert an explicit null check whenever we create byref by adding a
-    // constant offset to a ref, in a MACK_Addr context (meaning that the byref is not immediately
-    // dereferenced).  The alternative is "aggressive", which would not insert such checks (for
-    // small offsets); in this plan, we would transfer some null-checking responsibility to
-    // callee's of methods taking byref parameters.  They would have to add explicit null checks
-    // when creating derived byrefs from argument byrefs by adding constants to argument byrefs, in
-    // contexts where the resulting derived byref is not immediately dereferenced (or if the offset is too
-    // large).  To make the "aggressive" scheme work, however, we'd also have to add explicit derived-from-null
-    // checks for byref parameters to "external" methods implemented in C++, and in P/Invoke stubs.
-    // This is left here to point out how to implement it.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#define CONSERVATIVE_NULL_CHECK_BYREF_CREATION 1
-
-    bool addExplicitNullCheck = false;
+    var_types objRefType           = objRef->TypeGet();
+    GenTree*  addr                 = nullptr;
+    GenTree*  comma                = nullptr;
+    bool      addExplicitNullCheck = false;
 
     if (fgAddrCouldBeNull(objRef))
     {
