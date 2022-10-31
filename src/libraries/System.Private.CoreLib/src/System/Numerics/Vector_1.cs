@@ -252,12 +252,18 @@ namespace System.Numerics
         public static Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Unsafe.SkipInit(out Vector<T> result);
+            Unsafe.SkipInit(out Vector<ulong> result);
 
-            Unsafe.AsRef(in result._00) = left._00 & right._00;
-            Unsafe.AsRef(in result._01) = left._01 & right._01;
+            Vector<ulong> vleft = left.As<T, ulong>();
+            Vector<ulong> vright = right.As<T, ulong>();
 
-            return result;
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                ulong value = vleft.GetElementUnsafe(index) & vright.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result.As<ulong, T>();
         }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -269,12 +275,18 @@ namespace System.Numerics
         public static Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Unsafe.SkipInit(out Vector<T> result);
+            Unsafe.SkipInit(out Vector<ulong> result);
 
-            Unsafe.AsRef(in result._00) = left._00 | right._00;
-            Unsafe.AsRef(in result._01) = left._01 | right._01;
+            Vector<ulong> vleft = left.As<T, ulong>();
+            Vector<ulong> vright = right.As<T, ulong>();
 
-            return result;
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                ulong value = vleft.GetElementUnsafe(index) | vright.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result.As<ulong, T>();
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
@@ -342,12 +354,18 @@ namespace System.Numerics
         public static Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Unsafe.SkipInit(out Vector<T> result);
+            Unsafe.SkipInit(out Vector<ulong> result);
 
-            Unsafe.AsRef(in result._00) = left._00 ^ right._00;
-            Unsafe.AsRef(in result._01) = left._01 ^ right._01;
+            Vector<ulong> vleft = left.As<T, ulong>();
+            Vector<ulong> vright = right.As<T, ulong>();
 
-            return result;
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                ulong value = vleft.GetElementUnsafe(index) ^ vright.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result.As<ulong, T>();
         }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
@@ -542,12 +560,17 @@ namespace System.Numerics
         public static Vector<T> operator ~(Vector<T> value)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            Unsafe.SkipInit(out Vector<T> result);
+            Unsafe.SkipInit(out Vector<ulong> result);
 
-            Unsafe.AsRef(in result._00) = ~value._00;
-            Unsafe.AsRef(in result._01) = ~value._01;
+            Vector<ulong> vector = value.As<T, ulong>();
 
-            return result;
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                ulong element = ~vector.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result.As<ulong, T>();
         }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
