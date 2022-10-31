@@ -11825,7 +11825,6 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     heap_segment_next (seg) = 0;
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
-    heap_segment_saved_allocated (seg) = heap_segment_mem (seg);
     heap_segment_decommit_target (seg) = heap_segment_reserved (seg);
 #ifdef BACKGROUND_GC
     heap_segment_background_allocated (seg) = 0;
@@ -29128,16 +29127,6 @@ void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
 }
 #endif //FEATURE_EVENT_TRACE
 
-inline void save_allocated(heap_segment* seg)
-{
-#ifndef MULTIPLE_HEAPS
-    if (!heap_segment_saved_allocated(seg))
-#endif // !MULTIPLE_HEAPS
-    {
-        heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
-    }
-}
-
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
@@ -29215,7 +29204,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
             heap_segment* fseg = seg;
             do
             {
-                heap_segment_saved_allocated(seg) = 0;
                 if (in_range_for_segment (slow, seg))
                 {
                     uint8_t* start_unmarked = 0;
@@ -29263,7 +29251,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         bgc_clear_batch_mark_array_bits ((shigh + Align (size (shigh))), heap_segment_allocated (seg));
                     }
 #endif //BACKGROUND_GC
-                    save_allocated(seg);
                     heap_segment_allocated (seg) = shigh + Align (size (shigh));
                 }
                 // test if the segment is in the range of [slow, shigh]
@@ -29282,7 +29269,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //USE_REGIONS
                     }
 #endif //BACKGROUND_GC
-                    save_allocated(seg);
                     // shorten it to minimum
                     heap_segment_allocated (seg) =  heap_segment_mem (seg);
                 }
@@ -29298,7 +29284,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
             heap_segment* sseg = seg;
             do
             {
-                heap_segment_saved_allocated(seg) = 0;
                 uint8_t* start_unmarked = heap_segment_mem (seg);
 #ifndef USE_REGIONS
                 // shorten it to minimum
@@ -29317,7 +29302,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     bgc_clear_batch_mark_array_bits (start_unmarked, heap_segment_allocated (seg));
                 }
 #endif //BACKGROUND_GC
-                save_allocated(seg);
                 heap_segment_allocated (seg) = start_unmarked;
 
                 seg = heap_segment_next_rw (seg);
@@ -29600,7 +29584,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //USE_REGIONS
             {
                 assert (heap_segment_allocated (seg1) == end);
-                save_allocated(seg1);
                 heap_segment_allocated (seg1) = plug_end;
                 current_brick = update_brick_table (tree, current_brick, x, plug_end);
                 dprintf (REGIONS_LOG, ("region %Ix-%Ix(%Ix) non SIP",
@@ -31979,7 +31962,6 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 #endif //_DEBUG
 
     assert (last_marked_obj_end);
-    save_allocated(region);
     heap_segment_allocated (region) = last_marked_obj_end;
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
 
@@ -41213,14 +41195,13 @@ size_t gc_heap::generation_fragmentation (generation* gen,
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
         while (seg)
         {
-            frag += (heap_segment_saved_allocated (seg) -
-                 heap_segment_plan_allocated (seg));
+            frag += (heap_segment_allocated (seg) - heap_segment_plan_allocated (seg));
 
             dprintf (3, ("h%d g%d adding seg plan frag: %Ix-%Ix=%Id -> %Id",
                 heap_number, gen_num,
-                heap_segment_saved_allocated (seg),
+                heap_segment_allocated (seg),
                 heap_segment_plan_allocated (seg),
-                (heap_segment_saved_allocated (seg) - heap_segment_plan_allocated (seg)),
+                (heap_segment_allocated (seg) - heap_segment_plan_allocated (seg)),
                 frag));
 
             seg = heap_segment_next_rw (seg);
@@ -41279,7 +41260,7 @@ size_t gc_heap::generation_fragmentation (generation* gen,
 // for SOH this returns the total sizes of the generation and its
 // younger generation(s).
 // for LOH this returns just LOH size.
-size_t gc_heap::generation_sizes (generation* gen, bool use_saved_p)
+size_t gc_heap::generation_sizes (generation* gen)
 {
     size_t result = 0;
 
@@ -41291,8 +41272,7 @@ size_t gc_heap::generation_sizes (generation* gen, bool use_saved_p)
         heap_segment* seg = heap_segment_in_range (generation_start_segment (generation_of (i)));
         while (seg)
         {
-            uint8_t* end = (use_saved_p ?
-                heap_segment_saved_allocated (seg) : heap_segment_allocated (seg));
+            uint8_t* end = heap_segment_allocated (seg);
             result += end - heap_segment_mem (seg);
             dprintf (3, ("h%d gen%d size + %Id (%Ix - %Ix) -> %Id",
                 heap_number, i, (end - heap_segment_mem (seg)),
@@ -41429,7 +41409,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
     should_expand = FALSE;
     generation*   gen = generation_of (condemned_gen_number);
     dynamic_data* dd = dynamic_data_of (condemned_gen_number);
-    size_t gen_sizes     = generation_sizes(gen, true);
+    size_t gen_sizes     = generation_sizes (gen);
     float  fragmentation_burden = ( ((0 == fragmentation) || (0 == gen_sizes)) ? (0.0f) :
                                     (float (fragmentation) / gen_sizes) );
 
@@ -43817,13 +43797,12 @@ void gc_heap::descr_generations (const char* msg)
             heap_segment_mem (generation_tail_region (gen))));
         while (seg)
         {
-            dprintf (GTC_LOG, ("g%d: (%d:p %d) [%Ix %Ix(sa: %Ix, pa: %Ix)[-%Ix[ (%Id) (%Id)",
+            dprintf (GTC_LOG, ("g%d: (%d:p %d) [%Ix %Ix(pa: %Ix)[-%Ix[ (%Id) (%Id)",
                                curr_gen_number,
                                heap_segment_gen_num (seg),
                                heap_segment_plan_gen_num (seg),
                                (size_t)heap_segment_mem (seg),
                                (size_t)heap_segment_allocated (seg),
-                               (size_t)heap_segment_saved_allocated (seg),
                                (size_t)heap_segment_plan_allocated (seg),
                                (size_t)heap_segment_committed (seg),
                                (size_t)(heap_segment_allocated (seg) - heap_segment_mem (seg)),

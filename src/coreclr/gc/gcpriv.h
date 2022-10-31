@@ -3366,7 +3366,7 @@ protected:
                                      generation* consing_gen,
                                      uint8_t* end);
     PER_HEAP
-    size_t generation_sizes (generation* gen, bool use_saved_p=FALSE);
+    size_t generation_sizes (generation* gen);
     PER_HEAP
     size_t committed_size();
     PER_HEAP
@@ -5734,11 +5734,6 @@ public:
 #endif //MULTIPLE_HEAPS
     uint8_t*        decommit_target;
     uint8_t*        plan_allocated;
-    // In the plan phase we change the allocated for a seg but we need this
-    // value to correctly calculate how much space we can reclaim in
-    // generation_fragmentation. But it's beneficial to truncate it as it
-    // means in the later phases we only need to look up to the new allocated.
-    uint8_t*        saved_allocated;
     uint8_t*        saved_bg_allocated;
 #ifdef USE_REGIONS
     // These generation numbers are initialized to -1.
@@ -6145,11 +6140,6 @@ inline
 uint8_t*& heap_segment_plan_allocated (heap_segment* inst)
 {
   return inst->plan_allocated;
-}
-inline
-uint8_t*& heap_segment_saved_allocated (heap_segment* inst)
-{
-  return inst->saved_allocated;
 }
 #ifdef BACKGROUND_GC
 inline
