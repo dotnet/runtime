@@ -560,12 +560,22 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.Boolean:
-                case ElementType.Char:
                 case ElementType.U1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.Char:
+                    int intCharVal = (int)value;
+                    if (value.GetType() == typeof(char))
+                        intCharVal = (int)(char)value;
+                    Write((ElementType)type, intCharVal);
+                    return true;
+                case ElementType.Boolean:
+                    int intBoolVal = (int)value;
+                    if (value.GetType() == typeof(bool))
+                        intBoolVal = (bool)value ? 1 : 0;
+                    Write((ElementType)type, intBoolVal);
                     return true;
                 case ElementType.I1:
                 case ElementType.U2:
@@ -684,7 +694,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "number":
                 {
+                    // FixMe: what if the number is not int but single/double?
                     Write(ElementType.I4, objValue["value"].Value<int>());
+                    return true;
+                }
+                case "symbol":
+                {
+                    Write(ElementType.Char, (int)objValue["value"].Value<char>());
                     return true;
                 }
                 case "string":
