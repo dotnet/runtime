@@ -360,11 +360,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private sealed record ElementIndexInfo(
-            string ElementIdxStr,
-            bool IsMultidimensional = false,
-            LiteralExpressionSyntax IndexingExpression = null);
-
         public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<string> variableDefinitions, CancellationToken token)
         {
             try
@@ -417,26 +412,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
                             return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
                         }
+                        if (indexObject is null && elementIdxInfo.IndexingExpression is null)
+                            throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+
                         var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
                         int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", BindingFlags.Default, token);
-                        if (methodIds == null)
+                        if (methodIds == null || methodIds.Length == 0)
                             throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
 
-                        // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
-                        int allowedParamCnt = 1;
-                        int toArrayId = methodIds[0];
                         // ToDo: optimize the loop by choosing the right method at once without trying out them all
                         for (int i = 0; i < methodIds.Length; i++)
                         {
                             MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
                             ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
 
-                            if (paramInfo.Length == allowedParamCnt)
+                            // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
+                            if (paramInfo.Length == 1)
                             {
                                 try
                                 {
-                                    if (indexObject is null && elementIdxInfo.IndexingExpression is null)
-                                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
                                     ArraySegment<byte> buffer = indexObject is null ?
                                         await WriteLiteralExpressionAsIndex(objectId,  elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
                                         await WriteJObjectAsIndex(objectId, indexObject, elementIdxInfo.ElementIdxStr);
@@ -445,7 +439,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 catch (Exception ex)
                                 {
-                                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
                                     continue;
                                 }
                             }
@@ -807,5 +801,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogError($"EvaluationResult of ID: {id} does not exist in the cache.");
             return val;
         }
+
+        private sealed record ElementIndexInfo(
+            string ElementIdxStr,
+            bool IsMultidimensional = false,
+            LiteralExpressionSyntax IndexingExpression = null);
     }
 }
