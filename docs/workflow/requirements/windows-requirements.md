@@ -50,7 +50,7 @@ These steps are required only in case the tools have not been installed as Visua
 
 #### CMake
 
-* Install [CMake](https://cmake.org/download) for Windows. For ARM64 machines please use the `windows-i386` installer (`windows-x86_64` is not going to work).
+* Install [CMake](https://cmake.org/download) for Windows.
 * Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable. The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
 The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
@@ -109,5 +109,4 @@ Simply edit the PATH variable's value and add the directory (with a semicolon se
 
 ### ARM64 (Experimental)
 
-* Install [CMake](https://cmake.org/download) using the `windows-i386` installer (`windows-x86_64` is not going to work, `C++ CMake tools for Windows` from VS might also not work).
-* Use MSBuild instead of Ninja (no official support for ARM64 yet).
+* Use MSBuild instead of Ninja (no official support for ARM64 yet) by passing `-msbuild` to either `build.cmd` or `build.ps1`.
