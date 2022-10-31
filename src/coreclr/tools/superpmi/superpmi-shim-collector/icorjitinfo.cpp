@@ -978,7 +978,7 @@ TypeCompareState interceptor_ICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLAS
     mc->cr->AddCall("isEnum");
     CORINFO_CLASS_HANDLE tempUnderlyingType = nullptr;
     TypeCompareState temp = original_ICorJitInfo->isEnum(cls, &tempUnderlyingType);
-    mc->recIsEnum(cls, tempUnderlyingType, temp);
+    mc->recIsEnum(cls, &tempUnderlyingType, temp);
     if (underlyingType != nullptr)
     {
         *underlyingType = tempUnderlyingType;
