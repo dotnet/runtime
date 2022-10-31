@@ -73,6 +73,21 @@ namespace System
         private static unsafe void SetCharBit(uint* charMap, byte value) =>
             charMap[(uint)value & IndexMask] |= 1u << (value >> IndexShift);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ShouldUseSimpleLoop(int searchSpaceLength, int valuesLength)
+        {
+            // We can perform either
+            // - a simple O(haystack * needle) search or
+            // - compute a character map of the values in O(needle), followed by an O(haystack) search
+            // As the constant factor to compute the character map is relatively high, it's more efficient
+            // to perform a simple loop search for short inputs.
+            //
+            // The following check does an educated guess as to whether computing the bitmap is more expensive.
+            // The limit of 20 on the haystack length is arbitrary, determined by experimentation.
+            return searchSpaceLength < Vector128<short>.Count
+                || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1));
+        }
+
         public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
             IndexOfAny<DontNegate>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
 
@@ -91,7 +106,7 @@ namespace System
             ReadOnlySpan<char> valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
-            if (searchSpaceLength < Vector128<short>.Count || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1)))
+            if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
                 ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
                 ref char cur = ref searchSpace;
@@ -125,7 +140,7 @@ namespace System
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
-            if (searchSpaceLength < Vector128<short>.Count || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1)))
+            if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
                 ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
