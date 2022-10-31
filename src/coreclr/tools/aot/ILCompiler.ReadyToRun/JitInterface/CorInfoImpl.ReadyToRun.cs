@@ -691,7 +691,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
                     res = ReadyToRunHelperId.GetNonGCStaticBase;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
                     res = ReadyToRunHelperId.GetThreadStaticBase;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
@@ -757,7 +757,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
@@ -1578,7 +1578,7 @@ namespace Internal.JitInterface
                     {
                         if (field.HasGCStaticBase)
                         {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCTHREADSTATIC_BASE;
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
                         else
