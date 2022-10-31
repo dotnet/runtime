@@ -14789,7 +14789,7 @@ GenTree* Compiler::fgInitThisClass()
             if (!(info.compClassAttr & CORINFO_FLG_SHAREDINST))
             {
                 resolvedToken.hClass = info.compClassHnd;
-                return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+                return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE, TYP_BYREF);
             }
 
             // We need a runtime lookup.

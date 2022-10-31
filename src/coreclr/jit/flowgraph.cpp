@@ -917,6 +917,10 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
         memset(&resolvedToken, 0, sizeof(resolvedToken));
         resolvedToken.hClass   = cls;
         CorInfoHelpFunc helper = CORINFO_HELP_READYTORUN_CCTOR_TRIGGER;
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            helper = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+        }
         if (0 <= m_preferredInitCctor && m_preferredInitCctor < CORINFO_HELP_COUNT)
         {
             helper = m_preferredInitCctor;
