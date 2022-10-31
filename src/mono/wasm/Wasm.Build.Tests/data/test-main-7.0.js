@@ -19,7 +19,7 @@
 const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
-if (is_node && process.versions.node.split(".")[0] < 14) {
+if (is_node && parseInt(process.versions.node.split(".")[0]) < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
@@ -266,7 +266,7 @@ async function run() {
             dotnet
                 .withEnvironmentVariable("NodeJSPlatform", process.platform)
                 .withAsyncFlushOnExit();
-            
+
             const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
             if (modulesToLoad) {
                 dotnet.withModuleConfig({

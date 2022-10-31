@@ -276,7 +276,7 @@ class HostBuilder implements DotnetHostBuilder {
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore:
                     const process = await import(/* webpackIgnore: true */"process");
-                    if (process.versions.node.split(".")[0] < 14) {
+                    if (parseInt(process.versions.node.split(".")[0]) < 14) {
                         throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
                     }
                 }
