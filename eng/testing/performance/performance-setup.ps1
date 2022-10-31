@@ -126,7 +126,7 @@ if ($RunFromPerformanceRepo) {
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+    git clone --branch release/7.0 --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")
