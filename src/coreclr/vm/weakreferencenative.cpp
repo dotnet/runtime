@@ -29,7 +29,7 @@ void FinalizeWeakReference(Object* obj)
     _ASSERTE(GCHeapUtilities::IsGCInProgress());
 
     // the lowermost 2 bits are reserved for storing additional info about the handle
-    // we can use these bits because handle is at least 32bit aligned
+    // we can use these bits because handle is at least 4 byte aligned
     const uintptr_t HandleTagBits = 3;
 
     WeakReferenceObject* weakRefObj = (WeakReferenceObject*)obj;
