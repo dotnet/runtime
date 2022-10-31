@@ -158,6 +158,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeName_GetTypeArguments)
     DllImportEntry(TypeName_GetModifiers)
     DllImportEntry(TypeName_GetAssemblyName)
+    DllImportEntry(Array_GetElementConstructorEntrypoint)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
     DllImportEntry(AssemblyNative_GetLocation)

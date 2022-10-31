@@ -59,7 +59,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            // This node does not trigger generation of other nodes.
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
@@ -72,29 +71,76 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Add the symbol representing this object node
             runtimeFunctionsBuilder.AddSymbol(this);
 
-            foreach (MethodWithGCInfo method in _methodNodes)
+            uint runtimeFunctionIndex = 0;
+            List<uint> mapping = new List<uint>();
+
+            for (int cold = 0; cold < 2; cold++)
             {
-                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets(factory);
-
-                for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
+                foreach (MethodWithGCInfo method in _methodNodes)
                 {
-                    FrameInfo frameInfo = method.FrameInfos[frameIndex];
+                    int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets(factory);
+                    int startIndex;
+                    int endIndex;
 
-                    // StartOffset of the runtime function
-                    int codeDelta = 0;
-                    if (Target.Architecture == TargetArchitecture.ARM)
+                    if (cold == 0)
                     {
-                        // THUMB_CODE
-                        codeDelta = 1;
+                        startIndex = 0;
+                        endIndex = method.FrameInfos.Length;
                     }
-                    runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + codeDelta);
-                    if (!relocsOnly && Target.Architecture == TargetArchitecture.X64)
+                    else if (method.ColdCodeNode == null)
                     {
-                        // On Amd64, the 2nd word contains the EndOffset of the runtime function
-                        runtimeFunctionsBuilder.EmitReloc(method, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                        continue;
                     }
-                    runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
+                    else
+                    {
+                        Debug.Assert((method.FrameInfos.Length + method.ColdFrameInfos.Length) == funcletOffsets.Length);
+                        startIndex = method.FrameInfos.Length;
+                        endIndex = funcletOffsets.Length;
+                    }
+
+                    for (int frameIndex = startIndex; frameIndex < endIndex; frameIndex++)
+                    {
+                        FrameInfo frameInfo;
+                        ISymbolNode symbol;
+
+                        if (frameIndex >= method.FrameInfos.Length)
+                        {
+                            frameInfo = method.ColdFrameInfos[frameIndex - method.FrameInfos.Length];
+                            symbol = method.ColdCodeNode;
+
+                            if (frameIndex == method.FrameInfos.Length)
+                            {
+                                mapping.Add(runtimeFunctionIndex);
+                                mapping.Add((uint)_insertedMethodNodes[method]);
+                            }
+                        }
+                        else
+                        {
+                            frameInfo = method.FrameInfos[frameIndex];
+                            symbol = method;
+                        }
+
+                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + Target.CodeDelta);
+                        if (!relocsOnly && Target.Architecture == TargetArchitecture.X64)
+                        {
+                            // On Amd64, the 2nd word contains the EndOffset of the runtime function
+                            Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                        }
+                        runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
+                        runtimeFunctionIndex++;
+                    }
                 }
+            }
+
+            // HotColdMap should not be null if there is cold code
+            if (_nodeFactory.HotColdMap != null)
+            {
+                _nodeFactory.HotColdMap.Mapping = mapping.ToArray();
+            }
+            else
+            {
+                Debug.Assert((mapping.Count == 0), "HotColdMap is null, but mapping is not empty");
             }
 
             // Emit sentinel entry

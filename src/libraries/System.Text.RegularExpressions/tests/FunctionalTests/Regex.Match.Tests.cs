@@ -336,14 +336,26 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                 yield return (@".*?", "abc", lineOption, 2, 1, true, "");
 
+                yield return (@"a.*?[b\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[b\n]", "xyza12345c6789", lineOption, 0, 14, false, "");
+
                 yield return (@"a.*?[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a.*?[bc\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bc\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bc\n]", "xyza12345d6789", lineOption, 0, 14, false, "");
 
                 yield return (@"a.*?[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
                 yield return (@"a.*?[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a.*?[bcd\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bcd\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bcd\n]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a.*?[bcd\n]", "xyza12345e6789", lineOption, 0, 14, false, "");
 
                 yield return (@"a.*?[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
@@ -351,12 +363,25 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a.*?[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a.*?[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
 
+                yield return (@"a.*?[bcde\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bcde\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bcde\n]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a.*?[bcde\n]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                yield return (@"a.*?[bcde\n]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
                 yield return (@"a.*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
                 yield return (@"a.*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a.*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
                 yield return (@"a.*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a[^b]*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a[^b]*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                yield return (@"a[^b]*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
             }
 
             // Nested loops

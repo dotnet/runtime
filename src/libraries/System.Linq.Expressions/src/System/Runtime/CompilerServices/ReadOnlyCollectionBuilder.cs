@@ -412,6 +412,11 @@ namespace System.Runtime.CompilerServices
         /// <returns>A new instance of <see cref="ReadOnlyCollection{T}"/>.</returns>
         public ReadOnlyCollection<T> ToReadOnlyCollection()
         {
+            if (_size == 0)
+            {
+                return ReadOnlyCollection<T>.Empty;
+            }
+
             // Can we use the stored array?
             T[] items;
             if (_size == _items.Length)

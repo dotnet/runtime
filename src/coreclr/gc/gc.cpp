@@ -21764,7 +21764,10 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 #ifdef USE_REGIONS
-    last_gc_before_oom = FALSE;
+    if (!(settings.concurrent))
+    {
+        last_gc_before_oom = FALSE;
+    }
 #endif //USE_REGIONS
 }
 
@@ -35683,7 +35686,7 @@ void gc_heap::revisit_written_page (uint8_t* page,
                                         no_more_loop_p = TRUE;
                                         goto end_limit;
                                     }
-                                    uint8_t* oo = *poo;
+                                    uint8_t* oo = VolatileLoadWithoutBarrier(poo);
 
                                     num_marked_objects++;
                                     background_mark_object (oo THREAD_NUMBER_ARG);
