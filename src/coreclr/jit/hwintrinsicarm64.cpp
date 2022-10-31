@@ -1339,13 +1339,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(sig->numArgs == 1);
             }
 
-            if (((intrinsic == NI_AdvSimd_LoadVector64) || (intrinsic == NI_AdvSimd_LoadVector128)) &&
-                !compExactlyDependsOn(InstructionSet_AdvSimd))
-            {
-                // Use IND for explicit loads only when we have corresponding ISAs available
-                break;
-            }
-
             op1 = impPopStack().val;
 
             if (op1->OperIs(GT_CAST))
@@ -1574,22 +1567,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Store:
-        case NI_Vector128_Store:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_StoreAligned:
         case NI_Vector128_StoreAligned:
         {
@@ -1638,6 +1615,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_Store:
+        case NI_Vector64_Store:
+        case NI_Vector128_Store:
         case NI_Vector64_StoreUnsafe:
         case NI_Vector128_StoreUnsafe:
         {
@@ -1645,6 +1625,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                assert((intrinsic == NI_Vector128_StoreUnsafe) || (intrinsic == NI_Vector64_StoreUnsafe));
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
@@ -1671,7 +1652,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            retNode = gtNewOperNode(GT_IND, simdType, op2);
+            retNode->gtFlags |= (GTF_GLOB_REF | GTF_IND_UNALIGNED);
+            retNode = gtNewAssignNode(retNode, op1);
             break;
         }
 

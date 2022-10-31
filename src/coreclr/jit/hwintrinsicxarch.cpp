@@ -1766,14 +1766,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 assert(sig->numArgs == 1);
             }
 
-            if (((intrinsic == NI_SSE_LoadVector128) && !compExactlyDependsOn(InstructionSet_SSE)) ||
-                ((intrinsic == NI_SSE2_LoadVector128) && !compExactlyDependsOn(InstructionSet_SSE2)) ||
-                ((intrinsic == NI_AVX_LoadVector256) && !compExactlyDependsOn(InstructionSet_AVX)))
-            {
-                // Use IND for explicit loads only when we have corresponding ISAs available
-                break;
-            }
-
             op1 = impPopStack().val;
 
             if (op1->OperIs(GT_CAST))
@@ -2120,37 +2112,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Store:
-        case NI_Vector256_Store:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                storeIntrinsic = NI_AVX_Store;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_Store;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_Store;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_StoreAligned:
         case NI_Vector256_StoreAligned:
         {
@@ -2213,6 +2174,11 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_Store:
+        case NI_SSE2_Store:
+        case NI_AVX_Store:
+        case NI_Vector128_Store:
+        case NI_Vector256_Store:
         case NI_Vector128_StoreUnsafe:
         case NI_Vector256_StoreUnsafe:
         {
@@ -2220,6 +2186,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                assert((intrinsic == NI_Vector128_StoreUnsafe) || (intrinsic == NI_Vector256_StoreUnsafe));
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
@@ -2246,22 +2213,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                storeIntrinsic = NI_AVX_Store;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_Store;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_Store;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewOperNode(GT_IND, simdType, op2);
+            retNode->gtFlags |= (GTF_GLOB_REF | GTF_IND_UNALIGNED);
+            retNode = gtNewAssignNode(retNode, op1);
             break;
         }
 
