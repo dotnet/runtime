@@ -895,6 +895,7 @@ namespace System.Numerics
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
             where T : struct => LessThanOrEqual(left, right).As<T, nuint>() != Vector<nuint>.Zero;
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
             where T : struct
@@ -902,6 +903,7 @@ namespace System.Numerics
             source = ref Unsafe.Add(ref source, elementOffset);
             return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref source));
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1666,6 +1668,7 @@ namespace System.Numerics
             return result;
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nuint elementOffset)
             where T : struct
@@ -1673,6 +1676,7 @@ namespace System.Numerics
             destination = ref Unsafe.Add(ref destination, elementOffset);
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
