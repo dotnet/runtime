@@ -167,7 +167,6 @@ namespace System
             return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)).Target;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static nint GetWeakHandle(nint taggedHandle)
         {
             Debug.Assert((taggedHandle & ComAwareBit) != 0);
