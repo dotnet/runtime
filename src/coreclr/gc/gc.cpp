@@ -12747,8 +12747,8 @@ void region_free_list::sort_by_committed_and_age()
 void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t region_size,
                                                    size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2])
 {
-    const ptrdiff_t MIN_PTR_DIFF = ((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-1);
-    const ptrdiff_t MAX_PTR_DIFF = (((((ptrdiff_t)1)<<((sizeof(ptrdiff_t)*CHAR_BIT)-2))-1)<<1)+1;
+    const ptrdiff_t MAX_PTR_DIFF = (ptrdiff_t)(~((size_t)0) >> 1);
+    const ptrdiff_t MIN_PTR_DIFF = ~MAX_PTR_DIFF;
 
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
