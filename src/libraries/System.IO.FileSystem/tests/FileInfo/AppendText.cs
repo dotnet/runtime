@@ -23,5 +23,15 @@ namespace System.IO.Tests
             writer.Write(content);
             writer.Dispose();
         }
+
+        [Fact]
+        public void FileInfoInvalidAfterAppendText()
+        {
+            FileInfo info = new FileInfo(GetTestFilePath());
+            using (StreamWriter streamWriter = info.AppendText())
+            {
+                Assert.True(info.Exists);
+            }
+        }
     }
 }
