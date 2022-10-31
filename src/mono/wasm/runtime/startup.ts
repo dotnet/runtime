@@ -59,7 +59,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const userOnRuntimeInitialized: () => void = module.onRuntimeInitialized ? module.onRuntimeInitialized : () => { };
     // when assets don't contain DLLs it means this is Blazor or another custom startup
-    isCustomStartup = !module.configSrc && (!module.config || !module.config.assets || module.config.assets.findIndex(a => a.behavior === "assembly") == -1); // like blazor
+    isCustomStartup = false; // like blazor
 
     // execution order == [0] ==
     // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -69,7 +69,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // execution order == [2] ==
     module.preRun = [() => preRunAsync(userPreRun)];
     // execution order == [4] ==
-    module.onRuntimeInitialized = () => onRuntimeInitializedAsync(userOnRuntimeInitialized);
+    module.onRuntimeInitialized = () => { console.log("MF onInit"); onRuntimeInitializedAsync(userOnRuntimeInitialized); };
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==

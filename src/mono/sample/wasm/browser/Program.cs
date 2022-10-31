@@ -11,11 +11,8 @@ namespace Sample
     {
         public static int Main(string[] args)
         {
-            DisplayMeaning(42);
+            Console.WriteLine("MF .NET");
             return 0;
         }
-
-        [JSImport("Sample.Test.displayMeaning", "main.js")]
-        internal static partial void DisplayMeaning(int meaning);
     }
 }

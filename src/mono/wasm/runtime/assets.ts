@@ -446,6 +446,11 @@ export async function instantiate_wasm_asset(
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module streaming");
+
+        if (runtimeHelpers.config.memory) {
+            wasmModuleImports['js']['mem'] = runtimeHelpers.config.memory;
+        }
+
         const streamingResult = await WebAssembly.instantiateStreaming(response, wasmModuleImports!);
         compiledInstance = streamingResult.instance;
         compiledModule = streamingResult.module;
