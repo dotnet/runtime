@@ -17,6 +17,12 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomConnectionStringPrefix = "CUSTOMCONNSTR_";
         private const string PostgresqlAzureServerPrefix = "POSTGRESQLCONNSTR_";
+        private const string ApiHubAzureServicePrefix = "APIHUBCONNSTR_";
+        private const string DocumentDbAzureServicePrefix = "DOCDBCONNSTR_";
+        private const string EventHubAzureServicePrefix ="EVENTHUBCONNSTR_";
+        private const string NotificationHubAzureServicePrefix = "NOTIFICATIONHUBCONNSTR_";
+        private const string RedisCacheAzureServicePrefix ="REDISCACHECONNSTR_";
+        private const string AzureServiceBusPrefix = "SERVICEBUSCONNSTR_";
 
         private readonly string _prefix;
         private readonly string _normalizedPrefix;
@@ -80,6 +86,30 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     else if (key.StartsWith(PostgresqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         HandleMatchedConnectionStringPrefix(data, PostgresqlAzureServerPrefix, "Npgsql", key, value);
+                    }
+                    else if (key.StartsWith(ApiHubAzureServicePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, ApiHubAzureServicePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(DocumentDbAzureServicePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, DocumentDbAzureServicePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(EventHubAzureServicePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, EventHubAzureServicePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(NotificationHubAzureServicePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, NotificationHubAzureServicePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(RedisCacheAzureServicePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, RedisCacheAzureServicePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(AzureServiceBusPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, AzureServiceBusPrefix, null, key, value);
                     }
                     else if (key.StartsWith(CustomConnectionStringPrefix, StringComparison.OrdinalIgnoreCase))
                     {
