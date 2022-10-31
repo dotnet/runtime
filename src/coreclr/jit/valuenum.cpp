@@ -2094,10 +2094,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
                 if (len >= 0)
                 {
-                    ValueNum op1vn;
-                    ValueNum op1Xvn;
-                    VNUnpackExc(arg0VN, &op1vn, &op1Xvn);
-                    resultVN = VNExcSetUnion(VNForIntCon(len), op1Xvn);
+                    resultVN = VNForIntCon(len);
                 }
             }
 
@@ -2126,10 +2123,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                                 int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
                                 if (len >= 0)
                                 {
-                                    ValueNum op1vn;
-                                    ValueNum op1Xvn;
-                                    VNUnpackExc(arg0VN, &op1vn, &op1Xvn);
-                                    resultVN = VNExcSetUnion(VNForIntCon(len), op1Xvn);
+                                    resultVN = VNForIntCon(len);
                                 }
                             }
                         }
