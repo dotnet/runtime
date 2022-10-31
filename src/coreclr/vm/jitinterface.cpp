@@ -12013,6 +12013,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 {
                     handle = getJitHandleForObject(fieldObj);
                     memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
+                    result = true;
                 }
             }
             else

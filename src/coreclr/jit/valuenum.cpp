@@ -8701,20 +8701,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             ((tree->gtFlags & GTF_IND_NONNULL) != 0) ? VNF_InvariantNonNullLoad : VNF_InvariantLoad;
 
                         // Special case: for initialized non-null 'static readonly' fields we want to keep field
-                        // sequence
-                        // to be able to fold their value
-                        ValueNum fieldSeqVN;
-                        if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR))
+                        // sequence to be able to fold their value
+                        if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
+                            addr->AsIntCon()->gtFieldSeq != nullptr)
                         {
-                            fieldSeqVN = vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq);
-                        }
-                        else
-                        {
-                            fieldSeqVN = vnStore->VNForNull();
+                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
                         }
 
-                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp,
-                                                                ValueNumPair(fieldSeqVN, fieldSeqVN));
+                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
                         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                 }
@@ -8807,14 +8801,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             if (tree->OperIs(GT_ARR_LENGTH))
             {
                 // Case 1: ARR_LENGTH(FROZEN_OBJ)
-                ValueNum addressVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+                ValueNum addressVN = vnStore->VNNormalValue(tree->gtGetOp1()->gtVNPair.GetLiberal());
                 if (vnStore->IsVNHandle(addressVN) && (vnStore->GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
                 {
                     size_t handle = vnStore->CoercedConstantValue<size_t>(addressVN);
                     int    len    = this->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
                     if (len >= 0)
                     {
+                        ValueNumPair op1vnp;
+                        ValueNumPair op1Xvnp;
+                        vnStore->VNPUnpackExc(tree->gtGetOp1()->gtVNPair, &op1vnp, &op1Xvnp);
                         tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
+                        tree->gtVNPair = vnStore->VNPExcSetUnion(tree->gtVNPair, op1Xvnp);
                         return;
                     }
                 }
@@ -8823,8 +8821,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 VNFuncApp funcApp;
                 if (vnStore->GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
                 {
-                    ValueNum fieldSeqVN = funcApp.m_args[1];
-                    if ((fieldSeqVN != vnStore->VNForNull()) && (fieldSeqVN != ValueNumStore::NoVN))
+                    ValueNum fieldSeqVN = vnStore->VNNormalValue(funcApp.m_args[0]);
+                    if (vnStore->IsVNHandle(fieldSeqVN) && (vnStore->GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
                     {
                         FieldSeq* fieldSeq = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
                         if (fieldSeq != nullptr)
@@ -8844,7 +8842,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     int len = this->info.compCompHnd->getArrayOrStringLength(objHandle);
                                     if (len >= 0)
                                     {
+                                        ValueNumPair op1vnp;
+                                        ValueNumPair op1Xvnp;
+                                        vnStore->VNPUnpackExc(tree->gtGetOp1()->gtVNPair, &op1vnp, &op1Xvnp);
                                         tree->gtVNPair.SetBoth(vnStore->VNForIntCon(len));
+                                        tree->gtVNPair = vnStore->VNPExcSetUnion(tree->gtVNPair, op1Xvnp);
                                         return;
                                     }
                                 }
