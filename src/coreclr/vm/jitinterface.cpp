@@ -12001,17 +12001,20 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             {
                 Object* obj = OBJECTREFToObject(fieldObj);
                 CORINFO_OBJECT_HANDLE handle;
-                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+
+                if (ignoreMovableObjects)
                 {
-                    handle = getJitHandleForObject(fieldObj, true);
-                    memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
-                    result = true;
+                    if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                    {
+                        handle = getJitHandleForObject(fieldObj, true);
+                        memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
+                        result = true;
+                    }
                 }
-                else if (!ignoreMovableObjects)
+                else
                 {
                     handle = getJitHandleForObject(fieldObj);
                     memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
-                    result = true;
                 }
             }
             else

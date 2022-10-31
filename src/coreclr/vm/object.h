@@ -834,7 +834,6 @@ typedef REF<UPTRArray>  UPTRARRAYREF;
 typedef REF<CHARArray>  CHARARRAYREF;
 typedef REF<PTRArray>   PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef REF<StringObject> STRINGREF;
-typedef REF<ReflectClassBaseObject> REFLECTCLASSBASEREF;
 
 #else   // USE_CHECKED_OBJECTREFS
 
@@ -854,7 +853,6 @@ typedef PTR_UPTRArray   UPTRARRAYREF;
 typedef PTR_CHARArray   CHARARRAYREF;
 typedef PTR_PTRArray    PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef PTR_StringObject STRINGREF;
-typedef PTR_ReflectClassBaseObject REFLECTCLASSBASEREF
 
 #endif // USE_CHECKED_OBJECTREFS
 
