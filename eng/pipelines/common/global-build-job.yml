@@ -32,6 +32,7 @@ parameters:
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
+  isManualCodeQLBuild: false
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -162,12 +163,22 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
+
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:
+      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
+        - task: CodeQL3000Init@0
+          displayName: Initialize CodeQL (manually-injected)
+
       - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}
+
+      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
+        - task: CodeQL3000Finalize@0
+          displayName: Finalize CodeQL (manually-injected)
+    #endif isSourceBuild
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
