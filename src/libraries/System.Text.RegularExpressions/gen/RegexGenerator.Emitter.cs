@@ -203,7 +203,7 @@ namespace System.Text.RegularExpressions.Generator
                         $"internal static readonly TimeSpan {DefaultTimeoutFieldName} = AppContext.GetData(\"REGEX_DEFAULT_MATCH_TIMEOUT\") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;",
                         $"",
                         $"/// <summary>Whether <see cref=\"{DefaultTimeoutFieldName}\"/> is non-infinite.</summary>",
-                        $"internal static readonly bool {HasDefaultTimeoutFieldName} = {DefaultTimeoutFieldName} != Timeout.InfiniteTimeSpan;",
+                        $"internal static readonly bool {HasDefaultTimeoutFieldName} = {DefaultTimeoutFieldName} != Regex.InfiniteMatchTimeout;",
                     });
                 }
             }
@@ -248,7 +248,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Gets a C# expression representing the specified timeout value.</summary>
         private static string GetTimeoutExpression(int matchTimeout) =>
             matchTimeout == Timeout.Infinite ?
-                "Timeout.InfiniteTimeSpan" :
+                "Regex.InfiniteMatchTimeout" :
                 $"TimeSpan.FromMilliseconds({matchTimeout.ToString(CultureInfo.InvariantCulture)})";
 
         /// <summary>Adds the IsWordChar helper to the required helpers collection.</summary>
