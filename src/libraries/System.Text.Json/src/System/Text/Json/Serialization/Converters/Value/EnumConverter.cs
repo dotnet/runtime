@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
-        private const int NameCacheSizeSoftLimit = 64;-
+        private const int NameCacheSizeSoftLimit = 64;
 
         // Odd type codes are conveniently signed types (for enum backing types).
         private static bool IsSignedEnum => ((int)Type.GetTypeCode(typeof(T)) % 2) == 1;
