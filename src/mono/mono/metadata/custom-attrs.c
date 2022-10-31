@@ -2248,22 +2248,12 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 	method_index = mono_method_get_index (method);
 	if (!method_index)
 		return NULL;
-	ca = &image->tables [MONO_TABLE_METHOD];
 
-	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
-	if (G_UNLIKELY (param_list == 0 && image->has_updates)) {
-		uint32_t count;
-		param_list = mono_metadata_update_get_method_params (image, mono_metadata_make_token (MONO_TABLE_METHOD, method_index), &count);
-		if (!param_list)
-			return NULL;
-		param_last = param_list + count;
-	} else {
-		if (method_index == table_info_get_rows (ca)) {
-			param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
-		} else {
-			param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
-		}
-	}
+	param_list = mono_metadata_get_method_params (image, method_index, &param_last);
+
+	if (!param_list)
+		return NULL;
+
 	ca = &image->tables [MONO_TABLE_PARAM];
 
 	found = FALSE;
