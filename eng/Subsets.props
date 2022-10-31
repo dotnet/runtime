@@ -126,8 +126,8 @@
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
-    <SubsetName Include="Tools.Linker" Description="The project that procude the linker and analyzer packages for trimming" />
-    <SubsetName Include="Tools.LinkerTests" OnDemand="true" Description="The project that procude the linker and analyzer packages for trimming" />
+    <SubsetName Include="Tools.Linker" Description="The projects that produce the linker and analyzer tools for trimming." />
+    <SubsetName Include="Tools.LinkerTests" OnDemand="true" Description="Unit tests for the tools.linker subset." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />

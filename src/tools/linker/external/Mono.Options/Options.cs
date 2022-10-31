@@ -163,27 +163,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-
-/* Unmerged change from project 'tlens'
-Before:
+#pragma warning disable IDE0005 // Using directive is unnecessary.
 using System.Globalization;
-using System.IO;
-After:
-using System.IO;
-*/
+#pragma warning restore IDE0005 // Using directive is unnecessary.
 using System.IO;
 #if PCL
 using System.Reflection;
 #else
-using System.
-/* Unmerged change from project 'tlens'
-Before:
+using System.Runtime.Serialization;
+#pragma warning disable IDE0005 // Using directive is unnecessary.
 using System.Security.Permissions;
-#endif
-After:
-#endif
-*/
-Runtime.Serialization;
+#pragma warning restore IDE0005 // Using directive is unnecessary.
 #endif
 using System.Text;
 using System.Text.RegularExpressions;
