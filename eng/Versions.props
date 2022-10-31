@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The bands we want to produce workload manifests for -->
-    <WorkloadSdkBandVersions Include="6.0.100;6.0.300" />
+    <WorkloadSdkBandVersions Include="6.0.100;6.0.300" SupportsMachineArch="false" />
     <WorkloadSdkBandVersions Include="6.0.400" SupportsMachineArch="true" />
   </ItemGroup>
   <PropertyGroup>
