@@ -13,11 +13,15 @@ class MetadataImportRO : IMetaDataImport2
 {
     std::atomic_uint32_t _refCount;
     mdhandle_ptr _md_ptr;
+    malloc_ptr _malloc_to_free;
+    cotaskmem_ptr _cotaskmem_to_free;
 
 public:
-    MetadataImportRO(mdhandle_ptr md_ptr)
+    MetadataImportRO(mdhandle_ptr md_ptr, malloc_ptr mallocMem, cotaskmem_ptr cotaskmemMem)
         : _refCount{ 1 }
         , _md_ptr{ std::move(md_ptr) }
+        , _malloc_to_free{ std::move(mallocMem) }
+        , _cotaskmem_to_free{ std::move(cotaskmemMem) }
     { }
 
     virtual ~MetadataImportRO() = default;

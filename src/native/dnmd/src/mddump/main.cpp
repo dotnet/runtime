@@ -40,6 +40,11 @@ public:
         return _ptr;
     }
 
+    operator T const* () const noexcept
+    {
+        return _ptr;
+    }
+
     T& operator[](size_t idx)
     {
         if (_ptr == nullptr)
@@ -103,13 +108,12 @@ struct free_deleter
 template<typename T>
 using malloc_span = owning_span<T, free_deleter>;
 
-bool create_mdhandle(malloc_span<uint8_t>& buffer, mdhandle_ptr& handle)
+bool create_mdhandle(malloc_span<uint8_t> const& buffer, mdhandle_ptr& handle)
 {
     mdhandle_t h;
     if (!md_create_handle(buffer, buffer.size(), &h))
         return false;
     handle.reset(h);
-    (void)buffer.release();
     return true;
 }
 

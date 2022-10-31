@@ -92,12 +92,12 @@ typedef struct _mdtable_t
     mdtcol_t column_details[MDTABLE_MAX_COLUMN_COUNT];
 } mdtable_t;
 
-typedef mddata_t mdstream_t;
+typedef mdcdata_t mdstream_t;
 
 typedef struct _mdcxt_t
 {
     uint32_t magic; // mdlib magic
-    mddata_t data; // metadata raw bytes
+    mdcdata_t data; // metadata raw bytes
 
     // Metadata root details - II.24.2.1
     uint16_t major_ver;

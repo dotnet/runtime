@@ -11,7 +11,7 @@ typedef void* mdhandle_t;
 //
 // The supplied data is expected to be unmoved and available until all
 // handles created with the data have been destroyed.
-bool md_create_handle(void* data, size_t data_len, mdhandle_t* handle);
+bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle);
 
 // Destroy the metadata handle and free all associated memory.
 void md_destroy_handle(mdhandle_t handle);

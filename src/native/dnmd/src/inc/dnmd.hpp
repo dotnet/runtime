@@ -16,4 +16,28 @@ struct mdhandle_deleter_t
 // C++ lifetime wrapper for mdhandle_t type
 using mdhandle_ptr = std::unique_ptr<mdhandle_t, mdhandle_deleter_t>;
 
+struct cotaskmem_deleter_t
+{
+    using pointer = void*;
+    void operator()(void* mem)
+    {
+        ::CoTaskMemFree(mem);
+    }
+};
+
+// C++ lifetime wrapper for CoTaskMemAlloc'd memory
+using cotaskmem_ptr = std::unique_ptr<void, cotaskmem_deleter_t>;
+
+struct malloc_deleter_t
+{
+    using pointer = void*;
+    void operator()(void* mem)
+    {
+        ::free(mem);
+    }
+};
+
+// C++ lifetime wrapper for malloc'd memory
+using malloc_ptr = std::unique_ptr<void, malloc_deleter_t>;
+
 #endif // _SRC_INC_DNMD_HPP_

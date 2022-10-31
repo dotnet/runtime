@@ -8,12 +8,12 @@
 // Defined in II.24.2.1
 #define METADATA_SIG 0x424A5342
 
-bool md_create_handle(void* data, size_t data_len, mdhandle_t* handle)
+bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
 {
     if (data == NULL || handle == NULL)
         return false;
 
-    uint8_t* const base = data;
+    uint8_t const* const base = data;
     uint8_t const* curr = data;
     size_t curr_len = data_len;
 
@@ -149,7 +149,6 @@ void md_destroy_handle(mdhandle_t handle)
     mdcxt_t* cxt = extract_mdcxt(handle);
     if (cxt == NULL)
         return;
-    free(cxt->data.ptr);
     free(cxt);
 }
 

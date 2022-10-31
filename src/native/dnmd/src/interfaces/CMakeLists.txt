@@ -1,5 +1,5 @@
 set(SOURCES
-  entry.cpp
+  dispenser.cpp
   metadataimport.cpp
 )
 

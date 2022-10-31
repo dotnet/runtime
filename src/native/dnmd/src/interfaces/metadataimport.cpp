@@ -54,12 +54,12 @@ namespace
     }
 }
 
-void MetadataImportRO::CloseEnum(HCORENUM hEnum)
+void STDMETHODCALLTYPE MetadataImportRO::CloseEnum(HCORENUM hEnum)
 {
     DestroyHCORENUM(hEnum);
 }
 
-HRESULT MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pulCount)
+HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pulCount)
 {
     if (pulCount == nullptr)
         return E_INVALIDARG;
@@ -72,7 +72,7 @@ HRESULT MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pulCount)
     return S_OK;
 }
 
-HRESULT MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPos)
+HRESULT STDMETHODCALLTYPE MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPos)
 {
     HCORENUMImpl* enumImpl = ToEnumImpl(hEnum);
     if (enumImpl == nullptr)
@@ -117,7 +117,7 @@ namespace
     }
 }
 
-HRESULT MetadataImportRO::EnumTypeDefs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
     HCORENUM* phEnum,
     mdTypeDef rTypeDefs[],
     ULONG cMax,
@@ -139,7 +139,7 @@ HRESULT MetadataImportRO::EnumTypeDefs(
     return EnumerateTokens(enumImpl, rTypeDefs, cMax, pcTypeDefs);
 }
 
-HRESULT MetadataImportRO::EnumInterfaceImpls(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
     HCORENUM* phEnum,
     mdTypeDef td,
     mdInterfaceImpl rImpls[],
@@ -149,7 +149,7 @@ HRESULT MetadataImportRO::EnumInterfaceImpls(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumTypeRefs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeRefs(
     HCORENUM* phEnum,
     mdTypeRef rTypeRefs[],
     ULONG cMax,
@@ -171,7 +171,7 @@ HRESULT MetadataImportRO::EnumTypeRefs(
     return EnumerateTokens(enumImpl, rTypeRefs, cMax, pcTypeRefs);
 }
 
-HRESULT MetadataImportRO::FindTypeDefByName(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeDefByName(
     LPCWSTR     szTypeDef,
     mdToken     tkEnclosingClass,
     mdTypeDef* ptd)
@@ -179,7 +179,7 @@ HRESULT MetadataImportRO::FindTypeDefByName(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetScopeProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
     _Out_writes_to_opt_(cchName, *pchName)
     LPWSTR      szName,
     ULONG       cchName,
@@ -189,7 +189,7 @@ HRESULT MetadataImportRO::GetScopeProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetModuleFromScope(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleFromScope(
     mdModule* pmd)
 {
     if (pmd == nullptr)
@@ -199,7 +199,7 @@ HRESULT MetadataImportRO::GetModuleFromScope(
     return S_OK;
 }
 
-HRESULT MetadataImportRO::GetTypeDefProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeDefProps(
     mdTypeDef   td,
     _Out_writes_to_opt_(cchTypeDef, *pchTypeDef)
     LPWSTR      szTypeDef,
@@ -211,7 +211,7 @@ HRESULT MetadataImportRO::GetTypeDefProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetInterfaceImplProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetInterfaceImplProps(
     mdInterfaceImpl iiImpl,
     mdTypeDef* pClass,
     mdToken* ptkIface)
@@ -227,7 +227,7 @@ HRESULT MetadataImportRO::GetInterfaceImplProps(
     return S_OK;
 }
 
-HRESULT MetadataImportRO::GetTypeRefProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeRefProps(
     mdTypeRef   tr,
     mdToken* ptkResolutionScope,
     _Out_writes_to_opt_(cchName, *pchName)
@@ -238,12 +238,12 @@ HRESULT MetadataImportRO::GetTypeRefProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
+HRESULT STDMETHODCALLTYPE MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
 {
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMembers(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     mdToken     rMembers[],
@@ -253,7 +253,7 @@ HRESULT MetadataImportRO::EnumMembers(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMembersWithName(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     LPCWSTR     szName,
@@ -264,7 +264,7 @@ HRESULT MetadataImportRO::EnumMembersWithName(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMethods(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethods(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     mdMethodDef rMethods[],
@@ -274,7 +274,7 @@ HRESULT MetadataImportRO::EnumMethods(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMethodsWithName(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodsWithName(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     LPCWSTR     szName,
@@ -285,7 +285,7 @@ HRESULT MetadataImportRO::EnumMethodsWithName(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumFields(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFields(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     mdFieldDef  rFields[],
@@ -295,7 +295,7 @@ HRESULT MetadataImportRO::EnumFields(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumFieldsWithName(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFieldsWithName(
     HCORENUM* phEnum,
     mdTypeDef   cl,
     LPCWSTR     szName,
@@ -307,7 +307,7 @@ HRESULT MetadataImportRO::EnumFieldsWithName(
 }
 
 
-HRESULT MetadataImportRO::EnumParams(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumParams(
     HCORENUM* phEnum,
     mdMethodDef mb,
     mdParamDef  rParams[],
@@ -317,7 +317,7 @@ HRESULT MetadataImportRO::EnumParams(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMemberRefs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMemberRefs(
     HCORENUM* phEnum,
     mdToken     tkParent,
     mdMemberRef rMemberRefs[],
@@ -327,7 +327,7 @@ HRESULT MetadataImportRO::EnumMemberRefs(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMethodImpls(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodImpls(
     HCORENUM* phEnum,
     mdTypeDef   td,
     mdToken     rMethodBody[],
@@ -338,7 +338,7 @@ HRESULT MetadataImportRO::EnumMethodImpls(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumPermissionSets(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
     HCORENUM* phEnum,
     mdToken     tk,
     DWORD       dwActions,
@@ -349,7 +349,7 @@ HRESULT MetadataImportRO::EnumPermissionSets(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::FindMember(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     mdTypeDef   td,
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
@@ -359,7 +359,7 @@ HRESULT MetadataImportRO::FindMember(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::FindMethod(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     mdTypeDef   td,
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
@@ -369,7 +369,7 @@ HRESULT MetadataImportRO::FindMethod(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::FindField(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     mdTypeDef   td,
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
@@ -379,7 +379,7 @@ HRESULT MetadataImportRO::FindField(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::FindMemberRef(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     mdTypeRef   td,
     LPCWSTR     szName,
     PCCOR_SIGNATURE pvSigBlob,
@@ -389,7 +389,7 @@ HRESULT MetadataImportRO::FindMemberRef(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetMethodProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
     mdMethodDef mb,
     mdTypeDef* pClass,
     _Out_writes_to_opt_(cchMethod, *pchMethod)
@@ -405,7 +405,7 @@ HRESULT MetadataImportRO::GetMethodProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetMemberRefProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberRefProps(
     mdMemberRef mr,
     mdToken* ptk,
     _Out_writes_to_opt_(cchMember, *pchMember)
@@ -418,7 +418,7 @@ HRESULT MetadataImportRO::GetMemberRefProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumProperties(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
     HCORENUM* phEnum,
     mdTypeDef   td,
     mdProperty  rProperties[],
@@ -428,7 +428,7 @@ HRESULT MetadataImportRO::EnumProperties(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumEvents(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     HCORENUM* phEnum,
     mdTypeDef   td,
     mdEvent     rEvents[],
@@ -438,7 +438,7 @@ HRESULT MetadataImportRO::EnumEvents(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetEventProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
     mdEvent     ev,
     mdTypeDef* pClass,
     LPCWSTR     szEvent,
@@ -456,7 +456,7 @@ HRESULT MetadataImportRO::GetEventProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMethodSemantics(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSemantics(
     HCORENUM* phEnum,
     mdMethodDef mb,
     mdToken     rEventProp[],
@@ -466,7 +466,7 @@ HRESULT MetadataImportRO::EnumMethodSemantics(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetMethodSemantics(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSemantics(
     mdMethodDef mb,
     mdToken     tkEventProp,
     DWORD* pdwSemanticsFlags)
@@ -474,7 +474,7 @@ HRESULT MetadataImportRO::GetMethodSemantics(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetClassLayout(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetClassLayout(
     mdTypeDef   td,
     DWORD* pdwPackSize,
     COR_FIELD_OFFSET rFieldOffset[],
@@ -485,7 +485,7 @@ HRESULT MetadataImportRO::GetClassLayout(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetFieldMarshal(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFieldMarshal(
     mdToken     tk,
     PCCOR_SIGNATURE* ppvNativeType,
     ULONG* pcbNativeType)
@@ -493,7 +493,7 @@ HRESULT MetadataImportRO::GetFieldMarshal(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetRVA(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetRVA(
     mdToken     tk,
     ULONG* pulCodeRVA,
     DWORD* pdwImplFlags)
@@ -501,7 +501,7 @@ HRESULT MetadataImportRO::GetRVA(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetPermissionSetProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPermissionSetProps(
     mdPermission pm,
     DWORD* pdwAction,
     void const** ppvPermission,
@@ -510,7 +510,7 @@ HRESULT MetadataImportRO::GetPermissionSetProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetSigFromToken(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetSigFromToken(
     mdSignature mdSig,
     PCCOR_SIGNATURE* ppvSig,
     ULONG* pcbSig)
@@ -518,7 +518,7 @@ HRESULT MetadataImportRO::GetSigFromToken(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetModuleRefProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleRefProps(
     mdModuleRef mur,
     _Out_writes_to_opt_(cchName, *pchName)
     LPWSTR      szName,
@@ -528,7 +528,7 @@ HRESULT MetadataImportRO::GetModuleRefProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumModuleRefs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumModuleRefs(
     HCORENUM* phEnum,
     mdModuleRef rModuleRefs[],
     ULONG       cmax,
@@ -537,7 +537,7 @@ HRESULT MetadataImportRO::EnumModuleRefs(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetTypeSpecFromToken(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeSpecFromToken(
     mdTypeSpec typespec,
     PCCOR_SIGNATURE* ppvSig,
     ULONG* pcbSig)
@@ -545,14 +545,14 @@ HRESULT MetadataImportRO::GetTypeSpecFromToken(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetNameFromToken(            // Not Recommended! May be removed!
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNameFromToken(            // Not Recommended! May be removed!
     mdToken     tk,
     MDUTF8CSTR* pszUtf8NamePtr)
 {
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumUnresolvedMethods(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUnresolvedMethods(
     HCORENUM* phEnum,
     mdToken     rMethods[],
     ULONG       cMax,
@@ -561,7 +561,7 @@ HRESULT MetadataImportRO::EnumUnresolvedMethods(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetUserString(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
     mdString    stk,
     _Out_writes_to_opt_(cchString, *pchString)
     LPWSTR      szString,
@@ -571,7 +571,7 @@ HRESULT MetadataImportRO::GetUserString(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetPinvokeMap(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
     mdToken     tk,
     DWORD* pdwMappingFlags,
     _Out_writes_to_opt_(cchImportName, *pchImportName)
@@ -583,7 +583,7 @@ HRESULT MetadataImportRO::GetPinvokeMap(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumSignatures(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumSignatures(
     HCORENUM* phEnum,
     mdSignature rSignatures[],
     ULONG       cmax,
@@ -592,7 +592,7 @@ HRESULT MetadataImportRO::EnumSignatures(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumTypeSpecs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
     HCORENUM* phEnum,
     mdTypeSpec  rTypeSpecs[],
     ULONG       cmax,
@@ -601,7 +601,7 @@ HRESULT MetadataImportRO::EnumTypeSpecs(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumUserStrings(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     HCORENUM* phEnum,
     mdString    rStrings[],
     ULONG       cmax,
@@ -610,7 +610,7 @@ HRESULT MetadataImportRO::EnumUserStrings(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetParamForMethodIndex(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamForMethodIndex(
     mdMethodDef md,
     ULONG       ulParamSeq,
     mdParamDef* ppd)
@@ -618,7 +618,7 @@ HRESULT MetadataImportRO::GetParamForMethodIndex(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumCustomAttributes(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumCustomAttributes(
     HCORENUM* phEnum,
     mdToken     tk,
     mdToken     tkType,
@@ -629,7 +629,7 @@ HRESULT MetadataImportRO::EnumCustomAttributes(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetCustomAttributeProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeProps(
     mdCustomAttribute cv,
     mdToken* ptkObj,
     mdToken* ptkType,
@@ -639,7 +639,7 @@ HRESULT MetadataImportRO::GetCustomAttributeProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::FindTypeRef(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeRef(
     mdToken     tkResolutionScope,
     LPCWSTR     szName,
     mdTypeRef* ptr)
@@ -647,7 +647,7 @@ HRESULT MetadataImportRO::FindTypeRef(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetMemberProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberProps(
     mdToken     mb,
     mdTypeDef* pClass,
     _Out_writes_to_opt_(cchMember, *pchMember)
@@ -666,7 +666,7 @@ HRESULT MetadataImportRO::GetMemberProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetFieldProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFieldProps(
     mdFieldDef  mb,
     mdTypeDef* pClass,
     _Out_writes_to_opt_(cchField, *pchField)
@@ -683,7 +683,7 @@ HRESULT MetadataImportRO::GetFieldProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetPropertyProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPropertyProps(
     mdProperty  prop,
     mdTypeDef* pClass,
     LPCWSTR     szProperty,
@@ -704,7 +704,7 @@ HRESULT MetadataImportRO::GetPropertyProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetParamProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamProps(
     mdParamDef  tk,
     mdMethodDef* pmd,
     ULONG* pulSequence,
@@ -720,7 +720,7 @@ HRESULT MetadataImportRO::GetParamProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetCustomAttributeByName(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeByName(
     mdToken     tkObj,
     LPCWSTR     szName,
     const void** ppData,
@@ -729,7 +729,7 @@ HRESULT MetadataImportRO::GetCustomAttributeByName(
     return E_NOTIMPL;
 }
 
-BOOL MetadataImportRO::IsValidToken(
+BOOL STDMETHODCALLTYPE MetadataImportRO::IsValidToken(
     mdToken     tk)
 {
     // If we can create a cursor, the token is valid.
@@ -739,14 +739,14 @@ BOOL MetadataImportRO::IsValidToken(
         : FALSE;
 }
 
-HRESULT MetadataImportRO::GetNestedClassProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNestedClassProps(
     mdTypeDef   tdNestedClass,
     mdTypeDef* ptdEnclosingClass)
 {
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetNativeCallConvFromSig(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNativeCallConvFromSig(
     void const* pvSig,
     ULONG       cbSig,
     ULONG* pCallConv)
@@ -754,14 +754,14 @@ HRESULT MetadataImportRO::GetNativeCallConvFromSig(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::IsGlobal(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::IsGlobal(
     mdToken     pd,
     int* pbGlobal)
 {
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumGenericParams(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParams(
     HCORENUM* phEnum,
     mdToken      tk,
     mdGenericParam rGenericParams[],
@@ -771,7 +771,7 @@ HRESULT MetadataImportRO::EnumGenericParams(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetGenericParamProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamProps(
     mdGenericParam gp,
     ULONG* pulParamSeq,
     DWORD* pdwParamFlags,
@@ -785,7 +785,7 @@ HRESULT MetadataImportRO::GetGenericParamProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetMethodSpecProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSpecProps(
     mdMethodSpec mi,
     mdToken* tkParent,
     PCCOR_SIGNATURE* ppvSigBlob,
@@ -794,7 +794,7 @@ HRESULT MetadataImportRO::GetMethodSpecProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumGenericParamConstraints(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParamConstraints(
     HCORENUM* phEnum,
     mdGenericParam tk,
     mdGenericParamConstraint rGenericParamConstraints[],
@@ -804,7 +804,7 @@ HRESULT MetadataImportRO::EnumGenericParamConstraints(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetGenericParamConstraintProps(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamConstraintProps(
     mdGenericParamConstraint gpc,
     mdGenericParam* ptGenericParam,
     mdToken* ptkConstraintType)
@@ -812,14 +812,14 @@ HRESULT MetadataImportRO::GetGenericParamConstraintProps(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetPEKind(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPEKind(
     DWORD* pdwPEKind,
     DWORD* pdwMAchine)
 {
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::GetVersionString(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(
     _Out_writes_to_opt_(ccBufSize, *pccBufSize)
     LPWSTR      pwzBuf,
     DWORD       ccBufSize,
@@ -828,7 +828,7 @@ HRESULT MetadataImportRO::GetVersionString(
     return E_NOTIMPL;
 }
 
-HRESULT MetadataImportRO::EnumMethodSpecs(
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSpecs(
     HCORENUM* phEnum,
     mdToken      tk,
     mdMethodSpec rMethodSpecs[],

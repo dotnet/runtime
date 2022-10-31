@@ -5,15 +5,11 @@
 #define DNMD_EXPORT
 #endif // DNMD_EXPORT
 
-// Given a pointer to a metadata blob, attempt to create an instance
-// of the metadata related interface.
+// Create a metadata dispenser instance for.
 //
-//  IMetaDataImport  - {7DAC8207-D3AE-4c75-9B67-92801A497D44}
-//  IMetaDataImport2 - {FCE5EFA0-8BBA-4f8e-A036-8F2022B08466}
+//  IMetaDataDispenser  - {809C652E-7396-11D2-9771-00A0C9B4D50C}
 extern "C" DNMD_EXPORT
-HRESULT ReadMetadata(
-    void* data,
-    size_t dataLen,
+HRESULT GetDispenser(
     REFGUID riid,
     void** ppObj);
 
