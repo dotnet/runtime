@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string SqlAzureServerPrefix = "SQLAZURECONNSTR_";
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomConnectionStringPrefix = "CUSTOMCONNSTR_";
+        private const string PostgresqlAzureServerPrefix = "POSTGRESQLCONNSTR_";
 
         private readonly string _prefix;
         private readonly string _normalizedPrefix;
@@ -75,6 +76,10 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         HandleMatchedConnectionStringPrefix(data, SqlServerPrefix, "System.Data.SqlClient", key, value);
+                    }
+                    else if (key.StartsWith(PostgresqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, PostgresqlAzureServerPrefix, "Npgsql", key, value);
                     }
                     else if (key.StartsWith(CustomConnectionStringPrefix, StringComparison.OrdinalIgnoreCase))
                     {
