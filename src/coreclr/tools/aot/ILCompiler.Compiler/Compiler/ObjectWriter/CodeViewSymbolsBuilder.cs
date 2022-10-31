@@ -15,6 +15,8 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
 using static ILCompiler.ObjectWriter.CodeViewNative;
+using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewRegister;
+using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewSymbolDefinition;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -36,7 +38,7 @@ namespace ILCompiler.ObjectWriter
 
         // Maps an ICorDebugInfo register number to the corresponding CodeView
         // register number
-        private ushort GetCVRegNum(uint regNum)
+        private CodeViewRegister GetCVRegNum(uint regNum)
         {
             switch (_targetArchitecture)
             {
@@ -79,7 +81,7 @@ namespace ILCompiler.ObjectWriter
         {
             using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
 
-            using (var recordWriter = symbolSubsection.StartRecord(0x1147 /* S_GPROC32_ID */))
+            using (var recordWriter = symbolSubsection.StartRecord(S_GPROC32_ID))
             {
                 recordWriter.Write((uint)0); // pointer to the parent
                 recordWriter.Write((uint)0); // pointer to this blocks end
@@ -96,7 +98,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (var (debugVar, typeIndex) in debugVars)
             {
-                using (var recordWriter = symbolSubsection.StartRecord(0x113e /* S_LOCAL */))
+                using (var recordWriter = symbolSubsection.StartRecord(S_LOCAL))
                 {
                     recordWriter.Write(typeIndex);
                     recordWriter.Write((ushort)(debugVar.IsParameter ? 1 : 0)); // TODO: Flags
@@ -109,10 +111,10 @@ namespace ILCompiler.ObjectWriter
                     {
                         case VarLocType.VLT_REG:
                         case VarLocType.VLT_REG_FP:
-                            var cvRegNum = GetCVRegNum((uint)range.VarLoc.B);
+                            CodeViewRegister cvRegNum = GetCVRegNum((uint)range.VarLoc.B);
                             if (cvRegNum != CV_REG_NONE)
                             {
-                                using (var recordWriter = symbolSubsection.StartRecord(0x1141 /* S_DEFRANGE_REGISTER */))
+                                using (var recordWriter = symbolSubsection.StartRecord(S_DEFRANGE_REGISTER))
                                 {
                                     recordWriter.Write((ushort)cvRegNum);
                                     recordWriter.Write((ushort)0); // TODO: Attributes
@@ -128,7 +130,7 @@ namespace ILCompiler.ObjectWriter
                             cvRegNum = GetCVRegNum((uint)range.VarLoc.B);
                             if (cvRegNum != CV_REG_NONE)
                             {
-                                using (var recordWriter = symbolSubsection.StartRecord(0x1145 /* S_DEFRANGE_REGISTER_REL */))
+                                using (var recordWriter = symbolSubsection.StartRecord(S_DEFRANGE_REGISTER_REL))
                                 {
                                     recordWriter.Write((ushort)cvRegNum);
                                     // TODO: Flags, CV_OFFSET_PARENT_LENGTH_LIMIT
@@ -158,7 +160,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            using (var recordWriter = symbolSubsection.StartRecord(0x114f /* S_PROC_ID_END */))
+            using (var recordWriter = symbolSubsection.StartRecord(S_PROC_ID_END))
             {
             }
         }
@@ -224,7 +226,7 @@ namespace ILCompiler.ObjectWriter
             using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
             foreach (var (name, typeIndex) in userDefinedTypes)
             {
-                using (var recordWriter = symbolSubsection.StartRecord(0x1108 /* S_UDT */))
+                using (var recordWriter = symbolSubsection.StartRecord(S_UDT))
                 {
                     recordWriter.Write(typeIndex);
                     recordWriter.Write(name);
@@ -244,8 +246,6 @@ namespace ILCompiler.ObjectWriter
             internal uint _size;
             internal List<byte[]> _data = new();
             internal List<(uint, RelocType, string)> _relocations = new();
-            private ArrayBufferWriter<byte> _bufferWriter = new();
-            internal bool _needLengthPrefix;
 
             public SubsectionWriter(DebugSymbolsSubsectionType kind, SectionWriter sectionWriter)
             {
@@ -280,33 +280,14 @@ namespace ILCompiler.ObjectWriter
 
             public RecordWriter StartRecord()
             {
-                _needLengthPrefix = false;
-                return new RecordWriter(this, _bufferWriter);
+                return new RecordWriter(this, false);
             }
 
-            public RecordWriter StartRecord(ushort recordType)
+            public RecordWriter StartRecord(CodeViewSymbolDefinition recordType)
             {
-                RecordWriter writer = new RecordWriter(this, _bufferWriter);
-                writer.Write(recordType);
-                _needLengthPrefix = true;
+                RecordWriter writer = new RecordWriter(this, true);
+                writer.Write((ushort)recordType);
                 return writer;
-            }
-
-            internal void CommitRecord()
-            {
-                if (_needLengthPrefix)
-                {
-                    byte[] lengthBuffer = new byte[sizeof(ushort)];
-                    BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(_bufferWriter.WrittenCount));
-                    _data.Add(lengthBuffer);
-                    _size += sizeof(ushort);
-                }
-
-                // Add data
-                _data.Add(_bufferWriter.WrittenSpan.ToArray());
-                _size += (uint)_bufferWriter.WrittenCount;
-
-                _bufferWriter.Clear();
             }
         }
 
@@ -314,16 +295,30 @@ namespace ILCompiler.ObjectWriter
         {
             private SubsectionWriter _subsectionWriter;
             private ArrayBufferWriter<byte> _bufferWriter;
+            private bool _hasLengthPrefix;
 
-            public RecordWriter(SubsectionWriter subsectionWriter, ArrayBufferWriter<byte> bufferWriter)
+            public RecordWriter(SubsectionWriter subsectionWriter, bool hasLengthPrefix)
             {
                 _subsectionWriter = subsectionWriter;
-                _bufferWriter = bufferWriter;
+                _bufferWriter = new();
+                _hasLengthPrefix = hasLengthPrefix;
             }
 
             public void Dispose()
             {
-                _subsectionWriter.CommitRecord();
+                if (_hasLengthPrefix)
+                {
+                    byte[] lengthBuffer = new byte[sizeof(ushort)];
+                    BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(_bufferWriter.WrittenCount));
+                    _subsectionWriter._data.Add(lengthBuffer);
+                    _subsectionWriter._size += sizeof(ushort);
+                }
+
+                // Add data
+                _subsectionWriter._data.Add(_bufferWriter.WrittenSpan.ToArray());
+                _subsectionWriter._size += (uint)_bufferWriter.WrittenCount;
+
+                _bufferWriter.Clear();
             }
 
             public void Write(byte value)
@@ -364,7 +359,7 @@ namespace ILCompiler.ObjectWriter
             {
                 _subsectionWriter._relocations.Add((
                     _subsectionWriter._size +
-                    (uint)(_subsectionWriter._needLengthPrefix ? sizeof(ushort) : 0) +
+                    (uint)(_hasLengthPrefix ? sizeof(ushort) : 0) +
                     (uint)_bufferWriter.WrittenCount,
                     relocType, symbolName));
 
