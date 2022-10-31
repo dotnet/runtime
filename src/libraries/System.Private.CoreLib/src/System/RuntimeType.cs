@@ -278,7 +278,7 @@ namespace System
         {
             RuntimeType underlyingType = type;
             if (type.IsActualEnum)
-                underlyingType = type.GetEnumUnderlyingType();
+                underlyingType = (RuntimeType)type.GetEnumUnderlyingType();
 
             if (underlyingType == typeof(sbyte))
                 return TypeCode.SByte;
