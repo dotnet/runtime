@@ -1244,84 +1244,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_LoadAligned:
         case NI_Vector128_LoadAligned:
-        {
-            assert(sig->numArgs == 1);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_LoadAlignedNonTemporal:
         case NI_Vector128_LoadAlignedNonTemporal:
-        {
             assert(sig->numArgs == 1);
-
             if (!opts.MinOpts())
             {
                 // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts
                 break;
             }
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            // ARM64 has non-temporal loads (LDNP) but we don't currently support them
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
+            FALLTHROUGH;
         case NI_AdvSimd_LoadVector64:
         case NI_AdvSimd_LoadVector128:
         case NI_Vector64_Load:
@@ -1569,52 +1501,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_StoreAligned:
         case NI_Vector128_StoreAligned:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_StoreAlignedNonTemporal:
         case NI_Vector128_StoreAlignedNonTemporal:
-        {
             assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
             if (!opts.MinOpts())
             {
                 // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts
                 break;
             }
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            // ARM64 has non-temporal stores (STNP) but we don't currently support them
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
+            FALLTHROUGH;
         case NI_AdvSimd_Store:
         case NI_Vector64_Store:
         case NI_Vector128_Store:
