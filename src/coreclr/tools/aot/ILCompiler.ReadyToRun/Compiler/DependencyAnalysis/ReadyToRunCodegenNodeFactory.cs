@@ -77,6 +77,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool MarkingComplete => _markingComplete;
 
+        public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
+        {
+            if (HotColdMap == null)
+            {
+                HotColdMap = new HotColdMapNode(this);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
+            }
+        }
+
         public void SetMarkingComplete()
         {
             _markingComplete = true;
@@ -337,6 +347,8 @@ namespace ILCompiler.DependencyAnalysis
         public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
+
+        public HotColdMapNode HotColdMap;
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 

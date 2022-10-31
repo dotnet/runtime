@@ -53,7 +53,7 @@ jobs:
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
-        version: '3.x'
+        version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)

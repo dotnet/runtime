@@ -25,7 +25,6 @@
 #include "clrhost.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
-#include "winnls.h"
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
@@ -913,15 +912,9 @@ inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 // Paths functions. Use these instead of the CRT.
 //
 //*****************************************************************************
-// secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(const WCHAR *path,
-                  __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-                  __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-                  __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-                  __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords);
 
 //*******************************************************************************
-// A much more sensible version that just points to each section of the string.
+// Split a path into individual components - points to each section of the string
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
@@ -949,31 +942,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // Allocate free memory with specific alignment
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
-
-class NumaNodeInfo
-{
-private:
-    static BOOL m_enableGCNumaAware;
-    static uint16_t m_nNodes;
-    static BOOL InitNumaNodeInfoAPI();
-
-public:
-    static BOOL CanEnableGCNumaAware();
-    static void InitNumaNodeInfo();
-
-#if !defined(FEATURE_NATIVEAOT)
-public: 	// functions
-
-    static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
-                                     DWORD allocType, DWORD prot, DWORD node);
-#ifdef HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
-    static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // HOST_WINDOWS
-#endif
-};
 
 #ifdef HOST_WINDOWS
 

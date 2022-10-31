@@ -174,8 +174,6 @@
 #include "stacksampler.h"
 #endif
 
-#include <shlwapi.h>
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
@@ -625,11 +623,6 @@ void EEStartupHelper()
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
 
-
-        // Initialize Numa and CPU group information
-        // Need to do this as early as possible. Used by creating object handle
-        // table inside Ref_Initialization() before GC is initialized.
-        NumaNodeInfo::InitNumaNodeInfo();
 #endif // HOST_WINDOWS
 #ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();

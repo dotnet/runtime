@@ -5745,7 +5745,6 @@ private:
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -8457,18 +8456,6 @@ private:
     static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
     {
         return (intrinsicId == SIMDIntrinsicEqual);
-    }
-
-    // Returns base JIT type of a TYP_SIMD local.
-    // Returns CORINFO_TYPE_UNDEF if the local is not TYP_SIMD.
-    CorInfoType getBaseJitTypeOfSIMDLocal(GenTree* tree)
-    {
-        if (isSIMDTypeLocal(tree))
-        {
-            return lvaGetDesc(tree->AsLclVarCommon())->GetSimdBaseJitType();
-        }
-
-        return CORINFO_TYPE_UNDEF;
     }
 
     bool isNumericsNamespace(const char* ns)
