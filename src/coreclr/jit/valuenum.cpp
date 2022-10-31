@@ -8821,7 +8821,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 if (this->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
                                                                                         TARGET_POINTER_SIZE, false))
                                 {
-                                    CORINFO_OBJECT_HANDLE objHandle;
+                                    CORINFO_OBJECT_HANDLE objHandle = NULL;
                                     memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
                                     int len = this->info.compCompHnd->getArrayOrStringLength(objHandle);
                                     if (len >= 0)
