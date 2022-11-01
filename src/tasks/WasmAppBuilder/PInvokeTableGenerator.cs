@@ -87,9 +87,8 @@ internal sealed class PInvokeTableGenerator
             {
                 string? signature = SignatureMapper.MethodToSignature(method!);
                 if (signature == null)
-                    {
-                        throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-                    }
+                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+
 
                 Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
                 signatures.Add(signature);
